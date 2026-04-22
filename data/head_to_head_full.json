@@ -1,0 +1,2656 @@
+{
+  "exported_at": "2026-03-30T21:38:14.453847+00:00",
+  "pickle_dir": "/Users/elshimin/PycharmProjects/PythonProject/pickle",
+  "note": "Данные — ровно то, что в pickle: head_to_head суммирует все встречи с соперником в этой лиге.",
+  "leagues": {
+    "rpl": {
+      "league_name": "РПЛ",
+      "pickle_file": "/Users/elshimin/PycharmProjects/PythonProject/pickle/rpl_teams.pkl",
+      "teams_count": 10,
+      "teams": {
+        "Динамо": {
+          "name": "Динамо",
+          "season": {
+            "matches": 5,
+            "wins": 3,
+            "draws": 1,
+            "losses": 1,
+            "scored": 12,
+            "missed": 8,
+            "points": 10,
+            "difference": 4
+          },
+          "head_to_head": {
+            "Зенит": {
+              "scored": 0,
+              "missed": 0,
+              "points": 1
+            },
+            "Краснодар": {
+              "scored": 3,
+              "missed": 4,
+              "points": 0
+            },
+            "Крылья Советов": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            },
+            "Ростов": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            },
+            "Урал": {
+              "scored": 5,
+              "missed": 2,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Зенит": {
+          "name": "Зенит",
+          "season": {
+            "matches": 5,
+            "wins": 2,
+            "draws": 3,
+            "losses": 0,
+            "scored": 14,
+            "missed": 10,
+            "points": 9,
+            "difference": 4
+          },
+          "head_to_head": {
+            "Динамо": {
+              "scored": 0,
+              "missed": 0,
+              "points": 1
+            },
+            "Локомотив": {
+              "scored": 0,
+              "missed": 0,
+              "points": 1
+            },
+            "Рубин": {
+              "scored": 4,
+              "missed": 4,
+              "points": 1
+            },
+            "Спартак": {
+              "scored": 6,
+              "missed": 3,
+              "points": 3
+            },
+            "Цска": {
+              "scored": 4,
+              "missed": 3,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Краснодар": {
+          "name": "Краснодар",
+          "season": {
+            "matches": 4,
+            "wins": 3,
+            "draws": 0,
+            "losses": 1,
+            "scored": 9,
+            "missed": 8,
+            "points": 9,
+            "difference": 1
+          },
+          "head_to_head": {
+            "Динамо": {
+              "scored": 4,
+              "missed": 3,
+              "points": 3
+            },
+            "Ростов": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            },
+            "Рубин": {
+              "scored": 5,
+              "missed": 3,
+              "points": 6
+            }
+          },
+          "head_to_head_opponents_count": 3
+        },
+        "Крылья Советов": {
+          "name": "Крылья Советов",
+          "season": {
+            "matches": 4,
+            "wins": 1,
+            "draws": 1,
+            "losses": 2,
+            "scored": 7,
+            "missed": 6,
+            "points": 4,
+            "difference": 1
+          },
+          "head_to_head": {
+            "Динамо": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            },
+            "Локомотив": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            },
+            "Рубин": {
+              "scored": 4,
+              "missed": 4,
+              "points": 1
+            },
+            "Урал": {
+              "scored": 3,
+              "missed": 0,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 4
+        },
+        "Локомотив": {
+          "name": "Локомотив",
+          "season": {
+            "matches": 5,
+            "wins": 2,
+            "draws": 2,
+            "losses": 1,
+            "scored": 7,
+            "missed": 5,
+            "points": 8,
+            "difference": 2
+          },
+          "head_to_head": {
+            "Зенит": {
+              "scored": 0,
+              "missed": 0,
+              "points": 1
+            },
+            "Крылья Советов": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            },
+            "Ростов": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Спартак": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            },
+            "Урал": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Ростов": {
+          "name": "Ростов",
+          "season": {
+            "matches": 5,
+            "wins": 2,
+            "draws": 1,
+            "losses": 2,
+            "scored": 10,
+            "missed": 9,
+            "points": 7,
+            "difference": 1
+          },
+          "head_to_head": {
+            "Динамо": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            },
+            "Краснодар": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            },
+            "Локомотив": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Рубин": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Цска": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Рубин": {
+          "name": "Рубин",
+          "season": {
+            "matches": 7,
+            "wins": 1,
+            "draws": 2,
+            "losses": 4,
+            "scored": 14,
+            "missed": 21,
+            "points": 5,
+            "difference": -7
+          },
+          "head_to_head": {
+            "Зенит": {
+              "scored": 4,
+              "missed": 4,
+              "points": 1
+            },
+            "Краснодар": {
+              "scored": 3,
+              "missed": 5,
+              "points": 0
+            },
+            "Крылья Советов": {
+              "scored": 4,
+              "missed": 4,
+              "points": 1
+            },
+            "Ростов": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Спартак": {
+              "scored": 0,
+              "missed": 5,
+              "points": 0
+            },
+            "Цска": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 6
+        },
+        "Спартак": {
+          "name": "Спартак",
+          "season": {
+            "matches": 5,
+            "wins": 3,
+            "draws": 1,
+            "losses": 1,
+            "scored": 13,
+            "missed": 9,
+            "points": 10,
+            "difference": 4
+          },
+          "head_to_head": {
+            "Зенит": {
+              "scored": 3,
+              "missed": 6,
+              "points": 0
+            },
+            "Локомотив": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            },
+            "Рубин": {
+              "scored": 5,
+              "missed": 0,
+              "points": 3
+            },
+            "Урал": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Цска": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Урал": {
+          "name": "Урал",
+          "season": {
+            "matches": 5,
+            "wins": 0,
+            "draws": 2,
+            "losses": 3,
+            "scored": 5,
+            "missed": 13,
+            "points": 2,
+            "difference": -8
+          },
+          "head_to_head": {
+            "Динамо": {
+              "scored": 2,
+              "missed": 5,
+              "points": 0
+            },
+            "Крылья Советов": {
+              "scored": 0,
+              "missed": 3,
+              "points": 0
+            },
+            "Локомотив": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            },
+            "Спартак": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Цска": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Цска": {
+          "name": "Цска",
+          "season": {
+            "matches": 5,
+            "wins": 1,
+            "draws": 1,
+            "losses": 3,
+            "scored": 9,
+            "missed": 11,
+            "points": 4,
+            "difference": -2
+          },
+          "head_to_head": {
+            "Зенит": {
+              "scored": 3,
+              "missed": 4,
+              "points": 0
+            },
+            "Ростов": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            },
+            "Рубин": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Спартак": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            },
+            "Урал": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 5
+        }
+      }
+    },
+    "eng": {
+      "league_name": "АПЛ",
+      "pickle_file": "/Users/elshimin/PycharmProjects/PythonProject/pickle/england_teams.pkl",
+      "teams_count": 10,
+      "teams": {
+        "Арсенал": {
+          "name": "Арсенал",
+          "season": {
+            "matches": 9,
+            "wins": 5,
+            "draws": 1,
+            "losses": 3,
+            "scored": 20,
+            "missed": 14,
+            "points": 16,
+            "difference": 6
+          },
+          "head_to_head": {
+            "Астон Вилла": {
+              "scored": 4,
+              "missed": 2,
+              "points": 3
+            },
+            "Брайтон": {
+              "scored": 3,
+              "missed": 3,
+              "points": 3
+            },
+            "Ливерпуль": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            },
+            "Ньюкасл": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            },
+            "Сити": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            },
+            "Тоттенхэм": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Фулхэм": {
+              "scored": 4,
+              "missed": 1,
+              "points": 3
+            },
+            "Челси": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 8
+        },
+        "Астон Вилла": {
+          "name": "Астон Вилла",
+          "season": {
+            "matches": 5,
+            "wins": 3,
+            "draws": 1,
+            "losses": 1,
+            "scored": 10,
+            "missed": 8,
+            "points": 10,
+            "difference": 2
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 2,
+              "missed": 4,
+              "points": 0
+            },
+            "Брайтон": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            },
+            "Ливерпуль": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Мю": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            },
+            "Челси": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Брайтон": {
+          "name": "Брайтон",
+          "season": {
+            "matches": 8,
+            "wins": 2,
+            "draws": 0,
+            "losses": 6,
+            "scored": 10,
+            "missed": 26,
+            "points": 6,
+            "difference": -16
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 3,
+              "missed": 3,
+              "points": 3
+            },
+            "Астон Вилла": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Ливерпуль": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            },
+            "Мю": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Сити": {
+              "scored": 0,
+              "missed": 10,
+              "points": 0
+            },
+            "Тоттенхэм": {
+              "scored": 4,
+              "missed": 3,
+              "points": 3
+            },
+            "Челси": {
+              "scored": 1,
+              "missed": 4,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 7
+        },
+        "Ливерпуль": {
+          "name": "Ливерпуль",
+          "season": {
+            "matches": 5,
+            "wins": 3,
+            "draws": 2,
+            "losses": 0,
+            "scored": 9,
+            "missed": 5,
+            "points": 11,
+            "difference": 4
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            },
+            "Астон Вилла": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Брайтон": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            },
+            "Мю": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            },
+            "Челси": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Мю": {
+          "name": "Мю",
+          "season": {
+            "matches": 6,
+            "wins": 2,
+            "draws": 1,
+            "losses": 3,
+            "scored": 9,
+            "missed": 9,
+            "points": 7,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Астон Вилла": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            },
+            "Брайтон": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Ливерпуль": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            },
+            "Тоттенхэм": {
+              "scored": 4,
+              "missed": 1,
+              "points": 3
+            },
+            "Фулхэм": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Челси": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 6
+        },
+        "Ньюкасл": {
+          "name": "Ньюкасл",
+          "season": {
+            "matches": 4,
+            "wins": 1,
+            "draws": 1,
+            "losses": 2,
+            "scored": 5,
+            "missed": 7,
+            "points": 4,
+            "difference": -2
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            },
+            "Сити": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Тоттенхэм": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Фулхэм": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 4
+        },
+        "Сити": {
+          "name": "Сити",
+          "season": {
+            "matches": 5,
+            "wins": 4,
+            "draws": 1,
+            "losses": 0,
+            "scored": 18,
+            "missed": 4,
+            "points": 13,
+            "difference": 14
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            },
+            "Брайтон": {
+              "scored": 10,
+              "missed": 0,
+              "points": 3
+            },
+            "Ньюкасл": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Тоттенхэм": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            },
+            "Фулхэм": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Тоттенхэм": {
+          "name": "Тоттенхэм",
+          "season": {
+            "matches": 7,
+            "wins": 2,
+            "draws": 1,
+            "losses": 4,
+            "scored": 13,
+            "missed": 18,
+            "points": 7,
+            "difference": -5
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Брайтон": {
+              "scored": 3,
+              "missed": 4,
+              "points": 0
+            },
+            "Мю": {
+              "scored": 1,
+              "missed": 4,
+              "points": 0
+            },
+            "Ньюкасл": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Сити": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Фулхэм": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Челси": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 7
+        },
+        "Фулхэм": {
+          "name": "Фулхэм",
+          "season": {
+            "matches": 5,
+            "wins": 1,
+            "draws": 1,
+            "losses": 3,
+            "scored": 7,
+            "missed": 11,
+            "points": 4,
+            "difference": -4
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 1,
+              "missed": 4,
+              "points": 0
+            },
+            "Мю": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Ньюкасл": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Сити": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Тоттенхэм": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Челси": {
+          "name": "Челси",
+          "season": {
+            "matches": 6,
+            "wins": 2,
+            "draws": 1,
+            "losses": 3,
+            "scored": 14,
+            "missed": 13,
+            "points": 7,
+            "difference": 1
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            },
+            "Астон Вилла": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            },
+            "Брайтон": {
+              "scored": 4,
+              "missed": 1,
+              "points": 3
+            },
+            "Ливерпуль": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Мю": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Тоттенхэм": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 6
+        }
+      }
+    },
+    "esp": {
+      "league_name": "Ла Лига",
+      "pickle_file": "/Users/elshimin/PycharmProjects/PythonProject/pickle/spain_teams.pkl",
+      "teams_count": 10,
+      "teams": {
+        "Атлетик": {
+          "name": "Атлетик",
+          "season": {
+            "matches": 2,
+            "wins": 1,
+            "draws": 1,
+            "losses": 0,
+            "scored": 7,
+            "missed": 6,
+            "points": 4,
+            "difference": 1
+          },
+          "head_to_head": {
+            "Бетис": {
+              "scored": 5,
+              "missed": 5,
+              "points": 1
+            },
+            "Севилья": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 2
+        },
+        "Атлетико": {
+          "name": "Атлетико",
+          "season": {
+            "matches": 2,
+            "wins": 1,
+            "draws": 1,
+            "losses": 0,
+            "scored": 7,
+            "missed": 3,
+            "points": 4,
+            "difference": 4
+          },
+          "head_to_head": {
+            "Райо Вальекано": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Реал": {
+              "scored": 5,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 2
+        },
+        "Барселона": {
+          "name": "Барселона",
+          "season": {
+            "matches": 3,
+            "wins": 2,
+            "draws": 1,
+            "losses": 0,
+            "scored": 10,
+            "missed": 4,
+            "points": 7,
+            "difference": 6
+          },
+          "head_to_head": {
+            "Вильярреал": {
+              "scored": 4,
+              "missed": 0,
+              "points": 3
+            },
+            "Реал": {
+              "scored": 4,
+              "missed": 2,
+              "points": 3
+            },
+            "Севилья": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 3
+        },
+        "Бетис": {
+          "name": "Бетис",
+          "season": {
+            "matches": 3,
+            "wins": 1,
+            "draws": 1,
+            "losses": 1,
+            "scored": 7,
+            "missed": 8,
+            "points": 4,
+            "difference": -1
+          },
+          "head_to_head": {
+            "Атлетик": {
+              "scored": 5,
+              "missed": 5,
+              "points": 1
+            },
+            "Реал": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Севилья": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 3
+        },
+        "Вильярреал": {
+          "name": "Вильярреал",
+          "season": {
+            "matches": 4,
+            "wins": 1,
+            "draws": 0,
+            "losses": 3,
+            "scored": 4,
+            "missed": 11,
+            "points": 3,
+            "difference": -7
+          },
+          "head_to_head": {
+            "Барселона": {
+              "scored": 0,
+              "missed": 4,
+              "points": 0
+            },
+            "Реал": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            },
+            "Реал Сосьедад": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            },
+            "Севилья": {
+              "scored": 3,
+              "missed": 5,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 4
+        },
+        "Жирона": {
+          "name": "Жирона",
+          "season": {
+            "matches": 1,
+            "wins": 0,
+            "draws": 1,
+            "losses": 0,
+            "scored": 2,
+            "missed": 2,
+            "points": 1,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Реал": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 1
+        },
+        "Райо Вальекано": {
+          "name": "Райо Вальекано",
+          "season": {
+            "matches": 2,
+            "wins": 0,
+            "draws": 1,
+            "losses": 1,
+            "scored": 2,
+            "missed": 8,
+            "points": 1,
+            "difference": -6
+          },
+          "head_to_head": {
+            "Атлетико": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Реал": {
+              "scored": 0,
+              "missed": 6,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 2
+        },
+        "Реал": {
+          "name": "Реал",
+          "season": {
+            "matches": 7,
+            "wins": 3,
+            "draws": 2,
+            "losses": 2,
+            "scored": 20,
+            "missed": 16,
+            "points": 11,
+            "difference": 4
+          },
+          "head_to_head": {
+            "Атлетико": {
+              "scored": 1,
+              "missed": 5,
+              "points": 0
+            },
+            "Барселона": {
+              "scored": 2,
+              "missed": 4,
+              "points": 0
+            },
+            "Бетис": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            },
+            "Вильярреал": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            },
+            "Жирона": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Райо Вальекано": {
+              "scored": 6,
+              "missed": 0,
+              "points": 3
+            },
+            "Севилья": {
+              "scored": 4,
+              "missed": 4,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 7
+        },
+        "Реал Сосьедад": {
+          "name": "Реал Сосьедад",
+          "season": {
+            "matches": 1,
+            "wins": 0,
+            "draws": 0,
+            "losses": 1,
+            "scored": 0,
+            "missed": 1,
+            "points": 0,
+            "difference": -1
+          },
+          "head_to_head": {
+            "Вильярреал": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 1
+        },
+        "Севилья": {
+          "name": "Севилья",
+          "season": {
+            "matches": 5,
+            "wins": 1,
+            "draws": 2,
+            "losses": 2,
+            "scored": 12,
+            "missed": 12,
+            "points": 5,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Атлетик": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Барселона": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Бетис": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            },
+            "Вильярреал": {
+              "scored": 5,
+              "missed": 3,
+              "points": 3
+            },
+            "Реал": {
+              "scored": 4,
+              "missed": 4,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 5
+        }
+      }
+    },
+    "ita": {
+      "league_name": "Серия А",
+      "pickle_file": "/Users/elshimin/PycharmProjects/PythonProject/pickle/italy_teams.pkl",
+      "teams_count": 10,
+      "teams": {
+        "Аталанта": {
+          "name": "Аталанта",
+          "season": {
+            "matches": 5,
+            "wins": 2,
+            "draws": 1,
+            "losses": 2,
+            "scored": 12,
+            "missed": 12,
+            "points": 7,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Милан": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Рома": {
+              "scored": 6,
+              "missed": 4,
+              "points": 3
+            },
+            "Сассуоло": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            },
+            "Фиорентина": {
+              "scored": 1,
+              "missed": 4,
+              "points": 0
+            },
+            "Ювентус": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Интер": {
+          "name": "Интер",
+          "season": {
+            "matches": 4,
+            "wins": 3,
+            "draws": 0,
+            "losses": 1,
+            "scored": 13,
+            "missed": 6,
+            "points": 9,
+            "difference": 7
+          },
+          "head_to_head": {
+            "Лацио": {
+              "scored": 4,
+              "missed": 2,
+              "points": 3
+            },
+            "Рома": {
+              "scored": 5,
+              "missed": 1,
+              "points": 3
+            },
+            "Торино": {
+              "scored": 4,
+              "missed": 3,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 3
+        },
+        "Лацио": {
+          "name": "Лацио",
+          "season": {
+            "matches": 6,
+            "wins": 1,
+            "draws": 2,
+            "losses": 3,
+            "scored": 10,
+            "missed": 14,
+            "points": 5,
+            "difference": -4
+          },
+          "head_to_head": {
+            "Интер": {
+              "scored": 2,
+              "missed": 4,
+              "points": 0
+            },
+            "Милан": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Наполи": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Фиорентина": {
+              "scored": 3,
+              "missed": 5,
+              "points": 1
+            },
+            "Ювентус": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Милан": {
+          "name": "Милан",
+          "season": {
+            "matches": 7,
+            "wins": 2,
+            "draws": 2,
+            "losses": 3,
+            "scored": 16,
+            "missed": 17,
+            "points": 8,
+            "difference": -1
+          },
+          "head_to_head": {
+            "Аталанта": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Лацио": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Наполи": {
+              "scored": 0,
+              "missed": 0,
+              "points": 1
+            },
+            "Сассуоло": {
+              "scored": 9,
+              "missed": 10,
+              "points": 3
+            },
+            "Торино": {
+              "scored": 5,
+              "missed": 4,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Наполи": {
+          "name": "Наполи",
+          "season": {
+            "matches": 7,
+            "wins": 3,
+            "draws": 2,
+            "losses": 2,
+            "scored": 15,
+            "missed": 12,
+            "points": 11,
+            "difference": 3
+          },
+          "head_to_head": {
+            "Лацио": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Милан": {
+              "scored": 0,
+              "missed": 0,
+              "points": 1
+            },
+            "Рома": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Сассуоло": {
+              "scored": 7,
+              "missed": 5,
+              "points": 3
+            },
+            "Торино": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Ювентус": {
+              "scored": 4,
+              "missed": 3,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 6
+        },
+        "Рома": {
+          "name": "Рома",
+          "season": {
+            "matches": 5,
+            "wins": 2,
+            "draws": 1,
+            "losses": 2,
+            "scored": 13,
+            "missed": 17,
+            "points": 7,
+            "difference": -4
+          },
+          "head_to_head": {
+            "Аталанта": {
+              "scored": 4,
+              "missed": 6,
+              "points": 0
+            },
+            "Интер": {
+              "scored": 1,
+              "missed": 5,
+              "points": 0
+            },
+            "Наполи": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Торино": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            },
+            "Фиорентина": {
+              "scored": 3,
+              "missed": 3,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Сассуоло": {
+          "name": "Сассуоло",
+          "season": {
+            "matches": 8,
+            "wins": 3,
+            "draws": 0,
+            "losses": 5,
+            "scored": 19,
+            "missed": 25,
+            "points": 9,
+            "difference": -6
+          },
+          "head_to_head": {
+            "Аталанта": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Милан": {
+              "scored": 10,
+              "missed": 9,
+              "points": 3
+            },
+            "Наполи": {
+              "scored": 5,
+              "missed": 7,
+              "points": 3
+            },
+            "Торино": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            },
+            "Фиорентина": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Ювентус": {
+              "scored": 0,
+              "missed": 3,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 6
+        },
+        "Торино": {
+          "name": "Торино",
+          "season": {
+            "matches": 7,
+            "wins": 2,
+            "draws": 1,
+            "losses": 4,
+            "scored": 10,
+            "missed": 15,
+            "points": 7,
+            "difference": -5
+          },
+          "head_to_head": {
+            "Интер": {
+              "scored": 3,
+              "missed": 4,
+              "points": 3
+            },
+            "Милан": {
+              "scored": 4,
+              "missed": 5,
+              "points": 3
+            },
+            "Наполи": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Рома": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            },
+            "Сассуоло": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Фиорентина": {
+          "name": "Фиорентина",
+          "season": {
+            "matches": 6,
+            "wins": 3,
+            "draws": 3,
+            "losses": 0,
+            "scored": 17,
+            "missed": 10,
+            "points": 12,
+            "difference": 7
+          },
+          "head_to_head": {
+            "Аталанта": {
+              "scored": 4,
+              "missed": 1,
+              "points": 3
+            },
+            "Лацио": {
+              "scored": 5,
+              "missed": 3,
+              "points": 4
+            },
+            "Рома": {
+              "scored": 3,
+              "missed": 3,
+              "points": 1
+            },
+            "Сассуоло": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            },
+            "Ювентус": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Ювентус": {
+          "name": "Ювентус",
+          "season": {
+            "matches": 5,
+            "wins": 2,
+            "draws": 2,
+            "losses": 1,
+            "scored": 12,
+            "missed": 9,
+            "points": 8,
+            "difference": 3
+          },
+          "head_to_head": {
+            "Аталанта": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Лацио": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Наполи": {
+              "scored": 3,
+              "missed": 4,
+              "points": 0
+            },
+            "Сассуоло": {
+              "scored": 3,
+              "missed": 0,
+              "points": 3
+            },
+            "Фиорентина": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 5
+        }
+      }
+    },
+    "ger": {
+      "league_name": "Бундеслига",
+      "pickle_file": "/Users/elshimin/PycharmProjects/PythonProject/pickle/germany_teams.pkl",
+      "teams_count": 10,
+      "teams": {
+        "Бавария": {
+          "name": "Бавария",
+          "season": {
+            "matches": 6,
+            "wins": 5,
+            "draws": 1,
+            "losses": 0,
+            "scored": 14,
+            "missed": 4,
+            "points": 16,
+            "difference": 10
+          },
+          "head_to_head": {
+            "Байер": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Боруссия М": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            },
+            "Вольфсбург": {
+              "scored": 6,
+              "missed": 2,
+              "points": 6
+            },
+            "Фрайбург": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            },
+            "Хоффенхайм": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Байер": {
+          "name": "Байер",
+          "season": {
+            "matches": 9,
+            "wins": 4,
+            "draws": 3,
+            "losses": 2,
+            "scored": 16,
+            "missed": 11,
+            "points": 15,
+            "difference": 5
+          },
+          "head_to_head": {
+            "Бавария": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Боруссия М": {
+              "scored": 3,
+              "missed": 0,
+              "points": 3
+            },
+            "Дортмунд": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Лейпциг": {
+              "scored": 0,
+              "missed": 3,
+              "points": 0
+            },
+            "Фрайбург": {
+              "scored": 5,
+              "missed": 4,
+              "points": 3
+            },
+            "Франкфурт": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Хоффенхайм": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            },
+            "Штутгарт": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 8
+        },
+        "Боруссия М": {
+          "name": "Боруссия М",
+          "season": {
+            "matches": 4,
+            "wins": 1,
+            "draws": 1,
+            "losses": 2,
+            "scored": 5,
+            "missed": 8,
+            "points": 4,
+            "difference": -3
+          },
+          "head_to_head": {
+            "Бавария": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Байер": {
+              "scored": 0,
+              "missed": 3,
+              "points": 0
+            },
+            "Вольфсбург": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Фрайбург": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 4
+        },
+        "Вольфсбург": {
+          "name": "Вольфсбург",
+          "season": {
+            "matches": 7,
+            "wins": 2,
+            "draws": 2,
+            "losses": 3,
+            "scored": 13,
+            "missed": 13,
+            "points": 8,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Бавария": {
+              "scored": 2,
+              "missed": 6,
+              "points": 0
+            },
+            "Боруссия М": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Лейпциг": {
+              "scored": 2,
+              "missed": 0,
+              "points": 3
+            },
+            "Фрайбург": {
+              "scored": 4,
+              "missed": 1,
+              "points": 3
+            },
+            "Франкфурт": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            },
+            "Хоффенхайм": {
+              "scored": 4,
+              "missed": 4,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 6
+        },
+        "Дортмунд": {
+          "name": "Дортмунд",
+          "season": {
+            "matches": 3,
+            "wins": 1,
+            "draws": 2,
+            "losses": 0,
+            "scored": 7,
+            "missed": 3,
+            "points": 5,
+            "difference": 4
+          },
+          "head_to_head": {
+            "Байер": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Фрайбург": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Штутгарт": {
+              "scored": 4,
+              "missed": 0,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 3
+        },
+        "Лейпциг": {
+          "name": "Лейпциг",
+          "season": {
+            "matches": 3,
+            "wins": 2,
+            "draws": 0,
+            "losses": 1,
+            "scored": 4,
+            "missed": 2,
+            "points": 6,
+            "difference": 2
+          },
+          "head_to_head": {
+            "Байер": {
+              "scored": 3,
+              "missed": 0,
+              "points": 3
+            },
+            "Вольфсбург": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            },
+            "Франкфурт": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 3
+        },
+        "Фрайбург": {
+          "name": "Фрайбург",
+          "season": {
+            "matches": 9,
+            "wins": 1,
+            "draws": 3,
+            "losses": 5,
+            "scored": 11,
+            "missed": 22,
+            "points": 6,
+            "difference": -11
+          },
+          "head_to_head": {
+            "Бавария": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            },
+            "Байер": {
+              "scored": 4,
+              "missed": 5,
+              "points": 3
+            },
+            "Боруссия М": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Вольфсбург": {
+              "scored": 1,
+              "missed": 4,
+              "points": 0
+            },
+            "Дортмунд": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Франкфурт": {
+              "scored": 3,
+              "missed": 3,
+              "points": 2
+            },
+            "Хоффенхайм": {
+              "scored": 0,
+              "missed": 3,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 7
+        },
+        "Франкфурт": {
+          "name": "Франкфурт",
+          "season": {
+            "matches": 6,
+            "wins": 2,
+            "draws": 3,
+            "losses": 1,
+            "scored": 10,
+            "missed": 6,
+            "points": 9,
+            "difference": 4
+          },
+          "head_to_head": {
+            "Байер": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Вольфсбург": {
+              "scored": 1,
+              "missed": 0,
+              "points": 3
+            },
+            "Лейпциг": {
+              "scored": 0,
+              "missed": 1,
+              "points": 0
+            },
+            "Фрайбург": {
+              "scored": 3,
+              "missed": 3,
+              "points": 2
+            },
+            "Штутгарт": {
+              "scored": 5,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Хоффенхайм": {
+          "name": "Хоффенхайм",
+          "season": {
+            "matches": 5,
+            "wins": 1,
+            "draws": 2,
+            "losses": 2,
+            "scored": 9,
+            "missed": 10,
+            "points": 5,
+            "difference": -1
+          },
+          "head_to_head": {
+            "Бавария": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            },
+            "Байер": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Вольфсбург": {
+              "scored": 4,
+              "missed": 4,
+              "points": 1
+            },
+            "Фрайбург": {
+              "scored": 3,
+              "missed": 0,
+              "points": 3
+            },
+            "Штутгарт": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Штутгарт": {
+          "name": "Штутгарт",
+          "season": {
+            "matches": 4,
+            "wins": 0,
+            "draws": 1,
+            "losses": 3,
+            "scored": 2,
+            "missed": 12,
+            "points": 1,
+            "difference": -10
+          },
+          "head_to_head": {
+            "Байер": {
+              "scored": 0,
+              "missed": 2,
+              "points": 0
+            },
+            "Дортмунд": {
+              "scored": 0,
+              "missed": 4,
+              "points": 0
+            },
+            "Франкфурт": {
+              "scored": 1,
+              "missed": 5,
+              "points": 0
+            },
+            "Хоффенхайм": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 4
+        }
+      }
+    },
+    "cl": {
+      "league_name": "Лига чемпионов",
+      "pickle_file": "/Users/elshimin/PycharmProjects/PythonProject/pickle/champ_league_teams.pkl",
+      "teams_count": 30,
+      "teams": {
+        "Арсенал": {
+          "name": "Арсенал",
+          "season": {
+            "matches": 3,
+            "wins": 1,
+            "draws": 0,
+            "losses": 2,
+            "scored": 5,
+            "missed": 6,
+            "points": 3,
+            "difference": -1
+          },
+          "head_to_head": {
+            "Зенит": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            },
+            "Реал Сосьедад": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Спартак": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 3
+        },
+        "Аталанта": {
+          "name": "Аталанта",
+          "season": {
+            "matches": 1,
+            "wins": 1,
+            "draws": 0,
+            "losses": 0,
+            "scored": 5,
+            "missed": 3,
+            "points": 3,
+            "difference": 2
+          },
+          "head_to_head": {
+            "Краснодар": {
+              "scored": 5,
+              "missed": 3,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 1
+        },
+        "Атлетик": {
+          "name": "Атлетик",
+          "season": {
+            "matches": 2,
+            "wins": 0,
+            "draws": 0,
+            "losses": 2,
+            "scored": 3,
+            "missed": 5,
+            "points": 0,
+            "difference": -2
+          },
+          "head_to_head": {
+            "Спартак": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            },
+            "Челси": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 2
+        },
+        "Атлетико": {
+          "name": "Атлетико",
+          "season": {
+            "matches": 2,
+            "wins": 2,
+            "draws": 0,
+            "losses": 0,
+            "scored": 8,
+            "missed": 5,
+            "points": 6,
+            "difference": 3
+          },
+          "head_to_head": {
+            "Тоттенхэм": {
+              "scored": 4,
+              "missed": 3,
+              "points": 3
+            },
+            "Франкфурт": {
+              "scored": 4,
+              "missed": 2,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 2
+        },
+        "Бавария": {
+          "name": "Бавария",
+          "season": {
+            "matches": 3,
+            "wins": 2,
+            "draws": 0,
+            "losses": 1,
+            "scored": 6,
+            "missed": 6,
+            "points": 6,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Ливерпуль": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Спартак": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            },
+            "Челси": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 3
+        },
+        "Байер": {
+          "name": "Байер",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Барселона": {
+          "name": "Барселона",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Боруссия М": {
+          "name": "Боруссия М",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Вильярреал": {
+          "name": "Вильярреал",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Динамо": {
+          "name": "Динамо",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Дортмунд": {
+          "name": "Дортмунд",
+          "season": {
+            "matches": 1,
+            "wins": 0,
+            "draws": 1,
+            "losses": 0,
+            "scored": 1,
+            "missed": 1,
+            "points": 1,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Милан": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 1
+        },
+        "Зенит": {
+          "name": "Зенит",
+          "season": {
+            "matches": 1,
+            "wins": 0,
+            "draws": 0,
+            "losses": 1,
+            "scored": 2,
+            "missed": 3,
+            "points": 0,
+            "difference": -1
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 1
+        },
+        "Интер": {
+          "name": "Интер",
+          "season": {
+            "matches": 1,
+            "wins": 1,
+            "draws": 0,
+            "losses": 0,
+            "scored": 3,
+            "missed": 1,
+            "points": 3,
+            "difference": 2
+          },
+          "head_to_head": {
+            "Ювентус": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 1
+        },
+        "Краснодар": {
+          "name": "Краснодар",
+          "season": {
+            "matches": 2,
+            "wins": 0,
+            "draws": 0,
+            "losses": 2,
+            "scored": 5,
+            "missed": 8,
+            "points": 0,
+            "difference": -3
+          },
+          "head_to_head": {
+            "Аталанта": {
+              "scored": 3,
+              "missed": 5,
+              "points": 0
+            },
+            "Ливерпуль": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 2
+        },
+        "Лейпциг": {
+          "name": "Лейпциг",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Ливерпуль": {
+          "name": "Ливерпуль",
+          "season": {
+            "matches": 2,
+            "wins": 2,
+            "draws": 0,
+            "losses": 0,
+            "scored": 6,
+            "missed": 3,
+            "points": 6,
+            "difference": 3
+          },
+          "head_to_head": {
+            "Бавария": {
+              "scored": 3,
+              "missed": 1,
+              "points": 3
+            },
+            "Краснодар": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 2
+        },
+        "Локомотив": {
+          "name": "Локомотив",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Милан": {
+          "name": "Милан",
+          "season": {
+            "matches": 2,
+            "wins": 0,
+            "draws": 2,
+            "losses": 0,
+            "scored": 3,
+            "missed": 3,
+            "points": 2,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Дортмунд": {
+              "scored": 1,
+              "missed": 1,
+              "points": 1
+            },
+            "Спартак": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            }
+          },
+          "head_to_head_opponents_count": 2
+        },
+        "Мю": {
+          "name": "Мю",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Наполи": {
+          "name": "Наполи",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Реал": {
+          "name": "Реал",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Реал Сосьедад": {
+          "name": "Реал Сосьедад",
+          "season": {
+            "matches": 1,
+            "wins": 1,
+            "draws": 0,
+            "losses": 0,
+            "scored": 2,
+            "missed": 1,
+            "points": 3,
+            "difference": 1
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 1
+        },
+        "Рома": {
+          "name": "Рома",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Сити": {
+          "name": "Сити",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Спартак": {
+          "name": "Спартак",
+          "season": {
+            "matches": 5,
+            "wins": 2,
+            "draws": 1,
+            "losses": 2,
+            "scored": 11,
+            "missed": 12,
+            "points": 7,
+            "difference": -1
+          },
+          "head_to_head": {
+            "Арсенал": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Атлетик": {
+              "scored": 2,
+              "missed": 1,
+              "points": 3
+            },
+            "Бавария": {
+              "scored": 2,
+              "missed": 3,
+              "points": 0
+            },
+            "Милан": {
+              "scored": 2,
+              "missed": 2,
+              "points": 1
+            },
+            "Ювентус": {
+              "scored": 3,
+              "missed": 5,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 5
+        },
+        "Тоттенхэм": {
+          "name": "Тоттенхэм",
+          "season": {
+            "matches": 1,
+            "wins": 0,
+            "draws": 0,
+            "losses": 1,
+            "scored": 3,
+            "missed": 4,
+            "points": 0,
+            "difference": -1
+          },
+          "head_to_head": {
+            "Атлетико": {
+              "scored": 3,
+              "missed": 4,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 1
+        },
+        "Франкфурт": {
+          "name": "Франкфурт",
+          "season": {
+            "matches": 1,
+            "wins": 0,
+            "draws": 0,
+            "losses": 1,
+            "scored": 2,
+            "missed": 4,
+            "points": 0,
+            "difference": -2
+          },
+          "head_to_head": {
+            "Атлетико": {
+              "scored": 2,
+              "missed": 4,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 1
+        },
+        "Цска": {
+          "name": "Цска",
+          "season": {
+            "matches": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "scored": 0,
+            "missed": 0,
+            "points": 0,
+            "difference": 0
+          },
+          "head_to_head": {},
+          "head_to_head_opponents_count": 0
+        },
+        "Челси": {
+          "name": "Челси",
+          "season": {
+            "matches": 2,
+            "wins": 1,
+            "draws": 0,
+            "losses": 1,
+            "scored": 4,
+            "missed": 4,
+            "points": 3,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Атлетик": {
+              "scored": 3,
+              "missed": 2,
+              "points": 3
+            },
+            "Бавария": {
+              "scored": 1,
+              "missed": 2,
+              "points": 0
+            }
+          },
+          "head_to_head_opponents_count": 2
+        },
+        "Ювентус": {
+          "name": "Ювентус",
+          "season": {
+            "matches": 2,
+            "wins": 1,
+            "draws": 0,
+            "losses": 1,
+            "scored": 6,
+            "missed": 6,
+            "points": 3,
+            "difference": 0
+          },
+          "head_to_head": {
+            "Интер": {
+              "scored": 1,
+              "missed": 3,
+              "points": 0
+            },
+            "Спартак": {
+              "scored": 5,
+              "missed": 3,
+              "points": 3
+            }
+          },
+          "head_to_head_opponents_count": 2
+        }
+      }
+    }
+  }
+}

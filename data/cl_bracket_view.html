@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Сетка ЛЧ</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(165deg, #0a1628 0%, #152a45 40%, #0d1830 100%);
+      color: #e8eef5;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+    h1 {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.35rem;
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+    .sub {
+      text-align: center;
+      font-size: 0.85rem;
+      opacity: 0.75;
+      margin-bottom: 28px;
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.45;
+    }
+    .bracket {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 14px;
+      justify-content: center;
+      align-items: flex-start;
+      overflow-x: auto;
+      padding-bottom: 16px;
+    }
+    .col {
+      flex: 0 0 auto;
+      min-width: 176px;
+      max-width: 220px;
+    }
+    .col h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      text-align: center;
+      margin: 0 0 12px;
+      opacity: 0.9;
+      font-weight: 600;
+    }
+    .cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card {
+      background: #fff;
+      color: #0a1628;
+      border-radius: 10px;
+      padding: 10px 12px 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+    .tie-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 0.82rem;
+      padding: 5px 0;
+    }
+    .tie-line .tname {
+      font-weight: 600;
+      flex: 1;
+      min-width: 0;
+    }
+    .tie-line .sc {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      text-align: right;
+    }
+    .tie-line .pen {
+      font-weight: 700;
+      color: #143a5c;
+    }
+    .dash { opacity: 0.45; font-weight: 600; }
+    .card-foot {
+      text-align: center;
+      color: #9aa8b8;
+      font-size: 0.95rem;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px solid #e0e6ec;
+      letter-spacing: 0.12em;
+    }
+    .final-card { text-align: center; padding: 4px 0; }
+    .final-card .fname { font-weight: 600; font-size: 0.82rem; margin: 4px 0; }
+    .final-card .fscore {
+      font-size: 1.05rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin: 6px 0;
+      color: #143a5c;
+    }
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 0.75rem;
+      opacity: 0.55;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.4;
+    }
+    </style>
+</head>
+<body>
+
+    <h1>Лига чемпионов — сетка плей-офф (проект)</h1>
+    <p class="sub">В каждой строке — только домашний матч команды в стыке (как в журнале: хозяева первыми).
+    У каждой команды — её домашний матч в стыке; ответный может быть ещё не сыгран (тогда прочерк).
+    Группа ЛЧ: <code>cl_phase: &quot;league&quot;</code> в JSON — сетка такие матчи пропускает.
+    Из главного меня матч-дня ЛЧ пишется как <code>knockout</code>. Старые записи без поля
+    учитываются; групповые допишите <code>league</code> вручную, если мешают.
+    Ничья в стыке: <code>penalties_by_team</code> — см. <code>match_results.py</code>.</p>
+    <div class="bracket">
+      <div class="col"><h2>1/16 (R1)</h2><div class="cards"><div class="card"><div class="tie-line"><span class="tname">Наполи</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">Дортмунд</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Франкфурт</span><span class="sc">4:4</span></div><div class="tie-line"><span class="tname">Боруссия М</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Бавария</span><span class="sc">2:2</span></div><div class="tie-line"><span class="tname">Ювентус</span><span class="sc">2:3</span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Реал</span><span class="sc">2:3 <span class="pen">(4)</span></span></div><div class="tie-line"><span class="tname">Атлетик</span><span class="sc">3:4 <span class="pen">(3)</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Вильярреал</span><span class="sc">3:2</span></div><div class="tie-line"><span class="tname">Динамо</span><span class="sc">6:0</span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Челси</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">Реал Сосьедад</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Ливерпуль</span><span class="sc">3:0</span></div><div class="tie-line"><span class="tname">Аталанта</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Мю</span><span class="sc">3:2</span></div><div class="tie-line"><span class="tname">Милан</span><span class="sc">1:1</span></div><div class="card-foot">—</div></div></div></div><div class="col"><h2>1/8 (R2)</h2><div class="cards"><div class="card"><div class="tie-line"><span class="tname">Интер</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">победитель R1 #0</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Зенит</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">победитель R1 #1</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Арсенал</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">Бавария</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Атлетико</span><span class="sc">1:2</span></div><div class="tie-line"><span class="tname">Реал</span><span class="sc">1:3</span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Лейпциг</span><span class="sc">1:2</span></div><div class="tie-line"><span class="tname">Динамо</span><span class="sc">1:3</span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Сити</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">победитель R1 #5</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Тоттенхэм</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">победитель R1 #6</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Барселона</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">Мю</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div></div></div><div class="col"><h2>1/4 финала</h2><div class="cards"><div class="card"><div class="tie-line"><span class="tname">победитель R2 #0</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">победитель R2 #1</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">победитель R2 #2</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">Атлетико</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">Лейпциг</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">победитель R2 #5</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">победитель R2 #6</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">победитель R2 #7</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div></div></div><div class="col"><h2>1/2 финала</h2><div class="cards"><div class="card"><div class="tie-line"><span class="tname">победитель R3 #0</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">победитель R3 #1</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div><div class="card"><div class="tie-line"><span class="tname">победитель R3 #2</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="tie-line"><span class="tname">победитель R3 #3</span><span class="sc"><span class="dash">—</span>:<span class="dash">—</span></span></div><div class="card-foot">—</div></div></div></div><div class="col"><h2>Финал</h2><div class="cards"><div class="card"><div class="final-card"><div class="fname">победитель ПФ #0</div><div class="fscore"><span class="dash">—</span> : <span class="dash">—</span></div><div class="fname">победитель ПФ #1</div></div><div class="card-foot">—</div></div></div></div>
+    </div>
+    <footer>Файл перезаписывается при открытии сетки из меню (k).</footer>
+    
+</body>
+</html>

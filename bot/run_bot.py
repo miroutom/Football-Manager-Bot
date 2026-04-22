@@ -1,0 +1,46 @@
+"""Запуск Telegram-бота (long polling). Из корня проекта: python -m bot"""
+from __future__ import annotations
+
+import asyncio
+import logging
+
+from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
+
+import bot  # noqa: F401 — ensure_project_paths при импорте пакета
+
+from bot.handlers import AccessMiddleware, router
+from bot.match_handlers import match_router
+from bot.transfer_handlers import transfer_router
+from bot.settings import get_bot_token
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+
+
+async def main() -> None:
+    token = get_bot_token()
+    dp = Dispatcher(storage=MemoryStorage())
+    match_router.message.middleware(AccessMiddleware())
+    match_router.callback_query.middleware(AccessMiddleware())
+    transfer_router.message.middleware(AccessMiddleware())
+    transfer_router.callback_query.middleware(AccessMiddleware())
+    router.message.middleware(AccessMiddleware())
+    router.callback_query.middleware(AccessMiddleware())
+    dp.include_router(match_router)
+    dp.include_router(transfer_router)
+    dp.include_router(router)
+
+    telegram_bot = Bot(
+        token=token,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
+    await dp.start_polling(telegram_bot)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -1,0 +1,757 @@
+{
+  "round1": [
+    {
+      "pick": 1,
+      "name": "Рубин",
+      "league": "rpl",
+      "tier": "D",
+      "place": 10,
+      "cl": "none",
+      "pts": 13,
+      "gd": -7,
+      "S": 5
+    },
+    {
+      "pick": 2,
+      "name": "Ростов",
+      "league": "rpl",
+      "tier": "D",
+      "place": 9,
+      "cl": "none",
+      "pts": 16,
+      "gd": -7,
+      "S": 6
+    },
+    {
+      "pick": 3,
+      "name": "Фрайбург",
+      "league": "ger",
+      "tier": "C",
+      "place": 10,
+      "cl": "none",
+      "pts": 8,
+      "gd": -30,
+      "S": 7
+    },
+    {
+      "pick": 4,
+      "name": "Брайтон",
+      "league": "eng",
+      "tier": "C",
+      "place": 10,
+      "cl": "none",
+      "pts": 10,
+      "gd": -36,
+      "S": 7
+    },
+    {
+      "pick": 5,
+      "name": "Жирона",
+      "league": "esp",
+      "tier": "C",
+      "place": 10,
+      "cl": "none",
+      "pts": 11,
+      "gd": -20,
+      "S": 7
+    },
+    {
+      "pick": 6,
+      "name": "Крылья Советов",
+      "league": "rpl",
+      "tier": "D",
+      "place": 8,
+      "cl": "none",
+      "pts": 16,
+      "gd": 3,
+      "S": 7
+    },
+    {
+      "pick": 7,
+      "name": "Райо Вальекано",
+      "league": "esp",
+      "tier": "C",
+      "place": 9,
+      "cl": "none",
+      "pts": 11,
+      "gd": -17,
+      "S": 8
+    },
+    {
+      "pick": 8,
+      "name": "Лацио",
+      "league": "ita",
+      "tier": "B",
+      "place": 10,
+      "cl": "none",
+      "pts": 12,
+      "gd": -20,
+      "S": 8
+    },
+    {
+      "pick": 9,
+      "name": "Штутгарт",
+      "league": "ger",
+      "tier": "C",
+      "place": 9,
+      "cl": "none",
+      "pts": 12,
+      "gd": -11,
+      "S": 8
+    },
+    {
+      "pick": 10,
+      "name": "Торино",
+      "league": "ita",
+      "tier": "C",
+      "place": 9,
+      "cl": "none",
+      "pts": 12,
+      "gd": -8,
+      "S": 8
+    },
+    {
+      "pick": 11,
+      "name": "Урал",
+      "league": "rpl",
+      "tier": "D",
+      "place": 7,
+      "cl": "none",
+      "pts": 17,
+      "gd": -7,
+      "S": 8
+    },
+    {
+      "pick": 12,
+      "name": "Челси",
+      "league": "eng",
+      "tier": "B",
+      "place": 9,
+      "cl": "r16",
+      "pts": 14,
+      "gd": -6,
+      "S": 10
+    },
+    {
+      "pick": 13,
+      "name": "Астон Вилла",
+      "league": "eng",
+      "tier": "B",
+      "place": 8,
+      "cl": "none",
+      "pts": 15,
+      "gd": -8,
+      "S": 10
+    },
+    {
+      "pick": 14,
+      "name": "Бетис",
+      "league": "esp",
+      "tier": "B",
+      "place": 8,
+      "cl": "none",
+      "pts": 16,
+      "gd": -17,
+      "S": 10
+    },
+    {
+      "pick": 15,
+      "name": "Фулхэм",
+      "league": "eng",
+      "tier": "C",
+      "place": 7,
+      "cl": "none",
+      "pts": 16,
+      "gd": -5,
+      "S": 10
+    },
+    {
+      "pick": 16,
+      "name": "Боруссия М",
+      "league": "ger",
+      "tier": "B",
+      "place": 8,
+      "cl": "r16",
+      "pts": 13,
+      "gd": -4,
+      "S": 11
+    },
+    {
+      "pick": 17,
+      "name": "Вольфсбург",
+      "league": "ger",
+      "tier": "C",
+      "place": 6,
+      "cl": "none",
+      "pts": 15,
+      "gd": -1,
+      "S": 11
+    },
+    {
+      "pick": 18,
+      "name": "Рома",
+      "league": "ita",
+      "tier": "B",
+      "place": 8,
+      "cl": "r16",
+      "pts": 17,
+      "gd": -7,
+      "S": 11
+    },
+    {
+      "pick": 19,
+      "name": "Фиорентина",
+      "league": "ita",
+      "tier": "C",
+      "place": 6,
+      "cl": "none",
+      "pts": 19,
+      "gd": -2,
+      "S": 11
+    },
+    {
+      "pick": 20,
+      "name": "Цска",
+      "league": "rpl",
+      "tier": "C",
+      "place": 5,
+      "cl": "none",
+      "pts": 21,
+      "gd": -9,
+      "S": 11
+    },
+    {
+      "pick": 21,
+      "name": "Хоффенхайм",
+      "league": "ger",
+      "tier": "C",
+      "place": 5,
+      "cl": "none",
+      "pts": 17,
+      "gd": -3,
+      "S": 12
+    },
+    {
+      "pick": 22,
+      "name": "Реал Сосьедад",
+      "league": "esp",
+      "tier": "B",
+      "place": 7,
+      "cl": "r16",
+      "pts": 18,
+      "gd": -4,
+      "S": 12
+    },
+    {
+      "pick": 23,
+      "name": "Милан",
+      "league": "ita",
+      "tier": "A",
+      "place": 7,
+      "cl": "r16",
+      "pts": 17,
+      "gd": -2,
+      "S": 13
+    },
+    {
+      "pick": 24,
+      "name": "Вильярреал",
+      "league": "esp",
+      "tier": "B",
+      "place": 6,
+      "cl": "r16",
+      "pts": 19,
+      "gd": -13,
+      "S": 13
+    },
+    {
+      "pick": 25,
+      "name": "Севилья",
+      "league": "esp",
+      "tier": "B",
+      "place": 5,
+      "cl": "none",
+      "pts": 20,
+      "gd": 0,
+      "S": 13
+    },
+    {
+      "pick": 26,
+      "name": "Динамо",
+      "league": "rpl",
+      "tier": "C",
+      "place": 6,
+      "cl": "qf",
+      "pts": 20,
+      "gd": 7,
+      "S": 13
+    },
+    {
+      "pick": 27,
+      "name": "Краснодар",
+      "league": "rpl",
+      "tier": "C",
+      "place": 4,
+      "cl": "r16",
+      "pts": 22,
+      "gd": -1,
+      "S": 13
+    },
+    {
+      "pick": 28,
+      "name": "Сассуоло",
+      "league": "ita",
+      "tier": "C",
+      "place": 4,
+      "cl": "none",
+      "pts": 23,
+      "gd": -2,
+      "S": 13
+    },
+    {
+      "pick": 29,
+      "name": "Лейпциг",
+      "league": "ger",
+      "tier": "A",
+      "place": 7,
+      "cl": "r8",
+      "pts": 14,
+      "gd": 6,
+      "S": 14
+    },
+    {
+      "pick": 30,
+      "name": "Спартак",
+      "league": "rpl",
+      "tier": "C",
+      "place": 3,
+      "cl": "r16",
+      "pts": 22,
+      "gd": 4,
+      "S": 14
+    },
+    {
+      "pick": 31,
+      "name": "Тоттенхэм",
+      "league": "eng",
+      "tier": "B",
+      "place": 5,
+      "cl": "r16",
+      "pts": 25,
+      "gd": 6,
+      "S": 14
+    },
+    {
+      "pick": 32,
+      "name": "Мю",
+      "league": "eng",
+      "tier": "A",
+      "place": 6,
+      "cl": "r8",
+      "pts": 17,
+      "gd": -4,
+      "S": 15
+    },
+    {
+      "pick": 33,
+      "name": "Наполи",
+      "league": "ita",
+      "tier": "A",
+      "place": 5,
+      "cl": "r16",
+      "pts": 22,
+      "gd": 5,
+      "S": 15
+    },
+    {
+      "pick": 34,
+      "name": "Байер",
+      "league": "ger",
+      "tier": "B",
+      "place": 4,
+      "cl": "r16",
+      "pts": 23,
+      "gd": 4,
+      "S": 15
+    },
+    {
+      "pick": 35,
+      "name": "Зенит",
+      "league": "rpl",
+      "tier": "C",
+      "place": 2,
+      "cl": "r16",
+      "pts": 25,
+      "gd": 8,
+      "S": 15
+    },
+    {
+      "pick": 36,
+      "name": "Аталанта",
+      "league": "ita",
+      "tier": "B",
+      "place": 3,
+      "cl": "r16",
+      "pts": 23,
+      "gd": 8,
+      "S": 16
+    },
+    {
+      "pick": 37,
+      "name": "Франкфурт",
+      "league": "ger",
+      "tier": "B",
+      "place": 3,
+      "cl": "r16",
+      "pts": 24,
+      "gd": 3,
+      "S": 16
+    },
+    {
+      "pick": 38,
+      "name": "Арсенал",
+      "league": "eng",
+      "tier": "A",
+      "place": 4,
+      "cl": "r16",
+      "pts": 26,
+      "gd": 8,
+      "S": 16
+    },
+    {
+      "pick": 39,
+      "name": "Локомотив",
+      "league": "rpl",
+      "tier": "C",
+      "place": 1,
+      "cl": "r16",
+      "pts": 26,
+      "gd": 9,
+      "S": 16
+    },
+    {
+      "pick": 40,
+      "name": "Ньюкасл",
+      "league": "eng",
+      "tier": "B",
+      "place": 2,
+      "cl": "none",
+      "pts": 27,
+      "gd": 7,
+      "S": 16
+    },
+    {
+      "pick": 41,
+      "name": "Ливерпуль",
+      "league": "eng",
+      "tier": "A",
+      "place": 3,
+      "cl": "r16",
+      "pts": 26,
+      "gd": 16,
+      "S": 17
+    },
+    {
+      "pick": 42,
+      "name": "Атлетико",
+      "league": "esp",
+      "tier": "A",
+      "place": 4,
+      "cl": "r8",
+      "pts": 30,
+      "gd": 16,
+      "S": 17
+    },
+    {
+      "pick": 43,
+      "name": "Дортмунд",
+      "league": "ger",
+      "tier": "A",
+      "place": 2,
+      "cl": "r16",
+      "pts": 32,
+      "gd": 16,
+      "S": 18
+    },
+    {
+      "pick": 44,
+      "name": "Атлетик",
+      "league": "esp",
+      "tier": "A",
+      "place": 3,
+      "cl": "r8",
+      "pts": 33,
+      "gd": 18,
+      "S": 18
+    },
+    {
+      "pick": 45,
+      "name": "Барселона",
+      "league": "esp",
+      "tier": "A",
+      "place": 2,
+      "cl": "r16",
+      "pts": 33,
+      "gd": 25,
+      "S": 18
+    },
+    {
+      "pick": 46,
+      "name": "Ювентус",
+      "league": "ita",
+      "tier": "A",
+      "place": 2,
+      "cl": "r8",
+      "pts": 24,
+      "gd": 8,
+      "S": 19
+    },
+    {
+      "pick": 47,
+      "name": "Интер",
+      "league": "ita",
+      "tier": "A",
+      "place": 1,
+      "cl": "r16",
+      "pts": 24,
+      "gd": 20,
+      "S": 19
+    },
+    {
+      "pick": 48,
+      "name": "Сити",
+      "league": "eng",
+      "tier": "A",
+      "place": 1,
+      "cl": "r16",
+      "pts": 32,
+      "gd": 22,
+      "S": 19
+    },
+    {
+      "pick": 49,
+      "name": "Реал",
+      "league": "esp",
+      "tier": "A",
+      "place": 1,
+      "cl": "r16",
+      "pts": 34,
+      "gd": 12,
+      "S": 19
+    },
+    {
+      "pick": 50,
+      "name": "Бавария",
+      "league": "ger",
+      "tier": "A",
+      "place": 1,
+      "cl": "r16",
+      "pts": 35,
+      "gd": 20,
+      "S": 19
+    }
+  ],
+  "round2": [
+    {
+      "pick": 51,
+      "name": "Бавария"
+    },
+    {
+      "pick": 52,
+      "name": "Реал"
+    },
+    {
+      "pick": 53,
+      "name": "Сити"
+    },
+    {
+      "pick": 54,
+      "name": "Интер"
+    },
+    {
+      "pick": 55,
+      "name": "Ювентус"
+    },
+    {
+      "pick": 56,
+      "name": "Барселона"
+    },
+    {
+      "pick": 57,
+      "name": "Атлетик"
+    },
+    {
+      "pick": 58,
+      "name": "Дортмунд"
+    },
+    {
+      "pick": 59,
+      "name": "Атлетико"
+    },
+    {
+      "pick": 60,
+      "name": "Ливерпуль"
+    },
+    {
+      "pick": 61,
+      "name": "Ньюкасл"
+    },
+    {
+      "pick": 62,
+      "name": "Локомотив"
+    },
+    {
+      "pick": 63,
+      "name": "Арсенал"
+    },
+    {
+      "pick": 64,
+      "name": "Франкфурт"
+    },
+    {
+      "pick": 65,
+      "name": "Аталанта"
+    },
+    {
+      "pick": 66,
+      "name": "Зенит"
+    },
+    {
+      "pick": 67,
+      "name": "Байер"
+    },
+    {
+      "pick": 68,
+      "name": "Наполи"
+    },
+    {
+      "pick": 69,
+      "name": "Мю"
+    },
+    {
+      "pick": 70,
+      "name": "Тоттенхэм"
+    },
+    {
+      "pick": 71,
+      "name": "Спартак"
+    },
+    {
+      "pick": 72,
+      "name": "Лейпциг"
+    },
+    {
+      "pick": 73,
+      "name": "Сассуоло"
+    },
+    {
+      "pick": 74,
+      "name": "Краснодар"
+    },
+    {
+      "pick": 75,
+      "name": "Динамо"
+    },
+    {
+      "pick": 76,
+      "name": "Севилья"
+    },
+    {
+      "pick": 77,
+      "name": "Вильярреал"
+    },
+    {
+      "pick": 78,
+      "name": "Милан"
+    },
+    {
+      "pick": 79,
+      "name": "Реал Сосьедад"
+    },
+    {
+      "pick": 80,
+      "name": "Хоффенхайм"
+    },
+    {
+      "pick": 81,
+      "name": "Цска"
+    },
+    {
+      "pick": 82,
+      "name": "Фиорентина"
+    },
+    {
+      "pick": 83,
+      "name": "Рома"
+    },
+    {
+      "pick": 84,
+      "name": "Вольфсбург"
+    },
+    {
+      "pick": 85,
+      "name": "Боруссия М"
+    },
+    {
+      "pick": 86,
+      "name": "Фулхэм"
+    },
+    {
+      "pick": 87,
+      "name": "Бетис"
+    },
+    {
+      "pick": 88,
+      "name": "Астон Вилла"
+    },
+    {
+      "pick": 89,
+      "name": "Челси"
+    },
+    {
+      "pick": 90,
+      "name": "Урал"
+    },
+    {
+      "pick": 91,
+      "name": "Торино"
+    },
+    {
+      "pick": 92,
+      "name": "Штутгарт"
+    },
+    {
+      "pick": 93,
+      "name": "Лацио"
+    },
+    {
+      "pick": 94,
+      "name": "Райо Вальекано"
+    },
+    {
+      "pick": 95,
+      "name": "Крылья Советов"
+    },
+    {
+      "pick": 96,
+      "name": "Жирона"
+    },
+    {
+      "pick": 97,
+      "name": "Брайтон"
+    },
+    {
+      "pick": 98,
+      "name": "Фрайбург"
+    },
+    {
+      "pick": 99,
+      "name": "Ростов"
+    },
+    {
+      "pick": 100,
+      "name": "Рубин"
+    }
+  ],
+  "formula": "S = tier + league + (10 - place) + cl; sort ascending S, then pts, then gd"
+}

@@ -1,0 +1,8 @@
+# Локальные секреты бота — не коммитить
+.env
+bot/.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/

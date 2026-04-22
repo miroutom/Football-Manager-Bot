@@ -1,0 +1,70 @@
+{
+  "_comment": "Черновик под корректировку: места в чемпионате и фаза ЛЧ. cl: none | r16 | r8 | qf (только лучший достигнутый этап). Веса в weights.",
+  "weights": {
+    "tier": { "A": 4, "B": 3, "C": 2, "D": 1 },
+    "league": {
+      "rpl": 4,
+      "eng": 5,
+      "esp": 5,
+      "ger": 5,
+      "ita": 5
+    },
+    "cl": { "none": 0, "r16": 1, "r8": 2, "qf": 3 }
+  },
+  "teams": [
+    { "name": "Цска", "league": "rpl", "place": 5, "tier": "C", "cl": "none", "pts": 21, "gd": -9 },
+    { "name": "Зенит", "league": "rpl", "place": 2, "tier": "C", "cl": "r16", "pts": 25, "gd": 8 },
+    { "name": "Краснодар", "league": "rpl", "place": 4, "tier": "C", "cl": "r16", "pts": 22, "gd": -1 },
+    { "name": "Локомотив", "league": "rpl", "place": 1, "tier": "C", "cl": "r16", "pts": 26, "gd": 9 },
+    { "name": "Спартак", "league": "rpl", "place": 3, "tier": "C", "cl": "r16", "pts": 22, "gd": 4 },
+    { "name": "Ростов", "league": "rpl", "place": 9, "tier": "D", "cl": "none", "pts": 16, "gd": -7 },
+    { "name": "Динамо", "league": "rpl", "place": 6, "tier": "C", "cl": "qf", "pts": 20, "gd": 7 },
+    { "name": "Рубин", "league": "rpl", "place": 10, "tier": "D", "cl": "none", "pts": 13, "gd": -7 },
+    { "name": "Крылья Советов", "league": "rpl", "place": 8, "tier": "D", "cl": "none", "pts": 16, "gd": 3 },
+    { "name": "Урал", "league": "rpl", "place": 7, "tier": "D", "cl": "none", "pts": 17, "gd": -7 },
+
+    { "name": "Сити", "league": "eng", "place": 1, "tier": "A", "cl": "r16", "pts": 32, "gd": 22 },
+    { "name": "Мю", "league": "eng", "place": 6, "tier": "A", "cl": "r8", "pts": 17, "gd": -4 },
+    { "name": "Ливерпуль", "league": "eng", "place": 3, "tier": "A", "cl": "r16", "pts": 26, "gd": 16 },
+    { "name": "Арсенал", "league": "eng", "place": 4, "tier": "A", "cl": "r16", "pts": 26, "gd": 8 },
+    { "name": "Астон Вилла", "league": "eng", "place": 8, "tier": "B", "cl": "none", "pts": 15, "gd": -8 },
+    { "name": "Челси", "league": "eng", "place": 9, "tier": "B", "cl": "r16", "pts": 14, "gd": -6 },
+    { "name": "Тоттенхэм", "league": "eng", "place": 5, "tier": "B", "cl": "r16", "pts": 25, "gd": 6 },
+    { "name": "Ньюкасл", "league": "eng", "place": 2, "tier": "B", "cl": "none", "pts": 27, "gd": 7 },
+    { "name": "Фулхэм", "league": "eng", "place": 7, "tier": "C", "cl": "none", "pts": 16, "gd": -5 },
+    { "name": "Брайтон", "league": "eng", "place": 10, "tier": "C", "cl": "none", "pts": 10, "gd": -36 },
+
+    { "name": "Реал", "league": "esp", "place": 1, "tier": "A", "cl": "r16", "pts": 34, "gd": 12 },
+    { "name": "Барселона", "league": "esp", "place": 2, "tier": "A", "cl": "r16", "pts": 33, "gd": 25 },
+    { "name": "Атлетико", "league": "esp", "place": 4, "tier": "A", "cl": "r8", "pts": 30, "gd": 16 },
+    { "name": "Атлетик", "league": "esp", "place": 3, "tier": "A", "cl": "r8", "pts": 33, "gd": 18 },
+    { "name": "Реал Сосьедад", "league": "esp", "place": 7, "tier": "B", "cl": "r16", "pts": 18, "gd": -4 },
+    { "name": "Севилья", "league": "esp", "place": 5, "tier": "B", "cl": "none", "pts": 20, "gd": 0 },
+    { "name": "Вильярреал", "league": "esp", "place": 6, "tier": "B", "cl": "r16", "pts": 19, "gd": -13 },
+    { "name": "Райо Вальекано", "league": "esp", "place": 9, "tier": "C", "cl": "none", "pts": 11, "gd": -17 },
+    { "name": "Жирона", "league": "esp", "place": 10, "tier": "C", "cl": "none", "pts": 11, "gd": -20 },
+    { "name": "Бетис", "league": "esp", "place": 8, "tier": "B", "cl": "none", "pts": 16, "gd": -17 },
+
+    { "name": "Бавария", "league": "ger", "place": 1, "tier": "A", "cl": "r16", "pts": 35, "gd": 20 },
+    { "name": "Дортмунд", "league": "ger", "place": 2, "tier": "A", "cl": "r16", "pts": 32, "gd": 16 },
+    { "name": "Байер", "league": "ger", "place": 4, "tier": "B", "cl": "r16", "pts": 23, "gd": 4 },
+    { "name": "Лейпциг", "league": "ger", "place": 7, "tier": "A", "cl": "r8", "pts": 14, "gd": 6 },
+    { "name": "Франкфурт", "league": "ger", "place": 3, "tier": "B", "cl": "r16", "pts": 24, "gd": 3 },
+    { "name": "Фрайбург", "league": "ger", "place": 10, "tier": "C", "cl": "none", "pts": 8, "gd": -30 },
+    { "name": "Боруссия М", "league": "ger", "place": 8, "tier": "B", "cl": "r16", "pts": 13, "gd": -4 },
+    { "name": "Вольфсбург", "league": "ger", "place": 6, "tier": "C", "cl": "none", "pts": 15, "gd": -1 },
+    { "name": "Штутгарт", "league": "ger", "place": 9, "tier": "C", "cl": "none", "pts": 12, "gd": -11 },
+    { "name": "Хоффенхайм", "league": "ger", "place": 5, "tier": "C", "cl": "none", "pts": 17, "gd": -3 },
+
+    { "name": "Интер", "league": "ita", "place": 1, "tier": "A", "cl": "r16", "pts": 24, "gd": 20 },
+    { "name": "Милан", "league": "ita", "place": 7, "tier": "A", "cl": "r16", "pts": 17, "gd": -2 },
+    { "name": "Ювентус", "league": "ita", "place": 2, "tier": "A", "cl": "r8", "pts": 24, "gd": 8 },
+    { "name": "Наполи", "league": "ita", "place": 5, "tier": "A", "cl": "r16", "pts": 22, "gd": 5 },
+    { "name": "Аталанта", "league": "ita", "place": 3, "tier": "B", "cl": "r16", "pts": 23, "gd": 8 },
+    { "name": "Фиорентина", "league": "ita", "place": 6, "tier": "C", "cl": "none", "pts": 19, "gd": -2 },
+    { "name": "Лацио", "league": "ita", "place": 10, "tier": "B", "cl": "none", "pts": 12, "gd": -20 },
+    { "name": "Рома", "league": "ita", "place": 8, "tier": "B", "cl": "r16", "pts": 17, "gd": -7 },
+    { "name": "Торино", "league": "ita", "place": 9, "tier": "C", "cl": "none", "pts": 12, "gd": -8 },
+    { "name": "Сассуоло", "league": "ita", "place": 4, "tier": "C", "cl": "none", "pts": 23, "gd": -2 }
+  ]
+}
