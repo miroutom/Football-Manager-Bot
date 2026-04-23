@@ -5,6 +5,13 @@
 """
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 from data.defender import Defender
 from data.forward import Forward
 from data.goalkeeper import Goalkeeper
@@ -12,10 +19,11 @@ from data.midfielder import Midfielder
 from utils.utils import (
     Base,
     CHAMPIONS_LEAGUE_DB_PATH,
+    COMMON_DB_PATH,
     LEAGUE_DB_PATH,
-    SessionCommon,
     engine_common,
     session_cl,
+    session_common,
     session_league,
 )
 
@@ -24,10 +32,31 @@ def _key(name: str, team: str, position: str) -> tuple:
     return (name.strip().lower(), team.strip().lower(), position.strip())
 
 
-def _merge_bucket_outfield(PlayerCls, src_sessions: tuple):
+def _team_in_cl_pool(team_name: str) -> bool:
+    """
+    Только клубы из списка участников ЛЧ (pickle champ_league_teams) должны давать строки из БД ЛЧ в common.
+    Иначе ошибочные/чужие записи в champions_league_new.db не суммируются с лигой.
+    """
+    import teams as teams_mod
+
+    pool = teams_mod.teams_champ_league.keys()
+    t = (team_name or "").strip()
+    if t == "ЦСКА":
+        t = "Цска"
+    tl = t.lower()
+    for name in pool:
+        if name.lower() == tl:
+            return True
+    return False
+
+
+def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
     buckets: dict = {}
-    for src in src_sessions:
+    for src in (session_league, session_cl):
+        is_cl = src is session_cl
         for p in src.query(PlayerCls).all():
+            if is_cl and not _team_in_cl_pool(p.team):
+                continue
             k = _key(p.name, p.team, p.position)
             if k not in buckets:
                 buckets[k] = {
@@ -133,21 +162,22 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
 def rebuild_common_database() -> None:
     """Полная перезапись ``common.db`` слиянием двух источников (имя+команда+позиция)."""
     Base.metadata.create_all(engine_common)
-    common = SessionCommon()
+    common = session_common
 
     for cls in (Forward, Midfielder, Defender, Goalkeeper):
         common.query(cls).delete()
     common.commit()
 
-    srcs = (session_league, session_cl)
-
     for Cls in (Forward, Midfielder, Defender):
-        buckets = _merge_bucket_outfield(Cls, srcs)
+        buckets = _merge_bucket_outfield(Cls, session_league, session_cl)
         _add_outfield_rows(common, Cls, buckets)
 
     gk_buckets: dict = {}
-    for src in srcs:
+    for src in (session_league, session_cl):
+        is_cl = src is session_cl
         for p in src.query(Goalkeeper).all():
+            if is_cl and not _team_in_cl_pool(p.team):
+                continue
             k = _key(p.name, p.team, p.position)
             if k not in gk_buckets:
                 gk_buckets[k] = {
@@ -198,7 +228,6 @@ def rebuild_common_database() -> None:
         )
 
     common.commit()
-    common.close()
 
 
 def common_db_paths_info() -> str:
@@ -207,3 +236,9 @@ def common_db_paths_info() -> str:
         f"cl: {CHAMPIONS_LEAGUE_DB_PATH}\n"
         f"common: {engine_common.url}"
     )
+
+
+if __name__ == "__main__":
+    rebuild_common_database()
+    print("Пересобран:", COMMON_DB_PATH)
+    print(common_db_paths_info())

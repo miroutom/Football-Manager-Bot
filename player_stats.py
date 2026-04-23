@@ -1110,9 +1110,9 @@ def show_team_goalscorers_table(
     standings_dict: Optional[dict] = None,
 ) -> None:
     """
-    Игроки команды, у которых есть голы: И (матчи в БД), Г, А, Г+А по убыванию Г+А.
-    Учитываются нападающие, полузащитники и защитники (все с goals > 0).
-    Внизу: сумма голов игроков, ЗМ и число матчей команды из турнирной таблицы (pickle).
+    Игроки команды с голом или передачей: И (матчи в БД), Г, А, Г+А по убыванию Г+А.
+    Учитываются нападающие, полузащитники и защитники (голы > 0 или передачи > 0).
+    Внизу: сумма голов игроков в списке, ЗМ по таблице и число матчей команды (pickle).
     """
     team = _team_name_as_in_db(team)
     session = get_session(tournament)
@@ -1120,10 +1120,10 @@ def show_team_goalscorers_table(
     for PlayerClass in (Forward, Midfielder, Defender):
         for p in session.query(PlayerClass).filter_by(team=team).all():
             g = int(p.goals or 0)
-            if g <= 0:
-                continue
             a = int(p.assists or 0)
-            ga = int(getattr(p, "ga", g + a) or (g + a))
+            if g <= 0 and a <= 0:
+                continue
+            ga = int(getattr(p, "ga", None) or (g + a))
             rows.append(
                 {
                     "name": p.name,
@@ -1140,10 +1140,10 @@ def show_team_goalscorers_table(
     sep = "=" * width
     tname = "Лига Чемпионов" if tournament in ("cl", "champ_league") else "национальные лиги"
     print(f"\n{sep}")
-    print(f"  Голеадоры: {team} ({tname})")
+    print(f"  Голы и передачи: {team} ({tname})")
     print(sep)
     if not rows:
-        print("  Нет игроков с голами в этой базе.")
+        print("  Нет игроков с голами или передачами в этой базе.")
     else:
         print(f"{'#':<4} {'Игрок':<18} {'Поз':<6} {'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5}")
         print("-" * width)
@@ -1173,7 +1173,7 @@ def show_team_goalscorers_table(
 def show_team_goalscorers_interactive() -> None:
     """Интерактив: лига (1–6) → голеадоры по всем командам этой лиги подряд."""
     print("\n" + "=" * 50)
-    print("  ГОЛЕАДОРЫ ПО КОМАНДАМ (только игроки с голами)")
+    print("  ГОЛЫ И ПЕРЕДАЧИ ПО КОМАНДАМ (гол или передача)")
     print("=" * 50)
     print("Лига: 1-РПЛ  2-АПЛ  3-Ла Лига  4-Серия А  5-Бундеслига  6-ЛЧ")
     league_choice = input("Лига (1-6): ").strip()

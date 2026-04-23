@@ -96,6 +96,19 @@ async def on_transfer_to(message: Message, state: FSMContext) -> None:
     pos = data.get("tr_pos", "")
     uid = message.from_user.id if message.from_user else None
     try:
+        from utils.player_transfer import apply_transfer
+
+        counts = apply_transfer(
+            player=player,
+            from_team=from_t,
+            position=pos,
+            to_team=to_t,
+        )
+    except Exception as e:
+        logger.exception("transfer_apply")
+        await message.answer(f"Не удалось обновить базы: {e}")
+        return
+    try:
         append_transfer(
             user_id=uid,
             player=player,
@@ -105,12 +118,29 @@ async def on_transfer_to(message: Message, state: FSMContext) -> None:
         )
     except Exception as e:
         logger.exception("transfer_save")
-        await message.answer(f"Не удалось сохранить: {e}")
+        await message.answer(
+            f"Базы обновлены, но журнал transfers.json не записан: {e}",
+            parse_mode="HTML",
+        )
+        await state.clear()
         return
+
     await state.clear()
-    await message.answer(
-        "✓ Трансфер записан в <code>data/transfers.json</code>.\n\n"
-        f"<b>{player}</b> ({pos})\n"
+    n_db = counts.get("league", 0) + counts.get("cl", 0)
+    warn = ""
+    if n_db == 0:
+        warn = (
+            "⚠️ В <code>league.db</code> и ЛЧ строк не найдено "
+            "(проверь имя, клуб «откуда» и позицию как в базе).\n\n"
+        )
+    lines = [
+        warn,
+        f"✓ БД: национальные лиги — <b>{counts['league']}</b>, ЛЧ — <b>{counts['cl']}</b>. "
+        "<code>common.db</code> пересобран.",
+        "",
+        "Журнал: <code>data/transfers.json</code>",
+        "",
+        f"<b>{player}</b> ({pos})",
         f"{from_t} → {to_t}",
-        parse_mode="HTML",
-    )
+    ]
+    await message.answer("\n".join(lines), parse_mode="HTML")
