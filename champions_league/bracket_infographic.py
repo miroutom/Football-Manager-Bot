@@ -4,6 +4,9 @@ PNG-сетка плей-офф ЛЧ: дерево, данные из журна�
 
 Стиль: тёмный фон «стадион / ЛЧ», светлые карточки, линии-акценты, опционально Montserrat VF
 в ``assets/fonts/Montserrat-VF.ttf`` (fallback — DejaVu).
+
+Трофей: растровый ``assets/cl_trophy.png`` (или ``cl_trophy.webp``). Если фон белый — снимается
+мягкой матовкой (разница с эталонным серым); при PNG с альфой — масштабируется как есть.
 """
 from __future__ import annotations
 
@@ -11,7 +14,7 @@ from io import BytesIO
 from pathlib import Path
 
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 except ImportError as e:
     raise ImportError("Нужен Pillow: pip install pillow") from e
 
@@ -24,6 +27,8 @@ from champions_league.bracket_html import (
 
 _MODULE_DIR = Path(__file__).resolve().parent
 _MONTserrat_VF = _MODULE_DIR / "assets" / "fonts" / "Montserrat-VF.ttf"
+_CL_TROPHY_PNG = _MODULE_DIR / "assets" / "cl_trophy.png"
+_CL_TROPHY_WEBP = _MODULE_DIR / "assets" / "cl_trophy.webp"
 
 _SANS_PATHS: tuple[Path, ...] = (
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
@@ -134,8 +139,65 @@ def _draw_subtle_sparkles(im: Image.Image, n: int = 42, seed: int = 42) -> None:
         px[x, y] = tuple(min(255, c + lift) for c in base)
 
 
-def _draw_cl_trophy(draw: ImageDraw.ImageDraw, cx: int, bot: int, scale: float = 1.0) -> None:
-    """Стилизованный кубок (золото / тени) над финалом."""
+def _trophy_asset_path() -> Path | None:
+    if _CL_TROPHY_PNG.is_file():
+        return _CL_TROPHY_PNG
+    if _CL_TROPHY_WEBP.is_file():
+        return _CL_TROPHY_WEBP
+    return None
+
+
+def _prepare_trophy_rgba(rgb: Image.Image, ref_bg: tuple[int, int, int] = (252, 252, 252)) -> Image.Image:
+    """Убрать однотонный светлый фон: альфа из карты расхождения с эталоном (мягкая кромка)."""
+    ref = Image.new("RGB", rgb.size, ref_bg)
+    diff = ImageChops.difference(rgb, ref).convert("L")
+    alpha = diff.point(lambda p: min(255, max(0, (p - 12) * 11)))
+    out = rgb.convert("RGBA")
+    out.putalpha(alpha)
+    return out
+
+
+def _rgba_has_real_alpha(im: Image.Image) -> bool:
+    if im.mode != "RGBA":
+        return False
+    lo, hi = im.split()[3].getextrema()
+    return lo < 240
+
+
+def _load_trophy_rgba(max_height: int = 108) -> Image.Image | None:
+    """Готовое RGBA, высота не больше max_height."""
+    path = _trophy_asset_path()
+    if path is None:
+        return None
+    try:
+        src = ImageOps.exif_transpose(Image.open(path))
+        if src.mode == "RGBA" and _rgba_has_real_alpha(src):
+            resized: Image.Image = src
+        else:
+            resized = _prepare_trophy_rgba(src.convert("RGB"))
+        rw, rh = resized.size
+        if rh > max_height:
+            scale = max_height / rh
+            resized = resized.resize((max(1, int(rw * scale)), max_height), Image.Resampling.LANCZOS)
+        return resized.convert("RGBA")
+    except OSError:
+        return None
+
+
+def _paste_trophy_or_draw_fallback(im: Image.Image, draw: ImageDraw.ImageDraw, cx: int, card_top: int, gap: int = 8) -> None:
+    tro = _load_trophy_rgba()
+    if tro is not None:
+        tw, th = tro.size
+        x = int(cx - tw / 2)
+        y = int(card_top - gap - th)
+        im.paste(tro, (x, y), tro)
+        return
+    bot = card_top - gap
+    _draw_cl_trophy_vector_fallback(draw, cx, bot)
+
+
+def _draw_cl_trophy_vector_fallback(draw: ImageDraw.ImageDraw, cx: int, bot: int, scale: float = 1.0) -> None:
+    """Если файла трофея нет — простая золотая иконка (как раньше)."""
     s = scale
     gold = (218, 185, 95)
     gold_mid = (196, 158, 72)
@@ -150,20 +212,12 @@ def _draw_cl_trophy(draw: ImageDraw.ImageDraw, cx: int, bot: int, scale: float =
     cup_h = int(22 * s)
     ear = int(7 * s)
 
-    # подставка
-    _rounded_rect(
-        draw,
-        (cx - bw // 2, bot - bh, cx + bw // 2, bot),
-        gold_dark,
-        gold,
-        4,
-    )
+    _rounded_rect(draw, (cx - bw // 2, bot - bh, cx + bw // 2, bot), gold_dark, gold, 4)
     stem_top = bot - bh - stem_h
     draw.rectangle((cx - stem_w // 2, stem_top, cx + stem_w // 2, bot - bh), fill=gold_mid, outline=gold)
 
     bowl_bot = stem_top
     bowl_top = bowl_bot - cup_h
-    # чаша: шире кверху
     cup_poly = [
         (cx - cup_w // 2 + ear, bowl_bot),
         (cx + cup_w // 2 - ear, bowl_bot),
@@ -171,23 +225,10 @@ def _draw_cl_trophy(draw: ImageDraw.ImageDraw, cx: int, bot: int, scale: float =
         (cx - cup_w // 2, bowl_top + int(6 * s)),
     ]
     draw.polygon(cup_poly, fill=gold, outline=gold_dark)
-    # верхний овал «ободок»
     draw.ellipse(
         (cx - cup_w // 2, bowl_top - int(5 * s), cx + cup_w // 2, bowl_top + int(10 * s)),
         fill=gold_hi,
         outline=gold_mid,
-    )
-    # ручки (упрощённо — дуги могут отсутствовать в старых PIL)
-    try:
-        draw.arc((cx - cup_w // 2 - ear - 6, bowl_top - 4, cx - cup_w // 2 + ear, bowl_bot), 200, 330, fill=gold_dark)
-        draw.arc((cx + cup_w // 2 - ear, bowl_top - 4, cx + cup_w // 2 + ear + 6, bowl_bot), 210, 340, fill=gold_dark)
-    except Exception:
-        pass
-    # блик
-    draw.line(
-        (cx - cup_w // 4, bowl_top + int(8 * s), cx - cup_w // 8, bowl_top + int(4 * s)),
-        fill=gold_hi,
-        width=2,
     )
 
 
@@ -488,8 +529,7 @@ def render_cl_bracket_infographic_png_bytes(
     top = fcy - 40
     box_h = 80
     cx5 = x5 + w5 // 2
-    # кубок непосредственно над карточкой финала
-    _draw_cl_trophy(draw, cx5, top - 6, scale=0.95)
+    _paste_trophy_or_draw_fallback(im, draw, cx5, top)
 
     _rounded_rect(draw, (x5, top, x5 + w5, top + box_h), CARD_FILL, CARD_EDGE, 10)
     cx = x5 + w5 // 2
