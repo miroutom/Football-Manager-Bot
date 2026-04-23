@@ -5,8 +5,12 @@ PNG-сетка плей-офф ЛЧ: дерево, данные из журна�
 Стиль: тёмный фон «стадион / ЛЧ», светлые карточки, линии-акценты, опционально Montserrat VF
 в ``assets/fonts/Montserrat-VF.ttf`` (fallback — DejaVu).
 
-Трофей: растровый ``assets/cl_trophy.png`` (или ``cl_trophy.webp``). Если фон белый — снимается
-мягкой матовкой (разница с эталонным серым); при PNG с альфой — масштабируется как есть.
+Фон (опционально): ``assets/cl_bracket_background.png`` (или .jpg / .webp) — масштабируется с
+обрезкой под размер PNG. Если файла нет — прежний градиент.
+
+Трофей: ``assets/cl_trophy.png`` / ``cl_trophy.webp``. PNG с альфой — как есть; частый случай
+«без фона», сохранённый как RGB с чёрным (0,0,0) — удаляется по яркости; светлый однотонный фон —
+матовка через разницу с эталонным серым.
 """
 from __future__ import annotations
 
@@ -17,6 +21,11 @@ try:
     from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 except ImportError as e:
     raise ImportError("Нужен Pillow: pip install pillow") from e
+
+try:
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore[misc, assignment]
 
 from champions_league.bracket_html import (
     _load_cl_scores_and_penalties,
@@ -29,6 +38,12 @@ _MODULE_DIR = Path(__file__).resolve().parent
 _MONTserrat_VF = _MODULE_DIR / "assets" / "fonts" / "Montserrat-VF.ttf"
 _CL_TROPHY_PNG = _MODULE_DIR / "assets" / "cl_trophy.png"
 _CL_TROPHY_WEBP = _MODULE_DIR / "assets" / "cl_trophy.webp"
+
+_CL_BG_CANDIDATES: tuple[Path, ...] = (
+    _MODULE_DIR / "assets" / "cl_bracket_background.png",
+    _MODULE_DIR / "assets" / "cl_bracket_background.jpg",
+    _MODULE_DIR / "assets" / "cl_bracket_background.webp",
+)
 
 _SANS_PATHS: tuple[Path, ...] = (
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
@@ -125,6 +140,42 @@ def _fill_vertical_gradient(im: Image.Image, top: tuple[int, int, int], bottom: 
         draw_tmp.rectangle((0, y, w, y + 1), fill=(r, g, b))
 
 
+def _background_asset_path() -> Path | None:
+    for p in _CL_BG_CANDIDATES:
+        if p.is_file():
+            return p
+    return None
+
+
+def _resize_cover_crop(bg: Image.Image, tw: int, th: int) -> Image.Image:
+    """Увеличить фон так, чтобы заполнить (tw, th), обрезать по центру."""
+    bw, bh = bg.size
+    scale = max(tw / bw, th / bh)
+    nw = max(1, int(round(bw * scale)))
+    nh = max(1, int(round(bh * scale)))
+    resized = bg.resize((nw, nh), Image.Resampling.LANCZOS)
+    left = max(0, (nw - tw) // 2)
+    top = max(0, (nh - th) // 2)
+    return resized.crop((left, top, left + tw, top + th)).convert("RGB")
+
+
+def _rgb_studio_black_to_rgba(rgb: Image.Image, mx_cutoff: int = 8) -> Image.Image:
+    """Чёрный фон как в Adobe RGB (много пикселей 0,0,0) → альфа."""
+    if np is None:
+        return _prepare_trophy_rgba(rgb)
+    arr = np.asarray(rgb)
+    mx = np.max(arr, axis=2)
+    a = np.where(mx > mx_cutoff, 255, 0).astype(np.uint8)
+    return Image.fromarray(np.dstack([arr, a]), "RGBA")
+
+
+def _fraction_pure_black(rgb: Image.Image) -> float:
+    if np is None:
+        return 0.0
+    mx = np.max(np.asarray(rgb), axis=2)
+    return float((mx == 0).mean())
+
+
 def _draw_subtle_sparkles(im: Image.Image, n: int = 42, seed: int = 42) -> None:
     """Лёгкие «блёстки» на фоне (очень тускло)."""
     import random
@@ -164,7 +215,7 @@ def _rgba_has_real_alpha(im: Image.Image) -> bool:
     return lo < 240
 
 
-def _load_trophy_rgba(max_height: int = 108) -> Image.Image | None:
+def _load_trophy_rgba(max_height: int = 120) -> Image.Image | None:
     """Готовое RGBA, высота не больше max_height."""
     path = _trophy_asset_path()
     if path is None:
@@ -174,7 +225,11 @@ def _load_trophy_rgba(max_height: int = 108) -> Image.Image | None:
         if src.mode == "RGBA" and _rgba_has_real_alpha(src):
             resized: Image.Image = src
         else:
-            resized = _prepare_trophy_rgba(src.convert("RGB"))
+            rgb = src.convert("RGB")
+            if np is not None and _fraction_pure_black(rgb) > 0.12:
+                resized = _rgb_studio_black_to_rgba(rgb)
+            else:
+                resized = _prepare_trophy_rgba(rgb)
         rw, rh = resized.size
         if rh > max_height:
             scale = max_height / rh
@@ -324,8 +379,17 @@ def render_cl_bracket_infographic_png_bytes(
     H = HDR_H + content_h + 36
 
     im = Image.new("RGB", (W, H), BG_TOP)
-    _fill_vertical_gradient(im, BG_TOP, BG_BOT)
-    _draw_subtle_sparkles(im)
+    bg_file = _background_asset_path()
+    if bg_file is not None:
+        try:
+            bg_img = ImageOps.exif_transpose(Image.open(bg_file)).convert("RGB")
+            im.paste(_resize_cover_crop(bg_img, W, H), (0, 0))
+        except OSError:
+            _fill_vertical_gradient(im, BG_TOP, BG_BOT)
+            _draw_subtle_sparkles(im)
+    else:
+        _fill_vertical_gradient(im, BG_TOP, BG_BOT)
+        _draw_subtle_sparkles(im)
     draw = ImageDraw.Draw(im)
 
     draw.rectangle((0, 0, W, HDR_H), fill=HEADER_BAR)
