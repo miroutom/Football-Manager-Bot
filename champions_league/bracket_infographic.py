@@ -18,7 +18,7 @@ from io import BytesIO
 from pathlib import Path
 
 try:
-    from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
+    from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps, ImageStat
 except ImportError as e:
     raise ImportError("Нужен Pillow: pip install pillow") from e
 
@@ -159,14 +159,23 @@ def _resize_cover_crop(bg: Image.Image, tw: int, th: int) -> Image.Image:
     return resized.crop((left, top, left + tw, top + th)).convert("RGB")
 
 
-def _rgb_studio_black_to_rgba(rgb: Image.Image, mx_cutoff: int = 8) -> Image.Image:
-    """Чёрный фон как в Adobe RGB (много пикселей 0,0,0) → альфа."""
+def _rgb_studio_black_to_rgba(rgb: Image.Image, mx_cutoff: int = 20) -> Image.Image:
+    """Студийный чёрный фон (RGB ~0,0,0 или почти) → прозрачность по max(R,G,B)."""
     if np is None:
-        return _prepare_trophy_rgba(rgb)
+        return _pil_black_background_to_rgba(rgb, lum_cutoff=mx_cutoff)
     arr = np.asarray(rgb)
     mx = np.max(arr, axis=2)
     a = np.where(mx > mx_cutoff, 255, 0).astype(np.uint8)
     return Image.fromarray(np.dstack([arr, a]), "RGBA")
+
+
+def _pil_black_background_to_rgba(rgb: Image.Image, lum_cutoff: int = 20) -> Image.Image:
+    """То же без numpy: по яркости канала L — чёрный фон убирается на любом сервере."""
+    lum = rgb.convert("L")
+    alpha = lum.point(lambda p, c=lum_cutoff: 0 if p <= c else 255)
+    out = rgb.convert("RGBA")
+    out.putalpha(alpha)
+    return out
 
 
 def _fraction_pure_black(rgb: Image.Image) -> float:
@@ -174,6 +183,33 @@ def _fraction_pure_black(rgb: Image.Image) -> float:
         return 0.0
     mx = np.max(np.asarray(rgb), axis=2)
     return float((mx == 0).mean())
+
+
+def _fraction_near_black(rgb: Image.Image, mx_cutoff: int = 22) -> float:
+    if np is None:
+        # грубая оценка по гистограмме L
+        lum = rgb.convert("L")
+        h = lum.histogram()
+        total = sum(h)
+        dark = sum(h[: mx_cutoff + 1])
+        return dark / total if total else 0.0
+    mx = np.max(np.asarray(rgb), axis=2)
+    return float((mx <= mx_cutoff).mean())
+
+
+def _looks_like_dark_studio_rgb(rgb: Image.Image) -> bool:
+    """Фон чёрный / почти чёрный (Adobe «без фона», сохранённый как RGB)."""
+    if _fraction_pure_black(rgb) > 0.08:
+        return True
+    if _fraction_near_black(rgb) > 0.45:
+        return True
+    try:
+        mean_lum = ImageStat.Stat(rgb.convert("L")).mean[0]
+        if mean_lum < 95:
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def _draw_subtle_sparkles(im: Image.Image, n: int = 42, seed: int = 42) -> None:
@@ -223,17 +259,23 @@ def _load_trophy_rgba(max_height: int = 120) -> Image.Image | None:
     try:
         src = ImageOps.exif_transpose(Image.open(path))
         if src.mode == "RGBA" and _rgba_has_real_alpha(src):
-            resized: Image.Image = src
-        else:
-            rgb = src.convert("RGB")
-            if np is not None and _fraction_pure_black(rgb) > 0.12:
-                resized = _rgb_studio_black_to_rgba(rgb)
-            else:
-                resized = _prepare_trophy_rgba(rgb)
-        rw, rh = resized.size
+            rgba_src: Image.Image = src
+            rw, rh = rgba_src.size
+            if rh > max_height:
+                scale = max_height / rh
+                rgba_src = rgba_src.resize((max(1, int(rw * scale)), max_height), Image.Resampling.LANCZOS)
+            return rgba_src.convert("RGBA")
+
+        rgb = src.convert("RGB")
+        rw, rh = rgb.size
         if rh > max_height:
             scale = max_height / rh
-            resized = resized.resize((max(1, int(rw * scale)), max_height), Image.Resampling.LANCZOS)
+            rgb = rgb.resize((max(1, int(rw * scale)), max_height), Image.Resampling.LANCZOS)
+
+        if _looks_like_dark_studio_rgb(rgb):
+            resized = _rgb_studio_black_to_rgba(rgb)
+        else:
+            resized = _prepare_trophy_rgba(rgb)
         return resized.convert("RGBA")
     except OSError:
         return None
