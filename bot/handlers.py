@@ -33,7 +33,9 @@ from bot.services import (
     render_skipped_matches_text,
     render_standings,
     render_team_goalscorers_league,
+    render_team_goalscorers_single,
     render_top100_all_leagues,
+    teams_ordered_for_goalscorers,
     render_top_assists,
     render_top_assists_common,
     render_top_ga,
@@ -113,6 +115,41 @@ def _league_keyboard(prefix: str) -> InlineKeyboardMarkup:
             row = []
     if row:
         rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _club_btn_label(text: str, max_chars: int = 40) -> str:
+    """Подпись на кнопке (у Telegram лимит ~64 символа)."""
+    text = text.strip()
+    if len(text) <= max_chars:
+        return text
+    return text[: max_chars - 1] + "…"
+
+
+def _tgclub_keyboard(league_code: str) -> InlineKeyboardMarkup:
+    teams = teams_ordered_for_goalscorers(league_code)
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for idx, team in enumerate(teams):
+        row.append(
+            InlineKeyboardButton(
+                text=_club_btn_label(team),
+                callback_data=f"tgclub:{league_code}:{idx}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="📋 Все клубы подряд",
+                callback_data=f"tgsall:{league_code}",
+            ),
+        ]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -599,13 +636,54 @@ async def cb_tcp_tops(callback: CallbackQuery) -> None:
 async def cb_menu_tgs_league(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Голеадоры по каждому клубу лиги (игроки с голами), как «b»→4:",
+        "Голеадоры по клубу: выберите лигу, затем клуб "
+        "(или «Все клубы подряд», как раньше «b»→4):",
         reply_markup=_league_keyboard("tgs"),
     )
 
 
 @router.callback_query(F.data.startswith("tgs:"))
-async def cb_tgs_league(callback: CallbackQuery) -> None:
+async def cb_tgs_pick_league(callback: CallbackQuery) -> None:
+    code = callback.data.split(":", 1)[1]
+    await callback.answer()
+    try:
+        kb = _tgclub_keyboard(code)
+    except Exception as e:
+        logger.exception("tgs_league_kb")
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+    await callback.message.answer(
+        f"{_league_title(code)} — выберите клуб:",
+        reply_markup=kb,
+    )
+
+
+@router.callback_query(F.data.startswith("tgclub:"))
+async def cb_tgclub_team(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    _, code, idx_s = parts
+    try:
+        idx = int(idx_s)
+    except ValueError:
+        await callback.answer()
+        return
+    await callback.answer("Считаю…")
+    try:
+        text = await asyncio.to_thread(render_team_goalscorers_single, code, idx)
+        teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
+        team_name = teams[idx]
+        title = f"Голеадоры · {_league_title(code)} · {team_name}"
+        await answer_report_photos(callback.message, text, title)
+    except Exception as e:
+        logger.exception("tgclub")
+        await callback.message.answer(f"Ошибка: {e}")
+
+
+@router.callback_query(F.data.startswith("tgsall:"))
+async def cb_tgs_all_clubs(callback: CallbackQuery) -> None:
     code = callback.data.split(":", 1)[1]
     await callback.answer("Считаю…")
     try:
@@ -613,8 +691,8 @@ async def cb_tgs_league(callback: CallbackQuery) -> None:
         await answer_report_photos(
             callback.message,
             text,
-            f"Голеадоры по клубам · {_league_title(code)}",
+            f"Голеадоры по клубам · {_league_title(code)} · все клубы",
         )
     except Exception as e:
-        logger.exception("tgs")
+        logger.exception("tgsall")
         await callback.message.answer(f"Ошибка: {e}")

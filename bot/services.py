@@ -163,6 +163,41 @@ def render_team_goalscorers_league(league_code: str) -> str:
     return format_team_goalscorers_league_report(league_code)
 
 
+def teams_ordered_for_goalscorers(league_code: str) -> list[str]:
+    """Клубы лиги в том же порядке, что и в полном отчёте «голеадоры по клубам»."""
+    from player_stats import LEAGUE_TEAMS
+
+    import teams as teams_mod
+
+    if league_code == "cl":
+        return sorted(teams_mod.teams_champ_league.keys())
+    if league_code not in LEAGUE_TEAMS:
+        raise ValueError(f"Неизвестная лига: {league_code}")
+    return sorted(LEAGUE_TEAMS[league_code])
+
+
+def render_team_goalscorers_single(league_code: str, team_index: int) -> str:
+    """Голеадоры одного клуба."""
+    teams = teams_ordered_for_goalscorers(league_code)
+    if not (0 <= team_index < len(teams)):
+        raise IndexError("Некорректный выбор команды")
+    team = teams[team_index]
+    tournament = "cl" if league_code == "cl" else "league"
+    import teams as teams_mod
+    from player_stats import format_team_goalscorers_table_str
+
+    standings_by_code = {
+        "rpl": teams_mod.teams_rpl,
+        "eng": teams_mod.teams_eng,
+        "esp": teams_mod.teams_spain,
+        "ita": teams_mod.teams_italy,
+        "ger": teams_mod.teams_germany,
+        "cl": teams_mod.teams_champ_league,
+    }
+    standings = standings_by_code.get(league_code)
+    return format_team_goalscorers_table_str(team, tournament, standings)
+
+
 def render_top100_all_leagues(sort_key: int = 1, limit: int = 100) -> str:
     """Топ-100 объединённая БД — как «b»→5; sort_key 1/2/3."""
     from player_stats import format_all_leagues_combined_list_str
