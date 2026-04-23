@@ -43,6 +43,7 @@ from bot.services import (
     to_pre_html,
     write_cl_bracket_html_path,
 )
+from bot.keyboards import send_main_menu_screen
 from bot.match_handlers import build_ason_league_kb
 from bot.settings import get_allowed_user_ids
 
@@ -99,61 +100,6 @@ def _league_keyboard(prefix: str) -> InlineKeyboardMarkup:
     if row:
         rows.append(row)
     return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
-def _main_menu_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="✅ Записать следующий",
-                    callback_data="play:next",
-                ),
-                InlineKeyboardButton(
-                    text="✏️ Ручной матч",
-                    callback_data="play:manual",
-                ),
-                InlineKeyboardButton(
-                    text="📌 Из пропусков",
-                    callback_data="skip:list",
-                ),
-            ],
-            [
-                InlineKeyboardButton(text="📊 Таблица", callback_data="menu:table"),
-                InlineKeyboardButton(text="⚽ Бомбардиры", callback_data="menu:goals"),
-            ],
-            [
-                InlineKeyboardButton(text="🎯 Ассисты", callback_data="menu:assists"),
-                InlineKeyboardButton(text="📈 Г+А", callback_data="menu:ga"),
-            ],
-            [
-                InlineKeyboardButton(text="🏟 Сетка ЛЧ (HTML)", callback_data="menu:bracket"),
-                InlineKeyboardButton(text="📌 Статус", callback_data="menu:status"),
-            ],
-            [
-                InlineKeyboardButton(text="⏭ След. матч", callback_data="menu:next"),
-                InlineKeyboardButton(text="📋 Очередь", callback_data="menu:queue"),
-            ],
-            [
-                InlineKeyboardButton(text="⏸ Пропуски", callback_data="menu:skipped"),
-                InlineKeyboardButton(text="📜 Журнал", callback_data="menu:journal"),
-            ],
-            [
-                InlineKeyboardButton(text="📅 Расписание", callback_data="menu:schedule"),
-                InlineKeyboardButton(text="📊 Стата без матча", callback_data="menu:stats_match"),
-            ],
-            [
-                InlineKeyboardButton(text="🔢 Топ-100 всего", callback_data="menu:top100"),
-                InlineKeyboardButton(text="📈 Ещё топы (+ЛЧ)", callback_data="menu:tops_plus"),
-            ],
-            [
-                InlineKeyboardButton(text="👥 Голеадоры по клубам", callback_data="menu:tgs_league"),
-            ],
-            [
-                InlineKeyboardButton(text="🔄 Трансфер", callback_data="xfer:start"),
-            ],
-        ]
-    )
 
 
 def _schedule_menu_kb() -> InlineKeyboardMarkup:
@@ -251,46 +197,55 @@ class AccessMiddleware(BaseMiddleware):
 
 @router.message(Command("start"))
 async def cmd_start(message: Message) -> None:
-    await message.answer(
-        "⚽ Football Manager — журнал, расписание, таблицы, топы.\n"
-        "Запись счёта: «✅ Записать следующий», «✏️ Ручной матч», «📌 Из пропусков» или "
-        "/play_next, /match, /play_skipped.\n"
-        "Трансфер игрока — кнопка «🔄 Трансфер» или /transfer.\n"
-        "Расписание, топ-100, топы лига+ЛЧ, голеадоры по клубам, стата без матча — кнопки ниже или /help.",
-        reply_markup=_main_menu_kb(),
+    await send_main_menu_screen(
+        message,
+        intro_text=(
+            "⚽ Football Manager — журнал, расписание, таблицы, топы.\n"
+            "Запись счёта: «✅ Записать следующий», «✏️ Ручной матч», «📌 Из пропусков» или "
+            "/play_next, /match, /play_skipped.\n"
+            "Трансфер игрока — кнопка «🔄 Трансфер» или /transfer.\n"
+            "Расписание, топ-100, топы лига+ЛЧ, голеадоры по клубам, стата без матча — кнопки в меню или /help.\n"
+            "Снизу экрана кнопка «📋 Меню» снова открывает главное меню."
+        ),
+        inline_title="Выберите действие:",
     )
 
 
 @router.message(Command("help"))
 async def cmd_help(message: Message) -> None:
-    await message.answer(
-        "Кнопки меню или команды:\n"
-        "<b>Запись матча:</b> «Записать следующий» / «Ручной матч» / «Из пропусков»; "
-        "команды /play_next, /match, /play_skipped (отложенные из skipped_matches.json).\n"
-        "/cancel — отменить ввод счёта, статистики или трансфера.\n"
-        "После успешной записи счёта бот может предложить статистику игроков "
-        "(если в main.py включён INPUT_PLAYER_STATS).\n"
-        "\n"
-        "/table /goals /assists /ga — таблица и топы (картинка)\n"
-        "/bracket — сетка ЛЧ (HTML + текст)\n"
-        "/status — полный статус как в консоли «i» (картинка)\n"
-        "/next — информация о следующем матче по календарю\n"
-        "/queue — очередь ближайших матчей\n"
-        "/skipped — список отложенных (только просмотр)\n"
-        "/journal — хвост журнала сыгранных\n"
-        "/stats_match — статистика по матчу без записи через матч-день (как «a»)\n"
-        "/transfer — записать трансфер (игрок, клуб, позиция, новый клуб)\n"
-        "/menu — главное меню\n"
-        "\n"
-        "В меню: расписание (как «v»), топ-100, топы лига+ЛЧ, голеадоры по клубам.\n"
-        "ЛЧ нокаут: при ничьей по сумме двух матчей бот спросит серию пенальти (два числа).\n",
-        reply_markup=_main_menu_kb(),
+    await send_main_menu_screen(
+        message,
+        intro_text=(
+            "Кнопки меню или команды:\n"
+            "<b>Снизу экрана</b> — «📋 Меню» открывает то же главное меню, что и /menu.\n"
+            "<b>Запись матча:</b> «Записать следующий» / «Ручной матч» / «Из пропусков»; "
+            "команды /play_next, /match, /play_skipped (отложенные из skipped_matches.json).\n"
+            "/cancel — отменить ввод счёта, статистики или трансфера.\n"
+            "После успешной записи счёта бот может предложить статистику игроков "
+            "(если в main.py включён INPUT_PLAYER_STATS).\n"
+            "\n"
+            "/table /goals /assists /ga — таблица и топы (картинка)\n"
+            "/bracket — сетка ЛЧ (HTML + текст)\n"
+            "/status — полный статус как в консоли «i» (картинка)\n"
+            "/next — информация о следующем матче по календарю\n"
+            "/queue — очередь ближайших матчей\n"
+            "/skipped — список отложенных (только просмотр)\n"
+            "/journal — хвост журнала сыгранных\n"
+            "/stats_match — статистика по матчу без записи через матч-день (как «a»)\n"
+            "/transfer — записать трансфер (игрок, клуб, позиция, новый клуб)\n"
+            "/menu — главное меню\n"
+            "\n"
+            "В меню: расписание (как «v»), топ-100, топы лига+ЛЧ, голеадоры по клубам.\n"
+            "ЛЧ нокаут: при ничьей по сумме двух матчей бот спросит серию пенальти (два числа).\n"
+        ),
+        inline_title="Выберите действие:",
+        intro_parse_mode="HTML",
     )
 
 
 @router.message(Command("menu"))
 async def cmd_menu(message: Message) -> None:
-    await message.answer("Главное меню:", reply_markup=_main_menu_kb())
+    await send_main_menu_screen(message, intro_text=None, inline_title="Главное меню:")
 
 
 @router.callback_query(F.data == "menu:table")

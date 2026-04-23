@@ -23,6 +23,7 @@ from bot.services import (
     run_process_match_bot,
     split_text_chunks,
 )
+from bot.keyboards import MENU_REPLY_TEXT, send_main_menu_screen
 from bot.states import AddOnlyStats, ClPenalties, MatchEnter, PostMatch, SkipPlay
 
 logger = logging.getLogger(__name__)
@@ -315,6 +316,12 @@ async def _begin_play_next(message: Message, state: FSMContext) -> None:
         reply_markup=kb,
         parse_mode="HTML",
     )
+
+
+@match_router.message(F.text == MENU_REPLY_TEXT)
+async def on_reply_menu_button(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await send_main_menu_screen(message, intro_text=None, inline_title="Главное меню:")
 
 
 @match_router.message(Command("cancel"))
