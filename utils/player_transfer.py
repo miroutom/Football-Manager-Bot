@@ -3,7 +3,9 @@
 Трансфер игрока: обновление клуба во всех рабочих SQLite (лига + ЛЧ) и пересборка common.db.
 
 Дополнительно: удаление строк из БД ЛЧ (один игрок или вся команда), затем пересборка common.
-CLI: ``rm-cl-player``, ``rm-cl-team``, ``fix-league Имя "Клуб" --assists 3 [--position ЦП]``.
+CLI: см. ``python utils/player_transfer.py -h``.
+Поиск строки в league: ``search-league подстрока [--team подстрока_клуба]``.
+Правка по id: ``fix-league-id midfielders 123 --assists 3``.
 """
 from __future__ import annotations
 
@@ -77,6 +79,123 @@ def apply_transfer(
     return counts
 
 
+_OUTFIELD_TABLES: dict[str, type] = {
+    "forwards": Forward,
+    "midfielders": Midfielder,
+    "defenders": Defender,
+}
+
+
+def search_league_players(
+    name_contains: str,
+    *,
+    team_contains: str | None = None,
+) -> list[dict[str, Any]]:
+    """Строки из league_new.db: имя содержит подстроку (без учёта регистра), клуб — опционально."""
+    needle = name_contains.strip().lower()
+    if not needle:
+        raise ValueError("Задай непустую подстроку для имени.")
+    pat = f"%{needle}%"
+
+    from utils.utils import session_league
+
+    rows_out: list[dict[str, Any]] = []
+    team_pat = (f"%{team_contains.strip().lower()}%" if team_contains else None)
+
+    for Cls in (Forward, Midfielder, Defender):
+        q = session_league.query(Cls).filter(func.lower(Cls.name).like(pat))
+        if team_pat:
+            q = q.filter(func.lower(Cls.team).like(team_pat))
+        for row in q.all():
+            rows_out.append(
+                {
+                    "table": Cls.__tablename__,
+                    "id": row.id,
+                    "name": row.name,
+                    "team": row.team,
+                    "position": row.position,
+                    "goals": int(row.goals or 0),
+                    "assists": int(row.assists or 0),
+                    "matches": int(row.matches or 0),
+                    "ga": int(getattr(row, "ga", 0) or 0),
+                }
+            )
+    rows_out.sort(key=lambda x: (x["team"].lower(), x["name"].lower()))
+    return rows_out
+
+
+def _apply_fix_numbers_to_row(
+    row: Any,
+    *,
+    goals: int | None,
+    assists: int | None,
+    matches: int | None,
+) -> tuple[dict[str, int], dict[str, int]]:
+    before = {
+        "goals": int(row.goals or 0),
+        "assists": int(row.assists or 0),
+        "matches": int(row.matches or 0),
+        "ga": int(getattr(row, "ga", 0) or 0),
+    }
+    if goals is not None:
+        row.goals = int(goals)
+    if assists is not None:
+        row.assists = int(assists)
+    if matches is not None:
+        row.matches = int(matches)
+    row.ga = int(row.goals or 0) + int(row.assists or 0)
+    after = {
+        "goals": int(row.goals or 0),
+        "assists": int(row.assists or 0),
+        "matches": int(row.matches or 0),
+        "ga": int(row.ga or 0),
+    }
+    return before, after
+
+
+def fix_league_row_by_table_id(
+    table: str,
+    row_id: int,
+    *,
+    goals: int | None = None,
+    assists: int | None = None,
+    matches: int | None = None,
+    rebuild_common: bool = True,
+) -> dict[str, Any]:
+    """Правка строки по имени таблицы SQLite и первичному ключу ``id``."""
+    if goals is None and assists is None and matches is None:
+        raise ValueError("Задай хотя бы одно из: goals, assists, matches")
+
+    tbl = table.strip().lower()
+    if tbl not in _OUTFIELD_TABLES:
+        raise ValueError(f"Таблица: один из {sorted(_OUTFIELD_TABLES)}")
+    Cls = _OUTFIELD_TABLES[tbl]
+
+    from utils.utils import session_league
+
+    row = session_league.query(Cls).filter(Cls.id == int(row_id)).first()
+    if row is None:
+        raise ValueError(f"Нет строки id={row_id} в «{tbl}».")
+
+    before, after = _apply_fix_numbers_to_row(row, goals=goals, assists=assists, matches=matches)
+    session_league.commit()
+
+    if rebuild_common:
+        from utils.common_db import rebuild_common_database
+
+        rebuild_common_database()
+
+    return {
+        "table": tbl,
+        "id": row.id,
+        "player": row.name,
+        "team": row.team,
+        "position": row.position,
+        "before": before,
+        "after": after,
+    }
+
+
 def fix_league_player_stats(
     player_name: str,
     team_name: str,
@@ -117,7 +236,9 @@ def fix_league_player_stats(
         raise ValueError(
             f"Не найден игрок «{player_name}» в клубе «{team_name}»"
             + (f", позиция «{position}»" if position else "")
-            + " в league_new.db (forwards/midfielders/defenders).",
+            + " в league_new.db (forwards/midfielders/defenders).\n"
+            "Подсказка: найди строку командой "
+            f'python3 utils/player_transfer.py search-league "{player_name}" --team часть_названия_клуба',
         )
     if len(hits) > 1:
         tabs = [h[0] for h in hits]
@@ -126,28 +247,8 @@ def fix_league_player_stats(
         )
 
     tablename, row = hits[0]
-    before = {
-        "goals": int(row.goals or 0),
-        "assists": int(row.assists or 0),
-        "matches": int(row.matches or 0),
-        "ga": int(getattr(row, "ga", 0) or 0),
-    }
-    if goals is not None:
-        row.goals = int(goals)
-    if assists is not None:
-        row.assists = int(assists)
-    if matches is not None:
-        row.matches = int(matches)
-    row.ga = int(row.goals or 0) + int(row.assists or 0)
-
+    before, after = _apply_fix_numbers_to_row(row, goals=goals, assists=assists, matches=matches)
     session_league.commit()
-
-    after = {
-        "goals": int(row.goals or 0),
-        "assists": int(row.assists or 0),
-        "matches": int(row.matches or 0),
-        "ga": int(row.ga or 0),
-    }
 
     if rebuild_common:
         from utils.common_db import rebuild_common_database
@@ -231,7 +332,7 @@ def delete_team_rows_from_cl_database(team_name: str) -> dict[str, int]:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Очистка ЛЧ и пересборка common.db")
+    parser = argparse.ArgumentParser(description="Трансферы, очистка ЛЧ, правка league.db")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p1 = sub.add_parser(
@@ -246,7 +347,7 @@ if __name__ == "__main__":
 
     p3 = sub.add_parser(
         "fix-league",
-        help="Задать голы / передачи / матчи в league_new.db и пересобрать common",
+        help="Задать голы / передачи / матчи в league_new.db (точное имя и клуб)",
     )
     p3.add_argument("player")
     p3.add_argument("team")
@@ -255,6 +356,32 @@ if __name__ == "__main__":
     p3.add_argument("--matches", type=int, default=None)
     p3.add_argument("--position", default=None, help="Если несколько строк у игрока в клубе")
 
+    p4 = sub.add_parser(
+        "search-league",
+        help="Найти игроков в league_new.db по подстроке имени (и опционально клуба)",
+    )
+    p4.add_argument("needle", help="Подстрока в имени (например камара)")
+    p4.add_argument(
+        "--team",
+        dest="team_needle",
+        default=None,
+        help="Подстрока в названии клуба (например вилла)",
+    )
+
+    p5 = sub.add_parser(
+        "fix-league-id",
+        help="Правка по таблице и id (как в выводе search-league)",
+    )
+    p5.add_argument(
+        "table",
+        choices=sorted(_OUTFIELD_TABLES.keys()),
+        help="forwards / midfielders / defenders",
+    )
+    p5.add_argument("row_id", type=int)
+    p5.add_argument("--goals", type=int, default=None)
+    p5.add_argument("--assists", type=int, default=None)
+    p5.add_argument("--matches", type=int, default=None)
+
     args = parser.parse_args()
     if args.cmd == "rm-cl-player":
         out = delete_player_rows_from_cl_database(args.player, args.team)
@@ -262,7 +389,7 @@ if __name__ == "__main__":
     elif args.cmd == "rm-cl-team":
         out = delete_team_rows_from_cl_database(args.team)
         print("Удалено по таблицам:", out)
-    else:
+    elif args.cmd == "fix-league":
         out = fix_league_player_stats(
             args.player,
             args.team,
@@ -270,5 +397,25 @@ if __name__ == "__main__":
             assists=args.assists,
             matches=args.matches,
             position=args.position,
+        )
+        print(out)
+    elif args.cmd == "search-league":
+        rows = search_league_players(args.needle, team_contains=args.team_needle)
+        if not rows:
+            print("Ничего не найдено.")
+        else:
+            for r in rows:
+                print(
+                    f"id={r['id']:>5}  {r['table']:<14}  {r['name']:<22}  {r['team']:<22}  "
+                    f"{r['position']:<6}  И={r['matches']}  Г={r['goals']}  А={r['assists']}  Г+А={r['ga']}",
+                )
+            print(f"\nВсего строк: {len(rows)}")
+    else:
+        out = fix_league_row_by_table_id(
+            args.table,
+            args.row_id,
+            goals=args.goals,
+            assists=args.assists,
+            matches=args.matches,
         )
         print(out)
