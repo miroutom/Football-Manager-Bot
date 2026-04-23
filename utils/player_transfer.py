@@ -17,7 +17,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from data.defender import Defender
 from data.forward import Forward
@@ -86,24 +86,92 @@ _OUTFIELD_TABLES: dict[str, type] = {
 }
 
 
+def _cyrillic_to_latin_lc(s: str) -> str:
+    """Грубая транслитерация для поиска (кириллица → латиница в стиле паспорта)."""
+    m = {
+        "а": "a",
+        "б": "b",
+        "в": "v",
+        "г": "g",
+        "д": "d",
+        "е": "e",
+        "ё": "e",
+        "ж": "zh",
+        "з": "z",
+        "и": "i",
+        "й": "y",
+        "к": "k",
+        "л": "l",
+        "м": "m",
+        "н": "n",
+        "о": "o",
+        "п": "p",
+        "р": "r",
+        "с": "s",
+        "т": "t",
+        "у": "u",
+        "ф": "f",
+        "х": "h",
+        "ц": "ts",
+        "ч": "ch",
+        "ш": "sh",
+        "щ": "sch",
+        "ъ": "",
+        "ы": "y",
+        "ь": "",
+        "э": "e",
+        "ю": "yu",
+        "я": "ya",
+    }
+    return "".join(m.get(c, c) for c in s.lower())
+
+
+def _name_like_variants(needle: str) -> list[str]:
+    """Подстроки для SQL LIKE: как ввели + латиница от кириллицы (имена в БД часто латиницей)."""
+    n = needle.strip().lower()
+    if not n:
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for cand in (n, _cyrillic_to_latin_lc(n)):
+        if cand and cand not in seen:
+            seen.add(cand)
+            out.append(cand)
+    return out
+
+
 def search_league_players(
-    name_contains: str,
+    name_contains: str | None,
     *,
     team_contains: str | None = None,
+    limit: int = 800,
 ) -> list[dict[str, Any]]:
-    """Строки из league_new.db: имя содержит подстроку (без учёта регистра), клуб — опционально."""
-    needle = name_contains.strip().lower()
-    if not needle:
-        raise ValueError("Задай непустую подстроку для имени.")
-    pat = f"%{needle}%"
+    """
+    Строки из ``league_new.db`` (см. ``utils.utils.LEAGUE_DB_PATH``).
+
+    Имя: подстрока в ``name``; если ввели кириллицу — дополнительно ищется латиница («камара» → ``%kamara%``).
+    Можно указать только клуб (``name`` пустой): ``search-league "" --team вилла``.
+    """
+    nm = (name_contains or "").strip()
+    tm = (team_contains or "").strip()
+
+    if not nm and not tm:
+        raise ValueError("Задай подстроку имени и/или --team для клуба.")
 
     from utils.utils import session_league
 
     rows_out: list[dict[str, Any]] = []
-    team_pat = (f"%{team_contains.strip().lower()}%" if team_contains else None)
+    name_vars = _name_like_variants(nm) if nm else []
+
+    team_pat = f"%{tm.lower()}%" if tm else None
 
     for Cls in (Forward, Midfielder, Defender):
-        q = session_league.query(Cls).filter(func.lower(Cls.name).like(pat))
+        q = session_league.query(Cls)
+        if name_vars:
+            name_conds = [
+                func.lower(Cls.name).like(f"%{v}%") for v in name_vars
+            ]
+            q = q.filter(or_(*name_conds))
         if team_pat:
             q = q.filter(func.lower(Cls.team).like(team_pat))
         for row in q.all():
@@ -120,8 +188,9 @@ def search_league_players(
                     "ga": int(getattr(row, "ga", 0) or 0),
                 }
             )
+
     rows_out.sort(key=lambda x: (x["team"].lower(), x["name"].lower()))
-    return rows_out
+    return rows_out[:limit]
 
 
 def _apply_fix_numbers_to_row(
@@ -335,6 +404,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Трансферы, очистка ЛЧ, правка league.db")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
+    p0 = sub.add_parser("db-path", help="Показать пути к league / cl / common (как в коде бота)")
+
     p1 = sub.add_parser(
         "rm-cl-player",
         help="Удалить игрока из champions_league_new.db",
@@ -360,7 +431,12 @@ if __name__ == "__main__":
         "search-league",
         help="Найти игроков в league_new.db по подстроке имени (и опционально клуба)",
     )
-    p4.add_argument("needle", help="Подстрока в имени (например камара)")
+    p4.add_argument(
+        "needle",
+        nargs="?",
+        default=None,
+        help="Подстрока в имени (например камара или Kamara); можно пусто вместе с --team",
+    )
     p4.add_argument(
         "--team",
         dest="team_needle",
@@ -383,7 +459,13 @@ if __name__ == "__main__":
     p5.add_argument("--matches", type=int, default=None)
 
     args = parser.parse_args()
-    if args.cmd == "rm-cl-player":
+    if args.cmd == "db-path":
+        from utils.utils import CHAMPIONS_LEAGUE_DB_PATH, COMMON_DB_PATH, LEAGUE_DB_PATH
+
+        print("league (нац. лиги):", LEAGUE_DB_PATH)
+        print("ЛЧ:                ", CHAMPIONS_LEAGUE_DB_PATH)
+        print("common (merge):    ", COMMON_DB_PATH)
+    elif args.cmd == "rm-cl-player":
         out = delete_player_rows_from_cl_database(args.player, args.team)
         print("Удалено по таблицам:", out)
     elif args.cmd == "rm-cl-team":
@@ -403,6 +485,11 @@ if __name__ == "__main__":
         rows = search_league_players(args.needle, team_contains=args.team_needle)
         if not rows:
             print("Ничего не найдено.")
+            print(
+                "Подсказка: имена часто латиницей — попробуй "
+                "`search-league kamara` или `search-league \"\" --team вилла` "
+                "и проверь `db-path`, что открыт league_new.db."
+            )
         else:
             for r in rows:
                 print(
