@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-PNG-сетка плей-офф ЛЧ: дерево как раньше (светлый стиль), данные только из журнала.
+PNG-сетка плей-офф ЛЧ: дерево, данные из журнала (как HTML).
 
-Счета и победители те же, что у ``bracket_html.py`` / HTML-сетки: ``match_results.json``
-(league=cl, без групповой фазы). В каждой карточке только две строки — команда и её счёт
-(домашний матч этой команды в стыке).
+Стиль: тёмный фон «стадион / ЛЧ», светлые карточки, линии-акценты, опционально Montserrat VF
+в ``assets/fonts/Montserrat-VF.ttf`` (fallback — DejaVu).
 """
 from __future__ import annotations
 
@@ -23,6 +22,9 @@ from champions_league.bracket_html import (
 )
 
 
+_MODULE_DIR = Path(__file__).resolve().parent
+_MONTserrat_VF = _MODULE_DIR / "assets" / "fonts" / "Montserrat-VF.ttf"
+
 _SANS_PATHS: tuple[Path, ...] = (
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
@@ -33,13 +35,9 @@ _SANS_PATHS: tuple[Path, ...] = (
 )
 
 
-def _font(path: Path | None, size: int) -> ImageFont.FreeTypeFont:
-    if path is not None and path.exists():
-        try:
-            return ImageFont.truetype(str(path), size=size)
-        except OSError:
-            pass
-    for p in _SANS_PATHS:
+def _font_legacy(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+    candidates = (_SANS_PATHS[0], _SANS_PATHS[1]) if bold else (_SANS_PATHS[1], _SANS_PATHS[0])
+    for p in candidates:
         if p.exists():
             try:
                 return ImageFont.truetype(str(p), size=size)
@@ -48,16 +46,27 @@ def _font(path: Path | None, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
+def _montserrat(size: int, variation: str) -> ImageFont.FreeTypeFont | None:
+    if not _MONTserrat_VF.is_file():
+        return None
+    try:
+        f = ImageFont.truetype(str(_MONTserrat_VF), size=size)
+        if hasattr(f, "set_variation_by_name"):
+            try:
+                f.set_variation_by_name(variation)
+            except OSError:
+                pass
+        return f
+    except OSError:
+        return None
+
+
 def _pick_fonts() -> tuple[ImageFont.FreeTypeFont, ImageFont.FreeTypeFont, ImageFont.FreeTypeFont]:
-    bold_path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
-    reg_path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
-    if bold_path.exists() and reg_path.exists():
-        return (
-            ImageFont.truetype(str(bold_path), 22),
-            ImageFont.truetype(str(bold_path), 15),
-            ImageFont.truetype(str(reg_path), 13),
-        )
-    return _font(None, 22), _font(None, 15), _font(None, 13)
+    """Заголовок (крупный), подзаголовки колонок, текст карточек."""
+    t = _montserrat(23, "Bold") or _font_legacy(23, bold=True)
+    h = _montserrat(14, "SemiBold") or _font_legacy(14, bold=True)
+    b = _montserrat(13, "Medium") or _font_legacy(13, bold=False)
+    return (t, h, b)
 
 
 def _text_size(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont) -> tuple[int, int]:
@@ -96,6 +105,90 @@ def _rounded_rect(
         draw.rounded_rectangle(xy, radius=radius, fill=fill, outline=outline, width=1)
     else:
         draw.rectangle(xy, fill=fill, outline=outline)
+
+
+def _fill_vertical_gradient(im: Image.Image, top: tuple[int, int, int], bottom: tuple[int, int, int]) -> None:
+    """Вертикальный градиент по всей высоте (RGB)."""
+    w, h = im.size
+    draw_tmp = ImageDraw.Draw(im)
+    hm = max(h - 1, 1)
+    for y in range(h):
+        t = y / hm
+        r = int(top[0] + (bottom[0] - top[0]) * t)
+        g = int(top[1] + (bottom[1] - top[1]) * t)
+        b = int(top[2] + (bottom[2] - top[2]) * t)
+        draw_tmp.rectangle((0, y, w, y + 1), fill=(r, g, b))
+
+
+def _draw_subtle_sparkles(im: Image.Image, n: int = 42, seed: int = 42) -> None:
+    """Лёгкие «блёстки» на фоне (очень тускло)."""
+    import random
+
+    rnd = random.Random(seed)
+    w, h = im.size
+    px = im.load()
+    for _ in range(n):
+        x, y = rnd.randint(8, w - 9), rnd.randint(80, h - 9)
+        base = px[x, y]
+        lift = rnd.randint(18, 38)
+        px[x, y] = tuple(min(255, c + lift) for c in base)
+
+
+def _draw_cl_trophy(draw: ImageDraw.ImageDraw, cx: int, bot: int, scale: float = 1.0) -> None:
+    """Стилизованный кубок (золото / тени) над финалом."""
+    s = scale
+    gold = (218, 185, 95)
+    gold_mid = (196, 158, 72)
+    gold_dark = (142, 108, 42)
+    gold_hi = (252, 238, 200)
+
+    bw = int(48 * s)
+    bh = int(9 * s)
+    stem_w = int(13 * s)
+    stem_h = int(26 * s)
+    cup_w = int(52 * s)
+    cup_h = int(22 * s)
+    ear = int(7 * s)
+
+    # подставка
+    _rounded_rect(
+        draw,
+        (cx - bw // 2, bot - bh, cx + bw // 2, bot),
+        gold_dark,
+        gold,
+        4,
+    )
+    stem_top = bot - bh - stem_h
+    draw.rectangle((cx - stem_w // 2, stem_top, cx + stem_w // 2, bot - bh), fill=gold_mid, outline=gold)
+
+    bowl_bot = stem_top
+    bowl_top = bowl_bot - cup_h
+    # чаша: шире кверху
+    cup_poly = [
+        (cx - cup_w // 2 + ear, bowl_bot),
+        (cx + cup_w // 2 - ear, bowl_bot),
+        (cx + cup_w // 2, bowl_top + int(6 * s)),
+        (cx - cup_w // 2, bowl_top + int(6 * s)),
+    ]
+    draw.polygon(cup_poly, fill=gold, outline=gold_dark)
+    # верхний овал «ободок»
+    draw.ellipse(
+        (cx - cup_w // 2, bowl_top - int(5 * s), cx + cup_w // 2, bowl_top + int(10 * s)),
+        fill=gold_hi,
+        outline=gold_mid,
+    )
+    # ручки (упрощённо — дуги могут отсутствовать в старых PIL)
+    try:
+        draw.arc((cx - cup_w // 2 - ear - 6, bowl_top - 4, cx - cup_w // 2 + ear, bowl_bot), 200, 330, fill=gold_dark)
+        draw.arc((cx + cup_w // 2 - ear, bowl_top - 4, cx + cup_w // 2 + ear + 6, bowl_bot), 210, 340, fill=gold_dark)
+    except Exception:
+        pass
+    # блик
+    draw.line(
+        (cx - cup_w // 4, bowl_top + int(8 * s), cx - cup_w // 8, bowl_top + int(4 * s)),
+        fill=gold_hi,
+        width=2,
+    )
 
 
 def _draw_tie_two_lines(
@@ -151,28 +244,29 @@ def render_cl_bracket_infographic_png_bytes(
     title: str = "Лига чемпионов",
     subtitle: str = "Плей-офф",
 ) -> bytes:
-    """
-    Одна PNG: та же логика счётов, что у HTML-сетки (журнал ``match_results.json``).
-    Только команды и счёт в карточках.
-    """
     scores, pen_by_tie = _load_cl_scores_and_penalties()
     st = build_cl_bracket_state(scores, pen_by_tie)
 
     title_font, header_font, body_font = _pick_fonts()
-    score_font = header_font
+    score_font = _montserrat(13, "SemiBold") or header_font
 
-    BG = (237, 242, 247)
-    HEADER_BLUE = (37, 99, 235)
-    HEADER_BLUE_DARK = (29, 78, 216)
-    LINE_BLUE = (59, 130, 246)
-    CARD_FILL = (219, 234, 254)
-    CARD_EDGE = (147, 197, 253)
+    # Фон: глубокий сине-ночной (ассоциация с ЛЧ)
+    BG_TOP = (10, 22, 52)
+    BG_BOT = (18, 38, 78)
+    HEADER_BAR = (8, 16, 42)
+    HEADER_ACCENT = (6, 12, 36)
+    LINE_CLR = (120, 185, 255)
+    CARD_FILL = (248, 250, 252)
+    CARD_EDGE = (190, 205, 228)
+    CARD_FILL_ALT = (241, 246, 252)
     TEAM_BAND = (255, 255, 255)
-    EDGE_TEAM = (226, 232, 240)
-    TEXT_MAIN = (15, 23, 42)
-    TEXT_MUTED = (71, 85, 105)
-    PEN_HTML = (20, 58, 92)
-    WHITE = (255, 255, 255)
+    EDGE_TEAM = (210, 218, 235)
+    TEXT_MAIN = (18, 28, 52)
+    TEXT_MUTED = (110, 125, 150)
+    PEN_CLR = (30, 90, 160)
+    TITLE_COLOR = (245, 248, 255)
+    SUB_TINT = (190, 210, 245)
+    COL_HDR = (170, 200, 240)
 
     ROW_LINE = 22
     CARD_PAD_V = 6
@@ -182,22 +276,24 @@ def render_cl_bracket_infographic_png_bytes(
     section_h = CARD_BODY + SECTION_GAP
 
     W = 1340
-    HDR_H = 82
+    HDR_H = 88
     PAD_TOP = 18
     n_r2 = 8
     content_h = int(n_r2 * section_h + 48)
     H = HDR_H + content_h + 36
 
-    im = Image.new("RGB", (W, H), BG)
+    im = Image.new("RGB", (W, H), BG_TOP)
+    _fill_vertical_gradient(im, BG_TOP, BG_BOT)
+    _draw_subtle_sparkles(im)
     draw = ImageDraw.Draw(im)
 
-    draw.rectangle((0, 0, W, HDR_H), fill=HEADER_BLUE)
-    draw.rectangle((0, HDR_H - 4, W, HDR_H), fill=HEADER_BLUE_DARK)
+    draw.rectangle((0, 0, W, HDR_H), fill=HEADER_BAR)
+    draw.rectangle((0, HDR_H - 3, W, HDR_H), fill=HEADER_ACCENT)
 
-    draw.text((28, 14), title, font=title_font, fill=WHITE)
+    draw.text((28, 16), title, font=title_font, fill=TITLE_COLOR)
     tw, _ = _text_size(draw, title, title_font)
-    draw.text((28 + tw + 12, 18), season_label, font=header_font, fill=(191, 219, 254))
-    draw.text((28, 48), subtitle, font=header_font, fill=(224, 231, 255))
+    draw.text((28 + tw + 14, 20), season_label, font=header_font, fill=SUB_TINT)
+    draw.text((28, 52), subtitle, font=body_font, fill=SUB_TINT)
 
     col_titles = (
         "Стыковые матчи",
@@ -211,8 +307,8 @@ def render_cl_bracket_infographic_png_bytes(
 
     y0 = HDR_H + PAD_TOP
     for i, lab in enumerate(col_titles):
-        draw.text((x_cols[i], y0), lab, font=header_font, fill=HEADER_BLUE)
-        draw.line((x_cols[i], y0 + 22, x_cols[i] + col_w[i], y0 + 22), fill=LINE_BLUE, width=2)
+        draw.text((x_cols[i], y0), lab, font=header_font, fill=COL_HDR)
+        draw.line((x_cols[i], y0 + 22, x_cols[i] + col_w[i], y0 + 22), fill=LINE_CLR, width=2)
 
     y_content = y0 + 34
 
@@ -270,19 +366,19 @@ def render_cl_bracket_infographic_png_bytes(
             fill_name_row1=TEXT_MAIN,
             fill_name_row2=TEXT_MAIN,
             fill_score=TEXT_MAIN,
-            pen_color=PEN_HTML,
+            pen_color=PEN_CLR,
         )
 
     for i in range(8):
         cy = yi(y_centers_r1_r2[i])
-        draw.line((x1_right, cy, x2_left, cy), fill=LINE_BLUE, width=2)
+        draw.line((x1_right, cy, x2_left, cy), fill=LINE_CLR, width=2)
 
     # --- R2 ---
     for i, m in enumerate(st["round_2"]):
         cy = y_centers_r1_r2[i]
         box_h = CARD_BODY + SECTION_GAP - 4
         top = cy - box_h / 2
-        _rounded_rect(draw, (x2, top, x2 + w2, top + CARD_BODY), CARD_FILL, CARD_EDGE, 6)
+        _rounded_rect(draw, (x2, top, x2 + w2, top + CARD_BODY), CARD_FILL_ALT, CARD_EDGE, 6)
         rows = tie_score_pair_strings(m["home"], m["away"], scores, pen_by_tie)
         inner_l = x2 + CARD_PAD_H
         inner_r = x2 + w2 - CARD_PAD_H
@@ -301,23 +397,21 @@ def render_cl_bracket_infographic_png_bytes(
             fill_name_row1=f1,
             fill_name_row2=f2,
             fill_score=TEXT_MAIN,
-            pen_color=PEN_HTML,
+            pen_color=PEN_CLR,
         )
 
-    # Линии к четвертьфиналам
     for j in range(4):
         yl = r3_centers[j]
         i0, i1 = 2 * j, 2 * j + 1
         yy0, yy1 = y_centers_r1_r2[i0], y_centers_r1_r2[i1]
         mx = (x2_right + x3_left) // 2
-        draw.line((x2_right, yi(yy0), mx, yi(yy0)), fill=LINE_BLUE, width=2)
-        draw.line((x2_right, yi(yy1), mx, yi(yy1)), fill=LINE_BLUE, width=2)
-        draw.line((mx, yi(yy0), mx, yi(yy1)), fill=LINE_BLUE, width=2)
+        draw.line((x2_right, yi(yy0), mx, yi(yy0)), fill=LINE_CLR, width=2)
+        draw.line((x2_right, yi(yy1), mx, yi(yy1)), fill=LINE_CLR, width=2)
+        draw.line((mx, yi(yy0), mx, yi(yy1)), fill=LINE_CLR, width=2)
         ym = (yy0 + yy1) / 2
-        draw.line((mx, yi(ym), mx, yi(yl)), fill=LINE_BLUE, width=2)
-        draw.line((mx, yi(yl), x3_left, yi(yl)), fill=LINE_BLUE, width=2)
+        draw.line((mx, yi(ym), mx, yi(yl)), fill=LINE_CLR, width=2)
+        draw.line((mx, yi(yl), x3_left, yi(yl)), fill=LINE_CLR, width=2)
 
-    # --- Четвертьфиналы ---
     for j, cy in enumerate(r3_centers):
         m = st["round_3"][j]
         top = cy - bh_q / 2
@@ -339,27 +433,25 @@ def render_cl_bracket_infographic_png_bytes(
             fill_name_row1=f1,
             fill_name_row2=f2,
             fill_score=TEXT_MAIN,
-            pen_color=PEN_HTML,
+            pen_color=PEN_CLR,
         )
 
-    # Линии к полуфиналам
     for j in range(2):
         cy = sf_centers[j]
         i0, i1 = 2 * j, 2 * j + 1
         ya, yb = r3_centers[i0], r3_centers[i1]
         mx = (x3_right + x4_left) // 2
-        draw.line((x3_right, yi(ya), mx, yi(ya)), fill=LINE_BLUE, width=2)
-        draw.line((x3_right, yi(yb), mx, yi(yb)), fill=LINE_BLUE, width=2)
-        draw.line((mx, yi(ya), mx, yi(yb)), fill=LINE_BLUE, width=2)
+        draw.line((x3_right, yi(ya), mx, yi(ya)), fill=LINE_CLR, width=2)
+        draw.line((x3_right, yi(yb), mx, yi(yb)), fill=LINE_CLR, width=2)
+        draw.line((mx, yi(ya), mx, yi(yb)), fill=LINE_CLR, width=2)
         ym = (ya + yb) / 2
-        draw.line((mx, yi(ym), mx, yi(cy)), fill=LINE_BLUE, width=2)
-        draw.line((mx, yi(cy), x4_left, yi(cy)), fill=LINE_BLUE, width=2)
+        draw.line((mx, yi(ym), mx, yi(cy)), fill=LINE_CLR, width=2)
+        draw.line((mx, yi(cy), x4_left, yi(cy)), fill=LINE_CLR, width=2)
 
-    # --- Полуфиналы ---
     for j, cy in enumerate(sf_centers):
         m = st["semi_finals"][j]
         top = cy - bh_q / 2
-        _rounded_rect(draw, (x4, top, x4 + w4, top + CARD_BODY), CARD_FILL, CARD_EDGE, 8)
+        _rounded_rect(draw, (x4, top, x4 + w4, top + CARD_BODY), CARD_FILL_ALT, CARD_EDGE, 8)
         rows = tie_score_pair_strings(m["home"], m["away"], scores, pen_by_tie)
         inner_l = x4 + CARD_PAD_H
         inner_r = x4 + w4 - CARD_PAD_H
@@ -377,26 +469,28 @@ def render_cl_bracket_infographic_png_bytes(
             fill_name_row1=f1,
             fill_name_row2=f2,
             fill_score=TEXT_MAIN,
-            pen_color=PEN_HTML,
+            pen_color=PEN_CLR,
         )
 
-    # Линии к финалу
     mx_f = (x4_right + x5_left) // 2
     ya, yb = sf_centers[0], sf_centers[1]
-    draw.line((x4_right, yi(ya), mx_f, yi(ya)), fill=LINE_BLUE, width=2)
-    draw.line((x4_right, yi(yb), mx_f, yi(yb)), fill=LINE_BLUE, width=2)
-    draw.line((mx_f, yi(ya), mx_f, yi(yb)), fill=LINE_BLUE, width=2)
+    draw.line((x4_right, yi(ya), mx_f, yi(ya)), fill=LINE_CLR, width=2)
+    draw.line((x4_right, yi(yb), mx_f, yi(yb)), fill=LINE_CLR, width=2)
+    draw.line((mx_f, yi(ya), mx_f, yi(yb)), fill=LINE_CLR, width=2)
     ym_sf = (ya + yb) / 2
-    draw.line((mx_f, yi(ym_sf), mx_f, yi(fcy)), fill=LINE_BLUE, width=2)
-    draw.line((mx_f, yi(fcy), x5_left, yi(fcy)), fill=LINE_BLUE, width=2)
+    draw.line((mx_f, yi(ym_sf), mx_f, yi(fcy)), fill=LINE_CLR, width=2)
+    draw.line((mx_f, yi(fcy), x5_left, yi(fcy)), fill=LINE_CLR, width=2)
 
-    # --- Финал (одна игра — одна строка счёта по центру) ---
     fin = st["final"]
     fh, fa = fin["home"], fin["away"]
     sc = fin["score"]
     sh, sa = sc[0], sc[1]
     top = fcy - 40
     box_h = 80
+    cx5 = x5 + w5 // 2
+    # кубок непосредственно над карточкой финала
+    _draw_cl_trophy(draw, cx5, top - 6, scale=0.95)
+
     _rounded_rect(draw, (x5, top, x5 + w5, top + box_h), CARD_FILL, CARD_EDGE, 10)
     cx = x5 + w5 // 2
     nm_muted_h = fh.startswith("победитель")
@@ -408,7 +502,7 @@ def render_cl_bracket_infographic_png_bytes(
     draw.text((cx - tw1 // 2, y1), t1, font=body_font, fill=TEXT_MUTED if nm_muted_h else TEXT_MAIN)
     mid_txt = "— : —" if sh is None or sa is None else f"{sh} : {sa}"
     twm, thm = _text_size(draw, mid_txt, score_font)
-    draw.text((cx - twm // 2, y1 + th1 + 4), mid_txt, font=score_font, fill=PEN_HTML)
+    draw.text((cx - twm // 2, y1 + th1 + 4), mid_txt, font=score_font, fill=PEN_CLR)
     tw2, _ = _text_size(draw, t2, body_font)
     draw.text((cx - tw2 // 2, y1 + th1 + thm + 10), t2, font=body_font, fill=TEXT_MUTED if nm_muted_a else TEXT_MAIN)
 
