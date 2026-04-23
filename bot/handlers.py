@@ -83,9 +83,17 @@ async def answer_report_photos(message: Message, body: str, caption: str) -> Non
 
 
 async def send_cl_bracket(message: Message) -> None:
-    """Сетка ЛЧ как PNG (моноширинный текст), как таблицы."""
-    txt = await asyncio.to_thread(render_cl_bracket_text)
+    """Сетка плей-офф ЛЧ: инфографика PNG; при ошибке — моноширинный текст как раньше."""
+    from champions_league.bracket_infographic import render_cl_bracket_infographic_png_bytes
 
+    try:
+        png = await asyncio.to_thread(render_cl_bracket_infographic_png_bytes)
+        await message.answer_photo(BufferedInputFile(png, filename="cl_bracket.png"))
+        return
+    except Exception:
+        logger.exception("bracket_infographic")
+
+    txt = await asyncio.to_thread(render_cl_bracket_text)
     try:
         await answer_report_photos(message, txt or "(пусто)", "Сетка ЛЧ")
     except Exception as e:
