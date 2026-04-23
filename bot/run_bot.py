@@ -11,6 +11,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 import bot  # noqa: F401 — ensure_project_paths при импорте пакета
 
+from bot.bot_commands import setup_bot_commands
 from bot.handlers import AccessMiddleware, router
 from bot.match_handlers import match_router
 from bot.transfer_handlers import transfer_router
@@ -39,6 +40,7 @@ async def main() -> None:
         token=token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+    await setup_bot_commands(telegram_bot)
     await dp.start_polling(telegram_bot)
 
 
