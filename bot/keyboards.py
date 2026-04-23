@@ -50,7 +50,7 @@ def main_menu_inline_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="📈 Г+А", callback_data="menu:ga"),
             ],
             [
-                InlineKeyboardButton(text="🏟 Сетка ЛЧ (HTML)", callback_data="menu:bracket"),
+                InlineKeyboardButton(text="🏟 Сетка ЛЧ", callback_data="menu:bracket"),
                 InlineKeyboardButton(text="📌 Статус", callback_data="menu:status"),
             ],
             [

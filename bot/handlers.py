@@ -44,7 +44,6 @@ from bot.services import (
     render_top_scorers_common,
     split_text_chunks,
     to_pre_html,
-    write_cl_bracket_html_path,
 )
 from bot.keyboards import send_main_menu_screen
 from bot.match_handlers import build_ason_league_kb
@@ -84,10 +83,7 @@ async def answer_report_photos(message: Message, body: str, caption: str) -> Non
 
 
 async def send_cl_bracket(message: Message) -> None:
-    """Текстовая сетка ЛЧ как PNG (как таблицы), плюс HTML для браузера."""
-    from aiogram.types import FSInputFile
-
-    path = await asyncio.to_thread(write_cl_bracket_html_path)
+    """Сетка ЛЧ как PNG (моноширинный текст), как таблицы."""
     txt = await asyncio.to_thread(render_cl_bracket_text)
 
     try:
@@ -98,11 +94,6 @@ async def send_cl_bracket(message: Message) -> None:
         if txt:
             for chunk in split_text_chunks(txt, 3800):
                 await message.answer(to_pre_html(chunk), parse_mode=ParseMode.HTML)
-
-    await message.answer_document(
-        FSInputFile(path),
-        caption="Интерактивная сетка (HTML) — открой в браузере.",
-    )
 
 
 def _league_keyboard(prefix: str) -> InlineKeyboardMarkup:
@@ -299,7 +290,7 @@ async def cb_menu_status(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "menu:bracket")
 async def cb_menu_bracket(callback: CallbackQuery) -> None:
-    await callback.answer("Генерирую HTML…")
+    await callback.answer("Рисую сетку…")
     try:
         await send_cl_bracket(callback.message)
     except Exception as e:
