@@ -11,6 +11,8 @@ from aiogram.types import (
 
 # Текст должен совпадать с обработчиком в match_handlers (до FSM).
 MENU_REPLY_TEXT = "📋 Меню"
+# Якорь для первого сообщения (reply-клавиатура): невидимый текст иногда режет Telegram API.
+_MENU_ROW_ANCHOR = "·"
 
 
 def reply_keyboard_menu_button() -> ReplyKeyboardMarkup:
@@ -85,7 +87,7 @@ async def send_main_menu_screen(
     intro_parse_mode: str | None = None,
 ) -> None:
     """Два сообщения: нижняя reply-клавиатура и inline-меню (один reply_markup на сообщение)."""
-    body = intro_text if intro_text is not None else "\u200b"
+    body = intro_text if intro_text is not None else _MENU_ROW_ANCHOR
     await message.answer(
         body,
         reply_markup=reply_keyboard_menu_button(),

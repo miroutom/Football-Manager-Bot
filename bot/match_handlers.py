@@ -6,9 +6,10 @@ import logging
 import re
 from html import escape as html_escape
 from typing import Final
+from unicodedata import normalize
 
 from aiogram import F, Router
-from aiogram.filters import Command
+from aiogram.filters import BaseFilter, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
@@ -23,7 +24,8 @@ from bot.services import (
     run_process_match_bot,
     split_text_chunks,
 )
-from bot.keyboards import MENU_REPLY_TEXT, send_main_menu_screen
+from bot.keyboards import MENU_REPLY_TEXT
+from bot.menu_content import deliver_help_screen, deliver_main_menu_refresh
 from bot.states import AddOnlyStats, ClPenalties, MatchEnter, PostMatch, SkipPlay
 
 logger = logging.getLogger(__name__)
@@ -34,6 +36,16 @@ _SCORE_RE: Final = re.compile(r"^\s*(\d+)\s+(\d+)\s*$")
 
 # Не перехватывать /help и прочие команды как счёт или имя команды
 _TEXT_NOT_CMD: Final = F.text & ~F.text.startswith("/")
+
+
+class MenuReplyFilter(BaseFilter):
+    """Текст кнопки «📋 Меню» с учётом разных NFC/NFD у эмодзи."""
+
+    async def __call__(self, message: Message) -> bool:
+        raw = message.text
+        if raw is None:
+            return False
+        return normalize("NFC", raw.strip()) == normalize("NFC", MENU_REPLY_TEXT)
 
 
 def _league_title(code: str) -> str:
@@ -318,10 +330,22 @@ async def _begin_play_next(message: Message, state: FSMContext) -> None:
     )
 
 
-@match_router.message(F.text == MENU_REPLY_TEXT)
+@match_router.message(Command("menu"))
+async def cmd_menu_match(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await deliver_main_menu_refresh(message)
+
+
+@match_router.message(Command("help"))
+async def cmd_help_match(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await deliver_help_screen(message)
+
+
+@match_router.message(MenuReplyFilter())
 async def on_reply_menu_button(message: Message, state: FSMContext) -> None:
     await state.clear()
-    await send_main_menu_screen(message, intro_text=None, inline_title="Главное меню:")
+    await deliver_main_menu_refresh(message)
 
 
 @match_router.message(Command("cancel"))

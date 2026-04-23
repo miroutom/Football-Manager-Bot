@@ -1,0 +1,43 @@
+"""Тексты главного меню и /help — общие для handlers и match_router."""
+from __future__ import annotations
+
+from aiogram.types import Message
+
+from bot.keyboards import send_main_menu_screen
+
+HELP_HTML = (
+    "Кнопки меню или команды:\n"
+    "<b>Снизу экрана</b> — «📋 Меню» открывает то же главное меню, что и /menu.\n"
+    "<b>Запись матча:</b> «Записать следующий» / «Ручной матч» / «Из пропусков»; "
+    "команды /play_next, /match, /play_skipped (отложенные из skipped_matches.json).\n"
+    "/cancel — отменить ввод счёта, статистики или трансфера.\n"
+    "После успешной записи счёта бот может предложить статистику игроков "
+    "(если в main.py включён INPUT_PLAYER_STATS).\n"
+    "\n"
+    "/table /goals /assists /ga — таблица и топы (картинка)\n"
+    "/bracket — сетка ЛЧ (HTML + текст)\n"
+    "/status — полный статус как в консоли «i» (картинка)\n"
+    "/next — информация о следующем матче по календарю\n"
+    "/queue — очередь ближайших матчей\n"
+    "/skipped — список отложенных (только просмотр)\n"
+    "/journal — хвост журнала сыгранных\n"
+    "/stats_match — статистика по матчу без записи через матч-день (как «a»)\n"
+    "/transfer — записать трансфер (игрок, клуб, позиция, новый клуб)\n"
+    "/menu — главное меню\n"
+    "\n"
+    "В меню: расписание (как «v»), топ-100, топы лига+ЛЧ, голеадоры по клубам.\n"
+    "ЛЧ нокаут: при ничьей по сумме двух матчей бот спросит серию пенальти (два числа).\n"
+)
+
+
+async def deliver_help_screen(message: Message) -> None:
+    await send_main_menu_screen(
+        message,
+        intro_text=HELP_HTML,
+        inline_title="Выберите действие:",
+        intro_parse_mode="HTML",
+    )
+
+
+async def deliver_main_menu_refresh(message: Message) -> None:
+    await send_main_menu_screen(message, intro_text=None, inline_title="Главное меню:")

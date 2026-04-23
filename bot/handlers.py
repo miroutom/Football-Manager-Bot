@@ -15,6 +15,7 @@ from aiogram.types import (
     CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    InputMediaPhoto,
     Message,
     TelegramObject,
 )
@@ -61,10 +62,23 @@ async def answer_report_photos(message: Message, body: str, caption: str) -> Non
     blobs = await asyncio.to_thread(
         partial(render_monospace_png_bytes, body, title=caption),
     )
-    for i, blob in enumerate(blobs):
+    if not blobs:
+        return
+    if len(blobs) == 1:
         await message.answer_photo(
-            BufferedInputFile(blob, filename=f"report_{i}.png"),
+            BufferedInputFile(blobs[0], filename="report_0.png"),
         )
+        return
+    chunk_size = 10
+    idx = 0
+    while idx < len(blobs):
+        chunk = blobs[idx : idx + chunk_size]
+        media: list[InputMediaPhoto] = []
+        for j, blob in enumerate(chunk):
+            bf = BufferedInputFile(blob, filename=f"report_{idx + j}.png")
+            media.append(InputMediaPhoto(media=bf))
+        await message.answer_media_group(media)
+        idx += chunk_size
 
 
 async def send_cl_bracket(message: Message) -> None:
@@ -209,43 +223,6 @@ async def cmd_start(message: Message) -> None:
         ),
         inline_title="Выберите действие:",
     )
-
-
-@router.message(Command("help"))
-async def cmd_help(message: Message) -> None:
-    await send_main_menu_screen(
-        message,
-        intro_text=(
-            "Кнопки меню или команды:\n"
-            "<b>Снизу экрана</b> — «📋 Меню» открывает то же главное меню, что и /menu.\n"
-            "<b>Запись матча:</b> «Записать следующий» / «Ручной матч» / «Из пропусков»; "
-            "команды /play_next, /match, /play_skipped (отложенные из skipped_matches.json).\n"
-            "/cancel — отменить ввод счёта, статистики или трансфера.\n"
-            "После успешной записи счёта бот может предложить статистику игроков "
-            "(если в main.py включён INPUT_PLAYER_STATS).\n"
-            "\n"
-            "/table /goals /assists /ga — таблица и топы (картинка)\n"
-            "/bracket — сетка ЛЧ (HTML + текст)\n"
-            "/status — полный статус как в консоли «i» (картинка)\n"
-            "/next — информация о следующем матче по календарю\n"
-            "/queue — очередь ближайших матчей\n"
-            "/skipped — список отложенных (только просмотр)\n"
-            "/journal — хвост журнала сыгранных\n"
-            "/stats_match — статистика по матчу без записи через матч-день (как «a»)\n"
-            "/transfer — записать трансфер (игрок, клуб, позиция, новый клуб)\n"
-            "/menu — главное меню\n"
-            "\n"
-            "В меню: расписание (как «v»), топ-100, топы лига+ЛЧ, голеадоры по клубам.\n"
-            "ЛЧ нокаут: при ничьей по сумме двух матчей бот спросит серию пенальти (два числа).\n"
-        ),
-        inline_title="Выберите действие:",
-        intro_parse_mode="HTML",
-    )
-
-
-@router.message(Command("menu"))
-async def cmd_menu(message: Message) -> None:
-    await send_main_menu_screen(message, intro_text=None, inline_title="Главное меню:")
 
 
 @router.callback_query(F.data == "menu:table")
