@@ -218,52 +218,36 @@ def _esc(s: str) -> str:
     return html_module.escape(s, quote=True)
 
 
-def _fmt_tie_card(
+def tie_score_pair_strings(
     home_first: str,
     away_first: str,
     scores: dict[tuple[str, str], tuple[int, int]],
     pen_by_tie: dict[tuple[str, str], dict[str, int]],
-) -> str:
+) -> tuple[tuple[str, str], tuple[str, str]]:
     """
-    Две строки: у каждой команды только её домашний матч в стыке (первый ходит home_first).
-    При ничьей по сумме — суффикс (N) из penalties_by_team, если есть в журнале.
+    Две строки карточки как в журнале: ((команда, счёт), …).
+    Счёт — «—:—», «2:1» или «2:1 (4)» при серии пенальти после ничьей по сумме.
+    Используется HTML-сеткой и PNG (один источник правды).
     """
-    rows: list[str] = []
-
-    def row(name: str, rec: tuple[int, int] | None) -> None:
-        if not rec:
-            score = '<span class="dash">—</span>:<span class="dash">—</span>'
-        else:
-            score = f"{rec[0]}:{rec[1]}"
-        rows.append(
-            f'<div class="tie-line"><span class="tname">{_esc(name)}</span>'
-            f'<span class="sc">{score}</span></div>'
-        )
-
-    def row_with_pen(name: str, rec: tuple[int, int] | None, pen_val: int | None) -> None:
-        if not rec:
-            score = '<span class="dash">—</span>:<span class="dash">—</span>'
-        else:
-            score = f"{rec[0]}:{rec[1]}"
-        if pen_val is not None:
-            score += ' <span class="pen">(' + _esc(str(pen_val)) + ")</span>"
-        rows.append(
-            f'<div class="tie-line"><span class="tname">{_esc(name)}</span>'
-            f'<span class="sc">{score}</span></div>'
-        )
-
     ph = _norm(home_first)
     pa = _norm(away_first)
     leg1 = scores.get((ph, pa))
-    leg2 = scores.get((pa, ph))  # away_first дома
+    leg2 = scores.get((pa, ph))
+
+    def plain(rec: tuple[int, int] | None, pen_val: int | None) -> str:
+        if not rec:
+            return "—:—"
+        s = f"{rec[0]}:{rec[1]}"
+        if pen_val is not None:
+            s += f" ({pen_val})"
+        return s
 
     if ph.startswith("Победитель") or pa.startswith("Победитель"):
-        row_with_pen(home_first, leg1, None)
-        row_with_pen(away_first, leg2, None)
-        return "".join(rows)
+        return (
+            (home_first, plain(leg1, None)),
+            (away_first, plain(leg2, None)),
+        )
 
-    # Показываем каждый сыгранный «дом» отдельно (первый матч стыка виден до ответного).
-    # Групповые пары отсечены при загрузке (cl_phase league). Пенальти — только при полном стыке.
     agg_tie = (
         leg1 is not None
         and leg2 is not None
@@ -274,12 +258,44 @@ def _fmt_tie_card(
     p_away = pens_map.get(pa) if agg_tie else None
 
     if agg_tie and p_home is not None and p_away is not None:
-        row_with_pen(home_first, leg1, p_home)
-        row_with_pen(away_first, leg2, p_away)
-    else:
-        row(home_first, leg1)
-        row(away_first, leg2)
+        return (
+            (home_first, plain(leg1, p_home)),
+            (away_first, plain(leg2, p_away)),
+        )
+    return (
+        (home_first, plain(leg1, None)),
+        (away_first, plain(leg2, None)),
+    )
 
+
+def _score_string_to_html_span(score_plain: str) -> str:
+    """Счёт как в tie_score_pair_strings → HTML со span dash/pen."""
+    if score_plain == "—:—":
+        return '<span class="dash">—</span>:<span class="dash">—</span>'
+    if " (" in score_plain and score_plain.endswith(")"):
+        left, pen = score_plain.rsplit(" (", 1)
+        return f"{left} <span class=\"pen\">({pen[:-1]})</span>"
+    return score_plain
+
+
+def _fmt_tie_card(
+    home_first: str,
+    away_first: str,
+    scores: dict[tuple[str, str], tuple[int, int]],
+    pen_by_tie: dict[tuple[str, str], dict[str, int]],
+) -> str:
+    """
+    Две строки: у каждой команды только её домашний матч в стыке (первый ходит home_first).
+    При ничьей по сумме — суффикс (N) из penalties_by_team, если есть в журнале.
+    """
+    r1, r2 = tie_score_pair_strings(home_first, away_first, scores, pen_by_tie)
+    rows: list[str] = []
+    for name, score_plain in (r1, r2):
+        score = _score_string_to_html_span(score_plain)
+        rows.append(
+            f'<div class="tie-line"><span class="tname">{_esc(name)}</span>'
+            f'<span class="sc">{score}</span></div>'
+        )
     return "".join(rows)
 
 

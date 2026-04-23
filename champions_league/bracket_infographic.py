@@ -1,31 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-PNG-сетка плей-офф ЛЧ в виде инфографики (колонки, блоки команд, связи между раундами).
-Стиль ориентирован на типичную «спортивную» сетку (светлый фон, синие акценты).
-Логика дерева — bracket_cl_playoff_24 из knockout_bracket.py.
+PNG-сетка плей-офф ЛЧ: дерево как раньше (светлый стиль), данные только из журнала.
 
-Живые счёта: файл ``cl_bracket_state.json`` рядом с этим модулем (или путь в CL_BRACKET_STATE_JSON).
+Счета и победители те же, что у ``bracket_html.py`` / HTML-сетки: ``match_results.json``
+(league=cl, без групповой фазы). В каждой карточке только две строки — команда и её счёт
+(домашний матч этой команды в стыке).
 """
 from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
-from typing import Sequence
-
-from champions_league.bracket_live_state import (
-    R1TieLive,
-    R2TieLive,
-    load_live_state,
-    winner_side_r1,
-    winner_side_r2,
-)
 
 try:
     from PIL import Image, ImageDraw, ImageFont
 except ImportError as e:
     raise ImportError("Нужен Pillow: pip install pillow") from e
 
-from champions_league.knockout_bracket import bracket_cl_playoff_24
+from champions_league.bracket_html import (
+    _load_cl_scores_and_penalties,
+    build_cl_bracket_state,
+    tie_score_pair_strings,
+)
 
 
 _SANS_PATHS: tuple[Path, ...] = (
@@ -44,7 +39,6 @@ def _font(path: Path | None, size: int) -> ImageFont.FreeTypeFont:
             return ImageFont.truetype(str(path), size=size)
         except OSError:
             pass
-    # первый доступный sans из списка
     for p in _SANS_PATHS:
         if p.exists():
             try:
@@ -91,67 +85,6 @@ def _truncate(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont
     return text[: low if low > 0 else 1].rstrip() + ell
 
 
-def _format_r1_footer(st: R1TieLive | None) -> str:
-    if not st:
-        return ""
-    parts: list[str] = []
-    if st.note:
-        parts.append(st.note)
-    if st.first_leg_only:
-        if st.leg1:
-            parts.append(f"1-й {st.leg1}")
-        else:
-            parts.append("1-й матч сыгран")
-    else:
-        legs = " / ".join(x for x in (st.leg1, st.leg2) if x)
-        if st.agg and legs:
-            parts.append(f"{legs} → Σ {st.agg}")
-        elif st.agg:
-            parts.append(f"Σ {st.agg}")
-        elif legs:
-            parts.append(legs)
-    return " · ".join(parts)
-
-
-def _format_r2_footer(st: R2TieLive | None) -> str:
-    if not st:
-        return ""
-    parts: list[str] = []
-    if st.note:
-        parts.append(st.note)
-    legs = " / ".join(x for x in (st.leg1, st.leg2) if x)
-    if st.agg and legs:
-        parts.append(f"{legs} → Σ {st.agg}")
-    elif st.agg:
-        parts.append(f"Σ {st.agg}")
-    elif legs:
-        parts.append(legs)
-    return " · ".join(parts)
-
-
-def _r1_winner_bold(home: str, away: str, st: R1TieLive | None) -> tuple[bool, bool]:
-    if not st or not st.winner:
-        return False, False
-    side = winner_side_r1(st.winner, home, away)
-    if side == "home":
-        return True, False
-    if side == "away":
-        return False, True
-    return False, False
-
-
-def _r1_winner_label(tie: dict, st: R1TieLive | None) -> str | None:
-    h, a = tie["home_first_leg"], tie["away_first_leg"]
-    if not st or not st.winner:
-        return None
-    side = winner_side_r1(st.winner, h, a)
-    if side == "home":
-        return h
-    if side == "away":
-        return a
-    return None
-
-
 def _rounded_rect(
     draw: ImageDraw.ImageDraw,
     xy: tuple[int, int, int, int],
@@ -165,40 +98,69 @@ def _rounded_rect(
         draw.rectangle(xy, fill=fill, outline=outline)
 
 
+def _draw_tie_two_lines(
+    draw: ImageDraw.ImageDraw,
+    inner_left: int,
+    inner_right: int,
+    top_y: int,
+    row_a: tuple[str, str],
+    row_b: tuple[str, str],
+    *,
+    line_gap: int,
+    name_font: ImageFont.FreeTypeFont,
+    score_font: ImageFont.FreeTypeFont,
+    fill_name_row1: tuple[int, int, int],
+    fill_name_row2: tuple[int, int, int],
+    fill_score: tuple[int, int, int],
+    pen_color: tuple[int, int, int],
+) -> None:
+    def one_line(y: int, row: tuple[str, str], fill_name: tuple[int, int, int]) -> None:
+        name, score_full = row
+        max_name_w = inner_right - inner_left - 52
+        tn = _truncate(draw, name, name_font, max_name_w)
+        draw.text((inner_left, y), tn, font=name_font, fill=fill_name)
+
+        score_main = score_full
+        pen_suf = ""
+        if " (" in score_full and score_full.endswith(")"):
+            score_main, pen_suf = score_full.rsplit(" (", 1)
+            pen_suf = "(" + pen_suf
+        tw_main, _ = _text_size(draw, score_main, score_font)
+        x_score = inner_right - tw_main
+        if pen_suf:
+            tw_pen, _ = _text_size(draw, " " + pen_suf, score_font)
+            x_score -= tw_pen
+        draw.text((x_score, y), score_main, font=score_font, fill=fill_score)
+        if pen_suf:
+            xp = inner_right - _text_size(draw, pen_suf, score_font)[0]
+            draw.text((xp, y), pen_suf, font=score_font, fill=pen_color)
+
+    one_line(top_y, row_a, fill_name_row1)
+    one_line(top_y + line_gap, row_b, fill_name_row2)
+
+
+def _fills_for_match(m: dict, *, muted: tuple[int, int, int], main: tuple[int, int, int]) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+    h = str(m["home"]).startswith("победитель")
+    a = str(m["away"]).startswith("победитель")
+    return (muted if h else main, muted if a else main)
+
+
 def render_cl_bracket_infographic_png_bytes(
-    r1_pairs: Sequence[tuple[str, str]] | None = None,
-    r2_seeds: Sequence[str] | None = None,
     *,
     season_label: str = "2025/26",
     title: str = "Лига чемпионов",
     subtitle: str = "Плей-офф",
-    live_state_path: Path | str | None = None,
 ) -> bytes:
     """
-    Одна PNG: сетка 24 команд (R1 стыки → R2 посевы → R3 → ПФ → финал).
-
-    Результаты и счёта (опционально): JSON по пути ``live_state_path`` или
-    ``CL_BRACKET_STATE_JSON``, иначе ``champions_league/cl_bracket_state.json`` при наличии.
+    Одна PNG: та же логика счётов, что у HTML-сетки (журнал ``match_results.json``).
+    Только команды и счёт в карточках.
     """
-    tree = bracket_cl_playoff_24(r1_pairs=r1_pairs, r2_seeds=r2_seeds)
+    scores, pen_by_tie = _load_cl_scores_and_penalties()
+    st = build_cl_bracket_state(scores, pen_by_tie)
 
     title_font, header_font, body_font = _pick_fonts()
-    small_font = body_font
-    tiny_font = body_font
-    try:
-        reg_path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
-        if reg_path.exists():
-            tiny_font = ImageFont.truetype(str(reg_path), 11)
-    except OSError:
-        pass
+    score_font = header_font
 
-    loaded = load_live_state(live_state_path)
-    r1_state: list[R1TieLive | None] = [None] * 8
-    r2_state: list[R2TieLive | None] = [None] * 8
-    if loaded:
-        r1_state, r2_state = loaded
-
-    # палитра (близко к спортивным инфографикам)
     BG = (237, 242, 247)
     HEADER_BLUE = (37, 99, 235)
     HEADER_BLUE_DARK = (29, 78, 216)
@@ -209,16 +171,19 @@ def render_cl_bracket_infographic_png_bytes(
     EDGE_TEAM = (226, 232, 240)
     TEXT_MAIN = (15, 23, 42)
     TEXT_MUTED = (71, 85, 105)
+    PEN_HTML = (20, 58, 92)
     WHITE = (255, 255, 255)
+
+    ROW_LINE = 22
+    CARD_PAD_V = 6
+    CARD_PAD_H = 8
+    CARD_BODY = CARD_PAD_V * 2 + ROW_LINE * 2
+    SECTION_GAP = 10
+    section_h = CARD_BODY + SECTION_GAP
 
     W = 1340
     HDR_H = 82
     PAD_TOP = 18
-    ROW_H = 24
-    FOOTER_H = 14
-    SECTION_GAP = 10
-    section_h = 2 * ROW_H + FOOTER_H + SECTION_GAP
-
     n_r2 = 8
     content_h = int(n_r2 * section_h + 48)
     H = HDR_H + content_h + 36
@@ -226,16 +191,13 @@ def render_cl_bracket_infographic_png_bytes(
     im = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(im)
 
-    # шапка
     draw.rectangle((0, 0, W, HDR_H), fill=HEADER_BLUE)
     draw.rectangle((0, HDR_H - 4, W, HDR_H), fill=HEADER_BLUE_DARK)
 
-    t_main = title
-    t_sub = subtitle
-    draw.text((28, 14), t_main, font=title_font, fill=WHITE)
-    tw, _ = _text_size(draw, t_main, title_font)
+    draw.text((28, 14), title, font=title_font, fill=WHITE)
+    tw, _ = _text_size(draw, title, title_font)
     draw.text((28 + tw + 12, 18), season_label, font=header_font, fill=(191, 219, 254))
-    draw.text((28, 48), t_sub, font=header_font, fill=(224, 231, 255))
+    draw.text((28, 48), subtitle, font=header_font, fill=(224, 231, 255))
 
     col_titles = (
         "Стыковые матчи",
@@ -248,31 +210,22 @@ def render_cl_bracket_infographic_png_bytes(
     col_w = (248, 268, 248, 228, 188)
 
     y0 = HDR_H + PAD_TOP
-    # заголовки колонок
-    cx = x_cols
     for i, lab in enumerate(col_titles):
-        draw.text((cx[i], y0), lab, font=header_font, fill=HEADER_BLUE)
-        draw.line((cx[i], y0 + 22, cx[i] + col_w[i], y0 + 22), fill=LINE_BLUE, width=2)
+        draw.text((x_cols[i], y0), lab, font=header_font, fill=HEADER_BLUE)
+        draw.line((x_cols[i], y0 + 22, x_cols[i] + col_w[i], y0 + 22), fill=LINE_BLUE, width=2)
 
     y_content = y0 + 34
-    pad_x_text = 8
 
-    # центры по вертикали для каждого стыка R1 (= строка R2 i)
     y_centers_r1_r2: list[float] = []
     for i in range(8):
         base = y_content + i * section_h
         y_centers_r1_r2.append(base + section_h / 2)
 
-    x1 = x_cols[0]
-    w1 = col_w[0]
-    x2 = x_cols[1]
-    w2 = col_w[1]
-    x3 = x_cols[2]
-    w3 = col_w[2]
-    x4 = x_cols[3]
-    w4 = col_w[3]
-    x5 = x_cols[4]
-    w5 = col_w[4]
+    x1, w1 = x_cols[0], col_w[0]
+    x2, w2 = x_cols[1], col_w[1]
+    x3, w3 = x_cols[2], col_w[2]
+    x4, w4 = x_cols[3], col_w[3]
+    x5, w5 = x_cols[4], col_w[4]
 
     x1_right = x1 + w1
     x2_left = x2
@@ -292,95 +245,102 @@ def render_cl_bracket_infographic_png_bytes(
     sf_centers = [(r3_centers[0] + r3_centers[1]) / 2, (r3_centers[2] + r3_centers[3]) / 2]
     fcy = (sf_centers[0] + sf_centers[1]) / 2
 
-    labels_r3 = ("Пара 1", "Пара 2", "Пара 3", "Пара 4")
-    bh = 52
+    bh_q = CARD_BODY + 4
 
     def yi(y: float) -> int:
         return int(round(y))
 
-    # --- Колонка 1: пары R1 ---
-    for i, tie in enumerate(tree["round_1"]):
+    # --- R1 ---
+    for i, m in enumerate(st["round_1"]):
         base = y_content + i * section_h
-        h_team = tie["home_first_leg"]
-        a_team = tie["away_first_leg"]
-        st = r1_state[i]
-        box = (x1, base, x1 + w1, base + section_h - 2)
-        _rounded_rect(draw, box, TEAM_BAND, EDGE_TEAM, 5)
+        _rounded_rect(draw, (x1, base, x1 + w1, base + CARD_BODY), TEAM_BAND, EDGE_TEAM, 5)
+        rows = tie_score_pair_strings(m["home"], m["away"], scores, pen_by_tie)
+        inner_l = x1 + CARD_PAD_H
+        inner_r = x1 + w1 - CARD_PAD_H
+        _draw_tie_two_lines(
+            draw,
+            inner_l,
+            inner_r,
+            base + CARD_PAD_V,
+            rows[0],
+            rows[1],
+            line_gap=ROW_LINE,
+            name_font=body_font,
+            score_font=score_font,
+            fill_name_row1=TEXT_MAIN,
+            fill_name_row2=TEXT_MAIN,
+            fill_score=TEXT_MAIN,
+            pen_color=PEN_HTML,
+        )
 
-        wh, wa = _r1_winner_bold(h_team, a_team, st)
-        f_home = header_font if wh else body_font
-        f_away = header_font if wa else body_font
-        hn = _truncate(draw, h_team, f_home, w1 - 2 * pad_x_text)
-        an = _truncate(draw, a_team, f_away, w1 - 2 * pad_x_text)
-        draw.text((x1 + pad_x_text, base + 4), hn, font=f_home, fill=TEXT_MAIN)
-        draw.text((x1 + pad_x_text, base + 4 + ROW_H), an, font=f_away, fill=TEXT_MAIN)
-        foot = _format_r1_footer(st)
-        if foot:
-            ft = _truncate(draw, foot, tiny_font, w1 - 2 * pad_x_text)
-            draw.text((x1 + pad_x_text, base + 4 + 2 * ROW_H + 1), ft, font=tiny_font, fill=TEXT_MUTED)
-
-    # Линии к 1/8 (под следующими блоками)
     for i in range(8):
         cy = yi(y_centers_r1_r2[i])
         draw.line((x1_right, cy, x2_left, cy), fill=LINE_BLUE, width=2)
 
-    # --- Колонка 2: посев vs победитель R1 ---
-    for i, t in enumerate(tree["round_2"]):
-        seed = str(t["seed"])
+    # --- R2 ---
+    for i, m in enumerate(st["round_2"]):
         cy = y_centers_r1_r2[i]
-        box_h = section_h - 4
+        box_h = CARD_BODY + SECTION_GAP - 4
         top = cy - box_h / 2
-        box = (x2, top, x2 + w2, top + box_h)
-        _rounded_rect(draw, box, CARD_FILL, CARD_EDGE, 6)
-
-        st1 = r1_state[i]
-        tie1 = tree["round_1"][i]
-        opp_name = _r1_winner_label(tie1, st1)
-        sub = opp_name if opp_name else f"победитель стыка {i + 1}"
-        sub_muted = opp_name is None
-
-        st2 = r2_state[i]
-        ws: str | None = None
-        if st2 and st2.winner:
-            ws = winner_side_r2(st2.winner, seed, opp_name)
-        if ws == "opp":
-            seed_font, opp_font = body_font, header_font
-        elif ws == "seed":
-            seed_font, opp_font = header_font, body_font
-        else:
-            seed_font, opp_font = header_font, body_font
-
-        line1 = _truncate(draw, seed, seed_font, w2 - 2 * pad_x_text)
-        draw.text((x2 + pad_x_text, top + 4), line1, font=seed_font, fill=TEXT_MAIN)
-        draw.text((x2 + pad_x_text, top + 22), "vs", font=small_font, fill=TEXT_MUTED)
-        line_sub = _truncate(draw, sub, opp_font, w2 - 2 * pad_x_text)
-        fill_opp = TEXT_MUTED if sub_muted else TEXT_MAIN
-        draw.text((x2 + pad_x_text, top + 38), line_sub, font=opp_font, fill=fill_opp)
-        foot2 = _format_r2_footer(st2)
-        if foot2:
-            ft2 = _truncate(draw, foot2, tiny_font, w2 - 2 * pad_x_text)
-            draw.text((x2 + pad_x_text, top + 54), ft2, font=tiny_font, fill=TEXT_MUTED)
+        _rounded_rect(draw, (x2, top, x2 + w2, top + CARD_BODY), CARD_FILL, CARD_EDGE, 6)
+        rows = tie_score_pair_strings(m["home"], m["away"], scores, pen_by_tie)
+        inner_l = x2 + CARD_PAD_H
+        inner_r = x2 + w2 - CARD_PAD_H
+        f1 = TEXT_MAIN
+        f2 = TEXT_MUTED if str(m["away"]).startswith("победитель") else TEXT_MAIN
+        _draw_tie_two_lines(
+            draw,
+            inner_l,
+            inner_r,
+            top + CARD_PAD_V,
+            rows[0],
+            rows[1],
+            line_gap=ROW_LINE,
+            name_font=body_font,
+            score_font=score_font,
+            fill_name_row1=f1,
+            fill_name_row2=f2,
+            fill_score=TEXT_MAIN,
+            pen_color=PEN_HTML,
+        )
 
     # Линии к четвертьфиналам
     for j in range(4):
         yl = r3_centers[j]
         i0, i1 = 2 * j, 2 * j + 1
-        y0, y1 = y_centers_r1_r2[i0], y_centers_r1_r2[i1]
+        yy0, yy1 = y_centers_r1_r2[i0], y_centers_r1_r2[i1]
         mx = (x2_right + x3_left) // 2
-        draw.line((x2_right, yi(y0), mx, yi(y0)), fill=LINE_BLUE, width=2)
-        draw.line((x2_right, yi(y1), mx, yi(y1)), fill=LINE_BLUE, width=2)
-        draw.line((mx, yi(y0), mx, yi(y1)), fill=LINE_BLUE, width=2)
-        ym = (y0 + y1) / 2
+        draw.line((x2_right, yi(yy0), mx, yi(yy0)), fill=LINE_BLUE, width=2)
+        draw.line((x2_right, yi(yy1), mx, yi(yy1)), fill=LINE_BLUE, width=2)
+        draw.line((mx, yi(yy0), mx, yi(yy1)), fill=LINE_BLUE, width=2)
+        ym = (yy0 + yy1) / 2
         draw.line((mx, yi(ym), mx, yi(yl)), fill=LINE_BLUE, width=2)
         draw.line((mx, yi(yl), x3_left, yi(yl)), fill=LINE_BLUE, width=2)
 
-    # Четвертьфиналы
+    # --- Четвертьфиналы ---
     for j, cy in enumerate(r3_centers):
-        top = cy - bh / 2
-        box = (x3, top, x3 + w3, top + bh)
-        _rounded_rect(draw, box, CARD_FILL, CARD_EDGE, 8)
-        draw.text((x3 + pad_x_text, top + 8), labels_r3[j], font=header_font, fill=TEXT_MAIN)
-        draw.text((x3 + pad_x_text, top + 30), "по итогам 1/8", font=small_font, fill=TEXT_MUTED)
+        m = st["round_3"][j]
+        top = cy - bh_q / 2
+        _rounded_rect(draw, (x3, top, x3 + w3, top + CARD_BODY), CARD_FILL, CARD_EDGE, 8)
+        rows = tie_score_pair_strings(m["home"], m["away"], scores, pen_by_tie)
+        inner_l = x3 + CARD_PAD_H
+        inner_r = x3 + w3 - CARD_PAD_H
+        f1, f2 = _fills_for_match(m, muted=TEXT_MUTED, main=TEXT_MAIN)
+        _draw_tie_two_lines(
+            draw,
+            inner_l,
+            inner_r,
+            top + CARD_PAD_V,
+            rows[0],
+            rows[1],
+            line_gap=ROW_LINE,
+            name_font=body_font,
+            score_font=score_font,
+            fill_name_row1=f1,
+            fill_name_row2=f2,
+            fill_score=TEXT_MAIN,
+            pen_color=PEN_HTML,
+        )
 
     # Линии к полуфиналам
     for j in range(2):
@@ -395,12 +355,30 @@ def render_cl_bracket_infographic_png_bytes(
         draw.line((mx, yi(ym), mx, yi(cy)), fill=LINE_BLUE, width=2)
         draw.line((mx, yi(cy), x4_left, yi(cy)), fill=LINE_BLUE, width=2)
 
-    # Полуфиналы
+    # --- Полуфиналы ---
     for j, cy in enumerate(sf_centers):
-        top = cy - bh / 2
-        box = (x4, top, x4 + w4, top + bh)
-        _rounded_rect(draw, box, CARD_FILL, CARD_EDGE, 8)
-        draw.text((x4 + pad_x_text, top + 10), f"Полуфинал {j + 1}", font=header_font, fill=TEXT_MAIN)
+        m = st["semi_finals"][j]
+        top = cy - bh_q / 2
+        _rounded_rect(draw, (x4, top, x4 + w4, top + CARD_BODY), CARD_FILL, CARD_EDGE, 8)
+        rows = tie_score_pair_strings(m["home"], m["away"], scores, pen_by_tie)
+        inner_l = x4 + CARD_PAD_H
+        inner_r = x4 + w4 - CARD_PAD_H
+        f1, f2 = _fills_for_match(m, muted=TEXT_MUTED, main=TEXT_MAIN)
+        _draw_tie_two_lines(
+            draw,
+            inner_l,
+            inner_r,
+            top + CARD_PAD_V,
+            rows[0],
+            rows[1],
+            line_gap=ROW_LINE,
+            name_font=body_font,
+            score_font=score_font,
+            fill_name_row1=f1,
+            fill_name_row2=f2,
+            fill_score=TEXT_MAIN,
+            pen_color=PEN_HTML,
+        )
 
     # Линии к финалу
     mx_f = (x4_right + x5_left) // 2
@@ -412,12 +390,27 @@ def render_cl_bracket_infographic_png_bytes(
     draw.line((mx_f, yi(ym_sf), mx_f, yi(fcy)), fill=LINE_BLUE, width=2)
     draw.line((mx_f, yi(fcy), x5_left, yi(fcy)), fill=LINE_BLUE, width=2)
 
-    # Финал
-    top = fcy - 36
-    box = (x5, top, x5 + w5, top + 72)
-    _rounded_rect(draw, box, CARD_FILL, CARD_EDGE, 10)
-    draw.text((x5 + pad_x_text, top + 16), "Финал", font=header_font, fill=TEXT_MAIN)
-    draw.text((x5 + pad_x_text, top + 42), "один матч", font=small_font, fill=TEXT_MUTED)
+    # --- Финал (одна игра — одна строка счёта по центру) ---
+    fin = st["final"]
+    fh, fa = fin["home"], fin["away"]
+    sc = fin["score"]
+    sh, sa = sc[0], sc[1]
+    top = fcy - 40
+    box_h = 80
+    _rounded_rect(draw, (x5, top, x5 + w5, top + box_h), CARD_FILL, CARD_EDGE, 10)
+    cx = x5 + w5 // 2
+    nm_muted_h = fh.startswith("победитель")
+    nm_muted_a = fa.startswith("победитель")
+    t1 = _truncate(draw, fh, body_font, w5 - 16)
+    t2 = _truncate(draw, fa, body_font, w5 - 16)
+    y1 = top + 8
+    tw1, th1 = _text_size(draw, t1, body_font)
+    draw.text((cx - tw1 // 2, y1), t1, font=body_font, fill=TEXT_MUTED if nm_muted_h else TEXT_MAIN)
+    mid_txt = "— : —" if sh is None or sa is None else f"{sh} : {sa}"
+    twm, thm = _text_size(draw, mid_txt, score_font)
+    draw.text((cx - twm // 2, y1 + th1 + 4), mid_txt, font=score_font, fill=PEN_HTML)
+    tw2, _ = _text_size(draw, t2, body_font)
+    draw.text((cx - tw2 // 2, y1 + th1 + thm + 10), t2, font=body_font, fill=TEXT_MUTED if nm_muted_a else TEXT_MAIN)
 
     buf = BytesIO()
     im.save(buf, format="PNG", optimize=True)
