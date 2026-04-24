@@ -135,7 +135,14 @@ def commons_crest_filename_for_team(team_db: str) -> str | None:
     if not t:
         return None
     m = _load_commons_map()
-    return m.get(t) or m.get(t.replace(" ", "_"))
+    v = m.get(t) or m.get(t.replace(" ", "_"))
+    if v:
+        return v
+    tcf = t.casefold()
+    for k, val in m.items():
+        if str(k).strip().casefold() == tcf:
+            return val
+    return None
 
 
 def load_commons_crest_rgba(commons_filename: str) -> Image.Image | None:
