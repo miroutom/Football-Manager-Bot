@@ -5,9 +5,9 @@
 входит в ``allowed_positions`` этого слота, выбирается с наивысшим рейтингом (как ЛЗ:
 Дэвис vs Геррейро). Если «своих» нет — подстановка по взаимозаменяемости, как раньше.
 
-Стартовые 11: слева мини-флаг (по полю ``nation`` в БД, иначе нейтральная плашка),
-футболка ``KitSpec``, справа рейтинг, снизу фамилия и слот. Справа панель: эмблема
-клуба (заглушка по названию) и список запасных в стиле «боковой сайдбар».
+Стартовые 11: слева мини-флаг (по ``nation`` в БД), футболка ``KitSpec``, справа рейтинг,
+снизу фамилия и слот. Справа панель: эмблема из ``assets/crests/<команда>.png`` при наличии,
+иначе круг-заглушка; запасные и резерв строками «—  Фамилия» (рейтинг в сайдбаре временно прочерк).
 """
 from __future__ import annotations
 
@@ -62,6 +62,12 @@ _SIDEBAR_BG_STRIPE = (22, 48, 130)
 _SIDEBAR_EDGE = (96, 165, 250)
 _FLAG_W = 22
 _FLAG_H = 15
+# В сайдбаре «Запасные» / «Резерв» пока без цифр — потом заменить на реальный рейтинг.
+_SIDEBAR_SCORE_PLACEHOLDER = "—"
+_SIDEBAR_LIST_TOP = 108
+_SIDEBAR_ROW_H = 28
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_CREST_DIR = _PROJECT_ROOT / "assets" / "crests"
 
 
 def _try_truetype(path: Path, size: int, index: int = 0) -> ImageFont.FreeTypeFont | None:
@@ -417,6 +423,19 @@ def _draw_mini_flag(draw: ImageDraw.ImageDraw, x: int, y: int, nation: str | Non
     )
 
 
+def _sidebar_bench_content_height(subs: list[_Pl], reserves: list[_Pl]) -> int:
+    """Минимальная высота поля/сайдбара, чтобы влезли списки запасных и резерва."""
+    row = _SIDEBAR_ROW_H
+    h = _SIDEBAR_LIST_TOP + 28 + len(subs) * row + 10
+    if reserves:
+        h += 26 + len(reserves) * row
+    return h + 28
+
+
+def _sidebar_bench_line(p: _Pl) -> str:
+    return f"{_SIDEBAR_SCORE_PLACEHOLDER}  {_surname(p.name)}"
+
+
 def _crest_initials(team_db: str) -> str:
     t = (team_db or "").strip()
     if not t:
@@ -427,6 +446,34 @@ def _crest_initials(team_db: str) -> str:
     if len(parts) >= 2 and parts[0] and parts[1]:
         return (parts[0][0] + parts[1][0]).upper()
     return t[:2].upper()
+
+
+def _try_load_crest_rgba(team_db: str) -> Image.Image | None:
+    """PNG/WebP/JPG из ``assets/crests/<имя как в БД>.{png,webp,jpg}``."""
+    if not _CREST_DIR.is_dir():
+        return None
+    base = (team_db or "").strip()
+    if not base:
+        return None
+    for name in (base, base.replace(" ", "_")):
+        for ext in (".png", ".webp", ".jpg", ".jpeg"):
+            path = _CREST_DIR / f"{name}{ext}"
+            if path.is_file():
+                try:
+                    return Image.open(path).convert("RGBA")
+                except OSError:
+                    logger.warning("Состав: не удалось открыть эмблему %s", path)
+                    return None
+    return None
+
+
+def _paste_crest_roundel(im: Image.Image, crest: Image.Image, cx: int, cy: int, r: int) -> None:
+    d = 2 * r
+    scaled = crest.resize((d, d), Image.Resampling.LANCZOS)
+    mask = Image.new("L", (d, d), 0)
+    md = ImageDraw.Draw(mask)
+    md.ellipse([0, 0, d - 1, d - 1], fill=255)
+    im.paste(scaled, (cx - r, cy - r), mask)
 
 
 def _draw_crest_placeholder(
@@ -465,29 +512,35 @@ def _draw_sidebar_text(
     rect: tuple[int, int, int, int],
     title_font: ImageFont.ImageFont,
     row_font: ImageFont.ImageFont,
-    small_font: ImageFont.ImageFont,
 ) -> None:
     x0, y0, x1, y1 = rect
     pad = 14
-    # Верх панели оставляем под эмблему на стыке с полем; список ниже.
-    ty = y0 + 108
+    ty = y0 + _SIDEBAR_LIST_TOP
     draw.text((x0 + pad, ty), "Запасные", fill=_SLATE_BRIGHT, font=title_font, anchor="lt")
     ty += 28
-    row_h = 28
+    row_h = _SIDEBAR_ROW_H
     for i, p in enumerate(subs):
         ry0 = ty + i * row_h
         stripe = _SIDEBAR_BG_STRIPE if i % 2 else (24, 54, 145)
         draw.rectangle([x0 + 8, ry0, x1 - 8, ry0 + row_h - 3], fill=stripe)
-        line = f"{_display_score(p.overall, p.rating)}  {_surname(p.name)}"
-        draw.text((x0 + pad, ry0 + 4), line, fill=_SLATE_BRIGHT, font=row_font, anchor="lt")
+        draw.text((x0 + pad, ry0 + 4), _sidebar_bench_line(p), fill=_SLATE_BRIGHT, font=row_font, anchor="lt")
     ty += len(subs) * row_h + 10
     if reserves:
         draw.text((x0 + pad, ty), "Резерв", fill=(191, 219, 254), font=title_font, anchor="lt")
         ty += 26
-        names = " · ".join(_surname(p.name) for p in reserves[:14])
-        if len(reserves) > 14:
-            names += " …"
-        draw.text((x0 + pad, ty), names, fill=(147, 197, 253), font=small_font, anchor="lt")
+        base_i = len(subs)
+        for j, p in enumerate(reserves):
+            i = base_i + j
+            ry0 = ty + j * row_h
+            stripe = _SIDEBAR_BG_STRIPE if i % 2 else (24, 54, 145)
+            draw.rectangle([x0 + 8, ry0, x1 - 8, ry0 + row_h - 3], fill=stripe)
+            draw.text(
+                (x0 + pad, ry0 + 4),
+                _sidebar_bench_line(p),
+                fill=_SLATE_BRIGHT,
+                font=row_font,
+                anchor="lt",
+            )
 
 
 def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], list[_Pl]]:
@@ -600,7 +653,8 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     subs = bench[:SUBSTITUTES_COUNT]
     reserves = bench[SUBSTITUTES_COUNT:]
 
-    h = _CONTENT_TOP + _PITCH_H + 36
+    pitch_body_h = max(_PITCH_H, _sidebar_bench_content_height(subs, reserves))
+    h = _CONTENT_TOP + pitch_body_h + 36
     im = Image.new("RGB", (w, h), _PAGE_BG)
     draw = ImageDraw.Draw(im)
     for y in range(h):
@@ -613,7 +667,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     px0 = _MARGINS_X
     px1 = w - _MARGINS_X - _SIDEBAR_W
     py0 = _CONTENT_TOP
-    py1 = py0 + _PITCH_H
+    py1 = py0 + pitch_body_h
     pitch_w = px1 - px0
     pitch_hh = py1 - py0
 
@@ -632,7 +686,6 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     _draw_sidebar_background(draw, sidebar_rect)
     sb_title = _pick_font(17, bold=True)
     sb_row = _pick_font(14, bold=False)
-    sb_small = _pick_font(12, bold=False)
 
     kit = kit_for_team(team_db)
     title_font = _pick_font(32, bold=True)
@@ -641,6 +694,15 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     rating_font = _pick_font(22, bold=True)
     pos_font = _pick_font(11, bold=False)
     crest_font = _pick_font(22, bold=True)
+
+    crest_cx = int(px1)
+    crest_cy = int(py0 + 56)
+    crest_r = 38
+    crest_img = _try_load_crest_rgba(team_db)
+    if crest_img is not None:
+        _paste_crest_roundel(im, crest_img, crest_cx, crest_cy, crest_r)
+    else:
+        _draw_crest_placeholder(draw, crest_cx, crest_cy, team_db, kit, crest_font)
 
     shirt_bw = 48
     for slot in slots:
@@ -676,11 +738,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         rect=sidebar_rect,
         title_font=sb_title,
         row_font=sb_row,
-        small_font=sb_small,
     )
-    crest_cx = int(px1)
-    crest_cy = int(py0 + 56)
-    _draw_crest_placeholder(draw, crest_cx, crest_cy, team_db, kit, crest_font)
 
     title = team
     draw.text(
