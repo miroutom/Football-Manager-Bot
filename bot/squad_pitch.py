@@ -176,6 +176,18 @@ def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], lis
         if slot.slot_id == "RCM" and len(cands) > 1:
             pref = [p for p in cands if (p.position or "").strip() in ("ПП", "ПЦП")]
             cands = pref or cands
+        if slot.slot_id == "LM" and len(cands) > 1:
+            pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
+            cands = pref or cands
+        if slot.slot_id == "RM" and len(cands) > 1:
+            pref = [p for p in cands if (p.position or "").strip() in ("ПП", "ПЦП")]
+            cands = pref or cands
+        if slot.slot_id == "CAM" and len(cands) > 1:
+            pref = [p for p in cands if (p.position or "").strip() == "ЦАП"]
+            cands = pref or cands
+        if slot.slot_id == "CCM" and len(cands) > 1:
+            pref = [p for p in cands if (p.position or "").strip() == "ЦП"]
+            cands = pref or cands
         p = take_best(cands)
         if p:
             slot_player[slot.slot_id] = p

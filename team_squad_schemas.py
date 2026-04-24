@@ -5,7 +5,7 @@
 Каждый слот задаётся позициями из БД (как в поле ``players.position``).
 Какой **ключ** схемы применяется к команде, читайте в ``coach_squad_state``:
 тренер · три **числовых id** (1–10, см. ``formation_catalog``), один active,
-привязка тренер→команда. Ключ слотов на поле: ``fid_<id>`` (пока геометрия как 433).
+привязка тренер→команда. Ключ слотов на поле: ``fid_<id>`` (геометрия в ``formation_geometry``).
 
 Статический запасной вариант: ``TEAM_FORMATION_KEY`` / ``DEFAULT`` (``433``),
 если тренер для команды ещё не настроен.
@@ -67,10 +67,9 @@ FORMATION_SLOTS: dict[str, tuple[SquadSlot, ...]] = {
     ),
 }
 
-# Каталог тактик 1–10: пока та же геометрия 433 (см. ``formation_catalog``).
-_BASE_433_SLOTS: tuple[SquadSlot, ...] = FORMATION_SLOTS["433"]
-for _fid in range(1, 11):
-    FORMATION_SLOTS[f"fid_{_fid}"] = _BASE_433_SLOTS
+from formation_geometry import register_fid_slots
+
+register_fid_slots(FORMATION_SLOTS)
 
 
 def get_slots_for_formation_key(formation_key: str) -> tuple[SquadSlot, ...]:

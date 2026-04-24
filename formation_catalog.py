@@ -24,7 +24,7 @@ FORMATION_ID_LABELS: dict[int, str] = {
     10: "5-2-3",
 }
 
-# id → ключ в FORMATION_SLOTS (геометрия поля)
+# id → ключ в FORMATION_SLOTS (геометрия — ``formation_geometry``)
 FORMATION_ID_TO_SLOT_KEY: Final[dict[int, str]] = {
     i: f"fid_{i}" for i in range(1, 11)
 }
