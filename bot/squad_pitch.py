@@ -5,9 +5,9 @@
 входит в ``allowed_positions`` этого слота, выбирается с наивысшим рейтингом (как ЛЗ:
 Дэвис vs Геррейро). Если «своих» нет — подстановка по взаимозаменяемости, как раньше.
 
-Стартовые 11: слева мини-флаг (по ``nation`` в БД), футболка ``KitSpec``, справа рейтинг,
-снизу фамилия и слот. Справа панель: эмблема из ``assets/crests/<команда>.png`` при наличии,
-иначе круг-заглушка; запасные и резерв строками «—  Фамилия» (рейтинг в сайдбаре временно прочерк).
+Стартовые 11: флаг по ``nation`` — PNG с flagcdn.com (кэш ``assets/cache/flags``), иначе упрощённые
+полосы. Эмблема: ``assets/crests/<команда>.png`` или ``wikimedia_commons.json`` (имя файла: Commons
+или en.wikipedia через ``Special:FilePath``). Сайдбар: рейтинг из БД / «—», затем позиция и фамилия.
 """
 from __future__ import annotations
 
@@ -23,6 +23,11 @@ from data.midfielder import Midfielder
 from coach_squad_state import label_for_squad_caption, resolve_formation_key_for_team
 from squad_kit_palette import KitSpec, kit_for_team
 from team_squad_schemas import SquadSlot, get_slots_for_formation_key
+from utils.squad_graphics_assets import (
+    commons_crest_filename_for_team,
+    load_commons_crest_rgba,
+    load_flag_png,
+)
 from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
 
 # Взаимозаменяемость (позиции из БД)
@@ -52,9 +57,9 @@ _SLATE_MUTED = (148, 163, 184)
 _SLATE_BRIGHT = (241, 245, 249)
 _RATING_TEXT = (190, 244, 210)
 
-_CANVAS_W = 1184
+_CANVAS_W = 1208
 _MARGINS_X = 18
-_SIDEBAR_W = 276
+_SIDEBAR_W = 300
 _CONTENT_TOP = 96
 _PITCH_H = 736
 _SIDEBAR_BG = (28, 58, 158)
@@ -62,8 +67,6 @@ _SIDEBAR_BG_STRIPE = (22, 48, 130)
 _SIDEBAR_EDGE = (96, 165, 250)
 _FLAG_W = 22
 _FLAG_H = 15
-# В сайдбаре «Запасные» / «Резерв» пока без цифр — потом заменить на реальный рейтинг.
-_SIDEBAR_SCORE_PLACEHOLDER = "—"
 _SIDEBAR_LIST_TOP = 108
 _SIDEBAR_ROW_H = 28
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -344,7 +347,63 @@ def _nation_to_iso2(raw: str | None) -> str | None:
         "КАЗАХСТАН": "KZ",
         "УЗБЕКИСТАН": "UZ",
     }
-    return ru.get(s)
+    en: dict[str, str] = {
+        "ENGLAND": "GB",
+        "SCOTLAND": "GB",
+        "WALES": "GB",
+        "NORTHERN IRELAND": "GB",
+        "RUSSIA": "RU",
+        "SPAIN": "ES",
+        "ITALY": "IT",
+        "FRANCE": "FR",
+        "GERMANY": "DE",
+        "BRAZIL": "BR",
+        "ARGENTINA": "AR",
+        "PORTUGAL": "PT",
+        "POLAND": "PL",
+        "UKRAINE": "UA",
+        "CROATIA": "HR",
+        "SERBIA": "RS",
+        "BELGIUM": "BE",
+        "NETHERLANDS": "NL",
+        "AUSTRIA": "AT",
+        "SWITZERLAND": "CH",
+        "SWEDEN": "SE",
+        "NORWAY": "NO",
+        "DENMARK": "DK",
+        "FINLAND": "FI",
+        "TURKEY": "TR",
+        "GREECE": "GR",
+        "CZECHIA": "CZ",
+        "CZECH REPUBLIC": "CZ",
+        "SLOVAKIA": "SK",
+        "ROMANIA": "RO",
+        "BULGARIA": "BG",
+        "JAPAN": "JP",
+        "SOUTH KOREA": "KR",
+        "CHINA": "CN",
+        "USA": "US",
+        "MEXICO": "MX",
+        "CANADA": "CA",
+        "AUSTRALIA": "AU",
+        "NIGERIA": "NG",
+        "GHANA": "GH",
+        "SENEGAL": "SN",
+        "MOROCCO": "MA",
+        "ALGERIA": "DZ",
+        "EGYPT": "EG",
+        "URUGUAY": "UY",
+        "COLOMBIA": "CO",
+        "SLOVENIA": "SI",
+        "BOSNIA": "BA",
+        "ISRAEL": "IL",
+        "GEORGIA": "GE",
+        "ARMENIA": "AM",
+        "AZERBAIJAN": "AZ",
+        "KAZAKHSTAN": "KZ",
+        "UZBEKISTAN": "UZ",
+    }
+    return ru.get(s) or en.get(s)
 
 
 _FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]] = {
@@ -398,6 +457,25 @@ _FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int,
 }
 
 
+def _paste_or_draw_flag(
+    im: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    x: int,
+    y: int,
+    nation: str | None,
+) -> None:
+    iso = _nation_to_iso2(nation)
+    fimg = load_flag_png(iso) if iso else None
+    if fimg is not None:
+        tw, th = _FLAG_W, _FLAG_H
+        thumb = fimg.resize((tw, th), Image.Resampling.LANCZOS)
+        mask = Image.new("L", (tw, th), 0)
+        ImageDraw.Draw(mask).rounded_rectangle([0, 0, tw - 1, th - 1], radius=3, fill=255)
+        im.paste(thumb, (x, y), mask)
+        return
+    _draw_mini_flag(draw, x, y, nation)
+
+
 def _draw_mini_flag(draw: ImageDraw.ImageDraw, x: int, y: int, nation: str | None) -> None:
     iso = _nation_to_iso2(nation)
     trip = _FLAG_V3.get(iso) if iso else None
@@ -433,7 +511,9 @@ def _sidebar_bench_content_height(subs: list[_Pl], reserves: list[_Pl]) -> int:
 
 
 def _sidebar_bench_line(p: _Pl) -> str:
-    return f"{_SIDEBAR_SCORE_PLACEHOLDER}  {_surname(p.name)}"
+    pos = (p.position or "").strip() or "—"
+    score = _display_score(p.overall, p.rating)
+    return f"{score}  {pos}  {_surname(p.name)}"
 
 
 def _crest_initials(team_db: str) -> str:
@@ -449,21 +529,25 @@ def _crest_initials(team_db: str) -> str:
 
 
 def _try_load_crest_rgba(team_db: str) -> Image.Image | None:
-    """PNG/WebP/JPG из ``assets/crests/<имя как в БД>.{png,webp,jpg}``."""
-    if not _CREST_DIR.is_dir():
-        return None
+    """Локальный файл в ``assets/crests/``, иначе Wikimedia Commons по ``wikimedia_commons.json``."""
     base = (team_db or "").strip()
     if not base:
         return None
-    for name in (base, base.replace(" ", "_")):
-        for ext in (".png", ".webp", ".jpg", ".jpeg"):
-            path = _CREST_DIR / f"{name}{ext}"
-            if path.is_file():
-                try:
-                    return Image.open(path).convert("RGBA")
-                except OSError:
-                    logger.warning("Состав: не удалось открыть эмблему %s", path)
-                    return None
+    if _CREST_DIR.is_dir():
+        for name in (base, base.replace(" ", "_")):
+            for ext in (".png", ".webp", ".jpg", ".jpeg"):
+                path = _CREST_DIR / f"{name}{ext}"
+                if path.is_file():
+                    try:
+                        return Image.open(path).convert("RGBA")
+                    except OSError:
+                        logger.warning("Состав: не удалось открыть эмблему %s", path)
+                        return None
+    cfn = commons_crest_filename_for_team(base)
+    if cfn:
+        cr = load_commons_crest_rgba(cfn)
+        if cr is not None:
+            return cr
     return None
 
 
@@ -717,7 +801,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
             x0, y0, x1, y1 = _draw_shirt(draw, ix, shirt_cy, kit, is_gk)
             flag_x = int(ix - shirt_bw // 2 - 8 - _FLAG_W)
             flag_y = int(shirt_cy - _FLAG_H // 2)
-            _draw_mini_flag(draw, flag_x, flag_y, pl.nation)
+            _paste_or_draw_flag(im, draw, flag_x, flag_y, pl.nation)
             score_txt = _display_score(pl.overall, pl.rating)
             bb_r = draw.textbbox((0, 0), score_txt, font=rating_font)
             rh = bb_r[3] - bb_r[1]

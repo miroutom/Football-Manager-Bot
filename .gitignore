@@ -5,3 +5,5 @@ __pycache__/
 bot/.env
 *.db
 .idea/
+# Кэш скачанных флагов и эмблем (PNG)
+assets/cache/**/*.png

@@ -3,8 +3,9 @@
 Ресурсы для PNG состава: флаги по ISO (CDN + кэш), эмблемы с Wikimedia Commons (опционально).
 
 Флаги: ``https://flagcdn.com`` (PNG по ISO 3166-1 alpha-2), сохранение в ``assets/cache/flags/``.
-Эмблемы: локальные файлы в ``assets/crests/``; дополнительно словарь ``assets/crests/wikimedia_commons.json``
-``{ "<команда как в БД>": "Имя_файла.svg" }`` — скачивание через ``Special:FilePath`` на Commons в ``assets/cache/commons_crests/``.
+Эмблемы: локальные файлы в ``assets/crests/``; словарь ``assets/crests/wikimedia_commons.json``
+``{ "<команда>": "Имя_файла.svg" }`` — ``Special:FilePath`` сначала на Commons, затем на **en.wikipedia**
+(многие гербы клубов есть только там, на Commons файла нет).
 """
 from __future__ import annotations
 
@@ -117,6 +118,18 @@ def _load_commons_map() -> dict[str, str]:
     return _commons_map
 
 
+def _looks_like_raster_image(data: bytes) -> bool:
+    if len(data) < 12:
+        return False
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return True
+    if data[:2] == b"\xff\xd8":
+        return True
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return True
+    return False
+
+
 def commons_crest_filename_for_team(team_db: str) -> str | None:
     t = (team_db or "").strip()
     if not t:
@@ -126,7 +139,7 @@ def commons_crest_filename_for_team(team_db: str) -> str | None:
 
 
 def load_commons_crest_rgba(commons_filename: str) -> Image.Image | None:
-    """Скачать файл с Commons (рендер width=256), кэш по хэшу имени файла."""
+    """Скачать по имени файла Wiki: ``Special:FilePath`` на Commons, иначе en.wikipedia; кэш PNG."""
     fn = commons_filename.strip()
     if not fn:
         return None
@@ -139,16 +152,25 @@ def load_commons_crest_rgba(commons_filename: str) -> Image.Image | None:
         except OSError:
             return None
     q = urllib.parse.quote(fn, safe="")
-    url = f"https://commons.wikimedia.org/wiki/Special:FilePath/{q}?width=256"
-    data = _http_get(url, timeout=15.0)
-    if not data:
-        return None
-    try:
-        im = Image.open(BytesIO(data)).convert("RGBA")
-    except OSError:
-        return None
-    try:
-        im.save(cache_path, format="PNG")
-    except OSError:
-        pass
-    return im
+    bases = (
+        "https://commons.wikimedia.org/wiki/Special:FilePath/",
+        "https://en.wikipedia.org/wiki/Special:FilePath/",
+    )
+    for base in bases:
+        url = f"{base}{q}?width=256"
+        data = _http_get(url, timeout=20.0)
+        if not data or not _looks_like_raster_image(data):
+            if data and not _looks_like_raster_image(data):
+                logger.info("Эмблема %s: ответ не растровое изображение (%s)", fn, base.rstrip("/"))
+            continue
+        try:
+            im = Image.open(BytesIO(data)).convert("RGBA")
+        except OSError as e:
+            logger.info("Эмблема %s: PIL %s (%s)", fn, e, base.rstrip("/"))
+            continue
+        try:
+            im.save(cache_path, format="PNG")
+        except OSError:
+            pass
+        return im
+    return None
