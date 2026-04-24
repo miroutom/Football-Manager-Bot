@@ -1,5 +1,8 @@
 """
-Состав клуба на схеме поля (4-3-3): фамилия + числовой рейтинг (overall из БД).
+Состав клуба на схеме поля: фамилия + рейтинг; слоты из ``team_squad_schemas``.
+
+Расстановка строго по позициям из БД для выбранного шаблона команды — без
+заполнения пустых слотов «лучшим оставшимся» с другой позицией.
 """
 from __future__ import annotations
 
@@ -12,6 +15,7 @@ from data.defender import Defender
 from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
+from team_squad_schemas import SquadSlot, formation_label_for_team, get_slots_for_team
 from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
 
 logger = logging.getLogger(__name__)
@@ -145,23 +149,13 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
     return out
 
 
-# (slot_id, x_frac, y_frac, required tag sets — достаточно пересечения с тегами игрока)
-_SLOT_SPECS: tuple[tuple[str, float, float, frozenset[str]], ...] = (
-    ("GK", 0.50, 0.86, frozenset({"gk"})),
-    ("LB", 0.10, 0.68, frozenset({"lb"})),
-    ("RB", 0.90, 0.68, frozenset({"rb"})),
-    ("LCB", 0.36, 0.68, frozenset({"cb"})),
-    ("RCB", 0.64, 0.68, frozenset({"cb"})),
-    ("CDM", 0.50, 0.52, frozenset({"cdm"})),
-    ("LCM", 0.32, 0.40, frozenset({"lcm", "cm"})),
-    ("RCM", 0.68, 0.40, frozenset({"rcm", "cm"})),
-    ("LW", 0.18, 0.22, frozenset({"lw"})),
-    ("ST", 0.50, 0.14, frozenset({"st"})),
-    ("RW", 0.82, 0.22, frozenset({"rw"})),
-)
+def _position_matches_slot(p: _Pl, slot: SquadSlot) -> bool:
+    pos = (p.position or "").strip()
+    return pos in slot.allowed_positions
 
 
-def _assign_slots(players: list[_Pl]) -> tuple[dict[str, _Pl], list[_Pl]]:
+def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], list[_Pl]]:
+    slots = get_slots_for_team(team_db)
     pool = players[:]
     used: set[int] = set()
     slot_player: dict[str, _Pl] = {}
@@ -173,27 +167,17 @@ def _assign_slots(players: list[_Pl]) -> tuple[dict[str, _Pl], list[_Pl]]:
         used.add(id(best))
         return best
 
-    for sid, _x, _y, need in _SLOT_SPECS:
-        cands = [p for p in pool if id(p) not in used and (p.tags & need)]
-        # LCM: не забирать чистых rcm в первую очередь — предпочесть lcm или общий cm
-        if sid == "LCM":
-            pref = [p for p in cands if "lcm" in p.tags or ("cm" in p.tags and "rcm" not in p.tags)]
+    for slot in slots:
+        cands = [p for p in pool if id(p) not in used and _position_matches_slot(p, slot)]
+        if slot.slot_id == "LCM" and len(cands) > 1:
+            pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
             cands = pref or cands
-        if sid == "RCM":
-            pref = [p for p in cands if "rcm" in p.tags or ("cm" in p.tags and "lcm" not in p.tags)]
+        if slot.slot_id == "RCM" and len(cands) > 1:
+            pref = [p for p in cands if (p.position or "").strip() in ("ПП", "ПЦП")]
             cands = pref or cands
         p = take_best(cands)
         if p:
-            slot_player[sid] = p
-
-    # Дозаполнение пустых слотов лучшими оставшимися
-    for sid, _x, _y, _need in _SLOT_SPECS:
-        if sid in slot_player:
-            continue
-        rest = [p for p in pool if id(p) not in used]
-        p = take_best(rest)
-        if p:
-            slot_player[sid] = p
+            slot_player[slot.slot_id] = p
 
     bench = [p for p in pool if id(p) not in used]
     bench.sort(key=lambda x: (-x.score, x.name.lower()))
@@ -247,6 +231,7 @@ def render_squad_pitch_png_bytes(
     *,
     subtitle: str = "",
 ) -> bytes:
+    team_db = _team_name_as_in_db(team)
     players = load_team_squad_players(team, tournament)
     if not players:
         w, h = 920, 400
@@ -263,7 +248,10 @@ def render_squad_pitch_png_bytes(
         im.save(out, format="PNG", optimize=True)
         return out.getvalue()
 
-    slot_map, bench = _assign_slots(players)
+    slot_map, bench = _assign_slots(players, team_db)
+    slots = get_slots_for_team(team_db)
+    if subtitle:
+        subtitle = f"{subtitle} · шаблон {formation_label_for_team(team_db)}"
 
     subs = bench[:SUBSTITUTES_COUNT]
     reserves = bench[SUBSTITUTES_COUNT:]
@@ -311,11 +299,11 @@ def render_squad_pitch_png_bytes(
     if subtitle:
         draw.text((w // 2, 58), subtitle, fill=(220, 230, 220), font=sub_font, anchor="mt")
 
-    for sid, xf, yf, _need in _SLOT_SPECS:
-        pl = slot_map.get(sid)
-        cx = px0 + xf * pitch_w
-        cy = py0 + yf * pitch_hh
-        label = sid
+    for slot in slots:
+        pl = slot_map.get(slot.slot_id)
+        cx = px0 + slot.x * pitch_w
+        cy = py0 + slot.y * pitch_hh
+        label = slot.slot_id
         if pl:
             line1 = _surname(pl.name)
             line2 = _display_score(pl.overall, pl.rating)
