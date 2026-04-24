@@ -300,13 +300,9 @@ def _draw_pitch_base(im: Image.Image, draw: ImageDraw.ImageDraw) -> None:
     draw.ellipse([cx - 70, my - 70, cx + 70, my + 70], outline=(255, 255, 255, 140), width=2)
 
 
-def render_squad_pitch_png_bytes(
-    team: str,
-    tournament: str,
-    *,
-    subtitle: str = "",
-) -> bytes:
+def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     team_db = _team_name_as_in_db(team)
+    headline_sub = label_for_squad_caption(team_db)
     players = load_team_squad_players(team, tournament)
     if not players:
         w, h = 920, 400
@@ -317,16 +313,14 @@ def render_squad_pitch_png_bytes(
         draw.text((w // 2, 120), team, fill=(255, 255, 255), font=tf, anchor="mm")
         msg = "В базе нет игроков этой команды для выбранного турнира."
         draw.text((w // 2, 180), msg, fill=(230, 230, 220), font=sf, anchor="mm")
-        if subtitle:
-            draw.text((w // 2, 220), subtitle, fill=(200, 210, 200), font=sf, anchor="mm")
+        if headline_sub:
+            draw.text((w // 2, 220), headline_sub, fill=(200, 210, 200), font=sf, anchor="mm")
         out = BytesIO()
         im.save(out, format="PNG", optimize=True)
         return out.getvalue()
 
     slot_map, bench = _assign_slots(players, team_db)
     slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
-    if subtitle:
-        subtitle = f"{subtitle} · {label_for_squad_caption(team_db)}"
 
     subs = bench[:SUBSTITUTES_COUNT]
     reserves = bench[SUBSTITUTES_COUNT:]
@@ -373,8 +367,8 @@ def render_squad_pitch_png_bytes(
 
     title = team
     draw.text((w // 2, 24), title, fill=(255, 255, 255), font=title_font, anchor="mt")
-    if subtitle:
-        draw.text((w // 2, 58), subtitle, fill=(220, 230, 220), font=sub_font, anchor="mt")
+    if headline_sub:
+        draw.text((w // 2, 58), headline_sub, fill=(220, 230, 220), font=sub_font, anchor="mt")
 
     for slot in slots:
         pl = slot_map.get(slot.slot_id)
