@@ -50,8 +50,7 @@ _GRASS_HI = (34, 92, 58)
 _LINE_SOFT = (230, 240, 235)
 _SLATE_MUTED = (148, 163, 184)
 _SLATE_BRIGHT = (241, 245, 249)
-_BADGE_FILL = (30, 41, 59)
-_BADGE_EDGE = (51, 65, 85)
+_RATING_TEXT = (190, 244, 210)
 
 
 def _try_truetype(path: Path, size: int, index: int = 0) -> ImageFont.FreeTypeFont | None:
@@ -216,14 +215,6 @@ def _natural_fits_slot(p: _Pl, slot: SquadSlot) -> bool:
     return (p.position or "").strip() in slot.allowed_positions
 
 
-def _draw_shirt_shadow(draw: ImageDraw.ImageDraw, cx: int, cy: int, bw: int, bh: int) -> None:
-    r = 12
-    sx0 = int(cx - bw // 2 + 2)
-    sy0 = int(cy - bh // 2 + 4)
-    sx1, sy1 = sx0 + bw, sy0 + bh
-    draw.rounded_rectangle([sx0, sy0, sx1, sy1], radius=r, fill=(8, 16, 12))
-
-
 def _draw_shirt(
     draw: ImageDraw.ImageDraw,
     cx: int,
@@ -247,7 +238,6 @@ def _draw_shirt(
     x0, y0 = int(cx - bw // 2), int(cy - bh // 2)
     x1, y1 = x0 + bw, y0 + bh
     edge = (220, 228, 236) if sum(primary) > 400 else (55, 65, 81)
-    _draw_shirt_shadow(draw, cx, cy, bw, bh)
     draw.rounded_rectangle(
         [x0, y0, x1, y1],
         radius=r,
@@ -468,22 +458,13 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
             x0, y0, x1, y1 = _draw_shirt(draw, ix, shirt_cy, kit, is_gk)
             score_txt = _display_score(pl.overall, pl.rating)
             bb_r = draw.textbbox((0, 0), score_txt, font=rating_font)
-            tw = bb_r[2] - bb_r[0]
             rh = bb_r[3] - bb_r[1]
-            rx = x1 + 10
+            rx = x1 + 8
             ry = (y0 + y1) // 2 - rh // 2
-            pad_x, pad_y = 6, 4
-            draw.rounded_rectangle(
-                [rx - pad_x, ry - pad_y, rx + tw + pad_x, ry + rh + pad_y],
-                radius=8,
-                fill=_BADGE_FILL,
-                outline=_BADGE_EDGE,
-                width=1,
-            )
             draw.text(
                 (rx, ry),
                 score_txt,
-                fill=_SLATE_BRIGHT,
+                fill=_RATING_TEXT,
                 font=rating_font,
                 anchor="lt",
             )
