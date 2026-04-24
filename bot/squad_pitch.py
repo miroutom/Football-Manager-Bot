@@ -437,7 +437,7 @@ def _draw_crest_placeholder(
     kit: KitSpec,
     font: ImageFont.ImageFont,
 ) -> None:
-    r = 46
+    r = 38
     prim = kit.primary
     lum = sum(prim)
     edge = (220, 228, 236) if lum > 380 else (148, 163, 184)
@@ -469,7 +469,8 @@ def _draw_sidebar_text(
 ) -> None:
     x0, y0, x1, y1 = rect
     pad = 14
-    ty = y0 + pad
+    # Верх панели оставляем под эмблему на стыке с полем; список ниже.
+    ty = y0 + 108
     draw.text((x0 + pad, ty), "Запасные", fill=_SLATE_BRIGHT, font=title_font, anchor="lt")
     ty += 28
     row_h = 28
@@ -678,7 +679,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         small_font=sb_small,
     )
     crest_cx = int(px1)
-    crest_cy = int(py0 + pitch_hh // 2)
+    crest_cy = int(py0 + 56)
     _draw_crest_placeholder(draw, crest_cx, crest_cy, team_db, kit, crest_font)
 
     title = team
