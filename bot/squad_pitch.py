@@ -1,8 +1,11 @@
 """
-Состав клуба на схеме поля: фамилия + рейтинг; слоты из ``team_squad_schemas``.
+Состав клуба на схеме поля: слоты из ``team_squad_schemas`` / ``formation_geometry``.
 
-Расстановка строго по позициям из БД для выбранного шаблона команды — без
-заполнения пустых слотов «лучшим оставшимся» с другой позицией.
+Подбор игрока: позиция из БД + взаимозаменяемость (атака/края, ЦП↔ЦОП, фланги
+защиты, ЦОП на ЦЗ); ВРТ только вратарь.
+
+Стартовые 11: футболка в цветах команды (см. ``squad_kit_palette``), фамилия
+снизу, рейтинг справа от футболки. Запасные/резерв — текстом как раньше.
 """
 from __future__ import annotations
 
@@ -16,8 +19,18 @@ from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from coach_squad_state import label_for_squad_caption, resolve_formation_key_for_team
+from squad_kit_palette import kit_for_team
 from team_squad_schemas import SquadSlot, get_slots_for_formation_key
 from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
+
+# Взаимозаменяемость (позиции из БД)
+_INTER_ATTACK = frozenset(
+    {"ФРВ", "ПФА", "ЛФА", "ПП", "ЛП", "ЦАП", "ЦФД", "ЛФД", "ПФД"}
+)
+_INTER_CM = frozenset({"ЦП", "ЦОП"})
+_INTER_FB = frozenset({"ЛЗ", "ПЗ", "ЛФЗ", "ПФЗ"})
+_CB_MARKERS = frozenset({"ЦЗ", "ЛЦЗ", "ПЦЗ"})
+_FORWARD_SLOT_IDS = frozenset({"LW", "RW", "ST", "STL", "STR", "CF"})
 
 logger = logging.getLogger(__name__)
 
@@ -150,9 +163,58 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
     return out
 
 
-def _position_matches_slot(p: _Pl, slot: SquadSlot) -> bool:
+def _player_fits_slot(p: _Pl, slot: SquadSlot) -> bool:
     pos = (p.position or "").strip()
-    return pos in slot.allowed_positions
+    allowed = slot.allowed_positions
+    if pos in allowed:
+        return True
+    if allowed == frozenset({"ВРТ"}):
+        return False
+    if pos == "ЦОП" and allowed & _CB_MARKERS:
+        return True
+    if pos in _INTER_FB and allowed & _INTER_FB:
+        return True
+    if pos in _INTER_CM and allowed & _INTER_CM:
+        return True
+    if slot.slot_id in _FORWARD_SLOT_IDS and pos in _INTER_ATTACK:
+        if allowed & _INTER_ATTACK or allowed & frozenset({"ЦФД"}):
+            return True
+    return False
+
+
+def _draw_shirt(
+    draw: ImageDraw.ImageDraw,
+    cx: int,
+    cy: int,
+    primary: tuple[int, int, int],
+    secondary: tuple[int, int, int],
+    striped: bool,
+    is_gk: bool,
+) -> tuple[int, int, int, int]:
+    """Рисует упрощённую футболку; возвращает bbox (x0,y0,x1,y1)."""
+    if is_gk:
+        primary = (26, 30, 38)
+        secondary = (65, 72, 84)
+        striped = False
+    bw, bh = 44, 48
+    x0, y0 = int(cx - bw // 2), int(cy - bh // 2)
+    x1, y1 = x0 + bw, y0 + bh
+    draw.rounded_rectangle(
+        [x0, y0, x1, y1],
+        radius=10,
+        fill=primary,
+        outline=(248, 248, 252),
+        width=2,
+    )
+    if striped:
+        for sx in range(x0 + 4, x1 - 4, 8):
+            draw.rectangle([sx, y0 + 5, min(sx + 3, x1 - 4), y1 - 5], fill=secondary)
+    draw.polygon(
+        [(cx, y0 + 5), (cx - 9, y0 + 16), (cx + 9, y0 + 16)],
+        fill=(18, 20, 26),
+        outline=(248, 248, 252),
+    )
+    return (x0, y0, x1, y1)
 
 
 def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], list[_Pl]]:
@@ -169,7 +231,7 @@ def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], lis
         return best
 
     for slot in slots:
-        cands = [p for p in pool if id(p) not in used and _position_matches_slot(p, slot)]
+        cands = [p for p in pool if id(p) not in used and _player_fits_slot(p, slot)]
         if slot.slot_id == "LCM" and len(cands) > 1:
             pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
             cands = pref or cands
@@ -303,9 +365,11 @@ def render_squad_pitch_png_bytes(
 
     title_font = _pick_font(30, bold=True)
     sub_font = _pick_font(20, bold=False)
-    name_font = _pick_font(22, bold=True)
-    pos_font = _pick_font(14, bold=False)
+    name_font = _pick_font(20, bold=True)
+    rating_font = _pick_font(24, bold=True)
+    pos_font = _pick_font(12, bold=False)
     bench_font = _pick_font(16, bold=False)
+    kit_primary, kit_secondary, kit_striped = kit_for_team(team_db)
 
     title = team
     draw.text((w // 2, 24), title, fill=(255, 255, 255), font=title_font, anchor="mt")
@@ -318,27 +382,28 @@ def render_squad_pitch_png_bytes(
         cy = py0 + slot.y * pitch_hh
         label = slot.slot_id
         if pl:
-            line1 = _surname(pl.name)
-            line2 = _display_score(pl.overall, pl.rating)
-            bb1 = draw.textbbox((0, 0), line1, font=name_font)
-            bb2 = draw.textbbox((0, 0), line2, font=name_font)
-            tw = max(bb1[2] - bb1[0], bb2[2] - bb2[0])
-            th1 = bb1[3] - bb1[1]
-            th2 = bb2[3] - bb2[1]
-            pad_x, pad_y = 10, 8
-            bw = max(tw + pad_x * 2, 72)
-            bh = pad_y * 2 + th1 + 8 + th2 + 22
-            x0, y0 = int(cx - bw // 2), int(cy - bh // 2)
-            draw.rounded_rectangle(
-                [x0, y0, x0 + bw, y0 + bh],
-                radius=8,
-                fill=(32, 36, 42),
-                outline=(180, 190, 200),
-                width=2,
+            is_gk = slot.slot_id == "GK"
+            ix, iy = int(cx), int(cy)
+            shirt_cy = iy - 14
+            x0, y0, x1, y1 = _draw_shirt(
+                draw,
+                ix,
+                shirt_cy,
+                kit_primary,
+                kit_secondary,
+                kit_striped,
+                is_gk,
             )
-            draw.text((cx, y0 + pad_y + 2), line1, fill=(250, 250, 250), font=name_font, anchor="mt")
-            draw.text((cx, y0 + pad_y + th1 + 8), line2, fill=(180, 255, 200), font=name_font, anchor="mt")
-            draw.text((cx, y0 + bh - 4), label, fill=(200, 200, 210), font=pos_font, anchor="mb")
+            score_txt = _display_score(pl.overall, pl.rating)
+            bb_r = draw.textbbox((0, 0), score_txt, font=rating_font)
+            rh = bb_r[3] - bb_r[1]
+            rx = x1 + 8
+            ry = (y0 + y1) // 2 - rh // 2
+            draw.text((rx, ry), score_txt, fill=(220, 255, 210), font=rating_font, anchor="lt")
+            sur = _surname(pl.name)
+            name_y = y1 + 10
+            draw.text((ix, name_y), sur, fill=(252, 252, 252), font=name_font, anchor="mt")
+            draw.text((ix, name_y + 22), label, fill=(200, 205, 215), font=pos_font, anchor="mt")
         else:
             draw.text((cx, cy), "—", fill=(200, 200, 200), font=name_font, anchor="mm")
 
