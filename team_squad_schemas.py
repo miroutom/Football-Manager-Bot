@@ -4,14 +4,15 @@
 
 Каждый слот задаётся позициями из БД (как в поле ``players.position``).
 Какой **ключ** схемы применяется к команде, читайте в ``coach_squad_state``:
-тренер · три варианта ключей (один active) · привязка тренер→команда.
+тренер · три **числовых id** (1–10, см. ``formation_catalog``), один active,
+привязка тренер→команда. Ключ слотов на поле: ``fid_<id>`` (пока геометрия как 433).
 
 Статический запасной вариант: ``TEAM_FORMATION_KEY`` / ``DEFAULT`` (``433``),
 если тренер для команды ещё не настроен.
 
-1. В ``FORMATION_SLOTS`` завести наборы слотов под новые ключи.
-2. У тренера в ``data/coach_squad_state.json`` указать три ключа, один ``active``;
-   команде назначить тренера через API ``coach_squad_state.assign_coach_to_team``.
+1. В ``FORMATION_SLOTS`` при необходимости завести геометрию под ``fid_<id>``.
+2. В ``data/coach_squad_state.json`` — ``formation_ids`` и ``active_formation_id``;
+   команде тренер через ``coach_squad_state.assign_coach_to_team``.
 
 Пока тренер не задан — сработает ``TEAM_FORMATION_KEY[команда]`` или ``433``.
 """
@@ -65,6 +66,11 @@ FORMATION_SLOTS: dict[str, tuple[SquadSlot, ...]] = {
         SquadSlot("RW", 0.82, 0.22, frozenset({"ПФА", "ПФД"})),
     ),
 }
+
+# Каталог тактик 1–10: пока та же геометрия 433 (см. ``formation_catalog``).
+_BASE_433_SLOTS: tuple[SquadSlot, ...] = FORMATION_SLOTS["433"]
+for _fid in range(1, 11):
+    FORMATION_SLOTS[f"fid_{_fid}"] = _BASE_433_SLOTS
 
 
 def get_slots_for_formation_key(formation_key: str) -> tuple[SquadSlot, ...]:
