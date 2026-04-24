@@ -5,8 +5,8 @@
 входит в ``allowed_positions`` этого слота, выбирается с наивысшим рейтингом (как ЛЗ:
 Дэвис vs Геррейро). Если «своих» нет — подстановка по взаимозаменяемости, как раньше.
 
-Стартовые 11: флаг по ``nation`` — PNG с flagcdn.com (кэш ``assets/cache/flags``), иначе упрощённые
-полосы. Эмблема: ``assets/crests/`` / ``wikimedia_commons.json``; на поле — как есть (пропорции),
+Стартовые 11: флаг по ``nation`` — flagcdn (ISO2 или ``gb-eng`` / ``gb-sct`` / ``gb-wls`` / ``gb-nir``),
+кэш ``assets/cache/flags``; иначе упрощённые полосы. Эмблема: ``assets/crests/`` / ``wikimedia_commons.json``; на поле — как есть (пропорции),
 без круга; тёмный фон, связный с краем картинки, делается прозрачным. Сайдбар: рейтинг, позиция, фамилия.
 """
 from __future__ import annotations
@@ -283,126 +283,137 @@ def _draw_shirt(
     return x0, y0, x1, y1
 
 
-def _nation_to_iso2(raw: str | None) -> str | None:
+def _nation_to_flagcdn_code(raw: str | None) -> str | None:
+    """Код для flagcdn: ISO2 в нижнем регистре (``de``) или UK-подрегион ``gb-eng`` … ``gb-nir``."""
     if not raw:
         return None
     s = str(raw).strip().upper()
     if not s:
         return None
     if len(s) == 2 and s.isalpha():
-        return s
+        return s.lower()
     ru: dict[str, str] = {
-        "РОССИЯ": "RU",
-        "РФ": "RU",
-        "ИСПАНИЯ": "ES",
-        "ИТАЛИЯ": "IT",
-        "ФРАНЦИЯ": "FR",
-        "ГЕРМАНИЯ": "DE",
-        "АНГЛИЯ": "GB",
-        "ШОТЛАНДИЯ": "GB",
-        "УЭЛЬС": "GB",
-        "БРАЗИЛИЯ": "BR",
-        "АРГЕНТИНА": "AR",
-        "ПОРТУГАЛИЯ": "PT",
-        "ПОЛЬША": "PL",
-        "УКРАИНА": "UA",
-        "ХОРВАТИЯ": "HR",
-        "СЕРБИЯ": "RS",
-        "БЕЛЬГИЯ": "BE",
-        "НИДЕРЛАНДЫ": "NL",
-        "ГОЛЛАНДИЯ": "NL",
-        "АВСТРИЯ": "AT",
-        "ШВЕЙЦАРИЯ": "CH",
-        "ШВЕЦИЯ": "SE",
-        "НОРВЕГИЯ": "NO",
-        "ДАНИЯ": "DK",
-        "ФИНЛЯНДИЯ": "FI",
-        "ТУРЦИЯ": "TR",
-        "ГРЕЦИЯ": "GR",
-        "ЧЕХИЯ": "CZ",
-        "СЛОВАКИЯ": "SK",
-        "ВЕНГРИЯ": "HU",
-        "РУМЫНИЯ": "RO",
-        "БОЛГАРИЯ": "BG",
-        "ЯПОНИЯ": "JP",
-        "КОРЕЯ": "KR",
-        "КНР": "CN",
-        "США": "US",
-        "МЕКСИКА": "MX",
-        "КАНАДА": "CA",
-        "АВСТРАЛИЯ": "AU",
-        "НИГЕРИЯ": "NG",
-        "ГАНА": "GH",
-        "СЕНЕГАЛ": "SN",
-        "МАРОККО": "MA",
-        "АЛЖИР": "DZ",
-        "ЕГИПЕТ": "EG",
-        "УРУГВАЙ": "UY",
-        "КОЛУМБИЯ": "CO",
-        "СЛОВЕНИЯ": "SI",
-        "БОСНИЯ": "BA",
-        "ИСРАИЛЬ": "IL",
-        "ГРУЗИЯ": "GE",
-        "АРМЕНИЯ": "AM",
-        "АЗЕРБАЙДЖАН": "AZ",
-        "КАЗАХСТАН": "KZ",
-        "УЗБЕКИСТАН": "UZ",
+        "РОССИЯ": "ru",
+        "РФ": "ru",
+        "ИСПАНИЯ": "es",
+        "ИТАЛИЯ": "it",
+        "ФРАНЦИЯ": "fr",
+        "ГЕРМАНИЯ": "de",
+        "АНГЛИЯ": "gb-eng",
+        "ШОТЛАНДИЯ": "gb-sct",
+        "УЭЛЬС": "gb-wls",
+        "СЕВЕРНАЯ ИРЛАНДИЯ": "gb-nir",
+        "ОЛСТЕР": "gb-nir",
+        "ВЕЛИКОБРИТАНИЯ": "gb",
+        "БРИТАНИЯ": "gb",
+        "ИРЛАНДИЯ": "ie",
+        "БРАЗИЛИЯ": "br",
+        "АРГЕНТИНА": "ar",
+        "ПОРТУГАЛИЯ": "pt",
+        "ПОЛЬША": "pl",
+        "УКРАИНА": "ua",
+        "ХОРВАТИЯ": "hr",
+        "СЕРБИЯ": "rs",
+        "БЕЛЬГИЯ": "be",
+        "НИДЕРЛАНДЫ": "nl",
+        "ГОЛЛАНДИЯ": "nl",
+        "АВСТРИЯ": "at",
+        "ШВЕЙЦАРИЯ": "ch",
+        "ШВЕЦИЯ": "se",
+        "НОРВЕГИЯ": "no",
+        "ДАНИЯ": "dk",
+        "ФИНЛЯНДИЯ": "fi",
+        "ТУРЦИЯ": "tr",
+        "ГРЕЦИЯ": "gr",
+        "ЧЕХИЯ": "cz",
+        "СЛОВАКИЯ": "sk",
+        "ВЕНГРИЯ": "hu",
+        "РУМЫНИЯ": "ro",
+        "БОЛГАРИЯ": "bg",
+        "ЯПОНИЯ": "jp",
+        "КОРЕЯ": "kr",
+        "КНР": "cn",
+        "США": "us",
+        "МЕКСИКА": "mx",
+        "КАНАДА": "ca",
+        "АВСТРАЛИЯ": "au",
+        "НИГЕРИЯ": "ng",
+        "ГАНА": "gh",
+        "СЕНЕГАЛ": "sn",
+        "МАРОККО": "ma",
+        "АЛЖИР": "dz",
+        "ЕГИПЕТ": "eg",
+        "УРУГВАЙ": "uy",
+        "КОЛУМБИЯ": "co",
+        "СЛОВЕНИЯ": "si",
+        "БОСНИЯ": "ba",
+        "ИСРАИЛЬ": "il",
+        "ГРУЗИЯ": "ge",
+        "АРМЕНИЯ": "am",
+        "АЗЕРБАЙДЖАН": "az",
+        "КАЗАХСТАН": "kz",
+        "УЗБЕКИСТАН": "uz",
     }
     en: dict[str, str] = {
-        "ENGLAND": "GB",
-        "SCOTLAND": "GB",
-        "WALES": "GB",
-        "NORTHERN IRELAND": "GB",
-        "RUSSIA": "RU",
-        "SPAIN": "ES",
-        "ITALY": "IT",
-        "FRANCE": "FR",
-        "GERMANY": "DE",
-        "BRAZIL": "BR",
-        "ARGENTINA": "AR",
-        "PORTUGAL": "PT",
-        "POLAND": "PL",
-        "UKRAINE": "UA",
-        "CROATIA": "HR",
-        "SERBIA": "RS",
-        "BELGIUM": "BE",
-        "NETHERLANDS": "NL",
-        "AUSTRIA": "AT",
-        "SWITZERLAND": "CH",
-        "SWEDEN": "SE",
-        "NORWAY": "NO",
-        "DENMARK": "DK",
-        "FINLAND": "FI",
-        "TURKEY": "TR",
-        "GREECE": "GR",
-        "CZECHIA": "CZ",
-        "CZECH REPUBLIC": "CZ",
-        "SLOVAKIA": "SK",
-        "ROMANIA": "RO",
-        "BULGARIA": "BG",
-        "JAPAN": "JP",
-        "SOUTH KOREA": "KR",
-        "CHINA": "CN",
-        "USA": "US",
-        "MEXICO": "MX",
-        "CANADA": "CA",
-        "AUSTRALIA": "AU",
-        "NIGERIA": "NG",
-        "GHANA": "GH",
-        "SENEGAL": "SN",
-        "MOROCCO": "MA",
-        "ALGERIA": "DZ",
-        "EGYPT": "EG",
-        "URUGUAY": "UY",
-        "COLOMBIA": "CO",
-        "SLOVENIA": "SI",
-        "BOSNIA": "BA",
-        "ISRAEL": "IL",
-        "GEORGIA": "GE",
-        "ARMENIA": "AM",
-        "AZERBAIJAN": "AZ",
-        "KAZAKHSTAN": "KZ",
-        "UZBEKISTAN": "UZ",
+        "ENGLAND": "gb-eng",
+        "SCOTLAND": "gb-sct",
+        "WALES": "gb-wls",
+        "NORTHERN IRELAND": "gb-nir",
+        "UNITED KINGDOM": "gb",
+        "GREAT BRITAIN": "gb",
+        "UK": "gb",
+        "IRELAND": "ie",
+        "REPUBLIC OF IRELAND": "ie",
+        "RUSSIA": "ru",
+        "SPAIN": "es",
+        "ITALY": "it",
+        "FRANCE": "fr",
+        "GERMANY": "de",
+        "BRAZIL": "br",
+        "ARGENTINA": "ar",
+        "PORTUGAL": "pt",
+        "POLAND": "pl",
+        "UKRAINE": "ua",
+        "CROATIA": "hr",
+        "SERBIA": "rs",
+        "BELGIUM": "be",
+        "NETHERLANDS": "nl",
+        "AUSTRIA": "at",
+        "SWITZERLAND": "ch",
+        "SWEDEN": "se",
+        "NORWAY": "no",
+        "DENMARK": "dk",
+        "FINLAND": "fi",
+        "TURKEY": "tr",
+        "GREECE": "gr",
+        "CZECHIA": "cz",
+        "CZECH REPUBLIC": "cz",
+        "SLOVAKIA": "sk",
+        "ROMANIA": "ro",
+        "BULGARIA": "bg",
+        "JAPAN": "jp",
+        "SOUTH KOREA": "kr",
+        "CHINA": "cn",
+        "USA": "us",
+        "MEXICO": "mx",
+        "CANADA": "ca",
+        "AUSTRALIA": "au",
+        "NIGERIA": "ng",
+        "GHANA": "gh",
+        "SENEGAL": "sn",
+        "MOROCCO": "ma",
+        "ALGERIA": "dz",
+        "EGYPT": "eg",
+        "URUGUAY": "uy",
+        "COLOMBIA": "co",
+        "SLOVENIA": "si",
+        "BOSNIA": "ba",
+        "ISRAEL": "il",
+        "GEORGIA": "ge",
+        "ARMENIA": "am",
+        "AZERBAIJAN": "az",
+        "KAZAKHSTAN": "kz",
+        "UZBEKISTAN": "uz",
     }
     return ru.get(s) or en.get(s)
 
@@ -416,6 +427,10 @@ _FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int,
     "BE": ((0, 0, 0), (255, 215, 0), (255, 0, 0)),
     "NL": ((174, 28, 40), (255, 255, 255), (33, 70, 139)),
     "GB": ((0, 36, 125), (255, 255, 255), (204, 0, 0)),
+    "gb-eng": ((255, 255, 255), (200, 30, 50), (255, 255, 255)),
+    "gb-sct": ((0, 36, 125), (255, 255, 255), (0, 36, 125)),
+    "gb-wls": ((33, 115, 70), (255, 255, 255), (206, 17, 38)),
+    "gb-nir": ((255, 255, 255), (206, 20, 43), (0, 56, 120)),
     "PT": ((6, 115, 57), (255, 0, 0), (6, 115, 57)),
     "BR": ((0, 156, 59), (255, 223, 0), (0, 39, 118)),
     "AR": ((116, 172, 223), (255, 255, 255), (116, 172, 223)),
@@ -458,6 +473,17 @@ _FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int,
 }
 
 
+def _flag_v3_trip(flag_code: str | None) -> tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]] | None:
+    if not flag_code:
+        return None
+    c = flag_code.strip().lower()
+    if len(c) == 6 and c[2] == "-" and c[:2].isalpha() and c[3:].isalpha() and len(c[3:]) == 3:
+        return _FLAG_V3.get(c)
+    if len(c) == 2 and c.isalpha():
+        return _FLAG_V3.get(c.upper())
+    return None
+
+
 def _paste_or_draw_flag(
     im: Image.Image,
     draw: ImageDraw.ImageDraw,
@@ -465,8 +491,8 @@ def _paste_or_draw_flag(
     y: int,
     nation: str | None,
 ) -> None:
-    iso = _nation_to_iso2(nation)
-    fimg = load_flag_png(iso) if iso else None
+    fcode = _nation_to_flagcdn_code(nation)
+    fimg = load_flag_png(fcode) if fcode else None
     if fimg is not None:
         tw, th = _FLAG_W, _FLAG_H
         thumb = fimg.resize((tw, th), Image.Resampling.LANCZOS)
@@ -478,8 +504,7 @@ def _paste_or_draw_flag(
 
 
 def _draw_mini_flag(draw: ImageDraw.ImageDraw, x: int, y: int, nation: str | None) -> None:
-    iso = _nation_to_iso2(nation)
-    trip = _FLAG_V3.get(iso) if iso else None
+    trip = _flag_v3_trip(_nation_to_flagcdn_code(nation))
     if trip is None:
         draw.rounded_rectangle(
             [x, y, x + _FLAG_W, y + _FLAG_H],

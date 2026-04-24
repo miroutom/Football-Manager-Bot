@@ -2,7 +2,8 @@
 """
 Ресурсы для PNG состава: флаги по ISO (CDN + кэш), эмблемы с Wikimedia Commons (опционально).
 
-Флаги: ``https://flagcdn.com`` (PNG по ISO 3166-1 alpha-2), сохранение в ``assets/cache/flags/``.
+Флаги: ``https://flagcdn.com`` — ISO2 (``fr``) или регион UK (``gb-eng``, ``gb-sct``, ``gb-wls``, ``gb-nir``);
+кэш ``assets/cache/flags/<код>.png``.
 Эмблемы: локальные файлы в ``assets/crests/``; словарь ``assets/crests/wikimedia_commons.json``
 ``{ "<команда>": "Имя_файла.svg" }`` — ``Special:FilePath`` сначала на Commons, затем на **en.wikipedia**
 (многие гербы клубов есть только там, на Commons файла нет).
@@ -12,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 import http.client
 import urllib.error
 import urllib.parse
@@ -68,15 +70,22 @@ def _http_get(url: str, timeout: float = 15.0) -> bytes | None:
         return None
 
 
-def load_flag_png(iso2: str | None) -> Image.Image | None:
-    """PNG флага по ISO2; кэш ``assets/cache/flags/<iso>.png``. Без сети — только кэш."""
-    if not iso2 or len(iso2) != 2:
+_FLAGCDN_CODE = re.compile(r"^[a-z]{2}$")
+_FLAGCDN_SUB = re.compile(r"^[a-z]{2}-[a-z]{3}$")
+
+
+def load_flag_png(flag_code: str | None) -> Image.Image | None:
+    """PNG с flagcdn: ISO2 (``de``) или подрегион UK ``gb-eng`` / ``gb-sct`` / ``gb-wls`` / ``gb-nir``."""
+    if not flag_code:
         return None
-    code = iso2.strip().lower()
-    if len(code) != 2 or not code.isalpha():
+    code = flag_code.strip().lower()
+    if not code:
+        return None
+    if not (_FLAGCDN_CODE.match(code) or _FLAGCDN_SUB.match(code)):
         return None
     _FLAG_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    cache_path = _FLAG_CACHE_DIR / f"{code}.png"
+    safe_name = code.replace("-", "_")
+    cache_path = _FLAG_CACHE_DIR / f"{safe_name}.png"
     if cache_path.is_file():
         try:
             return Image.open(cache_path).convert("RGBA")
