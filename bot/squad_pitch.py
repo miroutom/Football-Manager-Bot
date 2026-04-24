@@ -6,12 +6,13 @@
 Дэвис vs Геррейро). Если «своих» нет — подстановка по взаимозаменяемости, как раньше.
 
 Стартовые 11: флаг по ``nation`` — PNG с flagcdn.com (кэш ``assets/cache/flags``), иначе упрощённые
-полосы. Эмблема: ``assets/crests/<команда>.png`` или ``wikimedia_commons.json`` (имя файла: Commons
-или en.wikipedia через ``Special:FilePath``). Сайдбар: рейтинг из БД / «—», затем позиция и фамилия.
+полосы. Эмблема: ``assets/crests/`` / ``wikimedia_commons.json``; на поле — как есть (пропорции),
+без круга; тёмный фон, связный с краем картинки, делается прозрачным. Сайдбар: рейтинг, позиция, фамилия.
 """
 from __future__ import annotations
 
 import logging
+from collections import deque
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -551,13 +552,62 @@ def _try_load_crest_rgba(team_db: str) -> Image.Image | None:
     return None
 
 
-def _paste_crest_roundel(im: Image.Image, crest: Image.Image, cx: int, cy: int, r: int) -> None:
-    d = 2 * r
-    scaled = crest.resize((d, d), Image.Resampling.LANCZOS)
-    mask = Image.new("L", (d, d), 0)
-    md = ImageDraw.Draw(mask)
-    md.ellipse([0, 0, d - 1, d - 1], fill=255)
-    im.paste(scaled, (cx - r, cy - r), mask)
+def _crest_dematte_linked_dark_from_edges(rgba: Image.Image, rgb_lim: int = 40) -> Image.Image:
+    """Делает прозрачным тёмный фон, 4-связный с краями изображения (часто чёрная «подложка» с Wiki)."""
+    im = rgba.copy()
+    w, h = im.size
+    if w < 2 or h < 2:
+        return im
+    px = im.load()
+
+    def dark(r: int, g: int, b: int, a: int) -> bool:
+        return a > 48 and r <= rgb_lim and g <= rgb_lim and b <= rgb_lim
+
+    q: deque[tuple[int, int]] = deque()
+    seen: set[tuple[int, int]] = set()
+    for x in range(w):
+        for y in (0, h - 1):
+            t = (x, y)
+            if t not in seen and dark(*px[x, y]):
+                seen.add(t)
+                q.append(t)
+    for y in range(h):
+        for x in (0, w - 1):
+            t = (x, y)
+            if t not in seen and dark(*px[x, y]):
+                seen.add(t)
+                q.append(t)
+    while q:
+        x, y = q.popleft()
+        r, g, b, a = px[x, y]
+        if not dark(r, g, b, a):
+            continue
+        px[x, y] = (r, g, b, 0)
+        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if nx < 0 or ny < 0 or nx >= w or ny >= h:
+                continue
+            nt = (nx, ny)
+            if nt in seen:
+                continue
+            rr, gg, bb, aa = px[nx, ny]
+            if dark(rr, gg, bb, aa):
+                seen.add(nt)
+                q.append(nt)
+    return im
+
+
+def _paste_crest_natural(im: Image.Image, crest: Image.Image, cx: int, cy: int, max_side: int) -> None:
+    """Вписывает эмблему в квадрат max_side×max_side без искажения пропорций, без круглой маски."""
+    work = crest.convert("RGBA")
+    work = _crest_dematte_linked_dark_from_edges(work)
+    thumb = work.copy()
+    thumb.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+    nw, nh = thumb.size
+    if nw < 1 or nh < 1:
+        return
+    left = int(cx - nw // 2)
+    top = int(cy - nh // 2)
+    im.paste(thumb, (left, top), thumb)
 
 
 def _draw_crest_placeholder(
@@ -781,10 +831,10 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
 
     crest_cx = int(px1)
     crest_cy = int(py0 + 56)
-    crest_r = 38
+    crest_max = 78
     crest_img = _try_load_crest_rgba(team_db)
     if crest_img is not None:
-        _paste_crest_roundel(im, crest_img, crest_cx, crest_cy, crest_r)
+        _paste_crest_natural(im, crest_img, crest_cx, crest_cy, crest_max)
     else:
         _draw_crest_placeholder(draw, crest_cx, crest_cy, team_db, kit, crest_font)
 
