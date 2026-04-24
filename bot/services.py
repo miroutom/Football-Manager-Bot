@@ -176,6 +176,20 @@ def teams_ordered_for_goalscorers(league_code: str) -> list[str]:
     return sorted(LEAGUE_TEAMS[league_code])
 
 
+def render_team_squad_pitch_png_bytes(league_code: str, team_index: int) -> bytes:
+    """PNG: состав на схеме 4-3-3 (фамилия + overall / иначе средний рейтинг)."""
+    from bot.squad_pitch import render_squad_pitch_png_bytes
+
+    teams = teams_ordered_for_goalscorers(league_code)
+    if not (0 <= team_index < len(teams)):
+        raise IndexError("Некорректный выбор команды")
+    team = teams[team_index]
+    tournament = tournament_db_for_league(league_code)
+    label = dict(LEAGUE_LABELS).get(league_code, league_code)
+    subtitle = f"{label} · 4-3-3 по позициям из БД"
+    return render_squad_pitch_png_bytes(team, tournament, subtitle=subtitle)
+
+
 def render_team_goalscorers_single(league_code: str, team_index: int) -> str:
     """Голеадоры одного клуба."""
     teams = teams_ordered_for_goalscorers(league_code)

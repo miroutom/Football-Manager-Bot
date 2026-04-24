@@ -1,0 +1,318 @@
+"""
+Состав клуба на схеме поля (4-3-3): фамилия + числовой рейтинг (overall из БД).
+"""
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from io import BytesIO
+from pathlib import Path
+
+from data.defender import Defender
+from data.forward import Forward
+from data.goalkeeper import Goalkeeper
+from data.midfielder import Midfielder
+from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
+
+logger = logging.getLogger(__name__)
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError as e:
+    raise ImportError("Нужен пакет Pillow: pip install pillow") from e
+
+def _pick_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+    paths = (
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+        Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
+        Path("C:/Windows/Fonts/arialbd.ttf"),
+    ) if bold else (
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("/Library/Fonts/Tahoma.ttf"),
+        Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
+        Path("C:/Windows/Fonts/arial.ttf"),
+    )
+    for p in paths:
+        try:
+            if p.exists():
+                return ImageFont.truetype(str(p), size=size)
+        except OSError:
+            continue
+    logger.warning("Состав: не найден TTF, используется шрифт по умолчанию")
+    return ImageFont.load_default()
+
+
+def _team_name_as_in_db(team: str) -> str:
+    if (team or "").strip() == "ЦСКА":
+        return "Цска"
+    return team
+
+
+def _surname(full_name: str) -> str:
+    s = (full_name or "").strip()
+    if not s:
+        return "?"
+    parts = s.split()
+    return parts[-1] if len(parts) >= 2 else parts[0]
+
+
+def _display_score(overall: int, rating: float) -> str:
+    o = int(overall or 0)
+    if o > 0:
+        return str(o)
+    r = float(rating or 0.0)
+    if r > 0:
+        return f"{r:.1f}"
+    return "—"
+
+
+def _position_tags(pos: str) -> set[str]:
+    p = (pos or "").strip()
+    tags: set[str] = set()
+    if p in goalkeepers:
+        tags.add("gk")
+    if p in ("ЛЗ", "ЛФЗ"):
+        tags.add("lb")
+    if p in ("ПЗ", "ПФЗ"):
+        tags.add("rb")
+    if p == "ЦЗ":
+        tags.add("cb")
+    if p == "ЛЦЗ":
+        tags.update(("cb", "lb"))
+    if p == "ПЦЗ":
+        tags.update(("cb", "rb"))
+    if p == "ЦОП":
+        tags.add("cdm")
+    if p in ("ЛП", "ЛЦП"):
+        tags.update(("cm", "lcm"))
+    if p in ("ПП", "ПЦП"):
+        tags.update(("cm", "rcm"))
+    if p in ("ЦП", "ЦАП"):
+        tags.add("cm")
+    if p in ("ЛФА", "ЛФД"):
+        tags.add("lw")
+    if p in ("ПФА", "ПФД"):
+        tags.add("rw")
+    if p in ("ФРВ", "ЦФД"):
+        tags.add("st")
+    if p in forwards and not tags:
+        tags.add("st")
+    if p in midfielders and not tags:
+        tags.add("cm")
+    if p in defenders and not tags:
+        tags.add("cb")
+    return tags
+
+
+def _player_score(overall: int, rating: float) -> int:
+    o = int(overall or 0)
+    r = float(rating or 0.0)
+    if o > 0:
+        return o * 1000 + int(r * 10)
+    return int(r * 100)
+
+
+@dataclass
+class _Pl:
+    name: str
+    position: str
+    overall: int
+    rating: float
+    tags: set[str]
+    score: int
+
+
+def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
+    team_db = _team_name_as_in_db(team)
+    session = get_session(tournament)
+    out: list[_Pl] = []
+    for cls in (Forward, Midfielder, Defender, Goalkeeper):
+        for p in session.query(cls).filter_by(team=team_db).all():
+            pos = getattr(p, "position", "") or ""
+            ov = int(getattr(p, "overall", 0) or 0)
+            rt = float(getattr(p, "rating", 0.0) or 0.0)
+            tags = _position_tags(pos)
+            out.append(
+                _Pl(
+                    name=p.name,
+                    position=pos,
+                    overall=ov,
+                    rating=rt,
+                    tags=tags,
+                    score=_player_score(ov, rt),
+                )
+            )
+    return out
+
+
+# (slot_id, x_frac, y_frac, required tag sets — достаточно пересечения с тегами игрока)
+_SLOT_SPECS: tuple[tuple[str, float, float, frozenset[str]], ...] = (
+    ("GK", 0.50, 0.86, frozenset({"gk"})),
+    ("LB", 0.10, 0.68, frozenset({"lb"})),
+    ("RB", 0.90, 0.68, frozenset({"rb"})),
+    ("LCB", 0.36, 0.68, frozenset({"cb"})),
+    ("RCB", 0.64, 0.68, frozenset({"cb"})),
+    ("CDM", 0.50, 0.52, frozenset({"cdm"})),
+    ("LCM", 0.32, 0.40, frozenset({"lcm", "cm"})),
+    ("RCM", 0.68, 0.40, frozenset({"rcm", "cm"})),
+    ("LW", 0.18, 0.22, frozenset({"lw"})),
+    ("ST", 0.50, 0.14, frozenset({"st"})),
+    ("RW", 0.82, 0.22, frozenset({"rw"})),
+)
+
+
+def _assign_slots(players: list[_Pl]) -> tuple[dict[str, _Pl], list[_Pl]]:
+    pool = players[:]
+    used: set[int] = set()
+    slot_player: dict[str, _Pl] = {}
+
+    def take_best(cands: list[_Pl]) -> _Pl | None:
+        if not cands:
+            return None
+        best = max(cands, key=lambda x: x.score)
+        used.add(id(best))
+        return best
+
+    for sid, _x, _y, need in _SLOT_SPECS:
+        cands = [p for p in pool if id(p) not in used and (p.tags & need)]
+        # LCM: не забирать чистых rcm в первую очередь — предпочесть lcm или общий cm
+        if sid == "LCM":
+            pref = [p for p in cands if "lcm" in p.tags or ("cm" in p.tags and "rcm" not in p.tags)]
+            cands = pref or cands
+        if sid == "RCM":
+            pref = [p for p in cands if "rcm" in p.tags or ("cm" in p.tags and "lcm" not in p.tags)]
+            cands = pref or cands
+        p = take_best(cands)
+        if p:
+            slot_player[sid] = p
+
+    # Дозаполнение пустых слотов лучшими оставшимися
+    for sid, _x, _y, _need in _SLOT_SPECS:
+        if sid in slot_player:
+            continue
+        rest = [p for p in pool if id(p) not in used]
+        p = take_best(rest)
+        if p:
+            slot_player[sid] = p
+
+    bench = [p for p in pool if id(p) not in used]
+    bench.sort(key=lambda x: (-x.score, x.name.lower()))
+    return slot_player, bench
+
+
+def _draw_pitch_base(im: Image.Image, draw: ImageDraw.ImageDraw) -> None:
+    w, h = im.size
+    for y in range(h):
+        t = y / max(h - 1, 1)
+        g = int(38 + t * 28)
+        r = int(32 + t * 18)
+        b = int(18 + t * 10)
+        draw.line([(0, y), (w, y)], fill=(r, g, b))
+    margin = 40
+    box = [margin, margin, w - margin, h - margin]
+    draw.rectangle(box, outline=(240, 240, 240, 200), width=3)
+    cx = w // 2
+    my = (box[1] + box[3]) // 2
+    draw.line([(box[0], my), (box[2], my)], fill=(255, 255, 255, 160), width=2)
+    draw.ellipse([cx - 70, my - 70, cx + 70, my + 70], outline=(255, 255, 255, 140), width=2)
+
+
+def render_squad_pitch_png_bytes(
+    team: str,
+    tournament: str,
+    *,
+    subtitle: str = "",
+) -> bytes:
+    players = load_team_squad_players(team, tournament)
+    if not players:
+        w, h = 920, 400
+        im = Image.new("RGB", (w, h), (34, 70, 40))
+        draw = ImageDraw.Draw(im)
+        tf = _pick_font(26, bold=True)
+        sf = _pick_font(18, bold=False)
+        draw.text((w // 2, 120), team, fill=(255, 255, 255), font=tf, anchor="mm")
+        msg = "В базе нет игроков этой команды для выбранного турнира."
+        draw.text((w // 2, 180), msg, fill=(230, 230, 220), font=sf, anchor="mm")
+        if subtitle:
+            draw.text((w // 2, 220), subtitle, fill=(200, 210, 200), font=sf, anchor="mm")
+        out = BytesIO()
+        im.save(out, format="PNG", optimize=True)
+        return out.getvalue()
+
+    slot_map, bench = _assign_slots(players)
+
+    w, h = 920, 1180
+    im = Image.new("RGB", (w, h), (34, 70, 40))
+    draw = ImageDraw.Draw(im)
+    pitch_top = 100
+    pitch_h = h - pitch_top - 200
+    pitch_rect = (30, pitch_top, w - 30, pitch_top + pitch_h)
+    px0, py0, px1, py1 = pitch_rect
+    pitch_w = px1 - px0
+    pitch_hh = py1 - py0
+    sub = Image.new("RGB", (pitch_w, pitch_hh), (40, 90, 45))
+    sub_draw = ImageDraw.Draw(sub)
+    _draw_pitch_base(sub, sub_draw)
+    im.paste(sub, (int(px0), int(py0)))
+
+    title_font = _pick_font(30, bold=True)
+    sub_font = _pick_font(20, bold=False)
+    name_font = _pick_font(22, bold=True)
+    pos_font = _pick_font(14, bold=False)
+    bench_font = _pick_font(16, bold=False)
+
+    title = team
+    draw.text((w // 2, 24), title, fill=(255, 255, 255), font=title_font, anchor="mt")
+    if subtitle:
+        draw.text((w // 2, 58), subtitle, fill=(220, 230, 220), font=sub_font, anchor="mt")
+
+    for sid, xf, yf, _need in _SLOT_SPECS:
+        pl = slot_map.get(sid)
+        cx = px0 + xf * pitch_w
+        cy = py0 + yf * pitch_hh
+        label = sid
+        if pl:
+            line1 = _surname(pl.name)
+            line2 = _display_score(pl.overall, pl.rating)
+            bb1 = draw.textbbox((0, 0), line1, font=name_font)
+            bb2 = draw.textbbox((0, 0), line2, font=name_font)
+            tw = max(bb1[2] - bb1[0], bb2[2] - bb2[0])
+            th1 = bb1[3] - bb1[1]
+            th2 = bb2[3] - bb2[1]
+            pad_x, pad_y = 10, 8
+            bw = max(tw + pad_x * 2, 72)
+            bh = pad_y * 2 + th1 + 8 + th2 + 22
+            x0, y0 = int(cx - bw // 2), int(cy - bh // 2)
+            draw.rounded_rectangle(
+                [x0, y0, x0 + bw, y0 + bh],
+                radius=8,
+                fill=(32, 36, 42),
+                outline=(180, 190, 200),
+                width=2,
+            )
+            draw.text((cx, y0 + pad_y + 2), line1, fill=(250, 250, 250), font=name_font, anchor="mt")
+            draw.text((cx, y0 + pad_y + th1 + 8), line2, fill=(180, 255, 200), font=name_font, anchor="mt")
+            draw.text((cx, y0 + bh - 4), label, fill=(200, 200, 210), font=pos_font, anchor="mb")
+        else:
+            draw.text((cx, cy), "—", fill=(200, 200, 200), font=name_font, anchor="mm")
+
+    if bench:
+        y0 = py1 + 14
+        draw.text((24, y0), "Запасные:", fill=(240, 240, 240), font=bench_font)
+        y0 += 28
+        chunks: list[str] = []
+        row: list[str] = []
+        for p in bench[:18]:
+            row.append(f"{_surname(p.name)} {_display_score(p.overall, p.rating)}")
+            if len(row) >= 6:
+                chunks.append("  ·  ".join(row))
+                row = []
+        if row:
+            chunks.append("  ·  ".join(row))
+        for line in chunks[:4]:
+            draw.text((24, y0), line, fill=(220, 230, 220), font=bench_font)
+            y0 += 24
+
+    out = BytesIO()
+    im.save(out, format="PNG", optimize=True)
+    return out.getvalue()

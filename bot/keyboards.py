@@ -73,6 +73,12 @@ def main_menu_inline_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="👥 Голеадоры по клубам", callback_data="menu:tgs_league"),
             ],
             [
+                InlineKeyboardButton(
+                    text="⚽ Состав клуба (схема)",
+                    callback_data="menu:squad_league",
+                ),
+            ],
+            [
                 InlineKeyboardButton(text="🔄 Трансфер", callback_data="xfer:start"),
             ],
         ]

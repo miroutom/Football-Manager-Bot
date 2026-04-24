@@ -34,6 +34,7 @@ from bot.services import (
     render_standings,
     render_team_goalscorers_league,
     render_team_goalscorers_single,
+    render_team_squad_pitch_png_bytes,
     render_top100_all_leagues,
     teams_ordered_for_goalscorers,
     render_top_assists,
@@ -123,6 +124,25 @@ def _club_btn_label(text: str, max_chars: int = 40) -> str:
     if len(text) <= max_chars:
         return text
     return text[: max_chars - 1] + "…"
+
+
+def _squad_club_keyboard(league_code: str) -> InlineKeyboardMarkup:
+    teams = teams_ordered_for_goalscorers(league_code)
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for idx, team in enumerate(teams):
+        row.append(
+            InlineKeyboardButton(
+                text=_club_btn_label(team),
+                callback_data=f"sqclub:{league_code}:{idx}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _tgclub_keyboard(league_code: str) -> InlineKeyboardMarkup:
@@ -655,6 +675,60 @@ async def cb_tgs_pick_league(callback: CallbackQuery) -> None:
         f"{_league_title(code)} — выберите клуб:",
         reply_markup=kb,
     )
+
+
+@router.callback_query(F.data == "menu:squad_league")
+async def cb_menu_squad_league(callback: CallbackQuery) -> None:
+    await callback.answer()
+    await callback.message.answer(
+        "Состав клуба на поле (условная 4-3-3): фамилия и число "
+        "(overall из БД; если нет — средний рейтинг за матчи). "
+        "Выберите лигу, затем клуб:",
+        reply_markup=_league_keyboard("squadlg"),
+    )
+
+
+@router.callback_query(F.data.startswith("squadlg:"))
+async def cb_squad_pick_league(callback: CallbackQuery) -> None:
+    code = callback.data.split(":", 1)[1]
+    await callback.answer()
+    try:
+        kb = _squad_club_keyboard(code)
+    except Exception as e:
+        logger.exception("squad_league_kb")
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+    await callback.message.answer(
+        f"{_league_title(code)} — выберите клуб:",
+        reply_markup=kb,
+    )
+
+
+@router.callback_query(F.data.startswith("sqclub:"))
+async def cb_sqclub_team(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    _, code, idx_s = parts
+    try:
+        idx = int(idx_s)
+    except ValueError:
+        await callback.answer()
+        return
+    await callback.answer("Рисую…")
+    try:
+        png = await asyncio.to_thread(render_team_squad_pitch_png_bytes, code, idx)
+        teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
+        team_name = teams[idx]
+        cap = f"Состав · {_league_title(code)} · {team_name}"
+        await callback.message.answer_photo(
+            BufferedInputFile(png, filename="squad_pitch.png"),
+            caption=cap,
+        )
+    except Exception as e:
+        logger.exception("sqclub")
+        await callback.message.answer(f"Ошибка: {e}")
 
 
 @router.callback_query(F.data.startswith("tgclub:"))
