@@ -15,7 +15,8 @@ from data.defender import Defender
 from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
-from team_squad_schemas import SquadSlot, formation_label_for_team, get_slots_for_team
+from coach_squad_state import label_for_squad_caption, resolve_formation_key_for_team
+from team_squad_schemas import SquadSlot, get_slots_for_formation_key
 from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
 
 logger = logging.getLogger(__name__)
@@ -155,7 +156,7 @@ def _position_matches_slot(p: _Pl, slot: SquadSlot) -> bool:
 
 
 def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], list[_Pl]]:
-    slots = get_slots_for_team(team_db)
+    slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
     pool = players[:]
     used: set[int] = set()
     slot_player: dict[str, _Pl] = {}
@@ -249,9 +250,9 @@ def render_squad_pitch_png_bytes(
         return out.getvalue()
 
     slot_map, bench = _assign_slots(players, team_db)
-    slots = get_slots_for_team(team_db)
+    slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
     if subtitle:
-        subtitle = f"{subtitle} · шаблон {formation_label_for_team(team_db)}"
+        subtitle = f"{subtitle} · {label_for_squad_caption(team_db)}"
 
     subs = bench[:SUBSTITUTES_COUNT]
     reserves = bench[SUBSTITUTES_COUNT:]

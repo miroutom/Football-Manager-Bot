@@ -3,20 +3,17 @@
 Схемы расстановки для PNG «Состав клуба».
 
 Каждый слот задаётся позициями из БД (как в поле ``players.position``).
-Игрок попадает в слот только если его позиция входит в ``allowed_positions``.
-Пустой слот остаётся «—», без подстановки «лучшего оставшегося» — так не окажется
-нападающий на ЦОП.
+Какой **ключ** схемы применяется к команде, читайте в ``coach_squad_state``:
+тренер · три варианта ключей (один active) · привязка тренер→команда.
 
-Как добавить схему команды
----------------------------
-1. В ``FORMATION_SLOTS`` завести новый ключ, например ``"433_сити"``, скопировав
-   кортеж из ``"433"`` и поменяв множества позиций под вашу схему.
-2. В ``TEAM_FORMATION_KEY`` сопоставить имя команды **как в SQLite** ключу схемы::
+Статический запасной вариант: ``TEAM_FORMATION_KEY`` / ``DEFAULT`` (``433``),
+если тренер для команды ещё не настроен.
 
-       TEAM_FORMATION_KEY["Сити"] = "433_сити"
+1. В ``FORMATION_SLOTS`` завести наборы слотов под новые ключи.
+2. У тренера в ``data/coach_squad_state.json`` указать три ключа, один ``active``;
+   команде назначить тренера через API ``coach_squad_state.assign_coach_to_team``.
 
-Имена команд для ключа — те же, что в ``player_stats.LEAGUE_TEAMS`` и в боте
-(в т.ч. «Цска», не «ЦСКА»). Если команды нет в словаре — используется ``"433"``.
+Пока тренер не задан — сработает ``TEAM_FORMATION_KEY[команда]`` или ``433``.
 """
 from __future__ import annotations
 
@@ -70,15 +67,10 @@ FORMATION_SLOTS: dict[str, tuple[SquadSlot, ...]] = {
 }
 
 
-def get_slots_for_team(team_db: str) -> tuple[SquadSlot, ...]:
-    key = TEAM_FORMATION_KEY.get((team_db or "").strip(), DEFAULT_FORMATION_KEY)
+def get_slots_for_formation_key(formation_key: str) -> tuple[SquadSlot, ...]:
+    """Слоты по ключу из ``FORMATION_SLOTS``; неизвестный ключ — дефолт 433."""
+    key = (formation_key or "").strip() or DEFAULT_FORMATION_KEY
     slots = FORMATION_SLOTS.get(key)
     if slots is None:
         return FORMATION_SLOTS[DEFAULT_FORMATION_KEY]
     return slots
-
-
-def formation_label_for_team(team_db: str) -> str:
-    """Короткая подпись для подзаголовка (какой ключ схемы задействован)."""
-    key = TEAM_FORMATION_KEY.get((team_db or "").strip(), DEFAULT_FORMATION_KEY)
-    return key
