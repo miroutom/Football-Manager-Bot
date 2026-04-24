@@ -5,8 +5,9 @@
 входит в ``allowed_positions`` этого слота, выбирается с наивысшим рейтингом (как ЛЗ:
 Дэвис vs Геррейро). Если «своих» нет — подстановка по взаимозаменяемости, как раньше.
 
-Стартовые 11: футболка в цветах команды (см. ``squad_kit_palette``), фамилия
-снизу, рейтинг справа от футболки. Запасные/резерв — текстом как раньше.
+Стартовые 11: футболка по ``KitSpec`` (1 цвет — сплошняк, 2 — полосы, 3 — полосы
+и отдельный цвет воротника), см. ``squad_kit_palette``. Фамилия снизу, рейтинг справа.
+Запасные/резерв — текстом как раньше.
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from coach_squad_state import label_for_squad_caption, resolve_formation_key_for_team
-from squad_kit_palette import kit_for_team
+from squad_kit_palette import KitSpec, kit_for_team
 from team_squad_schemas import SquadSlot, get_slots_for_formation_key
 from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
 
@@ -192,9 +193,7 @@ def _draw_shirt(
     draw: ImageDraw.ImageDraw,
     cx: int,
     cy: int,
-    primary: tuple[int, int, int],
-    secondary: tuple[int, int, int],
-    striped: bool,
+    kit: KitSpec,
     is_gk: bool,
 ) -> tuple[int, int, int, int]:
     """Рисует упрощённую футболку; возвращает bbox (x0,y0,x1,y1)."""
@@ -202,6 +201,12 @@ def _draw_shirt(
         primary = (26, 30, 38)
         secondary = (65, 72, 84)
         striped = False
+        collar = (18, 20, 26)
+    else:
+        primary = kit.primary
+        striped = kit.striped
+        secondary = kit.secondary if kit.secondary is not None else primary
+        collar = kit.collar_rgb()
     bw, bh = 44, 48
     x0, y0 = int(cx - bw // 2), int(cy - bh // 2)
     x1, y1 = x0 + bw, y0 + bh
@@ -217,10 +222,10 @@ def _draw_shirt(
             draw.rectangle([sx, y0 + 5, min(sx + 3, x1 - 4), y1 - 5], fill=secondary)
     draw.polygon(
         [(cx, y0 + 5), (cx - 9, y0 + 16), (cx + 9, y0 + 16)],
-        fill=(18, 20, 26),
+        fill=collar,
         outline=(248, 248, 252),
     )
-    return (x0, y0, x1, y1)
+    return x0, y0, x1, y1
 
 
 def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], list[_Pl]]:
@@ -373,7 +378,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     rating_font = _pick_font(24, bold=True)
     pos_font = _pick_font(12, bold=False)
     bench_font = _pick_font(16, bold=False)
-    kit_primary, kit_secondary, kit_striped = kit_for_team(team_db)
+    kit = kit_for_team(team_db)
 
     title = team
     draw.text((w // 2, 24), title, fill=(255, 255, 255), font=title_font, anchor="mt")
@@ -389,15 +394,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
             is_gk = slot.slot_id == "GK"
             ix, iy = int(cx), int(cy)
             shirt_cy = iy - 14
-            x0, y0, x1, y1 = _draw_shirt(
-                draw,
-                ix,
-                shirt_cy,
-                kit_primary,
-                kit_secondary,
-                kit_striped,
-                is_gk,
-            )
+            x0, y0, x1, y1 = _draw_shirt(draw, ix, shirt_cy, kit, is_gk)
             score_txt = _display_score(pl.overall, pl.rating)
             bb_r = draw.textbbox((0, 0), score_txt, font=rating_font)
             rh = bb_r[3] - bb_r[1]
