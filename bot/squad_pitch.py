@@ -1,8 +1,9 @@
 """
 Состав клуба на схеме поля: слоты из ``team_squad_schemas`` / ``formation_geometry``.
 
-Подбор игрока: позиция из БД + взаимозаменяемость (атака/края, ЦП↔ЦОП, фланги
-защиты, ЦОП на ЦЗ); ВРТ только вратарь.
+Подбор по слотам формации: для каждого слота среди игроков команды, чья позиция в БД
+входит в ``allowed_positions`` этого слота, выбирается с наивысшим рейтингом (как ЛЗ:
+Дэвис vs Геррейро). Если «своих» нет — подстановка по взаимозаменяемости, как раньше.
 
 Стартовые 11: футболка в цветах команды (см. ``squad_kit_palette``), фамилия
 снизу, рейтинг справа от футболки. Запасные/резерв — текстом как раньше.
@@ -182,6 +183,11 @@ def _player_fits_slot(p: _Pl, slot: SquadSlot) -> bool:
     return False
 
 
+def _natural_fits_slot(p: _Pl, slot: SquadSlot) -> bool:
+    """Позиция из БД напрямую входит в допустимые для слота (без сдвигов по линиям)."""
+    return (p.position or "").strip() in slot.allowed_positions
+
+
 def _draw_shirt(
     draw: ImageDraw.ImageDraw,
     cx: int,
@@ -226,12 +232,16 @@ def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], lis
     def take_best(cands: list[_Pl]) -> _Pl | None:
         if not cands:
             return None
-        best = max(cands, key=lambda x: x.score)
+        best = max(cands, key=lambda x: (x.score, x.name.lower()))
         used.add(id(best))
         return best
 
     for slot in slots:
-        cands = [p for p in pool if id(p) not in used and _player_fits_slot(p, slot)]
+        cands = [
+            p for p in pool if id(p) not in used and _natural_fits_slot(p, slot)
+        ]
+        if not cands:
+            cands = [p for p in pool if id(p) not in used and _player_fits_slot(p, slot)]
         if slot.slot_id == "LCM" and len(cands) > 1:
             pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
             cands = pref or cands
