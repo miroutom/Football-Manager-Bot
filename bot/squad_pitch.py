@@ -41,23 +41,50 @@ try:
 except ImportError as e:
     raise ImportError("Нужен пакет Pillow: pip install pillow") from e
 
+# Палитра «карточки» состава (тёмный UI + газон)
+_PAGE_BG = (11, 18, 22)
+_PAGE_BG_TOP = (17, 28, 34)
+_PITCH_FRAME = (71, 85, 105)
+_GRASS_LO = (18, 58, 42)
+_GRASS_HI = (34, 92, 58)
+_LINE_SOFT = (230, 240, 235)
+_SLATE_MUTED = (148, 163, 184)
+_SLATE_BRIGHT = (241, 245, 249)
+_BADGE_FILL = (30, 41, 59)
+_BADGE_EDGE = (51, 65, 85)
+
+
+def _try_truetype(path: Path, size: int, index: int = 0) -> ImageFont.FreeTypeFont | None:
+    if not path.exists():
+        return None
+    try:
+        return ImageFont.truetype(str(path), size=size, index=index)
+    except OSError:
+        return None
+
+
 def _pick_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-    paths = (
-        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
-        Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
-        Path("C:/Windows/Fonts/arialbd.ttf"),
-    ) if bold else (
-        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-        Path("/Library/Fonts/Tahoma.ttf"),
-        Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
-        Path("C:/Windows/Fonts/arial.ttf"),
-    )
-    for p in paths:
-        try:
-            if p.exists():
-                return ImageFont.truetype(str(p), size=size)
-        except OSError:
-            continue
+    if bold:
+        candidates = (
+            (Path("/System/Library/Fonts/Supplemental/Avenir Next.ttc"), 6),
+            (Path("/System/Library/Fonts/Supplemental/Avenir.ttc"), 2),
+            (Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"), 0),
+            (Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf"), 0),
+            (Path("C:/Windows/Fonts/arialbd.ttf"), 0),
+        )
+    else:
+        candidates = (
+            (Path("/System/Library/Fonts/Supplemental/Avenir Next.ttc"), 0),
+            (Path("/System/Library/Fonts/Supplemental/Avenir.ttc"), 0),
+            (Path("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf"), 0),
+            (Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"), 0),
+            (Path("/System/Library/Fonts/Supplemental/Arial.ttf"), 0),
+            (Path("C:/Windows/Fonts/arial.ttf"), 0),
+        )
+    for path, idx in candidates:
+        f = _try_truetype(path, size, idx)
+        if f is not None:
+            return f
     logger.warning("Состав: не найден TTF, используется шрифт по умолчанию")
     return ImageFont.load_default()
 
@@ -189,6 +216,14 @@ def _natural_fits_slot(p: _Pl, slot: SquadSlot) -> bool:
     return (p.position or "").strip() in slot.allowed_positions
 
 
+def _draw_shirt_shadow(draw: ImageDraw.ImageDraw, cx: int, cy: int, bw: int, bh: int) -> None:
+    r = 12
+    sx0 = int(cx - bw // 2 + 2)
+    sy0 = int(cy - bh // 2 + 4)
+    sx1, sy1 = sx0 + bw, sy0 + bh
+    draw.rounded_rectangle([sx0, sy0, sx1, sy1], radius=r, fill=(8, 16, 12))
+
+
 def _draw_shirt(
     draw: ImageDraw.ImageDraw,
     cx: int,
@@ -198,32 +233,36 @@ def _draw_shirt(
 ) -> tuple[int, int, int, int]:
     """Рисует упрощённую футболку; возвращает bbox (x0,y0,x1,y1)."""
     if is_gk:
-        primary = (26, 30, 38)
-        secondary = (65, 72, 84)
+        primary = (32, 38, 48)
+        secondary = (72, 82, 98)
         striped = False
-        collar = (18, 20, 26)
+        collar = (22, 28, 36)
     else:
         primary = kit.primary
         striped = kit.striped
         secondary = kit.secondary if kit.secondary is not None else primary
         collar = kit.collar_rgb()
-    bw, bh = 44, 48
+    bw, bh = 48, 52
+    r = 12
     x0, y0 = int(cx - bw // 2), int(cy - bh // 2)
     x1, y1 = x0 + bw, y0 + bh
+    edge = (220, 228, 236) if sum(primary) > 400 else (55, 65, 81)
+    _draw_shirt_shadow(draw, cx, cy, bw, bh)
     draw.rounded_rectangle(
         [x0, y0, x1, y1],
-        radius=10,
+        radius=r,
         fill=primary,
-        outline=(248, 248, 252),
-        width=2,
+        outline=edge,
+        width=1,
     )
     if striped:
-        for sx in range(x0 + 4, x1 - 4, 8):
-            draw.rectangle([sx, y0 + 5, min(sx + 3, x1 - 4), y1 - 5], fill=secondary)
+        for sx in range(x0 + 5, x1 - 4, 8):
+            draw.rectangle([sx, y0 + 6, min(sx + 3, x1 - 5), y1 - 6], fill=secondary)
     draw.polygon(
-        [(cx, y0 + 5), (cx - 9, y0 + 16), (cx + 9, y0 + 16)],
+        [(cx, y0 + 5), (cx - 10, y0 + 17), (cx + 10, y0 + 17)],
         fill=collar,
-        outline=(248, 248, 252),
+        outline=edge,
+        width=1,
     )
     return x0, y0, x1, y1
 
@@ -300,19 +339,22 @@ def _format_bench_rows(players: list[_Pl], per_row: int = _BENCH_NAMES_PER_ROW) 
 
 def _draw_pitch_base(im: Image.Image, draw: ImageDraw.ImageDraw) -> None:
     w, h = im.size
+    lo_r, lo_g, lo_b = _GRASS_LO
+    hi_r, hi_g, hi_b = _GRASS_HI
     for y in range(h):
         t = y / max(h - 1, 1)
-        g = int(38 + t * 28)
-        r = int(32 + t * 18)
-        b = int(18 + t * 10)
+        r = int(lo_r + t * (hi_r - lo_r))
+        g = int(lo_g + t * (hi_g - lo_g))
+        b = int(lo_b + t * (hi_b - lo_b))
         draw.line([(0, y), (w, y)], fill=(r, g, b))
-    margin = 40
+    margin = 36
     box = [margin, margin, w - margin, h - margin]
-    draw.rectangle(box, outline=(240, 240, 240, 200), width=3)
+    br = 6
+    draw.rounded_rectangle(box, radius=br, outline=_LINE_SOFT, width=1)
     cx = w // 2
     my = (box[1] + box[3]) // 2
-    draw.line([(box[0], my), (box[2], my)], fill=(255, 255, 255, 160), width=2)
-    draw.ellipse([cx - 70, my - 70, cx + 70, my + 70], outline=(255, 255, 255, 140), width=2)
+    draw.line([(box[0], my), (box[2], my)], fill=_LINE_SOFT, width=1)
+    draw.ellipse([cx - 70, my - 70, cx + 70, my + 70], outline=_LINE_SOFT, width=1)
 
 
 def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
@@ -321,15 +363,21 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     players = load_team_squad_players(team, tournament)
     if not players:
         w, h = 920, 400
-        im = Image.new("RGB", (w, h), (34, 70, 40))
+        im = Image.new("RGB", (w, h), _PAGE_BG)
         draw = ImageDraw.Draw(im)
-        tf = _pick_font(26, bold=True)
-        sf = _pick_font(18, bold=False)
-        draw.text((w // 2, 120), team, fill=(255, 255, 255), font=tf, anchor="mm")
+        for y in range(h):
+            t = y / max(h - 1, 1)
+            r = int(_PAGE_BG[0] + t * (_PAGE_BG_TOP[0] - _PAGE_BG[0]))
+            g = int(_PAGE_BG[1] + t * (_PAGE_BG_TOP[1] - _PAGE_BG[1]))
+            b = int(_PAGE_BG[2] + t * (_PAGE_BG_TOP[2] - _PAGE_BG[2]))
+            draw.line([(0, y), (w, y)], fill=(r, g, b))
+        tf = _pick_font(28, bold=True)
+        sf = _pick_font(17, bold=False)
+        draw.text((w // 2, 120), team, fill=_SLATE_BRIGHT, font=tf, anchor="mm", stroke_width=1, stroke_fill=(15, 23, 42))
         msg = "В базе нет игроков этой команды для выбранного турнира."
-        draw.text((w // 2, 180), msg, fill=(230, 230, 220), font=sf, anchor="mm")
+        draw.text((w // 2, 180), msg, fill=_SLATE_MUTED, font=sf, anchor="mm")
         if headline_sub:
-            draw.text((w // 2, 220), headline_sub, fill=(200, 210, 200), font=sf, anchor="mm")
+            draw.text((w // 2, 220), headline_sub, fill=_SLATE_MUTED, font=sf, anchor="mm")
         out = BytesIO()
         im.save(out, format="PNG", optimize=True)
         return out.getvalue()
@@ -361,29 +409,52 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     pitch_hh = 860
     h = pitch_top + pitch_hh + max(bottom_need, 120)
 
-    im = Image.new("RGB", (w, h), (34, 70, 40))
+    im = Image.new("RGB", (w, h), _PAGE_BG)
     draw = ImageDraw.Draw(im)
-    pitch_rect = (30, pitch_top, w - 30, pitch_top + pitch_hh)
+    for y in range(h):
+        t = y / max(h - 1, 1)
+        r = int(_PAGE_BG[0] + t * (_PAGE_BG_TOP[0] - _PAGE_BG[0]))
+        g = int(_PAGE_BG[1] + t * (_PAGE_BG_TOP[1] - _PAGE_BG[1]))
+        b = int(_PAGE_BG[2] + t * (_PAGE_BG_TOP[2] - _PAGE_BG[2]))
+        draw.line([(0, y), (w, y)], fill=(r, g, b))
+
+    pitch_rect = (28, pitch_top, w - 28, pitch_top + pitch_hh)
     px0, py0, px1, py1 = pitch_rect
     pitch_w = px1 - px0
     pitch_hh = py1 - py0
-    sub = Image.new("RGB", (pitch_w, pitch_hh), (40, 90, 45))
+    sub = Image.new("RGB", (pitch_w, pitch_hh), _GRASS_LO)
     sub_draw = ImageDraw.Draw(sub)
     _draw_pitch_base(sub, sub_draw)
     im.paste(sub, (int(px0), int(py0)))
+    pr = 14
+    draw.rounded_rectangle(
+        [pitch_rect[0] - 2, pitch_rect[1] - 2, pitch_rect[2] + 2, pitch_rect[3] + 2],
+        radius=pr,
+        outline=_PITCH_FRAME,
+        width=2,
+    )
 
-    title_font = _pick_font(30, bold=True)
-    sub_font = _pick_font(20, bold=False)
-    name_font = _pick_font(20, bold=True)
-    rating_font = _pick_font(24, bold=True)
-    pos_font = _pick_font(12, bold=False)
-    bench_font = _pick_font(16, bold=False)
+    title_font = _pick_font(32, bold=True)
+    sub_font = _pick_font(17, bold=False)
+    name_font = _pick_font(19, bold=True)
+    rating_font = _pick_font(22, bold=True)
+    pos_font = _pick_font(11, bold=False)
+    bench_font = _pick_font(15, bold=False)
     kit = kit_for_team(team_db)
 
     title = team
-    draw.text((w // 2, 24), title, fill=(255, 255, 255), font=title_font, anchor="mt")
+    draw.text(
+        (w // 2, 22),
+        title,
+        fill=_SLATE_BRIGHT,
+        font=title_font,
+        anchor="mt",
+        stroke_width=1,
+        stroke_fill=(15, 23, 42),
+    )
     if headline_sub:
-        draw.text((w // 2, 58), headline_sub, fill=(220, 230, 220), font=sub_font, anchor="mt")
+        draw.text((w // 2, 60), headline_sub, fill=_SLATE_MUTED, font=sub_font, anchor="mt")
+    draw.line([(48, 86), (w - 48, 86)], fill=_PITCH_FRAME, width=1)
 
     for slot in slots:
         pl = slot_map.get(slot.slot_id)
@@ -397,32 +468,55 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
             x0, y0, x1, y1 = _draw_shirt(draw, ix, shirt_cy, kit, is_gk)
             score_txt = _display_score(pl.overall, pl.rating)
             bb_r = draw.textbbox((0, 0), score_txt, font=rating_font)
+            tw = bb_r[2] - bb_r[0]
             rh = bb_r[3] - bb_r[1]
-            rx = x1 + 8
+            rx = x1 + 10
             ry = (y0 + y1) // 2 - rh // 2
-            draw.text((rx, ry), score_txt, fill=(220, 255, 210), font=rating_font, anchor="lt")
+            pad_x, pad_y = 6, 4
+            draw.rounded_rectangle(
+                [rx - pad_x, ry - pad_y, rx + tw + pad_x, ry + rh + pad_y],
+                radius=8,
+                fill=_BADGE_FILL,
+                outline=_BADGE_EDGE,
+                width=1,
+            )
+            draw.text(
+                (rx, ry),
+                score_txt,
+                fill=_SLATE_BRIGHT,
+                font=rating_font,
+                anchor="lt",
+            )
             sur = _surname(pl.name)
             name_y = y1 + 10
-            draw.text((ix, name_y), sur, fill=(252, 252, 252), font=name_font, anchor="mt")
-            draw.text((ix, name_y + 22), label, fill=(200, 205, 215), font=pos_font, anchor="mt")
+            draw.text(
+                (ix, name_y),
+                sur,
+                fill=_SLATE_BRIGHT,
+                font=name_font,
+                anchor="mt",
+                stroke_width=1,
+                stroke_fill=(15, 23, 42),
+            )
+            draw.text((ix, name_y + 21), label, fill=_SLATE_MUTED, font=pos_font, anchor="mt")
         else:
-            draw.text((cx, cy), "—", fill=(200, 200, 200), font=name_font, anchor="mm")
+            draw.text((cx, cy), "—", fill=_SLATE_MUTED, font=name_font, anchor="mm")
 
     if sub_lines or reserve_lines:
         y0 = py1 + bottom_pad_top
         if sub_lines:
-            draw.text((24, y0), "Запасные:", fill=(240, 240, 240), font=bench_font)
-            y0 += section_title_h
+            draw.text((28, y0), "Запасные", fill=_SLATE_BRIGHT, font=bench_font)
+            y0 += section_title_h - 2
             for line in sub_lines:
-                draw.text((24, y0), line, fill=(220, 230, 220), font=bench_font)
+                draw.text((28, y0), line, fill=_SLATE_MUTED, font=bench_font)
                 y0 += bench_line_h
         if reserve_lines:
             if sub_lines:
                 y0 += gap_between_sections
-            draw.text((24, y0), "Резерв:", fill=(240, 240, 240), font=bench_font)
-            y0 += section_title_h
+            draw.text((28, y0), "Резерв", fill=_SLATE_BRIGHT, font=bench_font)
+            y0 += section_title_h - 2
             for line in reserve_lines:
-                draw.text((24, y0), line, fill=(210, 215, 225), font=bench_font)
+                draw.text((28, y0), line, fill=(100, 116, 139), font=bench_font)
                 y0 += bench_line_h
 
     out = BytesIO()
