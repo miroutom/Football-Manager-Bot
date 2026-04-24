@@ -5,9 +5,9 @@
 входит в ``allowed_positions`` этого слота, выбирается с наивысшим рейтингом (как ЛЗ:
 Дэвис vs Геррейро). Если «своих» нет — подстановка по взаимозаменяемости, как раньше.
 
-Стартовые 11: футболка по ``KitSpec`` (1 цвет — сплошняк, 2 — полосы, 3 — полосы
-и отдельный цвет воротника), см. ``squad_kit_palette``. Фамилия снизу, рейтинг справа.
-Запасные/резерв — текстом как раньше.
+Стартовые 11: слева мини-флаг (по полю ``nation`` в БД, иначе нейтральная плашка),
+футболка ``KitSpec``, справа рейтинг, снизу фамилия и слот. Справа панель: эмблема
+клуба (заглушка по названию) и список запасных в стиле «боковой сайдбар».
 """
 from __future__ import annotations
 
@@ -51,6 +51,17 @@ _LINE_SOFT = (230, 240, 235)
 _SLATE_MUTED = (148, 163, 184)
 _SLATE_BRIGHT = (241, 245, 249)
 _RATING_TEXT = (190, 244, 210)
+
+_CANVAS_W = 1184
+_MARGINS_X = 18
+_SIDEBAR_W = 276
+_CONTENT_TOP = 96
+_PITCH_H = 736
+_SIDEBAR_BG = (28, 58, 158)
+_SIDEBAR_BG_STRIPE = (22, 48, 130)
+_SIDEBAR_EDGE = (96, 165, 250)
+_FLAG_W = 22
+_FLAG_H = 15
 
 
 def _try_truetype(path: Path, size: int, index: int = 0) -> ImageFont.FreeTypeFont | None:
@@ -166,6 +177,7 @@ class _Pl:
     rating: float
     tags: set[str]
     score: int
+    nation: str | None
 
 
 def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
@@ -178,6 +190,9 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
             ov = int(getattr(p, "overall", 0) or 0)
             rt = float(getattr(p, "rating", 0.0) or 0.0)
             tags = _position_tags(pos)
+            nat = getattr(p, "nation", None)
+            if nat is not None:
+                nat = str(nat).strip() or None
             out.append(
                 _Pl(
                     name=p.name,
@@ -186,6 +201,7 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     rating=rt,
                     tags=tags,
                     score=_player_score(ov, rt),
+                    nation=nat,
                 )
             )
     return out
@@ -257,6 +273,222 @@ def _draw_shirt(
     return x0, y0, x1, y1
 
 
+def _nation_to_iso2(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    s = str(raw).strip().upper()
+    if not s:
+        return None
+    if len(s) == 2 and s.isalpha():
+        return s
+    ru: dict[str, str] = {
+        "РОССИЯ": "RU",
+        "РФ": "RU",
+        "ИСПАНИЯ": "ES",
+        "ИТАЛИЯ": "IT",
+        "ФРАНЦИЯ": "FR",
+        "ГЕРМАНИЯ": "DE",
+        "АНГЛИЯ": "GB",
+        "ШОТЛАНДИЯ": "GB",
+        "УЭЛЬС": "GB",
+        "БРАЗИЛИЯ": "BR",
+        "АРГЕНТИНА": "AR",
+        "ПОРТУГАЛИЯ": "PT",
+        "ПОЛЬША": "PL",
+        "УКРАИНА": "UA",
+        "ХОРВАТИЯ": "HR",
+        "СЕРБИЯ": "RS",
+        "БЕЛЬГИЯ": "BE",
+        "НИДЕРЛАНДЫ": "NL",
+        "ГОЛЛАНДИЯ": "NL",
+        "АВСТРИЯ": "AT",
+        "ШВЕЙЦАРИЯ": "CH",
+        "ШВЕЦИЯ": "SE",
+        "НОРВЕГИЯ": "NO",
+        "ДАНИЯ": "DK",
+        "ФИНЛЯНДИЯ": "FI",
+        "ТУРЦИЯ": "TR",
+        "ГРЕЦИЯ": "GR",
+        "ЧЕХИЯ": "CZ",
+        "СЛОВАКИЯ": "SK",
+        "ВЕНГРИЯ": "HU",
+        "РУМЫНИЯ": "RO",
+        "БОЛГАРИЯ": "BG",
+        "ЯПОНИЯ": "JP",
+        "КОРЕЯ": "KR",
+        "КНР": "CN",
+        "США": "US",
+        "МЕКСИКА": "MX",
+        "КАНАДА": "CA",
+        "АВСТРАЛИЯ": "AU",
+        "НИГЕРИЯ": "NG",
+        "ГАНА": "GH",
+        "СЕНЕГАЛ": "SN",
+        "МАРОККО": "MA",
+        "АЛЖИР": "DZ",
+        "ЕГИПЕТ": "EG",
+        "УРУГВАЙ": "UY",
+        "КОЛУМБИЯ": "CO",
+        "СЛОВЕНИЯ": "SI",
+        "БОСНИЯ": "BA",
+        "ИСРАИЛЬ": "IL",
+        "ГРУЗИЯ": "GE",
+        "АРМЕНИЯ": "AM",
+        "АЗЕРБАЙДЖАН": "AZ",
+        "КАЗАХСТАН": "KZ",
+        "УЗБЕКИСТАН": "UZ",
+    }
+    return ru.get(s)
+
+
+_FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]] = {
+    "RU": ((255, 255, 255), (0, 57, 166), (213, 43, 30)),
+    "FR": ((0, 85, 164), (255, 255, 255), (239, 65, 53)),
+    "DE": ((0, 0, 0), (221, 0, 0), (255, 204, 0)),
+    "IT": ((0, 140, 69), (255, 255, 255), (206, 43, 55)),
+    "ES": ((170, 0, 0), (252, 194, 27), (170, 0, 0)),
+    "BE": ((0, 0, 0), (255, 215, 0), (255, 0, 0)),
+    "NL": ((174, 28, 40), (255, 255, 255), (33, 70, 139)),
+    "GB": ((0, 36, 125), (255, 255, 255), (204, 0, 0)),
+    "PT": ((6, 115, 57), (255, 0, 0), (6, 115, 57)),
+    "BR": ((0, 156, 59), (255, 223, 0), (0, 39, 118)),
+    "AR": ((116, 172, 223), (255, 255, 255), (116, 172, 223)),
+    "PL": ((255, 255, 255), (220, 20, 60), (255, 255, 255)),
+    "UA": ((0, 91, 187), (255, 213, 0), (0, 91, 187)),
+    "HR": ((255, 0, 0), (255, 255, 255), (23, 23, 150)),
+    "RS": ((198, 54, 60), (14, 84, 176), (255, 255, 255)),
+    "CH": ((255, 0, 0), (255, 255, 255), (255, 0, 0)),
+    "AT": ((255, 0, 0), (255, 255, 255), (255, 0, 0)),
+    "SE": ((0, 106, 167), (254, 204, 0), (0, 106, 167)),
+    "NO": ((186, 12, 47), (255, 255, 255), (0, 32, 91)),
+    "DK": ((198, 12, 48), (255, 255, 255), (198, 12, 48)),
+    "FI": ((255, 255, 255), (0, 53, 128), (255, 255, 255)),
+    "TR": ((227, 10, 23), (255, 255, 255), (227, 10, 23)),
+    "US": ((178, 34, 52), (255, 255, 255), (60, 59, 110)),
+    "MX": ((0, 104, 71), (255, 255, 255), (206, 17, 38)),
+    "JP": ((255, 255, 255), (188, 0, 45), (255, 255, 255)),
+    "KR": ((205, 0, 26), (255, 255, 255), (0, 56, 168)),
+    "NG": ((0, 135, 81), (255, 255, 255), (0, 135, 81)),
+    "GH": ((206, 17, 38), (252, 209, 22), (0, 107, 63)),
+    "SN": ((0, 133, 63), (227, 27, 35), (227, 27, 35)),
+    "MA": ((193, 39, 45), (0, 98, 51), (193, 39, 45)),
+    "EG": ((0, 0, 0), (255, 255, 255), (206, 17, 38)),
+    "CO": ((252, 209, 22), (0, 56, 168), (213, 9, 27)),
+    "UY": ((0, 56, 168), (255, 255, 255), (0, 56, 168)),
+    "CZ": ((215, 20, 26), (255, 255, 255), (17, 69, 126)),
+    "SK": ((255, 255, 255), (11, 100, 185), (238, 28, 37)),
+    "HU": ((205, 42, 62), (255, 255, 255), (67, 111, 77)),
+    "RO": ((0, 43, 127), (252, 209, 22), (206, 17, 38)),
+    "BG": ((255, 255, 255), (0, 150, 110), (214, 38, 18)),
+    "GR": ((13, 94, 175), (255, 255, 255), (13, 94, 175)),
+    "IE": ((22, 155, 98), (255, 255, 255), (255, 134, 92)),
+    "CA": ((255, 0, 0), (255, 255, 255), (255, 0, 0)),
+    "AU": ((0, 0, 139), (255, 255, 255), (255, 0, 0)),
+    "NZ": ((0, 0, 0), (255, 255, 255), (204, 0, 0)),
+    "IL": ((0, 56, 184), (255, 255, 255), (0, 56, 184)),
+    "GE": ((255, 255, 255), (255, 0, 0), (255, 255, 255)),
+    "KZ": ((0, 127, 255), (255, 215, 0), (0, 127, 255)),
+    "CN": ((222, 41, 16), (255, 222, 0), (222, 41, 16)),
+}
+
+
+def _draw_mini_flag(draw: ImageDraw.ImageDraw, x: int, y: int, nation: str | None) -> None:
+    iso = _nation_to_iso2(nation)
+    trip = _FLAG_V3.get(iso) if iso else None
+    if trip is None:
+        draw.rounded_rectangle(
+            [x, y, x + _FLAG_W, y + _FLAG_H],
+            radius=3,
+            fill=(51, 65, 85),
+            outline=(71, 85, 105),
+            width=1,
+        )
+        return
+    seg = _FLAG_W / 3.0
+    for i, col in enumerate(trip):
+        xa = int(x + i * seg)
+        xb = int(x + (i + 1) * seg) if i < 2 else x + _FLAG_W
+        draw.rectangle([xa, y, xb, y + _FLAG_H], fill=col)
+    draw.rounded_rectangle(
+        [x, y, x + _FLAG_W, y + _FLAG_H],
+        radius=3,
+        outline=(15, 23, 42),
+        width=1,
+    )
+
+
+def _crest_initials(team_db: str) -> str:
+    t = (team_db or "").strip()
+    if not t:
+        return "?"
+    if len(t) <= 2:
+        return t.upper()
+    parts = t.replace("-", " ").split()
+    if len(parts) >= 2 and parts[0] and parts[1]:
+        return (parts[0][0] + parts[1][0]).upper()
+    return t[:2].upper()
+
+
+def _draw_crest_placeholder(
+    draw: ImageDraw.ImageDraw,
+    cx: int,
+    cy: int,
+    team_db: str,
+    kit: KitSpec,
+    font: ImageFont.ImageFont,
+) -> None:
+    r = 46
+    prim = kit.primary
+    lum = sum(prim)
+    edge = (220, 228, 236) if lum > 380 else (148, 163, 184)
+    txt = (248, 250, 252) if lum < 340 else (30, 41, 59)
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=prim, outline=edge, width=2)
+    draw.text((cx, cy), _crest_initials(team_db), fill=txt, font=font, anchor="mm")
+
+
+def _draw_sidebar_background(draw: ImageDraw.ImageDraw, rect: tuple[int, int, int, int]) -> None:
+    x0, y0, x1, y1 = rect
+    draw.rounded_rectangle(
+        [x0, y0, x1, y1],
+        radius=18,
+        fill=_SIDEBAR_BG,
+        outline=_SIDEBAR_EDGE,
+        width=1,
+    )
+
+
+def _draw_sidebar_text(
+    draw: ImageDraw.ImageDraw,
+    *,
+    subs: list[_Pl],
+    reserves: list[_Pl],
+    rect: tuple[int, int, int, int],
+    title_font: ImageFont.ImageFont,
+    row_font: ImageFont.ImageFont,
+    small_font: ImageFont.ImageFont,
+) -> None:
+    x0, y0, x1, y1 = rect
+    pad = 14
+    ty = y0 + pad
+    draw.text((x0 + pad, ty), "Запасные", fill=_SLATE_BRIGHT, font=title_font, anchor="lt")
+    ty += 28
+    row_h = 28
+    for i, p in enumerate(subs):
+        ry0 = ty + i * row_h
+        stripe = _SIDEBAR_BG_STRIPE if i % 2 else (24, 54, 145)
+        draw.rectangle([x0 + 8, ry0, x1 - 8, ry0 + row_h - 3], fill=stripe)
+        line = f"{_display_score(p.overall, p.rating)}  {_surname(p.name)}"
+        draw.text((x0 + pad, ry0 + 4), line, fill=_SLATE_BRIGHT, font=row_font, anchor="lt")
+    ty += len(subs) * row_h + 10
+    if reserves:
+        draw.text((x0 + pad, ty), "Резерв", fill=(191, 219, 254), font=title_font, anchor="lt")
+        ty += 26
+        names = " · ".join(_surname(p.name) for p in reserves[:14])
+        if len(reserves) > 14:
+            names += " …"
+        draw.text((x0 + pad, ty), names, fill=(147, 197, 253), font=small_font, anchor="lt")
+
+
 def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], list[_Pl]]:
     slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
     pool = players[:]
@@ -305,26 +537,6 @@ def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], lis
 
 # Скамейка: первые N — запасные (как в заявке), остальные — резерв (до 22–25 в составе).
 SUBSTITUTES_COUNT = 7
-# С позицией строки длиннее — меньше ячеек в ряд, чтобы влезало в ширину PNG.
-_BENCH_NAMES_PER_ROW = 5
-
-
-def _format_bench_cell(p: _Pl) -> str:
-    pos = (p.position or "").strip() or "—"
-    return f"{_surname(p.name)} {pos} {_display_score(p.overall, p.rating)}"
-
-
-def _format_bench_rows(players: list[_Pl], per_row: int = _BENCH_NAMES_PER_ROW) -> list[str]:
-    chunks: list[str] = []
-    row: list[str] = []
-    for p in players:
-        row.append(_format_bench_cell(p))
-        if len(row) >= per_row:
-            chunks.append("  ·  ".join(row))
-            row = []
-    if row:
-        chunks.append("  ·  ".join(row))
-    return chunks
 
 
 def _draw_pitch_base(im: Image.Image, draw: ImageDraw.ImageDraw) -> None:
@@ -351,8 +563,10 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     team_db = _team_name_as_in_db(team)
     headline_sub = label_for_squad_caption(team_db)
     players = load_team_squad_players(team, tournament)
+    w = _CANVAS_W
+
     if not players:
-        w, h = 920, 400
+        h = 420
         im = Image.new("RGB", (w, h), _PAGE_BG)
         draw = ImageDraw.Draw(im)
         for y in range(h):
@@ -363,42 +577,29 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
             draw.line([(0, y), (w, y)], fill=(r, g, b))
         tf = _pick_font(28, bold=True)
         sf = _pick_font(17, bold=False)
-        draw.text((w // 2, 120), team, fill=_SLATE_BRIGHT, font=tf, anchor="mm", stroke_width=1, stroke_fill=(15, 23, 42))
+        draw.text(
+            (w // 2, 130),
+            team,
+            fill=_SLATE_BRIGHT,
+            font=tf,
+            anchor="mm",
+            stroke_width=1,
+            stroke_fill=(15, 23, 42),
+        )
         msg = "В базе нет игроков этой команды для выбранного турнира."
-        draw.text((w // 2, 180), msg, fill=_SLATE_MUTED, font=sf, anchor="mm")
+        draw.text((w // 2, 190), msg, fill=_SLATE_MUTED, font=sf, anchor="mm")
         if headline_sub:
-            draw.text((w // 2, 220), headline_sub, fill=_SLATE_MUTED, font=sf, anchor="mm")
+            draw.text((w // 2, 230), headline_sub, fill=_SLATE_MUTED, font=sf, anchor="mm")
         out = BytesIO()
         im.save(out, format="PNG", optimize=True)
         return out.getvalue()
 
     slot_map, bench = _assign_slots(players, team_db)
     slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
-
     subs = bench[:SUBSTITUTES_COUNT]
     reserves = bench[SUBSTITUTES_COUNT:]
-    sub_lines = _format_bench_rows(subs)
-    reserve_lines = _format_bench_rows(reserves)
 
-    bench_line_h = 22
-    section_title_h = 26
-    gap_between_sections = 18
-    bottom_pad_top = 14
-    bottom_pad_bottom = 28
-    bottom_need = bottom_pad_top
-    if sub_lines:
-        bottom_need += section_title_h + len(sub_lines) * bench_line_h
-    if reserve_lines:
-        if sub_lines:
-            bottom_need += gap_between_sections
-        bottom_need += section_title_h + len(reserve_lines) * bench_line_h
-    bottom_need += bottom_pad_bottom
-
-    w = 920
-    pitch_top = 100
-    pitch_hh = 860
-    h = pitch_top + pitch_hh + max(bottom_need, 120)
-
+    h = _CONTENT_TOP + _PITCH_H + 36
     im = Image.new("RGB", (w, h), _PAGE_BG)
     draw = ImageDraw.Draw(im)
     for y in range(h):
@@ -408,29 +609,77 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         b = int(_PAGE_BG[2] + t * (_PAGE_BG_TOP[2] - _PAGE_BG[2]))
         draw.line([(0, y), (w, y)], fill=(r, g, b))
 
-    pitch_rect = (28, pitch_top, w - 28, pitch_top + pitch_hh)
-    px0, py0, px1, py1 = pitch_rect
+    px0 = _MARGINS_X
+    px1 = w - _MARGINS_X - _SIDEBAR_W
+    py0 = _CONTENT_TOP
+    py1 = py0 + _PITCH_H
     pitch_w = px1 - px0
     pitch_hh = py1 - py0
+
     sub = Image.new("RGB", (pitch_w, pitch_hh), _GRASS_LO)
     sub_draw = ImageDraw.Draw(sub)
     _draw_pitch_base(sub, sub_draw)
     im.paste(sub, (int(px0), int(py0)))
-    pr = 14
     draw.rounded_rectangle(
-        [pitch_rect[0] - 2, pitch_rect[1] - 2, pitch_rect[2] + 2, pitch_rect[3] + 2],
-        radius=pr,
+        [px0 - 2, py0 - 2, px1 + 2, py1 + 2],
+        radius=14,
         outline=_PITCH_FRAME,
         width=2,
     )
 
+    sidebar_rect = (px1, py0, w - _MARGINS_X, py1)
+    _draw_sidebar_background(draw, sidebar_rect)
+    sb_title = _pick_font(17, bold=True)
+    sb_row = _pick_font(14, bold=False)
+    sb_small = _pick_font(12, bold=False)
+
+    kit = kit_for_team(team_db)
     title_font = _pick_font(32, bold=True)
     sub_font = _pick_font(17, bold=False)
     name_font = _pick_font(19, bold=True)
     rating_font = _pick_font(22, bold=True)
     pos_font = _pick_font(11, bold=False)
-    bench_font = _pick_font(15, bold=False)
-    kit = kit_for_team(team_db)
+    crest_font = _pick_font(22, bold=True)
+
+    shirt_bw = 48
+    for slot in slots:
+        pl = slot_map.get(slot.slot_id)
+        cx = px0 + slot.x * pitch_w
+        cy = py0 + slot.y * pitch_hh
+        label = slot.slot_id
+        if pl:
+            is_gk = slot.slot_id == "GK"
+            ix, iy = int(cx), int(cy)
+            shirt_cy = iy - 14
+            x0, y0, x1, y1 = _draw_shirt(draw, ix, shirt_cy, kit, is_gk)
+            flag_x = int(ix - shirt_bw // 2 - 8 - _FLAG_W)
+            flag_y = int(shirt_cy - _FLAG_H // 2)
+            _draw_mini_flag(draw, flag_x, flag_y, pl.nation)
+            score_txt = _display_score(pl.overall, pl.rating)
+            bb_r = draw.textbbox((0, 0), score_txt, font=rating_font)
+            rh = bb_r[3] - bb_r[1]
+            rx = x1 + 8
+            ry = (y0 + y1) // 2 - rh // 2
+            draw.text((rx, ry), score_txt, fill=_RATING_TEXT, font=rating_font, anchor="lt")
+            sur = _surname(pl.name)
+            name_y = y1 + 10
+            draw.text((ix, name_y), sur, fill=_SLATE_BRIGHT, font=name_font, anchor="mt")
+            draw.text((ix, name_y + 21), label, fill=_SLATE_MUTED, font=pos_font, anchor="mt")
+        else:
+            draw.text((cx, cy), "—", fill=_SLATE_MUTED, font=name_font, anchor="mm")
+
+    _draw_sidebar_text(
+        draw,
+        subs=subs,
+        reserves=reserves,
+        rect=sidebar_rect,
+        title_font=sb_title,
+        row_font=sb_row,
+        small_font=sb_small,
+    )
+    crest_cx = int(px1)
+    crest_cy = int(py0 + pitch_hh // 2)
+    _draw_crest_placeholder(draw, crest_cx, crest_cy, team_db, kit, crest_font)
 
     title = team
     draw.text(
@@ -444,61 +693,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     )
     if headline_sub:
         draw.text((w // 2, 60), headline_sub, fill=_SLATE_MUTED, font=sub_font, anchor="mt")
-    draw.line([(48, 86), (w - 48, 86)], fill=_PITCH_FRAME, width=1)
-
-    for slot in slots:
-        pl = slot_map.get(slot.slot_id)
-        cx = px0 + slot.x * pitch_w
-        cy = py0 + slot.y * pitch_hh
-        label = slot.slot_id
-        if pl:
-            is_gk = slot.slot_id == "GK"
-            ix, iy = int(cx), int(cy)
-            shirt_cy = iy - 14
-            x0, y0, x1, y1 = _draw_shirt(draw, ix, shirt_cy, kit, is_gk)
-            score_txt = _display_score(pl.overall, pl.rating)
-            bb_r = draw.textbbox((0, 0), score_txt, font=rating_font)
-            rh = bb_r[3] - bb_r[1]
-            rx = x1 + 8
-            ry = (y0 + y1) // 2 - rh // 2
-            draw.text(
-                (rx, ry),
-                score_txt,
-                fill=_RATING_TEXT,
-                font=rating_font,
-                anchor="lt",
-            )
-            sur = _surname(pl.name)
-            name_y = y1 + 10
-            draw.text(
-                (ix, name_y),
-                sur,
-                fill=_SLATE_BRIGHT,
-                font=name_font,
-                anchor="mt",
-                stroke_width=1,
-                stroke_fill=(15, 23, 42),
-            )
-            draw.text((ix, name_y + 21), label, fill=_SLATE_MUTED, font=pos_font, anchor="mt")
-        else:
-            draw.text((cx, cy), "—", fill=_SLATE_MUTED, font=name_font, anchor="mm")
-
-    if sub_lines or reserve_lines:
-        y0 = py1 + bottom_pad_top
-        if sub_lines:
-            draw.text((28, y0), "Запасные", fill=_SLATE_BRIGHT, font=bench_font)
-            y0 += section_title_h - 2
-            for line in sub_lines:
-                draw.text((28, y0), line, fill=_SLATE_MUTED, font=bench_font)
-                y0 += bench_line_h
-        if reserve_lines:
-            if sub_lines:
-                y0 += gap_between_sections
-            draw.text((28, y0), "Резерв", fill=_SLATE_BRIGHT, font=bench_font)
-            y0 += section_title_h - 2
-            for line in reserve_lines:
-                draw.text((28, y0), line, fill=(100, 116, 139), font=bench_font)
-                y0 += bench_line_h
+    draw.line([(28, 86), (w - 28, 86)], fill=_PITCH_FRAME, width=1)
 
     out = BytesIO()
     im.save(out, format="PNG", optimize=True)
