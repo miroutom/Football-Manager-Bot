@@ -200,6 +200,30 @@ def _assign_slots(players: list[_Pl]) -> tuple[dict[str, _Pl], list[_Pl]]:
     return slot_player, bench
 
 
+# Скамейка: первые N — запасные (как в заявке), остальные — резерв (до 22–25 в составе).
+SUBSTITUTES_COUNT = 7
+# С позицией строки длиннее — меньше ячеек в ряд, чтобы влезало в ширину PNG.
+_BENCH_NAMES_PER_ROW = 5
+
+
+def _format_bench_cell(p: _Pl) -> str:
+    pos = (p.position or "").strip() or "—"
+    return f"{_surname(p.name)} {pos} {_display_score(p.overall, p.rating)}"
+
+
+def _format_bench_rows(players: list[_Pl], per_row: int = _BENCH_NAMES_PER_ROW) -> list[str]:
+    chunks: list[str] = []
+    row: list[str] = []
+    for p in players:
+        row.append(_format_bench_cell(p))
+        if len(row) >= per_row:
+            chunks.append("  ·  ".join(row))
+            row = []
+    if row:
+        chunks.append("  ·  ".join(row))
+    return chunks
+
+
 def _draw_pitch_base(im: Image.Image, draw: ImageDraw.ImageDraw) -> None:
     w, h = im.size
     for y in range(h):
@@ -241,12 +265,33 @@ def render_squad_pitch_png_bytes(
 
     slot_map, bench = _assign_slots(players)
 
-    w, h = 920, 1180
+    subs = bench[:SUBSTITUTES_COUNT]
+    reserves = bench[SUBSTITUTES_COUNT:]
+    sub_lines = _format_bench_rows(subs)
+    reserve_lines = _format_bench_rows(reserves)
+
+    bench_line_h = 22
+    section_title_h = 26
+    gap_between_sections = 18
+    bottom_pad_top = 14
+    bottom_pad_bottom = 28
+    bottom_need = bottom_pad_top
+    if sub_lines:
+        bottom_need += section_title_h + len(sub_lines) * bench_line_h
+    if reserve_lines:
+        if sub_lines:
+            bottom_need += gap_between_sections
+        bottom_need += section_title_h + len(reserve_lines) * bench_line_h
+    bottom_need += bottom_pad_bottom
+
+    w = 920
+    pitch_top = 100
+    pitch_hh = 860
+    h = pitch_top + pitch_hh + max(bottom_need, 120)
+
     im = Image.new("RGB", (w, h), (34, 70, 40))
     draw = ImageDraw.Draw(im)
-    pitch_top = 100
-    pitch_h = h - pitch_top - 200
-    pitch_rect = (30, pitch_top, w - 30, pitch_top + pitch_h)
+    pitch_rect = (30, pitch_top, w - 30, pitch_top + pitch_hh)
     px0, py0, px1, py1 = pitch_rect
     pitch_w = px1 - px0
     pitch_hh = py1 - py0
@@ -296,22 +341,22 @@ def render_squad_pitch_png_bytes(
         else:
             draw.text((cx, cy), "—", fill=(200, 200, 200), font=name_font, anchor="mm")
 
-    if bench:
-        y0 = py1 + 14
-        draw.text((24, y0), "Запасные:", fill=(240, 240, 240), font=bench_font)
-        y0 += 28
-        chunks: list[str] = []
-        row: list[str] = []
-        for p in bench[:18]:
-            row.append(f"{_surname(p.name)} {_display_score(p.overall, p.rating)}")
-            if len(row) >= 6:
-                chunks.append("  ·  ".join(row))
-                row = []
-        if row:
-            chunks.append("  ·  ".join(row))
-        for line in chunks[:4]:
-            draw.text((24, y0), line, fill=(220, 230, 220), font=bench_font)
-            y0 += 24
+    if sub_lines or reserve_lines:
+        y0 = py1 + bottom_pad_top
+        if sub_lines:
+            draw.text((24, y0), "Запасные:", fill=(240, 240, 240), font=bench_font)
+            y0 += section_title_h
+            for line in sub_lines:
+                draw.text((24, y0), line, fill=(220, 230, 220), font=bench_font)
+                y0 += bench_line_h
+        if reserve_lines:
+            if sub_lines:
+                y0 += gap_between_sections
+            draw.text((24, y0), "Резерв:", fill=(240, 240, 240), font=bench_font)
+            y0 += section_title_h
+            for line in reserve_lines:
+                draw.text((24, y0), line, fill=(210, 215, 225), font=bench_font)
+                y0 += bench_line_h
 
     out = BytesIO()
     im.save(out, format="PNG", optimize=True)
