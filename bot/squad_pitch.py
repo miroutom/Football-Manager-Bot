@@ -119,7 +119,8 @@ def _team_name_as_in_db(team: str) -> str:
 
 def _player_name_key(full_name: str) -> str:
     """Ключ дедупликации: нормализованное ФИО (один игрок = одна строка в ростере)."""
-    return " ".join((full_name or "").split()).lower()
+    s = (full_name or "").replace("-", " ").replace("\u2011", " ").replace("\u2010", " ")
+    return " ".join(s.split()).lower()
 
 
 def _surname(full_name: str) -> str:
@@ -229,6 +230,7 @@ def _roster_order_map(team_db: str) -> dict[str, int]:
     from data.england_apl_squads import ENGLAND_APL_SQUADS
     from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
     from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
+    from data.russia_rpl_squads import RUSSIA_RPL_SQUADS
     from data.spain_la_liga_squads import SPAIN_LA_LIGA_SQUADS
 
     for squads in (
@@ -236,6 +238,7 @@ def _roster_order_map(team_db: str) -> dict[str, int]:
         GERMANY_BUNDESLIGA_SQUADS,
         ITALY_SERIE_A_SQUADS,
         SPAIN_LA_LIGA_SQUADS,
+        RUSSIA_RPL_SQUADS,
     ):
         rows = squads.get(team_db)
         if rows:
@@ -243,11 +246,33 @@ def _roster_order_map(team_db: str) -> dict[str, int]:
     return {}
 
 
+def _declared_roster_name_keys(team_db: str) -> frozenset[str] | None:
+    """Имена из файла заявки (нормализованный ключ); ``None`` — нет жёсткого списка для клуба."""
+    from data.england_apl_squads import ENGLAND_APL_SQUADS
+    from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
+    from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
+    from data.russia_rpl_squads import RUSSIA_RPL_SQUADS
+    from data.spain_la_liga_squads import SPAIN_LA_LIGA_SQUADS
+
+    for squads in (
+        ENGLAND_APL_SQUADS,
+        GERMANY_BUNDESLIGA_SQUADS,
+        ITALY_SERIE_A_SQUADS,
+        SPAIN_LA_LIGA_SQUADS,
+        RUSSIA_RPL_SQUADS,
+    ):
+        rows = squads.get(team_db)
+        if rows:
+            return frozenset(_player_name_key(str(r[0])) for r in rows)
+    return None
+
+
 def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
     """Поля позиция/нация/статус/overall из файла заявки — 1:1 с таблицей, даже если БД ещё не синкнута."""
     from data.england_apl_squads import ENGLAND_APL_SQUADS
     from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
     from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
+    from data.russia_rpl_squads import RUSSIA_RPL_SQUADS
     from data.spain_la_liga_squads import SPAIN_LA_LIGA_SQUADS
 
     rows = None
@@ -256,6 +281,7 @@ def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
         GERMANY_BUNDESLIGA_SQUADS,
         ITALY_SERIE_A_SQUADS,
         SPAIN_LA_LIGA_SQUADS,
+        RUSSIA_RPL_SQUADS,
     ):
         if team_db in squads:
             rows = squads[team_db]
@@ -311,8 +337,12 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     roster_rank=9999,
                 )
             )
-    out = _dedupe_squad_pl_by_name(out)
+    # Сначала заявка из файла: при дублях в БД (разные таблицы/позиции) не отбрасываем «левую» строку до merge.
     _overlay_declared_roster(out, team_db)
+    out = _dedupe_squad_pl_by_name(out)
+    keys = _declared_roster_name_keys(team_db)
+    if keys is not None:
+        out = [p for p in out if _player_name_key(p.name) in keys]
     order = _roster_order_map(team_db)
     for p in out:
         p.roster_rank = order.get(_player_name_key(p.name), 9999)
@@ -478,6 +508,11 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "МОЗАМБИК": "mz",
         "КАБО-ВЕРДЕ": "cv",
         "ДОМИНИКАНСКАЯ РЕСПУБЛИКА": "do",
+        "ЛИТВА": "lt",
+        "ЛЮКСЕМБУРГ": "lu",
+        "ГВИНЕЯ": "gn",
+        "ДР КОНГО": "cd",
+        "МОЛДАВИЯ": "md",
     }
     en: dict[str, str] = {
         "ENGLAND": "gb-eng",
@@ -563,6 +598,13 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "CAPE VERDE": "cv",
         "CABO VERDE": "cv",
         "DOMINICAN REPUBLIC": "do",
+        "LITHUANIA": "lt",
+        "LUXEMBOURG": "lu",
+        "GUINEA": "gn",
+        "DR CONGO": "cd",
+        "DRC": "cd",
+        "CONGO DR": "cd",
+        "MOLDOVA": "md",
     }
     return ru.get(s) or en.get(s)
 
@@ -639,6 +681,11 @@ _FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int,
     "MZ": ((0, 107, 63), (0, 0, 0), (252, 209, 22)),
     "CV": ((0, 56, 168), (252, 209, 22), (206, 17, 38)),
     "DO": ((0, 36, 148), (255, 255, 255), (206, 17, 38)),
+    "LT": ((0, 106, 168), (0, 154, 62), (252, 209, 22)),
+    "LU": ((237, 41, 57), (255, 255, 255), (0, 161, 222)),
+    "GN": ((206, 17, 38), (252, 209, 22), (0, 135, 81)),
+    "CD": ((0, 127, 255), (252, 209, 22), (206, 17, 38)),
+    "MD": ((0, 70, 173), (252, 209, 22), (206, 17, 38)),
 }
 
 
@@ -917,6 +964,8 @@ def _slots_explicit_order(slots: tuple[SquadSlot, ...]) -> tuple[SquadSlot, ...]
 
 def _place_on_slot_explicit(slot: SquadSlot, pool: list[_Pl], used: set[int]) -> _Pl | None:
     cands = [p for p in pool if id(p) not in used and _natural_fits_slot(p, slot)]
+    if not cands:
+        cands = [p for p in pool if id(p) not in used and _player_fits_slot(p, slot)]
     if not cands:
         return None
     if slot.slot_id == "LCM" and len(cands) > 1:

@@ -4,11 +4,11 @@
     "berdyev": {
       "name": "Бердыев",
       "formation_ids": [
+        3,
         8,
-        6,
-        9
+        6
       ],
-      "active_formation_id": 6
+      "active_formation_id": 3
     },
     "semak": {
       "name": "Семак",
@@ -256,11 +256,11 @@
     "alonso": {
       "name": "Алонсо",
       "formation_ids": [
+        7,
         5,
-        2,
-        3
+        2
       ],
-      "active_formation_id": 3
+      "active_formation_id": 7
     },
     "galaktionov": {
       "name": "Галактионов",

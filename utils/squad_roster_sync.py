@@ -344,3 +344,18 @@ def run_spain_la_liga_sync(
         tournaments=tournaments,
         rebuild_common=rebuild_common,
     )
+
+
+def run_russia_rpl_sync(
+    *,
+    tournaments: tuple[str, ...] | None = None,
+    rebuild_common: bool = True,
+) -> dict[str, dict[str, dict[str, int]]]:
+    from data.russia_rpl_squads import RUSSIA_RPL_SQUADS
+
+    return run_squads_sync(
+        RUSSIA_RPL_SQUADS,
+        label="RUSSIA_RPL_SQUADS",
+        tournaments=tournaments,
+        rebuild_common=rebuild_common,
+    )
