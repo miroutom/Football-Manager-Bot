@@ -3,7 +3,10 @@ __pycache__/
 *.pyc
 .env
 bot/.env
+# SQLite: в репозитории храним только ``db/*.db`` (приватный репо, бэкап состояния).
 *.db
+!db/*.db
+db/backup*/
 .idea/
 # Кэш скачанных флагов и эмблем (PNG)
 assets/cache/**/*.png
