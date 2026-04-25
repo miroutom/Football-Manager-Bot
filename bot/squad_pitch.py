@@ -236,6 +236,36 @@ def _roster_order_map(team_db: str) -> dict[str, int]:
     return {}
 
 
+def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
+    """Поля позиция/нация/статус/overall из файла заявки — 1:1 с таблицей, даже если БД ещё не синкнута."""
+    from data.england_apl_squads import ENGLAND_APL_SQUADS
+    from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
+
+    rows = None
+    for squads in (ENGLAND_APL_SQUADS, GERMANY_BUNDESLIGA_SQUADS):
+        if team_db in squads:
+            rows = squads[team_db]
+            break
+    if not rows:
+        return
+    by_key: dict[str, tuple] = {_player_name_key(str(r[0])): r for r in rows}
+    for p in out:
+        r = by_key.get(_player_name_key(p.name))
+        if r is None:
+            continue
+        _nm, pos, ov, nation, st = r[0], r[1], r[2], r[3], r[4]
+        p.position = (str(pos) if pos is not None else "").strip()
+        if nation is not None and str(nation).strip():
+            p.nation = str(nation).strip()
+        sx = (str(st) if st is not None else "").strip().lower()
+        if sx in ("start", "bench", "reserve"):
+            p.status = sx
+        if int(ov or 0) > 0:
+            p.overall = int(ov)
+        p.tags = _position_tags(p.position)
+        p.score = _player_score(p.overall, p.rating)
+
+
 def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
     team_db = _team_name_as_in_db(team)
     session = get_session(tournament)
@@ -268,6 +298,7 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                 )
             )
     out = _dedupe_squad_pl_by_name(out)
+    _overlay_declared_roster(out, team_db)
     order = _roster_order_map(team_db)
     for p in out:
         p.roster_rank = order.get(_player_name_key(p.name), 9999)
@@ -818,13 +849,14 @@ def _dedupe_squad_pl_by_name(rows: list[_Pl]) -> list[_Pl]:
 
 
 def _slots_explicit_order(slots: tuple[SquadSlot, ...]) -> tuple[SquadSlot, ...]:
-    """CAM/CCM раньше LCM/RCM/LM/RM, чтобы ЦАП не уходил на боковой центральный из-за рейтинга."""
+    """CAM/CCM раньше полузащиты; LM/RM раньше LCM/RCM (иначе ПП уходит в RCM и опустошает фланг)."""
     late_ids = frozenset({"LCM", "RCM", "LM", "RM"})
     cam_ids = frozenset({"CAM", "CCM"})
     early = [s for s in slots if s.slot_id not in late_ids and s.slot_id not in cam_ids]
     mid = [s for s in slots if s.slot_id in cam_ids]
-    late = [s for s in slots if s.slot_id in late_ids]
-    return tuple(early + mid + late)
+    wide = [s for s in slots if s.slot_id in ("LM", "RM")]
+    edge_cm = [s for s in slots if s.slot_id in ("LCM", "RCM")]
+    return tuple(early + mid + wide + edge_cm)
 
 
 def _place_on_slot_explicit(slot: SquadSlot, pool: list[_Pl], used: set[int]) -> _Pl | None:
@@ -852,9 +884,13 @@ def _place_on_slot_explicit(slot: SquadSlot, pool: list[_Pl], used: set[int]) ->
         if pref:
             cands = pref
     if slot.slot_id == "CCM" and len(cands) > 1:
-        pref = [p for p in cands if (p.position or "").strip() == "ЦП"]
-        if pref:
-            cands = pref
+        pref_cdm = [p for p in cands if (p.position or "").strip() == "ЦОП"]
+        if pref_cdm:
+            cands = pref_cdm
+        else:
+            pref = [p for p in cands if (p.position or "").strip() == "ЦП"]
+            if pref:
+                cands = pref
     if slot.slot_id == "ST" and len(cands) > 1:
         pref = [p for p in cands if (p.position or "").strip() == "ФРВ"]
         if pref:
@@ -888,8 +924,12 @@ def _place_on_slot(slot: SquadSlot, pool: list[_Pl], used: set[int]) -> _Pl | No
         pref = [p for p in cands if (p.position or "").strip() == "ЦАП"]
         cands = pref or cands
     if slot.slot_id == "CCM" and len(cands) > 1:
-        pref = [p for p in cands if (p.position or "").strip() == "ЦП"]
-        cands = pref or cands
+        pref_cdm = [p for p in cands if (p.position or "").strip() == "ЦОП"]
+        if pref_cdm:
+            cands = pref_cdm
+        else:
+            pref = [p for p in cands if (p.position or "").strip() == "ЦП"]
+            cands = pref or cands
     if not cands:
         return None
     best = max(cands, key=lambda x: (x.score, x.name.lower()))

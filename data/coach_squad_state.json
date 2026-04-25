@@ -121,7 +121,7 @@
     "gattuso": {
       "name": "Гаттузо",
       "formation_ids": [
-        10,
+        5,
         4,
         8
       ],
@@ -404,7 +404,7 @@
         3,
         9
       ],
-      "active_formation_id": 7
+      "active_formation_id": 9
     },
     "mourinho": {
       "name": "Моуриньо",
