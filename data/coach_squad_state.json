@@ -409,11 +409,11 @@
     "mourinho": {
       "name": "Моуриньо",
       "formation_ids": [
+        4,
         2,
-        3,
-        10
+        3
       ],
-      "active_formation_id": 3
+      "active_formation_id": 4
     },
     "amorim": {
       "name": "Аморим",

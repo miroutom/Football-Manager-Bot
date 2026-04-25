@@ -314,3 +314,18 @@ def run_bundesliga_sync(
         tournaments=tournaments,
         rebuild_common=rebuild_common,
     )
+
+
+def run_italy_seria_sync(
+    *,
+    tournaments: tuple[str, ...] | None = None,
+    rebuild_common: bool = True,
+) -> dict[str, dict[str, dict[str, int]]]:
+    from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
+
+    return run_squads_sync(
+        ITALY_SERIE_A_SQUADS,
+        label="ITALY_SERIE_A_SQUADS",
+        tournaments=tournaments,
+        rebuild_common=rebuild_common,
+    )

@@ -228,8 +228,9 @@ def _roster_order_map(team_db: str) -> dict[str, int]:
     """Порядок строк в заявке (АПЛ / Бундес): для сопоставления слотов при нескольких «своих»."""
     from data.england_apl_squads import ENGLAND_APL_SQUADS
     from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
+    from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
 
-    for squads in (ENGLAND_APL_SQUADS, GERMANY_BUNDESLIGA_SQUADS):
+    for squads in (ENGLAND_APL_SQUADS, GERMANY_BUNDESLIGA_SQUADS, ITALY_SERIE_A_SQUADS):
         rows = squads.get(team_db)
         if rows:
             return {_player_name_key(str(r[0])): i for i, r in enumerate(rows)}
@@ -240,9 +241,10 @@ def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
     """Поля позиция/нация/статус/overall из файла заявки — 1:1 с таблицей, даже если БД ещё не синкнута."""
     from data.england_apl_squads import ENGLAND_APL_SQUADS
     from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
+    from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
 
     rows = None
-    for squads in (ENGLAND_APL_SQUADS, GERMANY_BUNDESLIGA_SQUADS):
+    for squads in (ENGLAND_APL_SQUADS, GERMANY_BUNDESLIGA_SQUADS, ITALY_SERIE_A_SQUADS):
         if team_db in squads:
             rows = squads[team_db]
             break
@@ -442,6 +444,15 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "БУРКИНА-ФАСО": "bf",
         "БУРКИНАФАСО": "bf",
         "КОТ-Д'ИВУАР": "ci",
+        "ИРАН": "ir",
+        "ПАРАГВАЙ": "py",
+        "АНГОЛА": "ao",
+        "АЛБАНИЯ": "al",
+        "ЧЕРНОГОРИЯ": "me",
+        "КОСОВО": "xk",
+        "СЕВЕРНАЯ МАКЕДОНИЯ": "mk",
+        "МАКЕДОНИЯ": "mk",
+        "ЭКВАТОРИАЛЬНАЯ ГВИНЕЯ": "gq",
         "СЛОВЕНИЯ": "si",
         "БОСНИЯ": "ba",
         "ИСРАИЛЬ": "il",
@@ -512,6 +523,15 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "IVORY COAST": "ci",
         "COTE D'IVOIRE": "ci",
         "CÔTE D'IVOIRE": "ci",
+        "IRAN": "ir",
+        "PARAGUAY": "py",
+        "ANGOLA": "ao",
+        "ALBANIA": "al",
+        "MONTENEGRO": "me",
+        "KOSOVO": "xk",
+        "NORTH MACEDONIA": "mk",
+        "MACEDONIA": "mk",
+        "EQUATORIAL GUINEA": "gq",
         "SLOVENIA": "si",
         "BOSNIA": "ba",
         "ISRAEL": "il",
@@ -583,6 +603,14 @@ _FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int,
     "GE": ((255, 255, 255), (255, 0, 0), (255, 255, 255)),
     "KZ": ((0, 127, 255), (255, 215, 0), (0, 127, 255)),
     "CN": ((222, 41, 16), (255, 222, 0), (222, 41, 16)),
+    "IR": ((35, 159, 64), (255, 255, 255), (213, 39, 48)),
+    "MK": ((206, 17, 38), (252, 209, 22), (206, 17, 38)),
+    "GQ": ((62, 112, 189), (255, 255, 255), (62, 112, 189)),
+    "PY": ((206, 17, 38), (255, 255, 255), (0, 56, 168)),
+    "AL": ((206, 17, 38), (0, 0, 0), (206, 17, 38)),
+    "ME": ((206, 17, 38), (252, 209, 22), (206, 17, 38)),
+    "XK": ((36, 74, 165), (252, 209, 22), (255, 255, 255)),
+    "AO": ((206, 17, 38), (0, 0, 0), (206, 17, 38)),
 }
 
 
