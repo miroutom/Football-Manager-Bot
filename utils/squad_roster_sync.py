@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -213,7 +213,7 @@ def sync_team_roster(
     return stats
 
 
-RosterRow = tuple[str, str, int, str | None, str]
+RosterRow = tuple[str, str, int, Optional[str], str]
 
 
 def run_squads_sync(
