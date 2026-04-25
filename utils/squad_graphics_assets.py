@@ -14,6 +14,7 @@ import hashlib
 import json
 import logging
 import re
+import ssl
 import http.client
 import urllib.error
 import urllib.parse
@@ -39,17 +40,31 @@ _BROWSER_UA = (
 _commons_map: dict[str, str] | None = None
 
 
+def _https_context() -> ssl.SSLContext | None:
+    """На части macOS-сборок Python нет корневых сертификатов — без cafile HTTPS падает."""
+    try:
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except (ImportError, OSError, ssl.SSLError):
+        return None
+
+
 def _http_get(url: str, timeout: float = 15.0) -> bytes | None:
     req = urllib.request.Request(
         url,
         headers={
             "User-Agent": _BROWSER_UA,
-            "Accept": "image/png,image/webp,image/*;q=0.8,*/*;q=0.5",
+            "Accept": "image/png,image/webp,image/*;q=0.8,*/*;q=0.5,application/json;q=0.1",
             "Accept-Language": "en-US,en;q=0.9",
         },
     )
+    ctx = _https_context() if url.lower().startswith("https://") else None
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        kw: dict = {"timeout": timeout}
+        if ctx is not None:
+            kw["context"] = ctx
+        with urllib.request.urlopen(req, **kw) as resp:
             code = getattr(resp, "status", None) or resp.getcode()
             if code != 200:
                 logger.warning("HTTP %s для %s", code, url[:96])
@@ -154,6 +169,46 @@ def commons_crest_filename_for_team(team_db: str) -> str | None:
     return None
 
 
+def _wiki_en_thumb_raster_url(filename: str, width: int = 256) -> str | None:
+    """Растровый thumb для ``File:…`` через API en.wikipedia (SVG с Special:FilePath PIL не открыть)."""
+    fn = (filename or "").strip()
+    if not fn:
+        return None
+    title = fn if fn.lower().startswith("file:") else f"File:{fn}"
+    qs = urllib.parse.urlencode(
+        {
+            "action": "query",
+            "titles": title,
+            "prop": "imageinfo",
+            "iiprop": "url",
+            "iiurlwidth": str(int(width)),
+            "format": "json",
+            "formatversion": "2",
+        }
+    )
+    api_url = f"https://en.wikipedia.org/w/api.php?{qs}"
+    raw = _http_get(api_url, timeout=20.0)
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as e:
+        logger.info("wiki thumb API: %s", e)
+        return None
+    raw_pages = (payload.get("query") or {}).get("pages") or []
+    if isinstance(raw_pages, dict):
+        pages = list(raw_pages.values())
+    else:
+        pages = list(raw_pages)
+    if not pages or pages[0].get("missing"):
+        return None
+    infos = (pages[0].get("imageinfo") or [])[:1]
+    if not infos:
+        return None
+    info = infos[0]
+    return info.get("thumburl") or info.get("url")
+
+
 def load_commons_crest_rgba(commons_filename: str) -> Image.Image | None:
     """Скачать по имени файла Wiki: ``Special:FilePath`` на Commons, иначе en.wikipedia; кэш PNG."""
     fn = commons_filename.strip()
@@ -167,6 +222,16 @@ def load_commons_crest_rgba(commons_filename: str) -> Image.Image | None:
             return Image.open(cache_path).convert("RGBA")
         except OSError:
             return None
+    if fn.startswith(("http://", "https://")):
+        data = _http_get(fn, timeout=25.0)
+        if data and _looks_like_raster_image(data):
+            try:
+                im = Image.open(BytesIO(data)).convert("RGBA")
+                im.save(cache_path, format="PNG")
+                return im
+            except OSError:
+                pass
+        return None
     q = urllib.parse.quote(fn, safe="")
     bases = (
         "https://commons.wikimedia.org/wiki/Special:FilePath/",
@@ -189,4 +254,14 @@ def load_commons_crest_rgba(commons_filename: str) -> Image.Image | None:
         except OSError:
             pass
         return im
+    thumb = _wiki_en_thumb_raster_url(fn, width=256)
+    if thumb:
+        data = _http_get(thumb, timeout=25.0)
+        if data and _looks_like_raster_image(data):
+            try:
+                im = Image.open(BytesIO(data)).convert("RGBA")
+                im.save(cache_path, format="PNG")
+                return im
+            except OSError as e:
+                logger.info("Эмблема %s: thumb PIL %s", fn, e)
     return None

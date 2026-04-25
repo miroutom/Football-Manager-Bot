@@ -513,6 +513,7 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "ГВИНЕЯ": "gn",
         "ДР КОНГО": "cd",
         "МОЛДАВИЯ": "md",
+        "МАЛИ": "ml",
     }
     en: dict[str, str] = {
         "ENGLAND": "gb-eng",
@@ -605,6 +606,7 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "DRC": "cd",
         "CONGO DR": "cd",
         "MOLDOVA": "md",
+        "MALI": "ml",
     }
     return ru.get(s) or en.get(s)
 
@@ -686,6 +688,7 @@ _FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int,
     "GN": ((206, 17, 38), (252, 209, 22), (0, 135, 81)),
     "CD": ((0, 127, 255), (252, 209, 22), (206, 17, 38)),
     "MD": ((0, 70, 173), (252, 209, 22), (206, 17, 38)),
+    "ML": ((20, 181, 58), (252, 209, 22), (206, 17, 38)),
 }
 
 
