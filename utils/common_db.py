@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Объединённая БД ``common.db``: сумма статистики из ``league_new.db`` и ``champions_league_new.db``.
-Пересборка: ``rebuild_common_database()`` (вызывается перед топами с tournament='common').
+Объединённая БД (по умолчанию ``common_synced.db``): сумма из лиги и ЛЧ.
+Пересборка: ``rebuild_common_database()`` (опционально свои сессии).
 """
 from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -170,22 +171,34 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
             )
 
 
-def rebuild_common_database() -> None:
-    """Полная перезапись ``common.db`` слиянием двух источников (имя+команда+позиция)."""
+def rebuild_common_database(
+    *,
+    session_league_: Any = None,
+    session_cl_: Any = None,
+    session_common_: Any = None,
+) -> None:
+    """
+    Полная перезапись common слиянием двух источников (имя+команда+позиция).
+    По умолчанию — глобальные сессии из ``utils``; можно передать свои (например, в тестах).
+    """
+    sleague = session_league_ or session_league
+    scl = session_cl_ or session_cl
+    scommon = session_common_ or session_common
+
     Base.metadata.create_all(engine_common)
-    common = session_common
+    common = scommon
 
     for cls in (Forward, Midfielder, Defender, Goalkeeper):
         common.query(cls).delete()
     common.commit()
 
     for Cls in (Forward, Midfielder, Defender):
-        buckets = _merge_bucket_outfield(Cls, session_league, session_cl)
+        buckets = _merge_bucket_outfield(Cls, sleague, scl)
         _add_outfield_rows(common, Cls, buckets)
 
     gk_buckets: dict = {}
-    for src in (session_league, session_cl):
-        is_cl = src is session_cl
+    for src in (sleague, scl):
+        is_cl = src is scl
         for p in src.query(Goalkeeper).all():
             if is_cl and not _team_in_cl_pool(p.team):
                 continue
@@ -247,7 +260,7 @@ def rebuild_common_database() -> None:
             )
         )
 
-    common.commit()
+    scommon.commit()
 
 
 def common_db_paths_info() -> str:

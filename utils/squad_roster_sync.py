@@ -71,20 +71,46 @@ def _all_rows_same_player(session, name: str, team: str) -> list[tuple[Any, type
     return out
 
 
-def _dedupe_player_rows_for_team(session, name: str, team: str) -> tuple[Any, type | None]:
+def _merge_carry_dicts(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
+    """Суммирует статистику из двух carry-словарей (рейтинг — по матчам взвешенно)."""
+    m1 = int(a.get("matches", 0) or 0)
+    m2 = int(b.get("matches", 0) or 0)
+    mt = m1 + m2
+    r1 = float(a.get("rating", 0) or 0)
+    r2 = float(b.get("rating", 0) or 0)
+    rt = (r1 * m1 + r2 * m2) / mt if mt else 0.0
+    out: dict[str, Any] = {
+        "matches": mt,
+        "rating": rt,
+        "trophies": int(a.get("trophies", 0) or 0) + int(b.get("trophies", 0) or 0),
+        "golden_balls": int(a.get("golden_balls", 0) or 0) + int(b.get("golden_balls", 0) or 0),
+    }
+    for k in ("goals", "assists", "ga", "golden_boots", "clean_sheets", "missed_goals"):
+        if k in a or k in b:
+            out[k] = int(a.get(k, 0) or 0) + int(b.get(k, 0) or 0)
+    return out
+
+
+def _dedupe_player_rows_for_team(
+    session, name: str, team: str
+) -> tuple[Any, type | None, dict[str, Any] | None]:
     """
-    Одна строка на игрока+клуб. Если в БД несколько дублей (разные таблицы/старые смены позиции),
-    удаляем все — следующий шаг upsert вставит одну корректную строку по заявке.
+    Одна строка на игрока+клуб. Если в БД несколько дублей — удаляем все и возвращаем
+    объединённый carry, чтобы вставка не обнуляла статистику.
     """
     found = _all_rows_same_player(session, name, team)
     if not found:
-        return None, None
+        return None, None, None
     if len(found) == 1:
-        return found[0]
+        r, c = found[0]
+        return r, c, None
+    merged: dict[str, Any] | None = None
     for r, _Cls in found:
+        c = _carry_from_row(r)
+        merged = c if merged is None else _merge_carry_dicts(merged, c)
         session.delete(r)
     session.flush()
-    return None, None
+    return None, None, merged
 
 
 def _new_player_kwargs(
@@ -177,11 +203,24 @@ def upsert_roster_player(
         raise ValueError(f"status must be start|bench|reserve, got {status!r}")
 
     tgt_cls = _cls_for_position(position)
-    row, cur_cls = _dedupe_player_rows_for_team(session, name, team)
+    row, cur_cls, dedupe_carry = _dedupe_player_rows_for_team(session, name, team)
     pos_u = position.strip().upper()
 
     if row is None:
-        session.add(tgt_cls(**_new_player_kwargs(tgt_cls, name=name, team=team, position=pos_u, overall=overall, nation=nation, status=st)))
+        session.add(
+            tgt_cls(
+                **_new_player_kwargs(
+                    tgt_cls,
+                    name=name,
+                    team=team,
+                    position=pos_u,
+                    overall=overall,
+                    nation=nation,
+                    status=st,
+                    carry=dedupe_carry,
+                )
+            )
+        )
         return "inserted"
 
     if cur_cls is not tgt_cls:

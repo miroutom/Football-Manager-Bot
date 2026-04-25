@@ -9,10 +9,10 @@ Base = declarative_base()
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _DB_DIR = os.path.join(PROJECT_ROOT, 'db')
 
-# Имена файлов SQLite (актуальные рабочие БД)
-LEAGUE_DB_FILE = "league_new.db"
-CHAMPIONS_LEAGUE_DB_FILE = "champions_league_new.db"
-COMMON_DB_FILE = "common.db"
+# Рабочие БД (заявки + стата после синка). Снимок «до переноса»: league_new.db / champions_league_new.db / common.db.
+LEAGUE_DB_FILE = "league_synced.db"
+CHAMPIONS_LEAGUE_DB_FILE = "champions_league_synced.db"
+COMMON_DB_FILE = "common_synced.db"
 LEAGUE_DB_PATH = os.path.join(_DB_DIR, LEAGUE_DB_FILE)
 CHAMPIONS_LEAGUE_DB_PATH = os.path.join(_DB_DIR, CHAMPIONS_LEAGUE_DB_FILE)
 COMMON_DB_PATH = os.path.join(_DB_DIR, COMMON_DB_FILE)
@@ -46,7 +46,7 @@ def get_session(tournament: str = 'league'):
     Получить сессию
     tournament: 'league' или 'l' - национальные лиги
                 'cl' - Лига Чемпионов
-                'common' / 'merged' - объединённая лига+ЛЧ (``common.db``)
+                'common' / 'merged' - объединённая лига+ЛЧ (``common_synced.db``)
     """
     if tournament in ['cl', 'champ_league']:
         return session_cl
