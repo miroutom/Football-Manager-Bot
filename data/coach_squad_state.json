@@ -80,7 +80,7 @@
         2,
         7
       ],
-      "active_formation_id": 7
+      "active_formation_id": 2
     },
     "emery": {
       "name": "Эмери",
@@ -193,11 +193,11 @@
     "ten_hag": {
       "name": "тен Хаг",
       "formation_ids": [
-        10,
+        7,
         9,
         1
       ],
-      "active_formation_id": 1
+      "active_formation_id": 7
     },
     "pellegrini": {
       "name": "Пеллегрини",
@@ -296,7 +296,7 @@
         10,
         4
       ],
-      "active_formation_id": 4
+      "active_formation_id": 3
     },
     "de_zerbi": {
       "name": "Де Дзерби",

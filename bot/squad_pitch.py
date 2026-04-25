@@ -229,8 +229,14 @@ def _roster_order_map(team_db: str) -> dict[str, int]:
     from data.england_apl_squads import ENGLAND_APL_SQUADS
     from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
     from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
+    from data.spain_la_liga_squads import SPAIN_LA_LIGA_SQUADS
 
-    for squads in (ENGLAND_APL_SQUADS, GERMANY_BUNDESLIGA_SQUADS, ITALY_SERIE_A_SQUADS):
+    for squads in (
+        ENGLAND_APL_SQUADS,
+        GERMANY_BUNDESLIGA_SQUADS,
+        ITALY_SERIE_A_SQUADS,
+        SPAIN_LA_LIGA_SQUADS,
+    ):
         rows = squads.get(team_db)
         if rows:
             return {_player_name_key(str(r[0])): i for i, r in enumerate(rows)}
@@ -242,9 +248,15 @@ def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
     from data.england_apl_squads import ENGLAND_APL_SQUADS
     from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
     from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
+    from data.spain_la_liga_squads import SPAIN_LA_LIGA_SQUADS
 
     rows = None
-    for squads in (ENGLAND_APL_SQUADS, GERMANY_BUNDESLIGA_SQUADS, ITALY_SERIE_A_SQUADS):
+    for squads in (
+        ENGLAND_APL_SQUADS,
+        GERMANY_BUNDESLIGA_SQUADS,
+        ITALY_SERIE_A_SQUADS,
+        SPAIN_LA_LIGA_SQUADS,
+    ):
         if team_db in squads:
             rows = squads[team_db]
             break
@@ -461,6 +473,11 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "АЗЕРБАЙДЖАН": "az",
         "КАЗАХСТАН": "kz",
         "УЗБЕКИСТАН": "uz",
+        "БОЛИВИЯ": "bo",
+        "ВЕНЕСУЭЛА": "ve",
+        "МОЗАМБИК": "mz",
+        "КАБО-ВЕРДЕ": "cv",
+        "ДОМИНИКАНСКАЯ РЕСПУБЛИКА": "do",
     }
     en: dict[str, str] = {
         "ENGLAND": "gb-eng",
@@ -540,6 +557,12 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "AZERBAIJAN": "az",
         "KAZAKHSTAN": "kz",
         "UZBEKISTAN": "uz",
+        "BOLIVIA": "bo",
+        "VENEZUELA": "ve",
+        "MOZAMBIQUE": "mz",
+        "CAPE VERDE": "cv",
+        "CABO VERDE": "cv",
+        "DOMINICAN REPUBLIC": "do",
     }
     return ru.get(s) or en.get(s)
 
@@ -611,6 +634,11 @@ _FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int,
     "ME": ((206, 17, 38), (252, 209, 22), (206, 17, 38)),
     "XK": ((36, 74, 165), (252, 209, 22), (255, 255, 255)),
     "AO": ((206, 17, 38), (0, 0, 0), (206, 17, 38)),
+    "BO": ((206, 17, 38), (252, 209, 22), (0, 121, 52)),
+    "VE": ((207, 20, 43), (252, 209, 22), (0, 36, 148)),
+    "MZ": ((0, 107, 63), (0, 0, 0), (252, 209, 22)),
+    "CV": ((0, 56, 168), (252, 209, 22), (206, 17, 38)),
+    "DO": ((0, 36, 148), (255, 255, 255), (206, 17, 38)),
 }
 
 
