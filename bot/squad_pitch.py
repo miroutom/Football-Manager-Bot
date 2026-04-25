@@ -1,9 +1,10 @@
 """
 Состав клуба на схеме поля: слоты из ``team_squad_schemas`` / ``formation_geometry``.
 
-Подбор по слотам формации: для каждого слота среди игроков команды, чья позиция в БД
-входит в ``allowed_positions`` этого слота, выбирается с наивысшим рейтингом (как ЛЗ:
-Дэвис vs Геррейро). Если «своих» нет — подстановка по взаимозаменяемости, как раньше.
+Подбор по слотам: если у команды заданы ``start``/``bench``/``reserve`` в БД, стартовые
+ставятся **только** при точном совпадении позиции со слотом (без сдвига линий); при равенстве
+слотов (ЦП/ЦАП на LCM/RCM) порядок как в файле заявки, CAM/CCM обрабатываются раньше боковых
+центральных. Без статусов — как раньше: лучший рейтинг и взаимозаменяемость при нехватке «своих».
 
 Стартовые 11: флаг по ``nation`` — flagcdn (ISO2 или ``gb-eng`` / ``gb-sct`` / ``gb-wls`` / ``gb-nir``),
 кэш ``assets/cache/flags``; иначе упрощённые полосы. Эмблема: ``assets/crests/`` / ``wikimedia_commons.json``; на поле — как есть (пропорции),
@@ -220,6 +221,19 @@ class _Pl:
     score: int
     nation: str | None
     status: str | None = None
+    roster_rank: int = 9999
+
+
+def _roster_order_map(team_db: str) -> dict[str, int]:
+    """Порядок строк в заявке (АПЛ / Бундес): для сопоставления слотов при нескольких «своих»."""
+    from data.england_apl_squads import ENGLAND_APL_SQUADS
+    from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
+
+    for squads in (ENGLAND_APL_SQUADS, GERMANY_BUNDESLIGA_SQUADS):
+        rows = squads.get(team_db)
+        if rows:
+            return {_player_name_key(str(r[0])): i for i, r in enumerate(rows)}
+    return {}
 
 
 def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
@@ -250,9 +264,14 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     score=_player_score(ov, rt),
                     nation=nat,
                     status=st,
+                    roster_rank=9999,
                 )
             )
-    return _dedupe_squad_pl_by_name(out)
+    out = _dedupe_squad_pl_by_name(out)
+    order = _roster_order_map(team_db)
+    for p in out:
+        p.roster_rank = order.get(_player_name_key(p.name), 9999)
+    return out
 
 
 def _player_fits_slot(p: _Pl, slot: SquadSlot) -> bool:
@@ -325,7 +344,7 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
     """Код для flagcdn: ISO2 в нижнем регистре (``de``) или UK-подрегион ``gb-eng`` … ``gb-nir``."""
     if not raw:
         return None
-    s = str(raw).strip().upper()
+    s = str(raw).strip().replace("\u2019", "'").replace("\u2018", "'").upper()
     if not s:
         return None
     if len(s) == 2 and s.isalpha():
@@ -384,6 +403,14 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "ЕГИПЕТ": "eg",
         "УРУГВАЙ": "uy",
         "КОЛУМБИЯ": "co",
+        "ЧИЛИ": "cl",
+        "ЭКВАДОР": "ec",
+        "КАМЕРУН": "cm",
+        "ЯМАЙКА": "jm",
+        "ТОГО": "tg",
+        "БУРКИНА-ФАСО": "bf",
+        "БУРКИНАФАСО": "bf",
+        "КОТ-Д'ИВУАР": "ci",
         "СЛОВЕНИЯ": "si",
         "БОСНИЯ": "ba",
         "ИСРАИЛЬ": "il",
@@ -445,6 +472,15 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "EGYPT": "eg",
         "URUGUAY": "uy",
         "COLOMBIA": "co",
+        "CHILE": "cl",
+        "ECUADOR": "ec",
+        "CAMEROON": "cm",
+        "JAMAICA": "jm",
+        "TOGO": "tg",
+        "BURKINA FASO": "bf",
+        "IVORY COAST": "ci",
+        "COTE D'IVOIRE": "ci",
+        "CÔTE D'IVOIRE": "ci",
         "SLOVENIA": "si",
         "BOSNIA": "ba",
         "ISRAEL": "il",
@@ -494,6 +530,13 @@ _FLAG_V3: dict[str, tuple[tuple[int, int, int], tuple[int, int, int], tuple[int,
     "MA": ((193, 39, 45), (0, 98, 51), (193, 39, 45)),
     "EG": ((0, 0, 0), (255, 255, 255), (206, 17, 38)),
     "CO": ((252, 209, 22), (0, 56, 168), (213, 9, 27)),
+    "CL": ((213, 43, 30), (255, 255, 255), (0, 57, 166)),
+    "EC": ((252, 209, 22), (0, 56, 168), (206, 17, 38)),
+    "CM": ((0, 122, 94), (206, 17, 38), (252, 209, 22)),
+    "JM": ((0, 155, 58), (252, 209, 22), (0, 0, 0)),
+    "TG": ((0, 122, 61), (252, 209, 22), (206, 17, 38)),
+    "BF": ((206, 17, 38), (0, 122, 61), (252, 209, 22)),
+    "CI": ((252, 209, 22), (255, 255, 255), (0, 135, 81)),
     "UY": ((0, 56, 168), (255, 255, 255), (0, 56, 168)),
     "CZ": ((215, 20, 26), (255, 255, 255), (17, 69, 126)),
     "SK": ((255, 255, 255), (11, 100, 185), (238, 28, 37)),
@@ -774,6 +817,57 @@ def _dedupe_squad_pl_by_name(rows: list[_Pl]) -> list[_Pl]:
     return out
 
 
+def _slots_explicit_order(slots: tuple[SquadSlot, ...]) -> tuple[SquadSlot, ...]:
+    """CAM/CCM раньше LCM/RCM/LM/RM, чтобы ЦАП не уходил на боковой центральный из-за рейтинга."""
+    late_ids = frozenset({"LCM", "RCM", "LM", "RM"})
+    cam_ids = frozenset({"CAM", "CCM"})
+    early = [s for s in slots if s.slot_id not in late_ids and s.slot_id not in cam_ids]
+    mid = [s for s in slots if s.slot_id in cam_ids]
+    late = [s for s in slots if s.slot_id in late_ids]
+    return tuple(early + mid + late)
+
+
+def _place_on_slot_explicit(slot: SquadSlot, pool: list[_Pl], used: set[int]) -> _Pl | None:
+    cands = [p for p in pool if id(p) not in used and _natural_fits_slot(p, slot)]
+    if not cands:
+        return None
+    if slot.slot_id == "LCM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
+        if pref:
+            cands = pref
+    if slot.slot_id == "RCM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() in ("ПП", "ПЦП")]
+        if pref:
+            cands = pref
+    if slot.slot_id == "LM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
+        if pref:
+            cands = pref
+    if slot.slot_id == "RM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() in ("ПП", "ПЦП")]
+        if pref:
+            cands = pref
+    if slot.slot_id == "CAM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() == "ЦАП"]
+        if pref:
+            cands = pref
+    if slot.slot_id == "CCM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() == "ЦП"]
+        if pref:
+            cands = pref
+    if slot.slot_id == "ST" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() == "ФРВ"]
+        if pref:
+            cands = pref
+    if slot.slot_id == "CF" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() == "ЦФД"]
+        if pref:
+            cands = pref
+    best = min(cands, key=lambda p: (p.roster_rank, -p.score, (p.name or "").lower()))
+    used.add(id(best))
+    return best
+
+
 def _place_on_slot(slot: SquadSlot, pool: list[_Pl], used: set[int]) -> _Pl | None:
     cands = [p for p in pool if id(p) not in used and _natural_fits_slot(p, slot)]
     if not cands:
@@ -819,20 +913,11 @@ def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], lis
         return slot_player, bench
 
     starters = [p for p in players if _norm_pl_status(p) == "start"]
-    bench_marked = [p for p in players if _norm_pl_status(p) == "bench"]
-    res_marked = [p for p in players if _norm_pl_status(p) == "reserve"]
-    orphans = [p for p in players if not _norm_pl_status(p)]
-    bench_sorted = sorted(bench_marked + orphans, key=lambda x: (-x.score, x.name.lower()))
-    res_sorted = sorted(res_marked, key=lambda x: (-x.score, x.name.lower()))
-    pools_ordered: tuple[list[_Pl], ...] = (starters, bench_sorted, res_sorted)
     used: set[int] = set()
     slot_player: dict[str, _Pl] = {}
-    for slot in slots:
-        placed: _Pl | None = None
-        for subpool in pools_ordered:
-            placed = _place_on_slot(slot, subpool, used)
-            if placed:
-                break
+    slot_iter = _slots_explicit_order(slots)
+    for slot in slot_iter:
+        placed = _place_on_slot_explicit(slot, starters, used)
         if placed:
             slot_player[slot.slot_id] = placed
     bench = [p for p in players if id(p) not in used]

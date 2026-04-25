@@ -114,7 +114,9 @@ def _build_all() -> dict[int, tuple["SquadSlot", ...]]:
         _S("STR", 0.62, 0.14, _ST),
     )
 
-    # --- 6: 4-3-3 «9» (опорник + два CM, впереди LW — CF — RW) ---
+    # --- 6: 4-3-3 «9» (опорник + два CM; впереди LW — ФРВ выше — ЦФД ниже — RW) ---
+    _ST_TOP6 = frozenset({"ФРВ"})
+    _CF_DEEP6 = frozenset({"ЦФД", "ФРВ"})
     fid6 = (
         _S("GK", 0.50, 0.86, _VRT),
         _S("LB", 0.10, 0.68, _LB),
@@ -125,7 +127,8 @@ def _build_all() -> dict[int, tuple["SquadSlot", ...]]:
         _S("LCM", 0.32, 0.40, _CM_L),
         _S("RCM", 0.68, 0.40, _CM_R),
         _S("LW", 0.18, 0.20, _LW),
-        _S("CF", 0.50, 0.14, _CF),
+        _S("ST", 0.50, 0.10, _ST_TOP6),
+        _S("CF", 0.50, 0.24, _CF_DEEP6),
         _S("RW", 0.82, 0.20, _RW),
     )
 
