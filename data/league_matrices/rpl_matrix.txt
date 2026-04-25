@@ -1,0 +1,17 @@
+# РПЛ (rpl)
+# Источник журнал: /Users/elshimin/PycharmProjects/PythonProject/match_results.json
+# Расписание (порядок 1/2): /Users/elshimin/PycharmProjects/PythonProject/mixed_schedule.json
+# Отложенные: /Users/elshimin/PycharmProjects/PythonProject/skipped_matches.json (учёт в порядке 1/2, см. merge_skipped)
+# Строка = хозяева, столбец = гости
+
+              	Цска	Зенит	Краснодар	Локомотив	Спартак	Ростов	Динамо	Рубин	Крылья Советов	Урал
+Цска          	—	2	x	1	2	2	x	2	x	x
+Зенит         	x	—	1	x	2	x	2	x	x	x
+Краснодар     	2	2	—	x	x	x	2	x	1	x
+Локомотив     	2	2	2	—	2	2	x	1	2	x
+Спартак       	x	x	2	x	—	1	x	x	x	x
+Ростов        	x	2	2	x	2	—	2	2	x	1
+Динамо        	2	x	x	2	2	x	—	x	x	x
+Рубин         	x	2	x	2	2	x	2	—	x	x
+Крылья Советов	2	2	2	x	2	2	2	2	—	x
+Урал          	2	2	2	2	2	2	2	2	2	—

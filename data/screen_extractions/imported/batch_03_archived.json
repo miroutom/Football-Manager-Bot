@@ -1,0 +1,36 @@
+{
+  "files": [
+    {"file": "20260404144059_1.jpg", "team": "RAYO VALLECANO", "players": [
+      {"name": "I. Palazón", "g": 2, "a": 0},
+      {"name": "De Frutos", "g": 0, "a": 1},
+      {"name": "Á. García", "g": 0, "a": 1}
+    ]},
+    {"file": "20260404144102_1.jpg", "team": "GIRONA FC", "players": [
+      {"name": "V. Tsygankov", "g": 3, "a": 0},
+      {"name": "C. Portu", "g": 0, "a": 1},
+      {"name": "B. García", "g": 0, "a": 1}
+    ]},
+    {"file": "20260404145746_1.jpg", "team": "ATLÉTICO DE MADRID", "players": [
+      {"name": "Á. Morata", "g": 1, "a": 0},
+      {"name": "M. Depay", "g": 1, "a": 1},
+      {"name": "Á. Correa", "g": 0, "a": 1}
+    ]},
+    {"file": "20260404145748_1.jpg", "team": "REAL SOCIEDAD", "players": [
+      {"name": "U. Sadiq", "g": 1, "a": 0},
+      {"name": "A. Zakharyan", "g": 1, "a": 0},
+      {"name": "T. Kubo", "g": 0, "a": 1}
+    ]},
+    {"file": "20260405014205_1.jpg", "team": "CHELSEA", "players": [
+      {"name": "R. Sterling", "g": 1, "a": 0},
+      {"name": "C. Nkunku", "g": 1, "a": 0},
+      {"name": "E. Fernández", "g": 0, "a": 1},
+      {"name": "C. Gallagher", "g": 0, "a": 1}
+    ]},
+    {"file": "20260405014209_1.jpg", "team": "NEWCASTLE UTD", "players": [
+      {"name": "M. Almirón", "g": 2, "a": 0},
+      {"name": "A. Isak", "g": 1, "a": 1},
+      {"name": "S. Tonali", "g": 1, "a": 1},
+      {"name": "B. Guimarães", "g": 0, "a": 1}
+    ]}
+  ]
+}

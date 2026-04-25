@@ -1,0 +1,70 @@
+{
+  "files": [
+    {"file": "20260404134248_1.jpg", "team": "MANCHESTER UTD", "players": [
+      {"name": "A. Diallo", "g": 0, "a": 0}, {"name": "M. Rashford", "g": 0, "a": 0},
+      {"name": "A. Martial", "g": 1, "a": 0}, {"name": "Antony", "g": 0, "a": 0},
+      {"name": "C. Eriksen", "g": 0, "a": 0}, {"name": "Casemiro", "g": 0, "a": 0},
+      {"name": "B. Fernandes", "g": 0, "a": 1}, {"name": "T. Malacia", "g": 0, "a": 0},
+      {"name": "L. Martínez", "g": 0, "a": 0}, {"name": "S. McTominay", "g": 0, "a": 0},
+      {"name": "R. Varane", "g": 0, "a": 0}, {"name": "A. Wan-Bissaka", "g": 0, "a": 0}
+    ]},
+    {"file": "20260404134253_1.jpg", "team": "MANCHESTER UTD", "players": [
+      {"name": "B. Fernandes", "g": 0, "a": 1}, {"name": "T. Malacia", "g": 0, "a": 0},
+      {"name": "L. Martínez", "g": 0, "a": 0}, {"name": "S. McTominay", "g": 0, "a": 0},
+      {"name": "R. Varane", "g": 0, "a": 0}, {"name": "A. Wan-Bissaka", "g": 0, "a": 0},
+      {"name": "A. Onana", "g": 0, "a": 0}
+    ]},
+    {"file": "20260404134256_1.jpg", "team": "MANCHESTER CITY", "players": [
+      {"name": "J. Doku", "g": 0, "a": 0}, {"name": "E. Haaland", "g": 1, "a": 0},
+      {"name": "P. Foden", "g": 0, "a": 1}, {"name": "K. De Bruyne", "g": 2, "a": 1},
+      {"name": "B. Silva", "g": 0, "a": 1}, {"name": "Rodri", "g": 0, "a": 0},
+      {"name": "J. Gvardiol", "g": 0, "a": 0}, {"name": "R. Dias", "g": 0, "a": 0},
+      {"name": "J. Stones", "g": 0, "a": 0}, {"name": "K. Walker", "g": 0, "a": 0},
+      {"name": "Ederson", "g": 0, "a": 0}
+    ]},
+    {"file": "20260404135757_1.jpg", "team": "FRANKFURT", "players": [
+      {"name": "F. Chaïbi", "g": 0, "a": 1}, {"name": "J. Dina Ebimbe", "g": 0, "a": 0},
+      {"name": "A. Knauff", "g": 1, "a": 0}, {"name": "J. Ngankam", "g": 0, "a": 0},
+      {"name": "O. Marmoush", "g": 0, "a": 0}, {"name": "R. Koch", "g": 0, "a": 0},
+      {"name": "M. Götze", "g": 0, "a": 0}, {"name": "E. Skhiri", "g": 0, "a": 0},
+      {"name": "N. Nkounkou", "g": 0, "a": 0}, {"name": "W. Pacho", "g": 0, "a": 0},
+      {"name": "Tuta", "g": 0, "a": 0}, {"name": "A. Buta", "g": 0, "a": 0}
+    ]},
+    {"file": "20260404135758_1.jpg", "team": "FRANKFURT", "players": [
+      {"name": "M. Götze", "g": 0, "a": 0}, {"name": "E. Skhiri", "g": 0, "a": 0},
+      {"name": "N. Nkounkou", "g": 0, "a": 0}, {"name": "W. Pacho", "g": 0, "a": 0},
+      {"name": "Tuta", "g": 0, "a": 0}, {"name": "A. Buta", "g": 0, "a": 0},
+      {"name": "K. Trapp", "g": 0, "a": 0}
+    ]},
+    {"file": "20260404135800_1.jpg", "team": "M'GLADBACH", "players": [
+      {"name": "F. Honorat", "g": 0, "a": 0}, {"name": "T. Čvančara", "g": 0, "a": 0},
+      {"name": "N. Ngoumou", "g": 0, "a": 0}, {"name": "A. Plea", "g": 0, "a": 0},
+      {"name": "J. Weigl", "g": 0, "a": 0}, {"name": "K. Koné", "g": 0, "a": 0},
+      {"name": "L. Netz", "g": 0, "a": 0}, {"name": "N. Elvedi", "g": 0, "a": 0},
+      {"name": "K. Itakura", "g": 0, "a": 0}, {"name": "J. Scally", "g": 0, "a": 0},
+      {"name": "J. Omlin", "g": 0, "a": 0}
+    ]},
+    {"file": "20260404142355_1.jpg", "team": "REAL SOCIEDAD", "players": [
+      {"name": "A. Zakharyan", "g": 0, "a": 1}, {"name": "U. Sadiq", "g": 1, "a": 1},
+      {"name": "T. Kubo", "g": 0, "a": 0}, {"name": "M. Oyarzabal", "g": 1, "a": 1},
+      {"name": "B. Méndez", "g": 0, "a": 0}, {"name": "M. Merino", "g": 1, "a": 0},
+      {"name": "K. Tierney", "g": 0, "a": 0}, {"name": "R. Le Normand", "g": 0, "a": 0},
+      {"name": "I. Zubeldia", "g": 0, "a": 0}, {"name": "H. Traoré", "g": 0, "a": 0},
+      {"name": "Á. Remiro", "g": 0, "a": 0}
+    ]},
+    {"file": "20260404142358_1.jpg", "team": "REAL BETIS", "players": [
+      {"name": "A. Pérez", "g": 0, "a": 0}, {"name": "N. Fekir", "g": 1, "a": 0},
+      {"name": "L. Henrique", "g": 0, "a": 0}, {"name": "B. Iglesias", "g": 0, "a": 0},
+      {"name": "Y. Fekir", "g": 0, "a": 0}, {"name": "M. Roca", "g": 0, "a": 0},
+      {"name": "Isco", "g": 0, "a": 1}, {"name": "G. Rodríguez", "g": 0, "a": 0},
+      {"name": "Abner", "g": 0, "a": 0}, {"name": "W. Carvalho", "g": 0, "a": 0},
+      {"name": "M. Bartra", "g": 0, "a": 0}, {"name": "H. Bellerín", "g": 0, "a": 0}
+    ]},
+    {"file": "20260404142359_1.jpg", "team": "REAL BETIS", "players": [
+      {"name": "Isco", "g": 0, "a": 1}, {"name": "M. Bartra", "g": 0, "a": 0},
+      {"name": "W. Carvalho", "g": 0, "a": 0}, {"name": "Abner", "g": 0, "a": 0},
+      {"name": "R. Silva", "g": 0, "a": 0}, {"name": "H. Bellerín", "g": 0, "a": 0},
+      {"name": "G. Rodríguez", "g": 0, "a": 0}
+    ]}
+  ]
+}

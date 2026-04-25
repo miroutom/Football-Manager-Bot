@@ -1,0 +1,36 @@
+# Лига Чемпионов (cl) — лиговая фаза: n / x / 1
+# Источник журнал: /Users/elshimin/PycharmProjects/PythonProject/match_results.json
+# Календарь пар: /Users/elshimin/PycharmProjects/PythonProject/mixed_schedule.json (cl) ∪ /Users/elshimin/PycharmProjects/PythonProject/skipped_matches.json (cl)
+# Строка = хозяева, столбец = гости
+
+             	Мю	Ливерпуль	Реал	Атлетико	Милан	Челси	Вильярреал	Рома	Франкфурт	Спартак	Наполи	Бавария	Байер	Цска	Краснодар	Сити	Арсенал	Барселона	Атлетик	Интер	Ювентус	Дортмунд	Лейпциг	Зенит	Локомотив	Тоттенхэм	Реал Сосьедад	Аталанта	Боруссия М	Динамо
+Мю           	—	n	n	n	n	n	n	n	n	n	x	n	n	n	n	n	n	n	n	n	n	n	n	x	n	n	n	1	1	n
+Ливерпуль    	n	—	n	n	n	n	n	n	n	n	n	x	n	n	x	n	n	1	n	n	n	n	n	1	n	n	n	n	n	n
+Реал         	n	n	—	n	n	n	n	n	n	n	n	n	x	n	n	n	n	n	n	x	n	n	n	x	1	n	n	n	n	n
+Атлетико     	n	x	n	—	n	n	n	n	x	n	n	n	n	n	n	n	n	n	n	n	x	n	n	n	n	x	n	n	n	n
+Милан        	x	n	n	n	—	x	n	n	n	x	n	n	n	n	n	n	n	n	n	n	n	x	n	n	n	n	n	n	n	n
+Челси        	n	n	n	x	n	—	x	n	x	n	n	x	n	n	n	n	n	n	n	n	n	n	n	n	n	n	n	n	n	n
+Вильярреал   	x	n	n	n	n	n	—	n	n	n	x	n	n	x	n	n	n	n	n	n	n	n	x	n	n	n	n	n	n	n
+Рома         	n	n	x	x	n	n	n	—	n	n	n	n	n	n	n	n	x	n	n	n	n	n	n	n	x	n	n	n	n	n
+Франкфурт    	n	n	n	n	n	n	n	n	—	x	n	n	n	n	n	n	n	n	n	n	n	n	n	n	n	n	x	x	n	1
+Спартак      	n	n	n	n	n	n	x	n	n	—	n	x	n	n	n	n	n	n	n	n	x	n	n	n	n	n	n	1	n	n
+Наполи       	n	n	n	x	n	n	n	n	n	n	—	n	n	x	n	x	n	n	n	n	n	n	n	n	n	n	n	n	n	x
+Бавария      	n	n	n	n	x	n	n	n	n	n	n	—	n	n	n	n	x	n	n	n	n	n	n	n	n	x	x	n	n	n
+Байер        	n	n	n	n	n	n	n	x	n	n	n	n	—	n	n	n	n	n	n	n	n	n	n	n	n	x	x	n	n	x
+Цска         	n	n	n	n	n	x	n	x	n	n	n	n	n	—	n	n	1	n	x	n	n	n	n	n	n	n	n	n	n	n
+Краснодар    	n	n	n	n	x	n	x	n	n	n	n	n	n	n	—	n	n	n	n	x	1	n	n	n	n	n	n	n	n	n
+Сити         	n	n	x	n	n	n	1	n	n	n	n	n	n	n	n	—	n	n	x	n	n	n	n	n	n	n	n	n	x	n
+Арсенал      	n	n	n	n	n	n	n	n	n	x	n	n	n	n	n	n	—	n	n	x	n	n	n	x	n	n	x	n	n	n
+Барселона    	n	n	n	n	x	n	n	n	n	n	n	n	n	x	n	n	n	—	n	x	n	n	x	n	n	n	n	n	n	n
+Атлетик      	n	n	n	n	n	x	n	n	x	x	n	n	n	n	n	n	n	n	—	n	n	n	n	n	n	n	n	n	n	x
+Интер        	n	n	n	n	n	n	n	n	x	n	n	n	x	n	n	n	n	n	n	—	x	n	x	n	n	n	n	n	n	n
+Ювентус      	n	n	n	n	n	n	n	n	n	n	n	n	x	n	n	n	n	x	n	n	—	n	x	n	x	n	n	n	n	n
+Дортмунд     	n	x	n	x	n	n	n	x	n	n	n	n	n	n	n	n	n	n	x	n	n	—	n	n	n	n	n	n	n	n
+Лейпциг      	x	n	n	n	n	n	n	n	n	n	n	n	n	n	1	n	n	n	n	n	n	n	—	n	x	x	n	n	n	n
+Зенит        	n	n	n	n	n	x	n	n	n	n	x	x	n	n	n	x	n	n	n	n	n	n	n	—	n	n	n	n	n	n
+Локомотив    	n	1	n	n	n	n	n	n	n	n	1	n	1	n	n	n	x	n	n	n	n	n	n	n	—	n	n	n	n	n
+Тоттенхэм    	n	n	n	n	x	n	n	n	n	n	n	n	n	x	n	n	n	n	x	n	n	x	n	n	n	—	n	n	n	n
+Реал Сосьедад	n	x	n	n	n	n	n	n	n	n	n	n	n	n	n	x	n	n	n	n	n	x	n	n	n	n	—	x	n	n
+Аталанта     	n	n	x	n	n	n	n	n	n	n	n	n	n	n	x	x	n	n	n	n	n	n	n	n	n	n	n	—	x	n
+Боруссия М   	n	n	x	n	n	n	n	x	n	n	n	n	n	n	x	n	n	x	n	n	n	n	n	n	n	n	n	n	—	n
+Динамо       	x	n	n	n	n	n	n	n	n	n	n	n	n	n	n	n	n	x	n	n	n	x	n	n	n	n	n	n	x	—

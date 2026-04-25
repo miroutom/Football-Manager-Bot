@@ -1,0 +1,17 @@
+# Серия А (ita)
+# Источник журнал: /Users/elshimin/PycharmProjects/PythonProject/match_results.json
+# Расписание (порядок 1/2): /Users/elshimin/PycharmProjects/PythonProject/mixed_schedule.json
+# Отложенные: /Users/elshimin/PycharmProjects/PythonProject/skipped_matches.json (учёт в порядке 1/2, см. merge_skipped)
+# Строка = хозяева, столбец = гости
+
+          	Интер	Милан	Ювентус	Наполи	Аталанта	Фиорентина	Лацио	Рома	Торино	Сассуоло
+Интер     	—	x	x	1	x	x	x	x	x	x
+Милан     	2	—	1	2	x	x	2	x	x	x
+Ювентус   	2	2	—	x	2	x	2	x	x	2
+Наполи    	2	x	2	—	x	x	x	2	x	x
+Аталанта  	2	2	x	2	—	2	x	x	x	x
+Фиорентина	2	2	2	2	x	—	x	2	1	x
+Лацио     	2	x	x	2	2	x	—	x	x	x
+Рома      	2	2	2	x	2	x	2	—	x	1
+Торино    	x	x	2	2	2	2	2	2	—	x
+Сассуоло  	2	x	x	x	2	2	2	2	2	—
