@@ -864,6 +864,18 @@ def _crest_dematte_linked_dark_from_edges(rgba: Image.Image, rgb_lim: int = 40) 
 
 # 0 = без обводки. Каждый pass — одно «наращивание» маски 3×3 (после downscale визуально ≈1 px на ребре).
 _CREST_OUTLINE_PASSES: int = 1
+# Прозрачные поля вокруг уменьшенной эмблемы (до обводки), иначе контур и dilate обрезаются у края PNG.
+_CREST_CANVAS_PAD_PX: int = 6
+
+
+def _crest_add_transparent_pad(rgba: Image.Image, pad: int) -> Image.Image:
+    if pad < 1:
+        return rgba
+    im = rgba.convert("RGBA")
+    w, h = im.size
+    out = Image.new("RGBA", (w + 2 * pad, h + 2 * pad), (0, 0, 0, 0))
+    out.paste(im, (pad, pad), im)
+    return out
 
 
 def _crest_white_outline(rgba: Image.Image, passes: int) -> Image.Image:
@@ -894,6 +906,7 @@ def _paste_crest_natural(im: Image.Image, crest: Image.Image, cx: int, cy: int, 
     work = _crest_dematte_safe(work)
     thumb = work.copy()
     thumb.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+    thumb = _crest_add_transparent_pad(thumb, _CREST_CANVAS_PAD_PX)
     thumb = _crest_white_outline(thumb, _CREST_OUTLINE_PASSES)
     nw, nh = thumb.size
     if nw < 1 or nh < 1:
