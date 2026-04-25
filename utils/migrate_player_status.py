@@ -1,7 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Добавить колонку ``status`` во все таблицы игроков (SQLite). Идемпотентно."""
+"""
+Миграции схемы игроков (колонка ``status`` и далее).
+
+1. Если установлен **Alembic** и есть ``alembic.ini`` — ``upgrade head`` по трём SQLite
+   (см. ``alembic/env.py``).
+2. Иначе — идемпотентный ``ALTER TABLE … ADD COLUMN status`` (как раньше).
+
+CLI::
+
+    alembic upgrade head
+    python -m utils.migrate_player_status
+"""
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 
@@ -9,36 +21,58 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
-
-from utils.utils import engine_cl, engine_common, engine_league
+logger = logging.getLogger(__name__)
 
 _TABLES = ("forwards", "midfielders", "defenders", "goalkeepers")
 
 
-def add_status_column_if_missing(engine, label: str) -> list[str]:
-    done: list[str] = []
-    with engine.begin() as conn:
-        for table in _TABLES:
-            sql = f"ALTER TABLE {table} ADD COLUMN status VARCHAR(16)"
-            try:
-                conn.execute(text(sql))
-                done.append(f"{label}:{table}")
-            except OperationalError as e:
-                if "duplicate column name" not in str(e).lower():
-                    raise
-    return done
+def _legacy_add_status_via_sql() -> list[str]:
+    """Добавить ``status`` без Alembic (старые окружения)."""
+    from sqlalchemy import text
+    from sqlalchemy.exc import OperationalError
+
+    from utils.utils import engine_cl, engine_common, engine_league
+
+    out: list[str] = []
+    for engine, label in (
+        (engine_league, "league"),
+        (engine_cl, "cl"),
+        (engine_common, "common"),
+    ):
+        with engine.begin() as conn:
+            for table in _TABLES:
+                try:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN status VARCHAR(16)"))
+                    out.append(f"{label}:{table}")
+                except OperationalError as e:
+                    if "duplicate column name" not in str(e).lower():
+                        raise
+    return out
 
 
 def migrate_all_player_status_columns() -> list[str]:
-    out: list[str] = []
-    out.extend(add_status_column_if_missing(engine_league, "league"))
-    out.extend(add_status_column_if_missing(engine_cl, "cl"))
-    out.extend(add_status_column_if_missing(engine_common, "common"))
-    return out
+    """
+    Привести схему всех трёх рабочих SQLite в соответствие с моделями.
+
+    С Alembic возвращает ``[]``; без — список добавленных ``label:table``.
+    """
+    ini = _ROOT / "alembic.ini"
+    try:
+        from alembic import command
+        from alembic.config import Config
+    except ImportError:
+        logger.info("Alembic не установлен — добавляю status через ALTER TABLE")
+        return _legacy_add_status_via_sql()
+
+    if not ini.is_file():
+        logger.info("Нет alembic.ini — добавляю status через ALTER TABLE")
+        return _legacy_add_status_via_sql()
+
+    cfg = Config(str(ini))
+    command.upgrade(cfg, "head")
+    return []
 
 
 if __name__ == "__main__":
     r = migrate_all_player_status_columns()
-    print("OK" if not r else "Added: " + ", ".join(r))
+    print("OK" if not r else "Added (legacy): " + ", ".join(r))

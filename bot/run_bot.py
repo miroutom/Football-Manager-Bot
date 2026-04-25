@@ -16,6 +16,7 @@ from bot.handlers import AccessMiddleware, router
 from bot.match_handlers import match_router
 from bot.transfer_handlers import transfer_router
 from bot.settings import get_bot_token
+from utils.migrate_player_status import migrate_all_player_status_columns
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,6 +25,13 @@ logging.basicConfig(
 
 
 async def main() -> None:
+    try:
+        await asyncio.to_thread(migrate_all_player_status_columns)
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Не удалось применить миграции SQLite (колонка status и др.)"
+        )
+        raise
     token = get_bot_token()
     dp = Dispatcher(storage=MemoryStorage())
     match_router.message.middleware(AccessMiddleware())

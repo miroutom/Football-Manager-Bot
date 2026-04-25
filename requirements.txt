@@ -1,5 +1,6 @@
 # Минимальные зависимости для main и БД (восстановление: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt)
 sqlalchemy>=1.4,<3
+alembic>=1.13,<2
 openpyxl>=3.0
 python-dotenv>=1.0
 aiogram>=3.13,<4
