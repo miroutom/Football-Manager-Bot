@@ -222,7 +222,6 @@ GERMANY_BUNDESLIGA_SQUADS: dict[str, list[Row]] = {
         ("Кабак", "ЦЗ", 75, "Турция", "reserve"),
         ("Джон", "ЛЗ", 71, "Германия", "reserve"),
         ("Адамс", "ЦЗ", 70, "Гана", "reserve"),
-        ("Мелехин", "ЦЗ", 70, "Россия", "reserve"),
     ],
     "Штутгарт": [
         ("Скамакка", "ФРВ", 78, "Италия", "start"),
@@ -272,18 +271,18 @@ GERMANY_BUNDESLIGA_SQUADS: dict[str, list[Row]] = {
         ("Козза", "ЛЗ", 74, "Франция", "reserve"),
         ("Перван", "ВРТ", 73, "Австрия", "reserve"),
         ("Сарр", "ФРВ", 70, "Швеция", "reserve"),
-        ("Бонгонда", "ЛФА", 75, "ДР Конго", "reserve"),
     ],
 }
 
 
 def _assert_roster_shape() -> None:
+    """11 старт + 7 скамейка; резерв 4 или 5 — как в таблицах (без «добивки» лишних имён)."""
     for team, rows in GERMANY_BUNDESLIGA_SQUADS.items():
-        assert len(rows) == 23, (team, len(rows))
         st = sum(1 for r in rows if r[4] == "start")
         bn = sum(1 for r in rows if r[4] == "bench")
         rs = sum(1 for r in rows if r[4] == "reserve")
-        assert st == 11 and bn == 7 and rs == 5, (team, st, bn, rs)
+        assert st == 11 and bn == 7 and rs in (4, 5), (team, st, bn, rs)
+        assert len(rows) == st + bn + rs, (team, len(rows), st, bn, rs)
 
 
 _assert_roster_shape()
