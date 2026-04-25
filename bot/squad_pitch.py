@@ -796,6 +796,28 @@ def _try_load_crest_rgba(team_db: str) -> Image.Image | None:
     return None
 
 
+def _crest_dematte_safe(rgba: Image.Image) -> Image.Image:
+    """
+    Убирает тёмную подложку у гербов с Wiki, но не трогает целиком тёмные логотипы (Ювентус и т.п.):
+    иначе flood-fill с краёв «съедает» всю эмблему и на поле ничего не видно.
+    """
+    base = rgba.convert("RGBA")
+
+    def _opaque_count(im: Image.Image) -> int:
+        px = im.load()
+        w, h = im.size
+        return sum(1 for y in range(h) for x in range(w) if px[x, y][3] > 48)
+
+    n0 = _opaque_count(base)
+    if n0 < 1:
+        return base
+    dem = _crest_dematte_linked_dark_from_edges(base.copy())
+    n1 = _opaque_count(dem)
+    if n1 < max(80, int(n0 * 0.12)):
+        return base
+    return dem
+
+
 def _crest_dematte_linked_dark_from_edges(rgba: Image.Image, rgb_lim: int = 40) -> Image.Image:
     """Делает прозрачным тёмный фон, 4-связный с краями изображения (часто чёрная «подложка» с Wiki)."""
     im = rgba.copy()
@@ -843,7 +865,7 @@ def _crest_dematte_linked_dark_from_edges(rgba: Image.Image, rgb_lim: int = 40) 
 def _paste_crest_natural(im: Image.Image, crest: Image.Image, cx: int, cy: int, max_side: int) -> None:
     """Вписывает эмблему в квадрат max_side×max_side без искажения пропорций, без круглой маски."""
     work = crest.convert("RGBA")
-    work = _crest_dematte_linked_dark_from_edges(work)
+    work = _crest_dematte_safe(work)
     thumb = work.copy()
     thumb.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
     nw, nh = thumb.size
