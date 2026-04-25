@@ -19,7 +19,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from data.defender import Defender
 from data.forward import Forward
@@ -29,6 +29,16 @@ from utils.common_db import _team_in_cl_pool
 from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
 
 _ALL_PLAYER = (Forward, Midfielder, Defender, Goalkeeper)
+
+
+def _filter_team(Cls, team: str):
+    """
+    Кириллица: SQLite lower() буквы не понижает, поэтому вместо одного
+    func.lower(Cls.team) == python_lower(team) сравниваем ещё и по точной строке клуба.
+    """
+    t = (team or "").strip()
+    tl = t.lower()
+    return or_(Cls.team == t, func.lower(Cls.team) == tl)
 
 
 def _cls_for_position(position: str) -> type:
@@ -44,11 +54,36 @@ def _cls_for_position(position: str) -> type:
 
 def find_player_row(session, name: str, team: str) -> tuple[Any, type | None]:
     nl = (name or "").strip().lower()
-    tl = (team or "").strip().lower()
     for Cls in _ALL_PLAYER:
-        for r in session.query(Cls).filter(func.lower(Cls.team) == tl).all():
+        for r in session.query(Cls).filter(_filter_team(Cls, team)).all():
             if (r.name or "").strip().lower() == nl:
                 return r, Cls
+    return None, None
+
+
+def _all_rows_same_player(session, name: str, team: str) -> list[tuple[Any, type]]:
+    nl = (name or "").strip().lower()
+    out: list[tuple[Any, type]] = []
+    for Cls in _ALL_PLAYER:
+        for r in session.query(Cls).filter(_filter_team(Cls, team)).all():
+            if (r.name or "").strip().lower() == nl:
+                out.append((r, Cls))
+    return out
+
+
+def _dedupe_player_rows_for_team(session, name: str, team: str) -> tuple[Any, type | None]:
+    """
+    Одна строка на игрока+клуб. Если в БД несколько дублей (разные таблицы/старые смены позиции),
+    удаляем все — следующий шаг upsert вставит одну корректную строку по заявке.
+    """
+    found = _all_rows_same_player(session, name, team)
+    if not found:
+        return None, None
+    if len(found) == 1:
+        return found[0]
+    for r, _Cls in found:
+        session.delete(r)
+    session.flush()
     return None, None
 
 
@@ -142,7 +177,7 @@ def upsert_roster_player(
         raise ValueError(f"status must be start|bench|reserve, got {status!r}")
 
     tgt_cls = _cls_for_position(position)
-    row, cur_cls = find_player_row(session, name, team)
+    row, cur_cls = _dedupe_player_rows_for_team(session, name, team)
     pos_u = position.strip().upper()
 
     if row is None:
@@ -177,11 +212,10 @@ def upsert_roster_player(
 
 
 def delete_team_players_not_in_names(session, team: str, roster_names: set[str]) -> int:
-    tl = team.strip().lower()
     nset = {n.strip().lower() for n in roster_names}
     deleted = 0
     for Cls in _ALL_PLAYER:
-        for r in session.query(Cls).filter(func.lower(Cls.team) == tl).all():
+        for r in session.query(Cls).filter(_filter_team(Cls, team)).all():
             if (r.name or "").strip().lower() not in nset:
                 session.delete(r)
                 deleted += 1

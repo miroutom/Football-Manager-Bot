@@ -116,6 +116,11 @@ def _team_name_as_in_db(team: str) -> str:
     return team
 
 
+def _player_name_key(full_name: str) -> str:
+    """Ключ дедупликации: нормализованное ФИО (один игрок = одна строка в ростере)."""
+    return " ".join((full_name or "").split()).lower()
+
+
 def _surname(full_name: str) -> str:
     s = (full_name or "").strip()
     if not s:
@@ -247,7 +252,7 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     status=st,
                 )
             )
-    return out
+    return _dedupe_squad_pl_by_name(out)
 
 
 def _player_fits_slot(p: _Pl, slot: SquadSlot) -> bool:
@@ -365,6 +370,7 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "БОЛГАРИЯ": "bg",
         "ЯПОНИЯ": "jp",
         "КОРЕЯ": "kr",
+        "ЮЖНАЯ КОРЕЯ": "kr",
         "КНР": "cn",
         "США": "us",
         "МЕКСИКА": "mx",
@@ -740,6 +746,34 @@ def _norm_pl_status(p: _Pl) -> str:
     return s if s in ("start", "bench", "reserve") else ""
 
 
+# Один ФИО — одна карточка: при дублях в БД (разные позиции/таблицы) оставляем заявку старт/скамейка.
+_DEDUPE_STATUS_RANK: dict[str, int] = {"start": 0, "bench": 1, "reserve": 2, "": 3}
+
+
+def _dedupe_squad_pl_by_name(rows: list[_Pl]) -> list[_Pl]:
+    buckets: dict[str, list[_Pl]] = {}
+    for p in rows:
+        k = _player_name_key(p.name)
+        if not k:
+            continue
+        buckets.setdefault(k, []).append(p)
+    out: list[_Pl] = []
+    for _k, group in buckets.items():
+        if len(group) == 1:
+            out.append(group[0])
+            continue
+        best = min(
+            group,
+            key=lambda p: (
+                _DEDUPE_STATUS_RANK.get(_norm_pl_status(p), 3),
+                -p.score,
+                (p.name or "").lower(),
+            ),
+        )
+        out.append(best)
+    return out
+
+
 def _place_on_slot(slot: SquadSlot, pool: list[_Pl], used: set[int]) -> _Pl | None:
     cands = [p for p in pool if id(p) not in used and _natural_fits_slot(p, slot)]
     if not cands:
@@ -872,6 +906,8 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         return out.getvalue()
 
     slot_map, bench = _assign_slots(players, team_db)
+    on_field_names = { _player_name_key(p.name) for p in slot_map.values() if p is not None }
+    bench = [p for p in bench if _player_name_key(p.name) not in on_field_names]
     slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
     subs = bench[:SUBSTITUTES_COUNT]
     reserves = bench[SUBSTITUTES_COUNT:]
