@@ -39,6 +39,7 @@ def apply_transfer(
     """
     Ищет игрока по имени (без учёта регистра), клубу «откуда» и позиции (как в БД),
     поле ``team`` меняет на новый клуб в league_new.db и champions_league_new.db.
+    Поле ``status`` (старт/скамейка/резерв) сбрасывается, чтобы в новом клубе не тянуть чужую заявку.
 
     Возвращает счётчики обновлённых строк: ``league``, ``cl``.
     """
@@ -64,6 +65,8 @@ def apply_transfer(
             )
             for r in rows:
                 r.team = to_team
+                if getattr(r, "status", None) is not None:
+                    r.status = None
                 counts[key] += 1
 
     _run(session_league, "league")

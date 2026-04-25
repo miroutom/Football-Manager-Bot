@@ -65,3 +65,4 @@ class Midfielder(Base):
     golden_balls = Column(Integer, default=0)
     golden_boots = Column(Integer, default=0)
     nation = Column(String, nullable=True)
+    status = Column(String, nullable=True)

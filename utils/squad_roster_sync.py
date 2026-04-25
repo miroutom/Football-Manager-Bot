@@ -1,0 +1,252 @@
+# -*- coding: utf-8 -*-
+"""
+Синхронизация заявки команды: overall, nation, position, status; удаление лишних игроков;
+вставка отсутствующих строк. Скрипт: ``scripts/sync_england_apl_rosters.py``.
+
+Полный прогон АПЛ по умолчанию пишет в ``league_new.db`` и (только для клубов из пула ЛЧ —
+``_team_in_cl_pool``, те же ключи что ``teams_champ_league`` / участники из ``get_cl_participants``)
+в ``champions_league_new.db``, затем при необходимости пересобирает ``common.db``.
+
+Статусы в БД: ``start`` | ``bench`` | ``reserve``.
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from typing import Any
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from sqlalchemy import func
+
+from data.defender import Defender
+from data.forward import Forward
+from data.goalkeeper import Goalkeeper
+from data.midfielder import Midfielder
+from utils.common_db import _team_in_cl_pool
+from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
+
+_ALL_PLAYER = (Forward, Midfielder, Defender, Goalkeeper)
+
+
+def _cls_for_position(position: str) -> type:
+    pos = (position or "").strip().upper()
+    if pos in forwards:
+        return Forward
+    if pos in midfielders:
+        return Midfielder
+    if pos in defenders:
+        return Defender
+    return Goalkeeper
+
+
+def find_player_row(session, name: str, team: str) -> tuple[Any, type | None]:
+    nl = (name or "").strip().lower()
+    tl = (team or "").strip().lower()
+    for Cls in _ALL_PLAYER:
+        for r in session.query(Cls).filter(func.lower(Cls.team) == tl).all():
+            if (r.name or "").strip().lower() == nl:
+                return r, Cls
+    return None, None
+
+
+def _new_player_kwargs(
+    tgt_cls: type,
+    *,
+    name: str,
+    team: str,
+    position: str,
+    overall: int,
+    nation: str | None,
+    status: str,
+    carry: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    pos = position.strip().upper()
+    st = status.strip().lower()
+    c = carry or {}
+    kw: dict[str, Any] = dict(
+        name=name,
+        team=team,
+        position=pos,
+        overall=int(overall),
+        nation=(nation.strip() if nation else None) or None,
+        status=st,
+        matches=int(c.get("matches", 0) or 0),
+        rating=float(c.get("rating", 0) or 0),
+        trophies=int(c.get("trophies", 0) or 0),
+        golden_balls=int(c.get("golden_balls", 0) or 0),
+    )
+    if tgt_cls is Forward:
+        kw.update(
+            goals=int(c.get("goals", 0) or 0),
+            assists=int(c.get("assists", 0) or 0),
+            ga=int(c.get("ga", 0) or 0),
+            golden_boots=int(c.get("golden_boots", 0) or 0),
+        )
+    elif tgt_cls is Midfielder:
+        kw.update(
+            goals=int(c.get("goals", 0) or 0),
+            assists=int(c.get("assists", 0) or 0),
+            ga=int(c.get("ga", 0) or 0),
+            golden_boots=int(c.get("golden_boots", 0) or 0),
+        )
+    elif tgt_cls is Defender:
+        kw.update(
+            goals=int(c.get("goals", 0) or 0),
+            assists=int(c.get("assists", 0) or 0),
+            ga=int(c.get("ga", 0) or 0),
+            clean_sheets=int(c.get("clean_sheets", 0) or 0),
+        )
+    else:
+        kw.update(
+            clean_sheets=int(c.get("clean_sheets", 0) or 0),
+            missed_goals=int(c.get("missed_goals", 0) or 0),
+        )
+    return kw
+
+
+def _carry_from_row(row: Any) -> dict[str, Any]:
+    out: dict[str, Any] = {
+        "matches": getattr(row, "matches", 0),
+        "rating": getattr(row, "rating", 0.0),
+        "trophies": getattr(row, "trophies", 0),
+        "golden_balls": getattr(row, "golden_balls", 0),
+    }
+    if hasattr(row, "goals"):
+        out["goals"] = getattr(row, "goals", 0)
+        out["assists"] = getattr(row, "assists", 0)
+        out["ga"] = getattr(row, "ga", 0)
+    if hasattr(row, "golden_boots"):
+        out["golden_boots"] = getattr(row, "golden_boots", 0)
+    if hasattr(row, "clean_sheets"):
+        out["clean_sheets"] = getattr(row, "clean_sheets", 0)
+    if hasattr(row, "missed_goals"):
+        out["missed_goals"] = getattr(row, "missed_goals", 0)
+    return out
+
+
+def upsert_roster_player(
+    session,
+    *,
+    team: str,
+    name: str,
+    position: str,
+    overall: int,
+    nation: str | None,
+    status: str,
+) -> str:
+    st = status.strip().lower()
+    if st not in ("start", "bench", "reserve"):
+        raise ValueError(f"status must be start|bench|reserve, got {status!r}")
+
+    tgt_cls = _cls_for_position(position)
+    row, cur_cls = find_player_row(session, name, team)
+    pos_u = position.strip().upper()
+
+    if row is None:
+        session.add(tgt_cls(**_new_player_kwargs(tgt_cls, name=name, team=team, position=pos_u, overall=overall, nation=nation, status=st)))
+        return "inserted"
+
+    if cur_cls is not tgt_cls:
+        carry = _carry_from_row(row)
+        session.delete(row)
+        session.flush()
+        session.add(
+            tgt_cls(
+                **_new_player_kwargs(
+                    tgt_cls,
+                    name=(row.name or name).strip(),
+                    team=team,
+                    position=pos_u,
+                    overall=overall,
+                    nation=nation,
+                    status=st,
+                    carry=carry,
+                )
+            )
+        )
+        return "moved"
+
+    row.position = pos_u
+    row.overall = int(overall)
+    row.nation = (nation.strip() if nation else None) or None
+    row.status = st
+    return "updated"
+
+
+def delete_team_players_not_in_names(session, team: str, roster_names: set[str]) -> int:
+    tl = team.strip().lower()
+    nset = {n.strip().lower() for n in roster_names}
+    deleted = 0
+    for Cls in _ALL_PLAYER:
+        for r in session.query(Cls).filter(func.lower(Cls.team) == tl).all():
+            if (r.name or "").strip().lower() not in nset:
+                session.delete(r)
+                deleted += 1
+    return deleted
+
+
+def sync_team_roster(
+    session,
+    team: str,
+    rows: list[tuple[str, str, int, str | None, str]],
+    *,
+    prune: bool = True,
+) -> dict[str, int]:
+    stats: dict[str, int] = {"inserted": 0, "updated": 0, "moved": 0, "deleted": 0}
+    names = {r[0] for r in rows}
+    if prune:
+        stats["deleted"] = delete_team_players_not_in_names(session, team, names)
+    for name, position, overall, nation, status in rows:
+        k = upsert_roster_player(
+            session,
+            team=team,
+            name=name,
+            position=position,
+            overall=overall,
+            nation=nation,
+            status=status,
+        )
+        stats[k] += 1
+    return stats
+
+
+def run_full_england_sync(
+    *,
+    tournaments: tuple[str, ...] | None = None,
+    rebuild_common: bool = True,
+) -> dict[str, dict[str, dict[str, int]]]:
+    """
+    Миграция ``status`` во все SQLite (лига + ЛЧ + common), затем синк заявок.
+
+    ``tournaments``: ключи для ``get_session``, по умолчанию ``("league", "cl")``.
+
+    Для ``cl`` составы пишутся **только** для команд, у которых ``_team_in_cl_pool(team)`` —
+    как при сборке ``common.db``, без заноса «чужих» АПЛ-клубов в БД ЛЧ.
+    """
+    from utils.migrate_player_status import migrate_all_player_status_columns
+
+    migrate_all_player_status_columns()
+    from data.england_apl_squads import ENGLAND_APL_SQUADS
+
+    if not ENGLAND_APL_SQUADS:
+        raise RuntimeError("ENGLAND_APL_SQUADS пуст (data/england_apl_squads.py).")
+
+    keys = tournaments if tournaments is not None else ("league", "cl")
+    out: dict[str, dict[str, dict[str, int]]] = {}
+    for tkey in keys:
+        session = get_session(tkey)
+        per_team: dict[str, dict[str, int]] = {}
+        for team, rows in ENGLAND_APL_SQUADS.items():
+            if tkey in ("cl", "champ_league") and not _team_in_cl_pool(team):
+                continue
+            per_team[team] = sync_team_roster(session, team, rows, prune=True)
+        session.commit()
+        out[tkey] = per_team
+    if rebuild_common:
+        from utils.common_db import rebuild_common_database
+
+        rebuild_common_database()
+    return out

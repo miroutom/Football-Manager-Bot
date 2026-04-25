@@ -74,8 +74,16 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
                     "overall_den": 0,
                     "rating_num": 0.0,
                     "rating_den": 0,
+                    "nation": None,
+                    "status": None,
                 }
             b = buckets[k]
+            nat = getattr(p, "nation", None)
+            if nat and not b.get("nation"):
+                b["nation"] = str(nat).strip() or None
+            st = getattr(p, "status", None)
+            if st and not b.get("status"):
+                b["status"] = str(st).strip().lower() or None
             m = int(p.matches or 0)
             b["matches"] += m
             b["goals"] += int(getattr(p, "goals", 0) or 0)
@@ -118,7 +126,8 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
                     golden_boots=b["golden_boots"],
-                    nation=None,
+                    nation=b.get("nation"),
+                    status=b.get("status"),
                 )
             )
         elif PlayerCls is Midfielder:
@@ -136,7 +145,8 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
                     golden_boots=b["golden_boots"],
-                    nation=None,
+                    nation=b.get("nation"),
+                    status=b.get("status"),
                 )
             )
         else:
@@ -154,7 +164,8 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     clean_sheets=b["clean_sheets"],
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
-                    nation=None,
+                    nation=b.get("nation"),
+                    status=b.get("status"),
                 )
             )
 
@@ -193,8 +204,16 @@ def rebuild_common_database() -> None:
                     "overall_den": 0,
                     "rating_num": 0.0,
                     "rating_den": 0,
+                    "nation": None,
+                    "status": None,
                 }
             b = gk_buckets[k]
+            nat = getattr(p, "nation", None)
+            if nat and not b.get("nation"):
+                b["nation"] = str(nat).strip() or None
+            st = getattr(p, "status", None)
+            if st and not b.get("status"):
+                b["status"] = str(st).strip().lower() or None
             m = int(p.matches or 0)
             b["matches"] += m
             b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)
@@ -223,7 +242,8 @@ def rebuild_common_database() -> None:
                 missed_goals=b["missed_goals"],
                 trophies=b["trophies"],
                 golden_balls=b["golden_balls"],
-                nation=None,
+                nation=b.get("nation"),
+                status=b.get("status"),
             )
         )
 

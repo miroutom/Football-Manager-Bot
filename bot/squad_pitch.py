@@ -214,6 +214,7 @@ class _Pl:
     tags: set[str]
     score: int
     nation: str | None
+    status: str | None = None
 
 
 def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
@@ -229,6 +230,11 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
             nat = getattr(p, "nation", None)
             if nat is not None:
                 nat = str(nat).strip() or None
+            st = getattr(p, "status", None)
+            if st is not None:
+                st = str(st).strip().lower() or None
+                if st not in ("start", "bench", "reserve"):
+                    st = None
             out.append(
                 _Pl(
                     name=p.name,
@@ -238,6 +244,7 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     tags=tags,
                     score=_player_score(ov, rt),
                     nation=nat,
+                    status=st,
                 )
             )
     return out
@@ -728,49 +735,80 @@ def _draw_sidebar_text(
             )
 
 
+def _norm_pl_status(p: _Pl) -> str:
+    s = (p.status or "").strip().lower()
+    return s if s in ("start", "bench", "reserve") else ""
+
+
+def _place_on_slot(slot: SquadSlot, pool: list[_Pl], used: set[int]) -> _Pl | None:
+    cands = [p for p in pool if id(p) not in used and _natural_fits_slot(p, slot)]
+    if not cands:
+        cands = [p for p in pool if id(p) not in used and _player_fits_slot(p, slot)]
+    if slot.slot_id == "LCM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
+        cands = pref or cands
+    if slot.slot_id == "RCM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() in ("ПП", "ПЦП")]
+        cands = pref or cands
+    if slot.slot_id == "LM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
+        cands = pref or cands
+    if slot.slot_id == "RM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() in ("ПП", "ПЦП")]
+        cands = pref or cands
+    if slot.slot_id == "CAM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() == "ЦАП"]
+        cands = pref or cands
+    if slot.slot_id == "CCM" and len(cands) > 1:
+        pref = [p for p in cands if (p.position or "").strip() == "ЦП"]
+        cands = pref or cands
+    if not cands:
+        return None
+    best = max(cands, key=lambda x: (x.score, x.name.lower()))
+    used.add(id(best))
+    return best
+
+
 def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], list[_Pl]]:
     slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
-    pool = players[:]
+    explicit = any(_norm_pl_status(p) for p in players)
+    if not explicit:
+        pool = players[:]
+        used: set[int] = set()
+        slot_player: dict[str, _Pl] = {}
+        for slot in slots:
+            p = _place_on_slot(slot, pool, used)
+            if p:
+                slot_player[slot.slot_id] = p
+        bench = [p for p in pool if id(p) not in used]
+        bench.sort(key=lambda x: (-x.score, x.name.lower()))
+        return slot_player, bench
+
+    starters = [p for p in players if _norm_pl_status(p) == "start"]
+    bench_marked = [p for p in players if _norm_pl_status(p) == "bench"]
+    res_marked = [p for p in players if _norm_pl_status(p) == "reserve"]
+    orphans = [p for p in players if not _norm_pl_status(p)]
+    bench_sorted = sorted(bench_marked + orphans, key=lambda x: (-x.score, x.name.lower()))
+    res_sorted = sorted(res_marked, key=lambda x: (-x.score, x.name.lower()))
+    pools_ordered: tuple[list[_Pl], ...] = (starters, bench_sorted, res_sorted)
     used: set[int] = set()
     slot_player: dict[str, _Pl] = {}
-
-    def take_best(cands: list[_Pl]) -> _Pl | None:
-        if not cands:
-            return None
-        best = max(cands, key=lambda x: (x.score, x.name.lower()))
-        used.add(id(best))
-        return best
-
     for slot in slots:
-        cands = [
-            p for p in pool if id(p) not in used and _natural_fits_slot(p, slot)
-        ]
-        if not cands:
-            cands = [p for p in pool if id(p) not in used and _player_fits_slot(p, slot)]
-        if slot.slot_id == "LCM" and len(cands) > 1:
-            pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
-            cands = pref or cands
-        if slot.slot_id == "RCM" and len(cands) > 1:
-            pref = [p for p in cands if (p.position or "").strip() in ("ПП", "ПЦП")]
-            cands = pref or cands
-        if slot.slot_id == "LM" and len(cands) > 1:
-            pref = [p for p in cands if (p.position or "").strip() in ("ЛП", "ЛЦП")]
-            cands = pref or cands
-        if slot.slot_id == "RM" and len(cands) > 1:
-            pref = [p for p in cands if (p.position or "").strip() in ("ПП", "ПЦП")]
-            cands = pref or cands
-        if slot.slot_id == "CAM" and len(cands) > 1:
-            pref = [p for p in cands if (p.position or "").strip() == "ЦАП"]
-            cands = pref or cands
-        if slot.slot_id == "CCM" and len(cands) > 1:
-            pref = [p for p in cands if (p.position or "").strip() == "ЦП"]
-            cands = pref or cands
-        p = take_best(cands)
-        if p:
-            slot_player[slot.slot_id] = p
-
-    bench = [p for p in pool if id(p) not in used]
-    bench.sort(key=lambda x: (-x.score, x.name.lower()))
+        placed: _Pl | None = None
+        for subpool in pools_ordered:
+            placed = _place_on_slot(slot, subpool, used)
+            if placed:
+                break
+        if placed:
+            slot_player[slot.slot_id] = placed
+    bench = [p for p in players if id(p) not in used]
+    bench.sort(
+        key=lambda p: (
+            0 if _norm_pl_status(p) == "bench" else 1 if _norm_pl_status(p) == "reserve" else 2,
+            -p.score,
+            p.name.lower(),
+        )
+    )
     return slot_player, bench
 
 

@@ -60,3 +60,4 @@ class Goalkeeper(Base):
     trophies = Column(Integer, default=0)
     golden_balls = Column(Integer, default=0)
     nation = Column(String, nullable=True)
+    status = Column(String, nullable=True)
