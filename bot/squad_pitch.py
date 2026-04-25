@@ -862,8 +862,8 @@ def _crest_dematte_linked_dark_from_edges(rgba: Image.Image, rgb_lim: int = 40) 
     return im
 
 
-# 0 = без обводки. После downscale: ~2–3 px визуально на типичной эмблеме (78 px).
-_CREST_OUTLINE_PASSES: int = 3
+# 0 = без обводки. Каждый pass — одно «наращивание» маски 3×3 (после downscale визуально ≈1 px на ребре).
+_CREST_OUTLINE_PASSES: int = 1
 
 
 def _crest_white_outline(rgba: Image.Image, passes: int) -> Image.Image:
