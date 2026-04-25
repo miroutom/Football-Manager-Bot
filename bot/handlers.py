@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from functools import partial
 from typing import Any, Awaitable, Callable
 
@@ -723,7 +724,10 @@ async def cb_sqclub_team(callback: CallbackQuery) -> None:
         team_name = teams[idx]
         cap = f"Состав · {_league_title(code)} · {team_name}"
         await callback.message.answer_photo(
-            BufferedInputFile(png, filename="squad_pitch.png"),
+            BufferedInputFile(
+                png,
+                filename=f"squad_{code}_{idx}_{time.time_ns()}.png",
+            ),
             caption=cap,
         )
     except Exception as e:

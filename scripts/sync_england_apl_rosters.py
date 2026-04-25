@@ -4,8 +4,9 @@
 Миграция колонки ``status`` + синхрон заявок АПЛ в ``league_new.db`` и ``champions_league_new.db``,
 затем пересборка ``common.db`` (если не отключено).
 
-Файлы ``*.db`` в git не входят (см. ``.gitignore``): после пуша кода у себя локально один раз
-запустите этот скрипт, чтобы обновить базы.
+Бот рисует состав из SQLite, а не из скриншотов: правки в ``data/england_apl_squads.py`` попадут в картинку
+**только после** ``python scripts/sync_england_apl_rosters.py`` на той машине, где лежит ``db/league_new.db``
+(тот же каталог, откуда запускается бот). ``*.db`` в git не коммитятся.
 """
 from __future__ import annotations
 
