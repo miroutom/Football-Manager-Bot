@@ -213,33 +213,33 @@ def sync_team_roster(
     return stats
 
 
-def run_full_england_sync(
+RosterRow = tuple[str, str, int, str | None, str]
+
+
+def run_squads_sync(
+    squads: dict[str, list[RosterRow]],
     *,
+    label: str = "squads",
     tournaments: tuple[str, ...] | None = None,
     rebuild_common: bool = True,
 ) -> dict[str, dict[str, dict[str, int]]]:
     """
-    Миграция ``status`` во все SQLite (лига + ЛЧ + common), затем синк заявок.
+    Миграция ``status`` во все SQLite (лига + ЛЧ + common), затем синк переданного словаря заявок.
 
-    ``tournaments``: ключи для ``get_session``, по умолчанию ``("league", "cl")``.
-
-    Для ``cl`` составы пишутся **только** для команд, у которых ``_team_in_cl_pool(team)`` —
-    как при сборке ``common.db``, без заноса «чужих» АПЛ-клубов в БД ЛЧ.
+    Для ``cl`` — только команды из ``_team_in_cl_pool`` (участники ЛЧ).
     """
     from utils.migrate_player_status import migrate_all_player_status_columns
 
     migrate_all_player_status_columns()
-    from data.england_apl_squads import ENGLAND_APL_SQUADS
-
-    if not ENGLAND_APL_SQUADS:
-        raise RuntimeError("ENGLAND_APL_SQUADS пуст (data/england_apl_squads.py).")
+    if not squads:
+        raise RuntimeError(f"Словарь заявок пуст ({label}).")
 
     keys = tournaments if tournaments is not None else ("league", "cl")
     out: dict[str, dict[str, dict[str, int]]] = {}
     for tkey in keys:
         session = get_session(tkey)
         per_team: dict[str, dict[str, int]] = {}
-        for team, rows in ENGLAND_APL_SQUADS.items():
+        for team, rows in squads.items():
             if tkey in ("cl", "champ_league") and not _team_in_cl_pool(team):
                 continue
             per_team[team] = sync_team_roster(session, team, rows, prune=True)
@@ -250,3 +250,33 @@ def run_full_england_sync(
 
         rebuild_common_database()
     return out
+
+
+def run_full_england_sync(
+    *,
+    tournaments: tuple[str, ...] | None = None,
+    rebuild_common: bool = True,
+) -> dict[str, dict[str, dict[str, int]]]:
+    from data.england_apl_squads import ENGLAND_APL_SQUADS
+
+    return run_squads_sync(
+        ENGLAND_APL_SQUADS,
+        label="ENGLAND_APL_SQUADS",
+        tournaments=tournaments,
+        rebuild_common=rebuild_common,
+    )
+
+
+def run_bundesliga_sync(
+    *,
+    tournaments: tuple[str, ...] | None = None,
+    rebuild_common: bool = True,
+) -> dict[str, dict[str, dict[str, int]]]:
+    from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
+
+    return run_squads_sync(
+        GERMANY_BUNDESLIGA_SQUADS,
+        label="GERMANY_BUNDESLIGA_SQUADS",
+        tournaments=tournaments,
+        rebuild_common=rebuild_common,
+    )
