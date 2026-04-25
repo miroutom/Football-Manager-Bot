@@ -45,7 +45,7 @@ _FORWARD_SLOT_IDS = frozenset({"LW", "RW", "ST", "STL", "STR", "CF"})
 logger = logging.getLogger(__name__)
 
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageFilter
 except ImportError as e:
     raise ImportError("Нужен пакет Pillow: pip install pillow") from e
 
@@ -862,12 +862,39 @@ def _crest_dematte_linked_dark_from_edges(rgba: Image.Image, rgb_lim: int = 40) 
     return im
 
 
+# 0 = без обводки. После downscale: ~2–3 px визуально на типичной эмблеме (78 px).
+_CREST_OUTLINE_PASSES: int = 3
+
+
+def _crest_white_outline(rgba: Image.Image, passes: int) -> Image.Image:
+    """
+    Тонкий белый контур снаружи силуэта (dilate(alpha) − alpha), без обводки bbox.
+    ``passes`` = число проходов 3×3 MaxFilter по бинарной маске (толщина кольца).
+    """
+    if passes < 1:
+        return rgba
+    im = rgba.convert("RGBA")
+    w, h = im.size
+    a = im.split()[3]
+    a = a.point(lambda p: 255 if p > 32 else 0, mode="L")
+    d = a
+    for _ in range(passes):
+        d = d.filter(ImageFilter.MaxFilter(3))
+    stroke = ImageChops.subtract(d, a)
+    wht = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    wht.paste((255, 255, 255, 255), mask=stroke)
+    if stroke.getextrema()[1] < 1:
+        return im
+    return Image.alpha_composite(wht, im)
+
+
 def _paste_crest_natural(im: Image.Image, crest: Image.Image, cx: int, cy: int, max_side: int) -> None:
     """Вписывает эмблему в квадрат max_side×max_side без искажения пропорций, без круглой маски."""
     work = crest.convert("RGBA")
     work = _crest_dematte_safe(work)
     thumb = work.copy()
     thumb.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+    thumb = _crest_white_outline(thumb, _CREST_OUTLINE_PASSES)
     nw, nh = thumb.size
     if nw < 1 or nh < 1:
         return
