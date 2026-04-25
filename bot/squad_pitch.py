@@ -7,7 +7,8 @@
 
 Стартовые 11: флаг по ``nation`` — flagcdn (ISO2 или ``gb-eng`` / ``gb-sct`` / ``gb-wls`` / ``gb-nir``),
 кэш ``assets/cache/flags``; иначе упрощённые полосы. Эмблема: ``assets/crests/`` / ``wikimedia_commons.json``; на поле — как есть (пропорции),
-без круга; тёмный фон, связный с краем картинки, делается прозрачным. Сайдбар: рейтинг, позиция, фамилия.
+без круга; тёмный фон, связный с краем картинки, делается прозрачным. Под заголовком: среднее по стартовым
+на поле (overall / rating). Сайдбар: рейтинг, позиция, фамилия.
 """
 from __future__ import annotations
 
@@ -131,6 +132,31 @@ def _display_score(overall: int, rating: float) -> str:
     if r > 0:
         return f"{r:.1f}"
     return "—"
+
+
+def _numeric_for_average(overall: int, rating: float) -> float | None:
+    """Число для среднего по стартовым: приоритет overall, иначе rating (как на футболке)."""
+    o = int(overall or 0)
+    if o > 0:
+        return float(o)
+    r = float(rating or 0.0)
+    if r > 0:
+        return r
+    return None
+
+
+def _starting_xi_avg_fragment(slot_player: dict[str, _Pl]) -> str | None:
+    """Среднее по игрокам на поле (занятые слоты формации)."""
+    vals: list[float] = []
+    for pl in slot_player.values():
+        if pl is None:
+            continue
+        n = _numeric_for_average(pl.overall, pl.rating)
+        if n is not None:
+            vals.append(n)
+    if not vals:
+        return None
+    return f"ср. старт {sum(vals) / len(vals):.1f}"
 
 
 def _position_tags(pos: str) -> set[str]:
@@ -909,8 +935,16 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         stroke_width=1,
         stroke_fill=(15, 23, 42),
     )
-    if headline_sub:
-        draw.text((w // 2, 60), headline_sub, fill=_SLATE_MUTED, font=sub_font, anchor="mt")
+    avg_frag = _starting_xi_avg_fragment(slot_map)
+    sub_parts = [p for p in (headline_sub, avg_frag) if p]
+    if sub_parts:
+        draw.text(
+            (w // 2, 60),
+            "   ·   ".join(sub_parts),
+            fill=_SLATE_MUTED,
+            font=sub_font,
+            anchor="mt",
+        )
     draw.line([(28, 86), (w - 28, 86)], fill=_PITCH_FRAME, width=1)
 
     out = BytesIO()
