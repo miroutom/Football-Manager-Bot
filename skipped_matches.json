@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "home": "Ливерпуль",
+    "away": "Арсенал",
+    "tournament": "eng",
+    "round": 4
+  },
+  {
+    "home": "Динамо",
+    "away": "Цска",
+    "tournament": "rpl",
+    "round": 4
+  },
+  {
+    "home": "Лацио",
+    "away": "Аталанта",
+    "tournament": "ita",
+    "round": 4
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Хоффенхайм",
+    "tournament": "ger",
+    "round": 5
+  },
+  {
+    "home": "Рубин",
+    "away": "Локомотив",
+    "tournament": "rpl",
+    "round": 5
+  },
+  {
+    "home": "Астон Вилла",
+    "away": "Сити",
+    "tournament": "eng",
+    "round": 5
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Вольфсбург",
+    "tournament": "ger",
+    "round": 5
+  },
+  {
+    "home": "Урал",
+    "away": "Локомотив",
+    "tournament": "rpl",
+    "round": 5
+  }
+]
