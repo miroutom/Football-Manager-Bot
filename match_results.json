@@ -1572,6 +1572,28 @@
       "day": 2
     },
     {
+      "home": "Челси",
+      "away": "Реал Сосьедад",
+      "league": "cl",
+      "cl_phase": "knockout",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 4,
+      "penalties_by_team": {
+        "Челси": 3,
+        "Реал Сосьедад": 4
+      }
+    },
+    {
+      "home": "Реал Сосьедад",
+      "away": "Челси",
+      "league": "cl",
+      "cl_phase": "knockout",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 4
+    },
+    {
       "home": "Реал",
       "away": "Зенит",
       "league": "cl",
