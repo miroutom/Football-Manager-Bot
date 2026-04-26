@@ -1566,6 +1566,7 @@
       "home": "Реал Сосьедад",
       "away": "Сити",
       "league": "cl",
+      "cl_phase": "league",
       "home_score": 0,
       "away_score": 2,
       "day": 2
