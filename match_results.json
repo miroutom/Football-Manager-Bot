@@ -3676,6 +3676,15 @@
       "cl_phase": "knockout"
     },
     {
+      "home": "Аталанта",
+      "away": "Ливерпуль",
+      "league": "cl",
+      "cl_phase": "knockout",
+      "home_score": 6,
+      "away_score": 7,
+      "day": 3
+    },
+    {
       "home": "Крылья Советов",
       "away": "Цска",
       "league": "rpl",
@@ -3765,6 +3774,15 @@
       "away_score": 4,
       "day": 2,
       "cl_phase": "knockout"
+    },
+    {
+      "home": "Боруссия М",
+      "away": "Франкфурт",
+      "league": "cl",
+      "cl_phase": "knockout",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 3
     },
     {
       "home": "Урал",
