@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """
-Откат одного сыгранного матча на сервере (или локально): удалить строку из
-match_results.json и снять статистику в соответствующем pickle — как обратное
-к add_stat в main.process_match (нацлиги и групповой этап ЛЧ).
+Откат одного сыгранного матча на сервере (или локально).
 
-ЛЧ нокаут в pickle не хранится — для такого матча только удаление из журнала.
+По умолчанию: удалить строку из match_results.json и снять статистику в pickle
+(обратное к add_stat в main.process_match) — нацлиги и групповой этап ЛЧ.
 
-Запуск из корня репозитория:
+  --pickle-only  — журнал не трогать; один раз снять лишний add_stat в pickle
+                   (когда в JSON строка одна, а в pickle матч учтён дважды).
+                   Счёт берётся из найденной записи в match_results.json.
 
-  python3 scripts/revert_one_match.py --home "Реал Сосьедад" --away Атлетико --league esp
+ЛЧ нокаут в pickle не хранится — для нокаута только удаление из журнала (без --pickle-only).
+
+Примеры:
+
+  python3 scripts/revert_one_match.py --home "Реал Сосьедад" --away Атлетико --league esp --pickle-only
   python3 scripts/revert_one_match.py --home Рубин --away Динамо --league rpl --day 3
   python3 scripts/revert_one_match.py --home Челси --away "Реал Сосьедад" --league cl --cl-phase knockout --dry-run
 
@@ -95,6 +100,11 @@ def main() -> int:
         help="для league=cl обязателен",
     )
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument(
+        "--pickle-only",
+        action="store_true",
+        help="не удалять строку из match_results.json, только снять один лишний add_stat в pickle",
+    )
     args = ap.parse_args()
 
     lg = args.league
@@ -140,7 +150,18 @@ def main() -> int:
         hs, aws = int(hs), int(aws)
         touch_pickle = lg != "cl" or is_cl_group_phase_record(rec)
 
-    if args.dry_run:
+    if args.pickle_only:
+        if not touch_pickle:
+            print("Для этого матча статистика в pickle не ведётся (ЛЧ нокаут) — нечего снять.", file=sys.stderr)
+            return 4
+        if hs is None or aws is None:
+            print("В журнале нет счёта — не могу снять pickle.", file=sys.stderr)
+            return 1
+        if args.dry_run:
+            print("[dry-run] match_results.json не трогаю.")
+            print("[dry-run] Сниму один лишний add_stat в pickle:", h, f"{hs}:{aws}", a, f"({lg})")
+            return 0
+    elif args.dry_run:
         print("[dry-run] Удалю запись:", json.dumps(rec, ensure_ascii=False))
         if touch_pickle:
             print("[dry-run] Сниму из pickle add_stat:", h, hs, aws, a)
@@ -148,12 +169,13 @@ def main() -> int:
             print("[dry-run] ЛЧ нокаут — pickle не меняется")
         return 0
 
-    new_matches = [r for j, r in enumerate(matches) if j != idx]
-    data["matches"] = new_matches
-    with open(MATCH_RESULTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-        f.write("\n")
-    print(f"Удалено из журнала: {h} — {a} ({lg})")
+    if not args.pickle_only:
+        new_matches = [r for j, r in enumerate(matches) if j != idx]
+        data["matches"] = new_matches
+        with open(MATCH_RESULTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print(f"Удалено из журнала: {h} — {a} ({lg})")
 
     if not touch_pickle:
         print("Pickle не трогал (ЛЧ нокаут или запись без счёта).")
@@ -171,7 +193,10 @@ def main() -> int:
 
     _reverse_add_stat(teams, h, a, hs, aws)
     save_teams(pkl_path, teams)
-    print(f"Снята статистика в {pkl_path} ({h} {hs}:{aws} {a})")
+    if args.pickle_only:
+        print(f"Снят один лишний add_stat в {pkl_path} ({h} {hs}:{aws} {a}); журнал без изменений.")
+    else:
+        print(f"Снята статистика в {pkl_path} ({h} {hs}:{aws} {a})")
     return 0
 
 
