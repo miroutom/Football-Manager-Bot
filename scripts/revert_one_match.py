@@ -5,17 +5,16 @@
 По умолчанию: удалить строку из match_results.json и снять статистику в pickle
 (обратное к add_stat в main.process_match) — нацлиги и групповой этап ЛЧ.
 
-  --pickle-only  — журнал не трогать; один раз снять лишний add_stat в pickle
-                   (когда в JSON строка одна, а в pickle матч учтён дважды).
-                   Счёт берётся из найденной записи в match_results.json.
+  --pickle-only  — журнал не трогать; один раз снять лишний add_stat в pickle.
+                   Счёт берётся из записи в match_results.json.
 
-ЛЧ нокаут в pickle не хранится — для нокаута только удаление из журнала (без --pickle-only).
+Скрипт не импортирует match_results/teams/utils — не нужен sqlalchemy и venv
+с лишними зависимостями; достаточно системного python3.
 
 Примеры:
 
   python3 scripts/revert_one_match.py --home "Реал Сосьедад" --away Атлетико --league esp --pickle-only
   python3 scripts/revert_one_match.py --home Рубин --away Динамо --league rpl --day 3
-  python3 scripts/revert_one_match.py --home Челси --away "Реал Сосьедад" --league cl --cl-phase knockout --dry-run
 
 Для ЛЧ обязателен --cl-phase league|knockout.
 """
@@ -24,21 +23,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pickle
 import sys
+from typing import Any, Dict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
-
-os.chdir(ROOT)
-
-from match_results import (  # noqa: E402
-    MATCH_RESULTS_FILE,
-    _norm,
-    is_cl_group_phase_record,
-    record_key,
-)
-from teams import PICKLE_DIR, load_teams, save_teams  # noqa: E402
+PICKLE_DIR = os.path.join(ROOT, "pickle")
+MATCH_RESULTS_FILE = os.path.join(ROOT, "match_results.json")
 
 LEAGUE_PICKLE = {
     "rpl": "rpl_teams.pkl",
@@ -50,8 +41,59 @@ LEAGUE_PICKLE = {
 }
 
 
+def _norm(s: str) -> str:
+    return (s or "").strip().title()
+
+
+def _normalize_cl_phase(raw: Any) -> str:
+    if raw is None:
+        return "knockout"
+    p = str(raw).strip().lower()
+    if p in ("league", "group", "лига", "группа", "гр", "groups"):
+        return "league"
+    return "knockout"
+
+
+def record_key(
+    home: str,
+    away: str,
+    tournament: str,
+    cl_phase: str | None = None,
+    *,
+    _rec: Dict[str, Any] | None = None,
+) -> tuple:
+    h, a = _norm(home), _norm(away)
+    t = tournament
+    if t != "cl":
+        return (h, a, t)
+    if _rec is not None:
+        phase = _normalize_cl_phase(_rec.get("cl_phase"))
+    else:
+        phase = _normalize_cl_phase(cl_phase)
+    return (h, a, t, phase)
+
+
+def is_cl_group_phase_record(rec: Dict[str, Any]) -> bool:
+    if str(rec.get("league") or "") != "cl":
+        return False
+    raw = rec.get("cl_phase")
+    if raw is None or str(raw).strip() == "":
+        return True
+    return _normalize_cl_phase(raw) == "league"
+
+
+def _load_teams(path: str) -> dict:
+    with open(path, "rb") as f:
+        return pickle.load(f)
+
+
+def _save_teams(path: str, teams: dict) -> None:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "wb") as f:
+        pickle.dump(teams, f)
+
+
 def _reverse_add_stat(teams: dict, home: str, away: str, hs: int, aws: int) -> None:
-    """Обратное к main.add_stat(home, away, hs, aws, teams)."""
     th = teams[home]
     ta = teams[away]
 
@@ -81,14 +123,14 @@ def _reverse_add_stat(teams: dict, home: str, away: str, hs: int, aws: int) -> N
 
 
 def _build_fake_rec(home: str, away: str, league: str, cl_phase: str | None) -> dict:
-    rec = {"home": _norm(home), "away": _norm(away), "league": league}
+    rec: Dict[str, Any] = {"home": _norm(home), "away": _norm(away), "league": league}
     if league == "cl":
         rec["cl_phase"] = cl_phase or "knockout"
     return rec
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Откат одного матча: журнал + pickle")
+    ap = argparse.ArgumentParser(description="Откат одного матча: журнал и/или pickle")
     ap.add_argument("--home", required=True)
     ap.add_argument("--away", required=True)
     ap.add_argument("--league", required=True, choices=list(LEAGUE_PICKLE.keys()))
@@ -117,11 +159,15 @@ def main() -> int:
     fake = _build_fake_rec(h, a, lg, args.cl_phase)
     target_key = record_key(h, a, lg, _rec=fake)
 
+    if not os.path.isfile(MATCH_RESULTS_FILE):
+        print(f"Нет файла {MATCH_RESULTS_FILE}", file=sys.stderr)
+        return 3
+
     with open(MATCH_RESULTS_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
     matches = data.get("matches", [])
 
-    def row_key(r: dict):
+    def row_key(r: dict) -> tuple:
         return record_key(r.get("home", ""), r.get("away", ""), r.get("league", ""), _rec=r)
 
     candidates = []
@@ -183,16 +229,16 @@ def main() -> int:
 
     pkl_name = LEAGUE_PICKLE[lg]
     pkl_path = os.path.join(PICKLE_DIR, pkl_name)
-    teams = load_teams(pkl_path)
-    if teams is None:
+    if not os.path.isfile(pkl_path):
         print(f"Нет файла {pkl_path}", file=sys.stderr)
         return 3
+    teams = _load_teams(pkl_path)
     if h not in teams or a not in teams:
         print(f"Команды не найдены в pickle: {h!r}, {a!r}", file=sys.stderr)
         return 3
 
     _reverse_add_stat(teams, h, a, hs, aws)
-    save_teams(pkl_path, teams)
+    _save_teams(pkl_path, teams)
     if args.pickle_only:
         print(f"Снят один лишний add_stat в {pkl_path} ({h} {hs}:{aws} {a}); журнал без изменений.")
     else:
