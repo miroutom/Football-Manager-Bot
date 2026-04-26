@@ -8,8 +8,8 @@
   --pickle-only  — журнал не трогать; один раз снять лишний add_stat в pickle.
                    Счёт берётся из записи в match_results.json.
 
-Скрипт не импортирует match_results/teams/utils — не нужен sqlalchemy и venv
-с лишними зависимостями; достаточно системного python3.
+Скрипт не тянет match_results/utils/sqlalchemy. Для чтения pickle нужен только
+модуль ``table.team`` (чистый класс Team) — репозиторий добавляется в sys.path.
 
 Примеры:
 
@@ -30,6 +30,13 @@ from typing import Any, Dict
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PICKLE_DIR = os.path.join(ROOT, "pickle")
 MATCH_RESULTS_FILE = os.path.join(ROOT, "match_results.json")
+
+
+def _ensure_team_class_for_pickle() -> None:
+    """pickle.load ожидает класс table.team.Team — подключаем корень репо в sys.path."""
+    if ROOT not in sys.path:
+        sys.path.insert(0, ROOT)
+    import table.team  # noqa: F401
 
 LEAGUE_PICKLE = {
     "rpl": "rpl_teams.pkl",
@@ -232,6 +239,7 @@ def main() -> int:
     if not os.path.isfile(pkl_path):
         print(f"Нет файла {pkl_path}", file=sys.stderr)
         return 3
+    _ensure_team_class_for_pickle()
     teams = _load_teams(pkl_path)
     if h not in teams or a not in teams:
         print(f"Команды не найдены в pickle: {h!r}, {a!r}", file=sys.stderr)
