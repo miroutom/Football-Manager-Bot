@@ -3,30 +3,53 @@
 """
 Слияние двух match_results.json (v2) по тому же ключу, что и в match_results.record_key.
 
-Сценарий: на сервере сделали git stash с локальными играми из бота, затем git pull
-подтянул репозиторий — рабочий файл с Git, застешенные матчи в stash.
+**Без импорта match_results** — скрипт автономный (на сервере без venv не тянет sqlalchemy).
 
-  git show 'stash@{0}:match_results.json' > /tmp/mr_stash.json
-  python3 scripts/merge_match_results_json.py match_results.json /tmp/mr_stash.json -o match_results.merged.json
+  git show 'stash@{0}:match_results.json' > /tmp/mr_from_stash.json
+  python3 scripts/merge_match_results_json.py match_results.json /tmp/mr_from_stash.json -o /tmp/mr_merged.json
 
 Правила: сначала все записи из base (порядок сохраняем), затем из incoming только
-новые ключи; при совпадении ключа — лучше запись с полным счётом, иначе --prefer
+новые ключи; при совпадении — лучше запись с полным счётом, иначе --prefer
 (first|second) при двух вариантах с полным счётом.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import os
-import sys
 from copy import deepcopy
-from typing import Any
+from typing import Any, Optional
 
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
 
-from match_results import _norm, record_key  # noqa: E402
+def _norm(s: str) -> str:
+    return (s or "").strip().title()
+
+
+def _normalize_cl_phase(raw: Any) -> str:
+    if raw is None:
+        return "knockout"
+    p = str(raw).strip().lower()
+    if p in ("league", "group", "лига", "группа", "гр", "groups"):
+        return "league"
+    return "knockout"
+
+
+def record_key(
+    home: str,
+    away: str,
+    tournament: str,
+    cl_phase: Optional[str] = None,
+    *,
+    _rec: Optional[dict[str, Any]] = None,
+) -> tuple:
+    h, a = _norm(home), _norm(away)
+    t = tournament
+    if t != "cl":
+        return (h, a, t)
+    if _rec is not None:
+        phase = _normalize_cl_phase(_rec.get("cl_phase"))
+    else:
+        phase = _normalize_cl_phase(cl_phase)
+    return (h, a, t, phase)
 
 
 def _parse_v2_file(path: str) -> list[dict[str, Any]]:
