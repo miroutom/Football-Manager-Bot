@@ -181,6 +181,28 @@ def _manual_league_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _cl_phase_kb(prefix: str) -> InlineKeyboardMarkup:
+    """prefix: mancl (ручной матч) или asoncl (стата без матч-дня)."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Группа (league)",
+                    callback_data=f"{prefix}:league",
+                ),
+                InlineKeyboardButton(
+                    text="Нокаут (knockout)",
+                    callback_data=f"{prefix}:knockout",
+                ),
+            ]
+        ]
+    )
+
+
+def _cl_phase_short_label(phase: str) -> str:
+    return "группа" if phase == "league" else "нокаут"
+
+
 def build_ason_league_kb() -> InlineKeyboardMarkup:
     """Выбор лиги для режима «статистика без записи счёта в матч-дне» (как «a»)."""
     rows: list[list[InlineKeyboardButton]] = []
@@ -210,7 +232,10 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
         lc = pj["lc"]
         hs = pj["hs"]
         aws = pj["aws"]
-        cl_ph = "knockout" if lc == "cl" else None
+        if lc == "cl":
+            cl_ph = pj.get("cl_phase", "knockout")
+        else:
+            cl_ph = None
         if not _played(h, a, lc, cl_phase=cl_ph):
             add_match_result(
                 h,
@@ -461,10 +486,39 @@ async def cmd_manual(message: Message, state: FSMContext) -> None:
 async def cb_manual_league(callback: CallbackQuery, state: FSMContext) -> None:
     code = callback.data.split(":", 1)[1]
     await callback.answer()
-    await state.update_data(league_code=code)
+    if code == "cl":
+        await state.update_data(league_code=code)
+        await state.set_state(MatchEnter.manual_cl_phase)
+        await callback.message.answer(
+            "Лига: <b>ЛЧ</b>\n"
+            "Выбери фазу (для группы и нокаута разные записи в журнале):",
+            reply_markup=_cl_phase_kb("mancl"),
+            parse_mode="HTML",
+        )
+        return
+    await state.update_data(league_code=code, cl_ph=None)
     await state.set_state(MatchEnter.manual_home)
     await callback.message.answer(
         f"Лига: <b>{_league_title(code)}</b>\n"
+        f"Введи название <b>хозяев</b> (как в базе):",
+        parse_mode="HTML",
+    )
+
+
+@match_router.callback_query(F.data.startswith("mancl:"))
+async def cb_manual_cl_phase(callback: CallbackQuery, state: FSMContext) -> None:
+    if await state.get_state() != MatchEnter.manual_cl_phase:
+        await callback.answer("Сначала начни ручной ввод и выбери ЛЧ.", show_alert=True)
+        return
+    phase = callback.data.split(":", 1)[1]
+    if phase not in ("league", "knockout"):
+        await callback.answer("Неверная фаза.", show_alert=True)
+        return
+    await callback.answer()
+    await state.update_data(cl_ph=phase)
+    await state.set_state(MatchEnter.manual_home)
+    await callback.message.answer(
+        f"Лига: <b>ЛЧ</b> · фаза: <b>{_cl_phase_short_label(phase)}</b>\n"
         f"Введи название <b>хозяев</b> (как в базе):",
         parse_mode="HTML",
     )
@@ -499,7 +553,11 @@ async def on_manual_score(message: Message, state: FSMContext) -> None:
     league_code = data["league_code"]
     home = data["home_raw"]
     away = data["away_raw"]
-    cl_ph = "knockout" if league_code == "cl" else None
+    cl_ph = data.get("cl_ph") if league_code == "cl" else None
+    if league_code == "cl" and not cl_ph:
+        await message.answer("Не выбрана фаза ЛЧ. Начни снова: /match")
+        await state.clear()
+        return
 
     await _record_match_or_request_penalties(
         message,
@@ -729,10 +787,39 @@ async def cb_ason_league(callback: CallbackQuery, state: FSMContext) -> None:
     code = callback.data.split(":", 1)[1]
     await callback.answer()
     await state.clear()
-    await state.set_state(AddOnlyStats.home)
     await state.update_data(ason_league=code)
+    if code == "cl":
+        await state.set_state(AddOnlyStats.cl_phase)
+        await callback.message.answer(
+            "Лига: <b>ЛЧ</b>\n"
+            "Выбери фазу (для группы и нокаута разные записи в журнале):",
+            reply_markup=_cl_phase_kb("asoncl"),
+            parse_mode="HTML",
+        )
+        return
+    await state.set_state(AddOnlyStats.home)
+    await state.update_data(ason_cl_ph=None)
     await callback.message.answer(
         f"Лига: <b>{_league_title(code)}</b>\n"
+        f"Введи название <b>хозяев</b> (как в базе):",
+        parse_mode="HTML",
+    )
+
+
+@match_router.callback_query(F.data.startswith("asoncl:"))
+async def cb_ason_cl_phase(callback: CallbackQuery, state: FSMContext) -> None:
+    if await state.get_state() != AddOnlyStats.cl_phase:
+        await callback.answer("Сначала выбери режим статистики и лигу.", show_alert=True)
+        return
+    phase = callback.data.split(":", 1)[1]
+    if phase not in ("league", "knockout"):
+        await callback.answer("Неверная фаза.", show_alert=True)
+        return
+    await callback.answer()
+    await state.update_data(ason_cl_ph=phase)
+    await state.set_state(AddOnlyStats.home)
+    await callback.message.answer(
+        f"Лига: <b>ЛЧ</b> · фаза: <b>{_cl_phase_short_label(phase)}</b>\n"
         f"Введи название <b>хозяев</b> (как в базе):",
         parse_mode="HTML",
     )
@@ -779,19 +866,28 @@ async def on_ason_score(message: Message, state: FSMContext) -> None:
     home = data["ason_home"].strip().title()
     away = data["ason_away"].strip().title()
 
+    pending_journal = {
+        "home": home,
+        "away": away,
+        "lc": lc,
+        "hs": hs,
+        "aws": aws,
+    }
+    if lc == "cl":
+        cph = data.get("ason_cl_ph")
+        if not cph:
+            await message.answer("Не выбрана фаза ЛЧ. Начни снова: /stats_match")
+            await state.clear()
+            return
+        pending_journal["cl_phase"] = cph
+
     await state.update_data(
         stats_home=home,
         stats_away=away,
         stats_hs=hs,
         stats_aws=aws,
         stats_tournament="cl" if lc == "cl" else "league",
-        pending_journal={
-            "home": home,
-            "away": away,
-            "lc": lc,
-            "hs": hs,
-            "aws": aws,
-        },
+        pending_journal=pending_journal,
     )
     await _send_stats_lines_ui(message, state)
 

@@ -6,6 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 class MatchEnter(StatesGroup):
     next_score = State()
+    manual_cl_phase = State()
     manual_home = State()
     manual_away = State()
     manual_score = State()
@@ -24,6 +25,7 @@ class PostMatch(StatesGroup):
 
 class AddOnlyStats(StatesGroup):
     """Статистика по матчу без записи счёта через матч-день (как «a» в консоли)."""
+    cl_phase = State()
     home = State()
     away = State()
     score = State()
