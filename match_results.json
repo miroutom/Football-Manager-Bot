@@ -4264,6 +4264,65 @@
       "home_score": 2,
       "away_score": 3,
       "day": 5
+    },
+    {
+      "home": "Мю",
+      "away": "Барселона",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 4,
+      "day": 6,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Бавария",
+      "away": "Арсенал",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 6,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Урал",
+      "away": "Локомотив",
+      "league": "rpl",
+      "home_score": 3,
+      "away_score": 3,
+      "day": 5
+    },
+    {
+      "home": "Штутгарт",
+      "away": "Бавария",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 3,
+      "day": 6
+    },
+    {
+      "home": "Рубин",
+      "away": "Зенит",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 6,
+      "day": 6
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Бавария",
+      "league": "ger",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 10
+    },
+    {
+      "home": "Арсенал",
+      "away": "Бавария",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 4,
+      "day": 7,
+      "cl_phase": "knockout"
     }
   ]
 }

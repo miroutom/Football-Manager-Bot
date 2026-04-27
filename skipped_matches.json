@@ -42,9 +42,247 @@
     "round": 5
   },
   {
-    "home": "Урал",
-    "away": "Локомотив",
+    "home": "Торино",
+    "away": "Рома",
+    "tournament": "ita",
+    "round": 6
+  },
+  {
+    "home": "Торино",
+    "away": "Наполи",
+    "tournament": "ita",
+    "round": 6
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Боруссия М",
+    "tournament": "ger",
+    "round": 6
+  },
+  {
+    "home": "Жирона",
+    "away": "Атлетик",
+    "tournament": "esp",
+    "round": 6
+  },
+  {
+    "home": "Сассуоло",
+    "away": "Лацио",
+    "tournament": "ita",
+    "round": 7
+  },
+  {
+    "home": "Байер",
+    "away": "Дортмунд",
+    "tournament": "ger",
+    "round": 7
+  },
+  {
+    "home": "Крылья Советов",
+    "away": "Краснодар",
     "tournament": "rpl",
-    "round": 5
+    "round": 7
+  },
+  {
+    "home": "Тоттенхэм",
+    "away": "Челси",
+    "tournament": "eng",
+    "round": 7
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Франкфурт",
+    "tournament": "ger",
+    "round": 7
+  },
+  {
+    "home": "Рома",
+    "away": "Аталанта",
+    "tournament": "ita",
+    "round": 7
+  },
+  {
+    "home": "Фрайбург",
+    "away": "Лейпциг",
+    "tournament": "ger",
+    "round": 7
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Сити",
+    "tournament": "eng",
+    "round": 7
+  },
+  {
+    "home": "Атлетико",
+    "away": "Барселона",
+    "tournament": "esp",
+    "round": 7
+  },
+  {
+    "home": "Зенит",
+    "away": "Боруссия М",
+    "tournament": "cl",
+    "round": 7,
+    "cl_phase": "knockout"
+  },
+  {
+    "home": "Боруссия М",
+    "away": "Зенит",
+    "tournament": "cl",
+    "round": 7,
+    "cl_phase": "knockout"
+  },
+  {
+    "home": "Рома",
+    "away": "Ювентус",
+    "tournament": "ita",
+    "round": 8
+  },
+  {
+    "home": "Франкфурт",
+    "away": "Дортмунд",
+    "tournament": "ger",
+    "round": 8
+  },
+  {
+    "home": "Фулхэм",
+    "away": "Челси",
+    "tournament": "eng",
+    "round": 8
+  },
+  {
+    "home": "Сассуоло",
+    "away": "Фиорентина",
+    "tournament": "ita",
+    "round": 8
+  },
+  {
+    "home": "Штутгарт",
+    "away": "Вольфсбург",
+    "tournament": "ger",
+    "round": 8
+  },
+  {
+    "home": "Челси",
+    "away": "Сити",
+    "tournament": "eng",
+    "round": 8
+  },
+  {
+    "home": "Урал",
+    "away": "Зенит",
+    "tournament": "rpl",
+    "round": 8
+  },
+  {
+    "home": "Сити",
+    "away": "Брайтон",
+    "tournament": "eng",
+    "round": 8
+  },
+  {
+    "home": "Атлетико",
+    "away": "Райо Вальекано",
+    "tournament": "esp",
+    "round": 8
+  },
+  {
+    "home": "Тоттенхэм",
+    "away": "Ливерпуль",
+    "tournament": "cl",
+    "round": 8,
+    "cl_phase": "knockout"
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Тоттенхэм",
+    "tournament": "cl",
+    "round": 8,
+    "cl_phase": "knockout"
+  },
+  {
+    "home": "Фиорентина",
+    "away": "Интер",
+    "tournament": "ita",
+    "round": 9
+  },
+  {
+    "home": "Цска",
+    "away": "Зенит",
+    "tournament": "rpl",
+    "round": 9
+  },
+  {
+    "home": "Ювентус",
+    "away": "Милан",
+    "tournament": "ita",
+    "round": 9
+  },
+  {
+    "home": "Цска",
+    "away": "Ростов",
+    "tournament": "rpl",
+    "round": 9
+  },
+  {
+    "home": "Арсенал",
+    "away": "Мю",
+    "tournament": "eng",
+    "round": 9
+  },
+  {
+    "home": "Рома",
+    "away": "Интер",
+    "tournament": "ita",
+    "round": 9
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Фрайбург",
+    "tournament": "ger",
+    "round": 9
+  },
+  {
+    "home": "Наполи",
+    "away": "Ювентус",
+    "tournament": "ita",
+    "round": 10
+  },
+  {
+    "home": "Милан",
+    "away": "Интер",
+    "tournament": "ita",
+    "round": 10
+  },
+  {
+    "home": "Краснодар",
+    "away": "Динамо",
+    "tournament": "rpl",
+    "round": 10
+  },
+  {
+    "home": "Тоттенхэм",
+    "away": "Ливерпуль",
+    "tournament": "eng",
+    "round": 10
+  },
+  {
+    "home": "Мю",
+    "away": "Фулхэм",
+    "tournament": "eng",
+    "round": 10
+  },
+  {
+    "home": "Фулхэм",
+    "away": "Астон Вилла",
+    "tournament": "eng",
+    "round": 10
+  },
+  {
+    "home": "Торино",
+    "away": "Фиорентина",
+    "tournament": "ita",
+    "round": 10
   }
 ]
