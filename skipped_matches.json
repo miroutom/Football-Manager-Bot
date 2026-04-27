@@ -6,12 +6,6 @@
     "round": 4
   },
   {
-    "home": "Вольфсбург",
-    "away": "Хоффенхайм",
-    "tournament": "ger",
-    "round": 5
-  },
-  {
     "home": "Торино",
     "away": "Рома",
     "tournament": "ita",
@@ -42,32 +36,14 @@
     "round": 8
   },
   {
-    "home": "Франкфурт",
-    "away": "Дортмунд",
-    "tournament": "ger",
-    "round": 8
-  },
-  {
     "home": "Сассуоло",
     "away": "Фиорентина",
     "tournament": "ita",
     "round": 8
   },
   {
-    "home": "Фиорентина",
-    "away": "Интер",
-    "tournament": "ita",
-    "round": 9
-  },
-  {
     "home": "Ювентус",
     "away": "Милан",
-    "tournament": "ita",
-    "round": 9
-  },
-  {
-    "home": "Рома",
-    "away": "Интер",
     "tournament": "ita",
     "round": 9
   },
@@ -90,8 +66,15 @@
     "round": 10
   },
   {
-    "home": "Барселона",
-    "away": "Ливерпуль",
+    "home": "Интер",
+    "away": "Атлетико",
+    "tournament": "cl",
+    "round": 11,
+    "cl_phase": "knockout"
+  },
+  {
+    "home": "Атлетико",
+    "away": "Интер",
     "tournament": "cl",
     "round": 11,
     "cl_phase": "knockout"

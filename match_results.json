@@ -4745,6 +4745,79 @@
       "home_score": 0,
       "away_score": 3,
       "day": 7
+    },
+    {
+      "home": "Франкфурт",
+      "away": "Дортмунд",
+      "league": "ger",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 8
+    },
+    {
+      "home": "Вольфсбург",
+      "away": "Хоффенхайм",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 5
+    },
+    {
+      "home": "Хоффенхайм",
+      "away": "Франкфурт",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 3,
+      "day": null
+    },
+    {
+      "home": "Хоффенхайм",
+      "away": "Боруссия М",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 3,
+      "day": null
+    },
+    {
+      "home": "Боруссия М",
+      "away": "Лейпциг",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 3,
+      "day": null
+    },
+    {
+      "home": "Хоффенхайм",
+      "away": "Лейпциг",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 2,
+      "day": null
+    },
+    {
+      "home": "Барселона",
+      "away": "Ливерпуль",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 11,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Фиорентина",
+      "away": "Интер",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 4,
+      "day": 9
+    },
+    {
+      "home": "Рома",
+      "away": "Интер",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 9
     }
   ]
 }
