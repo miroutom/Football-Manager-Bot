@@ -2,8 +2,10 @@
 """
 Визуальная сетка плей-офф ЛЧ: HTML (колонки, карточки).
 
-Счета из match_results.json (league=cl), **без** записей с ``cl_phase``: ``league``/``group``
-(групповая фаза). Для двухматчевого стыка в карточке:
+Счета из match_results.json (league=cl). Для плей-офф используются только записи,
+для которых **не** выполняется ``is_cl_group_phase_record`` (группа и устаревшие
+строки без ``cl_phase`` — как в расчёте групповой таблицы). Иначе матчи группы
+ошибочно попадали бы в стыки нокаута.
 каждая строка — только домашний матч этой команды (хозяева;гости в журнале).
 
 При ничьей по сумме двух матчей можно внести пенальти: на любой из двух матчей стыка
@@ -23,7 +25,7 @@ from champions_league.knockout_bracket import (
     SlotRef,
     default_cl_playoff_24_tree,
 )
-from match_results import load_records_and_keys
+from match_results import is_cl_group_phase_record, load_records_and_keys
 from utils.utils import PROJECT_ROOT
 
 OUT_PATH = os.path.join(PROJECT_ROOT, "data", "cl_bracket_view.html")
@@ -38,12 +40,6 @@ def _tie_key(a: str, b: str) -> tuple[str, str]:
     return (x, y) if x <= y else (y, x)
 
 
-def _cl_record_is_group_phase(r: dict) -> bool:
-    """Матч группы ЛЧ — не используем для сетки плей-офф."""
-    p = str(r.get("cl_phase") or "").strip().lower()
-    return p in ("league", "group", "лига", "группа", "groups")
-
-
 def _load_cl_scores_and_penalties() -> tuple[
     dict[tuple[str, str], tuple[int, int]],
     dict[tuple[str, str], dict[str, int]],
@@ -55,7 +51,7 @@ def _load_cl_scores_and_penalties() -> tuple[
     for r in records:
         if r.get("league") != "cl":
             continue
-        if _cl_record_is_group_phase(r):
+        if is_cl_group_phase_record(r):
             continue
         hs, aws = r.get("home_score"), r.get("away_score")
         h = _norm(str(r.get("home", "")))
