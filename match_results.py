@@ -64,13 +64,21 @@ def record_key(
     """
     Ключ строки журнала. Для ЛЧ учитывается фаза — группа и плей-офф могут иметь
     одну и ту же пару (дом, гости); для остальных лиг ключ по-прежнему (дом, гости, лига).
+
+    Для записи из JSON (``_rec``): нет/пустой ``cl_phase`` = группа (как
+    ``is_cl_group_phase_record``), **не** нокаут. Иначе нельзя ввести тот же
+    «по парам» матч в нокауте после группы.
     """
     h, a = _norm(home), _norm(away)
     t = tournament
     if t != "cl":
         return (h, a, t)
     if _rec is not None:
-        phase = _normalize_cl_phase(_rec.get("cl_phase"))
+        raw = _rec.get("cl_phase")
+        if raw is None or str(raw).strip() == "":
+            phase = "league"
+        else:
+            phase = _normalize_cl_phase(raw)
     else:
         phase = _normalize_cl_phase(cl_phase)
     return (h, a, t, phase)
@@ -200,9 +208,10 @@ def load_records_and_keys():
                 'day': None,
             }
             if t == 'cl':
-                row['cl_phase'] = 'knockout'
+                # v1: в источнике нет фазы; как legacy без cl_phase = группа (is_cl_group_phase_record).
+                pass
             records.append(row)
-            keys.add(record_key(h, a, t, row.get('cl_phase')))
+            keys.add(record_key(h, a, t, _rec=row))
         if records:
             _save_v2(records)
         return records, keys
