@@ -64,19 +64,5 @@
     "away": "Фиорентина",
     "tournament": "ita",
     "round": 10
-  },
-  {
-    "home": "Интер",
-    "away": "Атлетико",
-    "tournament": "cl",
-    "round": 11,
-    "cl_phase": "knockout"
-  },
-  {
-    "home": "Атлетико",
-    "away": "Интер",
-    "tournament": "cl",
-    "round": 11,
-    "cl_phase": "knockout"
   }
 ]
