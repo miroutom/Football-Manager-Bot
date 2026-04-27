@@ -4721,6 +4721,22 @@
       "home_score": 2,
       "away_score": 2,
       "day": 6
+    },
+    {
+      "home": "Байер",
+      "away": "Дортмунд",
+      "league": "ger",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 7
+    },
+    {
+      "home": "Лейпциг",
+      "away": "Франкфурт",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 1,
+      "day": 7
     }
   ]
 }
