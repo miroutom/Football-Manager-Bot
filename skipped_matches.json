@@ -60,12 +60,6 @@
     "round": 6
   },
   {
-    "home": "Жирона",
-    "away": "Атлетик",
-    "tournament": "esp",
-    "round": 6
-  },
-  {
     "home": "Сассуоло",
     "away": "Лацио",
     "tournament": "ita",
@@ -114,26 +108,6 @@
     "round": 7
   },
   {
-    "home": "Атлетико",
-    "away": "Барселона",
-    "tournament": "esp",
-    "round": 7
-  },
-  {
-    "home": "Зенит",
-    "away": "Боруссия М",
-    "tournament": "cl",
-    "round": 7,
-    "cl_phase": "knockout"
-  },
-  {
-    "home": "Боруссия М",
-    "away": "Зенит",
-    "tournament": "cl",
-    "round": 7,
-    "cl_phase": "knockout"
-  },
-  {
     "home": "Рома",
     "away": "Ювентус",
     "tournament": "ita",
@@ -170,12 +144,6 @@
     "round": 8
   },
   {
-    "home": "Урал",
-    "away": "Зенит",
-    "tournament": "rpl",
-    "round": 8
-  },
-  {
     "home": "Сити",
     "away": "Брайтон",
     "tournament": "eng",
@@ -186,20 +154,6 @@
     "away": "Райо Вальекано",
     "tournament": "esp",
     "round": 8
-  },
-  {
-    "home": "Тоттенхэм",
-    "away": "Ливерпуль",
-    "tournament": "cl",
-    "round": 8,
-    "cl_phase": "knockout"
-  },
-  {
-    "home": "Ливерпуль",
-    "away": "Тоттенхэм",
-    "tournament": "cl",
-    "round": 8,
-    "cl_phase": "knockout"
   },
   {
     "home": "Фиорентина",
@@ -283,6 +237,26 @@
     "home": "Торино",
     "away": "Фиорентина",
     "tournament": "ita",
+    "round": 10
+  },
+  {
+    "home": "Реал Сосьедад",
+    "away": "Сити",
+    "tournament": "cl",
+    "round": 9,
+    "cl_phase": "knockout"
+  },
+  {
+    "home": "Бавария",
+    "away": "Атлетико",
+    "tournament": "cl",
+    "round": 9,
+    "cl_phase": "knockout"
+  },
+  {
+    "home": "Ростов",
+    "away": "Краснодар",
+    "tournament": "rpl",
     "round": 10
   }
 ]

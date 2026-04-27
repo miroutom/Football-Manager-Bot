@@ -4323,6 +4323,109 @@
       "away_score": 4,
       "day": 7,
       "cl_phase": "knockout"
+    },
+    {
+      "home": "Вильярреал",
+      "away": "Атлетико",
+      "league": "esp",
+      "home_score": 0,
+      "away_score": 1,
+      "day": 6
+    },
+    {
+      "home": "Атлетико",
+      "away": "Барселона",
+      "league": "esp",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 7
+    },
+    {
+      "home": "Жирона",
+      "away": "Атлетик",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 6
+    },
+    {
+      "home": "Атлетик",
+      "away": "Бетис",
+      "league": "esp",
+      "home_score": 6,
+      "away_score": 1,
+      "day": 10
+    },
+    {
+      "home": "Урал",
+      "away": "Зенит",
+      "league": "rpl",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 8
+    },
+    {
+      "home": "Тоттенхэм",
+      "away": "Ливерпуль",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 8,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Интер",
+      "away": "Наполи",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 0,
+      "day": 7,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Ливерпуль",
+      "away": "Тоттенхэм",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 3,
+      "day": 8,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Наполи",
+      "away": "Интер",
+      "league": "cl",
+      "home_score": 4,
+      "away_score": 4,
+      "day": 8,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Сити",
+      "away": "Реал Сосьедад",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 8,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Зенит",
+      "away": "Боруссия М",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 4,
+      "day": 7,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Боруссия М",
+      "away": "Зенит",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 0,
+      "day": 7,
+      "cl_phase": "knockout"
     }
   ]
 }
