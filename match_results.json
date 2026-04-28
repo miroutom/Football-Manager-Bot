@@ -4836,6 +4836,138 @@
       "away_score": 2,
       "day": 11,
       "cl_phase": "knockout"
+    },
+    {
+      "home": "Ливерпуль",
+      "away": "Барселона",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 5,
+      "day": 11,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Сити",
+      "away": "Барселона",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 1,
+      "day": null,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Барселона",
+      "away": "Сити",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 1,
+      "day": null,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Интер",
+      "away": "Сити",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 1,
+      "day": null,
+      "cl_phase": "knockout"
+    },
+    {
+      "home": "Лацио",
+      "away": "Аталанта",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 0,
+      "day": 4
+    },
+    {
+      "home": "Торино",
+      "away": "Рома",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 6
+    },
+    {
+      "home": "Торино",
+      "away": "Наполи",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 6
+    },
+    {
+      "home": "Сассуоло",
+      "away": "Лацио",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 4,
+      "day": 7
+    },
+    {
+      "home": "Рома",
+      "away": "Аталанта",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 7
+    },
+    {
+      "home": "Рома",
+      "away": "Ювентус",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 8
+    },
+    {
+      "home": "Сассуоло",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 8
+    },
+    {
+      "home": "Ювентус",
+      "away": "Милан",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 9
+    },
+    {
+      "home": "Наполи",
+      "away": "Ювентус",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 10
+    },
+    {
+      "home": "Милан",
+      "away": "Интер",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 3,
+      "day": 10
+    },
+    {
+      "home": "Торино",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 10
+    },
+    {
+      "home": "Ювентус",
+      "away": "Лацио",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 3,
+      "day": null
     }
   ]
 }
