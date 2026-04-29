@@ -52,6 +52,7 @@ def _team_in_cl_pool(team_name: str) -> bool:
 
 
 def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
+    """Слияние сессий. Счётчики наград сезона (golden_*) в двух БД — одна сущность; в common берётся max."""
     buckets: dict = {}
     for src in (session_league, session_cl):
         is_cl = src is session_cl
@@ -91,10 +92,17 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
             b["goals"] += int(getattr(p, "goals", 0) or 0)
             b["assists"] += int(getattr(p, "assists", 0) or 0)
             b["trophies"] += int(getattr(p, "trophies", 0) or 0)
-            b["golden_balls"] += int(getattr(p, "golden_balls", 0) or 0)
+            b["golden_balls"] = max(
+                b["golden_balls"], int(getattr(p, "golden_balls", 0) or 0)
+            )
             if hasattr(p, "golden_boots"):
-                b["golden_boots"] += int(getattr(p, "golden_boots", 0) or 0)
-            b["golden_boys"] += int(getattr(p, "golden_boys", 0) or 0)
+                b["golden_boots"] = max(
+                    b["golden_boots"],
+                    int(getattr(p, "golden_boots", 0) or 0),
+                )
+            b["golden_boys"] = max(
+                b["golden_boys"], int(getattr(p, "golden_boys", 0) or 0)
+            )
             if hasattr(p, "clean_sheets"):
                 b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)
             if m > 0:
@@ -241,10 +249,18 @@ def rebuild_common_database(
             b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)
             b["missed_goals"] += int(getattr(p, "missed_goals", 0) or 0)
             b["trophies"] += int(getattr(p, "trophies", 0) or 0)
-            b["golden_balls"] += int(getattr(p, "golden_balls", 0) or 0)
-            b["golden_boots"] += int(getattr(p, "golden_boots", 0) or 0)
-            b["golden_gloves"] += int(getattr(p, "golden_gloves", 0) or 0)
-            b["golden_boys"] += int(getattr(p, "golden_boys", 0) or 0)
+            b["golden_balls"] = max(
+                b["golden_balls"], int(getattr(p, "golden_balls", 0) or 0)
+            )
+            b["golden_boots"] = max(
+                b["golden_boots"], int(getattr(p, "golden_boots", 0) or 0)
+            )
+            b["golden_gloves"] = max(
+                b["golden_gloves"], int(getattr(p, "golden_gloves", 0) or 0)
+            )
+            b["golden_boys"] = max(
+                b["golden_boys"], int(getattr(p, "golden_boys", 0) or 0)
+            )
             if m > 0:
                 b["overall_num"] += int(p.overall or 0) * m
                 b["overall_den"] += m

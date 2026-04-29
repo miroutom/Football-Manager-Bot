@@ -1,4 +1,4 @@
-"""Награды сезона: +1 в БД (лига+ЛЧ), пересборка common. FSM: вид → лига → клуб → имя."""
+"""Награды сезона: +1 в одной БД (сезонная награда не в двойном экземпляре), common — max(лига, лч). FSM: вид → лига → клуб → имя."""
 from __future__ import annotations
 
 import asyncio
@@ -111,8 +111,8 @@ async def _open_award_menu_msg(message: Message) -> None:
     await message.answer(
         "🏅 <b>Награда сезона</b>\n\n"
         "Выбери награду, лигу и клуб, затем введи <b>имя игрока</b> как в базе.\n"
-        "Счётчик +1 в национальной лиге и в ЛЧ (если игрок в ЛЧ), "
-        "затем <code>common.db</code> пересчитывается.\n\n"
+        "Одна награда этого вида на сезон: +1 пишется в <b>одну</b> БД (сначала ищем в нац. лиге, "
+        "если нет строки — в БД ЛЧ). В <code>common.db</code> для сводки дубли не суммируются.\n\n"
         "/cancel — отмена.",
         reply_markup=_kinds_keyboard(),
         parse_mode="HTML",
@@ -247,11 +247,12 @@ async def on_award_name(message: Message, state: FSMContext) -> None:
         await message.answer(f"Ошибка: {e}")
         return
     await state.clear()
-    ntot = r.league + r.cl
+    src = "нац. лига" if r.league else "ЛЧ"
     await message.answer(
         f"✅ {lbl}\n"
         f"<b>{name}</b> · {team}\n"
-        f"строк: лига {r.league}, ЛЧ {r.cl} (всего {ntot}) · класс: {r.player_class}\n"
+        f"+1 в одной БД ({src}) — в сезоне одна награда этого вида; "
+        f"класс: {r.player_class}\n"
         f"<code>common.db</code> пересобран.",
         parse_mode="HTML",
     )

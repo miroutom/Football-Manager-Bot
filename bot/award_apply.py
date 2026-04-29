@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Начисление +1 к полю награды у игрока (строка в БД лиги и, если есть, ЛЧ) и пересборка common.db.
+Начисление +1 к полю награды у игрока в одной БД (сезонная награда не дублируется
+в лиге и ЛЧ: пишем в национальную лигу, если игрок найден там, иначе в БД ЛЧ) и
+пересборка common.db.
 """
 from __future__ import annotations
 
@@ -65,7 +67,10 @@ def apply_trophy(
 
     try:
         n_league = _bump(session_league)
-        n_cl = _bump(session_cl)
+        if n_league:
+            n_cl = 0
+        else:
+            n_cl = _bump(session_cl)
     except ValueError:
         session_league.rollback()
         session_cl.rollback()
@@ -77,8 +82,10 @@ def apply_trophy(
             "Игрок не найден в БД (проверь имя и клуб как в игре, без лишних пробелов)."
         )
 
-    session_league.commit()
-    session_cl.commit()
+    if n_league:
+        session_league.commit()
+    if n_cl:
+        session_cl.commit()
 
     if rebuild_common:
         rebuild_common_database()
