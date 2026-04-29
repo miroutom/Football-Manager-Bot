@@ -22,15 +22,59 @@ def tournament_db_for_league(league_code: str) -> str:
     return "cl" if league_code == "cl" else "league"
 
 
-def render_standings(league_code: str) -> str:
+# Имя файла pickle в db/season_n/pickle/ (как в teams.save_result)
+ARCHIVE_PICKLE_BY_LEAGUE: dict[str, str] = {
+    "rpl": "rpl_teams.pkl",
+    "eng": "england_teams.pkl",
+    "esp": "spain_teams.pkl",
+    "ita": "italy_teams.pkl",
+    "ger": "germany_teams.pkl",
+    "cl": "champ_league_teams.pkl",
+}
+
+
+def render_standings(league_code: str, season_num: int | None = None) -> str:
+    """
+    Таблица лиги. ``season_num`` — архив ``db/season_n``; ``None`` — текущий сезон (pickle + журнал).
+    """
+    import os
+    import pickle
+
     from main import LEAGUES, show_table
+    from utils import season_paths
 
     league = next((x for x in LEAGUES.values() if x["code"] == league_code), None)
     if not league:
         return f"Неизвестная лига: {league_code}"
+
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        show_table(league["teams"], league["name"], league_code=league_code)
+        if season_num is None:
+            show_table(league["teams"], league["name"], league_code=league_code)
+        else:
+            pkl_name = ARCHIVE_PICKLE_BY_LEAGUE.get(league_code)
+            if not pkl_name:
+                print(f"Неизвестная лига: {league_code}")
+            else:
+                base = season_paths.season_archive_directory(season_num)
+                pkl_path = os.path.join(base, "pickle", pkl_name)
+                if not os.path.isfile(pkl_path):
+                    print(
+                        f"Нет архива pickle для сезона {season_num}: {pkl_path}\n"
+                        f"(нужна папка db/season_{season_num}/pickle/)."
+                    )
+                else:
+                    with open(pkl_path, "rb") as f:
+                        arch_teams = pickle.load(f)
+                    title = f"{league['name']} · архив сезона {season_num}"
+                    jpath = os.path.join(base, "match_results.json")
+                    cl_j = jpath if league_code == "cl" else None
+                    show_table(
+                        arch_teams,
+                        title,
+                        league_code=league_code,
+                        cl_journal_path=cl_j,
+                    )
     return buf.getvalue()
 
 
@@ -129,31 +173,18 @@ def render_full_status_text() -> str:
 
 
 def render_top_scorers_common(league_code: str, limit: int = 25) -> str:
-    """Топ бомбардиров: сумма лига + ЛЧ (common.db), как «b»→1+ в консоли."""
-    from player_stats import show_top_scorers
-
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        show_top_scorers("common", league_code, limit=limit)
-    return buf.getvalue()
+    """Топ бомбардиров: лига + ЛЧ из common_synced.db (все сезоны)."""
+    return render_cumulative_top_scorers(league_code, limit)
 
 
 def render_top_assists_common(league_code: str, limit: int = 25) -> str:
-    from player_stats import show_top_assistants
-
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        show_top_assistants("common", league_code, limit=limit)
-    return buf.getvalue()
+    """Топ ассистов: common_synced.db (все сезоны)."""
+    return render_cumulative_top_assists(league_code, limit)
 
 
 def render_top_ga_common(league_code: str, limit: int = 25) -> str:
-    from player_stats import show_top_ga
-
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        show_top_ga("common", league_code, limit=limit)
-    return buf.getvalue()
+    """Топ Г+А: common_synced.db (все сезоны)."""
+    return render_cumulative_top_ga(league_code, limit)
 
 
 def render_team_goalscorers_league(league_code: str) -> str:

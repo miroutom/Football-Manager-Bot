@@ -16,9 +16,13 @@
 
 Фаза для строки ``mixed_schedule`` задаётся опциональным 4-м сегментом (``...;cl;knockout``)
 или выводится из групповой сетки ``table.schedule.schedule_cl``.
+
+При «Завершить сезон» живой ``match_results.json`` копируется в
+``db/season_N/match_results.json`` и очищается (см. ``utils.season_end``).
 """
 import json
 import os
+import shutil
 from typing import Any, Dict, Iterable, Optional
 
 from utils.utils import PROJECT_ROOT
@@ -141,17 +145,88 @@ def is_cl_group_phase_record(rec: Dict[str, Any]) -> bool:
     return _normalize_cl_phase(raw) == "league"
 
 
-def compute_cl_group_standings_from_journal(team_names: Iterable[str]) -> Dict[str, Any]:
+def load_records_and_keys_from_path(path: str) -> tuple[list[dict[str, Any]], set]:
+    """
+    Прочитать журнал сыгранных из произвольного JSON (архив сезона).
+    Не перезаписывает основной ``match_results.json`` при v1.
+    """
+    if not os.path.isfile(path):
+        return [], set()
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+    except Exception:
+        return [], set()
+
+    if isinstance(raw, list):
+        records: list[dict[str, Any]] = []
+        keys: set = set()
+        for item in raw:
+            if not isinstance(item, (list, tuple)) or len(item) < 3:
+                continue
+            h, a, t = _norm(item[0]), _norm(item[1]), item[2]
+            row = {
+                "home": h,
+                "away": a,
+                "league": t,
+                "home_score": None,
+                "away_score": None,
+                "day": None,
+            }
+            records.append(row)
+            keys.add(record_key(h, a, t, _rec=row))
+        return records, keys
+
+    if isinstance(raw, dict) and raw.get("version") == 2:
+        matches = raw.get("matches", [])
+        records = []
+        keys = set()
+        for m in matches:
+            if not isinstance(m, dict):
+                continue
+            h = _norm(m.get("home", ""))
+            a = _norm(m.get("away", ""))
+            t = m.get("league")
+            if not t:
+                continue
+            rec: dict[str, Any] = {
+                "home": h,
+                "away": a,
+                "league": t,
+                "home_score": m.get("home_score"),
+                "away_score": m.get("away_score"),
+                "day": m.get("day"),
+            }
+            if "cl_phase" in m:
+                rec["cl_phase"] = m.get("cl_phase")
+            if "penalties_by_team" in m:
+                rec["penalties_by_team"] = m.get("penalties_by_team")
+            records.append(rec)
+            keys.add(record_key(h, a, t, _rec=rec))
+        return records, keys
+
+    return [], set()
+
+
+def compute_cl_group_standings_from_journal(
+    team_names: Iterable[str],
+    *,
+    journal_path: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Построить таблицу группового этапа ЛЧ только из журнала match_results.json.
 
+    ``journal_path`` — альтернативный файл (архив сезона); иначе живой журнал проекта.
     Не использует pickle: нокаут в эту таблицу не попадает.
     """
     from table.team import Team
 
     names = [_norm(n) for n in team_names]
     teams = {n: Team(n) for n in names}
-    records, _ = load_records_and_keys()
+    if journal_path:
+        records, _ = load_records_and_keys_from_path(journal_path)
+    else:
+        records, _ = load_records_and_keys()
     for r in records:
         if not is_cl_group_phase_record(r):
             continue
@@ -266,6 +341,53 @@ def save_match_results(results):
             'day': None,
         })
     _save_v2(records)
+
+
+def archive_match_results_json_to_dir(dest_path: str) -> str:
+    """
+    Скопировать текущий ``match_results.json`` в ``dest_path`` (например
+    ``db/season_N/match_results.json``).
+
+    Возвращает ``no_source`` (файла не было), ``ok`` (скопировано), ``copy_failed``.
+    """
+    if not os.path.isfile(MATCH_RESULTS_FILE):
+        return "no_source"
+    parent = os.path.dirname(os.path.abspath(dest_path))
+    try:
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        shutil.copy2(MATCH_RESULTS_FILE, dest_path)
+        return "ok"
+    except OSError:
+        return "copy_failed"
+
+
+def clear_match_results_journal() -> None:
+    """Полностью очистить живой журнал (новый сезон): ``{version:2, matches: []}``."""
+    _save_v2([])
+
+
+def remove_cl_knockout_matches_from_journal() -> int:
+    """
+    Удалить из ``match_results.json`` все матчи ЛЧ **плей-офф** (нокаут).
+
+    Групповой этап ЛЧ (``cl_phase`` группа / legacy без фазы) и остальные лиги
+    не трогаются. Нужно при новом сезоне: сетка HTML/PNG читает нокаут из журнала
+    (см. ``champions_league/bracket_html.py``).
+
+    Возвращает число удалённых записей.
+    """
+    records, _ = load_records_and_keys()
+    kept: list[dict[str, Any]] = []
+    removed = 0
+    for r in records:
+        if str(r.get("league") or "") == "cl" and not is_cl_group_phase_record(r):
+            removed += 1
+        else:
+            kept.append(r)
+    if removed:
+        _save_v2(kept)
+    return removed
 
 
 def find_cl_knockout_first_leg_record(second_home: str, second_away: str):

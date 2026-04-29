@@ -188,6 +188,52 @@ def _season_numbers_for_stats_picker() -> list[int]:
     return sorted(n for n in nums if n >= 1)
 
 
+def _table_season_kb() -> InlineKeyboardMarkup:
+    """Сначала выбор сезона, затем лига (callback tbls:… → tbl:…:rpl)."""
+    nums = _season_numbers_for_stats_picker()
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="📍 Текущий сезон",
+                callback_data="tbls:cur",
+            ),
+        ],
+    ]
+    row: list[InlineKeyboardButton] = []
+    for n in nums:
+        row.append(
+            InlineKeyboardButton(
+                text=f"Сезон {n}",
+                callback_data=f"tbls:{n}",
+            )
+        )
+        if len(row) >= 4:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _league_keyboard_for_table(season_key: str) -> InlineKeyboardMarkup:
+    """Таблица: tbl:<season_key>:<league_code> (season_key = cur или номер)."""
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for code, label in LEAGUE_LABELS:
+        row.append(
+            InlineKeyboardButton(
+                text=label,
+                callback_data=f"tbl:{season_key}:{code}",
+            )
+        )
+        if len(row) == 3:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 def _stats_history_root_kb() -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = [
         [
@@ -408,7 +454,31 @@ async def cmd_start(message: Message) -> None:
 @router.callback_query(F.data == "menu:table")
 async def cb_menu_table(callback: CallbackQuery) -> None:
     await callback.answer()
-    await callback.message.answer("Лига для таблицы:", reply_markup=_league_keyboard("tbl"))
+    await callback.message.answer(
+        "Таблица: сначала выберите сезон (текущий — живой pickle и журнал; "
+        "архив — снимок <code>db/season_n</code>, для ЛЧ при наличии — "
+        "<code>match_results.json</code> из архива):",
+        parse_mode=ParseMode.HTML,
+        reply_markup=_table_season_kb(),
+    )
+
+
+@router.callback_query(F.data.startswith("tbls:"))
+async def cb_table_season_pick(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 2:
+        await callback.answer()
+        return
+    season_key = parts[1].strip()
+    if not season_key:
+        await callback.answer()
+        return
+    await callback.answer()
+    label = "текущий сезон" if season_key == "cur" else f"сезон {season_key}"
+    await callback.message.answer(
+        f"Лига для таблицы ({label}):",
+        reply_markup=_league_keyboard_for_table(season_key),
+    )
 
 
 @router.callback_query(F.data == "menu:goals")
@@ -453,13 +523,30 @@ async def cb_menu_bracket(callback: CallbackQuery) -> None:
 @router.callback_query(F.data.startswith("tbl:"))
 async def cb_table(callback: CallbackQuery) -> None:
     await callback.answer()
-    code = callback.data.split(":", 1)[1]
+    parts = (callback.data or "").split(":")
+    if len(parts) == 3:
+        _, season_key, code = parts
+        if season_key == "cur":
+            season_num = None
+        else:
+            try:
+                season_num = int(season_key)
+            except ValueError:
+                await callback.message.answer("Некорректный номер сезона.")
+                return
+    elif len(parts) == 2:
+        _, code = parts
+        season_num = None
+    else:
+        await callback.message.answer("Некорректная кнопка таблицы.")
+        return
     try:
-        text = await asyncio.to_thread(render_standings, code)
+        text = await asyncio.to_thread(render_standings, code, season_num)
+        suf = " · текущий" if season_num is None else f" · сезон {season_num}"
         await answer_report_photos(
             callback.message,
             text,
-            f"Таблица · {_league_title(code)}",
+            f"Таблица · {_league_title(code)}{suf}",
         )
     except Exception as e:
         logger.exception("table")
@@ -673,7 +760,10 @@ async def cb_ga(callback: CallbackQuery) -> None:
 
 @router.message(Command("table"))
 async def cmd_table(message: Message) -> None:
-    await message.answer("Лига для таблицы:", reply_markup=_league_keyboard("tbl"))
+    await message.answer(
+        "Таблица: выберите сезон.",
+        reply_markup=_table_season_kb(),
+    )
 
 
 @router.message(Command("goals"))
@@ -855,7 +945,7 @@ async def cb_top100_sort(callback: CallbackQuery) -> None:
 async def cb_menu_tops_plus(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Топы лига + ЛЧ (common.db), как пункт «b» с «+» в консоли. "
+        "Топы лига + ЛЧ из <code>common_synced.db</code> (все сезоны), как «b» с «+» в консоли. "
         "⚽ бомбардиры · 🎯 ассисты · 📈 гол+пас:",
         reply_markup=_tops_plus_kb(),
     )

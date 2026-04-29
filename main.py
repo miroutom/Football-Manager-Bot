@@ -265,13 +265,32 @@ def show_cl_knockout_bracket():
     print(format_cl_knockout_bracket_text())
 
 
-def show_table(teams, title="", league_code=None):
-    """Показать таблицу. Для ЛЧ — только групповой этап из журнала (без нокаута)."""
+def show_table(
+    teams,
+    title="",
+    league_code=None,
+    *,
+    cl_journal_path: Optional[str] = None,
+):
+    """
+    Показать таблицу. Для ЛЧ — группа из журнала (без нокаута).
+
+    ``cl_journal_path``: путь к ``match_results.json`` архива сезона; если задан и файла
+    нет — для ЛЧ берётся таблица из ``teams`` (pickle). ``None`` — живой журнал проекта.
+    """
     display_teams = teams
     if league_code == "cl":
         from match_results import compute_cl_group_standings_from_journal
 
-        display_teams = compute_cl_group_standings_from_journal(teams.keys())
+        if cl_journal_path is not None:
+            if os.path.isfile(cl_journal_path):
+                display_teams = compute_cl_group_standings_from_journal(
+                    teams.keys(), journal_path=cl_journal_path
+                )
+            else:
+                display_teams = teams
+        else:
+            display_teams = compute_cl_group_standings_from_journal(teams.keys())
     if title:
         print(f"\n{'='*70}")
         cl_note = (

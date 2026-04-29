@@ -281,6 +281,21 @@ def finalize_season() -> dict[str, Any]:
         raise FileNotFoundError(
             f"Архив сезона неполный после снимка: {snap_league!s}, {snap_cl!s}"
         )
+    try:
+        from match_results import archive_match_results_json_to_dir, clear_match_results_journal
+
+        mr_dest = os.path.join(archive_dir, "match_results.json")
+        ar_st = archive_match_results_json_to_dir(mr_dest)
+        log["match_results_archived"] = ar_st
+        if ar_st == "copy_failed":
+            log["match_results_cleared"] = "skipped: archive copy failed"
+        else:
+            clear_match_results_journal()
+            log["match_results_cleared"] = True
+    except OSError as e:
+        log["match_results_cleared"] = f"error: {e!s}"
+    except Exception as e:
+        log["match_results_cleared"] = f"error: {e!s}"
     log["cumulative_merge"] = append_season_snapshot_to_all_time(
         snap_league, snap_cl
     ).get("cumulative", [])

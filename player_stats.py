@@ -1529,32 +1529,49 @@ def format_team_goalscorers_league_report(league_code: str) -> str:
 
 def format_all_leagues_combined_list_str(limit: int = 100, sort_key: int = 1) -> str:
     """
-    Топ игроков common.db — как пункт «b»→5.
+    Топ игроков из ``common_synced.db`` (накопление всех сезонов) — как «b»→5.
     sort_key: 1 — голы, 2 — передачи, 3 — Г+А.
     """
-    from utils.common_db import rebuild_common_database
+    import os
 
-    rebuild_common_database()
-    session = get_session("common")
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from utils import season_paths
+
+    common_path = season_paths.get_cumulative_common_db_path()
+    if not os.path.isfile(common_path):
+        return (
+            "Накопительная база ещё не создана: нет файла common_synced.db.\n"
+            "После «Завершить сезон» появятся league_synced.db, champions_league_synced.db "
+            "и common_synced.db."
+        )
+
+    engine = create_engine(f"sqlite:///{common_path}")
+    session = sessionmaker(bind=engine)()
     rows = []
-    for PlayerClass in (Forward, Midfielder, Defender):
-        for p in session.query(PlayerClass).all():
-            g = int(p.goals or 0)
-            a = int(p.assists or 0)
-            ga = int(getattr(p, "ga", None) or (g + a))
-            if g == 0 and a == 0:
-                continue
-            rows.append(
-                {
-                    "name": p.name,
-                    "team": p.team,
-                    "position": p.position,
-                    "matches": int(p.matches or 0),
-                    "goals": g,
-                    "assists": a,
-                    "ga": ga,
-                }
-            )
+    try:
+        for PlayerClass in (Forward, Midfielder, Defender):
+            for p in session.query(PlayerClass).all():
+                g = int(p.goals or 0)
+                a = int(p.assists or 0)
+                ga = int(getattr(p, "ga", None) or (g + a))
+                if g == 0 and a == 0:
+                    continue
+                rows.append(
+                    {
+                        "name": p.name,
+                        "team": p.team,
+                        "position": p.position,
+                        "matches": int(p.matches or 0),
+                        "goals": g,
+                        "assists": a,
+                        "ga": ga,
+                    }
+                )
+    finally:
+        session.close()
+        engine.dispose()
 
     n_cand = len(rows)
 
@@ -1571,7 +1588,7 @@ def format_all_leagues_combined_list_str(limit: int = 100, sort_key: int = 1) ->
     with contextlib.redirect_stdout(buf):
         print("\n" + "=" * 76)
         print(
-            f"  ТОП-{limit} — лига + ЛЧ, все лиги "
+            f"  ТОП-{limit} — лига + ЛЧ, все лиги (common_synced.db, все сезоны) "
             f"(с голом или передачей; кандидатов: {n_cand})"
         )
         print("=" * 76)
