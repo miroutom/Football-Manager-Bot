@@ -7,28 +7,54 @@ Base = declarative_base()
 
 # Абсолютный путь к проекту (работает при запуске из любой директории)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_DB_DIR = os.path.join(PROJECT_ROOT, 'db')
+_DB_DIR = os.path.join(PROJECT_ROOT, "db")
 
-# Рабочие БД (заявки + стата после синка). Снимок «до переноса»: league_new.db / champions_league_new.db / common.db.
-LEAGUE_DB_FILE = "league_synced.db"
-CHAMPIONS_LEAGUE_DB_FILE = "champions_league_synced.db"
-COMMON_DB_FILE = "common_synced.db"
-LEAGUE_DB_PATH = os.path.join(_DB_DIR, LEAGUE_DB_FILE)
-CHAMPIONS_LEAGUE_DB_PATH = os.path.join(_DB_DIR, CHAMPIONS_LEAGUE_DB_FILE)
-COMMON_DB_PATH = os.path.join(_DB_DIR, COMMON_DB_FILE)
+# Пути к рабочим БД: через season_paths (legacy или db/season_n/*.db)
+def reinit_db_connections() -> None:
+    """Пересоздать движки/сессии (после смены сезона)."""
+    from utils import season_paths
 
-# Три БД: национальные лиги, ЛЧ, объединённая (лига + ЛЧ)
-engine_league = create_engine(f"sqlite:///{LEAGUE_DB_PATH}")
-engine_cl = create_engine(f"sqlite:///{CHAMPIONS_LEAGUE_DB_PATH}")
-engine_common = create_engine(f"sqlite:///{COMMON_DB_PATH}")
+    global LEAGUE_DB_PATH, CHAMPIONS_LEAGUE_DB_PATH, COMMON_DB_PATH
+    global engine_league, engine_cl, engine_common
+    global SessionLeague, SessionCL, SessionCommon
+    global session_league, session_cl, session_common
 
-SessionLeague = sessionmaker(bind=engine_league)
-SessionCL = sessionmaker(bind=engine_cl)
-SessionCommon = sessionmaker(bind=engine_common)
+    try:
+        engine_league.dispose()
+    except Exception:
+        pass
+    try:
+        engine_cl.dispose()
+    except Exception:
+        pass
+    try:
+        engine_common.dispose()
+    except Exception:
+        pass
 
-session_league = SessionLeague()
-session_cl = SessionCL()
-session_common = SessionCommon()
+    LEAGUE_DB_PATH = season_paths.get_league_db_path()
+    CHAMPIONS_LEAGUE_DB_PATH = season_paths.get_cl_db_path()
+    COMMON_DB_PATH = season_paths.get_common_db_path()
+
+    engine_league = create_engine(f"sqlite:///{LEAGUE_DB_PATH}")
+    engine_cl = create_engine(f"sqlite:///{CHAMPIONS_LEAGUE_DB_PATH}")
+    engine_common = create_engine(f"sqlite:///{COMMON_DB_PATH}")
+
+    SessionLeague = sessionmaker(bind=engine_league)
+    SessionCL = sessionmaker(bind=engine_cl)
+    SessionCommon = sessionmaker(bind=engine_common)
+
+    session_league = SessionLeague()
+    session_cl = SessionCL()
+    session_common = SessionCommon()
+
+
+reinit_db_connections()
+
+# Синонимы для путей (как раньше)
+LEAGUE_DB_FILE = "league.db"  # смысловой label; фактическое имя в season_paths
+CHAMPIONS_LEAGUE_DB_FILE = "champions_league.db"
+COMMON_DB_FILE = "common.db"
 
 # Для обратной совместимости
 engine = engine_league

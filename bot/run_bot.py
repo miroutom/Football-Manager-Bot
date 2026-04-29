@@ -11,12 +11,15 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 import bot  # noqa: F401 — ensure_project_paths при импорте пакета
 
-from bot.awards_handlers import awards_router
+from bot.season_handlers import season_router
 from bot.bot_commands import setup_bot_commands
 from bot.handlers import AccessMiddleware, router
 from bot.match_handlers import match_router
 from bot.transfer_handlers import transfer_router
+from bot.awards_handlers import awards_router
+from bot.rating_handlers import rating_router
 from bot.settings import get_bot_token
+from utils.migrate_player_discipline import migrate_all_player_discipline_columns
 from utils.migrate_player_awards import migrate_player_awards_columns
 from utils.migrate_player_status import migrate_all_player_status_columns
 
@@ -35,6 +38,13 @@ async def main() -> None:
         )
         raise
     try:
+        await asyncio.to_thread(migrate_all_player_discipline_columns)
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Не удалось применить миграции дисциплины (жк/кк)"
+        )
+        raise
+    try:
         await asyncio.to_thread(migrate_player_awards_columns)
     except Exception:
         logging.getLogger(__name__).exception(
@@ -49,11 +59,17 @@ async def main() -> None:
     transfer_router.callback_query.middleware(AccessMiddleware())
     awards_router.message.middleware(AccessMiddleware())
     awards_router.callback_query.middleware(AccessMiddleware())
+    rating_router.message.middleware(AccessMiddleware())
+    rating_router.callback_query.middleware(AccessMiddleware())
+    season_router.message.middleware(AccessMiddleware())
+    season_router.callback_query.middleware(AccessMiddleware())
     router.message.middleware(AccessMiddleware())
     router.callback_query.middleware(AccessMiddleware())
     dp.include_router(match_router)
     dp.include_router(transfer_router)
     dp.include_router(awards_router)
+    dp.include_router(rating_router)
+    dp.include_router(season_router)
     dp.include_router(router)
 
     telegram_bot = Bot(

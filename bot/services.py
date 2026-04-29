@@ -329,7 +329,10 @@ def render_next_match_text() -> str:
     """Как «n» — следующий несыгранный слот по mixed_schedule."""
     from main import find_next_match_in_schedule, load_or_generate_mixed_schedule
     from player_stats import LEAGUE_NAMES
+    from utils.schedule_by_months import read_mixed_slot_label
+    from main import MIXED_SCHEDULE_FILE
 
+    slot_label = read_mixed_slot_label(MIXED_SCHEDULE_FILE)
     sch = load_or_generate_mixed_schedule()
     day, mstr, home, away, lg = find_next_match_in_schedule(sch)
     if day is None:
@@ -338,7 +341,7 @@ def render_next_match_text() -> str:
         )
     lg_title = LEAGUE_NAMES.get(lg, lg)
     return (
-        f"Следующий по календарю — матч-день {day}\n"
+        f"Следующий по календарю — {slot_label.lower()} {day}\n"
         f"{home} — {away}\n"
         f"Лига: {lg_title}\n"
         f"Слот: {mstr}"
@@ -352,11 +355,14 @@ def render_schedule_queue_text(limit: int = 18) -> str:
         get_teams_by_league,
         is_match_played,
         load_or_generate_mixed_schedule,
+        MIXED_SCHEDULE_FILE,
     )
     from match_results import cl_phase_from_mixed_schedule_line
     from skipped_matches import load_skipped_matches
     from player_stats import LEAGUE_NAMES
+    from utils.schedule_by_months import read_mixed_slot_label
 
+    slot_label = read_mixed_slot_label(MIXED_SCHEDULE_FILE)
     mixed = load_or_generate_mixed_schedule()
     skipped = load_skipped_matches()
     lines: list[str] = []
@@ -384,7 +390,9 @@ def render_schedule_queue_text(limit: int = 18) -> str:
             ):
                 continue
             nm = LEAGUE_NAMES.get(league_code, league_code)
-            lines.append(f"день {day_num} · [{nm}] {home} — {away}")
+            lines.append(
+                f"{slot_label.lower()} {day_num} · [{nm}] {home} — {away}"
+            )
             n += 1
             if n >= limit:
                 return (

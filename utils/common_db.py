@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Объединённая БД (по умолчанию ``common_synced.db``): сумма из лиги и ЛЧ.
-Пересборка: ``rebuild_common_database()`` (опционально свои сессии).
+Объединённая БД (``common_*.db``): суммарная статистика по лиге и ЛЧ.
+Пересборка: ``rebuild_common_database()``.
+
+- ``trophies`` в common = сумма трофеев из нац. БД + ЛЧ (трофей лиги и трофей ЛЧ по отдельным источникам).
+  В файле **только** лиги: только национальные; в **только** БД ЛЧ: только трофеи ЛЧ.
 """
 from __future__ import annotations
 
@@ -68,6 +71,8 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
                     "matches": 0,
                     "goals": 0,
                     "assists": 0,
+                    "yellow_cards": 0,
+                    "red_cards": 0,
                     "trophies": 0,
                     "golden_balls": 0,
                     "golden_boots": 0,
@@ -91,7 +96,13 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
             b["matches"] += m
             b["goals"] += int(getattr(p, "goals", 0) or 0)
             b["assists"] += int(getattr(p, "assists", 0) or 0)
-            b["trophies"] += int(getattr(p, "trophies", 0) or 0)
+            b["yellow_cards"] = b.get("yellow_cards", 0) + int(
+                getattr(p, "yellow_cards", 0) or 0
+            )
+            b["red_cards"] = b.get("red_cards", 0) + int(
+                getattr(p, "red_cards", 0) or 0
+            )
+            b["trophies"] += int(getattr(p, "trophies", 0) or 0)  # common: лиг. + лч, суммарно
             b["golden_balls"] = max(
                 b["golden_balls"], int(getattr(p, "golden_balls", 0) or 0)
             )
@@ -140,6 +151,8 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     golden_boys=b["golden_boys"],
                     nation=b.get("nation"),
                     status=b.get("status"),
+                    yellow_cards=int(b.get("yellow_cards", 0) or 0),
+                    red_cards=int(b.get("red_cards", 0) or 0),
                 )
             )
         elif PlayerCls is Midfielder:
@@ -160,6 +173,8 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     golden_boys=b["golden_boys"],
                     nation=b.get("nation"),
                     status=b.get("status"),
+                    yellow_cards=int(b.get("yellow_cards", 0) or 0),
+                    red_cards=int(b.get("red_cards", 0) or 0),
                 )
             )
         else:
@@ -181,6 +196,8 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     golden_boys=b["golden_boys"],
                     nation=b.get("nation"),
                     status=b.get("status"),
+                    yellow_cards=int(b.get("yellow_cards", 0) or 0),
+                    red_cards=int(b.get("red_cards", 0) or 0),
                 )
             )
 
@@ -226,6 +243,8 @@ def rebuild_common_database(
                     "clean_sheets": 0,
                     "missed_goals": 0,
                     "trophies": 0,
+                    "yellow_cards": 0,
+                    "red_cards": 0,
                     "golden_balls": 0,
                     "golden_boots": 0,
                     "golden_gloves": 0,
@@ -248,7 +267,13 @@ def rebuild_common_database(
             b["matches"] += m
             b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)
             b["missed_goals"] += int(getattr(p, "missed_goals", 0) or 0)
-            b["trophies"] += int(getattr(p, "trophies", 0) or 0)
+            b["trophies"] += int(getattr(p, "trophies", 0) or 0)  # common: лиг. + лч, суммарно
+            b["yellow_cards"] = b.get("yellow_cards", 0) + int(
+                getattr(p, "yellow_cards", 0) or 0
+            )
+            b["red_cards"] = b.get("red_cards", 0) + int(
+                getattr(p, "red_cards", 0) or 0
+            )
             b["golden_balls"] = max(
                 b["golden_balls"], int(getattr(p, "golden_balls", 0) or 0)
             )
@@ -288,6 +313,8 @@ def rebuild_common_database(
                 golden_boys=b["golden_boys"],
                 nation=b.get("nation"),
                 status=b.get("status"),
+                yellow_cards=int(b.get("yellow_cards", 0) or 0),
+                red_cards=int(b.get("red_cards", 0) or 0),
             )
         )
 

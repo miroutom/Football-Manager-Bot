@@ -266,7 +266,12 @@ def print_mixed_schedule(
     league_code: Optional[str] = None,
     team_query: str = "",
     match_filter: str = MATCH_FILTER_ALL,
+    slot_label: Optional[str] = None,
 ) -> None:
+    if slot_label is None:
+        from utils.schedule_by_months import read_mixed_slot_label
+
+        slot_label = read_mixed_slot_label(MIXED_SCHEDULE_FILE)
     lines_out: list[tuple[int, str]] = list(
         iter_mixed_filtered(
             mixed_schedule,
@@ -291,7 +296,7 @@ def print_mixed_schedule(
     for day, line in lines_out:
         if cur_day != day:
             cur_day = day
-            print(f"\n  --- Матч-день {day} ---")
+            print(f"\n  --- {slot_label} {day} ---")
         print(f"    {line}")
 
 

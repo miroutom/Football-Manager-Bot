@@ -37,13 +37,20 @@ class ClPenalties(StatesGroup):
 
 
 class TransferEnter(StatesGroup):
-    """Запись трансфера: игрок, клуб-отправитель, позиция, клуб-получатель."""
+    """Трансфер из клуба или свободный агент: заявка start/bench/reserve."""
     player_name = State()
-    from_team = State()
+    from_team = State()  # только «из клуба»
     position = State()
     to_team = State()
+    fa_overall = State()  # только св. агент: число overall
+    new_status = State()
 
 
 class AwardEnter(StatesGroup):
     """Награды сезона: после выбора вида, лиги, клуба — ввод имени игрока."""
     wait_name = State()
+
+
+class RatingEnter(StatesGroup):
+    """Правка overall: лига, клуб, многострочный ввод «имя +N / имя -N»."""
+    wait_lines = State()

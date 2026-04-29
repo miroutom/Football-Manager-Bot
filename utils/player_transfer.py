@@ -28,20 +28,79 @@ from data.midfielder import Midfielder
 _ALL_PLAYER = (Forward, Midfielder, Defender, Goalkeeper)
 
 
-def apply_transfer(
+def _filter_team(Cls, team: str):
+    t = (team or "").strip()
+    tl = t.lower()
+    return or_(Cls.team == t, func.lower(Cls.team) == tl)
+
+
+def _all_for_team(sess, Cls, team: str) -> list[Any]:
+    return sess.query(Cls).filter(_filter_team(Cls, team)).all()
+
+
+def _cascade_status(
+    sess, Cls, to_team: str, position: str, incoming: Any, new_status: str | None
+) -> None:
+    """
+    Правила заявки в новом клубе: start / bench / reserve.
+    new_status None — только сброс status (как раньше).
+    """
+    if new_status is None:
+        incoming.status = None
+        return
+    pos = position.strip()
+    pos_l = pos.lower()
+    ns = new_status.strip().lower()
+    if ns not in ("start", "bench", "reserve"):
+        raise ValueError("status: start | bench | reserve")
+
+    def _same_pos(r: Any) -> bool:
+        return (r.position or "").strip().lower() == pos_l
+
+    if ns == "reserve":
+        incoming.status = "reserve"
+        return
+
+    if ns == "start":
+        for r in _all_for_team(sess, Cls, to_team):
+            if r.id == incoming.id:
+                continue
+            if _same_pos(r) and (r.status or "").strip().lower() == "start":
+                r.status = "bench"
+        incoming.status = "start"
+        bench = [
+            r
+            for r in _all_for_team(sess, Cls, to_team)
+            if (r.status or "").strip().lower() == "bench"
+        ]
+        if bench:
+            worst = min(bench, key=lambda x: (x.overall or 0, (x.name or "")))
+            worst.status = "reserve"
+        return
+
+    # bench
+    incoming.status = "bench"
+    bench = [
+        r
+        for r in _all_for_team(sess, Cls, to_team)
+        if (r.status or "").strip().lower() == "bench"
+    ]
+    if len(bench) >= 2:
+        worst = min(bench, key=lambda x: (x.overall or 0, (x.name or "")))
+        worst.status = "reserve"
+
+
+def apply_transfer_with_status(
     player: str,
     from_team: str,
     position: str,
     to_team: str,
+    new_status: str | None,
     *,
     rebuild_common: bool = True,
 ) -> dict[str, int]:
     """
-    Ищет игрока по имени (без учёта регистра), клубу «откуда» и позиции (как в БД),
-    поле ``team`` меняет на новый клуб в league_new.db и champions_league_new.db.
-    Поле ``status`` (старт/скамейка/резерв) сбрасывается, чтобы в новом клубе не тянуть чужую заявку.
-
-    Возвращает счётчики обновлённых строк: ``league``, ``cl``.
+    Трансфер + заявка в новом клубе. ``new_status`` is None — сброс status (старое поведение).
     """
     player = player.strip()
     from_team = from_team.strip()
@@ -50,9 +109,9 @@ def apply_transfer(
 
     from utils.utils import session_cl, session_league
 
-    counts = {"league": 0, "cl": 0}
+    counts: dict[str, int] = {"league": 0, "cl": 0}
 
-    def _run(sess, key: str) -> None:
+    def _run_session(sess, key: str) -> None:
         for Cls in _ALL_PLAYER:
             rows = (
                 sess.query(Cls)
@@ -65,20 +124,167 @@ def apply_transfer(
             )
             for r in rows:
                 r.team = to_team
-                if getattr(r, "status", None) is not None:
-                    r.status = None
+                _cascade_status(sess, Cls, to_team, position, r, new_status)
                 counts[key] += 1
 
-    _run(session_league, "league")
+    _run_session(session_league, "league")
     session_league.commit()
-    _run(session_cl, "cl")
+    _run_session(session_cl, "cl")
     session_cl.commit()
 
     if rebuild_common:
         from utils.common_db import rebuild_common_database
 
         rebuild_common_database()
+    return counts
 
+
+def apply_transfer(
+    player: str,
+    from_team: str,
+    position: str,
+    to_team: str,
+    *,
+    rebuild_common: bool = True,
+) -> dict[str, int]:
+    """
+    Ищет игрока по имени (без учёта регистра), клубу «откуда» и позиции (как в БД),
+    поле ``team`` меняет на новый клуб в национальной БД и в БД ЛЧ.
+    ``status`` сбрасывается (см. ``apply_transfer_with_status`` для start/bench/reserve).
+
+    Возвращает счётчики обновлённых строк: ``league``, ``cl``.
+    """
+    return apply_transfer_with_status(
+        player, from_team, position, to_team, None, rebuild_common=rebuild_common
+    )
+
+
+def _cls_for_position(position: str):
+    from utils.squad_roster_sync import _cls_for_position as resolve
+
+    return resolve(position)
+
+
+def _new_player_kwargs(
+    Cls: type,
+    *,
+    name: str,
+    team: str,
+    position: str,
+    overall: int,
+) -> dict[str, Any]:
+    u = max(1, min(99, int(overall)))
+    pos_u = position.strip().upper()
+    kw: dict[str, Any] = dict(
+        name=name.strip(),
+        team=team.strip(),
+        position=pos_u,
+        overall=u,
+        matches=0,
+        rating=0.0,
+        trophies=0,
+        golden_balls=0,
+        nation=None,
+        status=None,
+    )
+    if Cls is Forward:
+        kw.update(
+            goals=0,
+            assists=0,
+            ga=0,
+            golden_boots=0,
+            golden_boys=0,
+        )
+    elif Cls is Midfielder:
+        kw.update(
+            goals=0,
+            assists=0,
+            ga=0,
+            golden_boots=0,
+            golden_boys=0,
+        )
+    elif Cls is Defender:
+        kw.update(
+            goals=0,
+            assists=0,
+            ga=0,
+            clean_sheets=0,
+            golden_boots=0,
+            golden_boys=0,
+        )
+    else:
+        kw.update(
+            clean_sheets=0,
+            missed_goals=0,
+            golden_boots=0,
+            golden_gloves=0,
+            golden_boys=0,
+        )
+    return kw
+
+
+def add_free_agent(
+    player: str,
+    position: str,
+    to_team: str,
+    new_status: str,
+    overall: int = 72,
+    *,
+    rebuild_common: bool = True,
+) -> dict[str, int]:
+    """
+    Новый игрок (свободный агент): вставка строки в нац. БД и в БД ЛЧ, если клуб в пуле ЛЧ.
+    """
+    from utils.common_db import _team_in_cl_pool
+
+    player = player.strip()
+    position = position.strip()
+    to_team = to_team.strip()
+    ns = new_status.strip().lower()
+    if ns not in ("start", "bench", "reserve"):
+        raise ValueError("status: start | bench | reserve")
+
+    Cls = _cls_for_position(position)
+    pos_u = position.strip().upper()
+    from utils.utils import session_cl, session_league
+
+    def _dup(sess) -> bool:
+        return bool(
+            sess.query(Cls)
+            .filter(
+                func.lower(Cls.name) == player.lower(),
+                func.lower(Cls.team) == to_team.lower(),
+                func.lower(Cls.position) == pos_u.lower(),
+            )
+            .first()
+        )
+
+    if _dup(session_league):
+        raise ValueError("Такой игрок с этой позицией в клубе уже есть (нац. БД).")
+
+    kw = _new_player_kwargs(Cls, name=player, team=to_team, position=position, overall=overall)
+    row_l = Cls(**kw)
+    session_league.add(row_l)
+    session_league.flush()
+    _cascade_status(session_league, Cls, to_team, pos_u, row_l, ns)
+    session_league.commit()
+
+    counts = {"league": 1, "cl": 0}
+    if _team_in_cl_pool(to_team):
+        if _dup(session_cl):
+            pass
+        else:
+            row_c = Cls(**{**kw, "id": None})
+            session_cl.add(row_c)
+            session_cl.flush()
+            _cascade_status(session_cl, Cls, to_team, pos_u, row_c, ns)
+            counts["cl"] = 1
+    session_cl.commit()
+
+    if rebuild_common:
+        from utils.common_db import rebuild_common_database
+
+        rebuild_common_database()
     return counts
 
 

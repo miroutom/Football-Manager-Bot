@@ -6,7 +6,7 @@ import os
 import json
 from typing import Dict, Optional
 from teams import (
-    get_sorted_teams, save_teams, PICKLE_DIR,
+    get_sorted_teams, save_teams, get_pickle_dir,
     teams_rpl, teams_eng, teams_spain, teams_italy, teams_germany, teams_champ_league,
     england, spain, italy, germany, rpl
 )
@@ -94,22 +94,13 @@ def load_or_generate_mixed_schedule():
     """
     Загрузить mixed_schedule.json с диска.
 
-    Пока файл существует — только чтение, без перегенерации (расписание фиксированное).
-    Случайное расписание создаётся только если файла ещё нет (первый запуск / удалили вручную).
-    Не путать со скриптом scripts/generate_mixed_schedule.py — он перезаписывает файл по запуску.
+    Формат v3 (10 «месяцев»): если файла нет — один раз генерируется v3 (нац. + ЛЧ),
+    плей-офф в календарь не входит. Старый плоский список матч-дней — по-прежнему
+    читается как есть, если лежит в проекте.
     """
-    if os.path.exists(MIXED_SCHEDULE_FILE):
-        with open(MIXED_SCHEDULE_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data
+    from utils.schedule_by_months import load_parsed_mixed
 
-    from utils.schedule_generator import build_full_schedule, generate_mixed_match_days
-    slots = {'rpl': 1, 'eng': 1, 'esp': 1, 'ita': 2, 'cl': 2, 'ger': 2}
-    full = build_full_schedule()
-    match_days = generate_mixed_match_days(full, slots, shuffle=True)
-    data = [{'day': i, 'matches': day} for i, day in enumerate(match_days, 1)]
-    with open(MIXED_SCHEDULE_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    data, _ = load_parsed_mixed(MIXED_SCHEDULE_FILE)
     return data
 
 
@@ -318,7 +309,7 @@ def save_result(league_code):
 
     if league_code in save_mapping:
         filename, teams = save_mapping[league_code]
-        save_teams(f'{PICKLE_DIR}/{filename}', teams)
+        save_teams(f'{get_pickle_dir()}/{filename}', teams)
 
 
 def process_match(home, away, home_score, away_score, league_code, round_num=None,

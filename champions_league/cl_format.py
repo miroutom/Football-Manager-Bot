@@ -1,17 +1,33 @@
 # -*- coding: utf-8 -*-
 """
 Формат Лиги Чемпионов (адаптация по образцу УЕФА 2025/26):
-- 30 команд (15 Roman + 15 Lika) — фиксированный список
+- 30 команд: из ``data/cl_participants_dynamic.txt`` (6 лучших из 5 нац. лиг после завершения сезона)
+  либо фиксированный список ``CL_PARTICIPANTS`` при первом запуске
 - 1-й этап: 30 команд → 6 вылетают, остаётся 24
-- 2-й этап: 24 команды → 8 напрямую в плей-офф, 16 в стыки (play-offs)
-- Стыки: 8 пар, 8 победителей → плей-офф
-- Плей-офф: 8 + 8 = 16 команд, 1/8, 1/4, 1/2, финал
+...
 """
+from pathlib import Path
+
 from config.leagues_config import CL_PARTICIPANTS
+
+_MODULE_DIR = Path(__file__).resolve().parent
+_ROOT = _MODULE_DIR.parent
+_CL_DYNAMIC = _ROOT / "data" / "cl_participants_dynamic.txt"
 
 
 def get_cl_participants() -> list:
-    """Получить 30 команд для ЛЧ (15 Roman + 15 Lika) — фиксированный список."""
+    """
+    30 команд ЛЧ: если после завершения сезона создан ``data/cl_participants_dynamic.txt``,
+    читаем оттуда; иначе — фиксированный список Roman+Lika (как в конфиге).
+    """
+    if _CL_DYNAMIC.is_file():
+        lines = [
+            ln.strip()
+            for ln in _CL_DYNAMIC.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
+        if len(lines) >= 2:
+            return [t.title() for t in lines]
     return [t.title() for t in CL_PARTICIPANTS['roman']] + [t.title() for t in CL_PARTICIPANTS['lika']]
 
 

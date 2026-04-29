@@ -25,6 +25,8 @@ def append_transfer(
     from_team: str,
     position: str,
     to_team: str,
+    new_status: str | None = None,
+    free_agent: bool = False,
 ) -> None:
     row = {
         "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -34,6 +36,10 @@ def append_transfer(
         "position": position.strip(),
         "to_team": to_team.strip(),
     }
+    if new_status is not None:
+        row["new_status"] = new_status.strip()
+    if free_agent:
+        row["free_agent"] = True
     with _lock:
         data = _load()
         data.setdefault("transfers", []).append(row)

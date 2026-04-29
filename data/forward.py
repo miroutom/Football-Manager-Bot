@@ -62,9 +62,12 @@ class Forward(Base):
     assists = Column(Integer, default=0)
     ga = Column(Integer, default=0)
     rating = Column(Float, default=0)
+    # Трофеи **национальной** лиги (только в league-БД). В common — общая сумма с ЛЧ.
     trophies = Column(Integer, default=0)
     golden_balls = Column(Integer, default=0)
     golden_boots = Column(Integer, default=0)
     golden_boys = Column(Integer, default=0)
     nation = Column(String, nullable=True)
     status = Column(String, nullable=True)
+    yellow_cards = Column(Integer, default=0)
+    red_cards = Column(Integer, default=0)

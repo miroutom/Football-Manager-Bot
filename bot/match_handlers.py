@@ -63,6 +63,7 @@ async def _finish_match_and_offer_stats(
     hs: int,
     aws: int,
     league_code: str,
+    schedule_day: int | None = None,
 ) -> None:
     """После записи матча — опционально предложить статистику (если INPUT_PLAYER_STATS в main)."""
     from main import INPUT_PLAYER_STATS
@@ -88,6 +89,8 @@ async def _finish_match_and_offer_stats(
         stats_hs=hs,
         stats_aws=aws,
         stats_tournament="cl" if league_code == "cl" else "league",
+        stats_league_code=league_code,
+        stats_schedule_day=schedule_day,
     )
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -165,6 +168,7 @@ async def _record_match_or_request_penalties(
         hs=hs,
         aws=aws,
         league_code=league_code,
+        schedule_day=round_num,
     )
 
 
@@ -221,6 +225,20 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
     """Закрыть ввод строк статистики; при режиме «только стата» — добавить матч в журнал при необходимости."""
     data = await state.get_data()
     pj = data.get("pending_journal")
+
+    h = data.get("stats_home")
+    a = data.get("stats_away")
+    lc = data.get("stats_league_code")
+    tourn = data.get("stats_tournament", "league")
+    if h and a:
+        if not lc:
+            from player_stats import infer_league_code_for_stats
+
+            lc = infer_league_code_for_stats(h, a, tourn)
+        from utils.player_discipline import register_match_played_for_discipline
+
+        await asyncio.to_thread(register_match_played_for_discipline, h, a, lc, tourn)
+
     await state.clear()
 
     extra = ""
@@ -292,8 +310,10 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
         ]
     )
     instr = (
-        "Вводи по одной строке (как в консоли): например <code>Салах 2 1</code>, "
-        "<code>ван дейк цз 0 0 cs</code>.\n"
+        "Вводи по одной строке: голы/пасы как раньше; дисциплина/травмы: "
+        "<code>бастони жк</code>, <code>бастони 2жк</code>, <code>бастони кк</code>, "
+        "<code>симонс 4м</code> (месяца без статы).\n"
+        "Как в консоли: <code>Салах 2 1</code>, <code>ван дейк цз 0 0 cs</code>.\n"
         "<code>1</code> — только из БД, <code>2</code> — новый игрок; "
         "<code>h</code>/<code>х</code> — хозяева, <code>a</code>/<code>г</code> — гости.\n"
         "/done или «Готово» — закончить; /cancel — отмена."
@@ -308,8 +328,11 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
 
 
 async def _begin_play_next(message: Message, state: FSMContext) -> None:
-    from main import find_next_match_in_schedule, load_or_generate_mixed_schedule
+    from main import MIXED_SCHEDULE_FILE, find_next_match_in_schedule, load_or_generate_mixed_schedule
     from match_results import cl_phase_from_mixed_schedule_line
+    from utils.schedule_by_months import read_mixed_slot_label
+
+    slot_label = read_mixed_slot_label(MIXED_SCHEDULE_FILE)
 
     sch = load_or_generate_mixed_schedule()
     tup = find_next_match_in_schedule(sch)
@@ -346,7 +369,7 @@ async def _begin_play_next(message: Message, state: FSMContext) -> None:
     )
 
     await message.answer(
-        f"Матч-день <b>{day}</b> · {lg}\n"
+        f"{slot_label} <b>{day}</b> · {lg}\n"
         f"<b>{home}</b> — <b>{away}</b>\n\n"
         f"Ответь сообщением со счётом через пробел, например: <code>2 1</code>\n"
         f"или нажми «Отложить».",
@@ -388,6 +411,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "ClPenalties",
             "TransferEnter",
             "AwardEnter",
+            "RatingEnter",
         ),
     ):
         return
@@ -402,6 +426,8 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         await message.answer("Трансфер отменён.")
     elif str(cur).startswith("AwardEnter"):
         await message.answer("Ввод награды отменён.")
+    elif str(cur).startswith("RatingEnter"):
+        await message.answer("Правка рейтинга отменена.")
     else:
         await message.answer("Ввод счёта отменён.")
 
@@ -739,6 +765,7 @@ async def on_cl_penalties_series(message: Message, state: FSMContext) -> None:
         hs=data["pen_hs"],
         aws=data["pen_aws"],
         league_code=data["pen_league"],
+        schedule_day=data.get("pen_round"),
     )
 
 
@@ -890,6 +917,8 @@ async def on_ason_score(message: Message, state: FSMContext) -> None:
         stats_hs=hs,
         stats_aws=aws,
         stats_tournament="cl" if lc == "cl" else "league",
+        stats_league_code=lc,
+        stats_schedule_day=None,
         pending_journal=pending_journal,
     )
     await _send_stats_lines_ui(message, state)
@@ -923,6 +952,8 @@ async def on_stats_line(message: Message, state: FSMContext) -> None:
             tournament=tournament,
             current_team=cur_team,
             mode_new=mode_new,
+            league_code=data.get("stats_league_code"),
+            schedule_day=data.get("stats_schedule_day"),
         )
 
     reply, new_team, new_mode = await asyncio.to_thread(run_line)

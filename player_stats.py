@@ -55,6 +55,22 @@ LEAGUE_NAMES = {
 }
 
 
+def infer_league_code_for_stats(
+    home_team: str, away_team: str, tournament: str
+) -> str:
+    """По сторонам матча и виду турнира — код лиги (для дисциплины: rpl, eng, … или cl)."""
+    if (tournament or "") == "cl" or (tournament or "") == "champ_league":
+        return "cl"
+    for code, tlist in LEAGUE_TEAMS.items():
+        h = _norm_cmp(home_team)
+        a = _norm_cmp(away_team)
+        for tname in tlist:
+            tn = _norm_cmp(tname)
+            if tn == h or tn == a:
+                return code
+    return "rpl"
+
+
 def get_position_type(position: str):
     """Определить тип позиции"""
     position = position.upper()
@@ -181,21 +197,21 @@ def find_or_create_player(session, name: str, position: str, team: str):
                 name=name, overall=0, team=team, position=position,
                 matches=0, rating=0, clean_sheets=0, missed_goals=0,
                 trophies=0, golden_balls=0, golden_boots=0, golden_gloves=0,
-                golden_boys=0, nation=None, status=None,
+                golden_boys=0, nation=None, status=None, yellow_cards=0, red_cards=0,
             )
         elif pos_type == 'defender':
             player = PlayerClass(
                 name=name, overall=0, team=team, position=position,
                 matches=0, goals=0, assists=0, ga=0, rating=0,
                 clean_sheets=0, trophies=0, golden_balls=0, golden_boots=0,
-                golden_boys=0, nation=None, status=None,
+                golden_boys=0, nation=None, status=None, yellow_cards=0, red_cards=0,
             )
         else:
             player = PlayerClass(
                 name=name, overall=0, team=team, position=position,
                 matches=0, goals=0, assists=0, ga=0, rating=0,
                 trophies=0, golden_balls=0, golden_boots=0, golden_boys=0,
-                nation=None, status=None,
+                nation=None, status=None, yellow_cards=0, red_cards=0,
             )
 
         session.add(player)
@@ -260,7 +276,10 @@ def print_roster_cheat_sheet(home_team: str, away_team: str, tournament: str = '
 
 def add_player_stats(name: str, position: str, team: str, goals: int = 0, assists: int = 0,
                      clean_sheet: bool = False, tournament: str = 'league', auto_find: bool = False,
-                     match_for_cs: tuple = None, create_if_missing: bool = False):
+                     match_for_cs: tuple = None, create_if_missing: bool = False,
+                     discipline_league_code: str | None = None,
+                     schedule_day: int | None = None,
+                     skip_discipline_check: bool = False):
     """
     Добавить статистику игрока после матча.
 
@@ -315,6 +334,25 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
     if not player:
         print(f"  ✗ Не удалось найти/создать игрока {name}")
         return False
+
+    if not create_if_missing and not skip_discipline_check:
+        from utils.player_discipline import check_player_eligible, get_calendar_month
+
+        lc = discipline_league_code
+        if lc is None and match_for_cs and len(match_for_cs) >= 2:
+            lc = infer_league_code_for_stats(match_for_cs[0], match_for_cs[1], tournament)
+        msched = get_calendar_month(schedule_day)
+        if lc:
+            el, msg = check_player_eligible(
+                player.name,
+                team,
+                league_code=lc,
+                tournament=tournament,
+                schedule_month=msched,
+            )
+            if not el:
+                print(f"  {msg}")
+                return False
 
     position = player.position
     pos_type = get_position_type(position)
@@ -581,6 +619,10 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
     print("  Одно число в конце = только голы, 0 передач (напр. «игрок 1» → 1+0). Нужны 1+1: «игрок 1 1» или «игрок 1+1».")
     print("Режимы: 1 — только из БД (по умолчанию)  |  2 — новый игрок (создать при отсутствии)")
     print("Сторона: h/х — хозяева, a/г — гости")
+    print(
+        "Дисциплина/травмы: бастони жк  |  бастони 2жк  |  бастони кк  |  симонс 4м "
+        "(номер месяца календаря можно задать в data/calendar_month.txt при вводе без слота)"
+    )
     print("-" * 50)
 
     home_cs = away_score == 0
@@ -621,6 +663,30 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
         if low in ('a', 'away', 'г', 'гости'):
             current_team = away_team
             print(f"  → {away_team}")
+            continue
+
+        from utils.player_discipline import (
+            get_calendar_month,
+            line_looks_discipline,
+            try_apply_discipline_line,
+        )
+
+        st_tourn = "cl" if tournament == "cl" else "league"
+        lc_inf = infer_league_code_for_stats(home_team, away_team, st_tourn)
+        msched = get_calendar_month(None)
+        if line_looks_discipline(player_input):
+            dm, h = try_apply_discipline_line(
+                player_input,
+                current_team=current_team,
+                tournament=st_tourn,
+                league_code=lc_inf,
+                schedule_month=msched,
+            )
+            if h:
+                if dm:
+                    print(f"  {dm}")
+            else:
+                print("  Не разобрать дисциплину. Формат: «… жк» / «… 2жк» / «… кк» / «… 4м»")
             continue
 
         line = player_input
@@ -673,6 +739,8 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
                 auto_find=pdata.get('auto_find', False),
                 match_for_cs=(home_team, away_team, home_score, away_score),
                 create_if_missing=mode_new,
+                discipline_league_code=lc_inf,
+                schedule_day=None,
             )
 
             if ok:
@@ -715,6 +783,8 @@ def apply_stats_bot_line(
     tournament: str,
     current_team: str,
     mode_new: bool,
+    league_code: str | None = None,
+    schedule_day: int | None = None,
 ) -> tuple[str, str, bool]:
     """
     Одна строка ввода статистики для бота (без input()).
@@ -722,6 +792,8 @@ def apply_stats_bot_line(
     """
     import contextlib
     import io
+
+    from utils.player_discipline import get_calendar_month, line_looks_discipline, try_apply_discipline_line
 
     raw = (line or "").strip()
     if not raw:
@@ -740,6 +812,26 @@ def apply_stats_bot_line(
         return (f"Сторона ввода: {home_team}", home_team, mode_new)
     if low in ("a", "away", "г", "гости"):
         return (f"Сторона ввода: {away_team}", away_team, mode_new)
+
+    st_tourn = "cl" if (tournament or "") == "cl" else "league"
+    lc = league_code or infer_league_code_for_stats(home_team, away_team, st_tourn)
+    msched = get_calendar_month(schedule_day)
+
+    if line_looks_discipline(raw):
+        dmsg, handled = try_apply_discipline_line(
+            raw,
+            current_team=current_team,
+            tournament=st_tourn,
+            league_code=lc,
+            schedule_month=msched,
+        )
+        if handled:
+            return (dmsg or "—", current_team, mode_new)
+        return (
+            "Не удалось разобрать дисциплину. Формат: «фамилия жк» / «… 2жк» / «… кк» / «… 4м»",
+            current_team,
+            mode_new,
+        )
 
     match_for_cs = (home_team, away_team, home_score, away_score)
 
@@ -790,6 +882,8 @@ def apply_stats_bot_line(
             auto_find=pdata.get("auto_find", False),
             match_for_cs=match_for_cs,
             create_if_missing=mode_new,
+            discipline_league_code=lc,
+            schedule_day=schedule_day,
         )
     out = buf2.getvalue().strip()
     if not ok_add:

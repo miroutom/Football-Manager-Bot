@@ -5,8 +5,10 @@ import os
 from config.leagues_config import england, spain, italy, germany, rpl
 from utils.utils import PROJECT_ROOT
 
-# Абсолютный путь к папке с pickle (работает при запуске из любой директории)
-PICKLE_DIR = os.path.join(PROJECT_ROOT, 'pickle')
+def get_pickle_dir() -> str:
+    """Папка с *.pkl (legacy: project/pickle; сезон: db/season_n/pickle)."""
+    from utils.season_paths import get_pickle_directory, ensure_pickle_subdir
+    return ensure_pickle_subdir()
 
 # Лига Чемпионов — 30 команд (15 Roman + 15 Lika), фиксированный список
 def _get_cl_teams():
@@ -18,9 +20,9 @@ champ_league = _get_cl_teams()
 
 def ensure_pickle_dir():
     """Создать папку pickle если её нет"""
-    if not os.path.exists(PICKLE_DIR):
-        os.makedirs(PICKLE_DIR)
-        print(f"Создана папка {PICKLE_DIR}")
+    if not os.path.exists(get_pickle_dir()):
+        os.makedirs(get_pickle_dir())
+        print(f"Создана папка {get_pickle_dir()}")
 
 
 def save_teams(filename, teams):
@@ -56,12 +58,12 @@ def load_or_create_teams(filename, team_list):
 # Загружаем или создаём команды
 ensure_pickle_dir()
 
-teams_rpl = load_or_create_teams(f'{PICKLE_DIR}/rpl_teams.pkl', rpl)
-teams_eng = load_or_create_teams(f'{PICKLE_DIR}/england_teams.pkl', england)
-teams_spain = load_or_create_teams(f'{PICKLE_DIR}/spain_teams.pkl', spain)
-teams_italy = load_or_create_teams(f'{PICKLE_DIR}/italy_teams.pkl', italy)
-teams_germany = load_or_create_teams(f'{PICKLE_DIR}/germany_teams.pkl', germany)
-teams_champ_league = load_or_create_teams(f'{PICKLE_DIR}/champ_league_teams.pkl', champ_league)
+teams_rpl = load_or_create_teams(f'{get_pickle_dir()}/rpl_teams.pkl', rpl)
+teams_eng = load_or_create_teams(f'{get_pickle_dir()}/england_teams.pkl', england)
+teams_spain = load_or_create_teams(f'{get_pickle_dir()}/spain_teams.pkl', spain)
+teams_italy = load_or_create_teams(f'{get_pickle_dir()}/italy_teams.pkl', italy)
+teams_germany = load_or_create_teams(f'{get_pickle_dir()}/germany_teams.pkl', germany)
+teams_champ_league = load_or_create_teams(f'{get_pickle_dir()}/champ_league_teams.pkl', champ_league)
 
 
 def compare_head_to_head(team1, team2, teams_dict):
@@ -131,7 +133,7 @@ def reset_league(league_name):
         if league_name == 'cl':
             team_list = _get_cl_teams()  # пересчёт при сбросе
         teams = create_teams_dict(team_list)
-        save_teams(f'{PICKLE_DIR}/{filename}', teams)
+        save_teams(f'{get_pickle_dir()}/{filename}', teams)
 
         if league_name == 'rpl':
             teams_rpl = teams
@@ -158,7 +160,30 @@ def reset_all_teams():
     print("Все лиги сброшены. Новый сезон!")
 
 
-if __name__ == '__main__':
+def reload_teams_from_disk() -> None:
+    """Перезагрузить глобальные словари pickle (после смены каталога сезона)."""
+    global teams_rpl, teams_eng, teams_spain, teams_italy, teams_germany, teams_champ_league
+    pd = get_pickle_dir()
+    teams_rpl = load_or_create_teams(f"{pd}/rpl_teams.pkl", rpl)
+    teams_eng = load_or_create_teams(f"{pd}/england_teams.pkl", england)
+    teams_spain = load_or_create_teams(f"{pd}/spain_teams.pkl", spain)
+    teams_italy = load_or_create_teams(f"{pd}/italy_teams.pkl", italy)
+    teams_germany = load_or_create_teams(f"{pd}/germany_teams.pkl", germany)
+    teams_champ_league = load_or_create_teams(f"{pd}/champ_league_teams.pkl", champ_league)
+    # main.LEAGUES держит ссылки на старые dict — обновим
+    import sys
+    _main = sys.modules.get("main")
+    if _main is not None and hasattr(_main, "LEAGUES"):
+        L = _main.LEAGUES
+        L["1"]["teams"] = teams_rpl
+        L["2"]["teams"] = teams_eng
+        L["3"]["teams"] = teams_spain
+        L["4"]["teams"] = teams_italy
+        L["5"]["teams"] = teams_germany
+        L["6"]["teams"] = teams_champ_league
+
+
+if __name__ == "__main__":
     print("Инициализация pickle файлов...")
     reset_all_teams()
     print("Готово!")

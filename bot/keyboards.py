@@ -82,6 +82,16 @@ def main_menu_inline_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="🔄 Трансфер", callback_data="xfer:start"),
                 InlineKeyboardButton(text="🏅 Награды", callback_data="menu:awards"),
             ],
+            [
+                InlineKeyboardButton(
+                    text="⭐ Рейтинг (±overall)", callback_data="menu:rating"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⏹ Завершить сезон", callback_data="menu:end_season"
+                ),
+            ],
         ]
     )
 
