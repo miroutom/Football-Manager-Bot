@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Синхронизация заявки команды: overall, nation, position, status; удаление лишних игроков;
-вставка отсутствующих строк. Скрипт: ``scripts/sync_england_apl_rosters.py``.
+Синхронизация заявки команды: overall, nation, position, status; опционально удаление лишних
+игроков (``prune``). Скрипты: ``scripts/sync_england_apl_rosters.py``,
+``scripts/sync_all_national_rosters.py`` (все нац. лиги разом).
 
 Полный прогон АПЛ по умолчанию пишет в ``league_new.db`` и (только для клубов из пула ЛЧ —
 ``_team_in_cl_pool``, те же ключи что ``teams_champ_league`` / участники из ``get_cl_participants``)
@@ -308,11 +309,16 @@ def run_squads_sync(
     label: str = "squads",
     tournaments: tuple[str, ...] | None = None,
     rebuild_common: bool = True,
+    prune: bool = True,
 ) -> dict[str, dict[str, dict[str, int]]]:
     """
     Миграция ``status`` во все SQLite (лига + ЛЧ + common), затем синк переданного словаря заявок.
 
     Для ``cl`` — только команды из ``_team_in_cl_pool`` (участники ЛЧ).
+
+    ``prune``: если True — удалить из команды строк игроков, которых нет в переданной заявке.
+    Если False — только upsert по списку; лишние строки в БД не трогаются (стата не теряется
+    из‑за расхождения имён).
     """
     from utils.migrate_player_status import migrate_all_player_status_columns
 
@@ -328,7 +334,7 @@ def run_squads_sync(
         for team, rows in squads.items():
             if tkey in ("cl", "champ_league") and not _team_in_cl_pool(team):
                 continue
-            per_team[team] = sync_team_roster(session, team, rows, prune=True)
+            per_team[team] = sync_team_roster(session, team, rows, prune=prune)
         session.commit()
         out[tkey] = per_team
     if rebuild_common:
@@ -336,6 +342,31 @@ def run_squads_sync(
 
         rebuild_common_database()
     return out
+
+
+def run_all_national_leagues_roster_sync(
+    *,
+    prune: bool = False,
+    rebuild_common: bool = True,
+    tournaments: tuple[str, ...] | None = None,
+) -> dict[str, dict[str, dict[str, int]]]:
+    """
+    Заявки **всех** нац. лиг из кода (АПЛ, Бундес, Серия А, Ла Лига, РПЛ) → рабочие league/cl (+ common).
+
+    По умолчанию ``prune=False``: не удалять игроков вне списка заявки (безопаснее для статистики).
+    Обновляются ``overall``, ``position``, ``nation``, ``status``; при смене позиции — перенос
+    между таблицами с сохранением carry (матчи, голы, …).
+    """
+    from utils.merged_national_squads import merged_national_squads
+
+    squads = merged_national_squads()
+    return run_squads_sync(
+        squads,
+        label="all_national_leagues",
+        tournaments=tournaments,
+        rebuild_common=rebuild_common,
+        prune=prune,
+    )
 
 
 def run_full_england_sync(

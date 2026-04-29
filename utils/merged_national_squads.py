@@ -15,7 +15,7 @@ Row = Tuple[str, str, int, Optional[str], str]
 
 
 def merged_national_squads() -> dict[str, list[Row]]:
-    out: dict[str, list[RosterRow]] = {}
+    out: dict[str, list[Row]] = {}
     for part in (
         ENGLAND_APL_SQUADS,
         GERMANY_BUNDESLIGA_SQUADS,
