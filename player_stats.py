@@ -1061,6 +1061,122 @@ def format_top_scorers_from_session(
     return buf.getvalue()
 
 
+def format_top_assists_from_session(
+    session,
+    league_code: Optional[str] = None,
+    limit: int = 20,
+    title_suffix: str = "",
+) -> str:
+    all_players: list[dict] = []
+    filter_teams = None
+    if league_code == "cl":
+        import teams as teams_mod
+
+        filter_teams = [t.lower() for t in teams_mod.teams_champ_league.keys()]
+    elif league_code and league_code in LEAGUE_TEAMS:
+        filter_teams = [t.lower() for t in LEAGUE_TEAMS[league_code]]
+
+    for PlayerClass in (Forward, Midfielder, Defender):
+        try:
+            for p in session.query(PlayerClass).filter(PlayerClass.assists > 0).all():
+                if filter_teams and p.team.lower() not in filter_teams:
+                    continue
+                all_players.append(
+                    {
+                        "name": p.name,
+                        "team": p.team,
+                        "position": p.position,
+                        "goals": p.goals,
+                        "assists": p.assists,
+                        "ga": p.ga,
+                        "matches": p.matches,
+                    }
+                )
+        except Exception:
+            pass
+
+    all_players.sort(key=lambda x: (-x["assists"], -x["goals"]))
+    base_name = LEAGUE_NAMES.get(league_code, "Все лиги")
+    league_name = f"{base_name}{title_suffix}"
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        print(f"\n{'='*65}")
+        print(f"  ТОП-{limit} АССИСТЕНТОВ - {league_name}")
+        print(f"{'='*65}")
+        print(
+            f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} {'А':<4} {'Г':<4} {'Г+А':<5}"
+        )
+        print("-" * 65)
+        if not all_players:
+            print("  Нет данных")
+        else:
+            for i, p in enumerate(all_players[:limit], 1):
+                print(
+                    f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
+                    f"{p['assists']:<4} {p['goals']:<4} {p['ga']:<5}"
+                )
+    return buf.getvalue()
+
+
+def format_top_ga_from_session(
+    session,
+    league_code: Optional[str] = None,
+    limit: int = 20,
+    title_suffix: str = "",
+) -> str:
+    all_players: list[dict] = []
+    filter_teams = None
+    if league_code == "cl":
+        import teams as teams_mod
+
+        filter_teams = [t.lower() for t in teams_mod.teams_champ_league.keys()]
+    elif league_code and league_code in LEAGUE_TEAMS:
+        filter_teams = [t.lower() for t in LEAGUE_TEAMS[league_code]]
+
+    for PlayerClass in (Forward, Midfielder, Defender):
+        try:
+            for p in session.query(PlayerClass).filter(PlayerClass.ga > 0).all():
+                if filter_teams and p.team.lower() not in filter_teams:
+                    continue
+                all_players.append(
+                    {
+                        "name": p.name,
+                        "team": p.team,
+                        "position": p.position,
+                        "goals": p.goals,
+                        "assists": p.assists,
+                        "ga": p.ga,
+                        "matches": p.matches,
+                    }
+                )
+        except Exception:
+            pass
+
+    all_players.sort(key=lambda x: (-x["ga"], -x["goals"]))
+    base_name = LEAGUE_NAMES.get(league_code, "Все лиги")
+    league_name = f"{base_name}{title_suffix}"
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        print(f"\n{'='*65}")
+        print(f"  ТОП-{limit} ПО Г+А - {league_name}")
+        print(f"{'='*65}")
+        print(
+            f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} {'Г+А':<5} {'Г':<4} {'А':<4}"
+        )
+        print("-" * 65)
+        if not all_players:
+            print("  Нет данных")
+        else:
+            for i, p in enumerate(all_players[:limit], 1):
+                print(
+                    f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
+                    f"{p['ga']:<5} {p['goals']:<4} {p['assists']:<4}"
+                )
+    return buf.getvalue()
+
+
 def show_top_assistants(tournament: str = 'league', league_code: str = None, limit: int = 20):
     """
     Показать топ ассистентов

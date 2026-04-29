@@ -454,7 +454,7 @@ def render_journal_report(limit: int = 120) -> str:
 
 
 def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> str:
-    """Топ бомбардиров из db/common.db (сумма по всем завершённым сезонам)."""
+    """Топ бомбардиров из db/common_synced.db (накопление по всем сезонам)."""
     import os
 
     from sqlalchemy import create_engine
@@ -467,7 +467,7 @@ def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> s
     if not os.path.isfile(p):
         return (
             "Накопительная база ещё пуста. После первого «Завершить сезон» "
-            "появятся db/league.db, db/champions_league.db и db/common.db."
+            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
         )
     e = create_engine(f"sqlite:///{p}")
     S = sessionmaker(bind=e)()
@@ -477,19 +477,84 @@ def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> s
             S,
             league_code=lc,
             limit=limit,
-            title_suffix=" — все сезоны (db/common.db)",
+            title_suffix=" — все сезоны (common_synced.db)",
         )
     finally:
         S.close()
         e.dispose()
 
 
-def render_archived_season_top_scorers(
+def render_cumulative_top_assists(league_code: str | None, limit: int = 30) -> str:
+    """Топ ассистов из db/common_synced.db (все сезоны)."""
+    import os
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    import player_stats
+    from utils import season_paths
+
+    p = season_paths.get_cumulative_common_db_path()
+    if not os.path.isfile(p):
+        return (
+            "Накопительная база ещё пуста. После первого «Завершить сезон» "
+            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
+        )
+    e = create_engine(f"sqlite:///{p}")
+    S = sessionmaker(bind=e)()
+    try:
+        lc = None if not league_code or league_code in ("a", "all") else league_code
+        return player_stats.format_top_assists_from_session(
+            S,
+            league_code=lc,
+            limit=limit,
+            title_suffix=" — все сезоны (common_synced.db)",
+        )
+    finally:
+        S.close()
+        e.dispose()
+
+
+def render_cumulative_top_ga(league_code: str | None, limit: int = 30) -> str:
+    """Топ Г+А из db/common_synced.db (все сезоны)."""
+    import os
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    import player_stats
+    from utils import season_paths
+
+    p = season_paths.get_cumulative_common_db_path()
+    if not os.path.isfile(p):
+        return (
+            "Накопительная база ещё пуста. После первого «Завершить сезон» "
+            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
+        )
+    e = create_engine(f"sqlite:///{p}")
+    S = sessionmaker(bind=e)()
+    try:
+        lc = None if not league_code or league_code in ("a", "all") else league_code
+        return player_stats.format_top_ga_from_session(
+            S,
+            league_code=lc,
+            limit=limit,
+            title_suffix=" — все сезоны (common_synced.db)",
+        )
+    finally:
+        S.close()
+        e.dispose()
+
+
+def render_archived_season_stat(
     season_num: int,
     league_code: str | None,
+    metric: str,
     limit: int = 30,
 ) -> str:
-    """Топ из архива db/season_n (пересборка common во временный файл)."""
+    """
+    Топ из архива db/season_n: metric — ``g`` | ``as`` | ``ga`` (пересборка common во временный файл).
+    """
     import os
     import tempfile
 
@@ -499,6 +564,16 @@ def render_archived_season_top_scorers(
     import player_stats
     from utils import season_paths
     from utils.common_db import rebuild_common_database_for_disk_paths
+
+    m = (metric or "g").lower()
+    if m in ("goals", "g"):
+        mkey = "g"
+    elif m in ("assists", "as", "a"):
+        mkey = "as"
+    elif m in ("ga", "g+a"):
+        mkey = "ga"
+    else:
+        return f"Неизвестная метрика: {metric!r}"
 
     base = season_paths.season_archive_directory(season_num)
     lp = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
@@ -510,17 +585,23 @@ def render_archived_season_top_scorers(
 
     fd, tmp = tempfile.mkstemp(suffix=".db")
     os.close(fd)
+    suf = f" — сезон {season_num} (архив)"
     try:
         rebuild_common_database_for_disk_paths(lp, cp, tmp)
         e = create_engine(f"sqlite:///{tmp}")
         S = sessionmaker(bind=e)()
         try:
             lc = None if not league_code or league_code in ("a", "all") else league_code
-            return player_stats.format_top_scorers_from_session(
-                S,
-                league_code=lc,
-                limit=limit,
-                title_suffix=f" — сезон {season_num} (архив)",
+            if mkey == "g":
+                return player_stats.format_top_scorers_from_session(
+                    S, league_code=lc, limit=limit, title_suffix=suf
+                )
+            if mkey == "as":
+                return player_stats.format_top_assists_from_session(
+                    S, league_code=lc, limit=limit, title_suffix=suf
+                )
+            return player_stats.format_top_ga_from_session(
+                S, league_code=lc, limit=limit, title_suffix=suf
             )
         finally:
             S.close()
@@ -530,6 +611,15 @@ def render_archived_season_top_scorers(
             os.remove(tmp)
         except OSError:
             pass
+
+
+def render_archived_season_top_scorers(
+    season_num: int,
+    league_code: str | None,
+    limit: int = 30,
+) -> str:
+    """Топ бомбардиров из архива db/season_n."""
+    return render_archived_season_stat(season_num, league_code, "g", limit)
 
 
 def split_text_chunks(text: str, max_len: int = 3800) -> list[str]:

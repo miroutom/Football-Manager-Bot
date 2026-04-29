@@ -54,23 +54,19 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
         ],
         [
             InlineKeyboardButton(text="⏭ След. матч", callback_data="menu:next"),
-        ],
-        [
             InlineKeyboardButton(text="⏸ Пропуски", callback_data="menu:skipped"),
-            InlineKeyboardButton(text="📜 Журнал", callback_data="menu:journal"),
         ],
         [
             InlineKeyboardButton(text="📅 Расписание", callback_data="menu:schedule"),
-            InlineKeyboardButton(text="📊 Стата без матча", callback_data="menu:stats_match"),
+            InlineKeyboardButton(text="📜 Журнал", callback_data="menu:journal"),
         ],
         [
+            InlineKeyboardButton(text="📊 Стата без матча", callback_data="menu:stats_match"),
             InlineKeyboardButton(text="📚 Стата сезонов", callback_data="menu:stats_history"),
         ],
         [
             InlineKeyboardButton(text="🔢 Топ-100 всего", callback_data="menu:top100"),
             InlineKeyboardButton(text="📈 Ещё топы (+ЛЧ)", callback_data="menu:tops_plus"),
-        ],
-        [
             InlineKeyboardButton(text="👥 Голеадоры по клубам", callback_data="menu:tgs_league"),
         ],
         [
@@ -82,8 +78,6 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
         [
             InlineKeyboardButton(text="🔄 Трансфер", callback_data="xfer:start"),
             InlineKeyboardButton(text="🏅 Награды", callback_data="menu:awards"),
-        ],
-        [
             InlineKeyboardButton(
                 text="⭐ Рейтинг (±overall)", callback_data="menu:rating"
             ),

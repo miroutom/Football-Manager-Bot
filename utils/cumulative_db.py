@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Накопительные БД в корне ``db/``: ``league.db``, ``champions_league.db``, ``common.db``.
-При завершении сезона в них добавляется снимок из ``db/season_N/`` (или из архива при legacy).
+Накопительная стата за все сезоны — ``db/league_synced.db``, ``db/champions_league_synced.db``,
+``db/common_synced.db`` (пути через ``season_paths.get_cumulative_*``).
 
-Раньше использовалась папка ``db/cumulative/`` — один раз переносим оттуда файлы, если
-в корне ``db/`` ещё нет накопительных файлов.
+При завершении сезона в них добавляется снимок из ``db/season_N/``.
+
+Миграции: старая папка ``db/cumulative/`` и плоские ``db/league.db`` (устар.) — перенос в synced,
+если целевого файла ещё нет.
 """
 from __future__ import annotations
 
@@ -37,6 +39,20 @@ def _migrate_old_cumulative_subfolder() -> None:
         src = os.path.join(old_d, name)
         if os.path.isfile(src) and not os.path.isfile(dst):
             os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
+            shutil.copy2(src, dst)
+
+
+def _migrate_flat_root_all_time_dbs() -> None:
+    """Устаревшие ``db/league.db`` и т.п. → в ``*_synced.db``, если synced ещё нет."""
+    db = os.path.join(season_paths.PROJECT_ROOT, "db")
+    flat = [
+        ("league.db", season_paths.get_cumulative_league_db_path()),
+        ("champions_league.db", season_paths.get_cumulative_cl_db_path()),
+        ("common.db", season_paths.get_cumulative_common_db_path()),
+    ]
+    for name, dst in flat:
+        src = os.path.join(db, name)
+        if os.path.isfile(src) and not os.path.isfile(dst):
             shutil.copy2(src, dst)
 
 
@@ -130,6 +146,7 @@ def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[s
     """
     log: dict[str, Any] = {"cumulative": []}
     _migrate_old_cumulative_subfolder()
+    _migrate_flat_root_all_time_dbs()
     os.makedirs(os.path.join(season_paths.PROJECT_ROOT, "db"), exist_ok=True)
 
     if not os.path.isfile(league_path) or not os.path.isfile(cl_path):

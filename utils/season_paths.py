@@ -9,8 +9,9 @@
 В режиме per_season рабочие файлы: ``db/season_{active_season}/league.db``,
 ``champions_league.db``, ``common.db``; pickle — в ``.../pickle/``.
 
-Накопительная статистика за **все** сезоны лежит прямо в ``db/``:
-``db/league.db``, ``db/champions_league.db``, ``db/common.db`` (пополняются при завершении сезона).
+Накопительная статистика за **все** сезоны — те же файлы, что и в legacy-режиме:
+``db/league_synced.db``, ``db/champions_league_synced.db``, ``db/common_synced.db``
+(пополняются при завершении сезона; в per_season рабочие сезонные БД — в ``db/season_n/``).
 """
 from __future__ import annotations
 
@@ -109,18 +110,18 @@ def ensure_pickle_subdir() -> str:
 
 
 def get_cumulative_league_db_path() -> str:
-    """Общая накопительная БД национальных лиг (все сезоны)."""
-    return os.path.join(_DB, SEASON_LEAGUE_NAME)
+    """Общая накопительная БД национальных лиг (все сезоны) — ``league_synced.db``."""
+    return os.path.join(_DB, LEGACY_LEAGUE)
 
 
 def get_cumulative_cl_db_path() -> str:
-    """Общая накопительная БД ЛЧ (все сезоны)."""
-    return os.path.join(_DB, SEASON_CL_NAME)
+    """Общая накопительная БД ЛЧ (все сезоны) — ``champions_league_synced.db``."""
+    return os.path.join(_DB, LEGACY_CL)
 
 
 def get_cumulative_common_db_path() -> str:
-    """Общая объединённая БД (лига + ЛЧ), пересобирается из двух файлов выше."""
-    return os.path.join(_DB, SEASON_COMMON_NAME)
+    """Общая объединённая БД — ``common_synced.db`` (пересборка из двух synced выше)."""
+    return os.path.join(_DB, LEGACY_COMMON)
 
 
 def season_archive_directory(season_num: int) -> str:
@@ -129,9 +130,10 @@ def season_archive_directory(season_num: int) -> str:
 
 def repair_per_season_database_files() -> list[str]:
     """
-    Если в season_state режим per_season, а файлов league.db в папке сезона нет,
-    копируем из legacy *_synced.db в активную папку (восстановление после сбоя).
-    Возвращает список выполненных действий (для логов).
+    Если в папке активного сезона нет league.db / cl / common:
+    сначала пробуем ``db/season_{N-1}/`` + обнуление матчевой статистики (как при новом сезоне).
+    Иначе — из ``*_synced.db`` через то же обнуление (не копировать synced как слепой снимок:
+    там накопительная стата за все сезоны).
     """
     if is_legacy_mode():
         return []
@@ -141,16 +143,38 @@ def repair_per_season_database_files() -> list[str]:
     if os.path.isfile(league) and os.path.isfile(get_cl_db_path()) and os.path.isfile(get_common_db_path()):
         return actions
     os.makedirs(season_dir, exist_ok=True)
+
+    from utils.season_end import _clone_db_zero_stats
+
+    active = get_active_season()
+    prev = active - 1
+    if prev >= 1:
+        pdir = season_archive_directory(prev)
+        pl = os.path.join(pdir, SEASON_LEAGUE_NAME)
+        pc = os.path.join(pdir, SEASON_CL_NAME)
+        po = os.path.join(pdir, SEASON_COMMON_NAME)
+        if os.path.isfile(pl) and os.path.isfile(pc) and os.path.isfile(po):
+            if not os.path.isfile(league):
+                _clone_db_zero_stats(pl, league)
+                actions.append(f"restored {league} from season_{prev} (match stats zeroed)")
+            if not os.path.isfile(get_cl_db_path()):
+                _clone_db_zero_stats(pc, get_cl_db_path())
+                actions.append("restored cl from previous season")
+            if not os.path.isfile(get_common_db_path()):
+                _clone_db_zero_stats(po, get_common_db_path())
+                actions.append("restored common from previous season")
+            return actions
+
     leg_l = os.path.join(_DB, LEGACY_LEAGUE)
     leg_c = os.path.join(_DB, LEGACY_CL)
     leg_o = os.path.join(_DB, LEGACY_COMMON)
     if not os.path.isfile(league) and os.path.isfile(leg_l):
-        shutil.copy2(leg_l, league)
-        actions.append(f"restored {league} from legacy")
+        _clone_db_zero_stats(leg_l, league)
+        actions.append(f"restored {league} from {LEGACY_LEAGUE} (match stats zeroed)")
     if not os.path.isfile(get_cl_db_path()) and os.path.isfile(leg_c):
-        shutil.copy2(leg_c, get_cl_db_path())
-        actions.append("restored cl db from legacy")
+        _clone_db_zero_stats(leg_c, get_cl_db_path())
+        actions.append(f"restored cl from {LEGACY_CL} (match stats zeroed)")
     if not os.path.isfile(get_common_db_path()) and os.path.isfile(leg_o):
-        shutil.copy2(leg_o, get_common_db_path())
-        actions.append("restored common from legacy")
+        _clone_db_zero_stats(leg_o, get_common_db_path())
+        actions.append(f"restored common from {LEGACY_COMMON} (match stats zeroed)")
     return actions

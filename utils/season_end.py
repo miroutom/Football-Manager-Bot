@@ -21,6 +21,7 @@ _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
 
 def _zero_player_row(row: Any, Cls: type) -> None:
+    """Полный сброс строки (редко нужен отдельно от матчевой статистики)."""
     row.status = None
     row.trophies = 0
     row.golden_balls = 0
@@ -42,6 +43,27 @@ def _zero_player_row(row: Any, Cls: type) -> None:
         row.clean_sheets = 0
     if hasattr(row, "missed_goals"):
         row.missed_goals = 0
+
+
+def _zero_match_stats_for_new_season(row: Any, Cls: type) -> None:
+    """
+    Старт нового сезона: обнуляем только матчевую статистику (голы, передачи, матчи, карточки и т.д.).
+    Трофеи, награды сезона, overall/состав — сохраняем как в снимке после завершённого сезона.
+    """
+    row.matches = 0
+    row.rating = 0.0
+    if hasattr(row, "goals"):
+        row.goals = 0
+        row.assists = 0
+        row.ga = 0
+    if hasattr(row, "clean_sheets"):
+        row.clean_sheets = 0
+    if hasattr(row, "missed_goals"):
+        row.missed_goals = 0
+    if hasattr(row, "yellow_cards"):
+        row.yellow_cards = 0
+    if hasattr(row, "red_cards"):
+        row.red_cards = 0
 
 
 def _inc_trophies_all_players_of_team(
@@ -111,7 +133,7 @@ def _copy_file(src: str, dst: str) -> None:
 
 
 def _clone_db_zero_stats(src: str, dst: str) -> None:
-    """Копия файла SQLite + обнуление матчевой/трофейной статистики."""
+    """Копия SQLite + обнуление только матчевой статистики для нового сезона (трофеи не трогаем)."""
     shutil.copy2(src, dst)
     eng = create_engine(f"sqlite:///{dst}")
     Sess = sessionmaker(bind=eng)
@@ -119,7 +141,7 @@ def _clone_db_zero_stats(src: str, dst: str) -> None:
     try:
         for Cls in _ALL:
             for row in s.query(Cls).all():
-                _zero_player_row(row, Cls)
+                _zero_match_stats_for_new_season(row, Cls)
         s.commit()
     finally:
         s.close()
