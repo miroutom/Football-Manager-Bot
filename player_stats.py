@@ -1380,21 +1380,14 @@ def show_team_goalscorers_table(
     team: str,
     tournament: str = "league",
     standings_dict: Optional[dict] = None,
-    *,
-    session=None,
-    title_suffix: str = "",
 ) -> None:
     """
     Игроки команды с голом или передачей: И (матчи в БД), Г, А, Г+А по убыванию Г+А.
     Учитываются нападающие, полузащитники и защитники (голы > 0 или передачи > 0).
     Внизу: сумма голов игроков в списке, ЗМ по таблице и число матчей команды (pickle).
-
-    Если передан ``session`` (архивный sqlite), он используется вместо ``get_session``;
-    вызывающий код закрывает сессию и движок.
     """
     team = _team_name_as_in_db(team)
-    if session is None:
-        session = get_session(tournament)
+    session = get_session(tournament)
     rows = []
     for PlayerClass in (Forward, Midfielder, Defender):
         for p in session.query(PlayerClass).filter_by(team=team).all():
@@ -1418,9 +1411,8 @@ def show_team_goalscorers_table(
     width = 68
     sep = "=" * width
     tname = "Лига Чемпионов" if tournament in ("cl", "champ_league") else "национальные лиги"
-    suf = f" · {title_suffix}" if title_suffix else ""
     print(f"\n{sep}")
-    print(f"  Голы и передачи: {team} ({tname}){suf}")
+    print(f"  Голы и передачи: {team} ({tname})")
     print(sep)
     if not rows:
         print("  Нет игроков с голами или передачами в этой базе.")
@@ -1493,9 +1485,6 @@ def format_team_goalscorers_table_str(
     team: str,
     tournament: str = "league",
     standings_dict: Optional[dict] = None,
-    *,
-    session=None,
-    title_suffix: str = "",
 ) -> str:
     """Текст блока «голеадоры команды» — как show_team_goalscorers_table, для бота."""
     import contextlib
@@ -1503,22 +1492,11 @@ def format_team_goalscorers_table_str(
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        show_team_goalscorers_table(
-            team,
-            tournament,
-            standings_dict,
-            session=session,
-            title_suffix=title_suffix,
-        )
+        show_team_goalscorers_table(team, tournament, standings_dict)
     return buf.getvalue()
 
 
-def format_team_goalscorers_league_report(
-    league_code: str,
-    *,
-    session=None,
-    title_suffix: str = "",
-) -> str:
+def format_team_goalscorers_league_report(league_code: str) -> str:
     """Все команды лиги подряд — как пункт «b»→4 в консоли."""
     tournament = "cl" if league_code == "cl" else "league"
     import teams as teams_mod
@@ -1539,22 +1517,13 @@ def format_team_goalscorers_league_report(
     }
     standings = standings_by_code.get(league_code)
 
-    head_extra = f" · {title_suffix}" if title_suffix else ""
     parts = [
         "\n" + "=" * 60,
-        f"  {league_name} — голеадоры всех команд{head_extra}",
+        f"  {league_name} — голеадоры всех команд",
         "=" * 60 + "\n",
     ]
     for team in teams:
-        parts.append(
-            format_team_goalscorers_table_str(
-                team,
-                tournament,
-                standings,
-                session=session,
-                title_suffix=title_suffix,
-            )
-        )
+        parts.append(format_team_goalscorers_table_str(team, tournament, standings))
     return "".join(parts)
 
 
