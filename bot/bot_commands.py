@@ -11,7 +11,7 @@ async def setup_bot_commands(bot: Bot) -> None:
             BotCommand(command="start", description="Начало, нижнее меню и кнопки"),
             BotCommand(command="menu", description="Главное меню"),
             BotCommand(command="help", description="Справка по всем действиям"),
-            BotCommand(command="cancel", description="Отменить ввод счёта, статы или трансфера"),
+            BotCommand(command="cancel", description="Отменить ввод счёта, статы, трансфера или наград"),
             BotCommand(command="play_next", description="Записать следующий матч по календарю"),
             BotCommand(command="match", description="Записать матч вручную (клубы и счёт)"),
             BotCommand(command="play_skipped", description="Сыграть из списка отложенных"),
@@ -28,5 +28,9 @@ async def setup_bot_commands(bot: Bot) -> None:
             BotCommand(command="queue", description="Очередь ближайших матчей"),
             BotCommand(command="skipped", description="Отложенные матчи (просмотр)"),
             BotCommand(command="journal", description="Журнал сыгранных матчей"),
+            BotCommand(
+                command="awards",
+                description="Награды сезона (ЗМ, бутса, перчатка, Golden Boy)",
+            ),
         ],
     )

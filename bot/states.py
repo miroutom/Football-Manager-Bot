@@ -42,3 +42,8 @@ class TransferEnter(StatesGroup):
     from_team = State()
     position = State()
     to_team = State()
+
+
+class AwardEnter(StatesGroup):
+    """Награды сезона: после выбора вида, лиги, клуба — ввод имени игрока."""
+    wait_name = State()

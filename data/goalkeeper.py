@@ -59,5 +59,8 @@ class Goalkeeper(Base):
     missed_goals = Column(Integer, default=0)
     trophies = Column(Integer, default=0)
     golden_balls = Column(Integer, default=0)
+    golden_boots = Column(Integer, default=0)
+    golden_gloves = Column(Integer, default=0)
+    golden_boys = Column(Integer, default=0)
     nation = Column(String, nullable=True)
     status = Column(String, nullable=True)

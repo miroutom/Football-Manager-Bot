@@ -70,6 +70,7 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
                     "trophies": 0,
                     "golden_balls": 0,
                     "golden_boots": 0,
+                    "golden_boys": 0,
                     "clean_sheets": 0,
                     "overall_num": 0,
                     "overall_den": 0,
@@ -93,6 +94,7 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
             b["golden_balls"] += int(getattr(p, "golden_balls", 0) or 0)
             if hasattr(p, "golden_boots"):
                 b["golden_boots"] += int(getattr(p, "golden_boots", 0) or 0)
+            b["golden_boys"] += int(getattr(p, "golden_boys", 0) or 0)
             if hasattr(p, "clean_sheets"):
                 b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)
             if m > 0:
@@ -127,6 +129,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
                     golden_boots=b["golden_boots"],
+                    golden_boys=b["golden_boys"],
                     nation=b.get("nation"),
                     status=b.get("status"),
                 )
@@ -146,6 +149,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
                     golden_boots=b["golden_boots"],
+                    golden_boys=b["golden_boys"],
                     nation=b.get("nation"),
                     status=b.get("status"),
                 )
@@ -165,6 +169,8 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     clean_sheets=b["clean_sheets"],
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
+                    golden_boots=b["golden_boots"],
+                    golden_boys=b["golden_boys"],
                     nation=b.get("nation"),
                     status=b.get("status"),
                 )
@@ -213,6 +219,9 @@ def rebuild_common_database(
                     "missed_goals": 0,
                     "trophies": 0,
                     "golden_balls": 0,
+                    "golden_boots": 0,
+                    "golden_gloves": 0,
+                    "golden_boys": 0,
                     "overall_num": 0,
                     "overall_den": 0,
                     "rating_num": 0.0,
@@ -233,6 +242,9 @@ def rebuild_common_database(
             b["missed_goals"] += int(getattr(p, "missed_goals", 0) or 0)
             b["trophies"] += int(getattr(p, "trophies", 0) or 0)
             b["golden_balls"] += int(getattr(p, "golden_balls", 0) or 0)
+            b["golden_boots"] += int(getattr(p, "golden_boots", 0) or 0)
+            b["golden_gloves"] += int(getattr(p, "golden_gloves", 0) or 0)
+            b["golden_boys"] += int(getattr(p, "golden_boys", 0) or 0)
             if m > 0:
                 b["overall_num"] += int(p.overall or 0) * m
                 b["overall_den"] += m
@@ -255,6 +267,9 @@ def rebuild_common_database(
                 missed_goals=b["missed_goals"],
                 trophies=b["trophies"],
                 golden_balls=b["golden_balls"],
+                golden_boots=b["golden_boots"],
+                golden_gloves=b["golden_gloves"],
+                golden_boys=b["golden_boys"],
                 nation=b.get("nation"),
                 status=b.get("status"),
             )

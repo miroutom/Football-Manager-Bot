@@ -387,6 +387,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "AddOnlyStats",
             "ClPenalties",
             "TransferEnter",
+            "AwardEnter",
         ),
     ):
         return
@@ -399,6 +400,8 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         await message.answer("Ввод пенальти отменён.")
     elif str(cur).startswith("TransferEnter"):
         await message.answer("Трансфер отменён.")
+    elif str(cur).startswith("AwardEnter"):
+        await message.answer("Награды: отменено.")
     else:
         await message.answer("Ввод счёта отменён.")
 
