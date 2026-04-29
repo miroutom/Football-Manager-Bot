@@ -1,70 +1,87 @@
 # -*- coding: utf-8 -*-
-"""Начисление индивидуальных наград (сезон) в БД лиги/ЛЧ."""
+"""
+Начисление +1 к полю награды у игрока (строка в БД лиги и, если есть, ЛЧ) и пересборка common.db.
+"""
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from data.goalkeeper import Goalkeeper
-from player_stats import find_player_by_name
 from utils.common_db import rebuild_common_database
+from utils.squad_roster_sync import find_player_row
+from utils.utils import session_cl, session_league
 
 
-KIND_TITLES = {
-    "ball": "Золотой мяч (ЗМ)",
-    "glove": "Золотая перчатка",
-    "boot": "Золотая бутса",
-    "boy": "Golden Boy",
+@dataclass
+class AwardApplyResult:
+    league: int
+    cl: int
+    player_class: str
+
+
+_KIND_TO_ATTR: dict[str, str] = {
+    "ball": "golden_balls",
+    "boot": "golden_boots",
+    "glove": "golden_gloves",
+    "boy": "golden_boys",
 }
 
 
 def apply_trophy(
-    session,
-    team: str,
-    name: str,
     kind: str,
-) -> tuple[bool, str]:
+    player_name: str,
+    team: str,
+    *,
+    rebuild_common: bool = True,
+) -> AwardApplyResult:
     """
-    +1 в соответствующую колонку у найденного игрока.
-    kind: ball | glove | boot | boy
+    kind: ball | boot | glove | boy
     """
-    if kind not in KIND_TITLES:
-        return False, f"Неизвестный вид награды: {kind!r}"
+    k = (kind or "").strip().lower()
+    attr = _KIND_TO_ATTR.get(k)
+    if not attr:
+        raise ValueError(f"Неизвестная награда: {kind!r}")
 
-    player, pos = find_player_by_name(session, name.strip(), team=team.strip())
-    if not player:
-        return (
-            False,
-            f"Игрок «{name.strip().title()}» в команде «{team.strip().title()}» не найден в базе.",
+    name = (player_name or "").strip()
+    team = (team or "").strip()
+    if len(name) < 2 or len(team) < 2:
+        raise ValueError("Имя и клуб слишком короткие")
+
+    n_league = 0
+    n_cl = 0
+    last_cls: str = ""
+
+    def _bump(session) -> int:
+        nonlocal last_cls
+        row, Cls = find_player_row(session, name, team)
+        if not row or not Cls:
+            return 0
+        if k == "glove" and Cls is not Goalkeeper:
+            raise ValueError("Золотая перчатка только для вратарей (позиция ВР в БД).")
+        cur = int(getattr(row, attr, 0) or 0)
+        setattr(row, attr, cur + 1)
+        last_cls = Cls.__name__
+        return 1
+
+    try:
+        n_league = _bump(session_league)
+        n_cl = _bump(session_cl)
+    except ValueError:
+        session_league.rollback()
+        session_cl.rollback()
+        raise
+    if n_league == 0 and n_cl == 0:
+        session_league.rollback()
+        session_cl.rollback()
+        raise ValueError(
+            "Игрок не найден в БД (проверь имя и клуб как в игре, без лишних пробелов)."
         )
 
-    if kind == "glove" and pos != "goalkeeper":
-        return (
-            False,
-            "Золотая перчатка выдаётся только вратарю (в базе позиция ВРТ).",
-        )
+    session_league.commit()
+    session_cl.commit()
 
-    if kind == "ball":
-        player.golden_balls = int(getattr(player, "golden_balls", 0) or 0) + 1
-    elif kind == "glove":
-        if not isinstance(player, Goalkeeper):
-            return False, "Вратарь не найден (внутренняя проверка)."
-        player.golden_gloves = int(getattr(player, "golden_gloves", 0) or 0) + 1
-    elif kind == "boot":
-        player.golden_boots = int(getattr(player, "golden_boots", 0) or 0) + 1
-    else:  # boy
-        player.golden_boys = int(getattr(player, "golden_boys", 0) or 0) + 1
-
-    session.commit()
-    t = KIND_TITLES[kind]
-    pl_name = player.name
-    pl_team = player.team
-    pos_ru = getattr(player, "position", "")
-    return (
-        True,
-        f"✓ {t}\n"
-        f"<b>{pl_name}</b> · {pl_team} · {pos_ru}\n"
-        f"Счётчик +1 (в «{t}»).",
+    if rebuild_common:
+        rebuild_common_database()
+    return AwardApplyResult(
+        league=n_league, cl=n_cl, player_class=last_cls or "—"
     )
-
-
-def save_trophy_and_rebuild_common() -> None:
-    """После правки league/cl пересобрать common (как после трансфера)."""
-    rebuild_common_database()

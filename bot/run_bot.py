@@ -37,7 +37,9 @@ async def main() -> None:
     try:
         await asyncio.to_thread(migrate_player_awards_columns)
     except Exception:
-        logging.getLogger(__name__).exception("Миграция наград (колонки golden_*)")
+        logging.getLogger(__name__).exception(
+            "Не удалось применить миграции наград (golden_boots, golden_boys, …)"
+        )
         raise
     token = get_bot_token()
     dp = Dispatcher(storage=MemoryStorage())

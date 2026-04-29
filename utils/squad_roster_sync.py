@@ -85,7 +85,16 @@ def _merge_carry_dicts(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
         "trophies": int(a.get("trophies", 0) or 0) + int(b.get("trophies", 0) or 0),
         "golden_balls": int(a.get("golden_balls", 0) or 0) + int(b.get("golden_balls", 0) or 0),
     }
-    for k in ("goals", "assists", "ga", "golden_boots", "clean_sheets", "missed_goals"):
+    for k in (
+        "goals",
+        "assists",
+        "ga",
+        "golden_boots",
+        "golden_boys",
+        "golden_gloves",
+        "clean_sheets",
+        "missed_goals",
+    ):
         if k in a or k in b:
             out[k] = int(a.get(k, 0) or 0) + int(b.get(k, 0) or 0)
     return out
@@ -139,6 +148,7 @@ def _new_player_kwargs(
         trophies=int(c.get("trophies", 0) or 0),
         golden_balls=int(c.get("golden_balls", 0) or 0),
     )
+    kw["golden_boys"] = int(c.get("golden_boys", 0) or 0)
     if tgt_cls is Forward:
         kw.update(
             goals=int(c.get("goals", 0) or 0),
@@ -159,11 +169,14 @@ def _new_player_kwargs(
             assists=int(c.get("assists", 0) or 0),
             ga=int(c.get("ga", 0) or 0),
             clean_sheets=int(c.get("clean_sheets", 0) or 0),
+            golden_boots=int(c.get("golden_boots", 0) or 0),
         )
     else:
         kw.update(
             clean_sheets=int(c.get("clean_sheets", 0) or 0),
             missed_goals=int(c.get("missed_goals", 0) or 0),
+            golden_boots=int(c.get("golden_boots", 0) or 0),
+            golden_gloves=int(c.get("golden_gloves", 0) or 0),
         )
     return kw
 
@@ -181,10 +194,16 @@ def _carry_from_row(row: Any) -> dict[str, Any]:
         out["ga"] = getattr(row, "ga", 0)
     if hasattr(row, "golden_boots"):
         out["golden_boots"] = getattr(row, "golden_boots", 0)
-    if hasattr(row, "clean_sheets"):
+    if hasattr(row, "golden_boys"):
+        out["golden_boys"] = getattr(row, "golden_boys", 0)
+    if hasattr(row, "clean_sheets") and not hasattr(row, "goals"):
+        out["clean_sheets"] = getattr(row, "clean_sheets", 0)
+    elif hasattr(row, "clean_sheets"):
         out["clean_sheets"] = getattr(row, "clean_sheets", 0)
     if hasattr(row, "missed_goals"):
         out["missed_goals"] = getattr(row, "missed_goals", 0)
+    if hasattr(row, "golden_gloves"):
+        out["golden_gloves"] = getattr(row, "golden_gloves", 0)
     return out
 
 

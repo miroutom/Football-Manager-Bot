@@ -401,7 +401,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
     elif str(cur).startswith("TransferEnter"):
         await message.answer("Трансфер отменён.")
     elif str(cur).startswith("AwardEnter"):
-        await message.answer("Награды: отменено.")
+        await message.answer("Ввод награды отменён.")
     else:
         await message.answer("Ввод счёта отменён.")
 

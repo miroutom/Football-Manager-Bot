@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Колонки наград: golden_boys (все позиции), golden_gloves (вратари),
-golden_boots (у защитников — при отсутствии в старых БД).
-
-Идемпотентно: ADD COLUMN, игнор «duplicate column».
+Идемпотентно добавляет колонки наград (золотой мяч, бутса, перчатка, golden boy) к таблицам
+игроков в league / cl / common SQLite, если их ещё нет.
+Вызывется при старте бота после migrate_all_player_status_columns.
 """
 from __future__ import annotations
 
@@ -22,22 +21,21 @@ from utils.utils import engine_cl, engine_common, engine_league
 
 logger = logging.getLogger(__name__)
 
-
-def _add_column(conn, table: str, coldef: str) -> bool:
-    try:
-        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {coldef}"))
-        return True
-    except OperationalError as e:
-        if "duplicate column name" not in str(e).lower():
-            raise
-        return False
+# (table, column, sqlite_type) — в порядке, без дубликатов
+_ALTER: list[tuple[str, str, str]] = [
+    ("forwards", "golden_boots", "INTEGER NOT NULL DEFAULT 0"),
+    ("midfielders", "golden_boots", "INTEGER NOT NULL DEFAULT 0"),
+    ("forwards", "golden_boys", "INTEGER NOT NULL DEFAULT 0"),
+    ("midfielders", "golden_boys", "INTEGER NOT NULL DEFAULT 0"),
+    ("defenders", "golden_boots", "INTEGER NOT NULL DEFAULT 0"),
+    ("defenders", "golden_boys", "INTEGER NOT NULL DEFAULT 0"),
+    ("goalkeepers", "golden_boots", "INTEGER NOT NULL DEFAULT 0"),
+    ("goalkeepers", "golden_gloves", "INTEGER NOT NULL DEFAULT 0"),
+    ("goalkeepers", "golden_boys", "INTEGER NOT NULL DEFAULT 0"),
+]
 
 
 def migrate_player_awards_columns() -> list[str]:
-    """
-    Все три рабочих SQLite: league, cl, common.
-    Возвращает список ``label:table:column`` для добавленных колонок.
-    """
     out: list[str] = []
     for engine, label in (
         (engine_league, "league"),
@@ -45,18 +43,15 @@ def migrate_player_awards_columns() -> list[str]:
         (engine_common, "common"),
     ):
         with engine.begin() as conn:
-            for table, coldef in (
-                ("forwards", "golden_boys INTEGER DEFAULT 0"),
-                ("midfielders", "golden_boys INTEGER DEFAULT 0"),
-                ("defenders", "golden_boots INTEGER DEFAULT 0"),
-                ("defenders", "golden_boys INTEGER DEFAULT 0"),
-                ("goalkeepers", "golden_boots INTEGER DEFAULT 0"),
-                ("goalkeepers", "golden_gloves INTEGER DEFAULT 0"),
-                ("goalkeepers", "golden_boys INTEGER DEFAULT 0"),
-            ):
-                if _add_column(conn, table, coldef):
-                    col = coldef.split()[0]
-                    out.append(f"{label}:{table}:{col}")
+            for table, col, sqlt in _ALTER:
+                try:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {sqlt}"))
+                    out.append(f"{label}:{table}.{col}")
+                except OperationalError as e:
+                    if "duplicate column" not in str(e).lower():
+                        raise
+    if out:
+        logger.info("Awards columns added: %s", ", ".join(out))
     return out
 
 

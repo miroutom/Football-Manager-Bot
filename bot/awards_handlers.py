@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
-"""Награды сезона: ЗМ, золотая перчатка, бутса, Golden Boy."""
+"""Награды сезона: +1 в БД (лига+ЛЧ), пересборка common. FSM: вид → лига → клуб → имя."""
 from __future__ import annotations
 
 import asyncio
 import logging
+import re
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -15,22 +15,64 @@ from aiogram.types import (
     Message,
 )
 
-from bot.award_apply import KIND_TITLES, apply_trophy, save_trophy_and_rebuild_common
-from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers, tournament_db_for_league
+from bot.award_apply import apply_trophy
+from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
 from bot.states import AwardEnter
-from utils.utils import get_session
 
 logger = logging.getLogger(__name__)
 
 awards_router = Router()
+
 _TEXT_NOT_CMD = F.text & ~F.text.startswith("/")
 
+_KIND_LABELS = {
+    "ball": "🌕 Золотой мяч",
+    "boot": "👢 Золотая бутса",
+    "glove": "🧤 Золотая перчатка (ВР)",
+    "boy": "🌟 Golden Boy",
+}
 
-def _league_row_kb() -> InlineKeyboardMarkup:
-    rows: list[list[InlineKeyboardButton]] = []
+_RE_LG = re.compile(r"^aw:lg:(ball|boot|glove|boy):[a-z0-9_]+$")
+_RE_TM = re.compile(r"^aw:tm:(ball|boot|glove|boy):[a-z0-9_]+:\d+$")
+
+
+def _league_title(code: str) -> str:
+    return dict(LEAGUE_LABELS).get(code, code)
+
+
+def _kinds_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🌕 Мяч", callback_data="aw:k:ball"
+                ),
+                InlineKeyboardButton(
+                    text="👢 Бутса", callback_data="aw:k:boot"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🧤 Перчатка", callback_data="aw:k:glove"
+                ),
+                InlineKeyboardButton(
+                    text="🌟 G. Boy", callback_data="aw:k:boy"
+                ),
+            ],
+        ]
+    )
+
+
+def _league_for_award_kb(kind: str) -> InlineKeyboardMarkup:
     row: list[InlineKeyboardButton] = []
+    rows: list[list[InlineKeyboardButton]] = []
     for code, label in LEAGUE_LABELS:
-        row.append(InlineKeyboardButton(text=label, callback_data=f"aw:lg:{code}"))
+        row.append(
+            InlineKeyboardButton(
+                text=label,
+                callback_data=f"aw:lg:{kind}:{code}",
+            )
+        )
         if len(row) == 3:
             rows.append(row)
             row = []
@@ -39,179 +81,177 @@ def _league_row_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def _kind_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="🌟 Золотой мяч (ЗМ)",
-                    callback_data="aw:k:ball",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="🧤 Золотая перчатка",
-                    callback_data="aw:k:glove",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="👟 Золотая бутса",
-                    callback_data="aw:k:boot",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="⭐ Golden Boy",
-                    callback_data="aw:k:boy",
-                ),
-            ],
-        ]
-    )
+def _club_btn_label(text: str, max_chars: int = 40) -> str:
+    text = (text or "").strip()
+    if len(text) <= max_chars:
+        return text
+    return text[: max_chars - 1] + "…"
 
 
-def _team_kb(league_code: str) -> InlineKeyboardMarkup:
+def _teams_kb(kind: str, league_code: str) -> InlineKeyboardMarkup:
     teams = teams_ordered_for_goalscorers(league_code)
     rows: list[list[InlineKeyboardButton]] = []
-    for i, tname in enumerate(teams):
-        label = tname if len(tname) <= 30 else tname[:27] + "…"
-        rows.append(
-            [InlineKeyboardButton(text=label, callback_data=f"aw:tm:{league_code}:{i}")]
+    row: list[InlineKeyboardButton] = []
+    for idx, team in enumerate(teams):
+        row.append(
+            InlineKeyboardButton(
+                text=_club_btn_label(team),
+                callback_data=f"aw:tm:{kind}:{league_code}:{idx}",
+            )
         )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def _open_award_menu_msg(message: Message) -> None:
+    await message.answer(
+        "🏅 <b>Награда сезона</b>\n\n"
+        "Выбери награду, лигу и клуб, затем введи <b>имя игрока</b> как в базе.\n"
+        "Счётчик +1 в национальной лиге и в ЛЧ (если игрок в ЛЧ), "
+        "затем <code>common.db</code> пересчитывается.\n\n"
+        "/cancel — отмена.",
+        reply_markup=_kinds_keyboard(),
+        parse_mode="HTML",
+    )
 
 
 @awards_router.callback_query(F.data == "menu:awards")
 async def cb_menu_awards(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
+    if callback.message is None:
+        return
     await state.clear()
-    await callback.message.answer(
-        "🏆 <b>Награды сезона</b>\n\n"
-        "Выбери вид награды — далее лигу, клуб, затем введи "
-        "имя игрока (как в базе, без позиции).\n"
-        "/cancel — отмена.",
-        reply_markup=_kind_kb(),
-        parse_mode="HTML",
-    )
+    await _open_award_menu_msg(callback.message)
 
 
-@awards_router.callback_query(F.data.startswith("aw:k:"))
+@awards_router.message(Command("awards"))
+async def cmd_awards(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await _open_award_menu_msg(message)
+
+
+@awards_router.callback_query(
+    (F.data == "aw:k:ball")
+    | (F.data == "aw:k:boot")
+    | (F.data == "aw:k:glove")
+    | (F.data == "aw:k:boy")
+)
 async def cb_award_kind(callback: CallbackQuery, state: FSMContext) -> None:
-    k = (callback.data or "").split(":", 2)[2]
-    if k not in KIND_TITLES:
-        await callback.answer("Неверный вид", show_alert=True)
-        return
     await callback.answer()
-    await state.update_data(aw_kind=k, aw_lg=None, aw_team=None)
+    if callback.message is None or not callback.data:
+        return
+    kind = callback.data.rsplit(":", 1)[-1]
+    await state.update_data(aw_kind=kind)
+    label = _KIND_LABELS.get(kind, kind)
     await callback.message.answer(
-        f"Награда: <b>{KIND_TITLES[k]}</b>\n\n"
-        f"Теперь выбери <b>лигу</b>:",
-        reply_markup=_league_row_kb(),
-        parse_mode="HTML",
+        f"{label} — выберите лигу:",
+        reply_markup=_league_for_award_kb(kind),
     )
 
 
-@awards_router.callback_query(F.data.startswith("aw:lg:"))
+@awards_router.callback_query(
+    (F.data.startswith("aw:lg:ball:"))
+    | (F.data.startswith("aw:lg:boot:"))
+    | (F.data.startswith("aw:lg:glove:"))
+    | (F.data.startswith("aw:lg:boy:"))
+)
 async def cb_award_league(callback: CallbackQuery, state: FSMContext) -> None:
-    parts = (callback.data or "").split(":")
-    if len(parts) < 3:
-        await callback.answer()
+    d = callback.data
+    if not d or not _RE_LG.match(d):
         return
-    code = parts[2]
-    title = dict(LEAGUE_LABELS).get(code, code)
     await callback.answer()
-    await state.update_data(aw_lg=code)
-    n_teams = len(teams_ordered_for_goalscorers(code))
-    if n_teams == 0:
-        await callback.message.answer(f"В лиге «{title}» нет списка клубов.")
+    if callback.message is None or not callback.data:
         return
+    parts = callback.data.split(":")
+    if len(parts) < 4:
+        return
+    kind, code = parts[2], parts[3]
+    await state.update_data(aw_kind=kind, aw_lg=code)
+    try:
+        kb = _teams_kb(kind, code)
+    except Exception as e:
+        logger.exception("aw_teams_kb")
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+    label = _KIND_LABELS.get(kind, kind)
     await callback.message.answer(
-        f"Лига: <b>{title}</b>\n\n"
-        f"Выбери <b>клуб</b> игрока:",
-        reply_markup=_team_kb(code),
-        parse_mode="HTML",
+        f"{label} · {_league_title(code)} — выберите клуб:",
+        reply_markup=kb,
     )
 
 
-@awards_router.callback_query(F.data.startswith("aw:tm:"))
+@awards_router.callback_query(
+    (F.data.startswith("aw:tm:ball:"))
+    | (F.data.startswith("aw:tm:boot:"))
+    | (F.data.startswith("aw:tm:glove:"))
+    | (F.data.startswith("aw:tm:boy:"))
+)
 async def cb_award_team(callback: CallbackQuery, state: FSMContext) -> None:
-    parts = (callback.data or "").split(":")
-    if len(parts) < 4:
-        await callback.answer()
+    d = callback.data
+    if not d or not _RE_TM.match(d):
         return
-    code = parts[2]
-    try:
-        idx = int(parts[3])
-    except ValueError:
-        await callback.answer("Ошибка кнопки", show_alert=True)
-        return
-    teams = teams_ordered_for_goalscorers(code)
-    if idx < 0 or idx >= len(teams):
-        await callback.answer("Клуба нет в списке", show_alert=True)
-        return
-    team = teams[idx]
-    data = await state.get_data()
-    if not data.get("aw_kind"):
-        await callback.answer("Сначала выбери награду.", show_alert=True)
+    if callback.message is None or not callback.data:
         return
     await callback.answer()
-    await state.update_data(aw_team=team, aw_lg=code)
-    t_kind = KIND_TITLES.get(data["aw_kind"], data["aw_kind"])
+    parts = callback.data.split(":")
+    if len(parts) < 5:
+        return
+    kind, code, idx_s = parts[2], parts[3], parts[4]
+    try:
+        idx = int(idx_s)
+    except ValueError:
+        return
+    try:
+        teams = teams_ordered_for_goalscorers(code)
+        team = teams[idx]
+    except (IndexError, Exception) as e:
+        await callback.message.answer(f"Клуб: ошибка: {e}")
+        return
+    label = _KIND_LABELS.get(kind, kind)
+    await state.update_data(aw_kind=kind, aw_lg=code, aw_team=team, aw_lbl=label)
     await state.set_state(AwardEnter.wait_name)
-    lg = dict(LEAGUE_LABELS).get(code, code)
     await callback.message.answer(
-        f"Награда: <b>{t_kind}</b>\n"
-        f"Лига: <b>{lg}</b>\n"
-        f"Клуб: <b>{team}</b>\n\n"
-        f"Введи <b>имя</b> игрока (как в БД, например «Смолов» или «Де Брюйне»):\n"
-        f"/cancel — отмена.",
+        f"{label}\n"
+        f"<b>{_league_title(code)}</b> · {team}\n\n"
+        "Введи <b>фамилию/имя игрока</b> как в БД (одна строка).\n"
+        "/cancel — отмена.",
         parse_mode="HTML",
     )
 
 
 @awards_router.message(AwardEnter.wait_name, _TEXT_NOT_CMD)
 async def on_award_name(message: Message, state: FSMContext) -> None:
-    raw = (message.text or "").strip()
-    if len(raw) < 2:
-        await message.answer("Слишком коротко. Введи имя или /cancel")
+    name = (message.text or "").strip()
+    if len(name) < 2:
+        await message.answer("Слишком коротко. Введи имя ещё раз.")
         return
     data = await state.get_data()
-    kind = data.get("aw_kind")
-    team = data.get("aw_team")
-    lg = data.get("aw_lg")
-    if not kind or not team or not lg:
+    kind = data.get("aw_kind", "")
+    team = data.get("aw_team", "")
+    lbl = data.get("aw_lbl", "Награда")
+    if not team:
         await state.clear()
-        await message.answer("Сессия сброшена. Начни с кнопки «Награды».")
+        await message.answer("Сброс. Начни с меню «Награды».")
         return
-    tdb = tournament_db_for_league(lg)
-    session = get_session(tdb)
-
-    def run() -> tuple[bool, str]:
-        ok, msg = apply_trophy(session, team, raw, kind)
-        if ok:
-            try:
-                save_trophy_and_rebuild_common()
-            except Exception as e:
-                logger.exception("rebuild common after award")
-                return (
-                    True,
-                    msg
-                    + f"\n\n⚠️ <code>common</code> не пересобран: {e!s}",
-                )
-        return ok, msg
-
-    ok, msg = await asyncio.to_thread(run)
+    try:
+        r = await asyncio.to_thread(apply_trophy, str(kind), name, str(team))
+    except ValueError as e:
+        await message.answer(str(e))
+        return
+    except Exception as e:
+        logger.exception("apply_trophy")
+        await message.answer(f"Ошибка: {e}")
+        return
     await state.clear()
-    await message.answer(msg, parse_mode="HTML")
-
-
-@awards_router.message(Command("awards"))
-async def cmd_awards(message: Message, state: FSMContext) -> None:
-    await state.clear()
+    ntot = r.league + r.cl
     await message.answer(
-        "🏆 <b>Награды сезона</b>\n\n"
-        "Выбери вид награды (кнопки ниже)…\n"
-        "/cancel — отмена.",
-        reply_markup=_kind_kb(),
+        f"✅ {lbl}\n"
+        f"<b>{name}</b> · {team}\n"
+        f"строк: лига {r.league}, ЛЧ {r.cl} (всего {ntot}) · класс: {r.player_class}\n"
+        f"<code>common.db</code> пересобран.",
         parse_mode="HTML",
     )
