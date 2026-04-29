@@ -454,7 +454,7 @@ def render_journal_report(limit: int = 120) -> str:
 
 
 def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> str:
-    """Топ бомбардиров из db/cumulative/common.db (сумма по завершённым сезонам)."""
+    """Топ бомбардиров из db/common.db (сумма по всем завершённым сезонам)."""
     import os
 
     from sqlalchemy import create_engine
@@ -467,7 +467,7 @@ def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> s
     if not os.path.isfile(p):
         return (
             "Накопительная база ещё пуста. После первого «Завершить сезон» "
-            "появятся db/cumulative/*.db с суммарной статой."
+            "появятся db/league.db, db/champions_league.db и db/common.db."
         )
     e = create_engine(f"sqlite:///{p}")
     S = sessionmaker(bind=e)()
@@ -477,7 +477,7 @@ def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> s
             S,
             league_code=lc,
             limit=limit,
-            title_suffix=" — все сезоны (db/cumulative)",
+            title_suffix=" — все сезоны (db/common.db)",
         )
     finally:
         S.close()

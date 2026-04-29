@@ -426,7 +426,8 @@ async def cb_menu_next(callback: CallbackQuery) -> None:
 async def cb_menu_stats_history(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Накопительная стата (db/cumulative) после каждого завершения сезона.\n"
+        "Накопительная стата в корне db/ (league.db, champions_league.db, common.db) "
+        "после каждого завершения сезона.\n"
         "Текущий сезон — обычные кнопки «Бомбардиры» / «Ещё топы».",
         reply_markup=_stats_history_root_kb(),
     )

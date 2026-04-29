@@ -9,8 +9,8 @@
 В режиме per_season рабочие файлы: ``db/season_{active_season}/league.db``,
 ``champions_league.db``, ``common.db``; pickle — в ``.../pickle/``.
 
-Накопительная статистика за все сезоны: ``db/cumulative/league.db``,
-``champions_league.db``, ``common.db`` (пополняются при «Завершить сезон»).
+Накопительная статистика за **все** сезоны лежит прямо в ``db/``:
+``db/league.db``, ``db/champions_league.db``, ``db/common.db`` (пополняются при завершении сезона).
 """
 from __future__ import annotations
 
@@ -28,9 +28,6 @@ _STATE_FILE = os.path.join(_DB, "season_state.json")
 SEASON_LEAGUE_NAME = "league.db"
 SEASON_CL_NAME = "champions_league.db"
 SEASON_COMMON_NAME = "common.db"
-
-# Накопительная статистика за все сезоны (не сбрасывается при смене сезона)
-CUMULATIVE_SUBDIR = "cumulative"
 
 # Legacy-имена (текущий репо)
 LEGACY_LEAGUE = "league_synced.db"
@@ -111,20 +108,19 @@ def ensure_pickle_subdir() -> str:
     return d
 
 
-def get_cumulative_directory() -> str:
-    return os.path.join(_DB, CUMULATIVE_SUBDIR)
-
-
 def get_cumulative_league_db_path() -> str:
-    return os.path.join(get_cumulative_directory(), SEASON_LEAGUE_NAME)
+    """Общая накопительная БД национальных лиг (все сезоны)."""
+    return os.path.join(_DB, SEASON_LEAGUE_NAME)
 
 
 def get_cumulative_cl_db_path() -> str:
-    return os.path.join(get_cumulative_directory(), SEASON_CL_NAME)
+    """Общая накопительная БД ЛЧ (все сезоны)."""
+    return os.path.join(_DB, SEASON_CL_NAME)
 
 
 def get_cumulative_common_db_path() -> str:
-    return os.path.join(get_cumulative_directory(), SEASON_COMMON_NAME)
+    """Общая объединённая БД (лига + ЛЧ), пересобирается из двух файлов выше."""
+    return os.path.join(_DB, SEASON_COMMON_NAME)
 
 
 def season_archive_directory(season_num: int) -> str:

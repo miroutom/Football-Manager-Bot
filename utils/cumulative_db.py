@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Накопительные БД в ``db/cumulative/`` (league.db, champions_league.db, common.db):
-при завершении сезона текущие сезонные БД добавляются сюда.
-``common.db`` в cumulative пересобирается из двух первых файлов.
+Накопительные БД в корне ``db/``: ``league.db``, ``champions_league.db``, ``common.db``.
+При завершении сезона в них добавляется снимок из ``db/season_N/`` (или из архива при legacy).
+
+Раньше использовалась папка ``db/cumulative/`` — один раз переносим оттуда файлы, если
+в корне ``db/`` ещё нет накопительных файлов.
 """
 from __future__ import annotations
 
@@ -18,15 +20,24 @@ from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from utils import season_paths
-from utils.utils import Base
 
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
 
-def _ensure_cumulative_dir() -> str:
-    d = season_paths.get_cumulative_directory()
-    os.makedirs(d, exist_ok=True)
-    return d
+def _migrate_old_cumulative_subfolder() -> None:
+    old_d = os.path.join(season_paths.PROJECT_ROOT, "db", "cumulative")
+    if not os.path.isdir(old_d):
+        return
+    pairs = [
+        (season_paths.SEASON_LEAGUE_NAME, season_paths.get_cumulative_league_db_path()),
+        (season_paths.SEASON_CL_NAME, season_paths.get_cumulative_cl_db_path()),
+        (season_paths.SEASON_COMMON_NAME, season_paths.get_cumulative_common_db_path()),
+    ]
+    for name, dst in pairs:
+        src = os.path.join(old_d, name)
+        if os.path.isfile(src) and not os.path.isfile(dst):
+            os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
+            shutil.copy2(src, dst)
 
 
 def _row_as_new(Cls: type, p: Any) -> Any:
@@ -38,7 +49,7 @@ def _row_as_new(Cls: type, p: Any) -> Any:
     return Cls(**d)
 
 
-def _merge_player_tables(src: Session, dst: Session, Cls: type) -> None:
+def _merge_player_tables(src: Any, dst: Any, Cls: type) -> None:
     for p in src.query(Cls).all():
         row = (
             dst.query(Cls)
@@ -112,43 +123,53 @@ def _merge_player_tables(src: Session, dst: Session, Cls: type) -> None:
             )
 
 
-def append_current_season_to_cumulative() -> dict[str, Any]:
-    from utils.utils import session_cl, session_league
-
+def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[str, Any]:
+    """
+    Добавить статистику из снимка сезона (два sqlite-файла) в общие ``db/league.db`` и
+    ``db/champions_league.db``, затем пересобрать ``db/common.db``.
+    """
     log: dict[str, Any] = {"cumulative": []}
-    _ensure_cumulative_dir()
-    cur_l = season_paths.get_league_db_path()
-    cur_c = season_paths.get_cl_db_path()
+    _migrate_old_cumulative_subfolder()
+    os.makedirs(os.path.join(season_paths.PROJECT_ROOT, "db"), exist_ok=True)
+
+    if not os.path.isfile(league_path) or not os.path.isfile(cl_path):
+        log["cumulative"].append("skip: snapshot league/cl not found")
+        return log
+
     cum_l = season_paths.get_cumulative_league_db_path()
     cum_c = season_paths.get_cumulative_cl_db_path()
 
-    if not os.path.isfile(cur_l) or not os.path.isfile(cur_c):
-        log["cumulative"].append("skip: season league/cl not on disk")
-        return log
-
     fresh = not os.path.isfile(cum_l) and not os.path.isfile(cum_c)
     if fresh:
-        shutil.copy2(cur_l, cum_l)
-        shutil.copy2(cur_c, cum_c)
-        log["cumulative"].append("initialized cumulative (copy of ending season)")
+        shutil.copy2(league_path, cum_l)
+        shutil.copy2(cl_path, cum_c)
+        log["cumulative"].append("initialized all-time DB (copy of ended season)")
     else:
-        eld = create_engine(f"sqlite:///{cum_l}")
-        ecd = create_engine(f"sqlite:///{cum_c}")
-        Sd = sessionmaker(bind=eld)
-        Scd = sessionmaker(bind=ecd)
-        sd, scd = Sd(), Scd()
+        el_src = create_engine(f"sqlite:///{league_path}")
+        ec_src = create_engine(f"sqlite:///{cl_path}")
+        el_dst = create_engine(f"sqlite:///{cum_l}")
+        ec_dst = create_engine(f"sqlite:///{cum_c}")
+        Sl = sessionmaker(bind=el_src)
+        Scl = sessionmaker(bind=ec_src)
+        Sd = sessionmaker(bind=el_dst)
+        Scd = sessionmaker(bind=ec_dst)
+        sl, scl, sd, scd = Sl(), Scl(), Sd(), Scd()
         try:
             for Cls in _ALL:
-                _merge_player_tables(session_league, sd, Cls)
-                _merge_player_tables(session_cl, scd, Cls)
+                _merge_player_tables(sl, sd, Cls)
+                _merge_player_tables(scl, scd, Cls)
             sd.commit()
             scd.commit()
-            log["cumulative"].append("merged additive into cumulative league+cl")
+            log["cumulative"].append("merged season snapshot into all-time league+cl")
         finally:
+            sl.close()
+            scl.close()
             sd.close()
             scd.close()
-            eld.dispose()
-            ecd.dispose()
+            el_src.dispose()
+            ec_src.dispose()
+            el_dst.dispose()
+            ec_dst.dispose()
 
     from utils.common_db import rebuild_common_database_for_disk_paths
 
@@ -157,8 +178,16 @@ def append_current_season_to_cumulative() -> dict[str, Any]:
         cum_c,
         season_paths.get_cumulative_common_db_path(),
     )
-    log["cumulative"].append("rebuilt cumulative common.db")
+    log["cumulative"].append("rebuilt db/common.db (all-time)")
     return log
+
+
+def append_current_season_to_cumulative() -> dict[str, Any]:
+    """Слить текущие рабочие пути сезона (как в season_paths) в общие db/*.db."""
+    return append_season_snapshot_to_all_time(
+        season_paths.get_league_db_path(),
+        season_paths.get_cl_db_path(),
+    )
 
 
 def list_season_archives_with_db() -> list[int]:

@@ -126,6 +126,48 @@ def _clone_db_zero_stats(src: str, dst: str) -> None:
         eng.dispose()
 
 
+def _safe_copy2_db(src: str, dst: str) -> None:
+    if not os.path.isfile(src):
+        return
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    if os.path.abspath(src) == os.path.abspath(dst):
+        return
+    shutil.copy2(src, dst)
+
+
+def _safe_copytree_pickle(src: str, dst: str) -> None:
+    if not os.path.isdir(src):
+        return
+    if os.path.abspath(src) == os.path.abspath(dst):
+        return
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    if os.path.isdir(dst):
+        shutil.rmtree(dst)
+    shutil.copytree(src, dst)
+
+
+def _freeze_working_season_into_season_folder(season_dir: str) -> None:
+    """
+    Снимок завершённого сезона в ``db/season_N/``: три БД + pickle.
+    Если рабочие файлы уже лежат в этой папке, лишний раз не копируем.
+    """
+    from utils import season_paths
+
+    os.makedirs(season_dir, exist_ok=True)
+    lp = season_paths.get_league_db_path()
+    cp = season_paths.get_cl_db_path()
+    op = season_paths.get_common_db_path()
+    dst_l = os.path.join(season_dir, season_paths.SEASON_LEAGUE_NAME)
+    dst_c = os.path.join(season_dir, season_paths.SEASON_CL_NAME)
+    dst_o = os.path.join(season_dir, season_paths.SEASON_COMMON_NAME)
+    _safe_copy2_db(lp, dst_l)
+    _safe_copy2_db(cp, dst_c)
+    _safe_copy2_db(op, dst_o)
+    p_live = season_paths.get_pickle_directory()
+    p_dst = os.path.join(season_dir, "pickle")
+    _safe_copytree_pickle(p_live, p_dst)
+
+
 def finalize_season() -> dict[str, Any]:
     """
     1) Трофеи по таблицам
@@ -141,9 +183,6 @@ def finalize_season() -> dict[str, Any]:
     tr = apply_season_trophies_from_standings()
     log["trophies"] = tr
 
-    from utils.cumulative_db import append_current_season_to_cumulative
-
-    log["cumulative_merge"] = append_current_season_to_cumulative().get("cumulative", [])
     from utils.cl_standing_participants import (
         build_cl_top30_from_current_pickles,
         write_cl_participants_file,
@@ -174,11 +213,18 @@ def finalize_season() -> dict[str, Any]:
     st = season_paths.get_state()
     db_root = os.path.join(season_paths.PROJECT_ROOT, "db")
     root_pickle = os.path.join(season_paths.PROJECT_ROOT, "pickle")
+
+    from utils.cumulative_db import append_season_snapshot_to_all_time
+
+    ended: int | None = None
+    snap_league: str | None = None
+    snap_cl: str | None = None
+    archive_dir: str | None = None
+
     if st["data_mode"] == "legacy":
         n = int(st.get("active_season") or 1)
-        next_n = n + 1
+        ended = n
         arch = os.path.join(db_root, f"season_{n}")
-        nxt = os.path.join(db_root, f"season_{next_n}")
         os.makedirs(arch, exist_ok=True)
         league_src = season_paths.get_league_db_path()
         cl_src = season_paths.get_cl_db_path()
@@ -191,18 +237,51 @@ def finalize_season() -> dict[str, Any]:
             if os.path.isdir(p_arch):
                 shutil.rmtree(p_arch)
             shutil.copytree(root_pickle, p_arch)
+        archive_dir = arch
+        snap_league = os.path.join(arch, season_paths.SEASON_LEAGUE_NAME)
+        snap_cl = os.path.join(arch, season_paths.SEASON_CL_NAME)
         log["archive"] = arch
+    else:
+        cur = int(st["active_season"] or 1)
+        ended = cur
+        cur_dir = os.path.join(db_root, f"season_{cur}")
+        _freeze_working_season_into_season_folder(cur_dir)
+        archive_dir = cur_dir
+        snap_league = os.path.join(cur_dir, season_paths.SEASON_LEAGUE_NAME)
+        snap_cl = os.path.join(cur_dir, season_paths.SEASON_CL_NAME)
+        log["archive"] = cur_dir
 
+    if not snap_league or not snap_cl:
+        raise FileNotFoundError(
+            "Не удалось зафиксировать архив сезона (нет путей league/cl)."
+        )
+    if not os.path.isfile(snap_league) or not os.path.isfile(snap_cl):
+        raise FileNotFoundError(
+            f"Архив сезона неполный после снимка: {snap_league!s}, {snap_cl!s}"
+        )
+    log["cumulative_merge"] = append_season_snapshot_to_all_time(
+        snap_league, snap_cl
+    ).get("cumulative", [])
+
+    if st["data_mode"] == "legacy":
+        n = int(ended or 1)
+        next_n = n + 1
+        arch = archive_dir or os.path.join(db_root, f"season_{n}")
+        nxt = os.path.join(db_root, f"season_{next_n}")
         os.makedirs(nxt, exist_ok=True)
         np = os.path.join(nxt, "pickle")
-        _clone_db_zero_stats(league_src, os.path.join(nxt, season_paths.SEASON_LEAGUE_NAME))
-        _clone_db_zero_stats(cl_src, os.path.join(nxt, season_paths.SEASON_CL_NAME))
-        _clone_db_zero_stats(com_src, os.path.join(nxt, season_paths.SEASON_COMMON_NAME))
-        if os.path.isdir(root_pickle):
+        l_arch = os.path.join(arch, season_paths.SEASON_LEAGUE_NAME)
+        c_arch = os.path.join(arch, season_paths.SEASON_CL_NAME)
+        o_arch = os.path.join(arch, season_paths.SEASON_COMMON_NAME)
+        _clone_db_zero_stats(l_arch, os.path.join(nxt, season_paths.SEASON_LEAGUE_NAME))
+        _clone_db_zero_stats(c_arch, os.path.join(nxt, season_paths.SEASON_CL_NAME))
+        _clone_db_zero_stats(o_arch, os.path.join(nxt, season_paths.SEASON_COMMON_NAME))
+        p_snap = os.path.join(arch, "pickle")
+        src_pick = p_snap if os.path.isdir(p_snap) else root_pickle
+        if os.path.isdir(src_pick):
             if os.path.isdir(np):
                 shutil.rmtree(np)
-            shutil.copytree(root_pickle, np)
-        # обнулим таблицы в pickle (новый сезон в папке next)
+            shutil.copytree(src_pick, np)
         season_paths.write_state(
             {
                 "data_mode": "per_season",
@@ -210,23 +289,20 @@ def finalize_season() -> dict[str, Any]:
             }
         )
         reinit_db_connections()
-        # каталог pickle активного сезона — season_next/pickle: reset
         reset_all_teams()
         log["new_season"] = nxt
     else:
-        cur = int(st["active_season"] or 1)
+        cur = int(ended or 1)
         nxt = cur + 1
-        cur_dir = os.path.join(db_root, f"season_{cur}")
+        cur_dir = archive_dir or os.path.join(db_root, f"season_{cur}")
         next_dir = os.path.join(db_root, f"season_{nxt}")
-        # архив: копия текущего (cur уже «закончен» логически) — дублируем в season_cur_stamped? ТЗ: cur остаётся снимком
-        # новый: копия из cur с нулевой статой
-        l_src = os.path.join(cur_dir, season_paths.SEASON_LEAGUE_NAME)
-        c_src = os.path.join(cur_dir, season_paths.SEASON_CL_NAME)
-        o_src = os.path.join(cur_dir, season_paths.SEASON_COMMON_NAME)
         os.makedirs(next_dir, exist_ok=True)
-        _clone_db_zero_stats(l_src, os.path.join(next_dir, season_paths.SEASON_LEAGUE_NAME))
-        _clone_db_zero_stats(c_src, os.path.join(next_dir, season_paths.SEASON_CL_NAME))
-        _clone_db_zero_stats(o_src, os.path.join(next_dir, season_paths.SEASON_COMMON_NAME))
+        l_arch = os.path.join(cur_dir, season_paths.SEASON_LEAGUE_NAME)
+        c_arch = os.path.join(cur_dir, season_paths.SEASON_CL_NAME)
+        o_arch = os.path.join(cur_dir, season_paths.SEASON_COMMON_NAME)
+        _clone_db_zero_stats(l_arch, os.path.join(next_dir, season_paths.SEASON_LEAGUE_NAME))
+        _clone_db_zero_stats(c_arch, os.path.join(next_dir, season_paths.SEASON_CL_NAME))
+        _clone_db_zero_stats(o_arch, os.path.join(next_dir, season_paths.SEASON_COMMON_NAME))
         pcur = os.path.join(cur_dir, "pickle")
         pnew = os.path.join(next_dir, "pickle")
         if os.path.isdir(pcur):
@@ -242,7 +318,6 @@ def finalize_season() -> dict[str, Any]:
         reinit_db_connections()
         reset_all_teams()
         log["new_season"] = next_dir
-        log["archive"] = cur_dir
 
     reload_teams_from_disk()
     # common после reinit указывает на новую БД — пересчитать из league+cl

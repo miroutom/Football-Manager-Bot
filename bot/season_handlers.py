@@ -60,8 +60,10 @@ async def cb_season_menu(callback: CallbackQuery) -> None:
         f"Сейчас учитывается сезон <b>{n}</b> (см. <code>db/season_state.json</code> в режиме per_season).\n"
         "Будет:\n"
         "• <b>Трофеи</b> по 1-му месту в каждой нац. лиге и в группе ЛЧ: +1 к <code>trophies</code> в соответствующей БД;\n"
-        "• <b>common</b> — сумма (общая) пересчитается;\n"
-        "• текущие БД и pickle уйдут в <code>db/season_…/archive</code> (копия), новый сезон — в следующую папку с чистой статой.\n\n"
+        "• Статистика сезона добавится в общие файлы в корне <code>db/</code>: "
+        "<code>league.db</code>, <code>champions_league.db</code>, <code>common.db</code>;\n"
+        f"• Снимок завершённого сезона — в <code>db/season_{n}/</code> (три БД + pickle);\n"
+        f"• В <code>db/season_{n + 1}/</code> создаются пустые БД и копия pickle для нового сезона.\n\n"
         "<b>Операция длинная и необратимая (бэкап сделай вручную при необходимости).</b>\n"
         "Продолжить?",
         parse_mode="HTML",
