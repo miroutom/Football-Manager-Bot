@@ -5,6 +5,10 @@
 
 - ``trophies`` в common = сумма трофеев из нац. БД + ЛЧ (трофей лиги и трофей ЛЧ по отдельным источникам).
   В файле **только** лиги: только национальные; в **только** БД ЛЧ: только трофеи ЛЧ.
+
+- ``overall``: при ненулевой сумме матчей — средневзвешенно по лиге+ЛЧ; иначе из заявки
+  (число из нац. БД, если оно >0, иначе из БД ЛЧ). Так в начале сезона (0 матчей) в common
+  не пропадают рейтинги из ``league.db`` / ``champions_league.db``.
 """
 from __future__ import annotations
 
@@ -118,13 +122,23 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
             if m > 0:
                 b["overall_num"] += int(p.overall or 0) * m
                 b["overall_den"] += m
+            ovi = int(getattr(p, "overall", 0) or 0)
+            if ovi > 0:
+                if not is_cl:
+                    b["overall_ref"] = ovi
+                elif int(b.get("overall_ref", 0) or 0) == 0:
+                    b["overall_ref"] = ovi
     return buckets
 
 
 def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
     for b in buckets.values():
         mtot = b["matches"]
-        ov = b["overall_num"] // b["overall_den"] if b["overall_den"] else 0
+        ov = (
+            b["overall_num"] // b["overall_den"]
+            if b["overall_den"]
+            else int(b.get("overall_ref", 0) or 0)
+        )
         g, a = b["goals"], b["assists"]
         ga = g + a
         if PlayerCls is Forward:
@@ -278,10 +292,20 @@ def rebuild_common_database(
             if m > 0:
                 b["overall_num"] += int(p.overall or 0) * m
                 b["overall_den"] += m
+            ovi = int(getattr(p, "overall", 0) or 0)
+            if ovi > 0:
+                if not is_cl:
+                    b["overall_ref"] = ovi
+                elif int(b.get("overall_ref", 0) or 0) == 0:
+                    b["overall_ref"] = ovi
 
     for b in gk_buckets.values():
         mtot = b["matches"]
-        ov = b["overall_num"] // b["overall_den"] if b["overall_den"] else 0
+        ov = (
+            b["overall_num"] // b["overall_den"]
+            if b["overall_den"]
+            else int(b.get("overall_ref", 0) or 0)
+        )
         common.add(
             Goalkeeper(
                 name=b["name"],
