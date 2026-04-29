@@ -20,10 +20,10 @@ from pathlib import Path
 from typing import Any
 
 from champions_league.knockout_bracket import (
-    DEFAULT_ROUND1_PAIRS,
-    DEFAULT_ROUND2_SEEDS,
     SlotRef,
     default_cl_playoff_24_tree,
+    get_default_round1_pairs,
+    get_default_round2_seeds,
 )
 from match_results import is_cl_group_phase_record, load_records_and_keys
 from utils.utils import PROJECT_ROOT
@@ -147,8 +147,8 @@ def build_cl_bracket_state(
             scores = s2
         if pen is None:
             pen = p2
-    r1_pairs = list(DEFAULT_ROUND1_PAIRS)
-    seeds = list(DEFAULT_ROUND2_SEEDS)
+    r1_pairs = list(get_default_round1_pairs())
+    seeds = list(get_default_round2_seeds())
 
     w: dict[tuple[str, int], str] = {}
 

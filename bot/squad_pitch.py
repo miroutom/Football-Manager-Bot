@@ -9,7 +9,7 @@
 Стартовые 11: флаг по ``nation`` — flagcdn (ISO2 или ``gb-eng`` / ``gb-sct`` / ``gb-wls`` / ``gb-nir``),
 кэш ``assets/cache/flags``; иначе упрощённые полосы. Эмблема: ``assets/crests/`` / ``wikimedia_commons.json``; на поле — как есть (пропорции),
 без круга; тёмный фон, связный с краем картинки, делается прозрачным. Под заголовком: среднее по стартовым
-на поле (overall / rating). Сайдбар: рейтинг, позиция, фамилия.
+на поле (overall). Сайдбар: overall, позиция, фамилия.
 """
 from __future__ import annotations
 
@@ -131,24 +131,18 @@ def _surname(full_name: str) -> str:
     return parts[-1] if len(parts) >= 2 else parts[0]
 
 
-def _display_score(overall: int, rating: float) -> str:
+def _display_score(overall: int) -> str:
     o = int(overall or 0)
     if o > 0:
         return str(o)
-    r = float(rating or 0.0)
-    if r > 0:
-        return f"{r:.1f}"
     return "—"
 
 
-def _numeric_for_average(overall: int, rating: float) -> float | None:
-    """Число для среднего по стартовым: приоритет overall, иначе rating (как на футболке)."""
+def _numeric_for_average(overall: int) -> float | None:
+    """Число для среднего по стартовым: overall с заявки/БД."""
     o = int(overall or 0)
     if o > 0:
         return float(o)
-    r = float(rating or 0.0)
-    if r > 0:
-        return r
     return None
 
 
@@ -158,7 +152,7 @@ def _starting_xi_avg_fragment(slot_player: dict[str, _Pl]) -> str | None:
     for pl in slot_player.values():
         if pl is None:
             continue
-        n = _numeric_for_average(pl.overall, pl.rating)
+        n = _numeric_for_average(pl.overall)
         if n is not None:
             vals.append(n)
     if not vals:
@@ -204,12 +198,8 @@ def _position_tags(pos: str) -> set[str]:
     return tags
 
 
-def _player_score(overall: int, rating: float) -> int:
-    o = int(overall or 0)
-    r = float(rating or 0.0)
-    if o > 0:
-        return o * 1000 + int(r * 10)
-    return int(r * 100)
+def _player_score(overall: int) -> int:
+    return int(overall or 0)
 
 
 @dataclass
@@ -217,7 +207,6 @@ class _Pl:
     name: str
     position: str
     overall: int
-    rating: float
     tags: set[str]
     score: int
     nation: str | None
@@ -303,7 +292,7 @@ def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
         if int(ov or 0) > 0:
             p.overall = int(ov)
         p.tags = _position_tags(p.position)
-        p.score = _player_score(p.overall, p.rating)
+        p.score = _player_score(p.overall)
 
 
 def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
@@ -314,7 +303,6 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
         for p in session.query(cls).filter_by(team=team_db).all():
             pos = getattr(p, "position", "") or ""
             ov = int(getattr(p, "overall", 0) or 0)
-            rt = float(getattr(p, "rating", 0.0) or 0.0)
             tags = _position_tags(pos)
             nat = getattr(p, "nation", None)
             if nat is not None:
@@ -329,9 +317,8 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     name=p.name,
                     position=pos,
                     overall=ov,
-                    rating=rt,
                     tags=tags,
-                    score=_player_score(ov, rt),
+                    score=_player_score(ov),
                     nation=nat,
                     status=st,
                     roster_rank=9999,
@@ -757,7 +744,7 @@ def _sidebar_bench_content_height(subs: list[_Pl], reserves: list[_Pl]) -> int:
 
 def _sidebar_bench_line(p: _Pl) -> str:
     pos = (p.position or "").strip() or "—"
-    score = _display_score(p.overall, p.rating)
+    score = _display_score(p.overall)
     return f"{score}  {pos}  {_surname(p.name)}"
 
 
@@ -1272,7 +1259,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
             flag_x = int(ix - shirt_bw // 2 - 8 - _FLAG_W)
             flag_y = int(shirt_cy - _FLAG_H // 2)
             _paste_or_draw_flag(im, draw, flag_x, flag_y, pl.nation)
-            score_txt = _display_score(pl.overall, pl.rating)
+            score_txt = _display_score(pl.overall)
             bb_r = draw.textbbox((0, 0), score_txt, font=rating_font)
             rh = bb_r[3] - bb_r[1]
             rx = x1 + 8

@@ -34,7 +34,6 @@ def _zero_player_row(row: Any, Cls: type) -> None:
     if hasattr(row, "red_cards"):
         row.red_cards = 0
     row.matches = 0
-    row.rating = 0.0
     if hasattr(row, "goals"):
         row.goals = 0
         row.assists = 0
@@ -47,11 +46,11 @@ def _zero_player_row(row: Any, Cls: type) -> None:
 
 def _zero_match_stats_for_new_season(row: Any, Cls: type) -> None:
     """
-    Старт нового сезона: обнуляем только матчевую статистику (голы, передачи, матчи, карточки и т.д.).
-    Трофеи, награды сезона, overall/состав — сохраняем как в снимке после завершённого сезона.
+    Старт нового сезона: обнуляем матчи, голы/передачи/Г+А, карточки, трофеи и награды сезона.
+
+    Сохраняем: имя, команда, позиция, overall, нация, status (как в архивном снимке сезона).
     """
     row.matches = 0
-    row.rating = 0.0
     if hasattr(row, "goals"):
         row.goals = 0
         row.assists = 0
@@ -64,6 +63,12 @@ def _zero_match_stats_for_new_season(row: Any, Cls: type) -> None:
         row.yellow_cards = 0
     if hasattr(row, "red_cards"):
         row.red_cards = 0
+    row.trophies = 0
+    row.golden_balls = 0
+    row.golden_boots = 0
+    row.golden_boys = 0
+    if hasattr(row, "golden_gloves"):
+        row.golden_gloves = 0
 
 
 def _inc_trophies_all_players_of_team(
@@ -133,7 +138,13 @@ def _copy_file(src: str, dst: str) -> None:
 
 
 def _clone_db_zero_stats(src: str, dst: str) -> None:
-    """Копия SQLite + обнуление только матчевой статистики для нового сезона (трофеи не трогаем)."""
+    """
+    Копия SQLite + обнуление сезонной статистики для нового сезона.
+
+    Сохраняются: имя, команда, позиция, overall, нация, status.
+    Обнуляются: матчи, голы/передачи/Г+А, сухие/пропущенные (ВР), карточки, трофеи и
+    награды сезона (golden_*).
+    """
     shutil.copy2(src, dst)
     eng = create_engine(f"sqlite:///{dst}")
     Sess = sessionmaker(bind=eng)
@@ -296,6 +307,17 @@ def finalize_season() -> dict[str, Any]:
         log["match_results_cleared"] = f"error: {e!s}"
     except Exception as e:
         log["match_results_cleared"] = f"error: {e!s}"
+    try:
+        from champions_league.knockout_bracket import (
+            reset_cl_playoff_bracket_json_to_placeholders,
+        )
+
+        reset_cl_playoff_bracket_json_to_placeholders()
+        log["cl_playoff_bracket_json_reset"] = True
+    except OSError as e:
+        log["cl_playoff_bracket_json_reset"] = f"error: {e!s}"
+    except Exception as e:
+        log["cl_playoff_bracket_json_reset"] = f"error: {e!s}"
     log["cumulative_merge"] = append_season_snapshot_to_all_time(
         snap_league, snap_cl
     ).get("cumulative", [])

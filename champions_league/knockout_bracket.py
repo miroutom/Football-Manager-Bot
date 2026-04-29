@@ -12,35 +12,78 @@
 Строки матчей: ``хозяева;гости;cl`` (двухраундовые стыки — по две строки).
 
 На сетке «Бильбао» = Athletic Club; в данных проекта используется имя «Атлетик».
+
+Пары стыков и посевы для **картинки/HTML** задаются в ``data/cl_playoff_bracket.json``.
+Если файла нет или он битый — используются плейсхолдеры «—». При «Завершить сезон»
+вызывается ``reset_cl_playoff_bracket_json_to_placeholders()`` (см. ``utils.season_end``).
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Iterable, Sequence
 
-# --- Round 1 (первый в кортеже — дом в 1-м матче стыка) ---
-DEFAULT_ROUND1_PAIRS: list[tuple[str, str]] = [
-    ("Наполи", "Дортмунд"),
-    ("Франкфурт", "Боруссия М"),
-    ("Бавария", "Ювентус"),
-    ("Реал", "Атлетик"),
-    ("Вильярреал", "Динамо"),
-    ("Челси", "Реал Сосьедад"),
-    ("Ливерпуль", "Аталанта"),
-    ("Мю", "Милан"),
-]
+_PLACEHOLDER_R1: list[tuple[str, str]] = [("—", "—")] * 8
+_PLACEHOLDER_SEEDS: list[str] = ["—"] * 8
 
-# --- Round 2: посев с индексом i играет с победителем стыка Round 1 #i ---
-DEFAULT_ROUND2_SEEDS: list[str] = [
-    "Интер",
-    "Зенит",
-    "Арсенал",
-    "Атлетико",
-    "Лейпциг",
-    "Сити",
-    "Тоттенхэм",
-    "Барселона",
-]
+
+def _bracket_json_path() -> Path:
+    from utils.utils import PROJECT_ROOT
+
+    return Path(PROJECT_ROOT) / "data" / "cl_playoff_bracket.json"
+
+
+def load_cl_playoff_bracket_from_disk() -> tuple[list[tuple[str, str]], list[str]]:
+    """Прочитать ``data/cl_playoff_bracket.json``; при ошибке — плейсхолдеры."""
+    p = _bracket_json_path()
+    if not p.is_file():
+        return [tuple(p) for p in _PLACEHOLDER_R1], list(_PLACEHOLDER_SEEDS)
+    try:
+        raw = json.loads(p.read_text(encoding="utf-8"))
+        pairs_raw = raw.get("round1_pairs") or []
+        seeds_raw = raw.get("round2_seeds") or []
+        pairs: list[tuple[str, str]] = []
+        for item in pairs_raw[:8]:
+            if not isinstance(item, (list, tuple)) or len(item) != 2:
+                return [tuple(x) for x in _PLACEHOLDER_R1], list(_PLACEHOLDER_SEEDS)
+            a, b = str(item[0]).strip(), str(item[1]).strip()
+            pairs.append((a, b))
+        while len(pairs) < 8:
+            pairs.append(("—", "—"))
+        seeds = [str(x).strip() if x is not None else "—" for x in seeds_raw[:8]]
+        while len(seeds) < 8:
+            seeds.append("—")
+        return pairs, seeds
+    except Exception:
+        return [tuple(x) for x in _PLACEHOLDER_R1], list(_PLACEHOLDER_SEEDS)
+
+
+def reset_cl_playoff_bracket_json_to_placeholders() -> None:
+    """
+    Записать ``data/cl_playoff_bracket.json`` плейсхолдерами (новый сезон / сетка без жребия).
+    """
+    p = _bracket_json_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version": 1,
+        "round1_pairs": [["—", "—"] for _ in range(8)],
+        "round2_seeds": ["—"] * 8,
+    }
+    p.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def get_default_round1_pairs() -> list[tuple[str, str]]:
+    p, _ = load_cl_playoff_bracket_from_disk()
+    return p
+
+
+def get_default_round2_seeds() -> list[str]:
+    _, s = load_cl_playoff_bracket_from_disk()
+    return s
 
 
 def two_leg_match_strings(home_first_leg: str, away_first_leg: str) -> tuple[str, str]:
@@ -87,10 +130,11 @@ def default_cl_playoff_24_tree() -> dict[str, Any]:
     """
     r1 = [{"tie": i, "pair_index": i} for i in range(8)]
 
+    seeds = get_default_round2_seeds()
     r2 = [
         {
             "tie": i,
-            "seed": DEFAULT_ROUND2_SEEDS[i],
+            "seed": seeds[i],
             "plays_winner_of": SlotRef("r1", i),
         }
         for i in range(8)
@@ -123,8 +167,8 @@ def bracket_cl_playoff_24(
     r2_seeds: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Полное дерево с конкретными парами R1 и посевами R2."""
-    pairs = list(r1_pairs) if r1_pairs is not None else list(DEFAULT_ROUND1_PAIRS)
-    seeds = list(r2_seeds) if r2_seeds is not None else list(DEFAULT_ROUND2_SEEDS)
+    pairs = list(r1_pairs) if r1_pairs is not None else get_default_round1_pairs()
+    seeds = list(r2_seeds) if r2_seeds is not None else get_default_round2_seeds()
     if len(pairs) != 8 or len(seeds) != 8:
         raise ValueError("Нужно 8 пар R1 и 8 посевов R2")
 
@@ -212,7 +256,7 @@ def full_cl_playoff_24_schedule(
         ("sf", winners_sf),
     )
 
-    seeds = list(r2_seeds) if r2_seeds is not None else list(DEFAULT_ROUND2_SEEDS)
+    seeds = list(r2_seeds) if r2_seeds is not None else get_default_round2_seeds()
     for i in range(8):
         lines["round_2"].extend(two_leg_match_strings(seeds[i], w[("r1", i)]))
 
@@ -251,7 +295,7 @@ def flatten_schedule(
 def example_chalk_winners_24(r1_pairs: Sequence[tuple[str, str]]) -> tuple[list[str], list[str], list[str], list[str]]:
     """Победитель каждого стыка — первый в паре / посев (для тестового полного календаря)."""
     w1 = [p[0] for p in r1_pairs]
-    seeds = list(DEFAULT_ROUND2_SEEDS)
+    seeds = list(get_default_round2_seeds())
     w2 = [seeds[i] for i in range(8)]
     r3_pairs = [(w2[0], w2[1]), (w2[2], w2[3]), (w2[4], w2[5]), (w2[6], w2[7])]
     w3 = [p[0] for p in r3_pairs]
@@ -275,8 +319,8 @@ def format_cl_knockout_bracket_text(
     """
     Текстовая сетка плей-офф ЛЧ для консоли (main.py и скрипты).
 
-    Пары R1 и посевы R2 по умолчанию — из ``DEFAULT_ROUND1_PAIRS`` / ``DEFAULT_ROUND2_SEEDS``
-    (см. ``champions_league/knockout_bracket.py``); при необходимости передай свои списки.
+    Пары R1 и посевы R2 по умолчанию — из ``data/cl_playoff_bracket.json``; при необходимости
+    передай свои ``r1_pairs`` / ``r2_seeds``.
     """
     tree = bracket_cl_playoff_24(r1_pairs=r1_pairs, r2_seeds=r2_seeds)
     out: list[str] = []
@@ -312,7 +356,6 @@ def format_cl_knockout_bracket_text(
     out.append(f"Финал:  {fh}  —  {fa}")
     out.append("")
     out.append(
-        "(Пары R1 и посевы R2 задаются в champions_league/knockout_bracket.py — "
-        "DEFAULT_ROUND1_PAIRS / DEFAULT_ROUND2_SEEDS.)"
+        "(Пары R1 и посевы R2 — файл data/cl_playoff_bracket.json; сброс при завершении сезона.)"
     )
     return "\n".join(out)

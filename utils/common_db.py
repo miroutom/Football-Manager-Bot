@@ -81,8 +81,6 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
                     "clean_sheets": 0,
                     "overall_num": 0,
                     "overall_den": 0,
-                    "rating_num": 0.0,
-                    "rating_den": 0,
                     "nation": None,
                     "status": None,
                 }
@@ -120,8 +118,6 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
             if m > 0:
                 b["overall_num"] += int(p.overall or 0) * m
                 b["overall_den"] += m
-                b["rating_num"] += float(p.rating or 0) * m
-                b["rating_den"] += m
     return buckets
 
 
@@ -129,9 +125,6 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
     for b in buckets.values():
         mtot = b["matches"]
         ov = b["overall_num"] // b["overall_den"] if b["overall_den"] else 0
-        rt = (
-            round(b["rating_num"] / b["rating_den"], 1) if b["rating_den"] else 0.0
-        )
         g, a = b["goals"], b["assists"]
         ga = g + a
         if PlayerCls is Forward:
@@ -145,7 +138,6 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     goals=g,
                     assists=a,
                     ga=ga,
-                    rating=rt,
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
                     golden_boots=b["golden_boots"],
@@ -167,7 +159,6 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     goals=g,
                     assists=a,
                     ga=ga,
-                    rating=rt,
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
                     golden_boots=b["golden_boots"],
@@ -189,7 +180,6 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     goals=g,
                     assists=a,
                     ga=ga,
-                    rating=rt,
                     clean_sheets=b["clean_sheets"],
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
@@ -252,8 +242,6 @@ def rebuild_common_database(
                     "golden_boys": 0,
                     "overall_num": 0,
                     "overall_den": 0,
-                    "rating_num": 0.0,
-                    "rating_den": 0,
                     "nation": None,
                     "status": None,
                 }
@@ -290,13 +278,10 @@ def rebuild_common_database(
             if m > 0:
                 b["overall_num"] += int(p.overall or 0) * m
                 b["overall_den"] += m
-                b["rating_num"] += float(p.rating or 0) * m
-                b["rating_den"] += m
 
     for b in gk_buckets.values():
         mtot = b["matches"]
         ov = b["overall_num"] // b["overall_den"] if b["overall_den"] else 0
-        rt = round(b["rating_num"] / b["rating_den"], 1) if b["rating_den"] else 0.0
         common.add(
             Goalkeeper(
                 name=b["name"],
@@ -304,7 +289,6 @@ def rebuild_common_database(
                 position=b["position"],
                 overall=ov,
                 matches=mtot,
-                rating=rt,
                 clean_sheets=b["clean_sheets"],
                 missed_goals=b["missed_goals"],
                 trophies=b["trophies"],

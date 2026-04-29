@@ -54,7 +54,7 @@ def update_all_players(tournament: str = 'league'):
 def process_player_row(row, session):
     """Обработка строки с данными игрока"""
     try:
-        name, overall, team, position, matches, goals, assists, rating, clean_sheets, trophies, golden_ball, golden_boot, missed_goals = row
+        name, overall, team, position, matches, goals, assists, _rating_csv, clean_sheets, trophies, golden_ball, golden_boot, missed_goals = row
     except ValueError:
         return
 
@@ -62,10 +62,9 @@ def process_player_row(row, session):
     team = team.title()
     overall = int(overall) if overall else 0
     position = position.upper()
-    matches = int(matches) if matches else (1 if rating else 0)
+    matches = int(matches) if matches else 0
     goals = int(goals) if goals else 0
     assists = int(assists) if assists else 0
-    rating = float(rating.replace(',', '.')) if rating else 0
     clean_sheets = int(clean_sheets) if clean_sheets else 0
     missed_goals = int(missed_goals) if missed_goals else 0
     trophies = int(trophies) if trophies else 0
@@ -77,28 +76,28 @@ def process_player_row(row, session):
             update_forward_stats(
                 session=session, name=name, overall=overall, position=position,
                 team=team, matches=matches, goals=goals, assists=assists,
-                new_rating=rating, trophies=trophies, golden_ball=golden_ball,
+                trophies=trophies, golden_ball=golden_ball,
                 golden_boot=golden_boot
             )
         elif position in midfielders:
             update_midfielder_stats(
                 session=session, name=name, overall=overall, position=position,
                 team=team, matches=matches, goals=goals, assists=assists,
-                new_rating=rating, trophies=trophies, golden_ball=golden_ball,
+                trophies=trophies, golden_ball=golden_ball,
                 golden_boot=golden_boot
             )
         elif position in defenders:
             update_defender_stats(
                 session=session, name=name, overall=overall, position=position,
                 team=team, matches=matches, goals=goals, assists=assists,
-                new_rating=rating, trophies=trophies, clean_sheet=clean_sheets,
+                trophies=trophies, clean_sheet=clean_sheets,
                 golden_ball=golden_ball
             )
         else:
             update_goalkeeper_stats(
                 session=session, name=name, overall=overall, position=position,
                 team=team, matches=matches, missed_goals_per_match=missed_goals,
-                new_rating=rating, trophies=trophies, clean_sheet=clean_sheets,
+                trophies=trophies, clean_sheet=clean_sheets,
                 golden_ball=golden_ball
             )
     except AttributeError as e:

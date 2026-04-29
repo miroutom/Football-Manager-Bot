@@ -195,21 +195,21 @@ def find_or_create_player(session, name: str, position: str, team: str):
         if pos_type == 'goalkeeper':
             player = PlayerClass(
                 name=name, overall=0, team=team, position=position,
-                matches=0, rating=0, clean_sheets=0, missed_goals=0,
+                matches=0, clean_sheets=0, missed_goals=0,
                 trophies=0, golden_balls=0, golden_boots=0, golden_gloves=0,
                 golden_boys=0, nation=None, status=None, yellow_cards=0, red_cards=0,
             )
         elif pos_type == 'defender':
             player = PlayerClass(
                 name=name, overall=0, team=team, position=position,
-                matches=0, goals=0, assists=0, ga=0, rating=0,
+                matches=0, goals=0, assists=0, ga=0,
                 clean_sheets=0, trophies=0, golden_balls=0, golden_boots=0,
                 golden_boys=0, nation=None, status=None, yellow_cards=0, red_cards=0,
             )
         else:
             player = PlayerClass(
                 name=name, overall=0, team=team, position=position,
-                matches=0, goals=0, assists=0, ga=0, rating=0,
+                matches=0, goals=0, assists=0, ga=0,
                 trophies=0, golden_balls=0, golden_boots=0, golden_boys=0,
                 nation=None, status=None, yellow_cards=0, red_cards=0,
             )

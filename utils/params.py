@@ -14,7 +14,6 @@ def forward_midfielder_params(root, name, position):
         goals = goals_entry.get()
         assists = assists_entry.get()
         matches = matches_entry.get()
-        new_rating = rating_entry.get()
         trophies = trophies_entry.get()
         golden_ball = golden_ball_var.get()
         golden_boot = golden_boot_var.get()
@@ -24,11 +23,12 @@ def forward_midfielder_params(root, name, position):
                 update_forward_stats(
                     session=session,
                     name=name,
+                    overall=0,
+                    team="",
                     position=position,
                     matches=int(matches) if matches else 1,
                     goals=int(goals) if goals else 0,
                     assists=int(assists) if assists else 0,
-                    new_rating=float(new_rating) if new_rating else 4.0,
                     trophies=int(trophies) if trophies else 0,
                     golden_ball=golden_ball,
                     golden_boot=golden_boot
@@ -37,11 +37,12 @@ def forward_midfielder_params(root, name, position):
                 update_midfielder_stats(
                     session=session,
                     name=name,
+                    overall=0,
+                    team="",
                     position=position,
                     matches=int(matches) if matches else 1,
                     goals=int(goals) if goals else 0,
                     assists=int(assists) if assists else 0,
-                    new_rating=float(new_rating) if new_rating else 4.0,
                     trophies=int(trophies) if trophies else 0,
                     golden_ball=golden_ball,
                     golden_boot=golden_boot
@@ -62,18 +63,14 @@ def forward_midfielder_params(root, name, position):
     assists_entry = tk.Entry(root)
     assists_entry.grid(row=5, column=1, padx=10, pady=5)
 
-    tk.Label(root, text="Рейтинг").grid(row=6, column=0, padx=10, pady=5)
-    rating_entry = tk.Entry(root)
-    rating_entry.grid(row=6, column=1, padx=10, pady=5)
-
-    tk.Label(root, text="Трофеи").grid(row=7, column=0, padx=10, pady=5)
+    tk.Label(root, text="Трофеи").grid(row=6, column=0, padx=10, pady=5)
     trophies_entry = tk.Entry(root)
-    trophies_entry.grid(row=7, column=1, padx=10, pady=5)
+    trophies_entry.grid(row=6, column=1, padx=10, pady=5)
 
-    tk.Label(root, text="Золотой мяч").grid(row=8, column=0, padx=10, pady=5)
+    tk.Label(root, text="Золотой мяч").grid(row=7, column=0, padx=10, pady=5)
     golden_ball_var = tk.BooleanVar()
     golden_ball_check = tk.Checkbutton(root, text="Да", variable=golden_ball_var)
-    golden_ball_check.grid(row=8, column=1, padx=10, pady=5)
+    golden_ball_check.grid(row=7, column=1, padx=10, pady=5)
 
     tk.Label(root, text="Золотая бутса").grid(row=9, column=0, padx=10, pady=5)
     golden_boot_var = tk.BooleanVar()
@@ -89,7 +86,6 @@ def defender_params(root, name, position):
         goals = goals_entry.get()
         assists = assists_entry.get()
         matches = matches_entry.get()
-        new_rating = rating_entry.get()
         trophies = trophies_entry.get()
         golden_ball = golden_ball_var.get()
         clean_sheets = clean_sheets_entry.get()
@@ -98,11 +94,12 @@ def defender_params(root, name, position):
             update_defender_stats(
                 session=session,
                 name=name,
+                overall=0,
+                team="",
                 position=position,
                 matches=int(matches) if matches else 1,
                 goals=int(goals) if goals else 0,
                 assists=int(assists) if assists else 0,
-                new_rating=float(new_rating) if new_rating else 4.0,
                 trophies=int(trophies) if trophies else 0,
                 clean_sheet=int(clean_sheets) if clean_sheets else 0,
                 golden_ball=golden_ball,
@@ -123,22 +120,18 @@ def defender_params(root, name, position):
     assists_entry = tk.Entry(root)
     assists_entry.grid(row=5, column=1, padx=10, pady=5)
 
-    tk.Label(root, text="Рейтинг").grid(row=6, column=0, padx=10, pady=5)
-    rating_entry = tk.Entry(root)
-    rating_entry.grid(row=6, column=1, padx=10, pady=5)
-
-    tk.Label(root, text="Трофеи").grid(row=7, column=0, padx=10, pady=5)
+    tk.Label(root, text="Трофеи").grid(row=6, column=0, padx=10, pady=5)
     trophies_entry = tk.Entry(root)
-    trophies_entry.grid(row=7, column=1, padx=10, pady=5)
+    trophies_entry.grid(row=6, column=1, padx=10, pady=5)
 
     tk.Label(root, text="Сухие матчи").grid(row=7, column=0, padx=10, pady=5)
     clean_sheets_entry = tk.Entry(root)
-    clean_sheets_entry.grid(row=8, column=1, padx=10, pady=5)
+    clean_sheets_entry.grid(row=7, column=1, padx=10, pady=5)
 
     tk.Label(root, text="Золотой мяч").grid(row=8, column=0, padx=10, pady=5)
     golden_ball_var = tk.BooleanVar()
     golden_ball_check = tk.Checkbutton(root, text="Да", variable=golden_ball_var)
-    golden_ball_check.grid(row=9, column=1, padx=10, pady=5)
+    golden_ball_check.grid(row=8, column=1, padx=10, pady=5)
 
     update_button = tk.Button(root, text="Обновить статистику игрока", command=on_update)
     update_button.grid(row=10, column=0, columnspan=2, pady=10)
@@ -147,7 +140,6 @@ def defender_params(root, name, position):
 def goalkeeper_params(root, name, position):
     def on_update():
         matches = matches_entry.get()
-        new_rating = rating_entry.get()
         trophies = trophies_entry.get()
         missed_goals = missed_goals_entry.get()
         golden_ball = golden_ball_var.get()
@@ -157,10 +149,11 @@ def goalkeeper_params(root, name, position):
             update_goalkeeper_stats(
                 session=session,
                 name=name,
+                overall=0,
+                team="",
                 position=position,
                 matches=int(matches) if matches else 1,
                 missed_goals_per_match=int(missed_goals) if missed_goals else 0,
-                new_rating=float(new_rating) if new_rating else 4.0,
                 trophies=int(trophies) if trophies else 0,
                 clean_sheet=int(clean_sheets) if clean_sheets else 0,
                 golden_ball=golden_ball,
@@ -173,26 +166,22 @@ def goalkeeper_params(root, name, position):
     matches_entry = tk.Entry(root)
     matches_entry.grid(row=3, column=1, padx=10, pady=5)
 
-    tk.Label(root, text="Рейтинг").grid(row=6, column=0, padx=10, pady=5)
-    rating_entry = tk.Entry(root)
-    rating_entry.grid(row=4, column=1, padx=10, pady=5)
-
-    tk.Label(root, text="Трофеи").grid(row=7, column=0, padx=10, pady=5)
+    tk.Label(root, text="Трофеи").grid(row=4, column=0, padx=10, pady=5)
     trophies_entry = tk.Entry(root)
-    trophies_entry.grid(row=5, column=1, padx=10, pady=5)
+    trophies_entry.grid(row=4, column=1, padx=10, pady=5)
 
-    tk.Label(root, text="Сухие матчи").grid(row=7, column=0, padx=10, pady=5)
+    tk.Label(root, text="Сухие матчи").grid(row=5, column=0, padx=10, pady=5)
     clean_sheets_entry = tk.Entry(root)
-    clean_sheets_entry.grid(row=6, column=1, padx=10, pady=5)
+    clean_sheets_entry.grid(row=5, column=1, padx=10, pady=5)
 
-    tk.Label(root, text="Пропущенные голы").grid(row=7, column=0, padx=10, pady=5)
+    tk.Label(root, text="Пропущенные голы").grid(row=6, column=0, padx=10, pady=5)
     missed_goals_entry = tk.Entry(root)
-    missed_goals_entry.grid(row=7, column=1, padx=10, pady=5)
+    missed_goals_entry.grid(row=6, column=1, padx=10, pady=5)
 
-    tk.Label(root, text="Золотой мяч").grid(row=8, column=0, padx=10, pady=5)
+    tk.Label(root, text="Золотой мяч").grid(row=7, column=0, padx=10, pady=5)
     golden_ball_var = tk.BooleanVar()
     golden_ball_check = tk.Checkbutton(root, text="Да", variable=golden_ball_var)
-    golden_ball_check.grid(row=8, column=1, padx=10, pady=5)
+    golden_ball_check.grid(row=7, column=1, padx=10, pady=5)
 
     update_button = tk.Button(root, text="Обновить статистику игрока", command=on_update)
-    update_button.grid(row=9, column=0, columnspan=2, pady=10)
+    update_button.grid(row=8, column=0, columnspan=2, pady=10)

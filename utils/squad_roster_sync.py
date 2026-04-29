@@ -72,16 +72,12 @@ def _all_rows_same_player(session, name: str, team: str) -> list[tuple[Any, type
 
 
 def _merge_carry_dicts(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
-    """Суммирует статистику из двух carry-словарей (рейтинг — по матчам взвешенно)."""
+    """Суммирует статистику из двух carry-словарей (дубли строк в БД)."""
     m1 = int(a.get("matches", 0) or 0)
     m2 = int(b.get("matches", 0) or 0)
     mt = m1 + m2
-    r1 = float(a.get("rating", 0) or 0)
-    r2 = float(b.get("rating", 0) or 0)
-    rt = (r1 * m1 + r2 * m2) / mt if mt else 0.0
     out: dict[str, Any] = {
         "matches": mt,
-        "rating": rt,
         "trophies": int(a.get("trophies", 0) or 0) + int(b.get("trophies", 0) or 0),
         "golden_balls": int(a.get("golden_balls", 0) or 0) + int(b.get("golden_balls", 0) or 0),
     }
@@ -144,7 +140,6 @@ def _new_player_kwargs(
         nation=(nation.strip() if nation else None) or None,
         status=st,
         matches=int(c.get("matches", 0) or 0),
-        rating=float(c.get("rating", 0) or 0),
         trophies=int(c.get("trophies", 0) or 0),
         golden_balls=int(c.get("golden_balls", 0) or 0),
     )
@@ -184,7 +179,6 @@ def _new_player_kwargs(
 def _carry_from_row(row: Any) -> dict[str, Any]:
     out: dict[str, Any] = {
         "matches": getattr(row, "matches", 0),
-        "rating": getattr(row, "rating", 0.0),
         "trophies": getattr(row, "trophies", 0),
         "golden_balls": getattr(row, "golden_balls", 0),
     }

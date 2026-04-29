@@ -117,26 +117,17 @@ def _merge_player_tables(src: Any, dst: Any, Cls: type) -> None:
                 setattr(
                     row,
                     attr,
-                    max(
-                        int(getattr(row, attr, 0) or 0),
-                        int(getattr(p, attr, 0) or 0),
-                    ),
+                    int(getattr(row, attr, 0) or 0)
+                    + int(getattr(p, attr, 0) or 0),
                 )
-        tot_m = row.matches
-        if tot_m > 0 and hasattr(row, "overall"):
-            row.overall = (
-                int(getattr(row, "overall", 0) or 0) * old_m
-                + int(getattr(p, "overall", 0) or 0) * add_m
-            ) // tot_m
-        if tot_m > 0 and hasattr(row, "rating"):
-            row.rating = round(
-                (
-                    float(getattr(row, "rating", 0) or 0) * old_m
-                    + float(getattr(p, "rating", 0) or 0) * add_m
-                )
-                / tot_m,
-                1,
-            )
+        # Ростер из снимка только что завершённого сезона (совпадает с активной заявкой в архиве)
+        row.overall = int(getattr(p, "overall", 0) or 0)
+        row.team = getattr(p, "team", row.team)
+        row.position = getattr(p, "position", row.position)
+        if hasattr(row, "status"):
+            row.status = getattr(p, "status", None)
+        if hasattr(row, "nation"):
+            row.nation = getattr(p, "nation", None)
 
 
 def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[str, Any]:

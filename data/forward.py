@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import Session
 
 from utils.utils import Base
@@ -17,7 +17,6 @@ def update_forward_stats(
         goals: int = 0,
         assists: int = 0,
         matches: int = 0,
-        new_rating: float = 4.0,
         trophies: int = 0,
         golden_ball: bool = False,
         golden_boot: bool = False,
@@ -34,7 +33,7 @@ def update_forward_stats(
     player = players.first()
 
     if not player:
-        print(f"Игрок {player.name} {player.position} {player.team} не найден.")
+        print(f"Игрок {name!r} (клуб {team!r}, поз. {position!r}) не найден.")
         return
 
     player.goals += goals
@@ -42,7 +41,6 @@ def update_forward_stats(
     player.assists += assists
     player.ga = player.goals + player.assists
     player.matches += matches
-    player.rating = round((player.rating * (player.matches - matches) + new_rating * matches) / player.matches, 1) if player.matches != 0 else 0
     player.trophies += trophies
     player.golden_balls += int(golden_ball)
     player.golden_boots += int(golden_boot)
@@ -61,7 +59,6 @@ class Forward(Base):
     goals = Column(Integer, default=0)
     assists = Column(Integer, default=0)
     ga = Column(Integer, default=0)
-    rating = Column(Float, default=0)
     # Трофеи **национальной** лиги (только в league-БД). В common — общая сумма с ЛЧ.
     trophies = Column(Integer, default=0)
     golden_balls = Column(Integer, default=0)

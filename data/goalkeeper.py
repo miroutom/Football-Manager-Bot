@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String
 
 from utils.utils import Base
 
@@ -14,7 +14,6 @@ def update_goalkeeper_stats(
         position: str = "",
         team: str = "",
         matches: int = 0,
-        new_rating: float = 4.0,
         trophies: int = 0,
         missed_goals_per_match: int = 0,
         clean_sheet: int = 0,
@@ -32,12 +31,11 @@ def update_goalkeeper_stats(
     player = players.first()
 
     if not player:
-        print(f"Игрок {player.name} {player.position} {player.team} не найден.")
+        print(f"Игрок {name!r} (клуб {team!r}, поз. {position!r}) не найден.")
         return
 
     player.matches += matches
     player.overall = overall if overall != 0 else player.overall
-    player.rating = round((player.rating * (player.matches - matches) + new_rating * matches) / player.matches, 1) if player.matches != 0 else 0
     player.clean_sheets += clean_sheet if matches != 0 else 0
     player.missed_goals += missed_goals_per_match if matches != 0 else 0
     player.trophies += trophies
@@ -54,7 +52,6 @@ class Goalkeeper(Base):
     team = Column(String, nullable=False)
     position = Column(String, nullable=False)
     matches = Column(Integer, default=0)
-    rating = Column(Float, default=0)
     clean_sheets = Column(Integer, default=0)
     missed_goals = Column(Integer, default=0)
     # БД лиги: трофеи лиги; БД ЛЧ: трофеи ЛЧ; common — сумма.

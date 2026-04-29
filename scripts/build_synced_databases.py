@@ -43,16 +43,6 @@ def _row_i(row: sqlite3.Row, col: str, default: int = 0) -> int:
     return int(v)
 
 
-def _row_f(row: sqlite3.Row, col: str, default: float = 0.0) -> float:
-    try:
-        v = row[col]
-    except (KeyError, IndexError):
-        return default
-    if v is None:
-        return default
-    return float(v)
-
-
 def _aggregate_archive_sqlite(db_path: Path) -> dict[tuple[str, str], dict]:
     """
     Читает архивную SQLite без ORM (старые файлы могут быть без колонки ``status``).
@@ -73,12 +63,10 @@ def _aggregate_archive_sqlite(db_path: Path) -> dict[tuple[str, str], dict]:
                 "missed_goals": 0,
                 "overall_num": 0,
                 "overall_den": 0,
-                "rating_num": 0.0,
-                "rating_den": 0,
             },
         )
         for key, val in kwargs.items():
-            if key in ("overall_num", "overall_den", "rating_num", "rating_den"):
+            if key in ("overall_num", "overall_den"):
                 slot[key] = slot.get(key, 0) + val
             else:
                 slot[key] = int(slot.get(key, 0) or 0) + int(val or 0)
@@ -106,8 +94,6 @@ def _aggregate_archive_sqlite(db_path: Path) -> dict[tuple[str, str], dict]:
                         k,
                         overall_num=_row_i(row, "overall") * m,
                         overall_den=m,
-                        rating_num=_row_f(row, "rating") * m,
-                        rating_den=m,
                     )
 
         for row in conn.execute("SELECT * FROM goalkeepers"):
@@ -126,8 +112,6 @@ def _aggregate_archive_sqlite(db_path: Path) -> dict[tuple[str, str], dict]:
                     k,
                     overall_num=_row_i(row, "overall") * m,
                     overall_den=m,
-                    rating_num=_row_f(row, "rating") * m,
-                    rating_den=m,
                 )
     finally:
         conn.close()
@@ -136,9 +120,7 @@ def _aggregate_archive_sqlite(db_path: Path) -> dict[tuple[str, str], dict]:
         g, a = int(s.get("goals", 0)), int(s.get("assists", 0))
         s["ga"] = g + a
         od = int(s.get("overall_den", 0) or 0)
-        rd = int(s.get("rating_den", 0) or 0)
         s["overall_w"] = s["overall_num"] // od if od else 0
-        s["rating_w"] = round(s["rating_num"] / rd, 1) if rd else 0.0
     return agg
 
 
@@ -165,7 +147,6 @@ def _apply_agg_to_target(target_session, agg: dict[tuple[str, str], dict]) -> in
                 row.golden_boots = int(s.get("golden_boots", 0) or 0)
             if hasattr(row, "clean_sheets"):
                 row.clean_sheets = int(s.get("clean_sheets", 0) or 0)
-            row.rating = float(s.get("rating_w", 0) or 0)
 
     for row in target_session.query(Goalkeeper).all():
         s = agg.get(_stat_key(row.name, row.team))
@@ -177,7 +158,6 @@ def _apply_agg_to_target(target_session, agg: dict[tuple[str, str], dict]) -> in
         row.missed_goals = int(s.get("missed_goals", 0) or 0)
         row.trophies = int(s.get("trophies", 0) or 0)
         row.golden_balls = int(s.get("golden_balls", 0) or 0)
-        row.rating = float(s.get("rating_w", 0) or 0)
 
     target_session.commit()
     return n

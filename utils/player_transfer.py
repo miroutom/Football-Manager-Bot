@@ -208,7 +208,6 @@ def _new_player_kwargs(
         position=pos_u,
         overall=u,
         matches=0,
-        rating=0.0,
         trophies=0,
         golden_balls=0,
         nation=None,
