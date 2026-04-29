@@ -140,6 +140,10 @@ def finalize_season() -> dict[str, Any]:
 
     tr = apply_season_trophies_from_standings()
     log["trophies"] = tr
+
+    from utils.cumulative_db import append_current_season_to_cumulative
+
+    log["cumulative_merge"] = append_current_season_to_cumulative().get("cumulative", [])
     from utils.cl_standing_participants import (
         build_cl_top30_from_current_pickles,
         write_cl_participants_file,

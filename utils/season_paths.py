@@ -8,11 +8,15 @@
 
 В режиме per_season рабочие файлы: ``db/season_{active_season}/league.db``,
 ``champions_league.db``, ``common.db``; pickle — в ``.../pickle/``.
+
+Накопительная статистика за все сезоны: ``db/cumulative/league.db``,
+``champions_league.db``, ``common.db`` (пополняются при «Завершить сезон»).
 """
 from __future__ import annotations
 
 import json
 import os
+import shutil
 from typing import Any
 
 # Не тянем utils (циклический импорт); корень = родитель пакета utils
@@ -24,6 +28,9 @@ _STATE_FILE = os.path.join(_DB, "season_state.json")
 SEASON_LEAGUE_NAME = "league.db"
 SEASON_CL_NAME = "champions_league.db"
 SEASON_COMMON_NAME = "common.db"
+
+# Накопительная статистика за все сезоны (не сбрасывается при смене сезона)
+CUMULATIVE_SUBDIR = "cumulative"
 
 # Legacy-имена (текущий репо)
 LEGACY_LEAGUE = "league_synced.db"
@@ -102,3 +109,52 @@ def ensure_pickle_subdir() -> str:
     d = get_pickle_directory()
     os.makedirs(d, exist_ok=True)
     return d
+
+
+def get_cumulative_directory() -> str:
+    return os.path.join(_DB, CUMULATIVE_SUBDIR)
+
+
+def get_cumulative_league_db_path() -> str:
+    return os.path.join(get_cumulative_directory(), SEASON_LEAGUE_NAME)
+
+
+def get_cumulative_cl_db_path() -> str:
+    return os.path.join(get_cumulative_directory(), SEASON_CL_NAME)
+
+
+def get_cumulative_common_db_path() -> str:
+    return os.path.join(get_cumulative_directory(), SEASON_COMMON_NAME)
+
+
+def season_archive_directory(season_num: int) -> str:
+    return os.path.join(_DB, f"season_{int(season_num)}")
+
+
+def repair_per_season_database_files() -> list[str]:
+    """
+    Если в season_state режим per_season, а файлов league.db в папке сезона нет,
+    копируем из legacy *_synced.db в активную папку (восстановление после сбоя).
+    Возвращает список выполненных действий (для логов).
+    """
+    if is_legacy_mode():
+        return []
+    actions: list[str] = []
+    league = get_league_db_path()
+    season_dir = os.path.dirname(league)
+    if os.path.isfile(league) and os.path.isfile(get_cl_db_path()) and os.path.isfile(get_common_db_path()):
+        return actions
+    os.makedirs(season_dir, exist_ok=True)
+    leg_l = os.path.join(_DB, LEGACY_LEAGUE)
+    leg_c = os.path.join(_DB, LEGACY_CL)
+    leg_o = os.path.join(_DB, LEGACY_COMMON)
+    if not os.path.isfile(league) and os.path.isfile(leg_l):
+        shutil.copy2(leg_l, league)
+        actions.append(f"restored {league} from legacy")
+    if not os.path.isfile(get_cl_db_path()) and os.path.isfile(leg_c):
+        shutil.copy2(leg_c, get_cl_db_path())
+        actions.append("restored cl db from legacy")
+    if not os.path.isfile(get_common_db_path()) and os.path.isfile(leg_o):
+        shutil.copy2(leg_o, get_common_db_path())
+        actions.append("restored common from legacy")
+    return actions

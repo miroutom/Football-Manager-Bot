@@ -14,6 +14,8 @@ def reinit_db_connections() -> None:
     """Пересоздать движки/сессии (после смены сезона)."""
     from utils import season_paths
 
+    season_paths.repair_per_season_database_files()
+
     global LEAGUE_DB_PATH, CHAMPIONS_LEAGUE_DB_PATH, COMMON_DB_PATH
     global engine_league, engine_cl, engine_common
     global SessionLeague, SessionCL, SessionCommon

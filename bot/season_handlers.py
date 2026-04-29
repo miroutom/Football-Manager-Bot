@@ -37,6 +37,14 @@ def _confirm_kb() -> InlineKeyboardMarkup:
 
 @season_router.callback_query(F.data == "menu:end_season")
 async def cb_season_menu(callback: CallbackQuery) -> None:
+    from bot.season_tools import can_finish_season
+
+    if not can_finish_season():
+        await callback.answer(
+            "Сезон можно завершить только когда в календаре не осталось несыгранных матчей.",
+            show_alert=True,
+        )
+        return
     await callback.answer()
     if not callback.message:
         return
@@ -70,6 +78,13 @@ async def cb_season_no(callback: CallbackQuery) -> None:
 
 @season_router.callback_query(F.data == "season:finalize:yes")
 async def cb_season_yes(callback: CallbackQuery) -> None:
+    from bot.season_tools import can_finish_season
+
+    if not can_finish_season():
+        await callback.answer(
+            "Календарь ещё не закрыт — завершение отменено.", show_alert=True
+        )
+        return
     await callback.answer("Считаю…")
     if not callback.message:
         return

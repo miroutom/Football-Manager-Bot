@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -216,7 +217,7 @@ def rebuild_common_database(
     scl = session_cl_ or session_cl
     scommon = session_common_ or session_common
 
-    Base.metadata.create_all(engine_common)
+    Base.metadata.create_all(scommon.get_bind())
     common = scommon
 
     for cls in (Forward, Midfielder, Defender, Goalkeeper):
@@ -327,6 +328,45 @@ def common_db_paths_info() -> str:
         f"cl: {CHAMPIONS_LEAGUE_DB_PATH}\n"
         f"common: {engine_common.url}"
     )
+
+
+def rebuild_common_database_for_disk_paths(
+    league_path: str,
+    cl_path: str,
+    common_path: str,
+) -> None:
+    """
+    Пересобрать ``common`` на диске из двух указанных SQLite (лига + ЛЧ).
+    Не трогает глобальные сессии ``utils``.
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    if not os.path.isfile(league_path) or not os.path.isfile(cl_path):
+        return
+    parent = os.path.dirname(os.path.abspath(common_path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    el = create_engine(f"sqlite:///{league_path}")
+    ec = create_engine(f"sqlite:///{cl_path}")
+    eo = create_engine(f"sqlite:///{common_path}")
+    Sl = sessionmaker(bind=el)
+    Scl = sessionmaker(bind=ec)
+    So = sessionmaker(bind=eo)
+    sl, scl, so = Sl(), Scl(), So()
+    try:
+        rebuild_common_database(
+            session_league_=sl,
+            session_cl_=scl,
+            session_common_=so,
+        )
+    finally:
+        sl.close()
+        scl.close()
+        so.close()
+        el.dispose()
+        ec.dispose()
+        eo.dispose()
 
 
 if __name__ == "__main__":

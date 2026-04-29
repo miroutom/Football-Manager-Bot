@@ -24,13 +24,14 @@ from aiogram.types import (
 from bot.image_render import render_monospace_png_bytes
 from bot.services import (
     LEAGUE_LABELS,
+    render_archived_season_top_scorers,
     render_cl_bracket_text,
+    render_cumulative_top_scorers,
     render_full_status_text,
     render_journal_report,
     render_next_match_text,
     render_schedule_intrinsic_rounds,
     render_schedule_mixed,
-    render_schedule_queue_text,
     render_skipped_matches_text,
     render_standings,
     render_team_goalscorers_league,
@@ -173,6 +174,40 @@ def _tgclub_keyboard(league_code: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _stats_history_root_kb() -> InlineKeyboardMarkup:
+    from utils.cumulative_db import list_season_archives_with_db
+
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="Всё время · все лиги",
+                callback_data="stats:hist:life:a",
+            ),
+        ],
+        [
+            InlineKeyboardButton(text="РПЛ", callback_data="stats:hist:life:rpl"),
+            InlineKeyboardButton(text="АПЛ", callback_data="stats:hist:life:eng"),
+            InlineKeyboardButton(text="Ла Лига", callback_data="stats:hist:life:esp"),
+        ],
+        [
+            InlineKeyboardButton(text="Серия А", callback_data="stats:hist:life:ita"),
+            InlineKeyboardButton(text="Бундес", callback_data="stats:hist:life:ger"),
+            InlineKeyboardButton(text="ЛЧ", callback_data="stats:hist:life:cl"),
+        ],
+    ]
+    seasons = list_season_archives_with_db()
+    if seasons:
+        row = [
+            InlineKeyboardButton(
+                text=f"Сезон {n}",
+                callback_data=f"stats:hist:arch:{n}:a",
+            )
+            for n in seasons[-8:]
+        ]
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 def _schedule_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -275,7 +310,8 @@ async def cmd_start(message: Message) -> None:
             "Запись счёта: «✅ Записать следующий», «✏️ Ручной матч», «📌 Из пропусков» или "
             "/play_next, /match, /play_skipped.\n"
             "Трансфер игрока — кнопка «🔄 Трансфер» или /transfer.\n"
-            "Расписание, топ-100, топы лига+ЛЧ, голеадоры по клубам, стата без матча — кнопки в меню или /help.\n"
+            "📅 Расписание — весь календарь картинками; 📚 Стата сезонов — всё время и архив. "
+            "Топ-100, топы лига+ЛЧ, голеадоры, стата без матча — в меню или /help.\n"
             "Снизу экрана кнопка «📋 Меню» снова открывает главное меню."
         ),
         inline_title="Выберите действие:",
@@ -386,14 +422,44 @@ async def cb_menu_next(callback: CallbackQuery) -> None:
         await callback.message.answer(f"Ошибка: {e}")
 
 
-@router.callback_query(F.data == "menu:queue")
-async def cb_menu_queue(callback: CallbackQuery) -> None:
+@router.callback_query(F.data == "menu:stats_history")
+async def cb_menu_stats_history(callback: CallbackQuery) -> None:
     await callback.answer()
+    await callback.message.answer(
+        "Накопительная стата (db/cumulative) после каждого завершения сезона.\n"
+        "Текущий сезон — обычные кнопки «Бомбардиры» / «Ещё топы».",
+        reply_markup=_stats_history_root_kb(),
+    )
+
+
+@router.callback_query(F.data.startswith("stats:hist:"))
+async def cb_stats_history_run(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) < 4:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    mode = parts[2]
+    await callback.answer("Считаю…")
     try:
-        text = await asyncio.to_thread(render_schedule_queue_text, 18)
-        await answer_report_photos(callback.message, text, "Очередь календаря")
+        if mode == "life":
+            code = parts[3]
+            lc = None if code == "a" else code
+            text = await asyncio.to_thread(render_cumulative_top_scorers, lc, 30)
+            cap = "Топ бомбардиров · всё время"
+        elif mode == "arch" and len(parts) >= 5:
+            sn = int(parts[3])
+            code = parts[4]
+            lc = None if code == "a" else code
+            text = await asyncio.to_thread(
+                render_archived_season_top_scorers, sn, lc, 30
+            )
+            cap = f"Топ бомбардиров · сезон {sn}"
+        else:
+            await callback.message.answer("Неизвестный режим.")
+            return
+        await answer_report_photos(callback.message, text, cap)
     except Exception as e:
-        logger.exception("queue")
+        logger.exception("stats:hist")
         await callback.message.answer(f"Ошибка: {e}")
 
 
@@ -480,16 +546,6 @@ async def cmd_next(message: Message) -> None:
     await message.answer(to_pre_html(text), parse_mode=ParseMode.HTML)
 
 
-@router.message(Command("queue"))
-async def cmd_queue(message: Message) -> None:
-    try:
-        text = await asyncio.to_thread(render_schedule_queue_text, 18)
-        await answer_report_photos(message, text, "Очередь календаря")
-    except Exception as e:
-        logger.exception("queue")
-        await message.answer(f"Ошибка: {e}")
-
-
 @router.message(Command("skipped"))
 async def cmd_skipped(message: Message) -> None:
     try:
@@ -512,12 +568,22 @@ async def cmd_journal(message: Message) -> None:
 
 @router.callback_query(F.data == "menu:schedule")
 async def cb_menu_schedule(callback: CallbackQuery) -> None:
-    await callback.answer()
-    await callback.message.answer(
-        "Расписание (как «v» в main, без поиска по названию команды).\n"
-        "Смеш — матч-дни; Туры — календарь лиги; Журнал — match_results.",
-        reply_markup=_schedule_menu_kb(),
-    )
+    """Сразу весь mixed_schedule.json (все слоты), как «Смеш · все»; подменю — для других срезов."""
+    await callback.answer("Генерация…")
+    try:
+        text = await asyncio.to_thread(render_schedule_mixed, None, "all")
+        await answer_report_photos(
+            callback.message,
+            text,
+            "Смешанное расписание — все матчи",
+        )
+        await callback.message.answer(
+            "Другие срезы: остаток по лигам, туры лиг, сыгранное из журнала.",
+            reply_markup=_schedule_menu_kb(),
+        )
+    except Exception as e:
+        logger.exception("menu:schedule")
+        await callback.message.answer(f"Ошибка: {e}")
 
 
 @router.callback_query(F.data == "menu:stats_match")

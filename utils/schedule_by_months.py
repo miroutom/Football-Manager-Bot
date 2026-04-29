@@ -3,7 +3,8 @@
 Смешанное расписание v3: 10 «месяцев» (day 1..10).
 Нац. лиги: туры 1–9 в месяцах 1–5, туры 10–18 в 6–10; в первой половине нет пары
 и обратной (второй круг только в 6–10).
-ЛЧ: 8+8 матчей, без соперников из той же страны; плей-офф не генерируется.
+ЛЧ: только лиговая фаза — 8 матчей на команду в месяцах 1–5 (без дерби по стране);
+   месяцы 6–10 без матчей ЛЧ (плей-офф задаётся позже).
 """
 from __future__ import annotations
 
@@ -91,12 +92,13 @@ def _one_perfect_round(
     return rec(names)
 
 
-def _build_cl_sixteen_rounds(
+def _build_cl_league_phase_eight_rounds(
     cl_teams: list[str],
     rng: random.Random,
 ) -> list[list[tuple[str, str]]] | None:
     """
-    8 туров (каждая команда 8 соперников) + 8 обратных встреч.
+    8 туров ЛЧ (30 команд, 15 матчей в туре): без соперников из одной страны,
+    каждая команда — 8 разных соперников. Обратные матчи не входят (плей-офф позже).
     """
     teams = [_title_team(t) for t in cl_teams]
     if len(teams) != 30:
@@ -117,14 +119,8 @@ def _build_cl_sixteen_rounds(
                 e = (a, b) if a < b else (b, a)
                 used.add(e)
             first.append(m)
-        if not ok or len(first) != CL_ROUNDS_HALF:
-            continue
-
-        second: list[list[tuple[str, str]]] = []
-        for r in first:
-            rev = [(a, b) for b, a in r]
-            second.append(rev)
-        return first + second
+        if ok and len(first) == CL_ROUNDS_HALF:
+            return first
     return None
 
 
@@ -181,7 +177,7 @@ def generate_mixed_schedule_v3(
 
     cl_rounds: list[list[tuple[str, str]]] | None = None
     for attempt in range(5000):
-        c = _build_cl_sixteen_rounds(cl_teams, rng)
+        c = _build_cl_league_phase_eight_rounds(cl_teams, rng)
         if c is not None:
             cl_rounds = c
             break
@@ -206,24 +202,14 @@ def generate_mixed_schedule_v3(
         for m, lines in {**m1, **m2}.items():
             months[m].extend(lines)
 
-    # --- ЛЧ: 8 + 8
-    cl_first8 = cl_rounds[:CL_ROUNDS_HALF]
-    cl_sec8 = cl_rounds[CL_ROUNDS_HALF:]
+    # --- ЛЧ: только месяцы 1–5 (8 туров), месяцы 6–10 без ЛЧ
     cidx = 0
     for i, n in enumerate(CL_ROUNDS_MONTHS_1_5):
         m = 1 + i
         for _ in range(n):
-            months[m].extend(_cl_rounds_to_lines(cl_first8[cidx]))
+            months[m].extend(_cl_rounds_to_lines(cl_rounds[cidx]))
             cidx += 1
-    assert cidx == 8, cidx
-
-    cidx = 0
-    for i, n in enumerate(CL_ROUNDS_MONTHS_1_5):
-        m = 6 + i
-        for _ in range(n):
-            months[m].extend(_cl_rounds_to_lines(cl_sec8[cidx]))
-            cidx += 1
-    assert cidx == 8, cidx
+    assert cidx == CL_ROUNDS_HALF, cidx
 
     # перемешивать внутри месяца, чтобы не было жёсткого пор лиг
     for m in months:

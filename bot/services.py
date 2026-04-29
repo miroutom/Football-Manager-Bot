@@ -453,6 +453,85 @@ def render_journal_report(limit: int = 120) -> str:
     return format_played_matches_report(limit=limit)
 
 
+def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> str:
+    """Топ бомбардиров из db/cumulative/common.db (сумма по завершённым сезонам)."""
+    import os
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    import player_stats
+    from utils import season_paths
+
+    p = season_paths.get_cumulative_common_db_path()
+    if not os.path.isfile(p):
+        return (
+            "Накопительная база ещё пуста. После первого «Завершить сезон» "
+            "появятся db/cumulative/*.db с суммарной статой."
+        )
+    e = create_engine(f"sqlite:///{p}")
+    S = sessionmaker(bind=e)()
+    try:
+        lc = None if not league_code or league_code in ("a", "all") else league_code
+        return player_stats.format_top_scorers_from_session(
+            S,
+            league_code=lc,
+            limit=limit,
+            title_suffix=" — все сезоны (db/cumulative)",
+        )
+    finally:
+        S.close()
+        e.dispose()
+
+
+def render_archived_season_top_scorers(
+    season_num: int,
+    league_code: str | None,
+    limit: int = 30,
+) -> str:
+    """Топ из архива db/season_n (пересборка common во временный файл)."""
+    import os
+    import tempfile
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    import player_stats
+    from utils import season_paths
+    from utils.common_db import rebuild_common_database_for_disk_paths
+
+    base = season_paths.season_archive_directory(season_num)
+    lp = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
+    cp = os.path.join(base, season_paths.SEASON_CL_NAME)
+    if not os.path.isfile(lp):
+        return f"В архиве нет league.db для сезона {season_num}."
+    if not os.path.isfile(cp):
+        return f"В архиве нет champions_league.db для сезона {season_num}."
+
+    fd, tmp = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rebuild_common_database_for_disk_paths(lp, cp, tmp)
+        e = create_engine(f"sqlite:///{tmp}")
+        S = sessionmaker(bind=e)()
+        try:
+            lc = None if not league_code or league_code in ("a", "all") else league_code
+            return player_stats.format_top_scorers_from_session(
+                S,
+                league_code=lc,
+                limit=limit,
+                title_suffix=f" — сезон {season_num} (архив)",
+            )
+        finally:
+            S.close()
+            e.dispose()
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+
+
 def split_text_chunks(text: str, max_len: int = 3800) -> list[str]:
     """Не рвём UTF-8 и по возможности по строкам."""
     if len(text) <= max_len:

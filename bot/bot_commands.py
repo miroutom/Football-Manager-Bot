@@ -26,7 +26,6 @@ async def setup_bot_commands(bot: Bot) -> None:
             BotCommand(command="bracket", description="Сетка ЛЧ (картинка)"),
             BotCommand(command="status", description="Полный статус сезона (картинка)"),
             BotCommand(command="next", description="Следующий матч по календарю"),
-            BotCommand(command="queue", description="Очередь ближайших матчей"),
             BotCommand(command="skipped", description="Отложенные матчи (просмотр)"),
             BotCommand(command="journal", description="Журнал сыгранных матчей"),
         ],
