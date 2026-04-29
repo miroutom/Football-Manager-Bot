@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -90,24 +90,20 @@ def _cascade_status(
         worst.status = "reserve"
 
 
-def apply_transfer_with_status(
+def _apply_transfer_with_status_to_sessions(
+    sess_league,
+    sess_cl,
     player: str,
     from_team: str,
     position: str,
     to_team: str,
     new_status: str | None,
-    *,
-    rebuild_common: bool = True,
 ) -> dict[str, int]:
-    """
-    Трансфер + заявка в новом клубе. ``new_status`` is None — сброс status (старое поведение).
-    """
+    """Трансфер в указанных сессиях; коммитит обе."""
     player = player.strip()
     from_team = from_team.strip()
     to_team = to_team.strip()
     position = position.strip()
-
-    from utils.utils import session_cl, session_league
 
     counts: dict[str, int] = {"league": 0, "cl": 0}
 
@@ -127,15 +123,46 @@ def apply_transfer_with_status(
                 _cascade_status(sess, Cls, to_team, position, r, new_status)
                 counts[key] += 1
 
-    _run_session(session_league, "league")
-    session_league.commit()
-    _run_session(session_cl, "cl")
-    session_cl.commit()
+    _run_session(sess_league, "league")
+    sess_league.commit()
+    _run_session(sess_cl, "cl")
+    sess_cl.commit()
+    return counts
+
+
+def apply_transfer_with_status(
+    player: str,
+    from_team: str,
+    position: str,
+    to_team: str,
+    new_status: str | None,
+    *,
+    rebuild_common: bool = True,
+) -> dict[str, int]:
+    """
+    Трансфер + заявка в новом клубе. ``new_status`` is None — сброс status (старое поведение).
+    """
+    from utils.utils import session_cl, session_league
+
+    counts = _apply_transfer_with_status_to_sessions(
+        session_league,
+        session_cl,
+        player,
+        from_team,
+        position,
+        to_team,
+        new_status,
+    )
 
     if rebuild_common:
         from utils.common_db import rebuild_common_database
 
         rebuild_common_database()
+    from utils import cumulative_mirror
+
+    cumulative_mirror.mirror_transfer_with_status(
+        player, from_team, position, to_team, new_status
+    )
     return counts
 
 
@@ -223,18 +250,17 @@ def _new_player_kwargs(
     return kw
 
 
-def add_free_agent(
+def _add_free_agent_to_sessions(
+    session_league,
+    session_cl,
     player: str,
     position: str,
     to_team: str,
     new_status: str,
     overall: int = 72,
     *,
-    rebuild_common: bool = True,
+    on_league_duplicate: Literal["raise", "skip"] = "raise",
 ) -> dict[str, int]:
-    """
-    Новый игрок (свободный агент): вставка строки в нац. БД и в БД ЛЧ, если клуб в пуле ЛЧ.
-    """
     from utils.common_db import _team_in_cl_pool
 
     player = player.strip()
@@ -246,7 +272,6 @@ def add_free_agent(
 
     Cls = _cls_for_position(position)
     pos_u = position.strip().upper()
-    from utils.utils import session_cl, session_league
 
     def _dup(sess) -> bool:
         return bool(
@@ -259,32 +284,64 @@ def add_free_agent(
             .first()
         )
 
-    if _dup(session_league):
-        raise ValueError("Такой игрок с этой позицией в клубе уже есть (нац. БД).")
-
     kw = _new_player_kwargs(Cls, name=player, team=to_team, position=position, overall=overall)
-    row_l = Cls(**kw)
-    session_league.add(row_l)
-    session_league.flush()
-    _cascade_status(session_league, Cls, to_team, pos_u, row_l, ns)
+    counts = {"league": 0, "cl": 0}
+    if _dup(session_league):
+        if on_league_duplicate == "raise":
+            raise ValueError("Такой игрок с этой позицией в клубе уже есть (нац. БД).")
+    else:
+        row_l = Cls(**kw)
+        session_league.add(row_l)
+        session_league.flush()
+        _cascade_status(session_league, Cls, to_team, pos_u, row_l, ns)
+        counts["league"] = 1
     session_league.commit()
 
-    counts = {"league": 1, "cl": 0}
     if _team_in_cl_pool(to_team):
-        if _dup(session_cl):
-            pass
-        else:
+        if not _dup(session_cl):
             row_c = Cls(**{**kw, "id": None})
             session_cl.add(row_c)
             session_cl.flush()
             _cascade_status(session_cl, Cls, to_team, pos_u, row_c, ns)
             counts["cl"] = 1
     session_cl.commit()
+    return counts
+
+
+def add_free_agent(
+    player: str,
+    position: str,
+    to_team: str,
+    new_status: str,
+    overall: int = 72,
+    *,
+    rebuild_common: bool = True,
+) -> dict[str, int]:
+    """
+    Новый игрок (свободный агент): вставка строки в нац. БД и в БД ЛЧ, если клуб в пуле ЛЧ.
+    """
+    from utils.utils import session_cl, session_league
+
+    counts = _add_free_agent_to_sessions(
+        session_league,
+        session_cl,
+        player,
+        position,
+        to_team,
+        new_status,
+        overall,
+        on_league_duplicate="raise",
+    )
 
     if rebuild_common:
         from utils.common_db import rebuild_common_database
 
         rebuild_common_database()
+    from utils import cumulative_mirror
+
+    cumulative_mirror.mirror_add_free_agent(
+        player, position, to_team, new_status, overall
+    )
     return counts
 
 

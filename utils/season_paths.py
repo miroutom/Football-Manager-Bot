@@ -11,7 +11,8 @@
 
 Накопительная статистика за **все** сезоны — те же файлы, что и в legacy-режиме:
 ``db/league_synced.db``, ``db/champions_league_synced.db``, ``db/common_synced.db``
-(пополняются при завершении сезона; в per_season рабочие сезонные БД — в ``db/season_n/``).
+(пополняются при завершении сезона; в ``per_season`` трансферы и правки overall из бота
+дополнительно зеркалятся туда через ``utils/cumulative_mirror.py``).
 """
 from __future__ import annotations
 
