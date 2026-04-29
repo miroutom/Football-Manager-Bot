@@ -36,6 +36,8 @@ from bot.services import (
     render_schedule_mixed,
     render_skipped_matches_text,
     render_standings,
+    render_archived_season_team_goalscorers_league,
+    render_archived_season_team_goalscorers_single,
     render_team_goalscorers_league,
     render_team_goalscorers_single,
     render_team_squad_pitch_png_bytes,
@@ -176,6 +178,52 @@ def _tgclub_keyboard(league_code: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _league_keyboard_tgssel(season_num: int) -> InlineKeyboardMarkup:
+    """Выбор лиги для голеадоров по клубам из архива сезона ``season_num``."""
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for code, label in LEAGUE_LABELS:
+        row.append(
+            InlineKeyboardButton(
+                text=label,
+                callback_data=f"tgssellg:{season_num}:{code}",
+            )
+        )
+        if len(row) == 3:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _tgclub_keyboard_season(season_num: int, league_code: str) -> InlineKeyboardMarkup:
+    teams = teams_ordered_for_goalscorers(league_code)
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for idx, team in enumerate(teams):
+        row.append(
+            InlineKeyboardButton(
+                text=_club_btn_label(team),
+                callback_data=f"tgclubsn:{season_num}:{league_code}:{idx}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="📋 Все клубы подряд",
+                callback_data=f"tgsallsn:{season_num}:{league_code}",
+            ),
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 def _season_numbers_for_stats_picker() -> list[int]:
     from utils import season_paths
     from utils.cumulative_db import list_season_archives_with_db
@@ -308,6 +356,12 @@ def _stats_history_season_metric_kb(season_num: int) -> InlineKeyboardMarkup:
         ("cl", "ЛЧ"),
     ]
     rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="👥 Голеадоры по клубам",
+                callback_data=f"tgssel:{season_num}",
+            ),
+        ],
         [
             InlineKeyboardButton(text="⚽ Все лиги", callback_data=f"{p}:g:a"),
             InlineKeyboardButton(text="🎯 Все лиги", callback_data=f"{p}:as:a"),
@@ -603,8 +657,9 @@ async def cb_menu_stats_history(callback: CallbackQuery) -> None:
         "<b>Стата сезонов</b>\n"
         "• <b>Всё время</b> — <code>league_synced.db</code>, <code>champions_league_synced.db</code>, "
         "<code>common_synced.db</code>.\n"
-        "• <b>Сезон</b> — снимок из <code>db/season_N/</code> (любой номер из списка).\n"
-        "Текущий игровой сезон — также кнопки «Бомбардиры» / «Ещё топы» в главном меню.",
+        "• <b>Сезон</b> — снимок из <code>db/season_N/</code> (любой номер из списка): топы и "
+        "<b>«Голеадоры по клубам»</b> из архивной <code>league.db</code> / <code>champions_league.db</code>.\n"
+        "Текущий игровой сезон — также кнопки «Бомбардиры» / «Ещё топы» / «Голеадоры по клубам» в главном меню.",
         parse_mode="HTML",
         reply_markup=_stats_history_root_kb(),
     )
@@ -1098,4 +1153,102 @@ async def cb_tgs_all_clubs(callback: CallbackQuery) -> None:
         )
     except Exception as e:
         logger.exception("tgsall")
+        await callback.message.answer(f"Ошибка: {e}")
+
+
+@router.callback_query(F.data.startswith("tgssel:"))
+async def cb_tgssel_season_pick_league(callback: CallbackQuery) -> None:
+    """Архив: сезон уже выбран — выбор лиги для голеадоров по клубам."""
+    parts = callback.data.split(":")
+    if len(parts) != 2:
+        await callback.answer()
+        return
+    try:
+        sn = int(parts[1])
+    except ValueError:
+        await callback.answer("Неверный сезон.", show_alert=True)
+        return
+    await callback.answer()
+    await callback.message.answer(
+        f"Сезон {sn} — голеадоры по клубу. Выберите лигу:",
+        reply_markup=_league_keyboard_tgssel(sn),
+    )
+
+
+@router.callback_query(F.data.startswith("tgssellg:"))
+async def cb_tgssellg_season_league(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    try:
+        sn = int(parts[1])
+    except ValueError:
+        await callback.answer()
+        return
+    code = parts[2]
+    await callback.answer()
+    try:
+        kb = _tgclub_keyboard_season(sn, code)
+    except Exception as e:
+        logger.exception("tgssellg_kb")
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+    await callback.message.answer(
+        f"Сезон {sn} · {_league_title(code)} — выберите клуб:",
+        reply_markup=kb,
+    )
+
+
+@router.callback_query(F.data.startswith("tgclubsn:"))
+async def cb_tgclubsn_archived_team(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 4:
+        await callback.answer()
+        return
+    try:
+        sn = int(parts[1])
+        idx = int(parts[3])
+    except ValueError:
+        await callback.answer()
+        return
+    code = parts[2]
+    await callback.answer("Считаю…")
+    try:
+        text = await asyncio.to_thread(
+            render_archived_season_team_goalscorers_single, sn, code, idx
+        )
+        teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
+        team_name = teams[idx]
+        title = f"Голеадоры · сезон {sn} · {_league_title(code)} · {team_name}"
+        await answer_report_photos(callback.message, text, title)
+    except Exception as e:
+        logger.exception("tgclubsn")
+        await callback.message.answer(f"Ошибка: {e}")
+
+
+@router.callback_query(F.data.startswith("tgsallsn:"))
+async def cb_tgsallsn_archived_all(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    try:
+        sn = int(parts[1])
+    except ValueError:
+        await callback.answer()
+        return
+    code = parts[2]
+    await callback.answer("Считаю…")
+    try:
+        text = await asyncio.to_thread(
+            render_archived_season_team_goalscorers_league, sn, code
+        )
+        await answer_report_photos(
+            callback.message,
+            text,
+            f"Голеадоры по клубам · сезон {sn} · {_league_title(code)} · все клубы",
+        )
+    except Exception as e:
+        logger.exception("tgsallsn")
         await callback.message.answer(f"Ошибка: {e}")
