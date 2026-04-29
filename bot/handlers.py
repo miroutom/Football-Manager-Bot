@@ -43,6 +43,7 @@ from bot.services import (
     render_team_squad_pitch_png_bytes,
     render_top100_all_leagues,
     teams_ordered_for_goalscorers,
+    teams_ordered_for_goalscorers_season_archive,
     render_top_assists,
     render_top_assists_common,
     render_top_ga,
@@ -225,7 +226,7 @@ def _tgs_season_root_keyboard() -> InlineKeyboardMarkup:
 
 
 def _tgclub_keyboard_season(season_num: int, league_code: str) -> InlineKeyboardMarkup:
-    teams = teams_ordered_for_goalscorers(league_code)
+    teams = teams_ordered_for_goalscorers_season_archive(season_num, league_code)
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
     for idx, team in enumerate(teams):
@@ -1249,7 +1250,9 @@ async def cb_tgclubsn_archived_team(callback: CallbackQuery) -> None:
         text = await asyncio.to_thread(
             render_archived_season_team_goalscorers_single, sn, code, idx
         )
-        teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
+        teams = await asyncio.to_thread(
+            teams_ordered_for_goalscorers_season_archive, sn, code
+        )
         team_name = teams[idx]
         title = f"Голеадоры · сезон {sn} · {_league_title(code)} · {team_name}"
         await answer_report_photos(callback.message, text, title)

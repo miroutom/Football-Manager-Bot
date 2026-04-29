@@ -1518,12 +1518,15 @@ def format_team_goalscorers_league_report(
     *,
     session=None,
     title_suffix: str = "",
+    teams_order: Optional[list[str]] = None,
 ) -> str:
     """Все команды лиги подряд — как пункт «b»→4 в консоли."""
     tournament = "cl" if league_code == "cl" else "league"
     import teams as teams_mod
 
-    if league_code == "cl":
+    if teams_order is not None:
+        teams = list(teams_order)
+    elif league_code == "cl":
         teams = sorted(teams_mod.teams_champ_league.keys())
     else:
         teams = sorted(LEAGUE_TEAMS[league_code])
@@ -1538,6 +1541,8 @@ def format_team_goalscorers_league_report(
         "cl": teams_mod.teams_champ_league,
     }
     standings = standings_by_code.get(league_code)
+    if league_code == "cl" and session is not None:
+        standings = None
 
     head_extra = f" · {title_suffix}" if title_suffix else ""
     parts = [

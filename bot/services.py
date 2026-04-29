@@ -207,6 +207,71 @@ def teams_ordered_for_goalscorers(league_code: str) -> list[str]:
     return sorted(LEAGUE_TEAMS[league_code])
 
 
+def cl_team_names_from_champions_db(db_path: str) -> list[str]:
+    """Участники ЛЧ по строкам в архивной champions_league.db (DISTINCT team по всем позициям)."""
+    import sqlite3
+
+    names: set[str] = set()
+    conn = sqlite3.connect(db_path)
+    try:
+        for tbl in ("forwards", "midfielders", "defenders", "goalkeepers"):
+            try:
+                cur = conn.execute(
+                    f"SELECT DISTINCT team FROM {tbl} "
+                    "WHERE team IS NOT NULL AND trim(team) != ''"
+                )
+                for (t,) in cur:
+                    s = str(t).strip()
+                    if s:
+                        names.add(s)
+            except sqlite3.OperationalError:
+                pass
+    finally:
+        conn.close()
+    return sorted(names, key=lambda x: x.casefold())
+
+
+def _cl_teams_from_season_pickle(season_num: int) -> list[str] | None:
+    import os
+    import pickle
+
+    from utils import season_paths
+
+    p = os.path.join(
+        season_paths.season_archive_directory(int(season_num)),
+        "pickle",
+        ARCHIVE_PICKLE_BY_LEAGUE["cl"],
+    )
+    if not os.path.isfile(p):
+        return None
+    with open(p, "rb") as f:
+        arch = pickle.load(f)
+    if isinstance(arch, dict):
+        keys = [str(k).strip() for k in arch.keys() if str(k).strip()]
+        return sorted(keys, key=lambda x: x.casefold()) if keys else None
+    return None
+
+
+def teams_ordered_for_goalscorers_season_archive(
+    season_num: int, league_code: str
+) -> list[str]:
+    """
+    Клубы для клавиатуры голеадоров в архиве сезона.
+    Для ЛЧ — состав участников того сезона (БД / pickle), не текущий teams_champ_league.
+    """
+    if league_code != "cl":
+        return teams_ordered_for_goalscorers(league_code)
+    p = _archived_season_db_path_for_goalscorers(int(season_num), "cl")
+    if p:
+        names = cl_team_names_from_champions_db(p)
+        if names:
+            return names
+    from_pkl = _cl_teams_from_season_pickle(int(season_num))
+    if from_pkl:
+        return from_pkl
+    return teams_ordered_for_goalscorers("cl")
+
+
 def render_team_squad_pitch_png_bytes(league_code: str, team_index: int) -> bytes:
     """PNG: состав на поле (схема тренера, футболки + запас/резерв текстом)."""
     from bot.squad_pitch import render_squad_pitch_png_bytes
@@ -274,8 +339,16 @@ def render_archived_season_team_goalscorers_league(
     S = sessionmaker(bind=e)()
     try:
         suf = f"сезон {int(season_num)} (архив)"
+        teams_order: list[str] | None = None
+        if league_code == "cl":
+            teams_order = cl_team_names_from_champions_db(p)
+            if not teams_order:
+                teams_order = _cl_teams_from_season_pickle(int(season_num))
         return format_team_goalscorers_league_report(
-            league_code, session=S, title_suffix=suf
+            league_code,
+            session=S,
+            title_suffix=suf,
+            teams_order=teams_order,
         )
     finally:
         S.close()
@@ -298,7 +371,7 @@ def render_archived_season_team_goalscorers_single(
             f"Нет файла БД для сезона {int(season_num)}: "
             f"проверьте db/season_{int(season_num)}/."
         )
-    teams = teams_ordered_for_goalscorers(league_code)
+    teams = teams_ordered_for_goalscorers_season_archive(season_num, league_code)
     if not (0 <= team_index < len(teams)):
         raise IndexError("Некорректный выбор команды")
     team = teams[team_index]
@@ -312,6 +385,8 @@ def render_archived_season_team_goalscorers_single(
         "cl": teams_mod.teams_champ_league,
     }
     standings = standings_by_code.get(league_code)
+    if league_code == "cl":
+        standings = None
     e = create_engine(f"sqlite:///{p}")
     S = sessionmaker(bind=e)()
     try:
