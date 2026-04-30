@@ -67,6 +67,11 @@ _SEASON_COLOR = (255, 235, 130)       # золотая цифра
 _POS_TEXT = (210, 200, 170)           # текст позиции без плашки
 _POS_BORDER = (130, 110, 60)         # линия-разделитель nameplate
 
+# ── Фиксированные размеры карточки (НЕ зависят от количества) ────
+_CARD_W_FIXED = 148                     # ширина карточки px
+_CARD_H_FIXED = 185                     # высота карточки px
+_NAMEPLATE_H_FIXED = 38                 # высота полосы имени
+
 
 # ═══════════════════════════════════════════════════════════════════
 #  Загрузка ассетов
@@ -563,11 +568,12 @@ def _draw_award_card(
     given_font,
     family_font,
 ) -> None:
-    """Рисует одну карточку награды."""
-    card_radius = 6
-    info_pad = 7
-    # Единый размер для эмблемы, позиции-текста, флага — все в колонку шириной icon_size
-    icon_size = 24
+    """Рисует одну карточку награды — фиксированный компактный размер."""
+    card_radius = 5
+    info_pad = 6
+    icon_size = 28       # единый размер: эмблема, текст позиции, флаг
+    item_gap = 3         # зазор между элементами в левой колонке
+    circle_r = 16        # радиус круга сезона — КРУПНЫЙ
 
     x1 = x0 + card_w - 1
     y1 = y0 + card_h - 1
@@ -581,15 +587,10 @@ def _draw_award_card(
         width=2,
     )
 
-    # ── 2. Номер сезона — круг в правом верхнем углу, чуть выше карточки ──
+    # ── 2. Номер сезона — круг в правом верхнем углу ──
     season_txt = str(int(season)) if season is not None else "?"
-    stb = draw.textbbox((0, 0), season_txt, font=season_font)
-    s_tw = stb[2] - stb[0]
-    s_th = stb[3] - stb[1]
-    circle_r = max(s_tw, s_th) // 2 + 7
-    circle_cx = x1 - circle_r - 6
-    circle_cy = y0 + 4                # чуть выше верха карточки
-    # Круг: заливка + обводка цветом карточки
+    circle_cx = x1 - circle_r - 5
+    circle_cy = y0 + circle_r + 3
     draw.ellipse(
         (circle_cx - circle_r, circle_cy - circle_r,
          circle_cx + circle_r, circle_cy + circle_r),
@@ -602,21 +603,15 @@ def _draw_award_card(
         fill=_SEASON_COLOR, font=season_font, anchor="mm",
     )
 
-    # ── 3. Левая колонка: эмблема, позиция (текст), флаг — одного размера ──
-    info_x = x0 + info_pad
-    info_y = y0 + 8
-    item_gap = 4   # зазор между элементами
+    # ── 3. Левая колонка: эмблема, позиция, флаг — ВЫРОВНЕНЫ по центру icon_size ──
+    col_cx = x0 + info_pad + icon_size // 2    # центр колонки
+    info_y = y0 + 7
 
-    # 3a. Эмблема клуба
+    # 3a. Эмблема клуба — центрирована
     if club and str(club).strip():
         cr = _try_load_crest_rgba(_team_name_as_in_db(str(club).strip()))
         if cr is not None:
-            _paste_crest_natural(
-                im, cr,
-                info_x + icon_size // 2,
-                info_y + icon_size // 2,
-                icon_size,
-            )
+            _paste_crest_natural(im, cr, col_cx, info_y + icon_size // 2, icon_size)
     info_y += icon_size + item_gap
 
     # Позиция и нация из БД
@@ -624,29 +619,44 @@ def _draw_award_card(
     if player and str(player).strip():
         pos_db, nat_db = _lookup_position_nation(str(player).strip(), club)
 
-    # 3b. Позиция — просто текст, без плашки
+    # 3b. Позиция — текст, центрирован в колонке
     if pos_db:
         pos_txt = pos_db.upper()
-        # Центрируем текст в квадрате icon_size × icon_size
         ptb = draw.textbbox((0, 0), pos_txt, font=pos_font)
         p_w = ptb[2] - ptb[0]
         p_h = ptb[3] - ptb[1]
         draw.text(
-            (info_x + (icon_size - p_w) // 2,
-             info_y + (icon_size - p_h) // 2),
+            (col_cx - p_w // 2, info_y + (icon_size - p_h) // 2),
             pos_txt, fill=_POS_TEXT, font=pos_font,
+        )
+    else:
+        dash_f = _pick_font(10, bold=False)
+        db = draw.textbbox((0, 0), "—", font=dash_f)
+        dw = db[2] - db[0]
+        draw.text(
+            (col_cx - dw // 2, info_y + (icon_size - (db[3] - db[1])) // 2),
+            "—", fill=_INFO_TEXT_DIM, font=dash_f,
         )
     info_y += icon_size + item_gap
 
-    # 3c. Флаг нации — ресайз под icon_size
+    # 3c. Флаг нации — центрирован
     if nat_db:
-        _paste_or_draw_flag(im, draw, int(info_x), int(info_y), nat_db)
-    info_y += icon_size + item_gap
+        flag_x = col_cx - _FLAG_W // 2
+        _paste_or_draw_flag(im, draw, int(flag_x), int(info_y + (icon_size - _FLAG_H) // 2), nat_db)
+    else:
+        # Заглушка
+        fw, fh = min(_FLAG_W, icon_size), min(_FLAG_H, icon_size - 4)
+        fx = col_cx - fw // 2
+        fy = info_y + (icon_size - fh) // 2
+        draw.rectangle(
+            (fx, fy, fx + fw, fy + fh),
+            fill=(40, 40, 42), outline=(60, 58, 52),
+        )
 
-    # ── 4. Фото — строго НАД nameplate с зазором ──
-    photo_margin = 4
+    # ── 4. Фото — строго НАД nameplate ──
+    photo_margin = 3
     photo_area_top = y0 + photo_margin
-    photo_area_bottom = y1 - nameplate_h - 6
+    photo_area_bottom = y1 - nameplate_h - 4
     photo_area_h = max(8, photo_area_bottom - photo_area_top)
     photo_area_left = x0 + photo_margin
     photo_area_w = max(8, card_w - photo_margin * 2)
@@ -658,7 +668,7 @@ def _draw_award_card(
             cropped = cropped.convert("RGBA")
         im.alpha_composite(cropped, (photo_area_left, photo_area_top))
     else:
-        mark_sz = min(36, int(photo_area_w * 0.3), int(photo_area_h * 0.3))
+        mark_sz = min(32, int(photo_area_w * 0.28), int(photo_area_h * 0.28))
         _draw_unknown_mark(
             im, draw,
             x0 + card_w // 2,
@@ -666,9 +676,8 @@ def _draw_award_card(
             mark_sz, light=True,
         )
 
-    # ── 5. Тёмная полоса снизу С РАМКОЙ: имя + фамилия ──
+    # ── 5. Тёмная полоса снизу С РАМКОЙ ──
     np_y = y1 - nameplate_h + 1
-    # Полоса с рамкой
     draw.rounded_rectangle(
         (x0 + 1, np_y, x1 - 1, y1 - 1),
         radius=card_radius,
@@ -676,18 +685,16 @@ def _draw_award_card(
         outline=_CARD_NAMEPLATE_BORDER,
         width=1,
     )
-    # Верх полосы ровный (перекрываем скругление)
     draw.rectangle(
         (x0 + 2, np_y, x1 - 2, np_y + card_radius),
         fill=_CARD_NAMEPLATE,
     )
-    # Рамка сверху
     draw.line(
         [(x0 + 2, np_y), (x1 - 2, np_y)],
         fill=_CARD_NAMEPLATE_BORDER, width=1,
     )
 
-    max_tw = card_w - 12
+    max_tw = card_w - 10
     cx = x0 + card_w // 2
 
     if player and str(player).strip():
@@ -695,19 +702,17 @@ def _draw_award_card(
     else:
         given, family = "", "—"
 
-    # Подбираем шрифты
-    fam_sz = 13
-    giv_sz = 10
+    fam_sz = 12
+    giv_sz = 9
     for _ in range(8):
         fam_f = _pick_font(fam_sz, bold=True)
         giv_f = _pick_font(giv_sz, bold=False)
         fam_t = _truncate(draw, family, fam_f, max_tw)
         giv_t = _truncate(draw, given, giv_f, max_tw) if given else ""
-        ok_f = _text_width(draw, fam_t, fam_f) <= max_tw
-        ok_g = not giv_t or _text_width(draw, giv_t, giv_f) <= max_tw
-        if ok_f and ok_g:
+        if (_text_width(draw, fam_t, fam_f) <= max_tw and
+                (not giv_t or _text_width(draw, giv_t, giv_f) <= max_tw)):
             break
-        fam_sz = max(9, fam_sz - 1)
+        fam_sz = max(8, fam_sz - 1)
         giv_sz = max(7, giv_sz - 1)
     else:
         fam_f = _pick_font(fam_sz, bold=True)
@@ -719,13 +724,13 @@ def _draw_award_card(
     giv_h = _text_height(draw, giv_t, giv_f) if giv_t else 0
     gap_lines = 2 if giv_t else 0
     total_h = giv_h + gap_lines + fam_h
-    ty = np_y + max(4, (nameplate_h - total_h) // 2)
+    ty = np_y + max(3, (nameplate_h - total_h) // 2)
 
     if giv_t:
         gw = _text_width(draw, giv_t, giv_f)
         draw.text(
             (cx - gw // 2, ty),
-            giv_t, fill=(180, 190, 210), font=giv_f,
+            giv_t, fill=(170, 168, 158), font=giv_f,
         )
         ty += giv_h + gap_lines
 
@@ -750,15 +755,22 @@ def render_award_history_png(kind: str) -> bytes:
         n = 1
 
     cols = _COLS_AWARD   # 5
-    inner_w = _CANVAS_W - 2 * _PAD
-    cell_w = inner_w // cols
-    cell_gap = 8
 
-    card_w = cell_w - cell_gap
-    # Компактнее: 25 карточек = 5×5 должны влезть на один лист
-    card_h = int(card_w * 1.25)
-    nameplate_h = 44
-    cell_h = card_h + cell_gap + 2
+    # ── ФИКСИРОВАННЫЕ размеры карточки ──
+    card_w = _CARD_W_FIXED           # 148
+    card_h = _CARD_H_FIXED           # 185
+    nameplate_h = _NAMEPLATE_H_FIXED # 38
+
+    # Зазоры между карточками
+    inner_w = _CANVAS_W - 2 * _PAD
+    total_cards_w = cols * card_w
+    cell_gap = max(6, (inner_w - total_cards_w) // (cols + 1))
+    cell_w = card_w + cell_gap
+    # Центрируем сетку
+    grid_w = cols * cell_w
+    grid_left = _PAD + (inner_w - grid_w) // 2
+
+    cell_h = card_h + cell_gap
 
     n_rows = (n + cols - 1) // cols
     title_line = title.upper()
@@ -776,11 +788,11 @@ def render_award_history_png(kind: str) -> bytes:
     draw = ImageDraw.Draw(im)
     _draw_header(draw, _CANVAS_W, title_line, subtitle_line)
 
-    # Шрифты — компактные
-    season_font = _pick_font(16, bold=True)
-    pos_font = _pick_font(10, bold=True)
-    given_font = _pick_font(10, bold=False)
-    family_font = _pick_font(13, bold=True)
+    # Шрифты
+    season_font = _pick_font(18, bold=True)   # крупный в круге
+    pos_font = _pick_font(11, bold=True)
+    given_font = _pick_font(9, bold=False)
+    family_font = _pick_font(12, bold=True)
 
     for idx, entry in enumerate(ordered):
         season = entry[0]
@@ -790,7 +802,7 @@ def render_award_history_png(kind: str) -> bytes:
 
         col = idx % cols
         row = idx // cols
-        x0 = _PAD + col * cell_w + cell_gap // 2
+        x0 = grid_left + col * cell_w + cell_gap // 2
         y0 = header_bottom + row * cell_h
 
         _draw_award_card(
