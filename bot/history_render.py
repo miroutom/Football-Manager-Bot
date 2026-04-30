@@ -337,7 +337,13 @@ def _lookup_position_nation(
 ) -> tuple[str | None, str | None]:
     """
     Позиция и нация из БД национальных лиг.
-    Ищет по ВСЕМ лигам (все .db файлы) через session_league.
+
+    В JSON имя может быть полным («Лаутаро Мартинез»),
+    а в БД — только фамилия («Мартинез»).
+    Поэтому ищем по:
+      1) полному имени
+      2) только фамилии (последнее слово)
+      3) только имени (первое слово) — на случай «Рёль» vs «Мерлин Рёль»
     """
     if not player_name or not str(player_name).strip():
         logger.debug("_lookup_position_nation: пустое имя")
@@ -346,7 +352,6 @@ def _lookup_position_nation(
     nm = player_name.strip()
     raw_t = (team or "").strip()
 
-    # Попытка 1: через SQLAlchemy (текущая лига)
     try:
         from sqlalchemy import func, or_
         from data.defender import Defender
@@ -358,36 +363,59 @@ def _lookup_position_nation(
         logger.warning("_lookup_position_nation: не удалось импортировать БД: %s", exc)
         return None, None
 
-    nml = nm.lower()
+    # Собираем варианты имени для поиска
+    parts = nm.split()
+    search_names: list[str] = [nm]                    # «Лаутаро Мартинез»
+    if len(parts) > 1:
+        search_names.append(parts[-1])                # «Мартинез» — фамилия
+        search_names.append(parts[0])                 # «Лаутаро» — имя
+    # Убираем дубли, сохраняя порядок
+    seen: set[str] = set()
+    unique_names: list[str] = []
+    for s in search_names:
+        sl = s.lower()
+        if sl not in seen:
+            seen.add(sl)
+            unique_names.append(s)
+
     tl = raw_t.lower()
 
     for Cls in (Forward, Midfielder, Defender, Goalkeeper):
-        try:
-            q = session_league.query(Cls).filter(
-                or_(Cls.name == nm, func.lower(Cls.name) == nml)
-            )
-            if raw_t:
-                row = q.filter(
-                    or_(Cls.team == raw_t, func.lower(Cls.team) == tl)
-                ).first()
-                if row is None:
-                    row = q.first()
-            else:
-                row = q.first()
-
-            if row is not None:
-                pos = (getattr(row, "position", None) or "").strip() or None
-                nat = (getattr(row, "nation", None) or "").strip() or None
-                logger.debug(
-                    "_lookup_position_nation: нашёл %s в %s → pos=%s nat=%s",
-                    nm, Cls.__name__, pos, nat,
+        for candidate in unique_names:
+            try:
+                cl = candidate.lower()
+                q = session_league.query(Cls).filter(
+                    or_(
+                        Cls.name == candidate,
+                        func.lower(Cls.name) == cl,
+                    )
                 )
-                return pos, nat
-        except Exception:
-            logger.debug("_lookup_position_nation: ошибка в %s", Cls.__name__, exc_info=True)
-            continue
+                # Сначала с фильтром по клубу
+                if raw_t:
+                    row = q.filter(
+                        or_(Cls.team == raw_t, func.lower(Cls.team) == tl)
+                    ).first()
+                    if row is None:
+                        row = q.first()
+                else:
+                    row = q.first()
 
-    logger.debug("_lookup_position_nation: %s не найден ни в одной таблице", nm)
+                if row is not None:
+                    pos = (getattr(row, "position", None) or "").strip() or None
+                    nat = (getattr(row, "nation", None) or "").strip() or None
+                    logger.debug(
+                        "_lookup: %s → matched '%s' in %s → pos=%s nat=%s",
+                        nm, candidate, Cls.__name__, pos, nat,
+                    )
+                    return pos, nat
+            except Exception:
+                logger.debug(
+                    "_lookup: ошибка %s / '%s'",
+                    Cls.__name__, candidate, exc_info=True,
+                )
+                continue
+
+    logger.debug("_lookup_position_nation: '%s' не найден ни в одной таблице", nm)
     return None, None
 
 
