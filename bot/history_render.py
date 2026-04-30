@@ -57,14 +57,13 @@ _TEXT_DIM = (186, 198, 210)
 _GOLD_TEXT = (255, 230, 130)
 _GOLD_BRIGHT = (255, 215, 0)
 
-# Карточка — тёплые тона
-_CARD_BG = (42, 36, 26)              # тёмно-коричневый фон карточки
-_CARD_BORDER = (95, 80, 45)          # золотистая рамка
-_CARD_NAMEPLATE = (18, 16, 12)       # почти чёрная полоса снизу
-_SEASON_COLOR = (220, 190, 100)      # золотистый номер сезона
-_POS_BG = (75, 62, 35, 200)         # тёмно-золотистая плашка позиции
-_POS_TEXT = (240, 220, 160)          # светло-золотой текст позиции
-_POS_BORDER = (130, 110, 60)        # рамка плашки позиции
+_CARD_BG = (42, 36, 26)
+_CARD_BORDER = (95, 80, 45)
+_CARD_NAMEPLATE = (18, 16, 12)
+_SEASON_COLOR = (255, 235, 130)       # ярко-золотой, хорошо видно
+_POS_BG = (65, 55, 30)
+_POS_TEXT = (240, 220, 160)
+_POS_BORDER = (130, 110, 60)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -114,42 +113,36 @@ def _crop_head_to_waist(
 ) -> Image.Image:
     """
     Обрезает фото «голова по пояс»:
-    - Берём верхние 65% изображения (отсекаем ноги)
-    - Делаем center-crop до нужных пропорций
-    - Ресайзим до target_w × target_h
-
-    Работает одинаково для портретных (Мартинез 736×1071)
-    и альбомных (Рёль 1200×800) фото.
+    - Портрет: берём верхние 65%
+    - Альбом: берём верхние 85%
+    - Center-crop до пропорций target
+    - Ресайз до target_w × target_h
     """
     img = photo.convert("RGBA")
     pw, ph = img.size
 
-    # 1. Отсекаем нижние 35% (ноги)
-    crop_bottom = int(ph * 0.65)
-    # Для альбомных фото (ширина > высота) берём больше — 80%
+    # Отсекаем ноги
     if pw > ph:
         crop_bottom = int(ph * 0.85)
-    crop_bottom = max(crop_bottom, target_h)  # не меньше целевой высоты
+    else:
+        crop_bottom = int(ph * 0.65)
+    crop_bottom = max(crop_bottom, target_h)
     crop_bottom = min(crop_bottom, ph)
-
     img = img.crop((0, 0, pw, crop_bottom))
     pw, ph = img.size
 
-    # 2. Center-crop до пропорций target
+    # Center-crop до пропорций target
     target_ratio = target_w / target_h
     current_ratio = pw / ph
 
     if current_ratio > target_ratio:
-        # Слишком широкое — обрезаем бока
         new_w = int(ph * target_ratio)
         left = (pw - new_w) // 2
         img = img.crop((left, 0, left + new_w, ph))
     elif current_ratio < target_ratio:
-        # Слишком высокое — обрезаем снизу
         new_h = int(pw / target_ratio)
         img = img.crop((0, 0, pw, new_h))
 
-    # 3. Ресайз до точного размера
     img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
     return img
 
@@ -342,8 +335,18 @@ def _split_given_family(full: str) -> tuple[str, str]:
 def _lookup_position_nation(
     player_name: str | None, team: str | None,
 ) -> tuple[str | None, str | None]:
+    """
+    Позиция и нация из БД национальных лиг.
+    Ищет по ВСЕМ лигам (все .db файлы) через session_league.
+    """
     if not player_name or not str(player_name).strip():
+        logger.debug("_lookup_position_nation: пустое имя")
         return None, None
+
+    nm = player_name.strip()
+    raw_t = (team or "").strip()
+
+    # Попытка 1: через SQLAlchemy (текущая лига)
     try:
         from sqlalchemy import func, or_
         from data.defender import Defender
@@ -351,12 +354,11 @@ def _lookup_position_nation(
         from data.goalkeeper import Goalkeeper
         from data.midfielder import Midfielder
         from utils.utils import session_league
-    except Exception:
+    except Exception as exc:
+        logger.warning("_lookup_position_nation: не удалось импортировать БД: %s", exc)
         return None, None
 
-    nm = player_name.strip()
     nml = nm.lower()
-    raw_t = (team or "").strip()
     tl = raw_t.lower()
 
     for Cls in (Forward, Midfielder, Defender, Goalkeeper):
@@ -372,13 +374,20 @@ def _lookup_position_nation(
                     row = q.first()
             else:
                 row = q.first()
+
+            if row is not None:
+                pos = (getattr(row, "position", None) or "").strip() or None
+                nat = (getattr(row, "nation", None) or "").strip() or None
+                logger.debug(
+                    "_lookup_position_nation: нашёл %s в %s → pos=%s nat=%s",
+                    nm, Cls.__name__, pos, nat,
+                )
+                return pos, nat
         except Exception:
-            logger.debug("award history: skip %s", Cls.__name__, exc_info=True)
+            logger.debug("_lookup_position_nation: ошибка в %s", Cls.__name__, exc_info=True)
             continue
-        if row is not None:
-            pos = (getattr(row, "position", None) or "").strip() or None
-            nat = (getattr(row, "nation", None) or "").strip() or None
-            return pos, nat
+
+    logger.debug("_lookup_position_nation: %s не найден ни в одной таблице", nm)
     return None, None
 
 
@@ -479,24 +488,25 @@ def render_cl_history_png() -> bytes:
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  Личные награды — карточки в стиле FUT
+#  Личные награды — карточки FUT
 # ═══════════════════════════════════════════════════════════════════
 #
 #  ┌──────────────────────────────┐
-#  │ [эмблема]              [1]  │  ← золотистая цифра сезона
-#  │ ┌─────┐                     │
-#  │ │ POS │  позиция             │  ← тёмно-золотая плашка
-#  │ └─────┘                     │
-#  │ [🇦🇷]   флаг                │
+#  │ [ЭМБЛЕМА 36px]        [1]   │  ← крупная золотая цифра
 #  │                              │
-#  │     ┌────────────┐           │
-#  │     │            │           │
-#  │     │  ФОТО      │           │  ← обрезка голова-по-пояс
-#  │     │  (зум)     │           │
-#  │     └────────────┘           │
-#  ├──────────────────────────────┤
-#  │        Лаутаро               │  ← имя (мелко)
-#  │       МАРТИНЕЗ               │  ← фамилия (крупно, жирно)
+#  │ ┌───────┐                    │
+#  │ │  POS  │  золотая плашка    │
+#  │ └───────┘                    │
+#  │ [🇦🇷 флаг]                  │
+#  │                              │
+#  │      ┌──────────────┐        │
+#  │      │              │        │
+#  │      │    ФОТО      │        │  ← строго НАД nameplate
+#  │      │  (по пояс)   │        │
+#  │      └──────────────┘        │
+#  ├──────────────────────────────┤  ← золотая линия
+#  │       Лаутаро                │
+#  │      Мартинез                │  ← увеличенная полоса 50px
 #  └──────────────────────────────┘
 
 _AWARD_META = {
@@ -526,13 +536,12 @@ def _draw_award_card(
     """Рисует одну карточку награды."""
     card_radius = 6
     info_pad = 8
-    crest_size = 26
+    crest_size = 36       # ← УВЕЛИЧЕНО с 26 до 36
 
     x1 = x0 + card_w - 1
     y1 = y0 + card_h - 1
 
-    # ── 1. Фон карточки с градиентом ──
-    # Рисуем рамку
+    # ── 1. Фон карточки ──
     draw.rounded_rectangle(
         (x0, y0, x1, y1),
         radius=card_radius,
@@ -540,22 +549,22 @@ def _draw_award_card(
         outline=_CARD_BORDER,
         width=2,
     )
-    # Лёгкий внутренний градиент (светлее сверху)
-    for dy in range(card_radius, card_h - nameplate_h):
-        t = dy / max(1, card_h - nameplate_h)
-        alpha = int(25 * (1 - t))
-        if alpha > 0:
-            draw.line(
-                [(x0 + 2, y0 + dy), (x1 - 2, y0 + dy)],
-                fill=(255, 240, 180, alpha),
-            )
 
-    # ── 2. Номер сезона — правый верхний угол ──
+    # ── 2. Номер сезона — правый верхний, КРУПНЫЙ и яркий ──
     season_txt = str(int(season)) if season is not None else "?"
     stb = draw.textbbox((0, 0), season_txt, font=season_font)
     s_w = stb[2] - stb[0]
+    # Подложка для контраста
+    s_h = stb[3] - stb[1]
+    sx = x1 - s_w - 10
+    sy = y0 + 8
+    draw.rounded_rectangle(
+        (sx - 4, sy - 2, sx + s_w + 4, sy + s_h + 2),
+        radius=4,
+        fill=(30, 26, 16, 180),
+    )
     draw.text(
-        (x1 - s_w - 8, y0 + 7),
+        (sx, sy),
         season_txt, fill=_SEASON_COLOR, font=season_font,
     )
 
@@ -563,7 +572,7 @@ def _draw_award_card(
     info_x = x0 + info_pad
     info_y = y0 + 8
 
-    # Эмблема клуба
+    # Эмблема клуба — КРУПНАЯ
     if club and str(club).strip():
         cr = _try_load_crest_rgba(_team_name_as_in_db(str(club).strip()))
         if cr is not None:
@@ -573,26 +582,38 @@ def _draw_award_card(
                 info_y + crest_size // 2,
                 crest_size,
             )
-    info_y += crest_size + 6
+        else:
+            # Пустой квадрат-заглушка
+            draw.rounded_rectangle(
+                (info_x, info_y,
+                 info_x + crest_size, info_y + crest_size),
+                radius=4,
+                fill=(50, 44, 30),
+                outline=(90, 78, 50),
+            )
+    info_y += crest_size + 8
 
     # Позиция и нация из БД
     pos_db, nat_db = None, None
     if player and str(player).strip():
         pos_db, nat_db = _lookup_position_nation(str(player).strip(), club)
+        logger.debug(
+            "Карточка %s: pos=%s, nat=%s",
+            player, pos_db, nat_db,
+        )
 
-    # Позиция — тёмно-золотая плашка
+    # Позиция — золотая плашка
     if pos_db:
         pos_txt = pos_db.upper()
         ptb = draw.textbbox((0, 0), pos_txt, font=pos_font)
         p_w = ptb[2] - ptb[0]
         p_h = ptb[3] - ptb[1]
-        pad_x, pad_y = 5, 3
-        # Плашка с рамкой
+        pad_x, pad_y = 6, 3
         draw.rounded_rectangle(
             (info_x, info_y,
              info_x + p_w + pad_x * 2, info_y + p_h + pad_y * 2),
-            radius=3,
-            fill=(65, 55, 30),
+            radius=4,
+            fill=_POS_BG,
             outline=_POS_BORDER,
             width=1,
         )
@@ -601,23 +622,35 @@ def _draw_award_card(
             pos_txt, fill=_POS_TEXT, font=pos_font,
         )
         info_y += p_h + pad_y * 2 + 6
+    else:
+        # Показываем прочерк, чтобы было видно что место есть
+        draw.text(
+            (info_x + 2, info_y),
+            "—", fill=(100, 88, 60), font=pos_font,
+        )
+        info_y += 18
 
     # Флаг нации
     if nat_db:
         _paste_or_draw_flag(im, draw, int(info_x), int(info_y), nat_db)
-        info_y += _FLAG_H + 4
+    else:
+        # Пустой прямоугольник-заглушка флага
+        fw, fh = _FLAG_W, _FLAG_H
+        draw.rectangle(
+            (info_x, info_y, info_x + fw, info_y + fh),
+            fill=(50, 44, 30), outline=(80, 70, 48),
+        )
 
-    # ── 4. Фото — обрезка голова-по-пояс ──
-    photo_margin = 4
+    # ── 4. Фото — СТРОГО над nameplate ──
+    photo_margin = 5
     photo_area_top = y0 + photo_margin
-    photo_area_bottom = y1 - nameplate_h - 2
+    photo_area_bottom = y1 - nameplate_h - 4   # ← зазор 4px над полосой
     photo_area_h = max(8, photo_area_bottom - photo_area_top)
     photo_area_left = x0 + photo_margin
     photo_area_w = max(8, card_w - photo_margin * 2)
 
     photo = _try_load_photo_rgba(slug)
     if photo is not None:
-        # Обрезаем и зумим: голова-по-пояс, единый размер
         cropped = _crop_head_to_waist(photo, photo_area_w, photo_area_h)
         if cropped.mode != "RGBA":
             cropped = cropped.convert("RGBA")
@@ -631,42 +664,46 @@ def _draw_award_card(
             mark_sz, light=True,
         )
 
-    # ── 5. Тёмная полоса снизу: имя + фамилия ──
+    # ── 5. Тёмная полоса снизу: ПОЛНОЕ имя ──
     np_y = y1 - nameplate_h + 1
-    # Рисуем полосу (перекрываем нижние скругления карточки)
     draw.rounded_rectangle(
         (x0, np_y, x1, y1),
         radius=card_radius,
         fill=_CARD_NAMEPLATE,
     )
+    # Верх полосы ровный
     draw.rectangle(
         (x0, np_y, x1, np_y + card_radius),
         fill=_CARD_NAMEPLATE,
     )
-    # Тонкая золотая линия-разделитель
+    # Золотая линия-разделитель
     draw.line(
-        [(x0 + 6, np_y), (x1 - 6, np_y)],
-        fill=(130, 110, 60, 160), width=1,
+        [(x0 + 4, np_y + 1), (x1 - 4, np_y + 1)],
+        fill=_POS_BORDER, width=1,
     )
 
     max_tw = card_w - 14
+    cx = x0 + card_w // 2
+
     if player and str(player).strip():
         given, family = _split_given_family(str(player).strip())
     else:
         given, family = "", "—"
 
-    # Подбираем размер шрифта
-    fam_sz, giv_sz = 13, 10
-    for _ in range(6):
+    # Подбираем шрифты — увеличенные для 50px полосы
+    fam_sz = 15
+    giv_sz = 11
+    for _ in range(8):
         fam_f = _pick_font(fam_sz, bold=True)
         giv_f = _pick_font(giv_sz, bold=False)
         fam_t = _truncate(draw, family, fam_f, max_tw)
         giv_t = _truncate(draw, given, giv_f, max_tw) if given else ""
-        if (_text_width(draw, fam_t, fam_f) <= max_tw and
-                (not giv_t or _text_width(draw, giv_t, giv_f) <= max_tw)):
+        ok_f = _text_width(draw, fam_t, fam_f) <= max_tw
+        ok_g = not giv_t or _text_width(draw, giv_t, giv_f) <= max_tw
+        if ok_f and ok_g:
             break
-        fam_sz = max(9, fam_sz - 1)
-        giv_sz = max(7, giv_sz - 1)
+        fam_sz = max(10, fam_sz - 1)
+        giv_sz = max(8, giv_sz - 1)
     else:
         fam_f = _pick_font(fam_sz, bold=True)
         giv_f = _pick_font(giv_sz, bold=False)
@@ -675,10 +712,9 @@ def _draw_award_card(
 
     fam_h = _text_height(draw, fam_t, fam_f)
     giv_h = _text_height(draw, giv_t, giv_f) if giv_t else 0
-    gap_lines = 2 if giv_t else 0
+    gap_lines = 3 if giv_t else 0
     total_h = giv_h + gap_lines + fam_h
-    ty = np_y + max(3, (nameplate_h - total_h) // 2)
-    cx = x0 + card_w // 2
+    ty = np_y + max(4, (nameplate_h - total_h) // 2)
 
     if giv_t:
         gw = _text_width(draw, giv_t, giv_f)
@@ -702,7 +738,6 @@ def render_award_history_png(kind: str) -> bytes:
     mx = get_active_season()
     rows = timeline_award(kind, mx)
 
-    # Новый сезон слева
     ordered = list(reversed(rows))
     n = len(ordered)
     if n == 0:
@@ -715,8 +750,8 @@ def render_award_history_png(kind: str) -> bytes:
     cell_gap = 10
 
     card_w = cell_w - cell_gap
-    card_h = int(card_w * 1.4)
-    nameplate_h = 40
+    card_h = int(card_w * 1.45)      # чуть выше для увеличенной полосы
+    nameplate_h = 50                  # ← УВЕЛИЧЕНО с 38/40 до 50
     cell_h = card_h + cell_gap + 4
 
     n_rows = (n + cols - 1) // cols
@@ -725,7 +760,6 @@ def render_award_history_png(kind: str) -> bytes:
     header_bottom = _measure_header_bottom(title_line, subtitle_line)
     final_h = header_bottom + n_rows * cell_h + _PAD + 10
 
-    # ── Фон ──
     im_rgb = _background_award_rgb(_CANVAS_W, final_h)
     im = im_rgb.convert("RGBA")
 
@@ -737,10 +771,10 @@ def render_award_history_png(kind: str) -> bytes:
     _draw_header(draw, _CANVAS_W, title_line, subtitle_line)
 
     # Шрифты
-    season_font = _pick_font(18, bold=True)
-    pos_font = _pick_font(10, bold=True)
-    given_font = _pick_font(10, bold=False)
-    family_font = _pick_font(13, bold=True)
+    season_font = _pick_font(22, bold=True)    # ← УВЕЛИЧЕНО с 18 до 22
+    pos_font = _pick_font(11, bold=True)       # ← чуть крупнее
+    given_font = _pick_font(11, bold=False)
+    family_font = _pick_font(15, bold=True)
 
     for idx, entry in enumerate(ordered):
         season = entry[0]
