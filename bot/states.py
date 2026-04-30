@@ -39,7 +39,9 @@ class ClPenalties(StatesGroup):
 class TransferEnter(StatesGroup):
     """Трансфер из клуба или свободный агент: заявка start/bench/reserve."""
     player_name = State()
-    from_team = State()  # только «из клуба»
+    from_club = State()  # «из клуба»: сначала клуб → кнопки игроков
+    pick_player = State()
+    from_team = State()  # только «из клуба» (ввод имени вручную: шаг «откуда»)
     position = State()
     to_team = State()
     fa_overall = State()  # только св. агент: число overall

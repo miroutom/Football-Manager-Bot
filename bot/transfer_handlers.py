@@ -25,6 +25,77 @@ _TEXT_NOT_CMD = F.text & ~F.text.startswith("/")
 
 _RE_OVERALL = re.compile(r"^\s*(\d{1,2})\s*$")
 
+# Сколько игроков на одной странице клавиатуры (Telegram — много коротких рядов).
+_ROSTER_PAGE_SIZE = 12
+
+
+def _team_name_as_in_db(team: str) -> str:
+    if (team or "").strip() == "ЦСКА":
+        return "Цска"
+    return (team or "").strip()
+
+
+def _league_roster_tuples(team: str) -> list[tuple[str, str, int, str]]:
+    """Ростер клуба из нац. БД: имя, позиция, overall, team как в строке БД."""
+    from data.defender import Defender
+    from data.forward import Forward
+    from data.goalkeeper import Goalkeeper
+    from data.midfielder import Midfielder
+    from utils.player_transfer import _filter_team
+    from utils.utils import session_league
+
+    t = _team_name_as_in_db(team)
+    out: list[tuple[str, str, int, str]] = []
+    for Cls in (Forward, Midfielder, Defender, Goalkeeper):
+        for r in session_league.query(Cls).filter(_filter_team(Cls, t)).all():
+            nm = (r.name or "").strip()
+            pos = (r.position or "").strip()
+            db_team = (r.team or "").strip()
+            if not nm:
+                continue
+            out.append((nm, pos, int(r.overall or 0), db_team))
+    out.sort(key=lambda x: (-x[2], x[0].lower()))
+    return out
+
+
+def _roster_keyboard(
+    candidates: list[tuple[str, str, int, str]], page: int
+) -> InlineKeyboardMarkup:
+    n = len(candidates)
+    ps = _ROSTER_PAGE_SIZE
+    total_pages = max(1, (n + ps - 1) // ps)
+    page = max(0, min(int(page), total_pages - 1))
+    chunk = candidates[page * ps : page * ps + ps]
+    base = page * ps
+    rows: list[list[InlineKeyboardButton]] = []
+    for i, (nm, pos, ov, _dbt) in enumerate(chunk):
+        gidx = base + i
+        label = f"{nm} · {pos} · {ov}"
+        if len(label) > 60:
+            label = label[:57] + "…"
+        rows.append(
+            [InlineKeyboardButton(text=label, callback_data=f"xfer:pk:{gidx}")]
+        )
+    if total_pages > 1:
+        nav: list[InlineKeyboardButton] = []
+        if page > 0:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"« {page}/{total_pages}",
+                    callback_data=f"xfer:pg:{page - 1}",
+                )
+            )
+        if page < total_pages - 1:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"{page + 2}/{total_pages} »",
+                    callback_data=f"xfer:pg:{page + 1}",
+                )
+            )
+        if nav:
+            rows.append(nav)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
 
 def _kind_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
@@ -67,13 +138,12 @@ def _status_keyboard() -> InlineKeyboardMarkup:
 async def cb_transfer_start(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     await state.set_state(TransferEnter.player_name)
-    await state.update_data(tr_kind="")
+    await state.update_data(tr_kind="", tr_roster_ui=False)
     await callback.message.answer(
         "🔄 <b>Трансфер / свободный агент</b>\n\n"
-        "Сначала выбери тип (кнопки ниже) или введи имя сразу для варианта "
-        "<b>из клуба</b> — тогда дальше шаги как раньше.\n"
-        "Удобнее: нажми кнопку <b>Из другого клуба</b> или <b>Свободный агент</b>.\n\n"
-        "Или <b>Шаг 1</b> — введи <b>имя игрока</b> (как в игре), если уже выбрал тип кнопкой.\n"
+        "<b>Из другого клуба</b> — сначала клуб, затем игрок <b>кнопками</b> из нац. БД.\n"
+        "<b>Свободный агент</b> — как раньше: имя → позиция → …\n"
+        "Или без кнопок: введи <b>имя</b> (режим «из клуба»), потом клуб и позицию текстом.\n"
         "/cancel — отмена.",
         parse_mode="HTML",
         reply_markup=_kind_keyboard(),
@@ -88,32 +158,138 @@ async def cb_transfer_kind(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     if not callback.message:
         return
-    await state.set_state(TransferEnter.player_name)
-    await state.update_data(tr_kind=kind)
     if kind == "club":
+        await state.set_state(TransferEnter.from_club)
+        await state.update_data(tr_kind=kind, tr_roster_ui=False)
         await callback.message.answer(
             "Тип: <b>трансфер из клуба</b>.\n\n"
-            "Шаг 1/5 — <b>имя игрока</b>.\n/cancel — отмена.",
+            "Шаг 1/4 — введи <b>клуб откуда</b> (как в БД, например «Рома»).\n"
+            "Потом выберешь игрока кнопками.\n/cancel — отмена.",
             parse_mode="HTML",
         )
-    else:
-        await callback.message.answer(
-            "Тип: <b>свободный агент</b> (новая строка в БД).\n\n"
-            "Шаг 1/5 — <b>имя игрока</b>.\n/cancel — отмена.",
-            parse_mode="HTML",
-        )
+        return
+
+    await state.set_state(TransferEnter.player_name)
+    await state.update_data(tr_kind=kind, tr_roster_ui=False)
+    await callback.message.answer(
+        "Тип: <b>свободный агент</b> (новая строка в БД).\n\n"
+        "Шаг 1/5 — <b>имя игрока</b>.\n/cancel — отмена.",
+        parse_mode="HTML",
+    )
 
 
 @transfer_router.message(Command("transfer"))
 async def cmd_transfer(message: Message, state: FSMContext) -> None:
     await state.set_state(TransferEnter.player_name)
-    await state.update_data(tr_kind="")
+    await state.update_data(tr_kind="", tr_roster_ui=False)
     await message.answer(
         "🔄 <b>Трансфер / свободный агент</b>\n\n"
         "Выбери тип кнопками или введи имя (режим «из клуба»).\n/cancel — отмена.",
         parse_mode="HTML",
         reply_markup=_kind_keyboard(),
     )
+
+
+@transfer_router.message(TransferEnter.from_club, _TEXT_NOT_CMD)
+async def on_transfer_from_club(message: Message, state: FSMContext) -> None:
+    raw = (message.text or "").strip()
+    if len(raw) < 2:
+        await message.answer("Введи название клуба (как в БД).")
+        return
+    rows = _league_roster_tuples(raw)
+    if not rows:
+        await message.answer(
+            "В <b>нац. лиге</b> никого не нашёл с таким клубом. "
+            "Проверь написание (как в игре, например «Цска» вместо ЦСКА).\n"
+            "Попробуй ещё раз или /cancel.",
+            parse_mode="HTML",
+        )
+        return
+    canonical_from = rows[0][3] or raw
+    serial = [list(x) for x in rows]
+    await state.update_data(
+        tr_candidates=serial,
+        tr_from=canonical_from,
+        tr_roster_page=0,
+        tr_roster_ui=True,
+    )
+    await state.set_state(TransferEnter.pick_player)
+    cands = [tuple(x) for x in serial]
+    n = len(cands)
+    kb = _roster_keyboard(cands, 0)
+    await message.answer(
+        f"Клуб: <b>{canonical_from}</b> — в базе <b>{n}</b> игрок(ов).\n"
+        f"Шаг 2/4 — <b>выбери игрока</b> (ниже кнопки; при длинном списке — листание).\n"
+        f"/cancel — отмена.",
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
+@transfer_router.callback_query(TransferEnter.pick_player, F.data.startswith("xfer:pg:"))
+async def cb_transfer_roster_page(callback: CallbackQuery, state: FSMContext) -> None:
+    if not callback.message or not callback.data:
+        return
+    try:
+        page = int((callback.data or "").rsplit(":", 1)[-1])
+    except ValueError:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    raw = data.get("tr_candidates") or []
+    cands = [tuple(x) for x in raw]
+    if not cands:
+        await callback.answer("Сессия устарела. Начни с /transfer.", show_alert=True)
+        return
+    await state.update_data(tr_roster_page=page)
+    ps = _ROSTER_PAGE_SIZE
+    total_pages = max(1, (len(cands) + ps - 1) // ps)
+    page = max(0, min(page, total_pages - 1))
+    try:
+        await callback.message.edit_reply_markup(
+            reply_markup=_roster_keyboard(cands, page),
+        )
+    except Exception:
+        await callback.message.answer(
+            f"Стр. {page + 1}/{total_pages} — выбери игрока:",
+            reply_markup=_roster_keyboard(cands, page),
+        )
+    await callback.answer()
+
+
+@transfer_router.callback_query(TransferEnter.pick_player, F.data.startswith("xfer:pk:"))
+async def cb_transfer_pick_player(callback: CallbackQuery, state: FSMContext) -> None:
+    if not callback.message or not callback.data:
+        return
+    try:
+        idx = int((callback.data or "").rsplit(":", 1)[-1])
+    except ValueError:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    raw = data.get("tr_candidates") or []
+    cands = [tuple(x) for x in raw]
+    if not cands or idx < 0 or idx >= len(cands):
+        await callback.answer("Неверный выбор. Начни с /transfer.", show_alert=True)
+        return
+    name, pos, _ov, from_t = cands[idx]
+    await state.update_data(tr_player=name, tr_pos=pos, tr_from=from_t, tr_roster_ui=True)
+    await state.set_state(TransferEnter.to_team)
+    await callback.answer()
+    try:
+        await callback.message.edit_text(
+            f"Выбрано: <b>{name}</b> ({pos})\n"
+            f"Откуда: <b>{from_t}</b>\n\n"
+            f"Шаг 3/4 — введи клуб <b>куда</b> переходит игрок.\n/cancel — отмена.",
+            parse_mode="HTML",
+            reply_markup=None,
+        )
+    except Exception:
+        await callback.message.answer(
+            f"Выбрано: <b>{name}</b> ({pos}), откуда: <b>{from_t}</b>.\n\n"
+            f"Шаг 3/4 — клуб <b>куда</b>.\n/cancel — отмена.",
+            parse_mode="HTML",
+        )
 
 
 @transfer_router.message(TransferEnter.player_name, _TEXT_NOT_CMD)
@@ -127,7 +303,7 @@ async def on_transfer_player(message: Message, state: FSMContext) -> None:
     if not kind:
         # по умолчанию — трансфер из клуба
         kind = "club"
-        await state.update_data(tr_kind="club")
+        await state.update_data(tr_kind="club", tr_roster_ui=False)
     await state.update_data(tr_player=name)
     if kind == "fa":
         await state.set_state(TransferEnter.position)
@@ -193,8 +369,10 @@ async def on_transfer_to(message: Message, state: FSMContext) -> None:
         )
         return
     await state.set_state(TransferEnter.new_status)
+    data = await state.get_data()
+    step_hint = "4/4" if data.get("tr_roster_ui") else "5/5"
     await message.answer(
-        "Шаг 5/5 — <b>заявка</b> в новом клубе (старт / скамейка / резерв). "
+        f"Шаг {step_hint} — <b>заявка</b> в новом клубе (старт / скамейка / резерв). "
         "Правила: <b>старт</b> — прежний старт с этой позиции → скамейка, худший на скамейке → резерв; "
         "<b>скамейка</b> — худший на скамейке (если больше одного) → резерв; "
         "<b>резерв</b> — только в резерв.\n"
