@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PNG «История»: сетка как на референсах (клубы — эмблемы + сезон; личные награды — карточка с «золотой» плашкой).
+PNG «История»: чемпионы — до 10 сезонов в ряд; личные награды — сетка из 5 колонок и «золотая» плашка.
 
 - Без сайдбара «Хронология», без зелёного «газона».
 - ЛЧ: фон из ``champions_league/assets/cl_bracket_background.*`` (как у сетки плей-офф), иначе тёмно-синий градиент.
@@ -17,7 +17,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
+    from PIL import Image, ImageDraw, ImageFont, ImageOps
 except ImportError as e:
     raise ImportError("Нужен пакет Pillow: pip install pillow") from e
 
@@ -43,9 +43,11 @@ _CL_BG_CANDIDATES: tuple[Path, ...] = (
 # Холст под ширину Telegram
 _CANVAS_W = 1200
 _COLS = 5
+# Чемпионы лиг / ЛЧ — сколько сезонов в один ряд (узкие ячейки, длинная хронология)
+_COLS_CLUB_HISTORY = 10
 _PAD = 22
 _HEADER_TOP = 20
-_TITLE_GAP = 6
+_TITLE_GAP = 22
 
 _TEXT = (248, 250, 252)
 _TEXT_DIM = (186, 198, 210)
@@ -53,6 +55,14 @@ _GOLD_PANEL = (218, 170, 45, 220)
 _GOLD_PANEL_EDGE = (255, 220, 120, 90)
 _GOLD_TEXT = (255, 230, 130)
 _GOLD_BRIGHT = (255, 215, 0)
+
+
+def _club_sentence_case(club: str) -> str:
+    """Первая буква заглавная, остальные строчные (Интер, Бавария)."""
+    s = (club or "").strip()
+    if not s:
+        return ""
+    return s[0].upper() + s[1:].lower()
 
 
 def _try_load_photo_rgba(slug: str | None) -> Image.Image | None:
@@ -246,7 +256,7 @@ def _draw_unknown_mark(
     fill = (30, 36, 48) if not light else (55, 52, 38)
     outline = _GOLD_BRIGHT if light else (200, 210, 225)
     draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill, outline=outline, width=2)
-    f = _pick_font(max(20, size // 2), bold=True)
+    f = _pick_font(max(14, min(size // 2, 26)), bold=True)
     draw.text((cx, cy), "?", fill=_GOLD_TEXT, font=f, anchor="mm")
 
 
@@ -266,7 +276,7 @@ def _paste_crest_cell(
     _draw_unknown_mark(im, draw, cx, cy, max_side, light=True)
 
 
-def _slanted_gold_layer(cell_w: int, cell_h: int, skew: int = 18) -> Image.Image:
+def _slanted_gold_layer(cell_w: int, cell_h: int, skew: int = 12) -> Image.Image:
     """Золотой наклонный блок за фото — как на референсе Sportskeeda."""
     layer = Image.new("RGBA", (cell_w, cell_h), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
@@ -306,6 +316,44 @@ def _paste_photo_in_cell(
     if thumb.mode != "RGBA":
         thumb = thumb.convert("RGBA")
     im.alpha_composite(thumb, (left, top))
+
+
+def _paste_photo_bust_crop(
+    im: Image.Image,
+    photo: Image.Image,
+    cx: int,
+    cy_top: int,
+    box_w: int,
+    box_h: int,
+) -> None:
+    """
+    Фиксированный кадр ``box_w×box_h``: масштаб как ``cover``, обрезка **сверху**
+    (портрет «от головы к поясу» для вертикальных фото).
+    """
+    if box_w < 4 or box_h < 4:
+        return
+    img = photo.convert("RGBA")
+    pw, ph = img.size
+    if pw < 1 or ph < 1:
+        return
+    scale = max(box_w / pw, box_h / ph)
+    nw = max(1, int(round(pw * scale)))
+    nh = max(1, int(round(ph * scale)))
+    img = img.resize((nw, nh), Image.Resampling.LANCZOS)
+    left = max(0, (nw - box_w) // 2)
+    top = 0
+    if nh < box_h:
+        top = 0
+        crop_h = nh
+    else:
+        crop_h = box_h
+    crop_w = min(box_w, nw)
+    crop_h = min(crop_h, nh)
+    img = img.crop((left, top, left + crop_w, top + crop_h))
+    if img.size != (box_w, box_h):
+        img = img.resize((box_w, box_h), Image.Resampling.LANCZOS)
+    w, h = img.size
+    im.alpha_composite(img, (int(cx - w // 2), int(cy_top)))
 
 
 def _text_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> int:
@@ -356,22 +404,18 @@ def _render_club_grid_png(
         rows: list[tuple[int, str | None]],
         use_cl_background: bool,
 ) -> bytes:
-    """rows: (season, team_or_None); порядок — новые сезоны первыми.
+    """rows: (season, team_or_None) из ``timeline_*`` в порядке 1..N по возрастанию.
 
-    Раскладка: новый сезон = верхний левый угол,
-    старые сдвигаются вправо, затем на следующую строку.
-    (Как на референсе FootyRoom Champions League Winners.)
+    На картинке нужен обратный порядок: **самый новый сезон слева** (в т.ч. неизвестный),
+    старые уходят вправо — поэтому ``reversed``.
     """
-    # ← БЕЗ reversed!  rows уже идут от нового к старому
-    ordered = list(rows)
+    ordered = list(reversed(rows))
     n = len(ordered)
     if n == 0:
         ordered = [(get_active_season(), None)]
         n = 1
 
     inner_w = _CANVAS_W - 2 * _PAD
-    cell_w = inner_w // _COLS
-    crest_max = min(64, int(cell_w * 0.62))
     cap_font = _pick_font(15, bold=True)
     _tmp = Image.new("RGB", (20, 20))
     _td = ImageDraw.Draw(_tmp)
@@ -380,8 +424,11 @@ def _render_club_grid_png(
     pad_v = 8
     gap_crest_label = 6
     row_gap = 12
-    cell_h = pad_v + crest_max + gap_crest_label + _cap_h + pad_v + row_gap
-    n_rows = (n + _COLS - 1) // _COLS
+    # Ширина ячейки по числу логотипов в ряду — меньше пустоты между клубами
+    cols = _COLS_CLUB_HISTORY
+    crest_max_base = min(56, int((inner_w // cols) * 0.62))
+    cell_h = pad_v + crest_max_base + gap_crest_label + _cap_h + pad_v + row_gap
+    n_rows = (n + cols - 1) // cols
     header_bottom = _measure_header_bottom(title, subtitle)
     final_h = header_bottom + n_rows * cell_h + _PAD
     if use_cl_background:
@@ -390,23 +437,28 @@ def _render_club_grid_png(
         im = _background_league_rgb(_CANVAS_W, final_h).convert("RGBA")
     draw = ImageDraw.Draw(im)
     _draw_header(draw, _CANVAS_W, title, subtitle)
-    for idx, (season, team) in enumerate(ordered):
-        col = idx % _COLS
-        row = idx // _COLS
-        x0 = _PAD + col * cell_w
-        y0 = header_bottom + row * cell_h
-        cx = x0 + cell_w // 2
-        cy_crest = y0 + pad_v + crest_max // 2
-        _paste_crest_cell(im, team, cx, cy_crest, crest_max, draw)
-        cap = f"Сезон {season}"
-        cb = draw.textbbox((0, 0), cap, font=cap_font)
-        cw = cb[2] - cb[0]
-        draw.text(
-            (cx - cw // 2, y0 + pad_v + crest_max + gap_crest_label),
-            cap,
-            fill=_TEXT,
-            font=cap_font,
-        )
+    for row in range(n_rows):
+        start = row * cols
+        end = min(n, start + cols)
+        row_items = ordered[start:end]
+        n_in_row = len(row_items)
+        cell_w_row = inner_w // max(1, n_in_row)
+        crest_max = min(crest_max_base, int(cell_w_row * 0.62))
+        for j, (season, team) in enumerate(row_items):
+            x0 = _PAD + j * cell_w_row
+            y0 = header_bottom + row * cell_h
+            cx = x0 + cell_w_row // 2
+            cy_crest = y0 + pad_v + crest_max // 2
+            _paste_crest_cell(im, team, cx, cy_crest, crest_max, draw)
+            cap = f"Сезон {season}"
+            cb = draw.textbbox((0, 0), cap, font=cap_font)
+            cw = cb[2] - cb[0]
+            draw.text(
+                (cx - cw // 2, y0 + pad_v + crest_max + gap_crest_label),
+                cap,
+                fill=_TEXT,
+                font=cap_font,
+            )
 
     buf = BytesIO()
     im.convert("RGB").save(buf, format="PNG", optimize=True)
@@ -449,24 +501,23 @@ def render_award_history_png(kind: str) -> bytes:
     title, trophy_file = _AWARD_META[kind]
     mx = get_active_season()
     rows = timeline_award(kind, mx)
-    # ← БЕЗ reversed!  Новый сезон — левый верхний угол,
-    # старые уходят вправо и вниз (как на референсе FootyRoom).
-    ordered = list(rows)
+    # timeline_award даёт сезоны 1..N по возрастанию; на экране — новый слева
+    ordered = list(reversed(rows))
     n = len(ordered)
     if n == 0:
         ordered = [(get_active_season(), None, None, None)]
         n = 1
 
     inner_w = _CANVAS_W - 2 * _PAD
-    cell_w = inner_w // _COLS
     cell_gap_x = 6
     cell_gap_y = 10
 
-    photo_area_h = int(cell_w * 1.1)
-    label_area_h = 60
-    cell_h = photo_area_h + label_area_h + cell_gap_y
-
     n_rows = (n + _COLS - 1) // _COLS
+    # Базовая ширина ячейки при полной строке — для высоты фото/плашки
+    cell_w_full = inner_w // _COLS
+    photo_area_h = min(118, max(88, int(cell_w_full * 0.48)))
+    label_area_h = 56
+    cell_h = photo_area_h + label_area_h + cell_gap_y
     title_line = title.upper()
     subtitle_line = "ПОБЕДИТЕЛИ ПО СЕЗОНАМ"
     header_bottom = _measure_header_bottom(title_line, subtitle_line)
@@ -485,64 +536,74 @@ def render_award_history_png(kind: str) -> bytes:
     name_font = _pick_font(14, bold=True)
     season_font = _pick_font(13, bold=True)
 
-    photo_max_w = cell_w - cell_gap_x * 2
-    photo_max_h = photo_area_h - 10
+    for row in range(n_rows):
+        start = row * _COLS
+        end = min(n, start + _COLS)
+        row_entries = ordered[start:end]
+        n_in_row = len(row_entries)
+        cell_w = inner_w // max(1, n_in_row)
+        photo_box_w = min(cell_w - cell_gap_x * 2 - 4, 132)
+        photo_box_h = photo_area_h - 14
 
-    for idx, entry in enumerate(ordered):
-        season = entry[0]
-        player = entry[1] if len(entry) > 1 else None
-        club = entry[2] if len(entry) > 2 else None
-        slug = entry[3] if len(entry) > 3 else None
+        for j, entry in enumerate(row_entries):
+            season = entry[0]
+            player = entry[1] if len(entry) > 1 else None
+            club = entry[2] if len(entry) > 2 else None
+            slug = entry[3] if len(entry) > 3 else None
 
-        col = idx % _COLS
-        row = idx // _COLS
-        x0 = _PAD + col * cell_w
-        y0 = header_bottom + row * cell_h
-        cx = x0 + cell_w // 2
+            x0 = _PAD + j * cell_w
+            y0 = header_bottom + row * cell_h
+            cx = x0 + cell_w // 2
 
-        gold = _slanted_gold_layer(cell_w - cell_gap_x, photo_area_h)
-        im.alpha_composite(gold, (x0 + cell_gap_x // 2, y0))
+            gold = _slanted_gold_layer(cell_w - cell_gap_x, photo_area_h)
+            im.alpha_composite(gold, (x0 + cell_gap_x // 2, y0))
 
-        cy_photo_top = y0 + 5
-        photo = _try_load_photo_rgba(slug)
-        if photo is not None:
-            _paste_photo_in_cell(im, photo, cx, cy_photo_top, photo_max_w, photo_max_h)
-        else:
-            mark_size = min(photo_max_w, photo_max_h) - 20
-            _draw_unknown_mark(
-                im, draw, cx,
-                cy_photo_top + photo_max_h // 2,
-                mark_size,
-                light=True,
-            )
-
-        max_tw = cell_w - 8
-        y_label = y0 + photo_area_h + 4
-
-        if player:
-            last_name = player.strip().split()[-1].upper() if player.strip() else "—"
-            if club:
-                line1 = f"{last_name} ({club.upper()})"
+            cy_photo_top = y0 + 6
+            photo = _try_load_photo_rgba(slug)
+            if photo is not None:
+                _paste_photo_bust_crop(
+                    im, photo, cx, cy_photo_top, photo_box_w, photo_box_h
+                )
             else:
-                line1 = last_name
-        else:
-            line1 = "—"
+                mark_size = min(44, int(photo_box_w * 0.42), int(photo_box_h * 0.55))
+                _draw_unknown_mark(
+                    im,
+                    draw,
+                    cx,
+                    cy_photo_top + photo_box_h // 2,
+                    mark_size,
+                    light=True,
+                )
 
-        line1 = _truncate(draw, line1, name_font, max_tw)
-        lb = draw.textbbox((0, 0), line1, font=name_font)
-        lw = lb[2] - lb[0]
-        lh = lb[3] - lb[1]
-        draw.text((cx - lw // 2, y_label), line1, fill=_TEXT, font=name_font)
+            max_tw = cell_w - 8
+            y_label = y0 + photo_area_h + 8
 
-        line2 = f"{season} СЕЗОН"
-        sb = draw.textbbox((0, 0), line2, font=season_font)
-        sw = sb[2] - sb[0]
-        draw.text(
-            (cx - sw // 2, y_label + lh + 4),
-            line2,
-            fill=_GOLD_TEXT,
-            font=season_font,
-        )
+            if player:
+                last_name = (
+                    player.strip().split()[-1].upper() if player.strip() else "—"
+                )
+                if club:
+                    line1 = f"{last_name} ({_club_sentence_case(club)})"
+                else:
+                    line1 = last_name
+            else:
+                line1 = "—"
+
+            line1 = _truncate(draw, line1, name_font, max_tw)
+            lb = draw.textbbox((0, 0), line1, font=name_font)
+            lw = lb[2] - lb[0]
+            lh = lb[3] - lb[1]
+            draw.text((cx - lw // 2, y_label), line1, fill=_TEXT, font=name_font)
+
+            line2 = f"{season} СЕЗОН"
+            sb = draw.textbbox((0, 0), line2, font=season_font)
+            sw = sb[2] - sb[0]
+            draw.text(
+                (cx - sw // 2, y_label + lh + 8),
+                line2,
+                fill=_GOLD_TEXT,
+                font=season_font,
+            )
 
     buf = BytesIO()
     im.convert("RGB").save(buf, format="PNG", optimize=True)
