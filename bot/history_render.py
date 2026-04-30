@@ -1,16 +1,23 @@
 # -*- coding: utf-8 -*-
-"""PNG «История»: тёмный фон, газонная панель и боковая колонка в духе ``squad_pitch``."""
+"""
+PNG «История»: сетка как на референсах (клубы — эмблемы + сезон; личные награды — карточка с «золотой» плашкой).
+
+- Без сайдбара «Хронология», без зелёного «газона».
+- ЛЧ: фон из ``champions_league/assets/cl_bracket_background.*`` (как у сетки плей-офф), иначе тёмно-синий градиент.
+- Нац. лиги: тёмно-синий / сине-фиолетовый градиент.
+- Личные награды: тёплый тёмный фон, опционально полупрозрачный трофей по центру, золотой наклонный блок за фото.
+- Порядок ячеек: от более нового сезона к старым (слева направо, сверху вниз).
+"""
 from __future__ import annotations
 
 import logging
-import os
 from io import BytesIO
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageDraw, ImageFont, ImageOps
 except ImportError as e:
     raise ImportError("Нужен пакет Pillow: pip install pillow") from e
 
@@ -26,24 +33,24 @@ from utils.season_paths import get_active_season
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _HISTORY_PHOTOS = _PROJECT_ROOT / "assets" / "history" / "photos"
 _HISTORY_TROPHIES = _PROJECT_ROOT / "assets" / "history" / "trophies"
+_CL_ASSETS_DIR = _PROJECT_ROOT / "champions_league" / "assets"
+_CL_BG_CANDIDATES: tuple[Path, ...] = (
+    _CL_ASSETS_DIR / "cl_bracket_background.png",
+    _CL_ASSETS_DIR / "cl_bracket_background.jpg",
+    _CL_ASSETS_DIR / "cl_bracket_background.webp",
+)
 
-_PAGE_BG = (11, 18, 22)
-_PAGE_BG_TOP = (17, 28, 34)
-_PITCH_FRAME = (71, 85, 105)
-_GRASS_LO = (18, 58, 42)
-_GRASS_HI = (34, 92, 58)
-_SLATE_BRIGHT = (241, 245, 249)
-_SLATE_MUTED = (148, 163, 184)
-_SIDEBAR_BG = (28, 58, 158)
-_SIDEBAR_BG_STRIPE = (22, 48, 130)
-_SIDEBAR_EDGE = (96, 165, 250)
+# Холст под ширину Telegram
+_CANVAS_W = 1200
+_COLS = 5
+_PAD = 22
+_HEADER_TOP = 20
+_TITLE_GAP = 6
 
-_CANVAS_W = 1208
-_MARGINS_X = 18
-_SIDEBAR_W = 280
-_ROW_H = 96
-_TOP = 88
-_BOTTOM_PAD = 28
+_TEXT = (248, 250, 252)
+_TEXT_DIM = (186, 198, 210)
+_GOLD_PANEL = (218, 170, 45, 220)
+_GOLD_PANEL_EDGE = (255, 220, 120, 90)
 
 
 def _try_load_photo_rgba(slug: str | None) -> Image.Image | None:
@@ -78,31 +85,177 @@ def _try_load_trophy_rgba(filename: str) -> Image.Image | None:
     return None
 
 
-def _draw_unknown_badge(im: Image.Image, draw: ImageDraw.ImageDraw, cx: int, cy: int, side: int) -> None:
-    r = side // 2
-    draw.ellipse(
-        (cx - r, cy - r, cx + r, cy + r),
-        fill=(45, 55, 70, 255),
-        outline=_SLATE_BRIGHT,
-        width=2,
-    )
-    font = _pick_font(max(22, side // 3), bold=True)
-    draw.text((cx, cy), "?", fill=_SLATE_BRIGHT, font=font, anchor="mm")
+def _fill_vertical_gradient_rgb(
+    im: Image.Image, top: tuple[int, int, int], bottom: tuple[int, int, int]
+) -> None:
+    w, h = im.size
+    draw = ImageDraw.Draw(im)
+    hm = max(h - 1, 1)
+    for y in range(h):
+        t = y / hm
+        r = int(top[0] + (bottom[0] - top[0]) * t)
+        g = int(top[1] + (bottom[1] - top[1]) * t)
+        b = int(top[2] + (bottom[2] - top[2]) * t)
+        draw.line([(0, y), (w, y)], fill=(r, g, b))
 
 
-def _paste_round_thumbnail(im: Image.Image, src: Image.Image, cx: int, cy: int, diam: int) -> None:
-    if diam < 8:
-        return
-    thumb = src.copy()
-    thumb.thumbnail((diam, diam), Image.Resampling.LANCZOS)
+def _resize_cover_crop(bg: Image.Image, tw: int, th: int) -> Image.Image:
+    bw, bh = bg.size
+    scale = max(tw / bw, th / bh)
+    nw = max(1, int(round(bw * scale)))
+    nh = max(1, int(round(bh * scale)))
+    resized = bg.resize((nw, nh), Image.Resampling.LANCZOS)
+    left = max(0, (nw - tw) // 2)
+    top = max(0, (nh - th) // 2)
+    return resized.crop((left, top, left + tw, top + th)).convert("RGB")
+
+
+def _background_cl_rgb(w: int, h: int) -> Image.Image:
+    im = Image.new("RGB", (w, h), (10, 18, 40))
+    for p in _CL_BG_CANDIDATES:
+        if p.is_file():
+            try:
+                bg = ImageOps.exif_transpose(Image.open(p)).convert("RGB")
+                return _resize_cover_crop(bg, w, h)
+            except OSError:
+                continue
+    _fill_vertical_gradient_rgb(im, (14, 32, 62), (6, 10, 24))
+    return im
+
+
+def _background_league_rgb(w: int, h: int) -> Image.Image:
+    im = Image.new("RGB", (w, h), (12, 16, 36))
+    _fill_vertical_gradient_rgb(im, (22, 28, 58), (8, 12, 28))
+    return im
+
+
+def _background_award_rgb(w: int, h: int) -> Image.Image:
+    im = Image.new("RGB", (w, h), (24, 18, 14))
+    _fill_vertical_gradient_rgb(im, (42, 32, 22), (14, 10, 12))
+    return im
+
+
+def _watermark_trophy(im: Image.Image, tro: Image.Image, alpha: int = 35) -> None:
+    w, h = im.size
+    t = tro.copy()
+    target = min(w, h) * 0.55
+    tw, th = t.size
+    scale = target / max(tw, th)
+    nw = max(1, int(tw * scale))
+    nh = max(1, int(th * scale))
+    t = t.resize((nw, nh), Image.Resampling.LANCZOS)
+    if t.mode != "RGBA":
+        t = t.convert("RGBA")
+    a = t.split()[3]
+    a = a.point(lambda p: int(p * alpha / 255))
+    t.putalpha(a)
+    im.paste(t, ((w - nw) // 2, (h - nh) // 2), t)
+
+
+def _draw_header(
+    draw: ImageDraw.ImageDraw,
+    w: int,
+    title: str,
+    subtitle: str | None,
+) -> int:
+    """Рисует заголовок по центру; возвращает нижнюю границу блока (y)."""
+    title_font = _pick_font(26, bold=True)
+    sub_font = _pick_font(14, bold=False)
+    y = _HEADER_TOP
+    tb = draw.textbbox((0, 0), title, font=title_font)
+    tw = tb[2] - tb[0]
+    draw.text(((w - tw) // 2, y), title, fill=_TEXT, font=title_font)
+    y += tb[3] - tb[1] + _TITLE_GAP
+    if subtitle:
+        sb = draw.textbbox((0, 0), subtitle, font=sub_font)
+        sw = sb[2] - sb[0]
+        draw.text(((w - sw) // 2, y), subtitle, fill=_TEXT_DIM, font=sub_font)
+        y += sb[3] - sb[1] + 8
+    else:
+        y += 8
+    return y + 8
+
+
+def _measure_header_bottom(title: str, subtitle: str | None) -> int:
+    """Высота блока заголовка (нижний y) для расчёта размера холста."""
+    tmp = Image.new("RGB", (_CANVAS_W, 240))
+    d = ImageDraw.Draw(tmp)
+    return _draw_header(d, _CANVAS_W, title, subtitle)
+
+
+def _draw_unknown_mark(
+    im: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    cx: int,
+    cy: int,
+    size: int,
+    *,
+    light: bool = False,
+) -> None:
+    r = size // 2
+    fill = (30, 36, 48) if not light else (55, 62, 78)
+    outline = _TEXT if light else (200, 210, 225)
+    draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill, outline=outline, width=2)
+    f = _pick_font(max(20, size // 2), bold=True)
+    draw.text((cx, cy), "?", fill=_TEXT, font=f, anchor="mm")
+
+
+def _paste_crest_cell(
+    im: Image.Image,
+    team: str | None,
+    cx: int,
+    cy: int,
+    max_side: int,
+    draw: ImageDraw.ImageDraw,
+) -> None:
+    if team:
+        cr = _try_load_crest_rgba(_team_name_as_in_db(team))
+        if cr is not None:
+            _paste_crest_natural(im, cr, cx, cy, max_side)
+            return
+    _draw_unknown_mark(im, draw, cx, cy, max_side, light=True)
+
+
+def _slanted_gold_layer(cell_w: int, cell_h: int, skew: int = 14) -> Image.Image:
+    layer = Image.new("RGBA", (cell_w, cell_h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    pts = [(skew, 4), (cell_w - 4, 4), (cell_w - skew - 4, cell_h - 16), (4, cell_h - 16)]
+    d.polygon(pts, fill=_GOLD_PANEL, outline=_GOLD_PANEL_EDGE)
+    return layer
+
+
+def _paste_photo_in_cell(
+    im: Image.Image,
+    photo: Image.Image,
+    cx: int,
+    cy_top: int,
+    max_w: int,
+    max_h: int,
+) -> None:
+    thumb = photo.copy()
+    thumb.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
     w, h = thumb.size
-    mask = Image.new("L", (w, h), 0)
-    md = ImageDraw.Draw(mask)
-    md.ellipse((0, 0, w - 1, h - 1), fill=255)
-    layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    layer.paste(thumb, (0, 0), thumb)
-    layer.putalpha(mask)
-    im.alpha_composite(layer, (int(cx - w // 2), int(cy - h // 2)))
+    left = int(cx - w // 2)
+    top = int(cy_top)
+    im.alpha_composite(thumb, (left, top))
+
+
+def _text_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> int:
+    b = draw.textbbox((0, 0), text, font=font)
+    return b[2] - b[0]
+
+
+def _truncate(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, max_w: int) -> str:
+    if not text:
+        return text
+    if _text_width(draw, text, font) <= max_w:
+        return text
+    ell = "…"
+    for i in range(len(text), 0, -1):
+        cand = text[:i].rstrip() + ell
+        if _text_width(draw, cand, font) <= max_w:
+            return cand
+    return ell
 
 
 def _paste_trophy_thumb(im: Image.Image, tro: Image.Image, cx: int, cy: int, max_h: int) -> None:
@@ -117,160 +270,82 @@ def _paste_trophy_thumb(im: Image.Image, tro: Image.Image, cx: int, cy: int, max
     im.alpha_composite(t, (int(cx - w // 2), int(cy - h // 2)))
 
 
-def _grass_gradient_band(im: Image.Image, y0: int, y1: int, x0: int, x1: int) -> None:
-    if y1 <= y0 or x1 <= x0:
-        return
-    g = Image.new("RGBA", (x1 - x0, y1 - y0), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(g)
-    h = y1 - y0
-    for i in range(h):
-        t = i / max(1, h - 1)
-        r = int(_GRASS_LO[0] + (_GRASS_HI[0] - _GRASS_LO[0]) * t)
-        g_ = int(_GRASS_LO[1] + (_GRASS_HI[1] - _GRASS_LO[1]) * t)
-        b = int(_GRASS_LO[2] + (_GRASS_HI[2] - _GRASS_LO[2]) * t)
-        gd.line([(0, i), (g.size[0], i)], fill=(r, g_, b, 255))
-    im.alpha_composite(g, (x0, y0))
-
-
-def _render_shell(
+def _render_club_grid_png(
+    *,
     title: str,
     subtitle: str | None,
-    n_rows: int,
-) -> tuple[Image.Image, ImageDraw.ImageDraw, int, int, int]:
-    """Возвращает (image, draw, content_x0, content_x1, row0_y)."""
-    inner_w = _CANVAS_W - 2 * _MARGINS_X
-    pitch_w = inner_w - _SIDEBAR_W - 12
-    h = _TOP + n_rows * _ROW_H + _BOTTOM_PAD
-    im = Image.new("RGBA", (_CANVAS_W, h), (0, 0, 0, 0))
+    rows: list[tuple[int, str | None]],
+    use_cl_background: bool,
+) -> bytes:
+    """rows: (season, team_or_None); порядок — новые сезоны первыми."""
+    ordered = list(reversed(rows))
+    n = len(ordered)
+    if n == 0:
+        ordered = [(get_active_season(), None)]
+
+    inner_w = _CANVAS_W - 2 * _PAD
+    cell_w = inner_w // _COLS
+    cell_h = cell_w + 36
+    n_rows = (n + _COLS - 1) // _COLS
+    header_bottom = _measure_header_bottom(title, subtitle)
+    final_h = header_bottom + n_rows * cell_h + _PAD
+    if use_cl_background:
+        im = _background_cl_rgb(_CANVAS_W, final_h).convert("RGBA")
+    else:
+        im = _background_league_rgb(_CANVAS_W, final_h).convert("RGBA")
     draw = ImageDraw.Draw(im)
-    # фон
-    for y in range(h):
-        t = y / max(1, h - 1)
-        r = int(_PAGE_BG[0] + (_PAGE_BG_TOP[0] - _PAGE_BG[0]) * t)
-        g = int(_PAGE_BG[1] + (_PAGE_BG_TOP[1] - _PAGE_BG[1]) * t)
-        b = int(_PAGE_BG[2] + (_PAGE_BG_TOP[2] - _PAGE_BG[2]) * t)
-        draw.line([(0, y), (_CANVAS_W, y)], fill=(r, g, b))
-    px0 = _MARGINS_X
-    px1 = px0 + pitch_w
-    sy0 = 56
-    sy1 = h - _BOTTOM_PAD
-    draw.rounded_rectangle(
-        (px0, sy0, px1, sy1),
-        radius=10,
-        outline=_PITCH_FRAME,
-        width=2,
-    )
-    _grass_gradient_band(im, sy0 + 4, sy1 - 4, px0 + 4, px1 - 4)
-    # боковая панель
-    sx0 = px1 + 12
-    draw.rounded_rectangle(
-        (sx0, sy0, _CANVAS_W - _MARGINS_X, sy1),
-        radius=8,
-        fill=_SIDEBAR_BG,
-        outline=_SIDEBAR_EDGE,
-        width=1,
-    )
-    title_font = _pick_font(30, bold=True)
-    sub_font = _pick_font(16, bold=False)
-    tw, th = draw.textbbox((0, 0), title, font=title_font)[2:]
-    draw.text(
-        ((_CANVAS_W - tw) // 2, 18),
-        title,
-        fill=_SLATE_BRIGHT,
-        font=title_font,
-    )
-    if subtitle:
-        sw, _ = draw.textbbox((0, 0), subtitle, font=sub_font)[2:]
+    _draw_header(draw, _CANVAS_W, title, subtitle)
+    crest_max = min(64, int(cell_w * 0.62))
+    cell_outline = (88, 98, 128)
+    for idx, (season, team) in enumerate(ordered):
+        col = idx % _COLS
+        row = idx // _COLS
+        x0 = _PAD + col * cell_w
+        y0 = header_bottom + row * cell_h
+        cx = x0 + cell_w // 2
+        cy_crest = y0 + 8 + crest_max // 2
+        xy = (x0 + 2, y0 + 2, x0 + cell_w - 3, y0 + cell_h - 4)
+        if hasattr(draw, "rounded_rectangle"):
+            draw.rounded_rectangle(xy, radius=8, outline=cell_outline, width=1)
+        else:
+            draw.rectangle(xy, outline=cell_outline, width=1)
+        _paste_crest_cell(im, team, cx, cy_crest, crest_max, draw)
+        cap = f"Сезон {season}"
+        cf = _pick_font(15, bold=True)
+        cb = draw.textbbox((0, 0), cap, font=cf)
+        cw = cb[2] - cb[0]
         draw.text(
-            ((_CANVAS_W - sw) // 2, 18 + th + 4),
-            subtitle,
-            fill=_SLATE_MUTED,
-            font=sub_font,
+            (cx - cw // 2, y0 + 12 + crest_max + 4),
+            cap,
+            fill=_TEXT,
+            font=cf,
         )
-    # полоски в сайдбаре — подписи
-    sb_x = sx0 + 14
-    row_y = sy0 + 16
-    sb_font = _pick_font(15, bold=True)
-    draw.text((sb_x, row_y), "Хронология", fill=_SLATE_BRIGHT, font=sb_font)
-    row_y += 36
-    hint = _pick_font(13, bold=False)
-    draw.text(
-        (sb_x, row_y),
-        "«?» — сезон\nещё не закрыт\nили данные\nне занесены.",
-        fill=_SLATE_MUTED,
-        font=hint,
-    )
-    content_x0 = px0 + 28
-    content_x1 = px1 - 28
-    row0_y = sy0 + 24
-    return im, draw, content_x0, content_x1, row0_y
+
+    buf = BytesIO()
+    im.convert("RGB").save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
 
 
 def render_league_history_png(league_code: str, league_title: str) -> bytes:
     mx = get_active_season()
     rows = timeline_league(league_code, mx)
-    im, draw, x0, x1, y0 = _render_shell(league_title, "Чемпионы по сезонам", len(rows))
-    crest_slot = 52
-    for i, (season, team) in enumerate(rows):
-        y = y0 + i * _ROW_H + _ROW_H // 2
-        band_top = y0 + i * _ROW_H - 4
-        if i % 2 == 0:
-            draw.rounded_rectangle(
-                (x0 - 8, band_top, x1 + 8, band_top + _ROW_H - 8),
-                radius=6,
-                fill=(255, 255, 255, 12),
-            )
-        sf = _pick_font(17, bold=True)
-        draw.text((x0, y), f"Сезон {season}", fill=_SLATE_BRIGHT, font=sf, anchor="lm")
-        cx = x0 + 200
-        if team:
-            dbn = _team_name_as_in_db(team)
-            cr = _try_load_crest_rgba(dbn)
-            if cr is not None:
-                _paste_crest_natural(im, cr, cx, y, crest_slot)
-            else:
-                _draw_unknown_badge(im, draw, cx, y, crest_slot)
-        else:
-            _draw_unknown_badge(im, draw, cx, y, crest_slot)
-        name = team if team else "—"
-        nf = _pick_font(20, bold=True)
-        draw.text((cx + crest_slot + 36, y), name, fill=_SLATE_BRIGHT, font=nf, anchor="lm")
-    buf = BytesIO()
-    im.convert("RGB").save(buf, format="PNG", optimize=True)
-    return buf.getvalue()
+    return _render_club_grid_png(
+        title=league_title,
+        subtitle="Чемпионы по сезонам",
+        rows=rows,
+        use_cl_background=False,
+    )
 
 
 def render_cl_history_png() -> bytes:
     mx = get_active_season()
     rows = timeline_cl(mx)
-    im, draw, x0, x1, y0 = _render_shell("Лига чемпионов", "Победитель группы (как в таблице бота)", len(rows))
-    crest_slot = 52
-    for i, (season, team) in enumerate(rows):
-        y = y0 + i * _ROW_H + _ROW_H // 2
-        band_top = y0 + i * _ROW_H - 4
-        if i % 2 == 0:
-            draw.rounded_rectangle(
-                (x0 - 8, band_top, x1 + 8, band_top + _ROW_H - 8),
-                radius=6,
-                fill=(255, 255, 255, 12),
-            )
-        sf = _pick_font(17, bold=True)
-        draw.text((x0, y), f"Сезон {season}", fill=_SLATE_BRIGHT, font=sf, anchor="lm")
-        cx = x0 + 200
-        if team:
-            cr = _try_load_crest_rgba(_team_name_as_in_db(team))
-            if cr is not None:
-                _paste_crest_natural(im, cr, cx, y, crest_slot)
-            else:
-                _draw_unknown_badge(im, draw, cx, y, crest_slot)
-        else:
-            _draw_unknown_badge(im, draw, cx, y, crest_slot)
-        name = team if team else "—"
-        nf = _pick_font(20, bold=True)
-        draw.text((cx + crest_slot + 36, y), name, fill=_SLATE_BRIGHT, font=nf, anchor="lm")
-    buf = BytesIO()
-    im.convert("RGB").save(buf, format="PNG", optimize=True)
-    return buf.getvalue()
+    return _render_club_grid_png(
+        title="Лига чемпионов",
+        subtitle="Победители по сезонам",
+        rows=rows,
+        use_cl_background=True,
+    )
 
 
 _AWARD_META = {
@@ -287,37 +362,91 @@ def render_award_history_png(kind: str) -> bytes:
     title, trophy_file = _AWARD_META[kind]
     mx = get_active_season()
     rows = timeline_award(kind, mx)
-    im, draw, x0, x1, y0 = _render_shell(title, "Личная награда по сезонам", len(rows))
+    ordered = list(reversed(rows))
+    n = len(ordered)
+    if n == 0:
+        ordered = [(get_active_season(), None, None, None)]
+
+    inner_w = _CANVAS_W - 2 * _PAD
+    cell_w = inner_w // _COLS
+    cell_h = int(cell_w * 1.35) + 52
+    n_rows = (n + _COLS - 1) // _COLS
+    title_line = title.upper()
+    header_bottom = _measure_header_bottom(title_line, "ПО СЕЗОНАМ")
+    final_h = header_bottom + n_rows * cell_h + _PAD
+    im_rgb = _background_award_rgb(_CANVAS_W, final_h)
+    im = im_rgb.convert("RGBA")
     tro = _try_load_trophy_rgba(trophy_file)
-    for i, (season, player, club, slug) in enumerate(rows):
-        y = y0 + i * _ROW_H + _ROW_H // 2
-        band_top = y0 + i * _ROW_H - 4
-        if i % 2 == 0:
-            draw.rounded_rectangle(
-                (x0 - 8, band_top, x1 + 8, band_top + _ROW_H - 8),
-                radius=6,
-                fill=(255, 255, 255, 10),
-            )
-        sf = _pick_font(16, bold=True)
-        draw.text((x0, y), f"Сезон {season}", fill=_SLATE_BRIGHT, font=sf, anchor="lm")
-        tx = x0 + 118
-        if tro is not None:
-            _paste_trophy_thumb(im, tro, tx, y, 72)
-        else:
-            draw.text((tx, y), "🏆", fill=_SLATE_BRIGHT, font=_pick_font(28), anchor="mm")
-        px = tx + 70
+    if tro is not None:
+        _watermark_trophy(im, tro, alpha=38)
+
+    draw = ImageDraw.Draw(im)
+    _draw_header(draw, _CANVAS_W, title_line, "ПО СЕЗОНАМ")
+
+    photo_max_w = cell_w - 18
+    photo_max_h = int(cell_h * 0.48)
+    trophy_h = min(52, int(cell_h * 0.28))
+
+    for idx, (season, player, club, slug) in enumerate(ordered):
+        col = idx % _COLS
+        row = idx // _COLS
+        x0 = _PAD + col * cell_w
+        y0 = header_bottom + row * cell_h
+        cx = x0 + cell_w // 2
+
+        gold = _slanted_gold_layer(cell_w - 8, int(cell_h * 0.72))
+        im.alpha_composite(gold, (x0 + 4, y0 + 4))
+
+        cy_photo_top = y0 + 14
         photo = _try_load_photo_rgba(slug)
-        if photo is not None and player:
-            _paste_round_thumbnail(im, photo, px + 36, y, 72)
+        if photo is not None:
+            _paste_photo_in_cell(im, photo, cx, cy_photo_top, photo_max_w, photo_max_h)
         else:
-            _draw_unknown_badge(im, draw, px + 36, y, 64)
-        line1 = player if player else "—"
-        line2 = club if club else ""
-        nf = _pick_font(18, bold=True)
-        draw.text((px + 92, y - 14), line1, fill=_SLATE_BRIGHT, font=nf, anchor="lm")
-        if line2:
-            cf = _pick_font(15, bold=False)
-            draw.text((px + 92, y + 14), line2, fill=_SLATE_MUTED, font=cf, anchor="lm")
+            _draw_unknown_mark(
+                im,
+                draw,
+                cx,
+                cy_photo_top + photo_max_h // 2,
+                min(photo_max_w, photo_max_h) - 8,
+                light=True,
+            )
+
+        if tro is not None:
+            _paste_trophy_thumb(
+                im,
+                tro,
+                cx + max(8, cell_w // 2 - 44),
+                y0 + 22 + photo_max_h // 2,
+                trophy_h,
+            )
+
+        line_a = (player or "—").strip().upper()
+        if line_a == "—":
+            line_a = "—"
+        line_b = f"(СЕЗОН {season})"
+        name_font = _pick_font(13, bold=True)
+        sea_font = _pick_font(12, bold=True)
+        max_tw = cell_w - 10
+        line_a = _truncate(draw, line_a, name_font, max_tw)
+        nb = draw.textbbox((0, 0), line_a, font=name_font)
+        nw = nb[2] - nb[0]
+        y_label = y0 + int(cell_h * 0.72) + 4
+        draw.text((cx - nw // 2, y_label), line_a, fill=_TEXT, font=name_font)
+        sb = draw.textbbox((0, 0), line_b, font=sea_font)
+        sw = sb[2] - sb[0]
+        draw.text((cx - sw // 2, y_label + (nb[3] - nb[1]) + 2), line_b, fill=_TEXT_DIM, font=sea_font)
+        if club and player:
+            cf = _pick_font(11, bold=False)
+            cc = _truncate(draw, club, cf, max_tw)
+            cb = draw.textbbox((0, 0), cc, font=cf)
+            cw = cb[2] - cb[0]
+            draw.text(
+                (cx - cw // 2, y_label + (nb[3] - nb[1]) + (sb[3] - sb[1]) + 6),
+                cc,
+                fill=_TEXT_DIM,
+                font=cf,
+            )
+
     buf = BytesIO()
     im.convert("RGB").save(buf, format="PNG", optimize=True)
     return buf.getvalue()
