@@ -123,6 +123,12 @@ def _player_name_key(full_name: str) -> str:
     return " ".join(s.split()).lower()
 
 
+# Имя в БД → ключ имени в файле заявки (переименования, опечатки).
+_DB_NAME_KEY_TO_DECLARED_KEY: dict[str, str] = {
+    "лауриент": "лориент",
+}
+
+
 def _surname(full_name: str) -> str:
     s = (full_name or "").strip()
     if not s:
@@ -237,34 +243,62 @@ def _roster_order_map(team_db: str) -> dict[str, int]:
 
 def _declared_roster_name_keys(team_db: str) -> frozenset[str] | None:
     """Имена из файла заявки (нормализованный ключ); ``None`` — нет жёсткого списка для клуба."""
-    from data.england_apl_squads import ENGLAND_APL_SQUADS
-    from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
-    from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
-    from data.russia_rpl_squads import RUSSIA_RPL_SQUADS
-    from data.spain_la_liga_squads import SPAIN_LA_LIGA_SQUADS
-
-    for squads in (
-        ENGLAND_APL_SQUADS,
-        GERMANY_BUNDESLIGA_SQUADS,
-        ITALY_SERIE_A_SQUADS,
-        SPAIN_LA_LIGA_SQUADS,
-        RUSSIA_RPL_SQUADS,
-    ):
-        rows = squads.get(team_db)
-        if rows:
-            return frozenset(_player_name_key(str(r[0])) for r in rows)
+    rows = _declared_roster_rows_for_team(team_db)
+    if rows:
+        return frozenset(_player_name_key(str(r[0])) for r in rows)
     return None
 
 
-def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
-    """Поля позиция/нация/статус/overall из файла заявки — 1:1 с таблицей, даже если БД ещё не синкнута."""
+def _player_key_allowed_in_declared(keys: frozenset[str], player_key: str) -> bool:
+    """Игрок из БД допускается в ростер, если его ключ или алиас совпадает с заявкой."""
+    if player_key in keys:
+        return True
+    mapped = _DB_NAME_KEY_TO_DECLARED_KEY.get(player_key)
+    return mapped in keys if mapped else False
+
+
+def _inject_missing_declared_players(out: list[_Pl], team_db: str) -> None:
+    """Добавить из заявки игроков, которых ещё нет в БД (после синка не прогнали и т.п.)."""
+    rows = _declared_roster_rows_for_team(team_db)
+    if not rows:
+        return
+    have = {_player_name_key(p.name) for p in out}
+    for r in rows:
+        file_key = _player_name_key(str(r[0]))
+        if file_key in have:
+            continue
+        name, pos, ov, nation, st = r[0], r[1], r[2], r[3], r[4]
+        sx = (str(st) if st is not None else "").strip().lower()
+        if sx not in ("start", "bench", "reserve"):
+            sx = None
+        pos_s = (str(pos) if pos is not None else "").strip()
+        ov_i = int(ov or 0)
+        nat = str(nation).strip() if nation is not None and str(nation).strip() else None
+        out.append(
+            _Pl(
+                name=str(name).strip(),
+                position=pos_s,
+                overall=ov_i,
+                tags=_position_tags(pos_s),
+                score=_player_score(ov_i),
+                nation=nat,
+                status=sx,
+                roster_rank=9999,
+            )
+        )
+        have.add(file_key)
+    order = _roster_order_map(team_db)
+    for p in out:
+        p.roster_rank = order.get(_player_name_key(p.name), 9999)
+
+
+def _declared_roster_rows_for_team(team_db: str) -> list[tuple] | None:
     from data.england_apl_squads import ENGLAND_APL_SQUADS
     from data.germany_bundesliga_squads import GERMANY_BUNDESLIGA_SQUADS
     from data.italy_seria_a_squads import ITALY_SERIE_A_SQUADS
     from data.russia_rpl_squads import RUSSIA_RPL_SQUADS
     from data.spain_la_liga_squads import SPAIN_LA_LIGA_SQUADS
 
-    rows = None
     for squads in (
         ENGLAND_APL_SQUADS,
         GERMANY_BUNDESLIGA_SQUADS,
@@ -273,16 +307,24 @@ def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
         RUSSIA_RPL_SQUADS,
     ):
         if team_db in squads:
-            rows = squads[team_db]
-            break
+            return list(squads[team_db])
+    return None
+
+
+def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
+    """Поля позиция/нация/статус/overall из файла заявки — 1:1 с таблицей, даже если БД ещё не синкнута."""
+    rows = _declared_roster_rows_for_team(team_db)
     if not rows:
         return
     by_key: dict[str, tuple] = {_player_name_key(str(r[0])): r for r in rows}
     for p in out:
-        r = by_key.get(_player_name_key(p.name))
+        nk = _player_name_key(p.name)
+        file_key = _DB_NAME_KEY_TO_DECLARED_KEY.get(nk, nk)
+        r = by_key.get(file_key)
         if r is None:
             continue
         _nm, pos, ov, nation, st = r[0], r[1], r[2], r[3], r[4]
+        p.name = str(_nm).strip()
         p.position = (str(pos) if pos is not None else "").strip()
         if nation is not None and str(nation).strip():
             p.nation = str(nation).strip()
@@ -327,9 +369,12 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
     # Сначала заявка из файла: при дублях в БД (разные таблицы/позиции) не отбрасываем «левую» строку до merge.
     _overlay_declared_roster(out, team_db)
     out = _dedupe_squad_pl_by_name(out)
+    _inject_missing_declared_players(out, team_db)
     keys = _declared_roster_name_keys(team_db)
     if keys is not None:
-        out = [p for p in out if _player_name_key(p.name) in keys]
+        out = [
+            p for p in out if _player_key_allowed_in_declared(keys, _player_name_key(p.name))
+        ]
     order = _roster_order_map(team_db)
     for p in out:
         p.roster_rank = order.get(_player_name_key(p.name), 9999)
