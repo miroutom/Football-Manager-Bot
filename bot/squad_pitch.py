@@ -1,6 +1,10 @@
 """
 Состав клуба на схеме поля: слоты из ``team_squad_schemas`` / ``formation_geometry``.
 
+Режим ``per_season`` (см. ``utils.season_paths``): позиции, рейтинги и статусы берутся **только**
+из SQLite активного сезона, без подмены строками из ``data/*_squads.py``. В **legacy** поведение
+прежнее: заявка из py-файлов накладывается на БД.
+
 Подбор по слотам: если у команды заданы ``start``/``bench``/``reserve`` в БД, стартовые
 ставятся **только** при точном совпадении позиции со слотом (без сдвига линий); при равенстве
 слотов (ЦП/ЦАП на LCM/RCM) порядок как в файле заявки, CAM/CCM обрабатываются раньше боковых
@@ -26,6 +30,7 @@ from data.midfielder import Midfielder
 from coach_squad_state import label_for_squad_caption, resolve_formation_key_for_team
 from squad_kit_palette import KitSpec, kit_for_team
 from team_squad_schemas import SquadSlot, get_slots_for_formation_key
+from utils import season_paths
 from utils.squad_graphics_assets import (
     commons_crest_filename_for_team,
     load_commons_crest_rgba,
@@ -220,6 +225,11 @@ class _Pl:
     roster_rank: int = 9999
 
 
+def _squad_rows_from_py_files() -> bool:
+    """В legacy заявка из ``data/*_squads.py``; в per_season — только данные активного сезона в БД."""
+    return season_paths.is_legacy_mode()
+
+
 def _roster_order_map(team_db: str) -> dict[str, int]:
     """Порядок строк в заявке (АПЛ / Бундес): для сопоставления слотов при нескольких «своих»."""
     from data.england_apl_squads import ENGLAND_APL_SQUADS
@@ -337,6 +347,21 @@ def _overlay_declared_roster(out: list[_Pl], team_db: str) -> None:
         p.score = _player_score(p.overall)
 
 
+def _assign_roster_ranks_from_db(players: list[_Pl]) -> None:
+    """Порядок «как в заявке» без py-файлов: старт → скамейка → резерв, затем рейтинг, имя."""
+    ordered_idx = sorted(
+        range(len(players)),
+        key=lambda i: (
+            _DEDUPE_STATUS_RANK.get(_norm_pl_status(players[i]), 3),
+            -players[i].score,
+            (players[i].name or "").lower(),
+        ),
+    )
+    rank_map = {idx: pos for pos, idx in enumerate(ordered_idx)}
+    for i, p in enumerate(players):
+        p.roster_rank = rank_map.get(i, 9999)
+
+
 def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
     team_db = _team_name_as_in_db(team)
     session = get_session(tournament)
@@ -366,18 +391,25 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     roster_rank=9999,
                 )
             )
-    # Сначала заявка из файла: при дублях в БД (разные таблицы/позиции) не отбрасываем «левую» строку до merge.
-    _overlay_declared_roster(out, team_db)
+    use_py = _squad_rows_from_py_files()
+    # Сначала заявка из файла (только legacy): при дублях в БД не отбрасываем «левую» строку до merge.
+    if use_py:
+        _overlay_declared_roster(out, team_db)
     out = _dedupe_squad_pl_by_name(out)
-    _inject_missing_declared_players(out, team_db)
-    keys = _declared_roster_name_keys(team_db)
-    if keys is not None:
-        out = [
-            p for p in out if _player_key_allowed_in_declared(keys, _player_name_key(p.name))
-        ]
-    order = _roster_order_map(team_db)
-    for p in out:
-        p.roster_rank = order.get(_player_name_key(p.name), 9999)
+    if use_py:
+        _inject_missing_declared_players(out, team_db)
+        keys = _declared_roster_name_keys(team_db)
+        if keys is not None:
+            out = [
+                p
+                for p in out
+                if _player_key_allowed_in_declared(keys, _player_name_key(p.name))
+            ]
+        order = _roster_order_map(team_db)
+        for p in out:
+            p.roster_rank = order.get(_player_name_key(p.name), 9999)
+    else:
+        _assign_roster_ranks_from_db(out)
     return out
 
 
