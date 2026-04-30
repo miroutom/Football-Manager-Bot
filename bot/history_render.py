@@ -17,7 +17,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageOps
+    from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 except ImportError as e:
     raise ImportError("Нужен пакет Pillow: pip install pillow") from e
 
@@ -51,6 +51,8 @@ _TEXT = (248, 250, 252)
 _TEXT_DIM = (186, 198, 210)
 _GOLD_PANEL = (218, 170, 45, 220)
 _GOLD_PANEL_EDGE = (255, 220, 120, 90)
+_GOLD_TEXT = (255, 230, 130)
+_GOLD_BRIGHT = (255, 215, 0)
 
 
 def _try_load_photo_rgba(slug: str | None) -> Image.Image | None:
@@ -130,9 +132,26 @@ def _background_league_rgb(w: int, h: int) -> Image.Image:
 
 
 def _background_award_rgb(w: int, h: int) -> Image.Image:
-    im = Image.new("RGB", (w, h), (24, 18, 14))
-    _fill_vertical_gradient_rgb(im, (42, 32, 22), (14, 10, 12))
+    """Тёплый тёмный фон — золотисто-коричневый градиент как на референсе."""
+    im = Image.new("RGB", (w, h), (44, 34, 20))
+    _fill_vertical_gradient_rgb(im, (62, 48, 28), (22, 16, 10))
     return im
+
+
+def _add_noise_grain(im: Image.Image, intensity: int = 18) -> None:
+    """Добавляем лёгкую зернистость для «журнального» вида."""
+    import random
+    pixels = im.load()
+    w, h = im.size
+    for y in range(0, h, 2):
+        for x in range(0, w, 2):
+            noise = random.randint(-intensity, intensity)
+            r, g, b = pixels[x, y][:3] if isinstance(pixels[x, y], tuple) and len(pixels[x, y]) >= 3 else (pixels[x, y], pixels[x, y], pixels[x, y])
+            pixels[x, y] = (
+                max(0, min(255, r + noise)),
+                max(0, min(255, g + noise)),
+                max(0, min(255, b + noise)),
+            )
 
 
 def _watermark_trophy(im: Image.Image, tro: Image.Image, alpha: int = 35) -> None:
@@ -152,6 +171,37 @@ def _watermark_trophy(im: Image.Image, tro: Image.Image, alpha: int = 35) -> Non
     im.paste(t, ((w - nw) // 2, (h - nh) // 2), t)
 
 
+def _scatter_watermark_trophies(im: Image.Image, tro: Image.Image, alpha: int = 20) -> None:
+    """Разбрасываем полупрозрачные трофеи по фону для «премиального» вида."""
+    w, h = im.size
+    positions = [
+        (int(w * 0.12), int(h * 0.25)),
+        (int(w * 0.88), int(h * 0.20)),
+        (int(w * 0.50), int(h * 0.50)),
+        (int(w * 0.15), int(h * 0.75)),
+        (int(w * 0.85), int(h * 0.78)),
+        (int(w * 0.35), int(h * 0.15)),
+        (int(w * 0.65), int(h * 0.85)),
+    ]
+    sizes = [0.18, 0.15, 0.22, 0.14, 0.16, 0.12, 0.13]
+    for (px, py), sz in zip(positions, sizes):
+        t = tro.copy()
+        target = int(min(w, h) * sz)
+        tw, th = t.size
+        scale = target / max(tw, th)
+        nw = max(1, int(tw * scale))
+        nh = max(1, int(th * scale))
+        t = t.resize((nw, nh), Image.Resampling.LANCZOS)
+        if t.mode != "RGBA":
+            t = t.convert("RGBA")
+        a = t.split()[3]
+        a = a.point(lambda p: int(p * alpha / 255))
+        t.putalpha(a)
+        left = max(0, min(w - nw, px - nw // 2))
+        top = max(0, min(h - nh, py - nh // 2))
+        im.paste(t, (left, top), t)
+
+
 def _draw_header(
     draw: ImageDraw.ImageDraw,
     w: int,
@@ -159,8 +209,8 @@ def _draw_header(
     subtitle: str | None,
 ) -> int:
     """Рисует заголовок по центру; возвращает нижнюю границу блока (y)."""
-    title_font = _pick_font(26, bold=True)
-    sub_font = _pick_font(14, bold=False)
+    title_font = _pick_font(36, bold=True)
+    sub_font = _pick_font(18, bold=False)
     y = _HEADER_TOP
     tb = draw.textbbox((0, 0), title, font=title_font)
     tw = tb[2] - tb[0]
@@ -178,7 +228,7 @@ def _draw_header(
 
 def _measure_header_bottom(title: str, subtitle: str | None) -> int:
     """Высота блока заголовка (нижний y) для расчёта размера холста."""
-    tmp = Image.new("RGB", (_CANVAS_W, 240))
+    tmp = Image.new("RGB", (_CANVAS_W, 300))
     d = ImageDraw.Draw(tmp)
     return _draw_header(d, _CANVAS_W, title, subtitle)
 
@@ -193,11 +243,11 @@ def _draw_unknown_mark(
     light: bool = False,
 ) -> None:
     r = size // 2
-    fill = (30, 36, 48) if not light else (55, 62, 78)
-    outline = _TEXT if light else (200, 210, 225)
+    fill = (30, 36, 48) if not light else (55, 52, 38)
+    outline = _GOLD_BRIGHT if light else (200, 210, 225)
     draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill, outline=outline, width=2)
     f = _pick_font(max(20, size // 2), bold=True)
-    draw.text((cx, cy), "?", fill=_TEXT, font=f, anchor="mm")
+    draw.text((cx, cy), "?", fill=_GOLD_TEXT, font=f, anchor="mm")
 
 
 def _paste_crest_cell(
@@ -216,11 +266,27 @@ def _paste_crest_cell(
     _draw_unknown_mark(im, draw, cx, cy, max_side, light=True)
 
 
-def _slanted_gold_layer(cell_w: int, cell_h: int, skew: int = 14) -> Image.Image:
+def _slanted_gold_layer(cell_w: int, cell_h: int, skew: int = 18) -> Image.Image:
+    """Золотой наклонный блок за фото — как на референсе Sportskeeda."""
     layer = Image.new("RGBA", (cell_w, cell_h), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
-    pts = [(skew, 4), (cell_w - 4, 4), (cell_w - skew - 4, cell_h - 16), (4, cell_h - 16)]
-    d.polygon(pts, fill=_GOLD_PANEL, outline=_GOLD_PANEL_EDGE)
+    # Основной золотой параллелограмм (правая часть ячейки)
+    offset_left = int(cell_w * 0.45)
+    pts = [
+        (offset_left + skew, 0),
+        (cell_w, 0),
+        (cell_w - skew, cell_h),
+        (offset_left, cell_h),
+    ]
+    d.polygon(pts, fill=(218, 170, 45, 200))
+    # Яркая грань
+    edge_pts = [
+        (offset_left + skew, 0),
+        (offset_left + skew + 6, 0),
+        (offset_left + 6, cell_h),
+        (offset_left, cell_h),
+    ]
+    d.polygon(edge_pts, fill=(255, 220, 100, 140))
     return layer
 
 
@@ -237,6 +303,8 @@ def _paste_photo_in_cell(
     w, h = thumb.size
     left = int(cx - w // 2)
     top = int(cy_top)
+    if thumb.mode != "RGBA":
+        thumb = thumb.convert("RGBA")
     im.alpha_composite(thumb, (left, top))
 
 
@@ -267,27 +335,44 @@ def _paste_trophy_thumb(im: Image.Image, tro: Image.Image, cx: int, cy: int, max
         nw = max(1, int(tw * max_h / th))
         t = t.resize((nw, max_h), Image.Resampling.LANCZOS)
     w, h = t.size
+    if t.mode != "RGBA":
+        t = t.convert("RGBA")
     im.alpha_composite(t, (int(cx - w // 2), int(cy - h // 2)))
 
 
+def _draw_cell_border(draw: ImageDraw.ImageDraw, x0: int, y0: int, w: int, h: int) -> None:
+    """Тонкая золотистая рамка вокруг ячейки."""
+    draw.rectangle(
+        (x0, y0, x0 + w, y0 + h),
+        outline=(180, 145, 50, 120),
+        width=2,
+    )
+
+
 def _render_club_grid_png(
-    *,
-    title: str,
-    subtitle: str | None,
-    rows: list[tuple[int, str | None]],
-    use_cl_background: bool,
+        *,
+        title: str,
+        subtitle: str | None,
+        rows: list[tuple[int, str | None]],
+        use_cl_background: bool,
 ) -> bytes:
-    """rows: (season, team_or_None); порядок — новые сезоны первыми."""
-    ordered = list(reversed(rows))
+    """rows: (season, team_or_None); порядок — новые сезоны первыми.
+
+    Раскладка: новый сезон = верхний левый угол,
+    старые сдвигаются вправо, затем на следующую строку.
+    (Как на референсе FootyRoom Champions League Winners.)
+    """
+    # ← БЕЗ reversed!  rows уже идут от нового к старому
+    ordered = list(rows)
     n = len(ordered)
     if n == 0:
         ordered = [(get_active_season(), None)]
+        n = 1
 
     inner_w = _CANVAS_W - 2 * _PAD
     cell_w = inner_w // _COLS
     crest_max = min(64, int(cell_w * 0.62))
     cap_font = _pick_font(15, bold=True)
-    # Высота строки — только контент + небольшие отступы (без «карточки» на всю ширину колонки)
     _tmp = Image.new("RGB", (20, 20))
     _td = ImageDraw.Draw(_tmp)
     _cb_cap = _td.textbbox((0, 0), "Сезон 9", font=cap_font)
@@ -364,91 +449,102 @@ def render_award_history_png(kind: str) -> bytes:
     title, trophy_file = _AWARD_META[kind]
     mx = get_active_season()
     rows = timeline_award(kind, mx)
-    ordered = list(reversed(rows))
+    # ← БЕЗ reversed!  Новый сезон — левый верхний угол,
+    # старые уходят вправо и вниз (как на референсе FootyRoom).
+    ordered = list(rows)
     n = len(ordered)
     if n == 0:
         ordered = [(get_active_season(), None, None, None)]
+        n = 1
 
     inner_w = _CANVAS_W - 2 * _PAD
     cell_w = inner_w // _COLS
-    cell_h = int(cell_w * 1.35) + 52
+    cell_gap_x = 6
+    cell_gap_y = 10
+
+    photo_area_h = int(cell_w * 1.1)
+    label_area_h = 60
+    cell_h = photo_area_h + label_area_h + cell_gap_y
+
     n_rows = (n + _COLS - 1) // _COLS
     title_line = title.upper()
-    header_bottom = _measure_header_bottom(title_line, "ПО СЕЗОНАМ")
-    final_h = header_bottom + n_rows * cell_h + _PAD
+    subtitle_line = "ПОБЕДИТЕЛИ ПО СЕЗОНАМ"
+    header_bottom = _measure_header_bottom(title_line, subtitle_line)
+    final_h = header_bottom + n_rows * cell_h + _PAD + 10
+
     im_rgb = _background_award_rgb(_CANVAS_W, final_h)
     im = im_rgb.convert("RGBA")
+
     tro = _try_load_trophy_rgba(trophy_file)
     if tro is not None:
-        _watermark_trophy(im, tro, alpha=38)
+        _scatter_watermark_trophies(im, tro, alpha=22)
 
     draw = ImageDraw.Draw(im)
-    _draw_header(draw, _CANVAS_W, title_line, "ПО СЕЗОНАМ")
+    _draw_header(draw, _CANVAS_W, title_line, subtitle_line)
 
-    photo_max_w = cell_w - 18
-    photo_max_h = int(cell_h * 0.48)
-    trophy_h = min(52, int(cell_h * 0.28))
+    name_font = _pick_font(14, bold=True)
+    season_font = _pick_font(13, bold=True)
 
-    for idx, (season, player, club, slug) in enumerate(ordered):
+    photo_max_w = cell_w - cell_gap_x * 2
+    photo_max_h = photo_area_h - 10
+
+    for idx, entry in enumerate(ordered):
+        season = entry[0]
+        player = entry[1] if len(entry) > 1 else None
+        club = entry[2] if len(entry) > 2 else None
+        slug = entry[3] if len(entry) > 3 else None
+
         col = idx % _COLS
         row = idx // _COLS
         x0 = _PAD + col * cell_w
         y0 = header_bottom + row * cell_h
         cx = x0 + cell_w // 2
 
-        gold = _slanted_gold_layer(cell_w - 8, int(cell_h * 0.72))
-        im.alpha_composite(gold, (x0 + 4, y0 + 4))
+        gold = _slanted_gold_layer(cell_w - cell_gap_x, photo_area_h)
+        im.alpha_composite(gold, (x0 + cell_gap_x // 2, y0))
 
-        cy_photo_top = y0 + 14
+        cy_photo_top = y0 + 5
         photo = _try_load_photo_rgba(slug)
         if photo is not None:
             _paste_photo_in_cell(im, photo, cx, cy_photo_top, photo_max_w, photo_max_h)
         else:
+            mark_size = min(photo_max_w, photo_max_h) - 20
             _draw_unknown_mark(
-                im,
-                draw,
-                cx,
+                im, draw, cx,
                 cy_photo_top + photo_max_h // 2,
-                min(photo_max_w, photo_max_h) - 8,
+                mark_size,
                 light=True,
             )
 
-        if tro is not None:
-            _paste_trophy_thumb(
-                im,
-                tro,
-                cx + max(8, cell_w // 2 - 44),
-                y0 + 22 + photo_max_h // 2,
-                trophy_h,
-            )
+        max_tw = cell_w - 8
+        y_label = y0 + photo_area_h + 4
 
-        line_a = (player or "—").strip().upper()
-        if line_a == "—":
-            line_a = "—"
-        line_b = f"(СЕЗОН {season})"
-        name_font = _pick_font(13, bold=True)
-        sea_font = _pick_font(12, bold=True)
-        max_tw = cell_w - 10
-        line_a = _truncate(draw, line_a, name_font, max_tw)
-        nb = draw.textbbox((0, 0), line_a, font=name_font)
-        nw = nb[2] - nb[0]
-        y_label = y0 + int(cell_h * 0.72) + 4
-        draw.text((cx - nw // 2, y_label), line_a, fill=_TEXT, font=name_font)
-        sb = draw.textbbox((0, 0), line_b, font=sea_font)
+        if player:
+            last_name = player.strip().split()[-1].upper() if player.strip() else "—"
+            if club:
+                line1 = f"{last_name} ({club.upper()})"
+            else:
+                line1 = last_name
+        else:
+            line1 = "—"
+
+        line1 = _truncate(draw, line1, name_font, max_tw)
+        lb = draw.textbbox((0, 0), line1, font=name_font)
+        lw = lb[2] - lb[0]
+        lh = lb[3] - lb[1]
+        draw.text((cx - lw // 2, y_label), line1, fill=_TEXT, font=name_font)
+
+        line2 = f"{season} СЕЗОН"
+        sb = draw.textbbox((0, 0), line2, font=season_font)
         sw = sb[2] - sb[0]
-        draw.text((cx - sw // 2, y_label + (nb[3] - nb[1]) + 2), line_b, fill=_TEXT_DIM, font=sea_font)
-        if club and player:
-            cf = _pick_font(11, bold=False)
-            cc = _truncate(draw, club, cf, max_tw)
-            cb = draw.textbbox((0, 0), cc, font=cf)
-            cw = cb[2] - cb[0]
-            draw.text(
-                (cx - cw // 2, y_label + (nb[3] - nb[1]) + (sb[3] - sb[1]) + 6),
-                cc,
-                fill=_TEXT_DIM,
-                font=cf,
-            )
+        draw.text(
+            (cx - sw // 2, y_label + lh + 4),
+            line2,
+            fill=_GOLD_TEXT,
+            font=season_font,
+        )
 
     buf = BytesIO()
     im.convert("RGB").save(buf, format="PNG", optimize=True)
     return buf.getvalue()
+
