@@ -57,16 +57,17 @@ _TEXT_DIM = (186, 198, 210)
 _GOLD_TEXT = (255, 230, 130)
 _GOLD_BRIGHT = (255, 215, 0)
 
-_CARD_BG = (32, 44, 62)              # тёмно-синий стальной
-_CARD_BORDER = (70, 95, 130)         # синеватая рамка
-_CARD_NAMEPLATE = (16, 22, 34)       # тёмная полоса снизу
-_CARD_NAMEPLATE_BORDER = (70, 95, 130)  # рамка nameplate = рамка карточки
-_SEASON_CIRCLE_STROKE = (70, 95, 130)   # обводка круга = рамка карточки
-_SEASON_CIRCLE_FILL = (22, 32, 48)      # заливка круга
-_SEASON_COLOR = (255, 235, 130)       # золотая цифра
-_POS_TEXT = (210, 200, 170)           # текст позиции без плашки
-_POS_BORDER = (130, 110, 60)         # линия-разделитель nameplate
-_INFO_TEXT_DIM = (160, 155, 140)
+# ─── Цвета карточки — тёплые тёмные (под коричневый фон) ──────────
+_CARD_BG = (38, 32, 24)                 # тёмно-коричневый
+_CARD_BORDER = (85, 72, 48)             # золотисто-коричневая рамка
+_CARD_NAMEPLATE = (18, 15, 10)          # почти чёрный тёплый
+_CARD_NAMEPLATE_BORDER = (85, 72, 48)   # совпадает с рамкой карточки
+_SEASON_CIRCLE_STROKE = (85, 72, 48)    # обводка круга = рамка карточки
+_SEASON_CIRCLE_FILL = (38, 32, 24)      # заливка круга = фон карточки
+_SEASON_COLOR = (255, 235, 130)         # золотая цифра
+_POS_TEXT = (210, 200, 170)             # текст позиции
+_POS_BORDER = (90, 82, 65)             # линия nameplate
+_INFO_TEXT_DIM = (120, 110, 90)         # тусклый текст (прочерки)
 
 # ── Фиксированные размеры карточки (НЕ зависят от количества) ────
 _CARD_W_FIXED = 148                     # ширина карточки px
@@ -120,28 +121,35 @@ def _crop_head_to_waist(
     target_h: int,
 ) -> Image.Image:
     """
-    Обрезает фото «голова по пояс»:
-    - Портрет: берём верхние 65%
-    - Альбом: берём верхние 85%
-    - Center-crop до пропорций target
-    - Ресайз до target_w × target_h
+    Обрезает фото «голова по пояс» с ДИНАМИЧЕСКИМ зумом:
+    - Маленькие фото (портреты) — берём верхние 60%, мягкий зум
+    - Большие/альбомные — берём верхние 80%, минимальный зум
+    - Итого все выглядят примерно одинаково
     """
     img = photo.convert("RGBA")
     pw, ph = img.size
 
-    # Отсекаем ноги
-    if pw > ph:
-        crop_bottom = int(ph * 0.85)
+    # Динамический crop: чем больше фото, тем меньше обрезаем
+    aspect = pw / max(ph, 1)
+    if aspect > 1.2:
+        # Альбомное (Рёль 1200×800) — берём 80%, меньше зум
+        crop_ratio = 0.80
+    elif aspect > 0.85:
+        # Почти квадратное — 70%
+        crop_ratio = 0.70
     else:
-        crop_bottom = int(ph * 0.65)
-    crop_bottom = max(crop_bottom, target_h)
+        # Портрет (Мартинез 736×1071) — 60%
+        crop_ratio = 0.60
+
+    crop_bottom = int(ph * crop_ratio)
+    crop_bottom = max(crop_bottom, 10)
     crop_bottom = min(crop_bottom, ph)
     img = img.crop((0, 0, pw, crop_bottom))
     pw, ph = img.size
 
     # Center-crop до пропорций target
     target_ratio = target_w / target_h
-    current_ratio = pw / ph
+    current_ratio = pw / max(ph, 1)
 
     if current_ratio > target_ratio:
         new_w = int(ph * target_ratio)
@@ -151,7 +159,29 @@ def _crop_head_to_waist(
         new_h = int(pw / target_ratio)
         img = img.crop((0, 0, pw, new_h))
 
-    img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+    # Динамический scale: крупные фото чуть уменьшаем
+    orig_area = photo.size[0] * photo.size[1]
+    target_area = target_w * target_h
+    if orig_area > target_area * 6:
+        # Большое фото — уменьшаем на 8%
+        scale = 0.92
+    elif orig_area > target_area * 3:
+        scale = 0.96
+    else:
+        scale = 1.0
+
+    final_w = max(1, int(target_w * scale))
+    final_h = max(1, int(target_h * scale))
+    img = img.resize((final_w, final_h), Image.Resampling.LANCZOS)
+
+    # Если уменьшили — центрируем на прозрачном холсте target размера
+    if final_w < target_w or final_h < target_h:
+        canvas = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
+        ox = (target_w - final_w) // 2
+        oy = target_h - final_h  # выравнивание по низу
+        canvas.paste(img, (ox, oy))
+        return canvas
+
     return img
 
 
@@ -569,12 +599,12 @@ def _draw_award_card(
     given_font,
     family_font,
 ) -> None:
-    """Рисует одну карточку награды — фиксированный компактный размер."""
+    """Рисует одну карточку награды."""
     card_radius = 5
     info_pad = 6
-    icon_size = 28       # единый размер: эмблема, текст позиции, флаг
-    item_gap = 3         # зазор между элементами в левой колонке
-    circle_r = 16        # радиус круга сезона — КРУПНЫЙ
+    icon_size = 22        # единый размер элементов
+    item_gap = 1          # ← МИНИМАЛЬНЫЙ зазор между эмблемой/позицией/флагом
+    circle_r = 14         # радиус круга сезона
 
     x1 = x0 + card_w - 1
     y1 = y0 + card_h - 1
@@ -588,10 +618,11 @@ def _draw_award_card(
         width=2,
     )
 
-    # ── 2. Номер сезона — круг в правом верхнем углу ──
+    # ── 2. Номер сезона — круг СНАРУЖИ, правый верхний угол ──
     season_txt = str(int(season)) if season is not None else "?"
-    circle_cx = x1 - circle_r - 5
-    circle_cy = y0 + circle_r + 3
+    circle_cx = x1 - 4
+    circle_cy = y0 + 4
+    # Круг выступает за границу карточки
     draw.ellipse(
         (circle_cx - circle_r, circle_cy - circle_r,
          circle_cx + circle_r, circle_cy + circle_r),
@@ -604,23 +635,23 @@ def _draw_award_card(
         fill=_SEASON_COLOR, font=season_font, anchor="mm",
     )
 
-    # ── 3. Левая колонка: эмблема, позиция, флаг — ВЫРОВНЕНЫ по центру icon_size ──
-    col_cx = x0 + info_pad + icon_size // 2    # центр колонки
-    info_y = y0 + 7
+    # ── 3. Левая колонка: эмблема, позиция, флаг — КОМПАКТНО ──
+    col_cx = x0 + info_pad + icon_size // 2
+    info_y = y0 + 6
 
-    # 3a. Эмблема клуба — центрирована
+    # 3a. Эмблема клуба
     if club and str(club).strip():
         cr = _try_load_crest_rgba(_team_name_as_in_db(str(club).strip()))
         if cr is not None:
             _paste_crest_natural(im, cr, col_cx, info_y + icon_size // 2, icon_size)
     info_y += icon_size + item_gap
 
-    # Позиция и нация из БД
+    # Позиция и нация
     pos_db, nat_db = None, None
     if player and str(player).strip():
         pos_db, nat_db = _lookup_position_nation(str(player).strip(), club)
 
-    # 3b. Позиция — текст, центрирован в колонке
+    # 3b. Позиция — текст без плашки
     if pos_db:
         pos_txt = pos_db.upper()
         ptb = draw.textbbox((0, 0), pos_txt, font=pos_font)
@@ -640,18 +671,19 @@ def _draw_award_card(
         )
     info_y += icon_size + item_gap
 
-    # 3c. Флаг нации — центрирован
+    # 3c. Флаг нации
     if nat_db:
         flag_x = col_cx - _FLAG_W // 2
-        _paste_or_draw_flag(im, draw, int(flag_x), int(info_y + (icon_size - _FLAG_H) // 2), nat_db)
+        flag_y = info_y + (icon_size - _FLAG_H) // 2
+        _paste_or_draw_flag(im, draw, int(flag_x), int(flag_y), nat_db)
     else:
-        # Заглушка
-        fw, fh = min(_FLAG_W, icon_size), min(_FLAG_H, icon_size - 4)
+        fw = min(_FLAG_W, icon_size)
+        fh = min(_FLAG_H, icon_size - 4)
         fx = col_cx - fw // 2
         fy = info_y + (icon_size - fh) // 2
         draw.rectangle(
             (fx, fy, fx + fw, fy + fh),
-            fill=(40, 40, 42), outline=(60, 58, 52),
+            fill=(32, 28, 20), outline=(60, 52, 38),
         )
 
     # ── 4. Фото — строго НАД nameplate ──
