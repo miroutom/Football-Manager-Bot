@@ -285,7 +285,17 @@ def _render_club_grid_png(
 
     inner_w = _CANVAS_W - 2 * _PAD
     cell_w = inner_w // _COLS
-    cell_h = cell_w + 36
+    crest_max = min(64, int(cell_w * 0.62))
+    cap_font = _pick_font(15, bold=True)
+    # Высота строки — только контент + небольшие отступы (без «карточки» на всю ширину колонки)
+    _tmp = Image.new("RGB", (20, 20))
+    _td = ImageDraw.Draw(_tmp)
+    _cb_cap = _td.textbbox((0, 0), "Сезон 9", font=cap_font)
+    _cap_h = _cb_cap[3] - _cb_cap[1]
+    pad_v = 8
+    gap_crest_label = 6
+    row_gap = 12
+    cell_h = pad_v + crest_max + gap_crest_label + _cap_h + pad_v + row_gap
     n_rows = (n + _COLS - 1) // _COLS
     header_bottom = _measure_header_bottom(title, subtitle)
     final_h = header_bottom + n_rows * cell_h + _PAD
@@ -295,30 +305,22 @@ def _render_club_grid_png(
         im = _background_league_rgb(_CANVAS_W, final_h).convert("RGBA")
     draw = ImageDraw.Draw(im)
     _draw_header(draw, _CANVAS_W, title, subtitle)
-    crest_max = min(64, int(cell_w * 0.62))
-    cell_outline = (88, 98, 128)
     for idx, (season, team) in enumerate(ordered):
         col = idx % _COLS
         row = idx // _COLS
         x0 = _PAD + col * cell_w
         y0 = header_bottom + row * cell_h
         cx = x0 + cell_w // 2
-        cy_crest = y0 + 8 + crest_max // 2
-        xy = (x0 + 2, y0 + 2, x0 + cell_w - 3, y0 + cell_h - 4)
-        if hasattr(draw, "rounded_rectangle"):
-            draw.rounded_rectangle(xy, radius=8, outline=cell_outline, width=1)
-        else:
-            draw.rectangle(xy, outline=cell_outline, width=1)
+        cy_crest = y0 + pad_v + crest_max // 2
         _paste_crest_cell(im, team, cx, cy_crest, crest_max, draw)
         cap = f"Сезон {season}"
-        cf = _pick_font(15, bold=True)
-        cb = draw.textbbox((0, 0), cap, font=cf)
+        cb = draw.textbbox((0, 0), cap, font=cap_font)
         cw = cb[2] - cb[0]
         draw.text(
-            (cx - cw // 2, y0 + 12 + crest_max + 4),
+            (cx - cw // 2, y0 + pad_v + crest_max + gap_crest_label),
             cap,
             fill=_TEXT,
-            font=cf,
+            font=cap_font,
         )
 
     buf = BytesIO()
