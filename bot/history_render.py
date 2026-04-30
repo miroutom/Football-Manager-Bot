@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 PNG «История»: чемпионы — 10 колонок; личные награды — 5 колонок,
-карточки в стиле FUT: прямоугольник, фото (обрезка голова-по-пояс),
-номер сезона в углу, эмблема + позиция + флаг слева внутри,
-тёмная полоса с именем/фамилией снизу.
+карточки в стиле FUT: прямоугольник, фото (обрезка голова-по-пояс) в левой зоне,
+прижато к верху полосы имён; справа узкая колонка — эмблема, позиция, флаг;
+номер сезона в круге в углу; тёмная полоса с именем/фамилией снизу.
 
 Цветовая гамма: тёплые золотисто-бежевые тона.
 """
@@ -73,6 +73,21 @@ _INFO_TEXT_DIM = (120, 110, 90)         # тусклый текст (проче�
 _CARD_W_FIXED = 148                     # ширина карточки px
 _CARD_H_FIXED = 185                     # высота карточки px
 _NAMEPLATE_H_FIXED = 38                 # высота полосы имени
+# Правая «невидимая» колонка под эмблему / позицию / флаг (внутри карточки)
+_AWARD_INFO_COL_W = 34
+# Запас справа, чтобы колонка (герб) не заезжала под круг с номером сезона
+_AWARD_SEASON_CIRCLE_CLEAR = 6
+
+
+def _season_card_label(season: int | str | None) -> str:
+    """Текст номера сезона для круга на карточке (без падений на нестандартных данных)."""
+    if season is None:
+        return "?"
+    try:
+        return str(int(season))
+    except (TypeError, ValueError):
+        t = str(season).strip()
+        return t if t else "?"
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -159,30 +174,33 @@ def _crop_head_to_waist(
         new_h = int(pw / target_ratio)
         img = img.crop((0, 0, pw, new_h))
 
-    # Динамический scale: крупные фото чуть уменьшаем
+    # Динамический scale + лёгкий boost — игрок крупнее; крупные исходники чуть сжимаем
     orig_area = photo.size[0] * photo.size[1]
     target_area = target_w * target_h
     if orig_area > target_area * 6:
-        # Большое фото — уменьшаем на 8%
-        scale = 0.92
+        scale = 0.98
     elif orig_area > target_area * 3:
-        scale = 0.96
+        scale = 1.02
     else:
-        scale = 1.0
+        scale = 1.06
 
-    final_w = max(1, int(target_w * scale))
-    final_h = max(1, int(target_h * scale))
+    zoom_boost = 1.05
+    final_w = max(1, int(round(target_w * scale * zoom_boost)))
+    final_h = max(1, int(round(target_h * scale * zoom_boost)))
     img = img.resize((final_w, final_h), Image.Resampling.LANCZOS)
 
-    # Если уменьшили — центрируем на прозрачном холсте target размера
-    if final_w < target_w or final_h < target_h:
-        canvas = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
-        ox = (target_w - final_w) // 2
-        oy = target_h - final_h  # выравнивание по низу
-        canvas.paste(img, (ox, oy))
-        return canvas
+    out = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
+    if final_w >= target_w and final_h >= target_h:
+        left = max(0, (final_w - target_w) // 2)
+        top = max(0, final_h - target_h)
+        chip = img.crop((left, top, left + target_w, top + target_h))
+        out.paste(chip, (0, 0))
+        return out
 
-    return img
+    ox = (target_w - final_w) // 2
+    oy = target_h - final_h
+    out.paste(img, (ox, oy))
+    return out
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -557,23 +575,13 @@ def render_cl_history_png() -> bytes:
 #  Личные награды — карточки FUT
 # ═══════════════════════════════════════════════════════════════════
 #
-#  ┌──────────────────────────────┐
-#  │ [ЭМБЛЕМА 36px]        [1]   │  ← крупная золотая цифра
-#  │                              │
-#  │ ┌───────┐                    │
-#  │ │  POS  │  золотая плашка    │
-#  │ └───────┘                    │
-#  │ [🇦🇷 флаг]                  │
-#  │                              │
-#  │      ┌──────────────┐        │
-#  │      │              │        │
-#  │      │    ФОТО      │        │  ← строго НАД nameplate
-#  │      │  (по пояс)   │        │
-#  │      └──────────────┘        │
-#  ├──────────────────────────────┤  ← золотая линия
-#  │       Лаутаро                │
-#  │      Мартинез                │  ← увеличенная полоса 50px
-#  └──────────────────────────────┘
+#  ┌────────────────────────────┬───┐
+#  │  ФОТО (зум, по низу зоны)  │ЭП │  ← справа невидимая колонка: герб, POS, флаг
+#  │                            │POS│
+#  │                      [1]○  │🇦🇷│  ← круг сезона поверх
+#  ├────────────────────────────┴───┤
+#  │         имя / фамилия          │
+#  └────────────────────────────────┘
 
 _AWARD_META = {
     "golden_ball": ("Золотой мяч", "ballon_dor"),
@@ -590,7 +598,7 @@ def _draw_award_card(
     card_w: int, card_h: int,
     nameplate_h: int,
     *,
-    season: int,
+    season: int | str | None,
     player: str | None,
     club: str | None,
     slug: str | None,
@@ -601,13 +609,16 @@ def _draw_award_card(
 ) -> None:
     """Рисует одну карточку награды."""
     card_radius = 5
-    info_pad = 6
-    icon_size = 22        # единый размер элементов
-    item_gap = 1          # ← МИНИМАЛЬНЫЙ зазор между эмблемой/позицией/флагом
-    circle_r = 14         # радиус круга сезона
+    info_pad_r = 5
+    icon_size = 22
+    item_gap = 1
+    circle_r = 14
+    photo_margin = 2
+    gap_photo_info = 2
 
     x1 = x0 + card_w - 1
     y1 = y0 + card_h - 1
+    np_y = y1 - nameplate_h + 1
 
     # ── 1. Фон карточки ──
     draw.rounded_rectangle(
@@ -618,40 +629,63 @@ def _draw_award_card(
         width=2,
     )
 
-    # ── 2. Номер сезона — круг СНАРУЖИ, правый верхний угол ──
-    season_txt = str(int(season)) if season is not None else "?"
-    circle_cx = x1 - 4
-    circle_cy = y0 + 4
-    # Круг выступает за границу карточки
-    draw.ellipse(
-        (circle_cx - circle_r, circle_cy - circle_r,
-         circle_cx + circle_r, circle_cy + circle_r),
-        fill=_SEASON_CIRCLE_FILL,
-        outline=_SEASON_CIRCLE_STROKE,
-        width=2,
+    # Зона фото: слева, до «невидимой» правой колонки; низ вплотную к полосе имени
+    photo_area_top = y0 + photo_margin
+    photo_area_h = max(8, np_y - photo_area_top)
+    right_reserved = (
+        gap_photo_info
+        + _AWARD_INFO_COL_W
+        + info_pad_r
+        + _AWARD_SEASON_CIRCLE_CLEAR
     )
-    draw.text(
-        (circle_cx, circle_cy), season_txt,
-        fill=_SEASON_COLOR, font=season_font, anchor="mm",
+    photo_area_w = max(16, card_w - 2 * photo_margin - right_reserved)
+    photo_area_left = x0 + photo_margin
+    photo_cx = photo_area_left + photo_area_w // 2
+
+    # ── 2. Фото по центру оставшейся ширины, низ зоны = верх nameplate ──
+    photo = _try_load_photo_rgba(slug)
+    if photo is not None:
+        cropped = _crop_head_to_waist(photo, photo_area_w, photo_area_h)
+        if cropped.mode != "RGBA":
+            cropped = cropped.convert("RGBA")
+        im.alpha_composite(cropped, (photo_area_left, photo_area_top))
+    else:
+        mark_sz = min(36, int(photo_area_w * 0.32), int(photo_area_h * 0.32))
+        _draw_unknown_mark(
+            im, draw,
+            photo_cx,
+            photo_area_top + photo_area_h // 2,
+            mark_sz, light=True,
+        )
+
+    # ── 3. Правая колонка (фикс. ширина _AWARD_INFO_COL_W), по вертикали по центру ──
+    info_col_left = (
+        x0
+        + card_w
+        - info_pad_r
+        - _AWARD_INFO_COL_W
+        - _AWARD_SEASON_CIRCLE_CLEAR
     )
+    col_cx = info_col_left + _AWARD_INFO_COL_W // 2
 
-    # ── 3. Левая колонка: эмблема, позиция, флаг — КОМПАКТНО ──
-    col_cx = x0 + info_pad + icon_size // 2
-    info_y = y0 + 6
-
-    # 3a. Эмблема клуба
-    if club and str(club).strip():
-        cr = _try_load_crest_rgba(_team_name_as_in_db(str(club).strip()))
-        if cr is not None:
-            _paste_crest_natural(im, cr, col_cx, info_y + icon_size // 2, icon_size)
-    info_y += icon_size + item_gap
-
-    # Позиция и нация
     pos_db, nat_db = None, None
     if player and str(player).strip():
         pos_db, nat_db = _lookup_position_nation(str(player).strip(), club)
 
-    # 3b. Позиция — текст без плашки
+    body_top = y0 + 4
+    body_bot = np_y - 2
+    stack_h = icon_size + item_gap + icon_size + item_gap + max(_FLAG_H, icon_size - 4)
+    y_stack = body_top + max(0, (body_bot - body_top - stack_h) // 2)
+    info_y = y_stack
+
+    if club and str(club).strip():
+        cr = _try_load_crest_rgba(_team_name_as_in_db(str(club).strip()))
+        if cr is not None:
+            _paste_crest_natural(
+                im, cr, col_cx, info_y + icon_size // 2, icon_size,
+            )
+    info_y += icon_size + item_gap
+
     if pos_db:
         pos_txt = pos_db.upper()
         ptb = draw.textbbox((0, 0), pos_txt, font=pos_font)
@@ -671,7 +705,6 @@ def _draw_award_card(
         )
     info_y += icon_size + item_gap
 
-    # 3c. Флаг нации
     if nat_db:
         flag_x = col_cx - _FLAG_W // 2
         flag_y = info_y + (icon_size - _FLAG_H) // 2
@@ -686,31 +719,7 @@ def _draw_award_card(
             fill=(32, 28, 20), outline=(60, 52, 38),
         )
 
-    # ── 4. Фото — строго НАД nameplate ──
-    photo_margin = 3
-    photo_area_top = y0 + photo_margin
-    photo_area_bottom = y1 - nameplate_h - 4
-    photo_area_h = max(8, photo_area_bottom - photo_area_top)
-    photo_area_left = x0 + photo_margin
-    photo_area_w = max(8, card_w - photo_margin * 2)
-
-    photo = _try_load_photo_rgba(slug)
-    if photo is not None:
-        cropped = _crop_head_to_waist(photo, photo_area_w, photo_area_h)
-        if cropped.mode != "RGBA":
-            cropped = cropped.convert("RGBA")
-        im.alpha_composite(cropped, (photo_area_left, photo_area_top))
-    else:
-        mark_sz = min(32, int(photo_area_w * 0.28), int(photo_area_h * 0.28))
-        _draw_unknown_mark(
-            im, draw,
-            x0 + card_w // 2,
-            photo_area_top + photo_area_h // 2,
-            mark_sz, light=True,
-        )
-
-    # ── 5. Тёмная полоса снизу С РАМКОЙ ──
-    np_y = y1 - nameplate_h + 1
+    # ── 4. Тёмная полоса снизу С РАМКОЙ ──
     draw.rounded_rectangle(
         (x0 + 1, np_y, x1 - 1, y1 - 1),
         radius=card_radius,
@@ -771,6 +780,23 @@ def _draw_award_card(
     draw.text(
         (cx - fw // 2, ty),
         fam_t, fill=_TEXT, font=fam_f,
+    )
+
+    # ── 5. Номер сезона — круг в углу; рисуем последним и на свежем Draw, чтобы не терялся
+    season_txt = _season_card_label(season)
+    circle_cx = x1 - 4
+    circle_cy = y0 + 4
+    draw_top = ImageDraw.Draw(im)
+    draw_top.ellipse(
+        (circle_cx - circle_r, circle_cy - circle_r,
+         circle_cx + circle_r, circle_cy + circle_r),
+        fill=_SEASON_CIRCLE_FILL,
+        outline=_SEASON_CIRCLE_STROKE,
+        width=2,
+    )
+    draw_top.text(
+        (circle_cx, circle_cy), season_txt,
+        fill=_SEASON_COLOR, font=season_font, anchor="mm",
     )
 
 
