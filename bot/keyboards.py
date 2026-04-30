@@ -45,6 +45,9 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
             InlineKeyboardButton(text="⚽ Бомбардиры", callback_data="menu:goals"),
         ],
         [
+            InlineKeyboardButton(text="📜 История", callback_data="menu:history"),
+        ],
+        [
             InlineKeyboardButton(text="🎯 Ассисты", callback_data="menu:assists"),
             InlineKeyboardButton(text="📈 Г+А", callback_data="menu:ga"),
         ],

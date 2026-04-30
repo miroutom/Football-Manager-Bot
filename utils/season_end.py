@@ -8,7 +8,7 @@ import os
 import shutil
 from typing import Any
 
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, func, or_
 from sqlalchemy.orm import sessionmaker
 
 from data.defender import Defender
@@ -74,12 +74,17 @@ def _zero_match_stats_for_new_season(row: Any, Cls: type) -> None:
 def _inc_trophies_all_players_of_team(
     session, team_display_name: str, delta: int = 1
 ) -> int:
-    t = (team_display_name or "").strip().lower()
+    """
+    Кириллица: в SQLite ``lower(колонка)`` часто не совпадает с ``str.lower()`` в Python,
+    поэтому фильтр — точное имя клуба ИЛИ ``func.lower`` (как в ``squad_roster_sync``).
+    """
+    raw = (team_display_name or "").strip()
+    tl = raw.lower()
     n = 0
     for Cls in _ALL:
         q = (
             session.query(Cls)
-            .filter(func.lower(Cls.team) == t)
+            .filter(or_(Cls.team == raw, func.lower(Cls.team) == tl))
             .all()
         )
         for row in q:
@@ -215,6 +220,15 @@ def finalize_season() -> dict[str, Any]:
 
     tr = apply_season_trophies_from_standings()
     log["trophies"] = tr
+
+    try:
+        ended_n = int(season_paths.get_state().get("active_season") or 1)
+        from bot.season_history_store import record_tournament_winners_from_finalize
+
+        record_tournament_winners_from_finalize(ended_n, tr)
+        log["season_history_tournaments"] = "ok"
+    except Exception as e:
+        log["season_history_tournaments"] = repr(e)
 
     from utils.cl_standing_participants import (
         build_cl_top30_from_current_pickles,
