@@ -271,17 +271,15 @@ def _add_free_agent_to_sessions(
 
     Cls = _cls_for_position(position)
     pos_u = position.strip().upper()
+    nl = player.lower()
+    pl = pos_u.lower()
 
     def _dup(sess) -> bool:
-        return bool(
-            sess.query(Cls)
-            .filter(
-                func.lower(Cls.name) == player.lower(),
-                func.lower(Cls.team) == to_team.lower(),
-                func.lower(Cls.position) == pos_u.lower(),
-            )
-            .first()
-        )
+        # SQLite lower() кириллицу не нормализует — сравниваем в Python (как в squad_roster_sync).
+        for r in sess.query(Cls).filter(_filter_team(Cls, to_team)).all():
+            if (r.name or "").strip().lower() == nl and (r.position or "").strip().lower() == pl:
+                return True
+        return False
 
     kw = _new_player_kwargs(Cls, name=player, team=to_team, position=position, overall=overall)
     counts = {"league": 0, "cl": 0}

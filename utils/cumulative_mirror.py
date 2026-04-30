@@ -103,7 +103,12 @@ def mirror_add_free_agent(
         _dispose_pair(sl, scl, el, ec)
 
 
-def mirror_overall_bumps_for_team(team: str, text: str) -> None:
+def mirror_overall_bumps_for_team(
+    team: str,
+    text: str,
+    *,
+    alternate_names: dict[str, tuple[str, ...]] | None = None,
+) -> None:
     paths = _cumulative_paths()
     if not paths:
         return
@@ -113,7 +118,9 @@ def mirror_overall_bumps_for_team(team: str, text: str) -> None:
 
     sl, scl, el, ec = _open_pair(lp, cp)
     try:
-        res = apply_overall_bumps_in_sessions(team, text, sl, scl)
+        res = apply_overall_bumps_in_sessions(
+            team, text, sl, scl, alternate_names=alternate_names
+        )
         if res.ok:
             sl.commit()
             scl.commit()

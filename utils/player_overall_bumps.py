@@ -27,8 +27,18 @@ def _clamp(v: int) -> int:
     return max(1, min(99, v))
 
 
-def _bump_in_session(session, name: str, team: str, delta: int) -> bool:
-    row, _Cls = find_player_row(session, name, team)
+def _bump_in_session(
+    session,
+    name: str,
+    team: str,
+    delta: int,
+    alternate_names: tuple[str, ...] = (),
+) -> bool:
+    from utils.squad_roster_sync import find_player_row_first_match
+
+    row, _Cls, _matched = find_player_row_first_match(
+        session, name, team, *alternate_names
+    )
     if not row:
         return False
     cur = int(getattr(row, "overall", 0) or 0)
@@ -37,7 +47,12 @@ def _bump_in_session(session, name: str, team: str, delta: int) -> bool:
 
 
 def apply_overall_bumps_in_sessions(
-    team: str, text: str, sleague, scl
+    team: str,
+    text: str,
+    sleague,
+    scl,
+    *,
+    alternate_names: dict[str, tuple[str, ...]] | None = None,
 ) -> OverallBumpResult:
     """
     Те же правки overall, что ``apply_overall_bumps_for_team``, но на переданных сессиях;
@@ -47,6 +62,7 @@ def apply_overall_bumps_in_sessions(
     if len(team) < 2:
         raise ValueError("Слишком короткое имя команды")
     res = OverallBumpResult()
+    alts_map = alternate_names or {}
     for line in (text or "").splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
@@ -60,12 +76,14 @@ def apply_overall_bumps_in_sessions(
         if not name:
             res.errors.append(f"пустое имя: {line!r}")
             continue
+        alt_key = f"{team.lower()}|{name.strip().lower()}"
+        extras = alts_map.get(alt_key, ())
         n_l = 0
         n_c = 0
         try:
-            if _bump_in_session(sleague, name, team, delta):
+            if _bump_in_session(sleague, name, team, delta, extras):
                 n_l = 1
-            if _bump_in_session(scl, name, team, delta):
+            if _bump_in_session(scl, name, team, delta, extras):
                 n_c = 1
         except Exception as e:
             res.errors.append(f"{name}: {e}")

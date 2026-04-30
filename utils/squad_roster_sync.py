@@ -64,6 +64,24 @@ def find_player_row(session, name: str, team: str) -> tuple[Any, type | None]:
     return None, None
 
 
+def find_player_row_first_match(
+    session, name: str, team: str, *alternate_names: str
+) -> tuple[Any, type | None, str]:
+    """
+    Сначала ``name``, затем каждый из ``alternate_names`` (как в заявке / БД).
+    Возвращает (row, Cls, совпавшая_строка_поиска) или (None, None, "").
+    """
+    for cand in ((name or "").strip(),) + tuple(
+        (x or "").strip() for x in alternate_names if (x or "").strip()
+    ):
+        if not cand:
+            continue
+        row, Cls = find_player_row(session, cand, team)
+        if row is not None:
+            return row, Cls, cand
+    return None, None, ""
+
+
 def _all_rows_same_player(session, name: str, team: str) -> list[tuple[Any, type]]:
     nl = (name or "").strip().lower()
     out: list[tuple[Any, type]] = []
