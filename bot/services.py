@@ -284,6 +284,47 @@ def render_team_squad_pitch_png_bytes(league_code: str, team_index: int) -> byte
     return render_squad_pitch_png_bytes(team, tournament)
 
 
+def render_team_goalscorers_common_for_season_context(
+    season_key: str, team: str
+) -> str:
+    """
+    Голеадоры клуба из **common.db** (уже сумма национальная лига + ЛЧ для выбранного сезона).
+
+    ``season_key``: ``\"cur\"`` — рабочий common активного сезона; иначе номер архива ``\"1\"``, ``\"2\"``, …
+    """
+    import os
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from player_stats import format_team_goalscorers_table_str
+    from utils import season_paths
+
+    team = (team or "").strip()
+    if season_key == "cur":
+        p = season_paths.get_common_db_path()
+        suf = "текущий сезон · лига+ЛЧ (common)"
+    else:
+        base = season_paths.season_archive_directory(int(season_key))
+        p = os.path.join(base, season_paths.SEASON_COMMON_NAME)
+        suf = f"сезон {int(season_key)} (архив) · лига+ЛЧ (common)"
+    if not os.path.isfile(p):
+        return f"Нет файла common: {p}"
+    e = create_engine(f"sqlite:///{p}")
+    S = sessionmaker(bind=e)()
+    try:
+        return format_team_goalscorers_table_str(
+            team,
+            "common",
+            None,
+            session=S,
+            title_suffix=suf,
+        )
+    finally:
+        S.close()
+        e.dispose()
+
+
 def render_team_goalscorers_single(league_code: str, team_index: int) -> str:
     """Голеадоры одного клуба."""
     teams = teams_ordered_for_goalscorers(league_code)

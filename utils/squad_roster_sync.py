@@ -12,6 +12,8 @@
 """
 from __future__ import annotations
 
+import os
+import sqlite3
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -341,6 +343,104 @@ def run_squads_sync(
         from utils.common_db import rebuild_common_database
 
         rebuild_common_database()
+    return out
+
+
+def _cl_teams_dict_from_sqlite(cl_path: str) -> dict[str, Any]:
+    """Клубы, для которых строки из БД ЛЧ участвуют в merge common (как пул участников этого файла)."""
+    names: set[str] = set()
+    conn = sqlite3.connect(cl_path)
+    try:
+        for tbl in ("forwards", "midfielders", "defenders", "goalkeepers"):
+            try:
+                for (t,) in conn.execute(
+                    f"SELECT DISTINCT team FROM {tbl} "  # noqa: S608
+                    "WHERE team IS NOT NULL AND trim(team) != ''"
+                ):
+                    s = str(t).strip()
+                    if s:
+                        names.add(s)
+            except sqlite3.OperationalError:
+                pass
+    finally:
+        conn.close()
+    out = dict.fromkeys(sorted(names), True)
+    if not out:
+        import teams as teams_mod
+
+        return dict.fromkeys(teams_mod.teams_champ_league.keys(), True)
+    return out
+
+
+def run_squads_sync_on_disk_paths(
+    league_path: str,
+    cl_path: str,
+    common_path: str,
+    squads: dict[str, list[RosterRow]] | None = None,
+    *,
+    prune: bool = False,
+    tournaments: tuple[str, ...] | None = None,
+    rebuild_common: bool = True,
+) -> dict[str, dict[str, dict[str, int]]]:
+    """
+    Тот же синк заявок, что ``run_squads_sync``, но по **явным** путям к SQLite (архив сезона,
+    накопительные *_synced.db и т.д.). Без вызова ``migrate_all_player_status_columns`` —
+    схему мигрируйте отдельно при необходимости.
+
+    Для ЛЧ пул клубов берётся из ``cl_path`` (DISTINCT team), чтобы архив не фильтровался
+    текущим pickle ЛЧ.
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from utils.common_db import rebuild_common_database_for_disk_paths
+    from utils.merged_national_squads import merged_national_squads
+
+    if squads is None:
+        squads = merged_national_squads()
+    if not squads:
+        raise RuntimeError("Словарь заявок пуст.")
+    if not os.path.isfile(league_path) or not os.path.isfile(cl_path):
+        raise FileNotFoundError(
+            f"Нет league или cl: {league_path!s} / {cl_path!s}"
+        )
+
+    keys = tournaments if tournaments is not None else ("league", "cl")
+    el = create_engine(f"sqlite:///{league_path}")
+    ec = create_engine(f"sqlite:///{cl_path}")
+    Sl = sessionmaker(bind=el)
+    Scl = sessionmaker(bind=ec)
+    sl, scl = Sl(), Scl()
+    import teams as teams_mod
+
+    saved_cl = teams_mod.teams_champ_league
+    try:
+        teams_mod.teams_champ_league = _cl_teams_dict_from_sqlite(cl_path)
+        out: dict[str, dict[str, dict[str, int]]] = {}
+        for tkey in keys:
+            session = sl if tkey == "league" else scl
+            per_team: dict[str, dict[str, int]] = {}
+            for team, rows in squads.items():
+                if tkey in ("cl", "champ_league") and not _team_in_cl_pool(team):
+                    continue
+                per_team[team] = sync_team_roster(session, team, rows, prune=prune)
+            session.commit()
+            out[tkey] = per_team
+    finally:
+        teams_mod.teams_champ_league = saved_cl
+
+    sl.close()
+    scl.close()
+    el.dispose()
+    ec.dispose()
+
+    if rebuild_common:
+        saved2 = teams_mod.teams_champ_league
+        try:
+            teams_mod.teams_champ_league = _cl_teams_dict_from_sqlite(cl_path)
+            rebuild_common_database_for_disk_paths(league_path, cl_path, common_path)
+        finally:
+            teams_mod.teams_champ_league = saved2
     return out
 
 

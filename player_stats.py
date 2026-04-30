@@ -1417,7 +1417,12 @@ def show_team_goalscorers_table(
 
     width = 68
     sep = "=" * width
-    tname = "Лига Чемпионов" if tournament in ("cl", "champ_league") else "национальные лиги"
+    if tournament in ("cl", "champ_league"):
+        tname = "Лига Чемпионов"
+    elif tournament in ("common", "merged", "all"):
+        tname = "лига + ЛЧ (общая БД)"
+    else:
+        tname = "национальные лиги"
     suf = f" · {title_suffix}" if title_suffix else ""
     print(f"\n{sep}")
     print(f"  Голы и передачи: {team} ({tname}){suf}")
