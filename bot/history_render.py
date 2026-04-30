@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-PNG «История»: чемпионы — 10 фиксированных колонок; личные награды — 8 колонок,
-узкая золотая плашка чуть шире фиксированного кадра фото.
+PNG «История»: чемпионы — 10 фиксированных колонок; личные награды — 5 колонок,
+карточка: прямоугольник с фото (contain, снизу по центру), в углу номер сезона цифрой,
+снизу тёмная полоса с именем и фамилией; справа — эмблема клуба, позиция, флаг из БД лиги.
 
 - Без сайдбара «Хронология», без зелёного «газона».
 - ЛЧ: фон из ``champions_league/assets/cl_bracket_background.*`` (как у сетки плей-офф), иначе тёмно-синий градиент.
 - Нац. лиги: тёмно-синий / сине-фиолетовый градиент.
-- Личные награды: тёплый тёмный фон, опционально полупрозрачный трофей по центру, золотой наклонный блок за фото.
+- Личные награды: тёплый тёмный фон, опционально полупрозрачный трофей по центру.
 - Порядок ячеек: от более нового сезона к старым (слева направо, сверху вниз).
 """
 from __future__ import annotations
@@ -24,7 +25,10 @@ except ImportError as e:
 
 from bot.season_history_store import timeline_award, timeline_cl, timeline_league
 from bot.squad_pitch import (
+    _FLAG_H,
+    _FLAG_W,
     _paste_crest_natural,
+    _paste_or_draw_flag,
     _pick_font,
     _team_name_as_in_db,
     _try_load_crest_rgba,
@@ -44,7 +48,7 @@ _CL_BG_CANDIDATES: tuple[Path, ...] = (
 # Холст под ширину Telegram
 _CANVAS_W = 1200
 # Личные награды — сколько карточек в один ряд
-_COLS_AWARD_HISTORY = 8
+_COLS_AWARD_HISTORY = 5
 # Чемпионы лиг / ЛЧ — сколько сезонов в один ряд (узкие ячейки, длинная хронология)
 _COLS_CLUB_HISTORY = 10
 _PAD = 22
@@ -57,14 +61,6 @@ _GOLD_PANEL = (218, 170, 45, 220)
 _GOLD_PANEL_EDGE = (255, 220, 120, 90)
 _GOLD_TEXT = (255, 230, 130)
 _GOLD_BRIGHT = (255, 215, 0)
-
-
-def _club_sentence_case(club: str) -> str:
-    """Первая буква заглавная, остальные строчные (Интер, Бавария)."""
-    s = (club or "").strip()
-    if not s:
-        return ""
-    return s[0].upper() + s[1:].lower()
 
 
 def _try_load_photo_rgba(slug: str | None) -> Image.Image | None:
@@ -278,32 +274,6 @@ def _paste_crest_cell(
     _draw_unknown_mark(im, draw, cx, cy, max_side, light=True)
 
 
-def _slanted_gold_layer(band_w: int, band_h: int, skew: int | None = None) -> Image.Image:
-    """
-    Узкий золотой параллелограмм шириной ``band_w`` (чуть шире фото), без растягивания на всю ячейку.
-    """
-    if band_w < 12 or band_h < 8:
-        return Image.new("RGBA", (max(band_w, 1), max(band_h, 1)), (0, 0, 0, 0))
-    sk = skew if skew is not None else max(6, min(10, band_w // 14))
-    layer = Image.new("RGBA", (band_w, band_h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    pts = [
-        (sk, 0),
-        (band_w, 0),
-        (band_w - sk, band_h),
-        (0, band_h),
-    ]
-    d.polygon(pts, fill=(218, 170, 45, 200))
-    edge_pts = [
-        (sk, 0),
-        (min(sk + 5, band_w - 1), 0),
-        (min(5, band_w - 1), band_h),
-        (0, band_h),
-    ]
-    d.polygon(edge_pts, fill=(255, 220, 100, 140))
-    return layer
-
-
 def _paste_photo_in_cell(
     im: Image.Image,
     photo: Image.Image,
@@ -322,42 +292,140 @@ def _paste_photo_in_cell(
     im.alpha_composite(thumb, (left, top))
 
 
-def _paste_photo_bust_crop(
+def _paste_photo_contain_bottom_center(
     im: Image.Image,
     photo: Image.Image,
-    cx: int,
-    cy_top: int,
+    left: int,
+    top: int,
     box_w: int,
     box_h: int,
 ) -> None:
-    """
-    Фиксированный кадр ``box_w×box_h``: масштаб как ``cover``, обрезка **сверху**
-    (портрет «от головы к поясу» для вертикальных фото).
-    """
+    """Вписывает фото в прямоугольник как contain, выравнивание снизу по центру."""
     if box_w < 4 or box_h < 4:
         return
     img = photo.convert("RGBA")
     pw, ph = img.size
     if pw < 1 or ph < 1:
         return
-    scale = max(box_w / pw, box_h / ph)
+    scale = min(box_w / pw, box_h / ph) * 0.96
     nw = max(1, int(round(pw * scale)))
     nh = max(1, int(round(ph * scale)))
     img = img.resize((nw, nh), Image.Resampling.LANCZOS)
-    left = max(0, (nw - box_w) // 2)
-    top = 0
-    if nh < box_h:
-        top = 0
-        crop_h = nh
-    else:
-        crop_h = box_h
-    crop_w = min(box_w, nw)
-    crop_h = min(crop_h, nh)
-    img = img.crop((left, top, left + crop_w, top + crop_h))
-    if img.size != (box_w, box_h):
-        img = img.resize((box_w, box_h), Image.Resampling.LANCZOS)
-    w, h = img.size
-    im.alpha_composite(img, (int(cx - w // 2), int(cy_top)))
+    x0 = int(left + (box_w - nw) // 2)
+    y0 = int(top + box_h - nh)
+    im.alpha_composite(img, (x0, y0))
+
+
+def _split_given_family(full: str) -> tuple[str, str]:
+    parts = (full or "").strip().split()
+    if not parts:
+        return "", ""
+    if len(parts) == 1:
+        return "", parts[0]
+    return " ".join(parts[:-1]), parts[-1]
+
+
+def _lookup_position_nation(
+    player_name: str | None, team: str | None
+) -> tuple[str | None, str | None]:
+    """Позиция и нация из БД национальной лиги (имя + клуб; без клуба — первое совпадение по имени)."""
+    if not player_name or not str(player_name).strip():
+        return None, None
+    try:
+        from sqlalchemy import func, or_
+
+        from data.defender import Defender
+        from data.forward import Forward
+        from data.goalkeeper import Goalkeeper
+        from data.midfielder import Midfielder
+        from utils.utils import session_league
+    except Exception:
+        return None, None
+
+    nm = player_name.strip()
+    nml = nm.lower()
+    raw_t = (team or "").strip()
+    tl = raw_t.lower()
+
+    for Cls in (Forward, Midfielder, Defender, Goalkeeper):
+        try:
+            q = session_league.query(Cls).filter(
+                or_(Cls.name == nm, func.lower(Cls.name) == nml)
+            )
+            if raw_t:
+                row = q.filter(
+                    or_(Cls.team == raw_t, func.lower(Cls.team) == tl)
+                ).first()
+                if row is None:
+                    row = q.first()
+            else:
+                row = q.first()
+        except Exception:
+            logger.debug("award history: skip %s in DB lookup", Cls.__name__, exc_info=True)
+            continue
+        if row is not None:
+            pos = (getattr(row, "position", None) or "").strip() or None
+            nat = (getattr(row, "nation", None) or "").strip() or None
+            return pos, nat
+    return None, None
+
+
+def _draw_award_nameplate(
+    draw: ImageDraw.ImageDraw,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    given: str,
+    family: str,
+) -> None:
+    """Тёмная полоса внизу карточки: имя (мельче) и фамилия; шрифт ужимается при нехватке ширины."""
+    draw.rectangle((x, y, x + w - 1, y + h - 1), fill=(12, 16, 28))
+    max_tw = max(6, w - 8)
+    fam_sz, giv_sz = 12, 9
+    fn = (family or "—").strip() or "—"
+    gn = (given or "").strip()
+    fn_t = fn
+    gn_t = ""
+    fam_font = _pick_font(fam_sz, bold=True)
+    giv_font = _pick_font(giv_sz, bold=False)
+    for _ in range(8):
+        fam_font = _pick_font(fam_sz, bold=True)
+        giv_font = _pick_font(giv_sz, bold=False)
+        fn_t = _truncate(draw, fn, fam_font, max_tw)
+        gn_t = _truncate(draw, gn, giv_font, max_tw) if gn else ""
+        ok_f = _text_width(draw, fn_t, fam_font) <= max_tw
+        ok_g = (not gn_t) or (_text_width(draw, gn_t, giv_font) <= max_tw)
+        if ok_f and ok_g:
+            break
+        fam_sz = max(8, fam_sz - 1)
+        giv_sz = max(7, giv_sz - 1)
+
+    fb = draw.textbbox((0, 0), fn_t, font=fam_font)
+    fh = fb[3] - fb[1]
+    gh = 0
+    if gn_t:
+        gb = draw.textbbox((0, 0), gn_t, font=giv_font)
+        gh = gb[3] - gb[1]
+    gap = 2 if gn_t else 0
+    total = fh + gap + gh
+    y_text = y + max(2, (h - total) // 2)
+    if gn_t:
+        gw = _text_width(draw, gn_t, giv_font)
+        draw.text(
+            (x + (w - gw) // 2, y_text),
+            gn_t,
+            fill=(200, 205, 220),
+            font=giv_font,
+        )
+        y_text += gh + gap
+    fw = _text_width(draw, fn_t, fam_font)
+    draw.text(
+        (x + (w - fw) // 2, y_text),
+        fn_t,
+        fill=_TEXT,
+        font=fam_font,
+    )
 
 
 def _text_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> int:
@@ -509,19 +577,20 @@ def render_award_history_png(kind: str) -> bytes:
         n = 1
 
     inner_w = _CANVAS_W - 2 * _PAD
-    cell_gap_y = 10
+    cell_gap_y = 12
     cols = _COLS_AWARD_HISTORY
     cell_w_fixed = inner_w // cols
 
+    margin_h = 5
+    side_w = 40
+    col_gap = 5
+    rect_w = max(96, cell_w_fixed - 2 * margin_h - side_w - col_gap)
+    rect_h = min(172, max(136, int(rect_w * 0.95)))
+    nameplate_h = 36
+    card_radius = 7
+    cell_h = rect_h + cell_gap_y
+
     n_rows = (n + cols - 1) // cols
-    photo_area_h = min(118, max(88, int(cell_w_fixed * 0.48)))
-    label_area_h = 56
-    cell_h = photo_area_h + label_area_h + cell_gap_y
-    # Фото + узкая золотая плашка (фиксированные отступы, не ширина ячейки)
-    _gold_pad_each = 6
-    photo_box_w = min(108, cell_w_fixed - 2 * _gold_pad_each - 8)
-    photo_box_h = photo_area_h - 14
-    gold_band_w = photo_box_w + 2 * _gold_pad_each
     title_line = title.upper()
     subtitle_line = "ПОБЕДИТЕЛИ ПО СЕЗОНАМ"
     header_bottom = _measure_header_bottom(title_line, subtitle_line)
@@ -537,8 +606,10 @@ def render_award_history_png(kind: str) -> bytes:
     draw = ImageDraw.Draw(im)
     _draw_header(draw, _CANVAS_W, title_line, subtitle_line)
 
-    name_font = _pick_font(14, bold=True)
-    season_font = _pick_font(13, bold=True)
+    season_corner_font = _pick_font(17, bold=True)
+    pos_font = _pick_font(10, bold=True)
+    cream = (252, 246, 236)
+    cream_edge = (88, 72, 52)
 
     for idx, entry in enumerate(ordered):
         col = idx % cols
@@ -550,58 +621,101 @@ def render_award_history_png(kind: str) -> bytes:
 
         x0 = _PAD + col * cell_w_fixed
         y0 = header_bottom + row * cell_h
-        cx = x0 + cell_w_fixed // 2
+        x_card = x0 + margin_h
+        y_card = y0 + 6
 
-        gold = _slanted_gold_layer(gold_band_w, photo_area_h)
-        gold_x = int(cx - gold_band_w // 2)
-        im.alpha_composite(gold, (gold_x, y0))
+        draw.rounded_rectangle(
+            (x_card, y_card, x_card + rect_w - 1, y_card + rect_h - 1),
+            radius=card_radius,
+            fill=cream,
+            outline=cream_edge,
+            width=2,
+        )
 
-        cy_photo_top = y0 + 6
+        photo_top = y_card + 20
+        photo_bottom = y_card + rect_h - nameplate_h - 3
+        photo_h = max(8, photo_bottom - photo_top)
+        photo_left = x_card + 4
+        photo_w = max(8, rect_w - 8)
         photo = _try_load_photo_rgba(slug)
         if photo is not None:
-            _paste_photo_bust_crop(
-                im, photo, cx, cy_photo_top, photo_box_w, photo_box_h
+            _paste_photo_contain_bottom_center(
+                im, photo, photo_left, photo_top, photo_w, photo_h
             )
         else:
-            mark_size = min(44, int(photo_box_w * 0.42), int(photo_box_h * 0.55))
+            msize = min(46, int(photo_w * 0.45), int(photo_h * 0.5))
             _draw_unknown_mark(
                 im,
                 draw,
-                cx,
-                cy_photo_top + photo_box_h // 2,
-                mark_size,
+                photo_left + photo_w // 2,
+                photo_top + photo_h // 2,
+                msize,
                 light=True,
             )
 
-        max_tw = cell_w_fixed - 8
-        y_label = y0 + photo_area_h + 8
-
-        if player:
-            last_name = (
-                player.strip().split()[-1].upper() if player.strip() else "—"
-            )
-            if club:
-                line1 = f"{last_name} ({_club_sentence_case(club)})"
-            else:
-                line1 = last_name
+        ny = y_card + rect_h - nameplate_h
+        if player and str(player).strip():
+            gv, fm = _split_given_family(str(player).strip())
+            _draw_award_nameplate(draw, x_card, ny, rect_w, nameplate_h, gv, fm)
         else:
-            line1 = "—"
+            _draw_award_nameplate(draw, x_card, ny, rect_w, nameplate_h, "", "—")
 
-        line1 = _truncate(draw, line1, name_font, max_tw)
-        lb = draw.textbbox((0, 0), line1, font=name_font)
-        lw = lb[2] - lb[0]
-        lh = lb[3] - lb[1]
-        draw.text((cx - lw // 2, y_label), line1, fill=_TEXT, font=name_font)
-
-        line2 = f"{season} СЕЗОН"
-        sb = draw.textbbox((0, 0), line2, font=season_font)
+        season_txt = str(int(season)) if season is not None else "?"
+        sb = draw.textbbox((0, 0), season_txt, font=season_corner_font)
         sw = sb[2] - sb[0]
         draw.text(
-            (cx - sw // 2, y_label + lh + 8),
-            line2,
-            fill=_GOLD_TEXT,
-            font=season_font,
+            (x_card + rect_w - 6 - sw, y_card + 5),
+            season_txt,
+            fill=(36, 28, 20),
+            font=season_corner_font,
         )
+
+        x_side = x_card + rect_w + col_gap
+        col_cx = x_side + side_w // 2
+        if player and str(player).strip():
+            pos_db, nat_db = _lookup_position_nation(str(player).strip(), club)
+            crest_ms = min(32, side_w - 2)
+            y_side = y_card + 5
+            if club and str(club).strip():
+                cy_crest = y_side + crest_ms // 2
+                cr = _try_load_crest_rgba(_team_name_as_in_db(str(club).strip()))
+                if cr is not None:
+                    _paste_crest_natural(im, cr, col_cx, cy_crest, crest_ms)
+                else:
+                    _draw_unknown_mark(
+                        im,
+                        draw,
+                        col_cx,
+                        cy_crest,
+                        max(14, crest_ms // 2),
+                        light=True,
+                    )
+                y_side += crest_ms + 8
+            pos_line = (pos_db or "—").strip() or "—"
+            pos_line = _truncate(draw, pos_line, pos_font, side_w + 8)
+            pb = draw.textbbox((0, 0), pos_line, font=pos_font)
+            pw = pb[2] - pb[0]
+            ph_pos = pb[3] - pb[1]
+            draw.text(
+                (col_cx - pw // 2, y_side),
+                pos_line,
+                fill=(32, 26, 18),
+                font=pos_font,
+            )
+            flag_y = y_side + ph_pos + 6
+            _paste_or_draw_flag(
+                im, draw, int(col_cx - _FLAG_W // 2), int(flag_y), nat_db
+            )
+        else:
+            dash = "—"
+            db = draw.textbbox((0, 0), dash, font=pos_font)
+            dw = db[2] - db[0]
+            draw.text(
+                (col_cx - dw // 2, y_card + rect_h // 2 - 6),
+                dash,
+                fill=(90, 78, 62),
+                font=pos_font,
+            )
 
     buf = BytesIO()
     im.convert("RGB").save(buf, format="PNG", optimize=True)
