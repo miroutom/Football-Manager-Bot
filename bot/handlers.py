@@ -681,6 +681,50 @@ async def cb_menu_edit_players(callback: CallbackQuery) -> None:
     )
 
 
+@router.callback_query(F.data == "menu:free_agents_list")
+async def cb_menu_free_agents_list(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if callback.message is None:
+        return
+    try:
+        from utils.free_agents_catalog import list_free_agents_tuples
+
+        rows = await asyncio.to_thread(list_free_agents_tuples)
+    except Exception as e:
+        logger.exception("list_free_agents_tuples")
+        await callback.message.answer(
+            f"Не удалось прочитать <code>free_agents.db</code>: {e}",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+    if not rows:
+        await callback.message.answer(
+            "Справочник свободных агентов пуст. "
+            "Данные можно завести через <code>data/free_agents.tsv</code> "
+            "или они появятся после исключения игроков из состава.",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+    lines = [f"{'OVR':>3}  {'Поз.':<5}  Имя  Нация"]
+    for nm, pos, ovr, nat in rows:
+        nat_s = (nat or "—").strip()
+        lines.append(f"{ovr:3d}  {pos:<5}  {nm}  {nat_s}")
+    body = "\n".join(lines)
+    header = (
+        f"📋 <b>Свободные агенты</b> (<code>free_agents.db</code>) — "
+        f"<b>{len(rows)}</b> чел.\n\n"
+    )
+    chunks = split_text_chunks(body, max_len=3600)
+    n = len(chunks)
+    for i, chunk in enumerate(chunks):
+        pre = to_pre_html(chunk)
+        if i == 0:
+            text = header + pre
+        else:
+            text = f"<i>…продолжение, {i + 1}/{n}</i>\n" + pre
+        await callback.message.answer(text, parse_mode=ParseMode.HTML)
+
+
 @router.callback_query(F.data == "menu:table")
 async def cb_menu_table(callback: CallbackQuery) -> None:
     await callback.answer()

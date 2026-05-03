@@ -85,13 +85,18 @@ async def cb_menu_squad_status(callback: CallbackQuery, state: FSMContext) -> No
     await state.clear()
     await callback.message.answer(
         "📋 <b>Заявка: старт / скамейка / резерв</b>\n\n"
-        "Выбери лигу и клуб, затем пришли список строк, по одной:\n"
+        "Только меняет статус у <b>перечисленных</b> игроков. Кого нет в списке — "
+        "<b>не трогает</b> (не снимает с состава и не в СА).\n\n"
+        "Если нужно «в заявке только эти N человек, остальных в свободные агенты» — "
+        "это меню <b>«В состав / из состава» → Полная заявка (текстом)»</b>, "
+        "там у каждой строки должны быть имя и позиция.\n\n"
+        "Здесь: выбери лигу и клуб, затем строки, например:\n"
         "<code>игиль start</code>\n"
+        "<code>силас пфа start</code> — если нужна позиция для поиска\n"
         "<code>мартинез bench</code>\n"
         "<code>юг reserve</code>\n"
-        "Слова <code>start</code>, <code>bench</code>, <code>reserve</code> — на латинице, "
-        "как в базе. Обновляются нац. лига и ЛЧ (если игрок есть в обеих); "
-        "затем <code>common.db</code> и накопительные БД при необходимости.\n\n"
+        "Статусы <code>start</code>, <code>bench</code>, <code>reserve</code> — латиницей. "
+        "Нац. лига и ЛЧ при необходимости, затем common и накопительные БД.\n\n"
         "/cancel — отмена.",
         parse_mode="HTML",
         reply_markup=_squad_league_kb(),
@@ -153,8 +158,9 @@ async def cb_squad_team(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(SquadStatusEnter.wait_lines)
     await callback.message.answer(
         f"<b>{_league_title(code)}</b> · {team}\n\n"
-        "Введи строки: <code>фамилия start</code> / <code>имя bench</code> / "
-        "<code>игрок reserve</code>.\n"
+        "Строки: <code>фамилия start</code>, при необходимости "
+        "<code>имя позиция bench</code> (позиция как в БД: ЦП, ПФА, …). "
+        "Кого нет в списке — состав не меняется.\n"
         "/cancel — отмена.",
         parse_mode="HTML",
     )

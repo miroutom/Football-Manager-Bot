@@ -107,6 +107,10 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
                 text="📋 Заявка (статусы)",
                 callback_data="menu:squad_status",
             ),
+            InlineKeyboardButton(
+                text="📋 Список СА",
+                callback_data="menu:free_agents_list",
+            ),
         ],
         [
             InlineKeyboardButton(
