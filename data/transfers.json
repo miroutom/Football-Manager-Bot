@@ -1,4 +1,50 @@
 {
   "version": 1,
-  "transfers": []
+  "transfers": [
+    {
+      "ts": "2026-05-03T16:18:56+00:00",
+      "user_id": 517240615,
+      "player": "Бонджорно",
+      "from_team": "Торино",
+      "position": "ЦЗ",
+      "to_team": "Крылья Советов",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:19:04+00:00",
+      "user_id": 517240615,
+      "player": "Риччи",
+      "from_team": "Торино",
+      "position": "ЦП",
+      "to_team": "Крылья Советов",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:19:22+00:00",
+      "user_id": 517240615,
+      "player": "Ито",
+      "from_team": "Штутгарт",
+      "position": "ЛЗ",
+      "to_team": "Крылья Советов",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:19:34+00:00",
+      "user_id": 517240615,
+      "player": "Паломино",
+      "from_team": "Аталанта",
+      "position": "ЦЗ",
+      "to_team": "Крылья Советов",
+      "new_status": "bench"
+    },
+    {
+      "ts": "2026-05-03T16:19:44+00:00",
+      "user_id": 517240615,
+      "player": "Туре",
+      "from_team": "Аталанта",
+      "position": "ФРВ",
+      "to_team": "Крылья Советов",
+      "new_status": "bench"
+    }
+  ]
 }
