@@ -1194,6 +1194,16 @@ def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], lis
         placed = _place_on_slot_explicit(slot, starters, used)
         if placed:
             slot_player[slot.slot_id] = placed
+    # Частичная заявка в БД (есть start/bench у части игроков): на поле попадали только
+    # строки со status=start — у остальных status пустой, слоты оставались пустыми.
+    # Добираем слоты как в авто-режиме из игроков без явной скамейки/резерва.
+    fill_pool = [p for p in players if _norm_pl_status(p) not in ("bench", "reserve")]
+    for slot in slot_iter:
+        if slot.slot_id in slot_player:
+            continue
+        placed = _place_on_slot(slot, fill_pool, used)
+        if placed:
+            slot_player[slot.slot_id] = placed
     bench = [p for p in players if id(p) not in used]
     bench.sort(
         key=lambda p: (
