@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -38,6 +39,28 @@ def _dispose_pair(sl: Session, scl: Session, el: object, ec: object) -> None:
     scl.close()
     el.dispose()
     ec.dispose()
+
+
+def mirror_roster_manual(fn: Callable[[Session, Session], None]) -> None:
+    """Выполнить правку ростера на ``league_synced`` + ``champions_league_synced`` и пересобрать common_synced."""
+    paths = _cumulative_paths()
+    if not paths:
+        return
+    lp, cp, cop = paths
+    from utils.common_db import rebuild_common_database_for_disk_paths
+
+    sl, scl, el, ec = _open_pair(lp, cp)
+    try:
+        fn(sl, scl)
+        sl.commit()
+        scl.commit()
+        rebuild_common_database_for_disk_paths(lp, cp, cop)
+    except Exception:
+        sl.rollback()
+        scl.rollback()
+        raise
+    finally:
+        _dispose_pair(sl, scl, el, ec)
 
 
 def mirror_transfer_with_status(

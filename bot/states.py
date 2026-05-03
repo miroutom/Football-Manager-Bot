@@ -74,3 +74,17 @@ class PlayerFieldEnter(StatesGroup):
     pick_player = State()
     pick_field = State()
     wait_value = State()
+
+
+class SquadRosterEnter(StatesGroup):
+    """Добавить / убрать игрока в составе клуба (лига → клуб → действие)."""
+    pick_lg = State()
+    pick_team = State()
+    pick_choice = State()
+    wait_paste_squad = State()
+    pick_rm = State()
+    add_name = State()
+    add_pos = State()
+    add_ovr = State()
+    add_nat = State()
+    wait_status_add = State()

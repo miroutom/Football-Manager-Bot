@@ -31,6 +31,12 @@ def edit_players_submenu_kb() -> InlineKeyboardMarkup:
                     callback_data="menu:player_field",
                 ),
             ],
+            [
+                InlineKeyboardButton(
+                    text="👥 В состав / из состава",
+                    callback_data="menu:squad_roster",
+                ),
+            ],
         ]
     )
 

@@ -46,6 +46,38 @@ def session_free_agents() -> Session:
     return _Session()
 
 
+def upsert_free_agent_catalog(
+    name: str, position: str, overall: int, nation: str | None
+) -> None:
+    """Добавить или заменить строку в справочнике СА (после исключения из состава)."""
+    from utils.player_transfer import normalize_player_name_for_db
+    from utils.transfer_input import normalize_nation, normalize_position
+
+    nm = normalize_player_name_for_db(name)
+    pos = normalize_position(position)
+    ovr = max(1, min(99, int(overall)))
+    nat_raw = (nation or "").strip()
+    nat = normalize_nation(nat_raw) if nat_raw else None
+    want_n = _norm_cmp(nm)
+    want_p = _norm_cmp(pos)
+    sess = session_free_agents()
+    try:
+        for r in list(sess.query(FreeAgent).all()):
+            if _norm_cmp(r.name or "") != want_n:
+                continue
+            if _norm_cmp(r.position or "") != want_p:
+                continue
+            sess.delete(r)
+        sess.add(FreeAgent(name=nm, position=pos, overall=ovr, nation=nat))
+        sess.commit()
+    except Exception:
+        sess.rollback()
+        raise
+    finally:
+        sess.close()
+    invalidate_free_agents_engine()
+
+
 def delete_signed_free_agent(name: str, position: str) -> int:
     """
     Удаляет строку СА после успешного оформления в клуб (имя и позиция как в справочнике).

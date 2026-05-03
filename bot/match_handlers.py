@@ -418,6 +418,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "RatingEnter",
             "SquadStatusEnter",
             "PlayerFieldEnter",
+            "SquadRosterEnter",
         ),
     ):
         return
@@ -434,6 +435,8 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         await message.answer("Правка рейтинга отменена.")
     elif str(cur).startswith("PlayerFieldEnter"):
         await message.answer("Правка поля игрока отменена.")
+    elif str(cur).startswith("SquadRosterEnter"):
+        await message.answer("Добавление/удаление из состава отменено.")
     elif str(cur).startswith("SquadStatusEnter"):
         await message.answer("Правка заявки отменена.")
     else:

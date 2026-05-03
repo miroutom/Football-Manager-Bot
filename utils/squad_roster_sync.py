@@ -233,6 +233,7 @@ def upsert_roster_player(
     overall: int,
     nation: str | None,
     status: str,
+    carry_in: dict[str, Any] | None = None,
 ) -> str:
     name = normalize_player_name_for_db(name)
     st = status.strip().lower()
@@ -242,6 +243,9 @@ def upsert_roster_player(
     tgt_cls = _cls_for_position(position)
     row, cur_cls, dedupe_carry = _dedupe_player_rows_for_team(session, name, team)
     pos_u = position.strip().upper()
+    insert_carry = carry_in
+    if dedupe_carry is not None:
+        insert_carry = dedupe_carry
 
     if row is None:
         session.add(
@@ -254,7 +258,7 @@ def upsert_roster_player(
                     overall=overall,
                     nation=nation,
                     status=st,
-                    carry=dedupe_carry,
+                    carry=insert_carry,
                 )
             )
         )
