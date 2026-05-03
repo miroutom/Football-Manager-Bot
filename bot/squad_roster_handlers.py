@@ -28,6 +28,21 @@ logger = logging.getLogger(__name__)
 
 squad_roster_router = Router()
 
+
+async def _ensure_squad_roster_fsm(callback: CallbackQuery, state: FSMContext) -> bool:
+    """Есть активная сессия «В состав / из состава» и сообщение для ответа."""
+    cur = await state.get_state()
+    if cur is None or not str(cur).startswith("SquadRosterEnter"):
+        await callback.answer(
+            "Сессия сброшена. Снова: «Изменить игроков» → «В состав / из состава».",
+            show_alert=True,
+        )
+        return False
+    if callback.message is None:
+        await callback.answer("Сообщение недоступно.", show_alert=True)
+        return False
+    return True
+
 _TEXT_NOT_CMD = F.text & ~F.text.startswith("/")
 
 _RE_SQR_LG = re.compile(r"^sqr:lg:([a-z0-9_]+)$")
@@ -176,10 +191,13 @@ async def cb_menu_squad_roster(callback: CallbackQuery, state: FSMContext) -> No
     )
 
 
-@squad_roster_router.callback_query(SquadRosterEnter.pick_lg, _RE_SQR_LG)
+@squad_roster_router.callback_query(F.data.regexp(_RE_SQR_LG))
 async def cb_sqr_league(callback: CallbackQuery, state: FSMContext) -> None:
     m = _RE_SQR_LG.match(callback.data or "")
-    if not m or not callback.message:
+    if not m:
+        await callback.answer()
+        return
+    if not await _ensure_squad_roster_fsm(callback, state):
         return
     code = m.group(1)
     await callback.answer()
@@ -191,10 +209,13 @@ async def cb_sqr_league(callback: CallbackQuery, state: FSMContext) -> None:
     )
 
 
-@squad_roster_router.callback_query(SquadRosterEnter.pick_team, _RE_SQR_TM)
+@squad_roster_router.callback_query(F.data.regexp(_RE_SQR_TM))
 async def cb_sqr_team(callback: CallbackQuery, state: FSMContext) -> None:
     m = _RE_SQR_TM.match(callback.data or "")
-    if not m or not callback.message:
+    if not m:
+        await callback.answer()
+        return
+    if not await _ensure_squad_roster_fsm(callback, state):
         return
     code, idx_s = m.group(1), m.group(2)
     try:
@@ -312,6 +333,7 @@ async def cb_sqr_choice_remove(callback: CallbackQuery, state: FSMContext) -> No
 @squad_roster_router.callback_query(SquadRosterEnter.pick_rm, F.data.startswith("sqr:rpg:"))
 async def cb_sqr_rm_page(callback: CallbackQuery, state: FSMContext) -> None:
     if not callback.message or not callback.data:
+        await callback.answer()
         return
     try:
         page = int((callback.data or "").rsplit(":", 1)[-1])
@@ -340,6 +362,7 @@ async def cb_sqr_rm_page(callback: CallbackQuery, state: FSMContext) -> None:
 @squad_roster_router.callback_query(SquadRosterEnter.pick_rm, F.data.startswith("sqr:rp:"))
 async def cb_sqr_rm_pick(callback: CallbackQuery, state: FSMContext) -> None:
     if not callback.message or not callback.data:
+        await callback.answer()
         return
     try:
         idx = int((callback.data or "").rsplit(":", 1)[-1])
