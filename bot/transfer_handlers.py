@@ -15,7 +15,11 @@ from aiogram.types import (
 )
 
 from bot.states import TransferEnter
-from bot.transfer_storage import append_transfer
+from bot.transfer_storage import (
+    append_transfer,
+    get_transfer_shortcut,
+    save_transfer_shortcut,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +103,66 @@ def _roster_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _shortcut_markup(user_id: int | None) -> InlineKeyboardMarkup | None:
+    sc = get_transfer_shortcut(user_id)
+    if not sc:
+        return None
+    f, t = sc["from"], sc["to"]
+    label = f"🔁 {f} → {t}"
+    if len(label) > 58:
+        label = label[:55] + "…"
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=label, callback_data="xfer:sc:both")]
+        ]
+    )
+
+
+@transfer_router.callback_query(F.data == "xfer:sc:both")
+async def cb_transfer_shortcut_repeat(callback: CallbackQuery, state: FSMContext) -> None:
+    uid = callback.from_user.id if callback.from_user else None
+    sc = get_transfer_shortcut(uid)
+    if not sc:
+        await callback.answer(
+            "Нет сохранённой связки. Один раз пройди трансфер до конца.", show_alert=True
+        )
+        return
+    if not callback.message:
+        await callback.answer()
+        return
+    from_t, to_t = sc["from"], sc["to"]
+    rows = _league_roster_tuples(from_t)
+    if not rows:
+        await callback.answer()
+        await callback.message.answer(
+            f"В нац. лиге не нашёл состав для «{from_t}». Введи клуб откуда текстом.",
+            parse_mode="HTML",
+        )
+        return
+    canonical_from = rows[0][3] or from_t
+    serial = [list(x) for x in rows]
+    await state.update_data(
+        tr_kind="club",
+        tr_candidates=serial,
+        tr_from=canonical_from,
+        tr_to=to_t,
+        tr_roster_page=0,
+        tr_roster_ui=True,
+        tr_meta_patch={},
+    )
+    await state.set_state(TransferEnter.pick_player)
+    cands = [tuple(x) for x in serial]
+    n = len(cands)
+    kb = _roster_keyboard(cands, 0)
+    await callback.answer()
+    await callback.message.answer(
+        f"🔁 <b>Откуда:</b> {canonical_from}\n<b>Куда:</b> {to_t}\n\n"
+        f"В базе <b>{n}</b> игрок(ов). Шаг 2/6 — <b>выбери игрока</b>.\n/cancel — отмена.",
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
 def _kind_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -165,11 +229,16 @@ async def cb_transfer_kind(callback: CallbackQuery, state: FSMContext) -> None:
     if kind == "club":
         await state.set_state(TransferEnter.from_club)
         await state.update_data(tr_kind=kind, tr_roster_ui=False, tr_meta_patch={})
+        uid = callback.from_user.id if callback.from_user else None
+        sk = _shortcut_markup(uid)
         await callback.message.answer(
             "Тип: <b>трансфер из клуба</b>.\n\n"
             "Шаг 1/6 — введи <b>клуб откуда</b> (как в БД, например «Рома»).\n"
-            "Потом выберешь игрока кнопками.\n/cancel — отмена.",
+            "Потом выберешь игрока кнопками.\n"
+            "Или нажми кнопку ниже — последняя пара «откуда → куда» из прошлого трансфера.\n"
+            "/cancel — отмена.",
             parse_mode="HTML",
+            reply_markup=sk,
         )
         return
 
@@ -277,9 +346,29 @@ async def cb_transfer_pick_player(callback: CallbackQuery, state: FSMContext) ->
         await callback.answer("Неверный выбор. Начни с /transfer.", show_alert=True)
         return
     name, pos, _ov, from_t = cands[idx]
+    data_prev = await state.get_data()
+    preset_to = (data_prev.get("tr_to") or "").strip()
     await state.update_data(tr_player=name, tr_pos=pos, tr_from=from_t, tr_roster_ui=True)
-    await state.set_state(TransferEnter.to_team)
     await callback.answer()
+    if preset_to:
+        await state.set_state(TransferEnter.xfer_optional_overall)
+        try:
+            await callback.message.edit_text(
+                f"Выбрано: <b>{name}</b> ({pos})\n"
+                f"Откуда: <b>{from_t}</b> → куда: <b>{preset_to}</b> (как в быстром маршруте)\n\n"
+                f"Шаг 4/6 — новый <b>overall</b> (1–99) или <code>-</code>, чтобы не менять.\n"
+                f"/cancel — отмена.",
+                parse_mode="HTML",
+                reply_markup=None,
+            )
+        except Exception:
+            await callback.message.answer(
+                f"Выбрано: <b>{name}</b> ({pos}). Куда: <b>{preset_to}</b>.\n\n"
+                f"Шаг 4/6 — <b>overall</b> или <code>-</code>.\n/cancel — отмена.",
+                parse_mode="HTML",
+            )
+        return
+    await state.set_state(TransferEnter.to_team)
     try:
         await callback.message.edit_text(
             f"Выбрано: <b>{name}</b> ({pos})\n"
@@ -426,7 +515,8 @@ async def on_xfer_optional_nation(message: Message, state: FSMContext) -> None:
     step_st = "6/6" if roster else "7/7"
     await message.answer(
         f"Шаг {step_st} — <b>заявка</b> в новом клубе (старт / скамейка / резерв). "
-        "Правила: <b>старт</b> — прежний старт с этой позиции → скамейка, худший на скамейке → резерв; "
+        "Правила: <b>старт</b> — среди игроков с этой позицией и заявкой «старт» остаются лучшие по рейтингу "
+        "(например, до двух центральных защитников); остальные на скамейку; затем худший на скамейке → резерв; "
         "<b>скамейка</b> — худший на скамейке (если больше одного) → резерв; "
         "<b>резерв</b> — только в резерв.\n"
         "/cancel — отмена.",
@@ -581,9 +671,11 @@ async def on_transfer_status(
         await callback.message.answer(
             f"Базы обновлены, но журнал transfers.json не записан: {e}",
         )
+        save_transfer_shortcut(uid, from_t, to_t)
         await state.clear()
         return
 
+    save_transfer_shortcut(uid, from_t, to_t)
     await state.clear()
     n_db = counts.get("league", 0) + counts.get("cl", 0)
     warn = ""

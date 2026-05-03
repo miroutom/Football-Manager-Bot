@@ -28,6 +28,36 @@ from data.midfielder import Midfielder
 _ALL_PLAYER = (Forward, Midfielder, Defender, Goalkeeper)
 
 
+def _norm_pos_key(position: str) -> str:
+    return (position or "").strip().upper()
+
+
+def _start_cap_for_position(position: str) -> int:
+    """
+    Сколько игроков с одной строкой позиции (ЦЗ, ЦП, …) может быть со статусом start одновременно.
+    Для пары центральных защитников — 2; для одиночных ролей — 1; полузащита 433 — до 3 ЦП и т.д.
+    Неизвестные аббревиатуры: 2 (разумный дефолт между 1 и 3).
+    """
+    caps: dict[str, int] = {
+        "ЦЗ": 2,
+        "ПЗ": 2,
+        "ЛЗ": 2,
+        "ЦП": 3,
+        "ЦОП": 2,
+        "ЦАП": 1,
+        "ЛФА": 2,
+        "ПФА": 2,
+        "ФРВ": 2,
+        "ЦН": 1,
+        "ВРТ": 1,
+        "ЛП": 2,
+        "ПП": 2,
+        "ЛЦП": 2,
+        "ПЦП": 2,
+    }
+    return caps.get(_norm_pos_key(position), 2)
+
+
 def _norm_cmp(s: str) -> str:
     """
     Сравнение без учёта регистра для кириллицы и латиницы.
@@ -70,12 +100,24 @@ def _cascade_status(
         return
 
     if ns == "start":
-        for r in _all_for_team(sess, Cls, to_team):
-            if r.id == incoming.id:
-                continue
-            if _same_pos(r) and (r.status or "").strip().lower() == "start":
-                r.status = "bench"
-        incoming.status = "start"
+        # Раньше все стартующие с той же позицией (два ЦЗ) уходили на скамейку — на поле пусто.
+        # Оставляем лучших по overall в пределах лимита на позицию (ЦЗ → 2 и т.д.).
+        cap = _start_cap_for_position(pos)
+        others = [
+            r
+            for r in _all_for_team(sess, Cls, to_team)
+            if r.id != incoming.id
+            and _same_pos(r)
+            and (r.status or "").strip().lower() == "start"
+        ]
+        pool = others + [incoming]
+        pool_sorted = sorted(
+            pool,
+            key=lambda x: (-(x.overall or 0), (x.name or "").lower()),
+        )
+        keep_ids = {id(r) for r in pool_sorted[:cap]}
+        for r in pool:
+            r.status = "start" if id(r) in keep_ids else "bench"
         bench = [
             r
             for r in _all_for_team(sess, Cls, to_team)

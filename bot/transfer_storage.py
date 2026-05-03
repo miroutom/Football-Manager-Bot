@@ -55,3 +55,48 @@ def append_transfer(
         _PATH.parent.mkdir(parents=True, exist_ok=True)
         with open(_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+_SHORTCUTS_PATH = _ROOT / "data" / "transfer_shortcuts.json"
+
+
+def save_transfer_shortcut(
+    user_id: int | None, from_team: str, to_team: str
+) -> None:
+    """Запоминает пару клубов для кнопки «тот же маршрут» в трансфере."""
+    if user_id is None:
+        return
+    ft = (from_team or "").strip()
+    tt = (to_team or "").strip()
+    if len(ft) < 2 or len(tt) < 2:
+        return
+    with _lock:
+        data: dict = {}
+        if _SHORTCUTS_PATH.exists():
+            with open(_SHORTCUTS_PATH, encoding="utf-8") as f:
+                data = json.load(f)
+        data.setdefault("version", 1)
+        users = data.setdefault("users", {})
+        users[str(int(user_id))] = {"from": ft, "to": tt}
+        _SHORTCUTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(_SHORTCUTS_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def get_transfer_shortcut(user_id: int | None) -> dict[str, str] | None:
+    if user_id is None or not _SHORTCUTS_PATH.exists():
+        return None
+    with _lock:
+        try:
+            with open(_SHORTCUTS_PATH, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return None
+    row = (data.get("users") or {}).get(str(int(user_id)))
+    if not isinstance(row, dict):
+        return None
+    ft = (row.get("from") or "").strip()
+    tt = (row.get("to") or "").strip()
+    if len(ft) < 2 or len(tt) < 2:
+        return None
+    return {"from": ft, "to": tt}
