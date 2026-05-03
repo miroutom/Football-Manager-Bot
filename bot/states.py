@@ -37,7 +37,11 @@ class ClPenalties(StatesGroup):
 
 
 class TransferEnter(StatesGroup):
-    """Трансфер из клуба или свободный агент: заявка start/bench/reserve."""
+    """Пакет трансферов или одиночный режим; заявка start/bench/reserve."""
+    batch_to_count = State()  # клуб «куда» + число трансферов (1–5)
+    batch_plan_kind = State()  # выбор: из клуба / св. агент (пока не набран план)
+    batch_plan_club = State()  # строка «Клуб N» для очередного блока из клуба
+    batch_plan_fa = State()  # число свободных агентов в блоке
     player_name = State()
     from_club = State()  # «из клуба»: сначала клуб → кнопки игроков
     pick_player = State()
