@@ -279,6 +279,249 @@
       "position": "ФРВ",
       "to_team": "Астон Вилла",
       "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:10:21+00:00",
+      "user_id": 517240615,
+      "player": "Гиббс-Уайт",
+      "from_team": "(свободный агент)",
+      "position": "ЦАП",
+      "to_team": "Хоффенхайм",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 78,
+      "nation": "Англия"
+    },
+    {
+      "ts": "2026-05-03T19:10:29+00:00",
+      "user_id": 517240615,
+      "player": "Доку",
+      "from_team": "Сити",
+      "position": "ЛФА",
+      "to_team": "Хоффенхайм",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:10:36+00:00",
+      "user_id": 517240615,
+      "player": "Рейна",
+      "from_team": "Дортмунд",
+      "position": "ПФА",
+      "to_team": "Хоффенхайм",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:10:40+00:00",
+      "user_id": 517240615,
+      "player": "Диоп",
+      "from_team": "Фулхэм",
+      "position": "ЦЗ",
+      "to_team": "Хоффенхайм",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:10:59+00:00",
+      "user_id": 517240615,
+      "player": "Лекуе",
+      "from_team": "Фулхэм",
+      "position": "ПЗ",
+      "to_team": "Хоффенхайм",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:11:59+00:00",
+      "user_id": 517240615,
+      "player": "Гроб",
+      "from_team": "Брайтон",
+      "position": "ЦОП",
+      "to_team": "Цска",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:12:02+00:00",
+      "user_id": 517240615,
+      "player": "Симеоне",
+      "from_team": "Брайтон",
+      "position": "ФРВ",
+      "to_team": "Цска",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:12:05+00:00",
+      "user_id": 517240615,
+      "player": "Адингра",
+      "from_team": "Брайтон",
+      "position": "ЛФА",
+      "to_team": "Цска",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:12:10+00:00",
+      "user_id": 517240615,
+      "player": "Чилвелл",
+      "from_team": "Челси",
+      "position": "ЛЗ",
+      "to_team": "Цска",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:12:16+00:00",
+      "user_id": 517240615,
+      "player": "Мудрык",
+      "from_team": "Челси",
+      "position": "ЛФА",
+      "to_team": "Цска",
+      "new_status": "bench"
+    },
+    {
+      "ts": "2026-05-03T19:13:17+00:00",
+      "user_id": 517240615,
+      "player": "Отаменди",
+      "from_team": "(свободный агент)",
+      "position": "ЦЗ",
+      "to_team": "Рома",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 82,
+      "nation": "Аргентина"
+    },
+    {
+      "ts": "2026-05-03T19:13:28+00:00",
+      "user_id": 517240615,
+      "player": "Тадич",
+      "from_team": "(свободный агент)",
+      "position": "ЛФА",
+      "to_team": "Рома",
+      "new_status": "bench",
+      "free_agent": true,
+      "overall": 82,
+      "nation": "Сербия"
+    },
+    {
+      "ts": "2026-05-03T19:13:37+00:00",
+      "user_id": 517240615,
+      "player": "Гризманн",
+      "from_team": "Вильярреал",
+      "position": "ФРВ",
+      "to_team": "Рома",
+      "new_status": "bench"
+    },
+    {
+      "ts": "2026-05-03T19:13:44+00:00",
+      "user_id": 517240615,
+      "player": "Ван Дейк",
+      "from_team": "Ливерпуль",
+      "position": "ЦЗ",
+      "to_team": "Рома",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:13:48+00:00",
+      "user_id": 517240615,
+      "player": "Гнабри",
+      "from_team": "Бавария",
+      "position": "ПФА",
+      "to_team": "Рома",
+      "new_status": "bench"
+    },
+    {
+      "ts": "2026-05-03T19:14:39+00:00",
+      "user_id": 517240615,
+      "player": "Алдервейрельд",
+      "from_team": "(свободный агент)",
+      "position": "ЦЗ",
+      "to_team": "Фиорентина",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 81,
+      "nation": "Бельгия"
+    },
+    {
+      "ts": "2026-05-03T19:16:11+00:00",
+      "user_id": 517240615,
+      "player": "Малком",
+      "from_team": "(свободный агент)",
+      "position": "ЛФА",
+      "to_team": "Фиорентина",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 82,
+      "nation": "Бразилия"
+    },
+    {
+      "ts": "2026-05-03T19:16:31+00:00",
+      "user_id": 517240615,
+      "player": "Ибаньес",
+      "from_team": "(свободный агент)",
+      "position": "ЦЗ",
+      "to_team": "Фиорентина",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 80,
+      "nation": "Испания"
+    },
+    {
+      "ts": "2026-05-03T19:16:42+00:00",
+      "user_id": 517240615,
+      "player": "Политано",
+      "from_team": "Наполи",
+      "position": "ПФА",
+      "to_team": "Фиорентина",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T19:16:49+00:00",
+      "user_id": 517240615,
+      "player": "Эллиотт",
+      "from_team": "Спартак",
+      "position": "ЦАП",
+      "to_team": "Фиорентина",
+      "new_status": "bench"
+    },
+    {
+      "ts": "2026-05-03T19:17:56+00:00",
+      "user_id": 517240615,
+      "player": "Шмейхель",
+      "from_team": "(свободный агент)",
+      "position": "ВРТ",
+      "to_team": "Вольфсбург",
+      "new_status": "bench",
+      "free_agent": true,
+      "overall": 81,
+      "nation": "Дания"
+    },
+    {
+      "ts": "2026-05-03T19:19:11+00:00",
+      "user_id": 517240615,
+      "player": "Аурснес",
+      "from_team": "(свободный агент)",
+      "position": "ПЗ",
+      "to_team": "Вольфсбург",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 80,
+      "nation": "Дания"
+    },
+    {
+      "ts": "2026-05-03T19:19:41+00:00",
+      "user_id": 517240615,
+      "player": "Фирмино",
+      "from_team": "(свободный агент)",
+      "position": "ФРВ",
+      "to_team": "Вольфсбург",
+      "new_status": "bench",
+      "free_agent": true,
+      "overall": 80,
+      "nation": "Португалия"
+    },
+    {
+      "ts": "2026-05-03T19:19:49+00:00",
+      "user_id": 517240615,
+      "player": "Саму Гарсия",
+      "from_team": "Жирона",
+      "position": "ЦП",
+      "to_team": "Вольфсбург",
+      "new_status": "bench"
     }
   ]
 }
