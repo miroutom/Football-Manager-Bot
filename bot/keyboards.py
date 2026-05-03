@@ -11,8 +11,10 @@ from aiogram.types import (
 
 # Текст должен совпадать с обработчиком в match_handlers (до FSM).
 MENU_REPLY_TEXT = "📋 Меню"
-# Первое сообщение только с reply-клавиатурой «Меню»: невидимый символ (не видимая точка).
-_MENU_REPLY_ONLY_BODY = "\u200b"
+# Первое сообщение только с reply-клавиатурой «Меню». Нельзя использовать только U+200B:
+# Telegram часто отклоняет «пустой» текст → падает весь вывод меню (/menu и кнопка).
+# NBSP считается непустым текстом и на экране почти не виден.
+_MENU_REPLY_ONLY_BODY = "\u00a0"
 
 
 def reply_keyboard_menu_button() -> ReplyKeyboardMarkup:
