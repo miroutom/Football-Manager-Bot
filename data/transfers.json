@@ -96,6 +96,138 @@
       "position": "ЛЗ",
       "to_team": "Жирона",
       "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:51:07+00:00",
+      "user_id": 517240615,
+      "player": "Менди",
+      "from_team": "(свободный агент)",
+      "position": "ВРТ",
+      "to_team": "Урал",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 81,
+      "nation": "Сенегал"
+    },
+    {
+      "ts": "2026-05-03T16:51:31+00:00",
+      "user_id": 517240615,
+      "player": "Натан",
+      "from_team": "Наполи",
+      "position": "ЦЗ",
+      "to_team": "Урал",
+      "new_status": "reserve"
+    },
+    {
+      "ts": "2026-05-03T16:51:39+00:00",
+      "user_id": 517240615,
+      "player": "Кокорин",
+      "from_team": "Фиорентина",
+      "position": "ПП",
+      "to_team": "Урал",
+      "new_status": "reserve"
+    },
+    {
+      "ts": "2026-05-03T16:52:40+00:00",
+      "user_id": 517240615,
+      "player": "Дансо",
+      "from_team": "(свободный агент)",
+      "position": "ЦЗ",
+      "to_team": "Лацио",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 80,
+      "nation": "Сенегал"
+    },
+    {
+      "ts": "2026-05-03T16:52:47+00:00",
+      "user_id": 517240615,
+      "player": "Бейси",
+      "from_team": "Фулхэм",
+      "position": "ЦЗ",
+      "to_team": "Лацио",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:52:53+00:00",
+      "user_id": 517240615,
+      "player": "Байер",
+      "from_team": "Сассуоло",
+      "position": "ЛФА",
+      "to_team": "Лацио",
+      "new_status": "bench"
+    },
+    {
+      "ts": "2026-05-03T16:53:04+00:00",
+      "user_id": 517240615,
+      "player": "Торрес",
+      "from_team": "Барселона",
+      "position": "ЛФА",
+      "to_team": "Лацио",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:53:15+00:00",
+      "user_id": 517240615,
+      "player": "Фраттези",
+      "from_team": "Интер",
+      "position": "ЦП",
+      "to_team": "Лацио",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:54:02+00:00",
+      "user_id": 517240615,
+      "player": "Витинья",
+      "from_team": "(свободный агент)",
+      "position": "ЦП",
+      "to_team": "Бетис",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 83,
+      "nation": "Португалия"
+    },
+    {
+      "ts": "2026-05-03T16:54:28+00:00",
+      "user_id": 517240615,
+      "player": "Шкриньяр",
+      "from_team": "(свободный агент)",
+      "position": "ЦЗ",
+      "to_team": "Бетис",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 82,
+      "nation": "Словакия"
+    },
+    {
+      "ts": "2026-05-03T16:54:45+00:00",
+      "user_id": 517240615,
+      "player": "Ханко",
+      "from_team": "(свободный агент)",
+      "position": "ЦЗ",
+      "to_team": "Бетис",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 81,
+      "nation": "Словакия"
+    },
+    {
+      "ts": "2026-05-03T16:54:50+00:00",
+      "user_id": 517240615,
+      "player": "Эль Шарави",
+      "from_team": "Рома",
+      "position": "ЛП",
+      "to_team": "Бетис",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:54:59+00:00",
+      "user_id": 517240615,
+      "player": "Васкез",
+      "from_team": "Реал",
+      "position": "ПЗ",
+      "to_team": "Бетис",
+      "new_status": "start"
     }
   ]
 }
