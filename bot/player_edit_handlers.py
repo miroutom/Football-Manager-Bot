@@ -25,6 +25,20 @@ player_edit_router = Router()
 
 _TEXT_NOT_CMD = F.text & ~F.text.startswith("/")
 
+
+async def _ensure_player_field_fsm(callback: CallbackQuery, state: FSMContext) -> bool:
+    cur = await state.get_state()
+    if cur is None or not str(cur).startswith("PlayerFieldEnter"):
+        await callback.answer(
+            "Сессия сброшена. Снова: «Изменить игроков» → «Изменить игрока (любое поле)».",
+            show_alert=True,
+        )
+        return False
+    if callback.message is None:
+        await callback.answer("Сообщение недоступно.", show_alert=True)
+        return False
+    return True
+
 _RE_PFP_LG = re.compile(r"^pfp:lg:([a-z0-9_]+)$")
 _RE_PFP_TM = re.compile(r"^pfp:tm:([a-z0-9_]+):(\d+)$")
 
@@ -149,10 +163,13 @@ async def cb_menu_player_field(callback: CallbackQuery, state: FSMContext) -> No
     )
 
 
-@player_edit_router.callback_query(PlayerFieldEnter.pick_lg, _RE_PFP_LG)
+@player_edit_router.callback_query(F.data.regexp(_RE_PFP_LG))
 async def cb_pfp_league(callback: CallbackQuery, state: FSMContext) -> None:
     m = _RE_PFP_LG.match(callback.data or "")
-    if not m or not callback.message:
+    if not m:
+        await callback.answer()
+        return
+    if not await _ensure_player_field_fsm(callback, state):
         return
     code = m.group(1)
     await callback.answer()
@@ -165,10 +182,13 @@ async def cb_pfp_league(callback: CallbackQuery, state: FSMContext) -> None:
     )
 
 
-@player_edit_router.callback_query(PlayerFieldEnter.pick_team, _RE_PFP_TM)
+@player_edit_router.callback_query(F.data.regexp(_RE_PFP_TM))
 async def cb_pfp_team(callback: CallbackQuery, state: FSMContext) -> None:
     m = _RE_PFP_TM.match(callback.data or "")
-    if not m or not callback.message:
+    if not m:
+        await callback.answer()
+        return
+    if not await _ensure_player_field_fsm(callback, state):
         return
     code, idx_s = m.group(1), m.group(2)
     try:
@@ -212,6 +232,7 @@ async def cb_pfp_team(callback: CallbackQuery, state: FSMContext) -> None:
 @player_edit_router.callback_query(PlayerFieldEnter.pick_player, F.data.startswith("pfp:pg:"))
 async def cb_pfp_roster_page(callback: CallbackQuery, state: FSMContext) -> None:
     if not callback.message or not callback.data:
+        await callback.answer()
         return
     try:
         page = int((callback.data or "").rsplit(":", 1)[-1])
@@ -243,6 +264,7 @@ async def cb_pfp_roster_page(callback: CallbackQuery, state: FSMContext) -> None
 @player_edit_router.callback_query(PlayerFieldEnter.pick_player, F.data.startswith("pfp:pk:"))
 async def cb_pfp_pick_player(callback: CallbackQuery, state: FSMContext) -> None:
     if not callback.message or not callback.data:
+        await callback.answer()
         return
     try:
         idx = int((callback.data or "").rsplit(":", 1)[-1])
@@ -281,6 +303,7 @@ async def cb_pfp_pick_player(callback: CallbackQuery, state: FSMContext) -> None
 @player_edit_router.callback_query(PlayerFieldEnter.pick_field, F.data.startswith("pfp:fd:"))
 async def cb_pfp_pick_field(callback: CallbackQuery, state: FSMContext) -> None:
     if not callback.message or not callback.data:
+        await callback.answer()
         return
     try:
         fi = int((callback.data or "").rsplit(":", 1)[-1])

@@ -117,6 +117,7 @@ async def cmd_squad_status(message: Message, state: FSMContext) -> None:
 async def cb_squad_league(callback: CallbackQuery, state: FSMContext) -> None:
     m = _RE_ST_LG.match(callback.data or "")
     if not m:
+        await callback.answer()
         return
     code = m.group(1)
     await callback.answer()
@@ -139,11 +140,13 @@ async def cb_squad_league(callback: CallbackQuery, state: FSMContext) -> None:
 async def cb_squad_team(callback: CallbackQuery, state: FSMContext) -> None:
     m = _RE_ST_TM.match(callback.data or "")
     if not m:
+        await callback.answer()
         return
     code, idx_s = m.group(1), m.group(2)
     try:
         idx = int(idx_s)
     except ValueError:
+        await callback.answer()
         return
     await callback.answer()
     if callback.message is None:
