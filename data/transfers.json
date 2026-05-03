@@ -45,6 +45,57 @@
       "position": "ФРВ",
       "to_team": "Крылья Советов",
       "new_status": "bench"
+    },
+    {
+      "ts": "2026-05-03T16:21:46+00:00",
+      "user_id": 517240615,
+      "player": "Перейра",
+      "from_team": "(свободный агент)",
+      "position": "ЦОП",
+      "to_team": "Жирона",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 81,
+      "nation": "португалия"
+    },
+    {
+      "ts": "2026-05-03T16:21:57+00:00",
+      "user_id": 517240615,
+      "player": "медина",
+      "from_team": "(свободный агент)",
+      "position": "ЦЗ",
+      "to_team": "Жирона",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 80,
+      "nation": "аргентина"
+    },
+    {
+      "ts": "2026-05-03T16:22:07+00:00",
+      "user_id": 517240615,
+      "player": "Жиру",
+      "from_team": "Милан",
+      "position": "ФРВ",
+      "to_team": "Жирона",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:22:22+00:00",
+      "user_id": 517240615,
+      "player": "Пулишич",
+      "from_team": "Милан",
+      "position": "ЛФА",
+      "to_team": "Жирона",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T16:22:32+00:00",
+      "user_id": 517240615,
+      "player": "Эступинан",
+      "from_team": "Брайтон",
+      "position": "ЛЗ",
+      "to_team": "Жирона",
+      "new_status": "start"
     }
   ]
 }
