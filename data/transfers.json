@@ -228,6 +228,57 @@
       "position": "ПЗ",
       "to_team": "Бетис",
       "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T18:41:25+00:00",
+      "user_id": 517240615,
+      "player": "Тодибо",
+      "from_team": "(свободный агент)",
+      "position": "ЦЗ",
+      "to_team": "Астон Вилла",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 80,
+      "nation": "франция"
+    },
+    {
+      "ts": "2026-05-03T18:42:28+00:00",
+      "user_id": 517240615,
+      "player": "Вейга",
+      "from_team": "(свободный агент)",
+      "position": "ЦАП",
+      "to_team": "Астон Вилла",
+      "new_status": "bench",
+      "free_agent": true,
+      "overall": 78,
+      "nation": "испания"
+    },
+    {
+      "ts": "2026-05-03T18:42:33+00:00",
+      "user_id": 517240615,
+      "player": "Лампти",
+      "from_team": "Брайтон",
+      "position": "ПЗ",
+      "to_team": "Астон Вилла",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T18:42:38+00:00",
+      "user_id": 517240615,
+      "player": "Гакпо",
+      "from_team": "Ливерпуль",
+      "position": "ФРВ",
+      "to_team": "Астон Вилла",
+      "new_status": "start"
+    },
+    {
+      "ts": "2026-05-03T18:42:44+00:00",
+      "user_id": 517240615,
+      "player": "Сперцян",
+      "from_team": "Краснодар",
+      "position": "ФРВ",
+      "to_team": "Астон Вилла",
+      "new_status": "start"
     }
   ]
 }
