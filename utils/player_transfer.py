@@ -9,6 +9,7 @@ CLI: см. ``python utils/player_transfer.py -h``.
 """
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 from typing import Any, Literal
@@ -447,6 +448,19 @@ def add_free_agent(
     cumulative_mirror.mirror_add_free_agent(
         player, position, to_team, new_status, overall, nation=nation
     )
+    try:
+        from utils.free_agents_catalog import delete_signed_free_agent
+
+        if not delete_signed_free_agent(player, position):
+            logging.getLogger(__name__).warning(
+                "Свободный агент %s (%s) не найден в free_agents.db для удаления.",
+                player,
+                position,
+            )
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Не удалось удалить свободного агента из free_agents.db"
+        )
     return counts
 
 

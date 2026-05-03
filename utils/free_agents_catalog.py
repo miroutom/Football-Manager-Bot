@@ -15,6 +15,18 @@ _engine: Any = None
 _Session: Any = None
 
 
+def invalidate_free_agents_engine() -> None:
+    """Сбросить пул после миграции/ручного изменения free_agents.db на диске."""
+    global _engine, _Session
+    if _engine is not None:
+        try:
+            _engine.dispose()
+        except Exception:
+            pass
+    _engine = None
+    _Session = None
+
+
 def _ensure_engine() -> None:
     global _engine, _Session
     if _engine is not None:
@@ -32,6 +44,31 @@ def _ensure_engine() -> None:
 def session_free_agents() -> Session:
     _ensure_engine()
     return _Session()
+
+
+def delete_signed_free_agent(name: str, position: str) -> int:
+    """
+    Удаляет строку СА после успешного оформления в клуб (имя и позиция как в справочнике).
+    Возвращает число удалённых строк (0 или 1).
+    """
+    want_n = _norm_cmp(name)
+    want_p = _norm_cmp(position)
+    sess = session_free_agents()
+    try:
+        for r in sess.query(FreeAgent).all():
+            if _norm_cmp(r.name or "") != want_n:
+                continue
+            if _norm_cmp(r.position or "") != want_p:
+                continue
+            sess.delete(r)
+            sess.commit()
+            return 1
+        return 0
+    except Exception:
+        sess.rollback()
+        raise
+    finally:
+        sess.close()
 
 
 def list_free_agents_tuples() -> list[tuple[str, str, int, str | None]]:
