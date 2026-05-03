@@ -328,6 +328,7 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
 
 
 async def _begin_play_next(message: Message, state: FSMContext) -> None:
+    from config.leagues_config import manager_session_label
     from main import MIXED_SCHEDULE_FILE, find_next_match_in_schedule, load_or_generate_mixed_schedule
     from match_results import cl_phase_from_mixed_schedule_line
     from utils.schedule_by_months import read_mixed_slot_label
@@ -368,7 +369,11 @@ async def _begin_play_next(message: Message, state: FSMContext) -> None:
         ]
     )
 
+    mode = manager_session_label(home, away)
+    mode_line = f"<b>{mode}</b>\n\n" if mode else ""
+
     await message.answer(
+        f"{mode_line}"
         f"{slot_label} <b>{day}</b> · {lg}\n"
         f"<b>{home}</b> — <b>{away}</b>\n\n"
         f"Ответь сообщением со счётом через пробел, например: <code>2 1</code>\n"
@@ -412,6 +417,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "TransferEnter",
             "AwardEnter",
             "RatingEnter",
+            "SquadStatusEnter",
         ),
     ):
         return
@@ -428,6 +434,8 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         await message.answer("Ввод награды отменён.")
     elif str(cur).startswith("RatingEnter"):
         await message.answer("Правка рейтинга отменена.")
+    elif str(cur).startswith("SquadStatusEnter"):
+        await message.answer("Правка заявки отменена.")
     else:
         await message.answer("Ввод счёта отменён.")
 
@@ -562,10 +570,19 @@ async def on_manual_home(message: Message, state: FSMContext) -> None:
 
 @match_router.message(MatchEnter.manual_away, _TEXT_NOT_CMD)
 async def on_manual_away(message: Message, state: FSMContext) -> None:
-    await state.update_data(away_raw=message.text.strip())
+    from config.leagues_config import manager_session_label
+
+    away = (message.text or "").strip()
+    await state.update_data(away_raw=away)
+    data = await state.get_data()
+    home = (data.get("home_raw") or "").strip()
+    mode = manager_session_label(home, away)
+    mode_head = f"<b>{mode}</b>\n\n" if mode else ""
     await state.set_state(MatchEnter.manual_score)
     await message.answer(
-        "Введи счёт два числа через пробел (хозяева гости), например: 2 1"
+        f"{mode_head}"
+        "Введи счёт два числа через пробел (хозяева гости), например: 2 1",
+        parse_mode="HTML",
     )
 
 
@@ -674,16 +691,21 @@ async def cb_skip_pick(callback: CallbackQuery, state: FSMContext) -> None:
         return
     row = ordered[idx]
     await callback.answer()
+    from config.leagues_config import manager_session_label
+
     lg = _league_title(row["tournament"])
     rnd = row["round"]
     extra = ""
     if row["tournament"] == "cl":
         extra = f"\nФаза ЛЧ: <code>{row.get('cl_phase') or 'knockout'}</code>"
+    mode = manager_session_label(row["home"], row["away"])
+    mode_line = f"<b>{mode}</b>\n\n" if mode else ""
 
     await state.set_state(SkipPlay.awaiting_score)
     await state.update_data(skip_play_row=dict(row))
 
     await callback.message.answer(
+        f"{mode_line}"
         f"Отложенный матч · <b>{lg}</b>, тур дня <b>{rnd}</b>{extra}\n"
         f"<b>{row['home']}</b> — <b>{row['away']}</b>\n\n"
         f"Отправь счёт через пробел (хозяева гости), например: <code>2 1</code>\n"

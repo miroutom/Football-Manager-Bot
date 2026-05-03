@@ -98,6 +98,10 @@ def _apply_transfer_with_status_to_sessions(
     position: str,
     to_team: str,
     new_status: str | None,
+    *,
+    new_overall: int | None = None,
+    nation_update: bool = False,
+    new_nation: str | None = None,
 ) -> dict[str, int]:
     """Трансфер в указанных сессиях; коммитит обе."""
     player = player.strip()
@@ -120,6 +124,10 @@ def _apply_transfer_with_status_to_sessions(
             )
             for r in rows:
                 r.team = to_team
+                if new_overall is not None:
+                    r.overall = max(1, min(99, int(new_overall)))
+                if nation_update:
+                    r.nation = (new_nation or "").strip() or None
                 _cascade_status(sess, Cls, to_team, position, r, new_status)
                 counts[key] += 1
 
@@ -138,6 +146,9 @@ def apply_transfer_with_status(
     new_status: str | None,
     *,
     rebuild_common: bool = True,
+    new_overall: int | None = None,
+    nation_update: bool = False,
+    new_nation: str | None = None,
 ) -> dict[str, int]:
     """
     Трансфер + заявка в новом клубе. ``new_status`` is None — сброс status (старое поведение).
@@ -152,6 +163,9 @@ def apply_transfer_with_status(
         position,
         to_team,
         new_status,
+        new_overall=new_overall,
+        nation_update=nation_update,
+        new_nation=new_nation,
     )
 
     if rebuild_common:
@@ -161,7 +175,14 @@ def apply_transfer_with_status(
     from utils import cumulative_mirror
 
     cumulative_mirror.mirror_transfer_with_status(
-        player, from_team, position, to_team, new_status
+        player,
+        from_team,
+        position,
+        to_team,
+        new_status,
+        new_overall=new_overall,
+        nation_update=nation_update,
+        new_nation=new_nation,
     )
     return counts
 
@@ -199,9 +220,11 @@ def _new_player_kwargs(
     team: str,
     position: str,
     overall: int,
+    nation: str | None = None,
 ) -> dict[str, Any]:
     u = max(1, min(99, int(overall)))
     pos_u = position.strip().upper()
+    nat = (nation or "").strip() or None
     kw: dict[str, Any] = dict(
         name=name.strip(),
         team=team.strip(),
@@ -210,7 +233,7 @@ def _new_player_kwargs(
         matches=0,
         trophies=0,
         golden_balls=0,
-        nation=None,
+        nation=nat,
         status=None,
     )
     if Cls is Forward:
@@ -258,6 +281,7 @@ def _add_free_agent_to_sessions(
     new_status: str,
     overall: int = 72,
     *,
+    nation: str | None = None,
     on_league_duplicate: Literal["raise", "skip"] = "raise",
 ) -> dict[str, int]:
     from utils.common_db import _team_in_cl_pool
@@ -281,7 +305,14 @@ def _add_free_agent_to_sessions(
                 return True
         return False
 
-    kw = _new_player_kwargs(Cls, name=player, team=to_team, position=position, overall=overall)
+    kw = _new_player_kwargs(
+        Cls,
+        name=player,
+        team=to_team,
+        position=position,
+        overall=overall,
+        nation=nation,
+    )
     counts = {"league": 0, "cl": 0}
     if _dup(session_league):
         if on_league_duplicate == "raise":
@@ -312,6 +343,7 @@ def add_free_agent(
     new_status: str,
     overall: int = 72,
     *,
+    nation: str | None = None,
     rebuild_common: bool = True,
 ) -> dict[str, int]:
     """
@@ -327,6 +359,7 @@ def add_free_agent(
         to_team,
         new_status,
         overall,
+        nation=nation,
         on_league_duplicate="raise",
     )
 
@@ -337,7 +370,7 @@ def add_free_agent(
     from utils import cumulative_mirror
 
     cumulative_mirror.mirror_add_free_agent(
-        player, position, to_team, new_status, overall
+        player, position, to_team, new_status, overall, nation=nation
     )
     return counts
 

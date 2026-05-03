@@ -80,7 +80,7 @@
         2,
         7
       ],
-      "active_formation_id": 2
+      "active_formation_id": 7
     },
     "emery": {
       "name": "Эмери",
@@ -89,7 +89,7 @@
         9,
         2
       ],
-      "active_formation_id": 9
+      "active_formation_id": 2
     },
     "simeone": {
       "name": "Симеоне",
@@ -134,7 +134,7 @@
         5,
         6
       ],
-      "active_formation_id": 5
+      "active_formation_id": 6
     },
     "kompany": {
       "name": "Компани",
@@ -170,7 +170,7 @@
         8,
         9
       ],
-      "active_formation_id": 9
+      "active_formation_id": 2
     },
     "karpin": {
       "name": "Карпин",
@@ -188,7 +188,7 @@
         4,
         9
       ],
-      "active_formation_id": 5
+      "active_formation_id": 9
     },
     "ten_hag": {
       "name": "тен Хаг",
@@ -206,7 +206,7 @@
         6,
         4
       ],
-      "active_formation_id": 7
+      "active_formation_id": 6
     },
     "michel": {
       "name": "Мишель",
@@ -283,11 +283,11 @@
     "sahin": {
       "name": "Шахин",
       "formation_ids": [
-        1,
-        6,
-        2
+        2,
+        8,
+        9
       ],
-      "active_formation_id": 1
+      "active_formation_id": 9
     },
     "iraola": {
       "name": "Ираола",
@@ -409,11 +409,11 @@
     "mourinho": {
       "name": "Моуриньо",
       "formation_ids": [
-        4,
         2,
-        3
+        3,
+        10
       ],
-      "active_formation_id": 4
+      "active_formation_id": 3
     },
     "amorim": {
       "name": "Аморим",
@@ -453,55 +453,45 @@
     }
   },
   "team_coach": {
-    "Рубин": "berdyev",
     "Зенит": "semak",
     "Цска": "ancelotti",
     "Мю": "pochettino",
     "Сити": "pep",
     "Реал": "valverde",
     "Ливерпуль": "klopp",
-    "Челси": "slutsky",
-    "Севилья": "slot",
-    "Астон Вилла": "emery",
+    "Челси": "mourinho",
+    "Севилья": "slutsky",
+    "Астон Вилла": "sahin",
     "Атлетико": "simeone",
     "Локомотив": "goncharenko",
-    "Краснодар": "hiddink",
+    "Краснодар": "emery",
     "Байер": "gattuso",
-    "Барселона": "flick",
+    "Барселона": "pellegrini",
     "Бавария": "kompany",
     "Ньюкасл": "zidane",
-    "Лацио": "tuchel",
-    "Арсенал": "arteta",
+    "Лацио": "abaskal",
+    "Арсенал": "slot",
     "Тоттенхэм": "karpin",
-    "Дортмунд": "terzic",
+    "Дортмунд": "hiddink",
     "Бетис": "ten_hag",
-    "Милан": "pellegrini",
+    "Милан": "terzic",
     "Жирона": "michel",
     "Интер": "inzaghi",
-    "Спартак": "abaskal",
+    "Спартак": "pioli",
     "Урал": "ignashevich",
     "Крылья Советов": "yuran",
-    "Ростов": "alonso",
-    "Брайтон": "galaktionov",
-    "Фулхэм": "gerrard",
-    "Боруссия М": "sahin",
-    "Вильярреал": "iraola",
+    "Боруссия М": "arteta",
     "Фиорентина": "de_zerbi",
     "Реал Сосьедад": "gonzalez",
     "Вольфсбург": "cooper",
-    "Фрайбург": "dyche",
     "Франкфурт": "postecoglou",
     "Лейпциг": "odegaard",
     "Наполи": "pioli",
     "Атлетик": "xavi",
-    "Торино": "ranieri",
     "Хоффенхайм": "nesta",
     "Аталанта": "pirlo",
-    "Штутгарт": "lucescu",
-    "Рома": "mourinho",
-    "Райо Вальекано": "amorim",
+    "Рома": "flick",
     "Динамо": "juric",
-    "Ювентус": "allegri",
-    "Сассуоло": "motta"
+    "Ювентус": "allegri"
   }
 }

@@ -85,6 +85,11 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
                 text="⭐ Рейтинг (±overall)", callback_data="menu:rating"
             ),
         ],
+        [
+            InlineKeyboardButton(
+                text="📋 Заявка (статусы)", callback_data="menu:squad_status"
+            ),
+        ],
     ]
     if show_end_season:
         rows.append(

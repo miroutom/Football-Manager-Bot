@@ -46,6 +46,10 @@ def mirror_transfer_with_status(
     position: str,
     to_team: str,
     new_status: str | None,
+    *,
+    new_overall: int | None = None,
+    nation_update: bool = False,
+    new_nation: str | None = None,
 ) -> None:
     paths = _cumulative_paths()
     if not paths:
@@ -57,7 +61,16 @@ def mirror_transfer_with_status(
     sl, scl, el, ec = _open_pair(lp, cp)
     try:
         _apply_transfer_with_status_to_sessions(
-            sl, scl, player, from_team, position, to_team, new_status
+            sl,
+            scl,
+            player,
+            from_team,
+            position,
+            to_team,
+            new_status,
+            new_overall=new_overall,
+            nation_update=nation_update,
+            new_nation=new_nation,
         )
         rebuild_common_database_for_disk_paths(lp, cp, cop)
     except Exception:
@@ -74,6 +87,8 @@ def mirror_add_free_agent(
     to_team: str,
     new_status: str,
     overall: int = 72,
+    *,
+    nation: str | None = None,
 ) -> None:
     paths = _cumulative_paths()
     if not paths:
@@ -92,9 +107,36 @@ def mirror_add_free_agent(
             to_team,
             new_status,
             overall,
+            nation=nation,
             on_league_duplicate="skip",
         )
         rebuild_common_database_for_disk_paths(lp, cp, cop)
+    except Exception:
+        sl.rollback()
+        scl.rollback()
+        raise
+    finally:
+        _dispose_pair(sl, scl, el, ec)
+
+
+def mirror_player_status_lines_for_team(team: str, text: str) -> None:
+    paths = _cumulative_paths()
+    if not paths:
+        return
+    lp, cp, cop = paths
+    from utils.player_status_lines import apply_player_status_lines_in_sessions
+    from utils.common_db import rebuild_common_database_for_disk_paths
+
+    sl, scl, el, ec = _open_pair(lp, cp)
+    try:
+        res = apply_player_status_lines_in_sessions(team, text, sl, scl)
+        if res.ok:
+            sl.commit()
+            scl.commit()
+            rebuild_common_database_for_disk_paths(lp, cp, cop)
+        else:
+            sl.rollback()
+            scl.rollback()
     except Exception:
         sl.rollback()
         scl.rollback()

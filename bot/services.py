@@ -557,6 +557,7 @@ def render_schedule_intrinsic_rounds(league_code: str, match_filter_code: str) -
 
 def render_next_match_text() -> str:
     """Как «n» — следующий несыгранный слот по mixed_schedule."""
+    from config.leagues_config import manager_session_label
     from main import find_next_match_in_schedule, load_or_generate_mixed_schedule
     from player_stats import LEAGUE_NAMES
     from utils.schedule_by_months import read_mixed_slot_label
@@ -570,7 +571,10 @@ def render_next_match_text() -> str:
             "Следующего матча нет: всё сыграно по журналу или оставшиеся слоты в списке отложенных."
         )
     lg_title = LEAGUE_NAMES.get(lg, lg)
+    mode = manager_session_label(home, away)
+    head = f"{mode}\n" if mode else ""
     return (
+        f"{head}"
         f"Следующий по календарю — {slot_label.lower()} {day}\n"
         f"{home} — {away}\n"
         f"Лига: {lg_title}\n"

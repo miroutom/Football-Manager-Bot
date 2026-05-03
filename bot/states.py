@@ -45,6 +45,9 @@ class TransferEnter(StatesGroup):
     position = State()
     to_team = State()
     fa_overall = State()  # только св. агент: число overall
+    fa_nation = State()  # только св. агент: нация (или -)
+    xfer_optional_overall = State()  # из клуба: правка overall или -
+    xfer_optional_nation = State()  # из клуба: правка нации или -
     new_status = State()
 
 
@@ -55,4 +58,9 @@ class AwardEnter(StatesGroup):
 
 class RatingEnter(StatesGroup):
     """Правка overall: лига, клуб, многострочный ввод «имя +N / имя -N»."""
+    wait_lines = State()
+
+
+class SquadStatusEnter(StatesGroup):
+    """Заявка start/bench/reserve: лига, клуб, строки «имя bench»."""
     wait_lines = State()

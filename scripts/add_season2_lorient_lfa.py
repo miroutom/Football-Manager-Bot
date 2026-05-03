@@ -89,6 +89,7 @@ def _run_for_paths(league_path: str, cl_path: str, common_path: str, label: str)
             TEAM,
             STATUS,
             OVERALL,
+            nation=NATION,
             on_league_duplicate="skip",
         )
         _ensure_lorient_nation_and_overall(sl, scl)

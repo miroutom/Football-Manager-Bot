@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Смешанное расписание v3: 10 «месяцев» (day 1..10).
-Нац. лиги: туры 1–9 в месяцах 1–5, туры 10–18 в 6–10; в первой половине нет пары
-и обратной (второй круг только в 6–10).
+Нац. лиги: два круга (``2*(N-1)`` туров при ``N`` командах); первая половина туров в месяцах 1–5,
+вторая — в 6–10. Расклад по месяцам подстраивается под число туров (8 команд → 7+7).
 ЛЧ: только лиговая фаза — 8 матчей на команду в месяцах 1–5 (без дерби по стране);
    месяцы 6–10 без матчей ЛЧ (плей-офф задаётся позже).
 """
@@ -21,9 +21,19 @@ from utils.team_country import same_country
 _ROOT = Path(__file__).resolve().parent.parent
 MIXED_FILE = _ROOT / "mixed_schedule.json"
 
-# Расклад 9 туров на 5 месяцев: по два тура в четырёх, один в пятом
-NATIONAL_ROUNDS_FIRST_HALF = 9
-NATIONAL_ROUND_MONTHS_1_5 = (2, 2, 2, 2, 1)  # сумма 9
+# Расклад первой половины нац. туров на 5 месяцев (сумма паттерна = числу туров в половине).
+# При 10 командах: 9+9 туров, паттерн (2,2,2,2,1). При 8: 7+7 — см. ``_national_chunk_pattern``.
+NATIONAL_ROUNDS_FIRST_HALF = 9  # legacy константа; фактически считается от числа команд
+NATIONAL_ROUND_MONTHS_1_5 = (2, 2, 2, 2, 1)  # сумма 9 — только для 10 команд; иначе динамика
+
+
+def _national_chunk_pattern(n_rounds_in_half: int) -> tuple[int, int, int, int, int]:
+    """Раскидать ``n_rounds_in_half`` туров по 5 «месяцам» (целые неотрицательные, сумма = n)."""
+    n = int(n_rounds_in_half)
+    if n < 0:
+        raise ValueError(n)
+    base, rem = divmod(n, 5)
+    return tuple(base + (1 if i < rem else 0) for i in range(5))
 CL_ROUNDS_HALF = 8
 CL_ROUNDS_MONTHS_1_5 = (2, 2, 2, 1, 1)  # сумма 8
 
@@ -195,10 +205,14 @@ def generate_mixed_schedule_v3(
         (germany, "ger"),
     ]:
         full = _national_double_schedule(code, list(teams))
-        first9 = full[:NATIONAL_ROUNDS_FIRST_HALF]
-        second9 = full[NATIONAL_ROUNDS_FIRST_HALF :]
-        m1 = _spread_rounds_to_months(first9, 1, NATIONAL_ROUND_MONTHS_1_5)
-        m2 = _spread_rounds_to_months(second9, 6, NATIONAL_ROUND_MONTHS_1_5)
+        n_tot = len(full)
+        n_first = n_tot // 2
+        chunk1 = _national_chunk_pattern(n_first)
+        chunk2 = _national_chunk_pattern(n_tot - n_first)
+        first_half = full[:n_first]
+        second_half = full[n_first:]
+        m1 = _spread_rounds_to_months(first_half, 1, chunk1)
+        m2 = _spread_rounds_to_months(second_half, 6, chunk2)
         for m, lines in {**m1, **m2}.items():
             months[m].extend(lines)
 
