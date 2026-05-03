@@ -78,6 +78,14 @@ def normalize_player_name_for_db(name: str) -> str:
     for part in s.split():
         if not part:
             continue
+        if "-" in part:
+            part = "-".join(
+                (p[:1].upper() + p[1:].lower()) if len(p) > 1 else p.upper()
+                for p in part.split("-")
+                if p
+            )
+            parts.append(part)
+            continue
         if len(part) == 1:
             parts.append(part.upper())
         else:
