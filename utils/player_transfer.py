@@ -28,6 +28,14 @@ from data.midfielder import Midfielder
 _ALL_PLAYER = (Forward, Midfielder, Defender, Goalkeeper)
 
 
+def _norm_cmp(s: str) -> str:
+    """
+    Сравнение без учёта регистра для кириллицы и латиницы.
+    В SQLite ``lower()`` кириллицу часто не меняет — нельзя сравнивать с ``.lower()`` из Python.
+    """
+    return (s or "").strip().casefold()
+
+
 def _filter_team(Cls, team: str):
     t = (team or "").strip()
     tl = t.lower()
@@ -110,19 +118,16 @@ def _apply_transfer_with_status_to_sessions(
     position = position.strip()
 
     counts: dict[str, int] = {"league": 0, "cl": 0}
+    want_name = _norm_cmp(player)
+    want_pos = _norm_cmp(position)
 
     def _run_session(sess, key: str) -> None:
         for Cls in _ALL_PLAYER:
-            rows = (
-                sess.query(Cls)
-                .filter(
-                    func.lower(Cls.name) == player.lower(),
-                    func.lower(Cls.team) == from_team.lower(),
-                    func.lower(Cls.position) == position.lower(),
-                )
-                .all()
-            )
-            for r in rows:
+            for r in sess.query(Cls).filter(_filter_team(Cls, from_team)).all():
+                if _norm_cmp(getattr(r, "name", "") or "") != want_name:
+                    continue
+                if _norm_cmp(getattr(r, "position", "") or "") != want_pos:
+                    continue
                 r.team = to_team
                 if new_overall is not None:
                     r.overall = max(1, min(99, int(new_overall)))
@@ -586,15 +591,19 @@ def fix_league_player_stats(
 
     from utils.utils import session_league
 
+    pn = _norm_cmp(player_name)
+    tn = _norm_cmp(team_name)
+    pos_want = _norm_cmp(position) if position else None
+
     hits: list[tuple[str, Any]] = []
     for Cls in (Forward, Midfielder, Defender):
-        q = session_league.query(Cls).filter(
-            func.lower(Cls.name) == player_name.lower(),
-            func.lower(Cls.team) == team_name.lower(),
-        )
-        if position:
-            q = q.filter(func.lower(Cls.position) == position.lower())
-        for row in q.all():
+        for row in session_league.query(Cls).filter(_filter_team(Cls, team_name)).all():
+            if _norm_cmp(row.name or "") != pn:
+                continue
+            if _norm_cmp(row.team or "") != tn:
+                continue
+            if pos_want is not None and _norm_cmp(row.position or "") != pos_want:
+                continue
             hits.append((Cls.__tablename__, row))
 
     if not hits:
