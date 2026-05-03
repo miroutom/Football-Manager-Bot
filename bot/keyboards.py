@@ -11,8 +11,8 @@ from aiogram.types import (
 
 # Текст должен совпадать с обработчиком в match_handlers (до FSM).
 MENU_REPLY_TEXT = "📋 Меню"
-# Якорь для первого сообщения (reply-клавиатура): невидимый текст иногда режет Telegram API.
-_MENU_ROW_ANCHOR = "·"
+# Первое сообщение только с reply-клавиатурой «Меню»: невидимый символ (не видимая точка).
+_MENU_REPLY_ONLY_BODY = "\u200b"
 
 
 def reply_keyboard_menu_button() -> ReplyKeyboardMarkup:
@@ -77,17 +77,26 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
                 text="⚽ Состав клуба (схема)",
                 callback_data="menu:squad_league",
             ),
+            InlineKeyboardButton(
+                text="📋 Заявка (статусы)",
+                callback_data="menu:squad_status",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="👤 Сменить тренера",
+                callback_data="menu:coach_team",
+            ),
+            InlineKeyboardButton(
+                text="📐 Схема (активная)",
+                callback_data="menu:formation_pick",
+            ),
         ],
         [
             InlineKeyboardButton(text="🔄 Трансфер", callback_data="xfer:start"),
             InlineKeyboardButton(text="🏅 Награды", callback_data="menu:awards"),
             InlineKeyboardButton(
                 text="⭐ Рейтинг (±overall)", callback_data="menu:rating"
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="📋 Заявка (статусы)", callback_data="menu:squad_status"
             ),
         ],
     ]
@@ -112,7 +121,7 @@ async def send_main_menu_screen(
     """Два сообщения: нижняя reply-клавиатура и inline-меню (один reply_markup на сообщение)."""
     from bot.season_tools import can_finish_season
 
-    body = intro_text if intro_text is not None else _MENU_ROW_ANCHOR
+    body = intro_text if intro_text is not None else _MENU_REPLY_ONLY_BODY
     await message.answer(
         body,
         reply_markup=reply_keyboard_menu_button(),

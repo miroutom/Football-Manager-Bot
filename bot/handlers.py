@@ -57,6 +57,14 @@ from bot.services import (
 from bot.keyboards import send_main_menu_screen
 from bot.match_handlers import build_ason_league_kb
 from bot.settings import get_allowed_user_ids
+from coach_squad_state import (
+    assign_coach_to_team,
+    get_coach_id_for_team,
+    get_coach_record,
+    list_coach_ids,
+    set_active_formation_id,
+)
+from formation_catalog import label_for_formation_id
 
 logger = logging.getLogger(__name__)
 
@@ -215,6 +223,93 @@ def _squad_club_keyboard(league_code: str) -> InlineKeyboardMarkup:
     if row:
         rows.append(row)
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _coach_pick_team_keyboard(league_code: str) -> InlineKeyboardMarkup:
+    """Клуб для назначения тренера или смены активной схемы."""
+    teams = teams_ordered_for_goalscorers(league_code)
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for idx, team in enumerate(teams):
+        row.append(
+            InlineKeyboardButton(
+                text=_club_btn_label(team),
+                callback_data=f"coachpick:{league_code}:{idx}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _formation_pick_team_keyboard(league_code: str) -> InlineKeyboardMarkup:
+    """Клуб для выбора активной схемы (callback ``formclub``)."""
+    teams = teams_ordered_for_goalscorers(league_code)
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for idx, team in enumerate(teams):
+        row.append(
+            InlineKeyboardButton(
+                text=_club_btn_label(team),
+                callback_data=f"formclub:{league_code}:{idx}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _coach_list_keyboard(league_code: str, team_idx: int) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for cid in list_coach_ids():
+        rec = get_coach_record(cid)
+        lab = (rec.name if rec else cid).strip() or cid
+        if len(lab) > 36:
+            lab = lab[:33] + "…"
+        row.append(
+            InlineKeyboardButton(
+                text=lab,
+                callback_data=f"coachteam:{league_code}:{team_idx}:{cid}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _active_formation_keyboard(league_code: str, team_idx: int) -> InlineKeyboardMarkup | None:
+    teams = teams_ordered_for_goalscorers(league_code)
+    if team_idx < 0 or team_idx >= len(teams):
+        return None
+    team = teams[team_idx]
+    cid = get_coach_id_for_team(team)
+    if not cid:
+        return None
+    rec = get_coach_record(cid)
+    if not rec:
+        return None
+    row = []
+    for fid in rec.formation_ids:
+        lab = f"{fid} · {label_for_formation_id(fid)}"
+        if len(lab) > 60:
+            lab = lab[:57] + "…"
+        row.append(
+            InlineKeyboardButton(
+                text=lab,
+                callback_data=f"formset:{league_code}:{team_idx}:{fid}",
+            )
+        )
+    return InlineKeyboardMarkup(inline_keyboard=[row])
 
 
 def _tgclub_keyboard(league_code: str) -> InlineKeyboardMarkup:
@@ -1312,6 +1407,195 @@ async def cb_sqclub_team(callback: CallbackQuery) -> None:
     except Exception as e:
         logger.exception("sqclub")
         await callback.message.answer(f"Ошибка: {e}")
+
+
+@router.callback_query(F.data == "menu:coach_team")
+async def cb_menu_coach_team(callback: CallbackQuery) -> None:
+    await callback.answer()
+    await callback.message.answer(
+        "👤 <b>Сменить тренера клуба</b>\n\n"
+        "Выберите лигу, затем клуб, затем тренера из списка.\n"
+        "У одного тренера может быть только одна команда в режиме карьеры — "
+        "при назначении клуб отберётся у другого, если тренер уже был занят.",
+        reply_markup=_league_keyboard("coachlg"),
+        parse_mode=ParseMode.HTML,
+    )
+
+
+@router.callback_query(F.data.startswith("coachlg:"))
+async def cb_coach_league(callback: CallbackQuery) -> None:
+    code = callback.data.split(":", 1)[1]
+    await callback.answer()
+    try:
+        kb = _coach_pick_team_keyboard(code)
+    except Exception as e:
+        logger.exception("coach_pick_team_kb")
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+    await callback.message.answer(
+        f"{_league_title(code)} — выберите клуб:",
+        reply_markup=kb,
+    )
+
+
+@router.callback_query(F.data.startswith("coachpick:"))
+async def cb_coach_pick_team(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    _, code, idx_s = parts
+    try:
+        idx = int(idx_s)
+    except ValueError:
+        await callback.answer()
+        return
+    teams = teams_ordered_for_goalscorers(code)
+    if idx < 0 or idx >= len(teams):
+        await callback.answer("Нет такого клуба.", show_alert=True)
+        return
+    await callback.answer()
+    team_name = teams[idx]
+    await callback.message.answer(
+        f"<b>{team_name}</b> — выберите тренера:",
+        reply_markup=_coach_list_keyboard(code, idx),
+        parse_mode=ParseMode.HTML,
+    )
+
+
+@router.callback_query(F.data.startswith("coachteam:"))
+async def cb_coach_assign(callback: CallbackQuery) -> None:
+    raw = callback.data or ""
+    parts = raw.split(":", 3)
+    if len(parts) != 4:
+        await callback.answer()
+        return
+    _, code, idx_s, coach_id = parts
+    try:
+        idx = int(idx_s)
+    except ValueError:
+        await callback.answer()
+        return
+    teams = teams_ordered_for_goalscorers(code)
+    if idx < 0 or idx >= len(teams):
+        await callback.answer("Нет такого клуба.", show_alert=True)
+        return
+    team_name = teams[idx]
+    await callback.answer()
+    try:
+        assign_coach_to_team(team_db=team_name, coach_id=coach_id)
+        rec = get_coach_record(coach_id)
+        nm = rec.name if rec else coach_id
+        labs = ", ".join(label_for_formation_id(x) for x in rec.formation_ids) if rec else ""
+        extra = f"\nСхемы: {labs}" if labs else ""
+        await callback.message.answer(
+            f"✓ Клуб <b>{team_name}</b>: тренер — <b>{nm}</b>.{extra}",
+            parse_mode=ParseMode.HTML,
+        )
+    except Exception as e:
+        logger.exception("assign_coach")
+        await callback.message.answer(f"Не удалось назначить: {e}")
+
+
+@router.callback_query(F.data == "menu:formation_pick")
+async def cb_menu_formation_pick(callback: CallbackQuery) -> None:
+    await callback.answer()
+    await callback.message.answer(
+        "📐 <b>Активная схема</b>\n\n"
+        "Выберите лигу и клуб, затем одну из <b>трёх</b> схем текущего тренера.\n"
+        "Если у клуба ещё нет тренера — сначала назначьте через «Сменить тренера».",
+        reply_markup=_league_keyboard("formationlg"),
+        parse_mode=ParseMode.HTML,
+    )
+
+
+@router.callback_query(F.data.startswith("formationlg:"))
+async def cb_formation_league(callback: CallbackQuery) -> None:
+    code = callback.data.split(":", 1)[1]
+    await callback.answer()
+    try:
+        kb = _formation_pick_team_keyboard(code)
+    except Exception as e:
+        logger.exception("formation_pick_team_kb")
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+    await callback.message.answer(
+        f"{_league_title(code)} — выберите клуб:",
+        reply_markup=kb,
+    )
+
+
+@router.callback_query(F.data.startswith("formclub:"))
+async def cb_formation_club(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    _, code, idx_s = parts
+    try:
+        idx = int(idx_s)
+    except ValueError:
+        await callback.answer()
+        return
+    await callback.answer()
+    kb = _active_formation_keyboard(code, idx)
+    teams = teams_ordered_for_goalscorers(code)
+    if idx < 0 or idx >= len(teams):
+        await callback.message.answer("Нет такого клуба.")
+        return
+    team_name = teams[idx]
+    if kb is None:
+        await callback.message.answer(
+            f"У клуба <b>{team_name}</b> нет тренера в данных или сломан профиль. "
+            f"Назначьте тренера через «Сменить тренера».",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+    cid = get_coach_id_for_team(team_name)
+    rec = get_coach_record(cid or "")
+    cur = (
+        label_for_formation_id(rec.active_formation_id) if rec else "?"
+    )
+    await callback.message.answer(
+        f"<b>{team_name}</b> · сейчас: <b>{cur}</b>\nВыберите активную схему:",
+        reply_markup=kb,
+        parse_mode=ParseMode.HTML,
+    )
+
+
+@router.callback_query(F.data.startswith("formset:"))
+async def cb_formation_set(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 4:
+        await callback.answer()
+        return
+    _, code, idx_s, fid_s = parts
+    try:
+        idx = int(idx_s)
+        fid = int(fid_s)
+    except ValueError:
+        await callback.answer()
+        return
+    teams = teams_ordered_for_goalscorers(code)
+    if idx < 0 or idx >= len(teams):
+        await callback.answer("Нет клуба.", show_alert=True)
+        return
+    team_name = teams[idx]
+    cid = get_coach_id_for_team(team_name)
+    if not cid:
+        await callback.answer("Нет тренера.", show_alert=True)
+        return
+    await callback.answer()
+    try:
+        set_active_formation_id(cid, fid)
+        lab = label_for_formation_id(fid)
+        await callback.message.answer(
+            f"✓ <b>{team_name}</b>: активная схема — <b>{lab}</b> (id {fid}).",
+            parse_mode=ParseMode.HTML,
+        )
+    except Exception as e:
+        logger.exception("set_active_formation")
+        await callback.message.answer(f"Не удалось сменить схему: {e}")
 
 
 @router.callback_query(F.data.startswith("tgclub:"))
