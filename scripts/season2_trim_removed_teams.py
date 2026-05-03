@@ -43,10 +43,11 @@ KEEP: dict[str, frozenset[str]] = {
     "Фулхэм": frozenset({"Перейра", "Бейси", "Диоп", "Лекуе", "Лено"}),
     "Вильярреал": frozenset({"Гризманн"}),
     "Сассуоло": frozenset({"Кастильехо", "Байер"}),
+    "Рубин": frozenset({"Палмер", "Ранделович"}),
 }
 
 # Полностью очистить состав (нац. + полностью из ЛЧ).
-FULL_DROP = frozenset({"Рубин"})
+FULL_DROP = frozenset()
 
 
 def _norm_name(s: str) -> str:
