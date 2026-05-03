@@ -29,6 +29,7 @@ from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from utils.common_db import _team_in_cl_pool
+from utils.player_transfer import normalize_player_name_for_db
 from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
 
 _ALL_PLAYER = (Forward, Midfielder, Defender, Goalkeeper)
@@ -152,9 +153,10 @@ def _new_player_kwargs(
 ) -> dict[str, Any]:
     pos = position.strip().upper()
     st = status.strip().lower()
+    nm = normalize_player_name_for_db(name)
     c = carry or {}
     kw: dict[str, Any] = dict(
-        name=name,
+        name=nm,
         team=team,
         position=pos,
         overall=int(overall),
@@ -232,6 +234,7 @@ def upsert_roster_player(
     nation: str | None,
     status: str,
 ) -> str:
+    name = normalize_player_name_for_db(name)
     st = status.strip().lower()
     if st not in ("start", "bench", "reserve"):
         raise ValueError(f"status must be start|bench|reserve, got {status!r}")
@@ -277,6 +280,7 @@ def upsert_roster_player(
         )
         return "moved"
 
+    row.name = name
     row.position = pos_u
     row.overall = int(overall)
     row.nation = (nation.strip() if nation else None) or None

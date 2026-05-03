@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from utils.player_transfer import _norm_cmp
+from utils.player_transfer import _norm_cmp, normalize_player_name_for_db
 
 
 def normalize_position(position: str) -> str:
@@ -12,7 +12,7 @@ def normalize_position(position: str) -> str:
 
 
 def normalize_display_name(name: str) -> str:
-    return (name or "").strip()
+    return normalize_player_name_for_db(name)
 
 
 def normalize_nation(nation: str) -> str:

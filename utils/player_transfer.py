@@ -66,6 +66,25 @@ def _norm_cmp(s: str) -> str:
     return (s or "").strip().casefold()
 
 
+def normalize_player_name_for_db(name: str) -> str:
+    """
+    Имя для записи в БД: каждое слово — с заглавной буквы, остальные строчные
+    (например «медина» → «Медина»).
+    """
+    s = (name or "").strip()
+    if not s:
+        return s
+    parts: list[str] = []
+    for part in s.split():
+        if not part:
+            continue
+        if len(part) == 1:
+            parts.append(part.upper())
+        else:
+            parts.append(part[0].upper() + part[1:].lower())
+    return " ".join(parts)
+
+
 def _filter_team(Cls, team: str):
     t = (team or "").strip()
     tl = t.lower()
@@ -272,8 +291,9 @@ def _new_player_kwargs(
     u = max(1, min(99, int(overall)))
     pos_u = position.strip().upper()
     nat = (nation or "").strip() or None
+    nm = normalize_player_name_for_db(name)
     kw: dict[str, Any] = dict(
-        name=name.strip(),
+        name=nm,
         team=team.strip(),
         position=pos_u,
         overall=u,
@@ -333,7 +353,7 @@ def _add_free_agent_to_sessions(
 ) -> dict[str, int]:
     from utils.common_db import _team_in_cl_pool
 
-    player = player.strip()
+    player = normalize_player_name_for_db(player.strip())
     position = position.strip()
     to_team = to_team.strip()
     ns = new_status.strip().lower()

@@ -50,8 +50,6 @@ class TransferEnter(StatesGroup):
     to_team = State()
     fa_overall = State()  # только св. агент: число overall
     fa_nation = State()  # только св. агент: нация (или -)
-    xfer_optional_overall = State()  # из клуба: правка overall или -
-    xfer_optional_nation = State()  # из клуба: правка нации или -
     new_status = State()
 
 
@@ -68,3 +66,12 @@ class RatingEnter(StatesGroup):
 class SquadStatusEnter(StatesGroup):
     """Заявка start/bench/reserve: лига, клуб, строки «имя bench»."""
     wait_lines = State()
+
+
+class PlayerFieldEnter(StatesGroup):
+    """Правка одного поля игрока: лига → клуб → игрок → поле → значение."""
+    pick_lg = State()
+    pick_team = State()
+    pick_player = State()
+    pick_field = State()
+    wait_value = State()

@@ -15,6 +15,26 @@ MENU_REPLY_TEXT = "📋 Меню"
 _MENU_REPLY_ONLY_BODY = "·"
 
 
+def edit_players_submenu_kb() -> InlineKeyboardMarkup:
+    """Подменю из пункта «Изменить игроков» главного меню."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="⭐ Рейтинг (±overall)",
+                    callback_data="menu:rating",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✏️ Изменить игрока (любое поле)",
+                    callback_data="menu:player_field",
+                ),
+            ],
+        ]
+    )
+
+
 def reply_keyboard_menu_button() -> ReplyKeyboardMarkup:
     """Нижняя клавиатура — всегда под рукой, без ответа /menu."""
     return ReplyKeyboardMarkup(
@@ -95,8 +115,11 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
         [
             InlineKeyboardButton(text="🔄 Трансфер", callback_data="xfer:start"),
             InlineKeyboardButton(text="🏅 Награды", callback_data="menu:awards"),
+        ],
+        [
             InlineKeyboardButton(
-                text="⭐ Рейтинг (±overall)", callback_data="menu:rating"
+                text="✏️ Изменить игроков",
+                callback_data="menu:edit_players",
             ),
         ],
     ]

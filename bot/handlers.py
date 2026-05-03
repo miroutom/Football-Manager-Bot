@@ -54,7 +54,7 @@ from bot.services import (
     split_text_chunks,
     to_pre_html,
 )
-from bot.keyboards import send_main_menu_screen
+from bot.keyboards import edit_players_submenu_kb, send_main_menu_screen
 from bot.match_handlers import build_ason_league_kb
 from bot.settings import get_allowed_user_ids
 from coach_squad_state import (
@@ -665,6 +665,19 @@ async def cmd_start(message: Message) -> None:
             "Снизу экрана кнопка «📋 Меню» снова открывает главное меню."
         ),
         inline_title="Выберите действие:",
+    )
+
+
+@router.callback_query(F.data == "menu:edit_players")
+async def cb_menu_edit_players(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if callback.message is None:
+        return
+    await callback.message.answer(
+        "✏️ <b>Изменить игроков</b>\n\n"
+        "Выбери действие:",
+        reply_markup=edit_players_submenu_kb(),
+        parse_mode=ParseMode.HTML,
     )
 
 

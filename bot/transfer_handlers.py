@@ -671,24 +671,35 @@ async def cb_transfer_pick_player(callback: CallbackQuery, state: FSMContext) ->
     data_prev = await state.get_data()
     preset_to = (data_prev.get("tr_to") or "").strip()
     batch_on = bool(data_prev.get("tr_batch_active"))
-    await state.update_data(tr_player=name, tr_pos=pos, tr_from=from_t, tr_roster_ui=True)
+    await state.update_data(
+        tr_player=name,
+        tr_pos=pos,
+        tr_from=from_t,
+        tr_roster_ui=True,
+        tr_meta_patch={},
+    )
     await callback.answer()
     if preset_to or batch_on:
-        await state.set_state(TransferEnter.xfer_optional_overall)
+        to_disp = (data_prev.get("tr_to") or "").strip()
+        text = (
+            f"Выбрано: <b>{name}</b> ({pos})\n"
+            f"Откуда: <b>{from_t}</b> → куда: <b>{to_disp}</b>\n\n"
+            "Из клуба <b>overall и нация не меняются</b> — только заявка в новом клубе.\n"
+            "Выбери: <b>старт</b> / <b>скамейка</b> / <b>резерв</b>.\n"
+            "/cancel — отмена."
+        )
+        await state.set_state(TransferEnter.new_status)
         try:
             await callback.message.edit_text(
-                f"Выбрано: <b>{name}</b> ({pos})\n"
-                f"Откуда: <b>{from_t}</b> → куда: <b>{preset_to}</b> (как в быстром маршруте)\n\n"
-                f"Шаг 4/6 — новый <b>overall</b> (1–99) или <code>-</code>, чтобы не менять.\n"
-                f"/cancel — отмена.",
+                text,
                 parse_mode="HTML",
-                reply_markup=None,
+                reply_markup=_status_keyboard(),
             )
         except Exception:
             await callback.message.answer(
-                f"Выбрано: <b>{name}</b> ({pos}). Куда: <b>{preset_to}</b>.\n\n"
-                f"Шаг 4/6 — <b>overall</b> или <code>-</code>.\n/cancel — отмена.",
+                text,
                 parse_mode="HTML",
+                reply_markup=_status_keyboard(),
             )
         return
     await state.set_state(TransferEnter.to_team)
@@ -808,57 +819,13 @@ async def on_transfer_to(message: Message, state: FSMContext) -> None:
             parse_mode="HTML",
         )
         return
-    await state.set_state(TransferEnter.xfer_optional_overall)
-    roster = bool(data.get("tr_roster_ui"))
-    step_ov = "4/6" if roster else "5/7"
-    await message.answer(
-        f"Шаг {step_ov} — новый <b>overall</b> в базе: число <b>1–99</b> или "
-        "<code>-</code>, чтобы не менять значение из базы.\n\n"
-        "/cancel — отмена.",
-        parse_mode="HTML",
-    )
-
-
-@transfer_router.message(TransferEnter.xfer_optional_overall, _TEXT_NOT_CMD)
-async def on_xfer_optional_overall(message: Message, state: FSMContext) -> None:
-    raw = (message.text or "").strip()
-    meta = (await state.get_data()).get("tr_meta_patch") or {}
-    if raw not in _SKIP_VALUE:
-        m = _RE_OVERALL.match(raw)
-        if not m:
-            await message.answer("Введи число 1–99 или -.")
-            return
-        o = int(m.group(1))
-        if o < 1 or o > 99:
-            await message.answer("Диапазон 1–99.")
-            return
-        meta["overall"] = o
-    await state.update_data(tr_meta_patch=meta)
-    await state.set_state(TransferEnter.xfer_optional_nation)
-    data = await state.get_data()
-    roster = bool(data.get("tr_roster_ui"))
-    step_nat = "5/6" if roster else "6/7"
-    await message.answer(
-        f"Шаг {step_nat} — <b>нация</b> в базе (как в игре, например «Бразилия») или "
-        "<code>-</code>, чтобы не менять.\n\n"
-        "/cancel — отмена.",
-        parse_mode="HTML",
-    )
-
-
-@transfer_router.message(TransferEnter.xfer_optional_nation, _TEXT_NOT_CMD)
-async def on_xfer_optional_nation(message: Message, state: FSMContext) -> None:
-    raw = (message.text or "").strip()
-    meta = (await state.get_data()).get("tr_meta_patch") or {}
-    if raw not in _SKIP_VALUE:
-        meta["nation"] = normalize_nation(raw)
-    await state.update_data(tr_meta_patch=meta)
+    player = (data.get("tr_player") or "").strip()
+    pos = (data.get("tr_pos") or "").strip()
+    from_t = (data.get("tr_from") or "").strip()
     await state.set_state(TransferEnter.new_status)
-    data = await state.get_data()
-    roster = bool(data.get("tr_roster_ui"))
-    step_st = "6/6" if roster else "7/7"
     await message.answer(
-        f"Шаг {step_st} — <b>заявка</b> в новом клубе (старт / скамейка / резерв). "
+        f"Игрок: <b>{player}</b> ({pos}), откуда: <b>{from_t}</b>, куда: <b>{to_t}</b>.\n\n"
+        "Из клуба <b>overall и нация не меняются</b> — только заявка.\n"
         "Правила: <b>старт</b> — среди игроков с этой позицией и заявкой «старт» остаются лучшие по рейтингу "
         "(например, до двух центральных защитников); остальные на скамейку; затем худший на скамейке → резерв; "
         "<b>скамейка</b> — худший на скамейке (если больше одного) → резерв; "
