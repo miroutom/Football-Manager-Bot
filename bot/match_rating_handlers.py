@@ -395,7 +395,10 @@ async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
     tour = _tournament_from_record(rec)
     try:
         tpl, key_map, canon_team = await asyncio.to_thread(
-            build_roster_template, team_journal, tour
+            build_roster_template,
+            team_journal,
+            tour,
+            roster_from="league",
         )
     except Exception:
         logger.exception(
@@ -412,6 +415,7 @@ async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
         mrate_team=canon_team,
         mrate_team_journal=team_journal,
         mrate_tournament=tour,
+        mrate_roster_from="league",
         mrate_key_map={k: [v[0], v[1], v[2]] for k, v in key_map.items()},
     )
     await state.set_state(MatchPerfRatingEnter.wait_paste)
@@ -427,8 +431,8 @@ async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
     empty_hint = ""
     if not key_map:
         empty_hint = (
-            "\n\n<i>В БД нет игроков для этого клуба в выбранном турнире "
-            "(лига/ЛЧ) — проверь состав.</i>"
+            "\n\n<i>В нац. БД нет игроков этого клуба — проверь состав "
+            "(шаблон берётся из league DB, как полная заявка).</i>"
         )
 
     if not callback.message:
@@ -445,7 +449,8 @@ async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
             ).strip().casefold():
                 disp = f"{team_journal} → {canon_team}"
             text = (
-                f"<b>{html_escape(disp)}</b> — шаблон состава:\n\n"
+                f"<b>{html_escape(disp)}</b> — шаблон состава "
+                f"(секции как в <b>полной заявке</b> в нац. БД; матчи ЛЧ тоже):\n\n"
                 f"{pre}{tail}{empty_hint}"
             )
         else:
@@ -468,6 +473,7 @@ async def on_mrate_paste(message: Message, state: FSMContext) -> None:
     side = data.get("mrate_side")
     team = data.get("mrate_team")
     tour = data.get("mrate_tournament") or "league"
+    roster_from = data.get("mrate_roster_from")
     raw_km = data.get("mrate_key_map") or {}
     key_map: dict[str, tuple[str, str, int]] = {
         k: (v[0], v[1], v[2]) for k, v in raw_km.items()
@@ -494,7 +500,13 @@ async def on_mrate_paste(message: Message, state: FSMContext) -> None:
 
     logs, _final = await asyncio.to_thread(_merge_and_sync)
 
-    reply_body = await asyncio.to_thread(format_rated_roster, team, ratings_new, tour)
+    reply_body = await asyncio.to_thread(
+        format_rated_roster,
+        team,
+        ratings_new,
+        tour,
+        roster_from=roster_from if roster_from else None,
+    )
     warn_txt = ""
     if warnings:
         warn_txt = "\n\n⚠ " + "\n".join(warnings[:12])

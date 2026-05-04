@@ -37,6 +37,12 @@ def edit_players_submenu_kb() -> InlineKeyboardMarkup:
                     callback_data="menu:squad_roster",
                 ),
             ],
+            [
+                InlineKeyboardButton(
+                    text="📅 Аренда",
+                    callback_data="menu:loan",
+                ),
+            ],
         ]
     )
 

@@ -190,21 +190,37 @@ def _roster_buckets_for_canonical(
     return buckets
 
 
-def _roster_buckets_by_status(team: str, tournament: str = "league") -> dict[str, list[tuple[str, str, int]]]:
+def _roster_buckets_by_status(
+    team: str,
+    tournament: str = "league",
+    *,
+    roster_from: str | None = None,
+) -> dict[str, list[tuple[str, str, int]]]:
     from utils.utils import get_session
 
-    sess = get_session(tournament)
+    t_read = roster_from if roster_from is not None else tournament
+    sess = get_session(t_read)
     canon = _resolve_team_name_for_session(team, sess)
     return _roster_buckets_for_canonical(sess, canon)
 
 
 def build_roster_template(
-    team: str, tournament: str = "league"
+    team: str,
+    tournament: str = "league",
+    *,
+    roster_from: str | None = None,
 ) -> tuple[str, dict[str, tuple[str, str, int]], str]:
-    """Возвращает шаблон, карту строк и каноническое имя клуба в БД (для matches/stats)."""
+    """
+    Возвращает шаблон, карту строк и каноническое имя клуба в БД (для matches/stats).
+
+    ``roster_from`` — из какой БД читать start/bench/reserve (по умолчанию = ``tournament``).
+    Для ввода оценок за ЛЧ-матч укажи ``roster_from="league"``, чтобы шаблон совпадал
+    с полной заявкой в национальной БД.
+    """
     from utils.utils import get_session
 
-    sess = get_session(tournament)
+    t_read = roster_from if roster_from is not None else tournament
+    sess = get_session(t_read)
     canon = _resolve_team_name_for_session(team, sess)
     buckets = _roster_buckets_for_canonical(sess, canon)
     lines: list[str] = []
@@ -323,9 +339,13 @@ def parse_user_rated_lines(
 
 
 def format_rated_roster(
-    team: str, ratings: dict[str, str], tournament: str = "league"
+    team: str,
+    ratings: dict[str, str],
+    tournament: str = "league",
+    *,
+    roster_from: str | None = None,
 ) -> str:
-    buckets = _roster_buckets_by_status(team, tournament)
+    buckets = _roster_buckets_by_status(team, tournament, roster_from=roster_from)
     lines: list[str] = []
     for sec in _SECTION_ORDER:
         lines.append(_SECTION_HEADER[sec])

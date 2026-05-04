@@ -76,6 +76,13 @@ class PlayerFieldEnter(StatesGroup):
     wait_value = State()
 
 
+class LoanEnter(StatesGroup):
+    """Аренда: лига → клуб → строка «имя позиция overall Nм»."""
+    pick_lg = State()
+    pick_team = State()
+    wait_line = State()
+
+
 class SquadRosterEnter(StatesGroup):
     """Добавить / убрать игрока в составе клуба (лига → клуб → действие)."""
     pick_lg = State()

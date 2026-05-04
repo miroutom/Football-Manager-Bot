@@ -246,6 +246,15 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
         from utils.player_discipline import register_match_played_for_discipline
 
         await asyncio.to_thread(register_match_played_for_discipline, h, a, lc, tourn)
+        from utils.player_loans import process_loan_expirations
+
+        loan_logs = await asyncio.to_thread(
+            process_loan_expirations, data.get("stats_schedule_day")
+        )
+        if loan_logs:
+            tail = "\n".join(loan_logs[:8])
+            more = f"\n…ещё {len(loan_logs) - 8}" if len(loan_logs) > 8 else ""
+            await message.answer(f"Аренды:\n{tail}{more}")
 
     await state.clear()
 
@@ -468,6 +477,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "PlayerFieldEnter",
             "SquadRosterEnter",
             "MatchPerfRatingEnter",
+            "LoanEnter",
         ),
     ):
         return
@@ -490,6 +500,8 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         await message.answer("Правка заявки отменена.")
     elif str(cur).startswith("MatchPerfRatingEnter"):
         await message.answer("Ввод оценок отменён.")
+    elif str(cur).startswith("LoanEnter"):
+        await message.answer("Аренда отменена.")
     else:
         await message.answer("Ввод счёта отменён.")
 

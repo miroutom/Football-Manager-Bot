@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 import io
 from html import escape as html_escape
 
@@ -939,4 +940,11 @@ def run_process_match_bot(
             interactive=False,
             penalties_override=penalties_override,
         )
+    if ok:
+        try:
+            from utils.player_loans import process_loan_expirations
+
+            process_loan_expirations(round_num)
+        except Exception:
+            logging.getLogger(__name__).exception("process_loan_expirations")
     return ok, (buf.getvalue() or "").strip()

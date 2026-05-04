@@ -261,7 +261,12 @@ def print_roster_cheat_sheet(home_team: str, away_team: str, tournament: str = '
     def dump_team(title: str, team: str) -> None:
         print(f"\n── {title}: {team} ──")
         try:
-            tpl, key_map, canon = build_roster_template(team, tournament)
+            kw = (
+                {"roster_from": "league"}
+                if (tournament or "").strip() in ("cl", "champ_league")
+                else {}
+            )
+            tpl, key_map, canon = build_roster_template(team, tournament, **kw)
         except Exception:
             print("  (не удалось загрузить состав из БД)")
             return
