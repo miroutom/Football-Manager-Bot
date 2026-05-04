@@ -7,6 +7,7 @@ import re
 from html import escape as html_escape
 
 from aiogram import F, Router
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
@@ -159,12 +160,15 @@ def _match_list_kb(page: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def _match_side_kb() -> InlineKeyboardMarkup:
+def _match_side_kb(home_team: str, away_team: str) -> InlineKeyboardMarkup:
+    """Подписи кнопок — названия клубов (до ~28 симв., лимит Telegram 64)."""
+    hb = _club_btn_label(home_team or "Хозяева", max_chars=28)
+    ab = _club_btn_label(away_team or "Гости", max_chars=28)
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="Хозяева", callback_data="mrate:side:home"),
-                InlineKeyboardButton(text="Гости", callback_data="mrate:side:away"),
+                InlineKeyboardButton(text=hb, callback_data="mrate:side:home"),
+                InlineKeyboardButton(text=ab, callback_data="mrate:side:away"),
             ],
             [
                 InlineKeyboardButton(text="✓ Готово", callback_data="mrate:mdone"),
@@ -344,25 +348,30 @@ async def cb_mrate_match_select(callback: CallbackQuery, state: FSMContext) -> N
     if hs is not None and aws is not None:
         sc = f"{hs}:{aws}"
     lg = _league_title((rec.get("league") or "")[:8])
-    await state.update_data(mrate_mk=mk, mrate_rec_idx=gidx)
+    await state.update_data(
+        mrate_mk=mk,
+        mrate_rec_idx=gidx,
+        mrate_home_name=str(h or ""),
+        mrate_away_name=str(a or ""),
+    )
     if callback.message:
         await callback.message.answer(
             f"Матч: <b>{html_escape(str(h))}</b> — <b>{html_escape(str(a))}</b>"
             f"{f' ({html_escape(sc)})' if sc else ''} · {html_escape(lg)}\n\n"
-            "Выбери сторону — пришлю состав для копирования. "
+            "Выбери клуб кнопкой ниже — пришлю состав для копирования (reserve / bench / start). "
             "Верни тот же список, добавив в начале строки один смайлик "
             "(см. легенду в начале режима). Отправь <b>весь</b> блок целиком.\n"
-            "Можно заполнить только хозяев или только гостей; затем «Готово».",
+            "Можно заполнить только одну сторону; затем «Готово».",
             parse_mode=ParseMode.HTML,
-            reply_markup=_match_side_kb(),
+            reply_markup=_match_side_kb(str(h or ""), str(a or "")),
         )
 
 
-@match_rating_router.callback_query(F.data.startswith("mrate:side:"))
+@match_rating_router.callback_query(
+    StateFilter(MatchPerfRatingEnter.session, MatchPerfRatingEnter.wait_paste),
+    F.data.startswith("mrate:side:"),
+)
 async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
-    if await state.get_state() != MatchPerfRatingEnter.session:
-        await callback.answer("Сначала выбери матч.", show_alert=True)
-        return
     side = (callback.data or "").split(":")[2]
     if side not in ("home", "away"):
         await callback.answer()
@@ -384,7 +393,16 @@ async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
         return
     team = (rec.get("home") if side == "home" else rec.get("away")) or ""
     tour = _tournament_from_record(rec)
-    tpl, key_map = await asyncio.to_thread(build_roster_template, team, tour)
+    try:
+        tpl, key_map = await asyncio.to_thread(build_roster_template, team, tour)
+    except Exception:
+        logger.exception("build_roster_template failed for %s (%s)", team, tour)
+        await callback.answer(
+            "Не удалось собрать состав из БД. Проверь название клуба.",
+            show_alert=True,
+        )
+        return
+
     await state.update_data(
         mrate_side=side,
         mrate_team=team,
@@ -393,18 +411,34 @@ async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
     )
     await state.set_state(MatchPerfRatingEnter.wait_paste)
     await callback.answer()
+
     legend = html_escape(CODE_LEGEND)
     tail = (
         f"\n\nТекущие оценки можно перезаписать. Уже учтённые матчи в БД синхронизируются "
         f"по строкам со смайликом.\n{legend}"
     )
-    if callback.message:
-        await callback.message.answer(
-            f"<b>{html_escape(team)}</b> — шаблон состава:\n\n"
-            f"<pre>{html_escape(tpl)}</pre>"
-            f"{tail}",
-            parse_mode=ParseMode.HTML,
+    empty_hint = ""
+    if not key_map:
+        empty_hint = (
+            "\n\n<i>В БД нет игроков для этого клуба в выбранном турнире "
+            "(лига/ЛЧ) — проверь состав.</i>"
         )
+
+    if not callback.message:
+        return
+
+    # Запас под HTML-обёртку и подпись (лимит Telegram ~4096)
+    chunks = split_text_chunks(tpl, 2800) if tpl else [""]
+    for i, chunk in enumerate(chunks):
+        pre = f"<pre>{html_escape(chunk)}</pre>" if chunk.strip() else "<i>(пусто)</i>"
+        if i == 0:
+            text = (
+                f"<b>{html_escape(team)}</b> — шаблон состава:\n\n"
+                f"{pre}{tail}{empty_hint}"
+            )
+        else:
+            text = f"<i>…продолжение {i + 1}/{len(chunks)}</i>\n{pre}"
+        await callback.message.answer(text, parse_mode=ParseMode.HTML)
 
 
 @match_rating_router.message(MatchPerfRatingEnter.wait_paste, _TEXT_NOT_CMD)
@@ -464,9 +498,11 @@ async def on_mrate_paste(message: Message, state: FSMContext) -> None:
         parse_mode=ParseMode.HTML,
     )
     await state.set_state(MatchPerfRatingEnter.session)
+    hn = data.get("mrate_home_name") or ""
+    an = data.get("mrate_away_name") or ""
     await message.answer(
         "Сторона сохранена. Другая сторона или «Готово».",
-        reply_markup=_match_side_kb(),
+        reply_markup=_match_side_kb(str(hn), str(an)),
     )
 
 
