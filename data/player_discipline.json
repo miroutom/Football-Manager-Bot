@@ -52,6 +52,36 @@
       "league_code": "cl",
       "scope": "cl",
       "count": 1
+    },
+    {
+      "key": "браим|реал|esp|league",
+      "name": "Браим",
+      "name_norm": "браим",
+      "team": "Реал",
+      "team_norm": "реал",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "сванберг|вольфсбург|cl|cl",
+      "name": "Сванберг",
+      "name_norm": "сванберг",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "фишер|вольфсбург|cl|cl",
+      "name": "Фишер",
+      "name_norm": "фишер",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
     }
   ],
   "injuries": [
@@ -89,6 +119,14 @@
       "team": "Атлетико",
       "team_norm": "атлетико",
       "return_month": 4
+    },
+    {
+      "name": "Викарио",
+      "name_norm": "викарио",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "return_month": 8,
+      "type": "травма"
     }
   ]
 }

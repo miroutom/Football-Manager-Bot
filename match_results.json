@@ -56,6 +56,25 @@
       "away_score": 1,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Барселона",
+      "away": "Реал",
+      "league": "esp",
+      "home_score": 5,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Тоттенхэм",
+      "away": "Вольфсбург",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }
