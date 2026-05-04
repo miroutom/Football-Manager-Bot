@@ -2157,6 +2157,15 @@
       "free_agent": true,
       "overall": 78,
       "nation": "Польша"
+    },
+    {
+      "ts": "2026-05-04T17:11:54+00:00",
+      "user_id": 517240615,
+      "player": "Перейра",
+      "from_team": "Фулхэм",
+      "position": "ФРВ",
+      "to_team": "Ньюкасл",
+      "new_status": "start"
     }
   ]
 }

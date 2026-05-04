@@ -125,6 +125,15 @@
       "day": 1,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Лацио",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 1,
+      "entry_type": "play"
     }
   ]
 }

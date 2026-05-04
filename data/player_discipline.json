@@ -82,6 +82,26 @@
       "league_code": "cl",
       "scope": "cl",
       "count": 1
+    },
+    {
+      "key": "эрнандез|милан|ita|league",
+      "name": "Эрнандез",
+      "name_norm": "эрнандез",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "хакими|милан|ita|league",
+      "name": "Хакими",
+      "name_norm": "хакими",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [
