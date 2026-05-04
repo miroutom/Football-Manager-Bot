@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "suspensions": [
+    {
+      "key": "салай|хоффенхайм|ger|league",
+      "name": "Салай",
+      "name_norm": "салай",
+      "team": "Хоффенхайм",
+      "team_norm": "хоффенхайм",
+      "league_code": "ger",
+      "scope": "league",
+      "matches_left": 2
+    }
+  ],
+  "yellow_cycle": [
+    {
+      "key": "мусиаля|франкфурт|cl|cl",
+      "name": "Мусиаля",
+      "name_norm": "мусиаля",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    }
+  ],
+  "injuries": []
+}
