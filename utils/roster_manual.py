@@ -8,12 +8,14 @@
 - Удаление: игрок попадает в ``free_agents``; при ненулевой статистике в нац./ЛЧ
   ``team = Free Agent``, иначе строка удаляется.
 - Пакетная заявка: ``apply_team_squad_declaration`` + ``parse_squad_declaration_text``
-  (строки через ``|`` или «имя … позиция start» через пробелы); кто в клубе не в списке,
-  уходит в СА тем же правилом, что и при удалении.
+  (через ``|``; «имя … позиция … start»; либо блоки ``==== start ===`` / ``=== bench ===`` /
+  ``=== reserve ===`` и строки ``имя позиция [overall] [нация]`` без суффикса статуса).
+  Кто в клубе не в списке, уходит в СА тем же правилом, что и при удалении.
 """
 from __future__ import annotations
 
 import os
+import re
 from collections import OrderedDict
 from typing import Any
 
@@ -25,6 +27,11 @@ from data.midfielder import Midfielder
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
 FREE_AGENT_TEAM = "Free Agent"
+
+_RE_SQUAD_SECTION = re.compile(
+    r"^\s*=+\s*(start|bench|reserve)\s*=+\s*$",
+    re.IGNORECASE,
+)
 
 
 def _norm_pair(name: str, position: str) -> tuple[str, str]:
@@ -465,6 +472,121 @@ def _parse_squad_line_space(
     return (nm, pos, st, ovr, nat), None
 
 
+def _parse_squad_line_implicit_status(
+    line: str, line_num: int, status: str
+) -> tuple[tuple[str, str, str, int | None, str | None] | None, str | None]:
+    """
+    Строка под секцией: ``имя … позиция [overall] [нация]`` — статус задаётся секцией.
+    Позиция — последний по счёту токен слева, совпадающий с известной позицией (поиск справа налево).
+    """
+    from utils.player_transfer import normalize_player_name_for_db
+    from utils.transfer_input import normalize_nation, normalize_position
+
+    tokens = line.split()
+    if len(tokens) < 2:
+        return None, f"строка {line_num}: мало токенов (нужны имя и позиция)"
+    st = (status or "").strip().lower()
+    if st not in ("start", "bench", "reserve"):
+        return None, f"строка {line_num}: внутренняя ошибка статуса {status!r}"
+
+    pos_idx: int | None = None
+    for j in range(len(tokens) - 1, -1, -1):
+        if _is_valid_game_position(tokens[j]):
+            pos_idx = j
+            break
+    if pos_idx is None:
+        return None, f"строка {line_num}: нет позиции (ЦП, ФРВ, ВРТ, …) в строке"
+
+    name_raw = " ".join(tokens[:pos_idx]).strip()
+    if not name_raw:
+        return None, f"строка {line_num}: пустое имя"
+    tail = tokens[pos_idx + 1 :]
+    pos = normalize_position(tokens[pos_idx])
+    nm = normalize_player_name_for_db(name_raw)
+    ovr: int | None = None
+    nat: str | None = None
+    if len(tail) == 2:
+        if not tail[0].isdigit():
+            return None, f"строка {line_num}: после позиции ожидается overall (число) и нация"
+        v = int(tail[0])
+        if v < 1 or v > 99:
+            return None, f"строка {line_num}: overall 1–99, не {tail[0]!r}"
+        ovr = v
+        if tail[1] not in ("", "-", "—"):
+            nat = normalize_nation(tail[1])
+    elif len(tail) == 1:
+        if tail[0].isdigit():
+            v = int(tail[0])
+            if 1 <= v <= 99:
+                ovr = v
+            else:
+                return None, f"строка {line_num}: overall 1–99"
+        elif tail[0] not in ("", "-", "—"):
+            nat = normalize_nation(tail[0])
+    elif len(tail) > 2:
+        return (
+            None,
+            f"строка {line_num}: после позиции максимум два поля (overall и нация)",
+        )
+
+    return (nm, pos, st, ovr, nat), None
+
+
+def build_squad_declaration_template_from_db(team: str) -> str:
+    """
+    Текст для правки: секции ``==== start ===`` / ``=== bench ===`` / ``=== reserve ===``
+    и строки ``имя позиция overall нация`` (нация и overall опционально).
+    """
+    from utils.player_transfer import _filter_team
+    from utils.transfer_input import resolve_team_name, _team_name_as_in_db
+    from utils.utils import session_league
+
+    sleague = session_league
+    resolved = resolve_team_name(team, sleague)
+    t = resolved if resolved else _team_name_as_in_db((team or "").strip())
+
+    buckets: dict[str, list[tuple[str, str, int, str | None]]] = {
+        "start": [],
+        "bench": [],
+        "reserve": [],
+    }
+    for Cls in _ALL:
+        for r in sleague.query(Cls).filter(_filter_team(Cls, t)).all():
+            nm = (r.name or "").strip()
+            pos = (r.position or "").strip()
+            if not nm or not pos:
+                continue
+            ovr = int(r.overall or 0)
+            nat_raw = (getattr(r, "nation", None) or "").strip() or None
+            st_raw = (getattr(r, "status", None) or "").strip().lower()
+            if st_raw not in buckets:
+                st_raw = "bench"
+            buckets[st_raw].append((nm, pos, ovr, nat_raw))
+
+    for key in buckets:
+        buckets[key].sort(key=lambda x: x[0].lower())
+
+    def _line(nm: str, pos: str, ovr: int, nat: str | None) -> str:
+        parts = [nm.lower(), pos.lower(), str(ovr)]
+        if nat:
+            parts.append(nat.lower())
+        return " ".join(parts)
+
+    lines: list[str] = []
+    sec_meta = [
+        ("start", "==== start ==="),
+        ("bench", "=== bench ==="),
+        ("reserve", "=== reserve ==="),
+    ]
+    for st_key, hdr in sec_meta:
+        lines.append(hdr)
+        for nm, pos, ovr, nat in buckets[st_key]:
+            lines.append(_line(nm, pos, ovr, nat))
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def parse_squad_declaration_text(
     text: str,
 ) -> tuple[list[tuple[str, str, str, int | None, str | None]], list[str]]:
@@ -472,20 +594,33 @@ def parse_squad_declaration_text(
     Строка заявки — одно из:
 
     - ``имя | позиция | start`` … [, ``| overall`` [, ``| нация``]]
-    - ``имя … позиция [overall] [нация] start`` (пробелы; статус — последнее слово;
-      при двух хвостовых полях после позиции: сначала overall 1–99, затем нация одним словом).
+    - ``имя … позиция [overall] [нация] start`` (пробелы; статус — последнее слово)
+    - блоки ``==== start ===`` / ``=== bench ===`` / ``=== reserve ===``, затем строки
+      ``имя … позиция [overall] [нация]`` (статус из секции)
     """
     entries: list[tuple[str, str, str, int | None, str | None]] = []
     errors: list[str] = []
+    ctx_status: str | None = None
     for i, raw in enumerate((text or "").splitlines(), start=1):
         line = raw.strip()
         if not line or line.startswith("#"):
+            continue
+        sec_m = _RE_SQUAD_SECTION.match(line)
+        if sec_m:
+            ctx_status = sec_m.group(1).lower()
             continue
         if "|" in line:
             parts = [p.strip() for p in line.split("|")]
             row, err = _parse_squad_line_pipe(parts, i)
         else:
-            row, err = _parse_squad_line_space(line, i)
+            tok = line.split()
+            last_l = tok[-1].lower() if tok else ""
+            if last_l in ("start", "bench", "reserve"):
+                row, err = _parse_squad_line_space(line, i)
+            elif ctx_status:
+                row, err = _parse_squad_line_implicit_status(line, i, ctx_status)
+            else:
+                row, err = _parse_squad_line_space(line, i)
         if err:
             errors.append(err)
             continue

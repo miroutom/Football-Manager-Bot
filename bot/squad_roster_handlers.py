@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from html import escape as html_escape
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
@@ -14,12 +15,13 @@ from aiogram.types import (
     Message,
 )
 
-from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
+from bot.services import LEAGUE_LABELS, split_text_chunks, teams_ordered_for_goalscorers
 from bot.states import SquadRosterEnter
 from bot.transfer_handlers import _ROSTER_PAGE_SIZE, _league_roster_tuples
 from utils.roster_manual import (
     FREE_AGENT_TEAM,
     apply_team_squad_declaration,
+    build_squad_declaration_template_from_db,
     parse_squad_declaration_text,
 )
 from utils.transfer_input import normalize_display_name, normalize_position
@@ -180,8 +182,8 @@ async def cb_menu_squad_roster(callback: CallbackQuery, state: FSMContext) -> No
     await callback.message.answer(
         "👥 <b>В состав / из состава</b>\n\n"
         "Выбери лигу и клуб.\n"
-        "<b>Полная заявка:</b> одним сообщением список строк — кто <b>не</b> в списке, "
-        "автоматически уходит в свободные агенты (как при ручном исключении).\n"
+        "<b>Полная заявка:</b> бот пришлёт черновик из БД (start/bench/reserve); "
+        "после правок — одним сообщением; кто <b>не</b> в списке, уходит в СА.\n"
         "<b>Один игрок:</b> если есть в <code>common_synced.db</code> — достаточно имени и позиции; "
         "иначе overall и нация.\n"
         f"При статистике клуб в БД станет «{FREE_AGENT_TEAM}».\n"
@@ -248,24 +250,48 @@ async def cb_sqr_set_squad(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     if not callback.message:
         return
+    data = await state.get_data()
+    team = (data.get("sqr_team") or "").strip()
+    if not team:
+        await callback.message.answer("Нет клуба в сессии. Начни с меню.")
+        return
+    try:
+        template_blob = await asyncio.to_thread(
+            build_squad_declaration_template_from_db, team
+        )
+    except Exception as e:
+        logger.exception("build_squad_declaration_template_from_db")
+        await callback.message.answer(f"Не удалось собрать состав из БД: {e}")
+        return
+
     await state.set_state(SquadRosterEnter.wait_paste_squad)
+    more_parts = ""
+    chunks = split_text_chunks(template_blob, 3500)
+    if len(chunks) > 1:
+        more_parts = (
+            f"Заявка на <b>{len(chunks)}</b> сообщений — скопируй все части подряд "
+            "в редактор, поправь и пришли <b>одним</b> сообщением.\n\n"
+        )
     await callback.message.answer(
-        "Пришли <b>полную заявку</b> одним сообщением (можно много строк).\n\n"
-        "<b>Через пробел:</b> последнее слово — <code>start</code>/<code>bench</code>/<code>reserve</code>; "
-        "перед ним — позиция (ЦП, ФРВ…); всё слева — имя.\n"
-        "<code>Иванов ЦП start</code>\n"
-        "<code>Иван Петров ФРВ bench</code>\n"
-        "Если нужны overall и нация (игрок вне common) — <b>число и нация стоят между позицией и статусом</b>:\n"
-        "<code>Новичок ЦЗ 78 Бразилия start</code>\n"
-        "только overall: <code>Юноша ВРТ 70 bench</code>\n\n"
-        "Либо <b>через |</b> (как раньше):\n"
-        "<code>имя | позиция | start | 78 | нация</code>\n\n"
-        "Статус: <code>start</code>, <code>bench</code>, <code>reserve</code> (латиницей). "
-        "Строки с <code>#</code> в начале игнорируются.\n\n"
-        "Кого нет в списке — снимутся в СА.\n"
+        "Ниже — <b>черновик заявки</b> из нац. БД (секции "
+        "<code>==== start ===</code>, <code>=== bench ===</code>, "
+        "<code>=== reserve ===</code>).\n"
+        "Формат строки: <code>имя позиция overall нация</code> "
+        "(нацию/overall можно опустить для игроков из common).\n\n"
+        + more_parts
+        + "Кого <b>нет</b> в тексте при отправке — уйдут в свободные агенты.\n\n"
+        "<b>По-прежнему можно</b> без секций: последнее слово "
+        "<code>start</code>/<code>bench</code>/<code>reserve</code>, "
+        "или строки через <code>|</code>.\n"
         "/cancel — отмена.",
         parse_mode="HTML",
     )
+    for j, chunk in enumerate(chunks):
+        prefix = f"📋 {j + 1}/{len(chunks)}\n" if len(chunks) > 1 else ""
+        await callback.message.answer(
+            f"<pre>{html_escape(prefix + chunk)}</pre>",
+            parse_mode="HTML",
+        )
 
 
 @squad_roster_router.message(SquadRosterEnter.wait_paste_squad, _TEXT_NOT_CMD)
