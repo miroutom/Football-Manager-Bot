@@ -167,6 +167,14 @@
       "team_norm": "сити",
       "return_month": 8,
       "type": "травма"
+    },
+    {
+      "name": "Ван Де Вен",
+      "name_norm": "ван де вен",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "return_month": 4,
+      "type": "травма"
     }
   ]
 }
