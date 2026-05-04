@@ -381,13 +381,26 @@ async def cb_sqr_rm_page(callback: CallbackQuery, state: FSMContext) -> None:
     ps = _ROSTER_PAGE_SIZE
     total_pages = max(1, (len(cands) + ps - 1) // ps)
     page = max(0, min(page, total_pages - 1))
+    team = (data.get("sqr_team") or "").strip()
+    kb = _sqr_roster_kb(cands, page)
+    caption = (
+        f"Клуб <b>{html_escape(team)}</b> — выбери игрока для <b>исключения</b> из состава.\n"
+        f"Стр. <b>{page + 1}</b>/<b>{total_pages}</b>."
+    )
     try:
-        await callback.message.edit_reply_markup(reply_markup=_sqr_roster_kb(cands, page))
-    except Exception:
-        await callback.message.answer(
-            f"Стр. {page + 1}/{total_pages}:",
-            reply_markup=_sqr_roster_kb(cands, page),
+        await callback.message.edit_text(
+            caption,
+            parse_mode="HTML",
+            reply_markup=kb,
         )
+    except Exception:
+        try:
+            await callback.message.edit_reply_markup(reply_markup=kb)
+        except Exception:
+            await callback.message.answer(
+                f"Стр. {page + 1}/{total_pages}:",
+                reply_markup=kb,
+            )
     await callback.answer()
 
 

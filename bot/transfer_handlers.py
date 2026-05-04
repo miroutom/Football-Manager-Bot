@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import re
+from html import escape as html_escape
 
 from aiogram import F, Router
 from aiogram.filters import Command, StateFilter
@@ -40,6 +41,32 @@ _SKIP_VALUE = frozenset({"", "-", "—"})
 _ROSTER_PAGE_SIZE = 12
 
 _TRANSFER_BATCH_MAX = 5
+
+
+def _transfer_pick_player_caption_html(
+    data: dict, *, page: int, total_pages: int, n_cands: int
+) -> str:
+    """Текст сообщения со списком игроков клуба при листании (одно сообщение edit_text)."""
+    club = html_escape((data.get("tr_from") or "").strip())
+    if data.get("tr_batch_active"):
+        ops = data.get("tr_batch_ops") or []
+        idx = int(data.get("tr_batch_op_idx") or 0)
+        to_t = html_escape((data.get("tr_batch_to") or "").strip())
+        n_slot = idx + 1
+        total_slots = max(1, len(ops))
+        return (
+            f"Трансфер <b>{n_slot}/{total_slots}</b> (из клуба).\n"
+            f"<b>Откуда:</b> {club} → <b>куда:</b> {to_t}\n"
+            f"В базе <b>{n_cands}</b> игрок(ов). Стр. <b>{page + 1}</b>/<b>{total_pages}</b> "
+            f"— выбери игрока.\n"
+            f"/cancel — отменить только этот трансфер и начать слот заново."
+        )
+    return (
+        f"Клуб: <b>{club}</b> — в базе <b>{n_cands}</b> игрок(ов).\n"
+        f"Шаг 2/6 — <b>выбери игрока</b> "
+        f"(стр. <b>{page + 1}</b>/<b>{total_pages}</b>).\n"
+        f"/cancel — отмена."
+    )
 _RE_BATCH_DEST = re.compile(r"^(.+?)\s+([1-5])\s*$")
 _RE_PLAN_CLUB = re.compile(r"^(.+?)\s+(\d+)\s*$")
 
@@ -179,7 +206,9 @@ async def _prompt_free_agent_catalog(
         await state.clear()
         return
     serial = [list(x) for x in rows]
-    await state.update_data(tr_fa_candidates=serial, tr_fa_page=0)
+    await state.update_data(
+        tr_fa_candidates=serial, tr_fa_page=0, tr_fa_intro_html=intro_html
+    )
     await state.set_state(TransferEnter.fa_pick)
     cands = [tuple(x) for x in serial]
     await message.answer(
@@ -716,15 +745,24 @@ async def cb_transfer_roster_page(callback: CallbackQuery, state: FSMContext) ->
     ps = _ROSTER_PAGE_SIZE
     total_pages = max(1, (len(cands) + ps - 1) // ps)
     page = max(0, min(page, total_pages - 1))
+    kb = _roster_keyboard(cands, page)
+    caption = _transfer_pick_player_caption_html(
+        data, page=page, total_pages=total_pages, n_cands=len(cands)
+    )
     try:
-        await callback.message.edit_reply_markup(
-            reply_markup=_roster_keyboard(cands, page),
+        await callback.message.edit_text(
+            caption,
+            parse_mode="HTML",
+            reply_markup=kb,
         )
     except Exception:
-        await callback.message.answer(
-            f"Стр. {page + 1}/{total_pages} — выбери игрока:",
-            reply_markup=_roster_keyboard(cands, page),
-        )
+        try:
+            await callback.message.edit_reply_markup(reply_markup=kb)
+        except Exception:
+            await callback.message.answer(
+                f"Стр. {page + 1}/{total_pages} — выбери игрока:",
+                reply_markup=kb,
+            )
     await callback.answer()
 
 
@@ -926,15 +964,25 @@ async def cb_fa_catalog_page(callback: CallbackQuery, state: FSMContext) -> None
     ps = _ROSTER_PAGE_SIZE
     total_pages = max(1, (len(cands) + ps - 1) // ps)
     page = max(0, min(page, total_pages - 1))
+    kb = _fa_catalog_keyboard(cands, page)
+    intro = (data.get("tr_fa_intro_html") or "").strip() or (
+        "Выбери игрока из базы <b>free_agents</b>."
+    )
+    text = f"{intro}\n\nСтр. <b>{page + 1}</b>/<b>{total_pages}</b> — выбери игрока:"
     try:
-        await callback.message.edit_reply_markup(
-            reply_markup=_fa_catalog_keyboard(cands, page),
+        await callback.message.edit_text(
+            text,
+            parse_mode="HTML",
+            reply_markup=kb,
         )
     except Exception:
-        await callback.message.answer(
-            f"Стр. {page + 1}/{total_pages}:",
-            reply_markup=_fa_catalog_keyboard(cands, page),
-        )
+        try:
+            await callback.message.edit_reply_markup(reply_markup=kb)
+        except Exception:
+            await callback.message.answer(
+                f"Стр. {page + 1}/{total_pages}:",
+                reply_markup=kb,
+            )
     await callback.answer()
 
 

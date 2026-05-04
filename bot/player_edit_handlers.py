@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from html import escape as html_escape
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
@@ -45,6 +46,15 @@ _RE_PFP_TM = re.compile(r"^pfp:tm:([a-z0-9_]+):(\d+)$")
 
 def _league_title(code: str) -> str:
     return dict(LEAGUE_LABELS).get(code, code)
+
+
+def _pfp_roster_caption_html(data: dict, page: int, total_pages: int) -> str:
+    code = data.get("pfp_lg") or ""
+    team = html_escape((data.get("pfp_team") or "").strip())
+    return (
+        f"<b>{html_escape(_league_title(code))}</b> · {team}\n\n"
+        f"Выбери игрока (стр. <b>{page + 1}</b>/<b>{total_pages}</b>).\n/cancel — отмена."
+    )
 
 
 def _club_btn_label(text: str, max_chars: int = 40) -> str:
@@ -249,15 +259,22 @@ async def cb_pfp_roster_page(callback: CallbackQuery, state: FSMContext) -> None
     ps = _ROSTER_PAGE_SIZE
     total_pages = max(1, (len(cands) + ps - 1) // ps)
     page = max(0, min(page, total_pages - 1))
+    kb = _pfp_roster_keyboard(cands, page)
+    caption = _pfp_roster_caption_html(data, page, total_pages)
     try:
-        await callback.message.edit_reply_markup(
-            reply_markup=_pfp_roster_keyboard(cands, page),
+        await callback.message.edit_text(
+            caption,
+            parse_mode="HTML",
+            reply_markup=kb,
         )
     except Exception:
-        await callback.message.answer(
-            f"Стр. {page + 1}/{total_pages}:",
-            reply_markup=_pfp_roster_keyboard(cands, page),
-        )
+        try:
+            await callback.message.edit_reply_markup(reply_markup=kb)
+        except Exception:
+            await callback.message.answer(
+                f"Стр. {page + 1}/{total_pages}:",
+                reply_markup=kb,
+            )
     await callback.answer()
 
 

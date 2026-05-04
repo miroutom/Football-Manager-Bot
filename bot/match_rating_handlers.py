@@ -107,6 +107,24 @@ def _short_rec_label(rec: dict, idx: int) -> str:
     return f"{idx + 1}. {h}—{a}{sc}"[:58]
 
 
+def _match_list_intro_html(page: int) -> str:
+    """Текст сообщения со списком матчей (включая номер страницы) — для edit_text при листании."""
+    recs = list_journal_records_for_ratings()
+    n = len(recs)
+    if n == 0:
+        return (
+            "В журнале нет подходящих матчей (все с "
+            "<code>entry_type: simulation</code> или журнал пуст)."
+        )
+    total_pages = max(1, (n + _MATCH_PAGE - 1) // _MATCH_PAGE)
+    page = max(0, min(page, total_pages - 1))
+    return (
+        "Матчи журнала (только «игра», без симуляций). Выбери матч:\n\n"
+        f"Страница <b>{page + 1}</b> из <b>{total_pages}</b> "
+        f"(по {_MATCH_PAGE} на странице)."
+    )
+
+
 def _match_list_kb(page: int) -> InlineKeyboardMarkup:
     recs = list_journal_records_for_ratings()
     n = len(recs)
@@ -303,8 +321,9 @@ async def cb_mrate_root_match(callback: CallbackQuery, state: FSMContext) -> Non
             await state.clear()
             return
         await callback.message.answer(
-            "Матчи журнала (только «игра», без симуляций). Выбери матч:",
+            _match_list_intro_html(0),
             reply_markup=_match_list_kb(0),
+            parse_mode=ParseMode.HTML,
         )
 
 
@@ -317,11 +336,25 @@ async def cb_mrate_match_page(callback: CallbackQuery, state: FSMContext) -> Non
         await callback.answer()
         return
     await callback.answer()
-    if callback.message:
-        await callback.message.answer(
-            "Страница матчей:",
-            reply_markup=_match_list_kb(page),
+    if not callback.message:
+        return
+    text = _match_list_intro_html(page)
+    kb = _match_list_kb(page)
+    try:
+        await callback.message.edit_text(
+            text,
+            reply_markup=kb,
+            parse_mode=ParseMode.HTML,
         )
+    except Exception:
+        try:
+            await callback.message.edit_reply_markup(reply_markup=kb)
+        except Exception:
+            await callback.message.answer(
+                text,
+                reply_markup=kb,
+                parse_mode=ParseMode.HTML,
+            )
 
 
 @match_rating_router.callback_query(F.data.startswith("mrate:ms:"))
