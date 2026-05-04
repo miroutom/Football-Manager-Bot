@@ -75,6 +75,36 @@
       "day": 1,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Реал Сосьедад",
+      "league": "cl",
+      "home_score": 6,
+      "away_score": 3,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Байер",
+      "away": "Атлетик",
+      "league": "cl",
+      "home_score": 4,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Наполи",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 4,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
     }
   ]
 }

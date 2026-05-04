@@ -127,6 +127,46 @@
       "team_norm": "тоттенхэм",
       "return_month": 8,
       "type": "травма"
+    },
+    {
+      "name": "Лориент",
+      "name_norm": "лориент",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Тюкавин",
+      "name_norm": "тюкавин",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Гюлер",
+      "name_norm": "гюлер",
+      "team": "Байер",
+      "team_norm": "байер",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Иньяки",
+      "name_norm": "иньяки",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Эдерсон",
+      "name_norm": "эдерсон",
+      "team": "Сити",
+      "team_norm": "сити",
+      "return_month": 8,
+      "type": "травма"
     }
   ]
 }
