@@ -34,6 +34,7 @@ from bot.states import (
     PostMatch,
     SkipPlay,
 )
+from utils.player_discipline import format_discipline_pre_match_notice_html
 
 logger = logging.getLogger(__name__)
 
@@ -379,10 +380,16 @@ async def _prompt_score_for_scheduled_slot(
     mode = manager_session_label(home, away)
     mode_line = f"<b>{mode}</b>\n\n" if mode else ""
 
+    disc_html = format_discipline_pre_match_notice_html(
+        home, away, league_code=league_code, schedule_day=day
+    )
+    disc_block = f"{disc_html}\n\n" if disc_html else ""
+
     await message.answer(
         f"{mode_line}"
         f"{slot_label} <b>{day}</b> · {lg}\n"
         f"<b>{home}</b> — <b>{away}</b>\n\n"
+        f"{disc_block}"
         f"Ответь сообщением со счётом через пробел, например: <code>2 1</code>\n"
         f"или нажми «Отложить».",
         reply_markup=kb,
@@ -919,6 +926,14 @@ async def cb_skip_pick(callback: CallbackQuery, state: FSMContext) -> None:
     mode = manager_session_label(row["home"], row["away"])
     mode_line = f"<b>{mode}</b>\n\n" if mode else ""
 
+    disc_html = format_discipline_pre_match_notice_html(
+        row["home"],
+        row["away"],
+        league_code=row["tournament"],
+        schedule_day=rnd,
+    )
+    disc_block = f"{disc_html}\n\n" if disc_html else ""
+
     await state.set_state(SkipPlay.awaiting_score)
     await state.update_data(skip_play_row=dict(row))
 
@@ -926,6 +941,7 @@ async def cb_skip_pick(callback: CallbackQuery, state: FSMContext) -> None:
         f"{mode_line}"
         f"Отложенный матч · <b>{lg}</b>, тур дня <b>{rnd}</b>{extra}\n"
         f"<b>{row['home']}</b> — <b>{row['away']}</b>\n\n"
+        f"{disc_block}"
         f"Отправь счёт через пробел (хозяева гости), например: <code>2 1</code>\n"
         f"/cancel — отмена.",
         parse_mode="HTML",

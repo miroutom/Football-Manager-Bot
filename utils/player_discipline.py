@@ -396,6 +396,72 @@ def _apply_injury(
     )
 
 
+def format_discipline_pre_match_notice_html(
+    home: str,
+    away: str,
+    *,
+    league_code: str,
+    schedule_day: int | None = None,
+) -> str:
+    """
+    Краткий блок для экрана выбора матча: активные травмы и дисквалы по обеим командам
+    (фильтр дисквала по турниру слота: лига или ЛЧ).
+    """
+    import html as html_module
+
+    esc = html_module.escape
+    month = get_calendar_month(schedule_day)
+    scope = "cl" if league_code == "cl" else "league"
+    lc = "cl" if scope == "cl" else league_code
+
+    with _lock:
+        st = _load()
+
+    def _team_block(team_label: str, team_norm: str) -> str | None:
+        lines: list[str] = []
+        for inj in st.get("injuries", []):
+            if inj.get("team_norm") != team_norm:
+                continue
+            ret = int(inj.get("return_month") or 99)
+            if month >= ret:
+                continue
+            left = ret - month
+            nm = esc(str(inj.get("name", "?")))
+            lines.append(
+                f"• {nm} — травма: вернётся с <b>{ret}</b>-го мес. календаря "
+                f"(сейчас <b>{month}</b>-й; осталось ≈<b>{left}</b> мес.)"
+            )
+        for row in st.get("suspensions", []):
+            if row.get("team_norm") != team_norm:
+                continue
+            if row.get("scope") != scope or row.get("league_code") != lc:
+                continue
+            left = int(row.get("matches_left") or 0)
+            if left <= 0:
+                continue
+            nm = esc(str(row.get("name", "?")))
+            w = "матч" if left == 1 else "матча" if 2 <= left <= 4 else "матчей"
+            lines.append(f"• {nm} — дискв. <b>{left}</b> {w} (турнир: {esc(lc)})")
+        if not lines:
+            return None
+        return f"<b>{esc(team_label)}</b>\n" + "\n".join(lines)
+
+    th_n, ta_n = _norm(home), _norm(away)
+    chunks: list[str] = []
+    hb = _team_block(home, th_n)
+    if hb:
+        chunks.append(hb)
+    ab = _team_block(away, ta_n)
+    if ab:
+        chunks.append(ab)
+    if not chunks:
+        return ""
+    return (
+        "<b>⚠ Травмы и дисквалы</b> (по данным дисциплины)\n\n"
+        + "\n\n".join(chunks)
+    )
+
+
 def clear_discipline_state() -> None:
     """Сброс JSON (например при новом сезоне)."""
     with _lock:
