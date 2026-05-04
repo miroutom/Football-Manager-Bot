@@ -37,6 +37,16 @@
       "away_score": 2,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Аталанта",
+      "away": "Мю",
+      "league": "cl",
+      "home_score": 6,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }

@@ -10,6 +10,16 @@
       "league_code": "ger",
       "scope": "league",
       "matches_left": 2
+    },
+    {
+      "key": "мартинелли|мю|cl|cl",
+      "name": "Мартинелли",
+      "name_norm": "мартинелли",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 2
     }
   ],
   "yellow_cycle": [
@@ -19,6 +29,26 @@
       "name_norm": "мусиаля",
       "team": "Франкфурт",
       "team_norm": "франкфурт",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "амрабат|мю|cl|cl",
+      "name": "Амрабат",
+      "name_norm": "амрабат",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "мартинез|мю|cl|cl",
+      "name": "Мартинез",
+      "name_norm": "мартинез",
+      "team": "Мю",
+      "team_norm": "мю",
       "league_code": "cl",
       "scope": "cl",
       "count": 1
