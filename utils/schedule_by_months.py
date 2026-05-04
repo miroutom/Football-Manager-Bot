@@ -5,6 +5,9 @@
 вторая — в 6–10. Расклад по месяцам подстраивается под число туров (8 команд → 7+7).
 ЛЧ: только лиговая фаза — 8 матчей на команду в месяцах 1–5 (без дерби по стране);
    месяцы 6–10 без матчей ЛЧ (плей-офф задаётся позже).
+
+После генерации ``build_and_write_mixed_v3`` по умолчанию из расписания выбрасываются строки,
+для которых в ``match_results.json`` уже есть сыгранный матч (со счётом, не simulation).
 """
 from __future__ import annotations
 
@@ -241,6 +244,131 @@ def generate_mixed_schedule_v3(
     }
 
 
+def _norm_schedule_name(s: str) -> str:
+    return (s or "").strip().title()
+
+
+def _normalize_cl_phase_journal(raw) -> str:
+    """Как ``match_results._normalize_cl_phase`` для ключа журнала."""
+    if raw is None:
+        return "knockout"
+    p = str(raw).strip().lower()
+    if p in ("league", "group", "лига", "группа", "гр", "groups"):
+        return "league"
+    return "knockout"
+
+
+def _journal_record_key_tuple(rec: dict) -> tuple | None:
+    """Ключ как в ``match_results.record_key`` (в т.ч. ЛЧ с фазой)."""
+    if not isinstance(rec, dict):
+        return None
+    lg = rec.get("league")
+    if not lg:
+        return None
+    h = _norm_schedule_name(str(rec.get("home") or ""))
+    a = _norm_schedule_name(str(rec.get("away") or ""))
+    if lg != "cl":
+        return (h, a, str(lg).strip())
+    raw = rec.get("cl_phase")
+    if raw is None or str(raw).strip() == "":
+        phase = "league"
+    else:
+        phase = _normalize_cl_phase_journal(raw)
+    return (h, a, "cl", phase)
+
+
+def _journal_played_keys_for_strip() -> set[tuple]:
+    """
+    Ключи записей журнала со счётом (реальная игра), для вычёркивания из расписания.
+
+    Читает ``match_results.json`` напрямую — без импорта ``match_results`` (нет цепочки SQLAlchemy).
+    """
+    path = _ROOT / "match_results.json"
+    if not path.is_file():
+        return set()
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return set()
+    matches = raw.get("matches") if isinstance(raw, dict) else raw
+    if not isinstance(matches, list):
+        return set()
+    out: set[tuple] = set()
+    for rec in matches:
+        if not isinstance(rec, dict):
+            continue
+        et = (rec.get("entry_type") or "play").strip().lower()
+        if et == "simulation":
+            continue
+        hs, aws = rec.get("home_score"), rec.get("away_score")
+        if hs is None or aws is None:
+            continue
+        try:
+            int(hs)
+            int(aws)
+        except (TypeError, ValueError):
+            continue
+        k = _journal_record_key_tuple(rec)
+        if k:
+            out.add(k)
+    return out
+
+
+def _mixed_schedule_line_played(match_str: str, played_keys: set[tuple]) -> bool:
+    """Строка календаря совпадает с сыгранным матчем (учёт обеих фаз ЛЧ в журнале)."""
+    parts = [x.strip() for x in match_str.split(";")]
+    if len(parts) < 3:
+        return False
+    home, away, lg = parts[0], parts[1], parts[2]
+    h = _norm_schedule_name(home)
+    a = _norm_schedule_name(away)
+    if lg != "cl":
+        return (h, a, lg) in played_keys
+    # ЛЧ: в журнале одно направление пары, в новом календаре после перегенерации —
+    # то же столкновение может быть в обратном порядке (одна встреча на пару за фазу).
+    for phase in ("league", "knockout"):
+        if (h, a, "cl", phase) in played_keys or (a, h, "cl", phase) in played_keys:
+            return True
+    return False
+
+
+def strip_played_matches_from_v3_document(doc: dict[str, Any]) -> dict[str, Any]:
+    """
+    Удалить из документа v3 все строки матчей, которые уже есть в журнале со счётом.
+
+    Возвращает новый dict (копия с отфильтрованными ``matches`` по месяцам).
+    """
+    played_keys = _journal_played_keys_for_strip()
+    if not played_keys:
+        return doc
+    rounds = doc.get("rounds")
+    if not isinstance(rounds, list):
+        return doc
+    new_rounds: list[dict[str, Any]] = []
+    for block in rounds:
+        if not isinstance(block, dict):
+            new_rounds.append(block)
+            continue
+        matches = block.get("matches") or []
+        if not isinstance(matches, list):
+            new_rounds.append(block)
+            continue
+        kept: list[str] = []
+        for ln in matches:
+            if not isinstance(ln, str):
+                kept.append(ln)
+                continue
+            if _mixed_schedule_line_played(ln, played_keys):
+                continue
+            kept.append(ln)
+        nb = dict(block)
+        nb["matches"] = kept
+        new_rounds.append(nb)
+    out = dict(doc)
+    out["rounds"] = new_rounds
+    return out
+
+
 def _legacy_list_from_v3(doc: dict[str, Any]) -> list[dict[str, Any]]:
     """Список как у старого json: [{day, matches}, …] + метаданные в первом элементе нет — несём version отдельно в load."""
     rounds = doc.get("rounds")
@@ -253,9 +381,13 @@ def build_and_write_mixed_v3(
     cl_teams: list[str] | None = None,
     path: Path | str | None = None,
     seed: int | None = None,
+    *,
+    strip_played: bool = True,
 ) -> str:
     p = Path(path) if path else MIXED_FILE
     doc = generate_mixed_schedule_v3(cl_teams=cl_teams, seed=seed)
+    if strip_played:
+        doc = strip_played_matches_from_v3_document(doc)
     p.parent.mkdir(parents=True, exist_ok=True)
     with open(p, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False, indent=2)

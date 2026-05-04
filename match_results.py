@@ -505,13 +505,20 @@ def is_match_played(home, away, tournament, cl_phase=None):
 
     Для ЛЧ передайте ``cl_phase`` (``league`` / ``knockout``); если ``None`` для ЛЧ,
     считается ``knockout`` (как матчи из главного меню матч-дня).
+
+    Для ЛЧ также проверяется «альтернативная» фаза: строка ``mixed_schedule`` может
+    относить пару к группе, а в журнале оказалась ``knockout`` (или наоборот) —
+    иначе слот оставался в «остатке» расписания.
     """
     _, keys = load_records_and_keys()
-    if tournament == 'cl':
-        k = record_key(home, away, tournament, _normalize_cl_phase(cl_phase))
-    else:
+    if tournament != "cl":
         k = record_key(home, away, tournament)
-    return k in keys
+        return k in keys
+    ph = _normalize_cl_phase(cl_phase)
+    if record_key(home, away, tournament, ph) in keys:
+        return True
+    alt = "knockout" if ph == "league" else "league"
+    return record_key(home, away, tournament, alt) in keys
 
 
 def migrate_from_teams(mixed_schedule, get_teams_by_league):

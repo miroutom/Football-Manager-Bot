@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Формат Лиги Чемпионов (адаптация по образцу УЕФА 2025/26):
-- 30 команд: из ``data/cl_participants_dynamic.txt`` (6 лучших из 5 нац. лиг после завершения сезона)
-  либо фиксированный список ``CL_PARTICIPANTS`` при первом запуске
+- 30 команд: из ``data/cl_participants_dynamic.txt`` (обычно топ-6 из каждой нац. лиги по ``data/draft_config.json``,
+  см. ``utils/cl_standing_participants.build_cl_top30_from_draft_json`` и скрипт ``scripts/rebuild_cl_pool_and_schedule.py``),
+  иначе фиксированный список ``CL_PARTICIPANTS``.
 - 1-й этап: 30 команд → 6 вылетают, остаётся 24
 ...
 """

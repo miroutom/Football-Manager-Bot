@@ -483,19 +483,17 @@ def process_match(home, away, home_score, away_score, league_code, round_num=Non
 
 def is_match_played(home, away, league_code, teams, cl_phase=None):
     """
-    Проверить, был ли матч уже сыгран.
-    Для ЛЧ: фаза ``league`` / ``knockout`` (если None для ЛЧ — проверяется плей-офф).
+    Проверить, был ли матч уже сыгран (журнал ``match_results``).
+
+    Для ЛЧ несовпадение фазы слота календаря и записи в журнале учитывается в
+    ``match_results.is_match_played``. Параметр ``teams`` оставлен для совместимости вызовов.
     """
     home = home.title()
     away = away.title()
-
-    if home not in teams or away not in teams:
-        return False
-
-    cl_ph = None
-    if league_code == 'cl':
-        cl_ph = cl_phase if cl_phase is not None else 'knockout'
-    return is_match_in_results(home, away, league_code, cl_phase=cl_ph)
+    if league_code == "cl":
+        cl_ph = cl_phase if cl_phase is not None else "knockout"
+        return is_match_in_results(home, away, league_code, cl_phase=cl_ph)
+    return is_match_in_results(home, away, league_code)
 
 
 def is_match_skipped(home, away, league_code, round_num):
