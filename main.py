@@ -176,6 +176,51 @@ def count_remaining_in_schedule(mixed_schedule):
     return count
 
 
+def list_remaining_schedule_matches(mixed_schedule):
+    """
+    Все слоты смешанного расписания, которые ещё не сыграны и не в skipped_matches
+    (тот же порядок обхода, что у ``find_next_match_in_schedule``).
+
+    Каждый элемент — dict с ключами: ``day``, ``match_str``, ``home``, ``away``,
+    ``league_code``, ``cl_ph``.
+    """
+    skipped = load_skipped_matches()
+    out = []
+    for day_data in mixed_schedule:
+        day_num = day_data["day"]
+        for match_str in day_data["matches"]:
+            parts = match_str.split(";")
+            if len(parts) < 3:
+                continue
+            home, away, league_code = parts[0], parts[1], parts[2]
+            cl_ph = (
+                cl_phase_from_mixed_schedule_line(match_str)
+                if league_code == "cl"
+                else None
+            )
+            teams = get_teams_by_league(league_code)
+            if not teams:
+                continue
+            if is_match_played(home, away, league_code, teams, cl_phase=cl_ph):
+                continue
+            if any(
+                _skipped_matches_slot(s, home, away, league_code, cl_ph)
+                for s in skipped
+            ):
+                continue
+            out.append(
+                {
+                    "day": day_num,
+                    "match_str": match_str,
+                    "home": home,
+                    "away": away,
+                    "league_code": league_code,
+                    "cl_ph": cl_ph,
+                }
+            )
+    return out
+
+
 def get_current_league():
     """Получить данные текущей лиги"""
     for key, league in LEAGUES.items():

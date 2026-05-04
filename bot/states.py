@@ -88,3 +88,9 @@ class SquadRosterEnter(StatesGroup):
     add_ovr = State()
     add_nat = State()
     wait_status_add = State()
+
+
+class MatchPerfRatingEnter(StatesGroup):
+    """Ввод оценок за матч: выбор матча → сторона → вставка состава со смайликами."""
+    session = State()
+    wait_paste = State()

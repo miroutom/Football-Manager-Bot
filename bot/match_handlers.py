@@ -26,7 +26,14 @@ from bot.services import (
 )
 from bot.keyboards import MENU_REPLY_TEXT
 from bot.menu_content import deliver_help_screen, deliver_main_menu_refresh
-from bot.states import AddOnlyStats, ClPenalties, MatchEnter, PostMatch, SkipPlay
+from bot.states import (
+    AddOnlyStats,
+    ClPenalties,
+    MatchEnter,
+    MatchPerfRatingEnter,
+    PostMatch,
+    SkipPlay,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -310,6 +317,8 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
         ]
     )
     instr = (
+        "Счётчик матчей в БД (поле <code>matches</code>) здесь <b>не</b> увеличивается — "
+        "кто сыграл, отмечай в меню «📝 Ввод оценки» (оценки за матч).\n\n"
         "Вводи по одной строке: голы/пасы как раньше; дисциплина/травмы: "
         "<code>бастони жк</code>, <code>бастони 2жк</code>, <code>бастони кк</code>, "
         "<code>симонс 4м</code> (месяца без статы).\n"
@@ -327,26 +336,24 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
     )
 
 
-async def _begin_play_next(message: Message, state: FSMContext) -> None:
+async def _prompt_score_for_scheduled_slot(
+    message: Message,
+    state: FSMContext,
+    slot: dict,
+) -> None:
+    """Счёт для слота из mixed_schedule (следующий или выбранный из календаря)."""
     from config.leagues_config import manager_session_label
-    from main import MIXED_SCHEDULE_FILE, find_next_match_in_schedule, load_or_generate_mixed_schedule
-    from match_results import cl_phase_from_mixed_schedule_line
+    from main import MIXED_SCHEDULE_FILE
     from utils.schedule_by_months import read_mixed_slot_label
 
+    day = slot["day"]
+    match_str = slot["match_str"]
+    home = slot["home"]
+    away = slot["away"]
+    league_code = slot["league_code"]
+    cl_ph = slot.get("cl_ph")
+
     slot_label = read_mixed_slot_label(MIXED_SCHEDULE_FILE)
-
-    sch = load_or_generate_mixed_schedule()
-    tup = find_next_match_in_schedule(sch)
-    if tup[0] is None:
-        await message.answer(
-            "Следующего матча нет (всё сыграно или остались только отложенные)."
-        )
-        return
-
-    day, match_str, home, away, league_code = tup
-    cl_ph = (
-        cl_phase_from_mixed_schedule_line(match_str) if league_code == "cl" else None
-    )
 
     await state.set_state(MatchEnter.next_score)
     await state.update_data(
@@ -380,6 +387,37 @@ async def _begin_play_next(message: Message, state: FSMContext) -> None:
         f"или нажми «Отложить».",
         reply_markup=kb,
         parse_mode="HTML",
+    )
+
+
+async def _begin_play_next(message: Message, state: FSMContext) -> None:
+    from main import find_next_match_in_schedule, load_or_generate_mixed_schedule
+    from match_results import cl_phase_from_mixed_schedule_line
+
+    sch = load_or_generate_mixed_schedule()
+    tup = find_next_match_in_schedule(sch)
+    if tup[0] is None:
+        await message.answer(
+            "Следующего матча нет (всё сыграно или остались только отложенные)."
+        )
+        return
+
+    day, match_str, home, away, league_code = tup
+    cl_ph = (
+        cl_phase_from_mixed_schedule_line(match_str) if league_code == "cl" else None
+    )
+
+    await _prompt_score_for_scheduled_slot(
+        message,
+        state,
+        {
+            "day": day,
+            "match_str": match_str,
+            "home": home,
+            "away": away,
+            "league_code": league_code,
+            "cl_ph": cl_ph,
+        },
     )
 
 
@@ -419,6 +457,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "SquadStatusEnter",
             "PlayerFieldEnter",
             "SquadRosterEnter",
+            "MatchPerfRatingEnter",
         ),
     ):
         return
@@ -439,6 +478,8 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         await message.answer("Добавление/удаление из состава отменено.")
     elif str(cur).startswith("SquadStatusEnter"):
         await message.answer("Правка заявки отменена.")
+    elif str(cur).startswith("MatchPerfRatingEnter"):
+        await message.answer("Ввод оценок отменён.")
     else:
         await message.answer("Ввод счёта отменён.")
 
@@ -622,6 +663,180 @@ async def on_manual_score(message: Message, state: FSMContext) -> None:
 
 
 _MAX_SKIP_BUTTONS = 50
+
+_SCHED_PAGE_SIZE = 10
+
+
+def _schedule_pick_kb(
+    ordered: list, *, page: int
+) -> InlineKeyboardMarkup:
+    """Кнопки sched:pick:<индекс в полном списке>; навигация sched:page:<n>."""
+    n = len(ordered)
+    if not ordered:
+        raise ValueError("schedule pick keyboard requires non-empty list")
+    total_pages = max(1, (n + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
+    page = max(0, min(int(page), total_pages - 1))
+    start = page * _SCHED_PAGE_SIZE
+    chunk = ordered[start : start + _SCHED_PAGE_SIZE]
+
+    rows: list[list[InlineKeyboardButton]] = []
+    for j, row in enumerate(chunk):
+        idx = start + j
+        lg = _league_title(row["league_code"])
+        label = f"{idx + 1}. д{row['day']} · {row['home']} — {row['away']} ({lg})"
+        if len(label) > 64:
+            label = label[:61] + "…"
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=label,
+                    callback_data=f"sched:pick:{idx}",
+                ),
+            ]
+        )
+
+    nav: list[InlineKeyboardButton] = []
+    if page > 0:
+        nav.append(
+            InlineKeyboardButton(
+                text=f"« {page}",
+                callback_data=f"sched:page:{page - 1}",
+            )
+        )
+    nav.append(
+        InlineKeyboardButton(
+            text=f"{page + 1}/{total_pages}",
+            callback_data="sched:noop",
+        )
+    )
+    if page < total_pages - 1:
+        nav.append(
+            InlineKeyboardButton(
+                text=f"{page + 2} »",
+                callback_data=f"sched:page:{page + 1}",
+            )
+        )
+    rows.append(nav)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _schedule_pick_intro_html(page: int, total_pages: int) -> str:
+    note = (
+        f"\nСтраница <b>{page + 1}</b> из <b>{total_pages}</b> "
+        f"(по {_SCHED_PAGE_SIZE} матчей; порядок как в mixed_schedule)."
+    )
+    return (
+        "Выбери матч из календаря — затем отправь счёт двумя числами через пробел "
+        f"(например <code>2 1</code>). Можно отложить матч кнопкой «Отложить», как при записи "
+        f"«следующего». Отложенные и уже сыгранные здесь не показываются.{note}\n"
+        "/cancel — отмена."
+    )
+
+
+async def _send_schedule_pick_list(message: Message, *, page: int = 0) -> None:
+    from main import list_remaining_schedule_matches, load_or_generate_mixed_schedule
+
+    sch = await asyncio.to_thread(load_or_generate_mixed_schedule)
+    ordered = await asyncio.to_thread(list_remaining_schedule_matches, sch)
+    if not ordered:
+        await message.answer(
+            "Нет доступных матчей в календаре: всё уже сыграно или остались только отложенные "
+            "(«📌 Из пропусков»). Либо календарь пуст."
+        )
+        return
+
+    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
+    page = max(0, min(int(page), total_pages - 1))
+
+    kb = _schedule_pick_kb(ordered, page=page)
+    await message.answer(
+        _schedule_pick_intro_html(page, total_pages),
+        reply_markup=kb,
+        parse_mode="HTML",
+    )
+
+
+@match_router.callback_query(F.data == "play:schedule")
+async def cb_play_schedule(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.clear()
+    await _send_schedule_pick_list(callback.message, page=0)
+
+
+@match_router.callback_query(F.data == "sched:noop")
+async def cb_sched_noop(callback: CallbackQuery) -> None:
+    await callback.answer()
+
+
+@match_router.callback_query(F.data.startswith("sched:page:"))
+async def cb_sched_page(callback: CallbackQuery, state: FSMContext) -> None:
+    try:
+        page = int((callback.data or "").split(":")[2])
+    except (IndexError, ValueError):
+        await callback.answer()
+        return
+    await callback.answer()
+    from main import list_remaining_schedule_matches, load_or_generate_mixed_schedule
+
+    sch = await asyncio.to_thread(load_or_generate_mixed_schedule)
+    ordered = await asyncio.to_thread(list_remaining_schedule_matches, sch)
+    if not ordered:
+        if callback.message:
+            try:
+                await callback.message.edit_text(
+                    "Нет доступных матчей в календаре.",
+                    parse_mode="HTML",
+                )
+            except Exception:
+                await callback.message.answer(
+                    "Нет доступных матчей в календаре.",
+                    parse_mode="HTML",
+                )
+        return
+    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
+    page = max(0, min(page, total_pages - 1))
+    kb = _schedule_pick_kb(ordered, page=page)
+    text = _schedule_pick_intro_html(page, total_pages)
+    if callback.message:
+        try:
+            await callback.message.edit_text(
+                text,
+                reply_markup=kb,
+                parse_mode="HTML",
+            )
+        except Exception:
+            await callback.message.answer(
+                text,
+                reply_markup=kb,
+                parse_mode="HTML",
+            )
+
+
+@match_router.callback_query(F.data.startswith("sched:pick:"))
+async def cb_sched_pick(callback: CallbackQuery, state: FSMContext) -> None:
+    try:
+        idx = int((callback.data or "").split(":")[2])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    from main import list_remaining_schedule_matches, load_or_generate_mixed_schedule
+
+    sch = await asyncio.to_thread(load_or_generate_mixed_schedule)
+    ordered = await asyncio.to_thread(list_remaining_schedule_matches, sch)
+    if idx < 0 or idx >= len(ordered):
+        await callback.answer("Матча нет в списке. Обнови список.", show_alert=True)
+        return
+    slot = ordered[idx]
+    await callback.answer()
+    await state.clear()
+    if callback.message:
+        await _prompt_score_for_scheduled_slot(callback.message, state, slot)
+
+
+@match_router.message(Command("play_schedule"))
+async def cmd_play_schedule(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await _send_schedule_pick_list(message, page=0)
 
 
 def _skipped_pick_kb(matches_slice: list) -> InlineKeyboardMarkup:

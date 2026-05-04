@@ -67,6 +67,10 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
             ),
         ],
         [
+            InlineKeyboardButton(
+                text="📋 Из календаря",
+                callback_data="play:schedule",
+            ),
             InlineKeyboardButton(text="📊 Таблица", callback_data="menu:table"),
             InlineKeyboardButton(text="⚽ Бомбардиры", callback_data="menu:goals"),
         ],
@@ -88,6 +92,12 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
         [
             InlineKeyboardButton(text="📅 Расписание", callback_data="menu:schedule"),
             InlineKeyboardButton(text="📜 Журнал", callback_data="menu:journal"),
+        ],
+        [
+            InlineKeyboardButton(
+                text="📝 Ввод оценки",
+                callback_data="menu:match_rating",
+            ),
         ],
         [
             InlineKeyboardButton(text="📊 Стата без матча", callback_data="menu:stats_match"),

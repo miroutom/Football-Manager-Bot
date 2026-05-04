@@ -8,6 +8,8 @@
 Файл match_results.json:
   v1 (legacy): массив [home, away, league]
   v2: {"version": 2, "matches": [{home, away, league, home_score?, away_score?, day?, ...}, ...]}
+  Опционально ``entry_type``: ``play`` (по умолчанию для старых строк) или ``simulation``
+  — режим «Ввод оценки» в боте показывает только матчи ``play``.
   Опционально для ЛЧ (league=cl):
   - ``cl_phase``: явный ``"knockout"`` — нокаут (не входит в групповую таблицу в интерфейсе).
     ``"league"`` / ``"group"`` и синонимы — группа. Если поля ``cl_phase`` **нет** (старые записи),
@@ -201,6 +203,8 @@ def load_records_and_keys_from_path(path: str) -> tuple[list[dict[str, Any]], se
                 rec["cl_phase"] = m.get("cl_phase")
             if "penalties_by_team" in m:
                 rec["penalties_by_team"] = m.get("penalties_by_team")
+            if m.get("entry_type"):
+                rec["entry_type"] = str(m.get("entry_type")).strip().lower()
             records.append(rec)
             keys.add(record_key(h, a, t, _rec=rec))
         return records, keys
@@ -315,6 +319,8 @@ def load_records_and_keys():
                 rec['cl_phase'] = m.get('cl_phase')
             if 'penalties_by_team' in m:
                 rec['penalties_by_team'] = m.get('penalties_by_team')
+            if m.get("entry_type"):
+                rec["entry_type"] = str(m.get("entry_type")).strip().lower()
             records.append(rec)
             keys.add(record_key(h, a, t, _rec=rec))
         return records, keys
@@ -438,12 +444,16 @@ def add_match_result(
     day=None,
     cl_phase=None,
     penalties_by_team=None,
+    *,
+    entry_type: str | None = None,
 ):
     """Добавить матч в сыгранные. Счёт и день тура — опционально.
 
     Для ЛЧ: ``cl_phase="league"`` — группа (сетка игнорирует); ``"knockout"`` — плей-офф.
     ``penalties_by_team``: при ничьей по сумме двух матчей — голы в серии по командам
     (ключи — названия как в журнале), см. ``bracket_html``.
+    ``entry_type``: ``"play"`` (по умолчанию) или ``"simulation"`` — для режима оценок
+    в журнал попадают только матчи с игрой «вручную», не симуляции.
     """
     records, keys = load_records_and_keys()
     h, a = _norm(home), _norm(away)
@@ -467,9 +477,27 @@ def add_match_result(
         row['cl_phase'] = phase
     if penalties_by_team:
         row['penalties_by_team'] = penalties_by_team
+    et = (entry_type or "play").strip().lower()
+    if et in ("play", "simulation"):
+        row["entry_type"] = et
     records.append(row)
     _save_v2(records)
     return True
+
+
+def list_journal_records_for_ratings() -> list[dict[str, Any]]:
+    """
+    Записи ``match_results`` в порядке журнала, только «реальные» матчи
+    (``entry_type`` не ``simulation``; у старых записей без поля — считаем ``play``).
+    """
+    records, _ = load_records_and_keys()
+    out: list[dict[str, Any]] = []
+    for r in records:
+        et = (r.get("entry_type") or "play").strip().lower()
+        if et == "simulation":
+            continue
+        out.append(dict(r))
+    return out
 
 
 def is_match_played(home, away, tournament, cl_phase=None):

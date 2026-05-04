@@ -279,12 +279,14 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
                      match_for_cs: tuple = None, create_if_missing: bool = False,
                      discipline_league_code: str | None = None,
                      schedule_day: int | None = None,
-                     skip_discipline_check: bool = False):
+                     skip_discipline_check: bool = False,
+                     increment_matches: bool = True):
     """
     Добавить статистику игрока после матча.
 
-    У каждого успешного вызова у игрока увеличивается ``matches`` на 1. При разборе состава
-    со скринов нужен отдельный вызов на каждого сыгравшего, в том числе с 0+0.
+    По умолчанию у каждого успешного вызова ``matches`` увеличивается на 1. Чтобы засчитать
+    только голы/передачи без игры в статистике матчей (бот — строки после матча), передайте
+    ``increment_matches=False``. Засчёт матчей по оценкам — через ``utils.match_ratings``.
 
     Ручной ввод через ``temporary`` / интерактив: команда «1» — только игроки из БД;
     «2» — новый игрок (в цикле передаётся ``create_if_missing=True``). Для программного вызова
@@ -372,7 +374,8 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
             print(f"  ✗ {name} ({team}): {err_g}")
             return False
 
-    player.matches += 1
+    if increment_matches:
+        player.matches += 1
 
     if pos_type in ['forward', 'midfielder', 'defender']:
         player.goals += goals
@@ -884,6 +887,7 @@ def apply_stats_bot_line(
             create_if_missing=mode_new,
             discipline_league_code=lc,
             schedule_day=schedule_day,
+            increment_matches=False,
         )
     out = buf2.getvalue().strip()
     if not ok_add:
