@@ -250,24 +250,31 @@ def _strip_cs_and_goals(parts: list) -> tuple:
 
 
 def print_roster_cheat_sheet(home_team: str, away_team: str, tournament: str = 'league') -> None:
-    """Вывести составы обеих команд из БД (шпаргалка перед вводом статистики)."""
-    session = get_session(tournament)
+    """Вывести составы обеих команд из БД (шпаргалка перед вводом статистики).
+
+    Секции как в заявке (``reserve`` / ``bench`` / ``start``) — тот же принцип, что
+    в ``utils.match_ratings.build_roster_template``, чтобы резерв был явно в списке
+    при вводе статы, даже если кого-то подняли из резерва в старт к матчу.
+    """
+    from utils.match_ratings import build_roster_template
 
     def dump_team(title: str, team: str) -> None:
         print(f"\n── {title}: {team} ──")
-        rows = []
-        for cls in (Forward, Midfielder, Defender, Goalkeeper):
-            try:
-                for p in session.query(cls).filter_by(team=team).all():
-                    rows.append((p.position, p.name))
-            except Exception:
-                pass
-        if not rows:
+        try:
+            tpl, key_map, canon = build_roster_template(team, tournament)
+        except Exception:
+            print("  (не удалось загрузить состав из БД)")
+            return
+        if not key_map:
             print("  (нет игроков в БД для этой команды)")
             return
-        rows.sort(key=lambda x: (x[0], x[1]))
-        for pos, name in rows:
-            print(f"  {pos:<5}  {name}")
+        if (canon or "").strip().casefold() != (team or "").strip().casefold():
+            print(f"  (канон в БД: {canon})")
+        for line in (tpl or "").splitlines():
+            s = line.strip()
+            if not s:
+                continue
+            print(f"  {line}")
 
     dump_team("ХОЗЯЕВА", home_team)
     dump_team("ГОСТИ", away_team)

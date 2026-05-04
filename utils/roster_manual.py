@@ -377,6 +377,38 @@ def _is_valid_game_position(s: str) -> bool:
     return u in valid
 
 
+def _tail_ovr_nation_after_position(
+    tail: list[str], line_num: int
+) -> tuple[int | None, str | None, str | None]:
+    """
+    После позиции в строке заявки: ``[overall]`` и/или нация из одного или нескольких слов
+    (например «др конго», «южная корея»).
+    Возвращает ``(overall, nation, error_message)``.
+    """
+    from utils.transfer_input import normalize_nation
+
+    if not tail:
+        return None, None, None
+    if tail[0].isdigit():
+        v = int(tail[0])
+        if v < 1 or v > 99:
+            return (
+                None,
+                None,
+                f"строка {line_num}: overall 1–99, не {tail[0]!r}",
+            )
+        if len(tail) == 1:
+            return v, None, None
+        rest_nat = " ".join(tail[1:]).strip()
+        if rest_nat in ("", "-", "—"):
+            return v, None, None
+        return v, normalize_nation(rest_nat), None
+    joined = " ".join(tail).strip()
+    if joined in ("", "-", "—"):
+        return None, None, None
+    return None, normalize_nation(joined), None
+
+
 def _parse_squad_line_pipe(
     parts: list[str], line_num: int
 ) -> tuple[tuple[str, str, str, int | None, str | None] | None, str | None]:
@@ -416,11 +448,11 @@ def _parse_squad_line_space(
     line: str, line_num: int
 ) -> tuple[tuple[str, str, str, int | None, str | None] | None, str | None]:
     """
-    ``имя … позиция [overall] [нация] start|bench|reserve`` — статус **всегда последний**;
-    позиция — слово перед блоком optional (число 1–99 и одно слово нации).
+    ``имя … позиция [overall] [нация …] start|bench|reserve`` — статус всегда последний;
+    нация может быть из нескольких слов (например «др конго», «южная корея»).
     """
     from utils.player_transfer import normalize_player_name_for_db
-    from utils.transfer_input import normalize_nation, normalize_position
+    from utils.transfer_input import normalize_position
 
     tokens = line.split()
     if len(tokens) < 3:
@@ -437,31 +469,21 @@ def _parse_squad_line_space(
             f"(латиницей), не {tokens[-1]!r}",
         )
     rest = list(tokens[:-1])
-    ovr: int | None = None
-    nat: str | None = None
-    if len(rest) >= 3:
-        if rest[-2].isdigit():
-            v2 = int(rest[-2])
-            if 1 <= v2 <= 99:
-                ovr = v2
-                tail = (rest[-1] or "").strip()
-                if tail not in ("", "-", "—"):
-                    nat = normalize_nation(tail)
-                rest = rest[:-2]
-    if ovr is None and len(rest) >= 2 and rest[-1].isdigit():
-        v = int(rest[-1])
-        if 1 <= v <= 99:
-            ovr = v
-            rest = rest[:-1]
-    if len(rest) < 2:
+    pos_idx: int | None = None
+    for j in range(len(rest) - 1, -1, -1):
+        if _is_valid_game_position(rest[j]):
+            pos_idx = j
+            break
+    if pos_idx is None:
         return (
             None,
-            f"строка {line_num}: после разбора статуса/overall не остались имя и позиция",
+            f"строка {line_num}: нет позиции (ЦП, ФРВ, ВРТ, …) перед статусом",
         )
-    pos_raw = rest[-1]
-    name_raw = " ".join(rest[:-1]).strip()
+    name_raw = " ".join(rest[:pos_idx]).strip()
+    tail = rest[pos_idx + 1 :]
     if not name_raw:
         return None, f"строка {line_num}: пустое имя"
+    pos_raw = rest[pos_idx]
     if not _is_valid_game_position(pos_raw):
         return (
             None,
@@ -469,6 +491,9 @@ def _parse_squad_line_space(
         )
     pos = normalize_position(pos_raw)
     nm = normalize_player_name_for_db(name_raw)
+    ovr, nat, terr = _tail_ovr_nation_after_position(tail, line_num)
+    if terr:
+        return None, terr
     return (nm, pos, st, ovr, nat), None
 
 
@@ -476,11 +501,12 @@ def _parse_squad_line_implicit_status(
     line: str, line_num: int, status: str
 ) -> tuple[tuple[str, str, str, int | None, str | None] | None, str | None]:
     """
-    Строка под секцией: ``имя … позиция [overall] [нация]`` — статус задаётся секцией.
-    Позиция — последний по счёту токен слева, совпадающий с известной позицией (поиск справа налево).
+    Строка под секцией: ``имя … позиция [overall] [нация …]`` — статус задаётся секцией.
+    Позиция — последний токен слева, совпадающий с известной позицией (поиск справа налево).
+    Нация может состоять из нескольких слов (например «др конго», «южная корея»).
     """
     from utils.player_transfer import normalize_player_name_for_db
-    from utils.transfer_input import normalize_nation, normalize_position
+    from utils.transfer_input import normalize_position
 
     tokens = line.split()
     if len(tokens) < 2:
@@ -503,32 +529,9 @@ def _parse_squad_line_implicit_status(
     tail = tokens[pos_idx + 1 :]
     pos = normalize_position(tokens[pos_idx])
     nm = normalize_player_name_for_db(name_raw)
-    ovr: int | None = None
-    nat: str | None = None
-    if len(tail) == 2:
-        if not tail[0].isdigit():
-            return None, f"строка {line_num}: после позиции ожидается overall (число) и нация"
-        v = int(tail[0])
-        if v < 1 or v > 99:
-            return None, f"строка {line_num}: overall 1–99, не {tail[0]!r}"
-        ovr = v
-        if tail[1] not in ("", "-", "—"):
-            nat = normalize_nation(tail[1])
-    elif len(tail) == 1:
-        if tail[0].isdigit():
-            v = int(tail[0])
-            if 1 <= v <= 99:
-                ovr = v
-            else:
-                return None, f"строка {line_num}: overall 1–99"
-        elif tail[0] not in ("", "-", "—"):
-            nat = normalize_nation(tail[0])
-    elif len(tail) > 2:
-        return (
-            None,
-            f"строка {line_num}: после позиции максимум два поля (overall и нация)",
-        )
-
+    ovr, nat, terr = _tail_ovr_nation_after_position(tail, line_num)
+    if terr:
+        return None, terr
     return (nm, pos, st, ovr, nat), None
 
 
