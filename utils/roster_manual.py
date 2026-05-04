@@ -173,16 +173,7 @@ def _apply_upsert_and_cascade(
     nation: str | None,
     status: str,
     carry: dict[str, Any] | None,
-    *,
-    skip_status_cascade: bool = False,
 ) -> None:
-    """
-    После upsert по умолчанию вызывается ``_cascade_status`` (лимиты стартов по позиции,
-    скамейка→резерв и т.) — удобно для одиночных трансферов.
-
-    Для **полной заявки** текстом нужны ровно те статусы, что в списке — передавай
-    ``skip_status_cascade=True``, иначе каскад перезапишет start/bench/reserve.
-    """
     from utils.player_transfer import _cascade_status
     from utils.squad_roster_sync import find_player_row, upsert_roster_player
 
@@ -197,8 +188,6 @@ def _apply_upsert_and_cascade(
         carry_in=carry,
     )
     sess.flush()
-    if skip_status_cascade:
-        return
     row, Cls = find_player_row(sess, name, team)
     if row is None or Cls is None:
         raise RuntimeError(f"После upsert не найден игрок {name!r} в {team!r}.")
@@ -219,7 +208,6 @@ def add_player_to_team_roster(
     rebuild_common: bool = True,
     mirror_synced: bool = True,
     commit: bool = True,
-    skip_status_cascade: bool = False,
 ) -> dict[str, Any]:
     from utils import cumulative_mirror
     from utils.common_db import rebuild_common_database
@@ -290,32 +278,12 @@ def add_player_to_team_roster(
 
     ovr_res = max(1, min(99, int(ovr_res)))
 
-    _apply_upsert_and_cascade(
-        sleague,
-        team,
-        nm,
-        pos,
-        ovr_res,
-        nat_res,
-        st,
-        carry,
-        skip_status_cascade=skip_status_cascade,
-    )
+    _apply_upsert_and_cascade(sleague, team, nm, pos, ovr_res, nat_res, st, carry)
     from utils.common_db import resolve_team_name_for_cl_pool
 
     cl_team = resolve_team_name_for_cl_pool(team)
     if cl_team:
-        _apply_upsert_and_cascade(
-            scl,
-            cl_team,
-            nm,
-            pos,
-            ovr_res,
-            nat_res,
-            st,
-            carry,
-            skip_status_cascade=skip_status_cascade,
-        )
+        _apply_upsert_and_cascade(scl, cl_team, nm, pos, ovr_res, nat_res, st, carry)
 
     if commit:
         sleague.commit()
@@ -339,7 +307,6 @@ def add_player_to_team_roster(
                 rebuild_common=False,
                 mirror_synced=False,
                 commit=True,
-                skip_status_cascade=skip_status_cascade,
             )
 
         cumulative_mirror.mirror_roster_manual(_dup)
@@ -736,7 +703,6 @@ def apply_team_squad_declaration(
                 rebuild_common=False,
                 mirror_synced=False,
                 commit=False,
-                skip_status_cascade=True,
             )
 
         sleague.commit()
