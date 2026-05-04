@@ -623,8 +623,8 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
     print("Режимы: 1 — только из БД (по умолчанию)  |  2 — новый игрок (создать при отсутствии)")
     print("Сторона: h/х — хозяева, a/г — гости")
     print(
-        "Дисциплина/травмы: бастони жк  |  бастони 2жк  |  бастони кк  |  симонс 4м "
-        "(номер месяца календаря можно задать в data/calendar_month.txt при вводе без слота)"
+        "Дисциплина/травмы: бастони жк  |  бастони 2жк  |  бастони кк  |  симонс 4м/4m "
+        "(травма — отдельной строкой, лат. m OK; calendar_month.txt при вводе без слота)"
     )
     print("-" * 50)
 
@@ -689,7 +689,9 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
                 if dm:
                     print(f"  {dm}")
             else:
-                print("  Не разобрать дисциплину. Формат: «… жк» / «… 2жк» / «… кк» / «… 4м»")
+                print(
+                    "  Не разобрать дисциплину. Формат: «… жк» / «… 2жк» / «… кк» / «… 4м»/«… 4m»"
+                )
             continue
 
         line = player_input
@@ -831,7 +833,7 @@ def apply_stats_bot_line(
         if handled:
             return (dmsg or "—", current_team, mode_new)
         return (
-            "Не удалось разобрать дисциплину. Формат: «фамилия жк» / «… 2жк» / «… кк» / «… 4м»",
+            "Не удалось разобрать дисциплину. Формат: «фамилия жк» / «… 2жк» / «… кк» / «… 4м» или «… 4m»",
             current_team,
             mode_new,
         )

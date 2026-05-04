@@ -6,7 +6,7 @@
 - 4 жк = 1 матч дискв. (накопление в JSON, жк в БД копятся за сезон)
 - 2жк = КК = 1 матч +1 red в БД
 - прямая КК = 3 матча +1 red
-- травма: «имя Nм» — недоступен до месяца (календарь v3), колонка в БД не ведётся
+- травма: «имя Nм» или «имя Nm» (лат. m) — отдельной строкой, недоступен до месяца (календарь v3)
 """
 from __future__ import annotations
 
@@ -25,7 +25,10 @@ _YEL4 = 4
 _RE_2Y = re.compile(r"^(.+?)\s+2\s*жк\s*$", re.IGNORECASE | re.UNICODE)
 _RE_Y = re.compile(r"^(.+?)\s+жк\s*$", re.IGNORECASE | re.UNICODE)
 _RE_R = re.compile(r"^(.+?)\s+кк\s*$", re.IGNORECASE | re.UNICODE)
-_RE_INJ = re.compile(r"^(.+?)\s+(\d+)\s*м\s*$", re.IGNORECASE | re.UNICODE)
+# суффикс месяцев: кирил. «м» или лат. «m» (часто с англ. раскладки)
+_RE_INJ = re.compile(
+    r"^(.+?)\s+(\d+)\s*(?:м|m)\s*$", re.IGNORECASE | re.UNICODE
+)
 
 
 def _norm(s: str) -> str:
@@ -471,7 +474,7 @@ def clear_discipline_state() -> None:
 
 def line_looks_discipline(s: str) -> bool:
     t = (s or "").strip().lower()
-    if re.search(r"\d+\s*м\s*$", t):
+    if re.search(r"\d+\s*(?:м|m)\s*$", t, re.IGNORECASE):
         return True
     if t.endswith("2жк"):
         return True

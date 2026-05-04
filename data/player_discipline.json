@@ -54,5 +54,27 @@
       "count": 1
     }
   ],
-  "injuries": []
+  "injuries": [
+    {
+      "name": "Бонавентура",
+      "name_norm": "бонавентура",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "return_month": 4
+    },
+    {
+      "name": "Пашалич",
+      "name_norm": "пашалич",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "return_month": 4
+    },
+    {
+      "name": "Эриксен",
+      "name_norm": "эриксен",
+      "team": "Мю",
+      "team_norm": "мю",
+      "return_month": 4
+    }
+  ]
 }
