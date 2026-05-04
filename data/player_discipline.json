@@ -52,6 +52,16 @@
       "league_code": "cl",
       "scope": "cl",
       "count": 1
+    },
+    {
+      "key": "гудель|севилья|esp|league",
+      "name": "Гудель",
+      "name_norm": "гудель",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [
