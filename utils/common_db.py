@@ -41,22 +41,35 @@ def _key(name: str, team: str, position: str) -> tuple:
     return (name.strip().lower(), team.strip().lower(), position.strip())
 
 
-def _team_in_cl_pool(team_name: str) -> bool:
+def resolve_team_name_for_cl_pool(team_name: str) -> str | None:
     """
-    Только клубы из списка участников ЛЧ (pickle champ_league_teams) должны давать строки из БД ЛЧ в common.
-    Иначе ошибочные/чужие записи в champions_league_new.db не суммируются с лигой.
+    Имя клуба, под которым он в пуле ЛЧ (для записей в ``champions_league_*.db``), или None.
+
+    Сначала сверка с ``get_cl_participants()`` (``cl_participants_dynamic.txt``) — актуальные 30;
+    иначе с ключами ``champ_league_teams.pkl`` (как раньше), чтобы старые сейвы не ломались.
     """
     import teams as teams_mod
 
-    pool = teams_mod.teams_champ_league.keys()
+    from champions_league.cl_format import get_cl_participants
+
     t = (team_name or "").strip()
-    if t == "ЦСКА":
+    if t.casefold() == "цска":
         t = "Цска"
-    tl = t.lower()
-    for name in pool:
-        if name.lower() == tl:
-            return True
-    return False
+    tl = t.casefold()
+    for name in get_cl_participants():
+        if (name or "").strip().casefold() == tl:
+            return (name or "").strip()
+    for name in teams_mod.teams_champ_league.keys():
+        if (name or "").strip().casefold() == tl:
+            return (name or "").strip()
+    return None
+
+
+def _team_in_cl_pool(team_name: str) -> bool:
+    """
+    Клуб участвует в ЛЧ (динамический топ-30 и/или pickle): можно писать строки в БД ЛЧ и common.
+    """
+    return resolve_team_name_for_cl_pool(team_name) is not None
 
 
 def _merge_bucket_outfield(PlayerCls, session_league, session_cl):

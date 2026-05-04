@@ -136,7 +136,6 @@ def _release_player_from_team_sessions(
     sleague: Any, scl: Any, team: str, nm: str, pos: str
 ) -> str:
     """Снять игрока с команды (как ``remove_player_from_team_roster`` без commit)."""
-    from utils.common_db import _team_in_cl_pool
     from utils.free_agents_catalog import upsert_free_agent_catalog
     from utils.player_field_edit import find_player_row as fpr
 
@@ -152,8 +151,11 @@ def _release_player_from_team_sessions(
     else:
         sleague.delete(row_l)
         label = "deleted"
-    if _team_in_cl_pool(team):
-        Cls_c, row_c = fpr(scl, team, nm, pos)
+    from utils.common_db import resolve_team_name_for_cl_pool
+
+    cl_team = resolve_team_name_for_cl_pool(team)
+    if cl_team:
+        Cls_c, row_c = fpr(scl, cl_team, nm, pos)
         if row_c is not None:
             if _has_meaningful_stats(row_c):
                 row_c.team = FREE_AGENT_TEAM
@@ -208,7 +210,7 @@ def add_player_to_team_roster(
     commit: bool = True,
 ) -> dict[str, Any]:
     from utils import cumulative_mirror
-    from utils.common_db import _team_in_cl_pool, rebuild_common_database
+    from utils.common_db import rebuild_common_database
     from utils.player_transfer import normalize_player_name_for_db
     from utils.squad_roster_sync import _carry_from_row, _merge_carry_dicts
     from utils.transfer_input import normalize_nation, normalize_position
@@ -277,8 +279,11 @@ def add_player_to_team_roster(
     ovr_res = max(1, min(99, int(ovr_res)))
 
     _apply_upsert_and_cascade(sleague, team, nm, pos, ovr_res, nat_res, st, carry)
-    if _team_in_cl_pool(team):
-        _apply_upsert_and_cascade(scl, team, nm, pos, ovr_res, nat_res, st, carry)
+    from utils.common_db import resolve_team_name_for_cl_pool
+
+    cl_team = resolve_team_name_for_cl_pool(team)
+    if cl_team:
+        _apply_upsert_and_cascade(scl, cl_team, nm, pos, ovr_res, nat_res, st, carry)
 
     if commit:
         sleague.commit()
@@ -647,17 +652,18 @@ def apply_team_squad_declaration(
     ``remove_player_from_team_roster``.
     """
     from utils import cumulative_mirror
-    from utils.common_db import rebuild_common_database
+    from utils.common_db import rebuild_common_database, resolve_team_name_for_cl_pool
     from utils.player_transfer import normalize_player_name_for_db
-    from utils.transfer_input import normalize_position
+    from utils.transfer_input import normalize_position, resolve_team_name
     from utils.utils import session_cl as default_cl
     from utils.utils import session_league as default_league
 
     sleague = session_league or default_league
     scl = session_cl or default_cl
-    team = (team or "").strip()
-    if len(team) < 2:
+    team_raw = (team or "").strip()
+    if len(team_raw) < 2:
         raise ValueError("Слишком короткое имя клуба")
+    team = resolve_team_name(team_raw, sleague) or team_raw
     if not entries:
         raise ValueError("Список заявки пуст")
 
@@ -728,4 +734,5 @@ def apply_team_squad_declaration(
         "declared": len(deduped),
         "released": len(released_labels),
         "released_detail": released_labels,
+        "cl_pool": bool(resolve_team_name_for_cl_pool(team)),
     }

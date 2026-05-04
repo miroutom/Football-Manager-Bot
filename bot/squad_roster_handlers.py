@@ -182,8 +182,9 @@ async def cb_menu_squad_roster(callback: CallbackQuery, state: FSMContext) -> No
     await callback.message.answer(
         "👥 <b>В состав / из состава</b>\n\n"
         "Выбери лигу и клуб.\n"
-        "<b>Полная заявка:</b> бот пришлёт черновик из БД (start/bench/reserve); "
-        "после правок — одним сообщением; кто <b>не</b> в списке, уходит в СА.\n"
+        "<b>Полная заявка:</b> черновик из нац. БД (start/bench/reserve); "
+        "одним сообщением — то же для ЛЧ у клубов из пула участников (отдельно в ЛЧ не нужно).\n"
+        "Кто <b>не</b> в списке, уходит в СА.\n"
         "<b>Один игрок:</b> если есть в <code>common_synced.db</code> — достаточно имени и позиции; "
         "иначе overall и нация.\n"
         f"При статистике клуб в БД станет «{FREE_AGENT_TEAM}».\n"
@@ -275,7 +276,8 @@ async def cb_sqr_set_squad(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.message.answer(
         "Ниже — <b>черновик заявки</b> из нац. БД (секции "
         "<code>==== start ===</code>, <code>=== bench ===</code>, "
-        "<code>=== reserve ===</code>).\n"
+        "<code>=== reserve ===</code>). После отправки одним сообщением заявка "
+        "применится и к нац. базе, и к ЛЧ (если клуб в актуальном пуле участников).\n"
         "Формат строки: <code>имя позиция overall нация</code> "
         "(нацию/overall можно опустить для игроков из common).\n\n"
         + more_parts
@@ -323,10 +325,14 @@ async def on_sqr_paste_squad(message: Message, state: FSMContext) -> None:
     det = r.get("released_detail") or []
     det_tail = "\n".join(det[:15]) if det else ""
     more = f"\n… ещё {len(det) - 15}" if len(det) > 15 else ""
+    cl_note = ""
+    if r.get("cl_pool"):
+        cl_note = "\nЛЧ: заявка синхронизирована (<code>champions_league_new.db</code>)."
     await message.answer(
         f"✅ Клуб <b>{r['team']}</b>\n"
         f"В заявке: <b>{r['declared']}</b> игроков.\n"
         f"Снято в СА: <b>{r['released']}</b>.\n"
+        + cl_note
         + (f"<pre>{det_tail}{more}</pre>" if det_tail else "")
         + "\n<code>common.db</code> / накопительные БД обновлены по режиму сезона.",
         parse_mode="HTML",
