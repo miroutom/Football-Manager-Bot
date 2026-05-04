@@ -195,6 +195,38 @@
       "team_norm": "тоттенхэм",
       "return_month": 4,
       "type": "травма"
+    },
+    {
+      "name": "Собослай",
+      "name_norm": "собослай",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Рабьо",
+      "name_norm": "рабьо",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Перейра",
+      "name_norm": "перейра",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Муса",
+      "name_norm": "муса",
+      "team": "Милан",
+      "team_norm": "милан",
+      "return_month": 4,
+      "type": "травма"
     }
   ]
 }
