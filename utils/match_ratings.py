@@ -213,7 +213,7 @@ def build_roster_template(
         lines.append(_SECTION_HEADER[sec])
         for nm, pos, ovr in buckets.get(sec, []):
             pk = player_row_key(nm, pos)
-            lines.append(f"{nm} · {pos} · {ovr}")
+            lines.append(f"{nm} {pos}")
             key_map[pk] = (nm, pos, ovr)
     return "\n".join(lines), key_map, canon
 
@@ -235,6 +235,30 @@ def _strip_first_emoji(line: str) -> tuple[str | None, str]:
 _RE_SPLIT_LINE = re.compile(r"\s*·\s*")
 
 
+def _extract_code_and_core(line: str) -> tuple[str | None, str]:
+    """
+    Смайлик оценки — в начале и/или в конце строки (через пробел в конце удобнее).
+    Если указаны оба, берётся конечный.
+    """
+    s = line.strip()
+    if not s:
+        return None, ""
+    code_tail: str | None = None
+    rest = s
+    for em in sorted(EMOJI_TO_CODE.keys(), key=len, reverse=True):
+        if rest.endswith(em):
+            code_tail = EMOJI_TO_CODE[em]
+            rest = rest[: -len(em)].rstrip()
+            break
+    code_head, rest = _strip_first_emoji(rest)
+    code = code_tail or code_head
+    return code, rest.strip()
+
+
+def _warn_pair(name: str, pos: str) -> str:
+    return f"{name.strip()} {pos.strip()}"
+
+
 def parse_user_rated_lines(
     text: str, expected_keys: dict[str, tuple[str, str, int]]
 ) -> tuple[dict[str, str], list[str]]:
@@ -246,26 +270,49 @@ def parse_user_rated_lines(
         line = raw_line.strip()
         if not line or line.startswith("="):
             continue
-        code, rest = _strip_first_emoji(line)
-        parts = _RE_SPLIT_LINE.split(rest.strip())
-        if len(parts) < 3:
-            warnings.append(f"Пропуск строки: {raw_line[:80]}")
+        code, rest = _extract_code_and_core(line)
+        rest = rest.strip()
+        if not rest:
             continue
-        name, pos = parts[0].strip(), parts[1].strip()
-        try:
-            ovr = int(parts[2].strip())
-        except ValueError:
-            warnings.append(f"Неверный OVR: {raw_line[:80]}")
+
+        # Старый формат: Имя · Поз · OVR (из шаблона с рейтингом)
+        if "·" in rest:
+            parts = _RE_SPLIT_LINE.split(rest)
+            if len(parts) < 3:
+                warnings.append(f"Пропуск: {rest[:80]}")
+                continue
+            name, pos = parts[0].strip(), parts[1].strip()
+            try:
+                ovr = int(parts[2].strip())
+            except ValueError:
+                warnings.append(_warn_pair(name, pos))
+                continue
+            pk = player_row_key(name, pos)
+            if pk not in expected_keys:
+                warnings.append(f"Нет в шаблоне: {_warn_pair(name, pos)}")
+                continue
+            exp = expected_keys[pk]
+            if exp[2] != ovr:
+                warnings.append(_warn_pair(name, pos))
+            if pk in used:
+                warnings.append(f"Дубликат: {_warn_pair(name, pos)}")
+            used.add(pk)
+            ratings[pk] = code if code else ""
             continue
+
+        # Новый формат: «Имя … позиция» + смайлик; OVR только из БД (key_map)
+        tokens = rest.split()
+        if len(tokens) < 2:
+            warnings.append(f"Пропуск: {raw_line[:80]}")
+            continue
+        pos = tokens[-1]
+        name = " ".join(tokens[:-1])
         pk = player_row_key(name, pos)
         if pk not in expected_keys:
-            warnings.append(f"Нет в шаблоне: {name} · {pos}")
+            warnings.append(f"Нет в шаблоне: {_warn_pair(name, pos)}")
             continue
-        exp = expected_keys[pk]
-        if exp[2] != ovr:
-            warnings.append(f"OVR не совпал для {name} (шаблон {exp[2]}, в строке {ovr})")
         if pk in used:
-            warnings.append(f"Дубликат: {name} · {pos}")
+            warnings.append(f"Дубликат: {_warn_pair(name, pos)}")
         used.add(pk)
         ratings[pk] = code if code else ""
 
@@ -287,7 +334,7 @@ def format_rated_roster(
             code = (ratings.get(pk) or "").strip()
             em = CODE_TO_EMOJI.get(code, "") if code else ""
             prefix = (em + " ") if em else ""
-            lines.append(f"{prefix}{nm} · {pos} · {ovr}")
+            lines.append(f"{prefix}{nm} {pos} {ovr}")
     return "\n".join(lines)
 
 
@@ -384,7 +431,7 @@ def format_team_ratings_history(league_code: str, team: str) -> str:
             if not code:
                 continue
             em = CODE_TO_EMOJI.get(code, code)
-            pretty = pk.replace("|", " · ")
+            pretty = pk.replace("|", " ")
             lines_out.append(f"  {em} {pretty}")
         lines_out.append("")
 
