@@ -215,6 +215,119 @@ def _cl_phase_short_label(phase: str) -> str:
     return "группа" if phase == "league" else "нокаут"
 
 
+_MANUAL_PICK_PAGE = 10
+
+
+def _sorted_team_names_for_manual(league_code: str) -> list[str]:
+    """Имена клубов из pickle лиги (как в матч-дне), для кнопок ручного матча."""
+    import teams as teams_mod
+
+    m = {
+        "rpl": teams_mod.teams_rpl,
+        "eng": teams_mod.teams_eng,
+        "esp": teams_mod.teams_spain,
+        "ger": teams_mod.teams_germany,
+        "ita": teams_mod.teams_italy,
+        "cl": teams_mod.teams_champ_league,
+    }
+    teams = m.get(league_code)
+    if not teams:
+        return []
+    return sorted(teams.keys(), key=lambda s: (s or "").casefold())
+
+
+def _manual_team_pick_kb(
+    names: list[str],
+    page: int,
+    *,
+    which: str,
+) -> InlineKeyboardMarkup:
+    """
+    which: "h" — хозяева (индекс в полном списке), "a" — гости (индекс в names = away list).
+    """
+    n = len(names)
+    if n == 0:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="✏️ Ввести вручную", callback_data="mtp:x:h")],
+            ],
+        )
+    total_pages = max(1, (n + _MANUAL_PICK_PAGE - 1) // _MANUAL_PICK_PAGE)
+    page = max(0, min(int(page), total_pages - 1))
+    start = page * _MANUAL_PICK_PAGE
+    chunk = names[start : start + _MANUAL_PICK_PAGE]
+
+    rows: list[list[InlineKeyboardButton]] = []
+    for j, name in enumerate(chunk):
+        idx = start + j
+        label = name if len(name) <= 50 else name[:47] + "…"
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=label,
+                    callback_data=f"mtp:{which}:{idx}",
+                ),
+            ],
+        )
+    nav: list[InlineKeyboardButton] = []
+    if page > 0:
+        nav.append(
+            InlineKeyboardButton(text="←", callback_data=f"mpt:{which}:{page - 1}")
+        )
+    if page < total_pages - 1:
+        nav.append(
+            InlineKeyboardButton(text="→", callback_data=f"mpt:{which}:{page + 1}")
+        )
+    if nav:
+        rows.append(nav)
+    tag = "h" if which == "h" else "a"
+    rows.append(
+        [InlineKeyboardButton(text="✏️ Ввести вручную", callback_data=f"mtp:x:{tag}")],
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _manual_banner_home_pick(data: dict) -> str:
+    lc = data.get("league_code") or ""
+    title = html_escape(_league_title(lc))
+    extra = ""
+    if lc == "cl" and data.get("cl_ph"):
+        extra = f" · {_cl_phase_short_label(str(data.get('cl_ph')))}"
+    return (
+        f"Лига: <b>{title}{html_escape(extra)}</b>\n"
+        "Выбери <b>хозяев</b> (внизу — ввод текста):"
+    )
+
+
+def _manual_banner_away_pick(data: dict, home: str) -> str:
+    lc = data.get("league_code") or ""
+    title = html_escape(_league_title(lc))
+    extra = ""
+    if lc == "cl" and data.get("cl_ph"):
+        extra = f" · {_cl_phase_short_label(str(data.get('cl_ph')))}"
+    return (
+        f"Лига: <b>{title}{html_escape(extra)}</b>\n"
+        f"Хозяева: <b>{html_escape(home)}</b>\n"
+        "Выбери <b>гостей</b>:"
+    )
+
+
+async def _answer_manual_score_prompt(
+    message: Message, state: FSMContext, home: str, away: str
+) -> None:
+    from config.leagues_config import manager_session_label
+
+    mode = manager_session_label(home, away)
+    mode_head = f"<b>{html_escape(mode)}</b>\n\n" if mode else ""
+    await state.update_data(away_raw=away)
+    await state.set_state(MatchEnter.manual_score)
+    await message.answer(
+        f"{mode_head}"
+        "Введи счёт два числа через пробел (хозяева гости), например: 2 1",
+        parse_mode="HTML",
+    )
+
+
 def build_ason_league_kb() -> InlineKeyboardMarkup:
     """Выбор лиги для режима «статистика без записи счёта в матч-дне» (как «a»)."""
     rows: list[list[InlineKeyboardButton]] = []
@@ -599,11 +712,27 @@ async def cb_manual_league(callback: CallbackQuery, state: FSMContext) -> None:
             parse_mode="HTML",
         )
         return
-    await state.update_data(league_code=code, cl_ph=None)
-    await state.set_state(MatchEnter.manual_home)
+    teams = _sorted_team_names_for_manual(code)
+    if not teams:
+        await callback.message.answer(
+            "Не удалось загрузить список команд для этой лиги. Дальше — ввод текстом."
+        )
+        await state.update_data(league_code=code, cl_ph=None)
+        await state.set_state(MatchEnter.manual_home)
+        await callback.message.answer(
+            f"Лига: <b>{_league_title(code)}</b>\n"
+            "Введи название <b>хозяев</b> (как в базе):",
+            parse_mode="HTML",
+        )
+        return
+    await state.update_data(
+        league_code=code, cl_ph=None, manual_all_teams=teams, manual_away_list=None
+    )
+    await state.set_state(MatchEnter.manual_home_pick)
+    data = await state.get_data()
     await callback.message.answer(
-        f"Лига: <b>{_league_title(code)}</b>\n"
-        f"Введи название <b>хозяев</b> (как в базе):",
+        _manual_banner_home_pick(data),
+        reply_markup=_manual_team_pick_kb(teams, 0, which="h"),
         parse_mode="HTML",
     )
 
@@ -618,13 +747,128 @@ async def cb_manual_cl_phase(callback: CallbackQuery, state: FSMContext) -> None
         await callback.answer("Неверная фаза.", show_alert=True)
         return
     await callback.answer()
-    await state.update_data(cl_ph=phase)
-    await state.set_state(MatchEnter.manual_home)
+    teams = _sorted_team_names_for_manual("cl")
+    if not teams:
+        await state.update_data(cl_ph=phase)
+        await state.set_state(MatchEnter.manual_home)
+        await callback.message.answer(
+            f"Лига: <b>ЛЧ</b> · фаза: <b>{_cl_phase_short_label(phase)}</b>\n"
+            "Введи название <b>хозяев</b> (как в базе):",
+            parse_mode="HTML",
+        )
+        return
+    await state.update_data(
+        league_code="cl",
+        cl_ph=phase,
+        manual_all_teams=teams,
+        manual_away_list=None,
+    )
+    await state.set_state(MatchEnter.manual_home_pick)
+    data = await state.get_data()
     await callback.message.answer(
-        f"Лига: <b>ЛЧ</b> · фаза: <b>{_cl_phase_short_label(phase)}</b>\n"
-        f"Введи название <b>хозяев</b> (как в базе):",
+        _manual_banner_home_pick(data),
+        reply_markup=_manual_team_pick_kb(teams, 0, which="h"),
         parse_mode="HTML",
     )
+
+
+@match_router.callback_query(F.data.startswith("mpt:"))
+async def cb_manual_pick_page(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    _, which, page_s = parts
+    try:
+        page = int(page_s)
+    except ValueError:
+        await callback.answer()
+        return
+    cur = await state.get_state()
+    data = await state.get_data()
+    if which == "h":
+        if cur != MatchEnter.manual_home_pick.state:
+            await callback.answer("Начни снова: /match", show_alert=True)
+            return
+        names = data.get("manual_all_teams") or []
+        banner = _manual_banner_home_pick(data)
+        wkey = "h"
+    elif which == "a":
+        if cur != MatchEnter.manual_away_pick.state:
+            await callback.answer("Начни снова: /match", show_alert=True)
+            return
+        names = data.get("manual_away_list") or []
+        home = (data.get("home_raw") or "").strip()
+        banner = _manual_banner_away_pick(data, home)
+        wkey = "a"
+    else:
+        await callback.answer()
+        return
+    await callback.message.edit_text(
+        banner,
+        reply_markup=_manual_team_pick_kb(names, page, which=wkey),
+        parse_mode="HTML",
+    )
+    await callback.answer()
+
+
+@match_router.callback_query(F.data.startswith("mtp:"))
+async def cb_manual_team_pick(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    _, kind, spec = parts
+    data = await state.get_data()
+    if kind == "x":
+        await callback.answer()
+        if spec == "h":
+            await state.set_state(MatchEnter.manual_home)
+            await callback.message.answer("Введи название хозяев (как в базе):")
+            return
+        if spec == "a":
+            await state.set_state(MatchEnter.manual_away)
+            await callback.message.answer("Введи название гостей:")
+        return
+    if kind not in ("h", "a"):
+        await callback.answer()
+        return
+    try:
+        idx = int(spec)
+    except ValueError:
+        await callback.answer()
+        return
+    if kind == "h":
+        if await state.get_state() != MatchEnter.manual_home_pick.state:
+            await callback.answer("Начни снова: /match", show_alert=True)
+            return
+        all_teams = data.get("manual_all_teams") or []
+        if idx < 0 or idx >= len(all_teams):
+            await callback.answer("Неверный выбор.", show_alert=True)
+            return
+        home = all_teams[idx]
+        away_list = [t for t in all_teams if t != home]
+        await state.update_data(home_raw=home, manual_away_list=away_list)
+        await state.set_state(MatchEnter.manual_away_pick)
+        data2 = await state.get_data()
+        await callback.message.edit_text(
+            _manual_banner_away_pick(data2, home),
+            reply_markup=_manual_team_pick_kb(away_list, 0, which="a"),
+            parse_mode="HTML",
+        )
+        await callback.answer()
+        return
+    if await state.get_state() != MatchEnter.manual_away_pick.state:
+        await callback.answer("Начни снова: /match", show_alert=True)
+        return
+    away_list = data.get("manual_away_list") or []
+    if idx < 0 or idx >= len(away_list):
+        await callback.answer("Неверный выбор.", show_alert=True)
+        return
+    away = away_list[idx]
+    home = (data.get("home_raw") or "").strip()
+    await callback.answer()
+    await _answer_manual_score_prompt(callback.message, state, home, away)
 
 
 @match_router.message(MatchEnter.manual_home, _TEXT_NOT_CMD)
@@ -636,20 +880,10 @@ async def on_manual_home(message: Message, state: FSMContext) -> None:
 
 @match_router.message(MatchEnter.manual_away, _TEXT_NOT_CMD)
 async def on_manual_away(message: Message, state: FSMContext) -> None:
-    from config.leagues_config import manager_session_label
-
     away = (message.text or "").strip()
-    await state.update_data(away_raw=away)
     data = await state.get_data()
     home = (data.get("home_raw") or "").strip()
-    mode = manager_session_label(home, away)
-    mode_head = f"<b>{mode}</b>\n\n" if mode else ""
-    await state.set_state(MatchEnter.manual_score)
-    await message.answer(
-        f"{mode_head}"
-        "Введи счёт два числа через пробел (хозяева гости), например: 2 1",
-        parse_mode="HTML",
-    )
+    await _answer_manual_score_prompt(message, state, home, away)
 
 
 @match_router.message(MatchEnter.manual_score, _TEXT_NOT_CMD)

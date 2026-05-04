@@ -173,6 +173,8 @@ def _apply_upsert_and_cascade(
     nation: str | None,
     status: str,
     carry: dict[str, Any] | None,
+    *,
+    skip_status_cascade: bool = False,
 ) -> None:
     from utils.player_transfer import _cascade_status
     from utils.squad_roster_sync import find_player_row, upsert_roster_player
@@ -192,7 +194,8 @@ def _apply_upsert_and_cascade(
     if row is None or Cls is None:
         raise RuntimeError(f"После upsert не найден игрок {name!r} в {team!r}.")
     pos_u = (position or "").strip().upper()
-    _cascade_status(sess, Cls, team.strip(), pos_u, row, status)
+    if not skip_status_cascade:
+        _cascade_status(sess, Cls, team.strip(), pos_u, row, status)
 
 
 def add_player_to_team_roster(
@@ -208,6 +211,7 @@ def add_player_to_team_roster(
     rebuild_common: bool = True,
     mirror_synced: bool = True,
     commit: bool = True,
+    skip_status_cascade: bool = False,
 ) -> dict[str, Any]:
     from utils import cumulative_mirror
     from utils.common_db import rebuild_common_database
@@ -278,12 +282,32 @@ def add_player_to_team_roster(
 
     ovr_res = max(1, min(99, int(ovr_res)))
 
-    _apply_upsert_and_cascade(sleague, team, nm, pos, ovr_res, nat_res, st, carry)
+    _apply_upsert_and_cascade(
+        sleague,
+        team,
+        nm,
+        pos,
+        ovr_res,
+        nat_res,
+        st,
+        carry,
+        skip_status_cascade=skip_status_cascade,
+    )
     from utils.common_db import resolve_team_name_for_cl_pool
 
     cl_team = resolve_team_name_for_cl_pool(team)
     if cl_team:
-        _apply_upsert_and_cascade(scl, cl_team, nm, pos, ovr_res, nat_res, st, carry)
+        _apply_upsert_and_cascade(
+            scl,
+            cl_team,
+            nm,
+            pos,
+            ovr_res,
+            nat_res,
+            st,
+            carry,
+            skip_status_cascade=skip_status_cascade,
+        )
 
     if commit:
         sleague.commit()
@@ -307,6 +331,7 @@ def add_player_to_team_roster(
                 rebuild_common=False,
                 mirror_synced=False,
                 commit=True,
+                skip_status_cascade=skip_status_cascade,
             )
 
         cumulative_mirror.mirror_roster_manual(_dup)
@@ -650,6 +675,8 @@ def apply_team_squad_declaration(
     Полная заявка клуба: все (имя, позиция) из списка остаются / добавляются с указанным
     статусом; остальные в нац. БД (и ЛЧ при пуле) снимаются в СА по правилам
     ``remove_player_from_team_roster``.
+
+    Статусы в БД совпадают с текстом заявки: при upsert не вызывается ``_cascade_status``.
     """
     from utils import cumulative_mirror
     from utils.common_db import rebuild_common_database, resolve_team_name_for_cl_pool
@@ -703,6 +730,7 @@ def apply_team_squad_declaration(
                 rebuild_common=False,
                 mirror_synced=False,
                 commit=False,
+                skip_status_cascade=True,
             )
 
         sleague.commit()
