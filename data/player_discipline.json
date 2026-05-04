@@ -20,6 +20,16 @@
       "league_code": "cl",
       "scope": "cl",
       "matches_left": 2
+    },
+    {
+      "key": "манчини|рома|ita|league",
+      "name": "Манчини",
+      "name_norm": "манчини",
+      "team": "Рома",
+      "team_norm": "рома",
+      "league_code": "ita",
+      "scope": "league",
+      "matches_left": 2
     }
   ],
   "yellow_cycle": [
