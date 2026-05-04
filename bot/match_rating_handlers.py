@@ -391,12 +391,16 @@ async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
     if not rec:
         await callback.answer("Матч не найден в журнале.", show_alert=True)
         return
-    team = (rec.get("home") if side == "home" else rec.get("away")) or ""
+    team_journal = (rec.get("home") if side == "home" else rec.get("away")) or ""
     tour = _tournament_from_record(rec)
     try:
-        tpl, key_map = await asyncio.to_thread(build_roster_template, team, tour)
+        tpl, key_map, canon_team = await asyncio.to_thread(
+            build_roster_template, team_journal, tour
+        )
     except Exception:
-        logger.exception("build_roster_template failed for %s (%s)", team, tour)
+        logger.exception(
+            "build_roster_template failed for %s (%s)", team_journal, tour
+        )
         await callback.answer(
             "Не удалось собрать состав из БД. Проверь название клуба.",
             show_alert=True,
@@ -405,7 +409,8 @@ async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
 
     await state.update_data(
         mrate_side=side,
-        mrate_team=team,
+        mrate_team=canon_team,
+        mrate_team_journal=team_journal,
         mrate_tournament=tour,
         mrate_key_map={k: [v[0], v[1], v[2]] for k, v in key_map.items()},
     )
@@ -432,8 +437,13 @@ async def cb_mrate_side(callback: CallbackQuery, state: FSMContext) -> None:
     for i, chunk in enumerate(chunks):
         pre = f"<pre>{html_escape(chunk)}</pre>" if chunk.strip() else "<i>(пусто)</i>"
         if i == 0:
+            disp = team_journal
+            if (canon_team or "").strip().casefold() != (
+                team_journal or ""
+            ).strip().casefold():
+                disp = f"{team_journal} → {canon_team}"
             text = (
-                f"<b>{html_escape(team)}</b> — шаблон состава:\n\n"
+                f"<b>{html_escape(disp)}</b> — шаблон состава:\n\n"
                 f"{pre}{tail}{empty_hint}"
             )
         else:

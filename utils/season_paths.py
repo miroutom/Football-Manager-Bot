@@ -136,6 +136,11 @@ def season_archive_directory(season_num: int) -> str:
     return os.path.join(_DB, f"season_{int(season_num)}")
 
 
+def get_common_db_path_for_season(season_num: int) -> str:
+    """Абсолютный путь к ``common.db`` указанного сезона (``db/season_N/common.db``)."""
+    return os.path.join(season_archive_directory(season_num), SEASON_COMMON_NAME)
+
+
 def repair_per_season_database_files() -> list[str]:
     """
     Если в папке активного сезона нет league.db / cl / common:

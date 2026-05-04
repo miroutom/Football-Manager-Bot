@@ -121,22 +121,54 @@ def player_row_key(name: str, pos: str) -> str:
     return f"{_norm_cmp(name)}|{_norm_cmp(pos)}"
 
 
-def _roster_buckets_by_status(team: str, tournament: str = "league") -> dict[str, list[tuple[str, str, int]]]:
+def _as_in_db_team(t: str) -> str:
+    if (t or "").strip().casefold() == "цска":
+        return "Цска"
+    return (t or "").strip()
+
+
+def _resolve_team_name_for_session(user_team: str, sess) -> str:
+    """
+    Имя клуба в этой БД (лига или ЛЧ): как в ``resolve_team_name``,
+    плюс нечёткое совпадение по подстроке, если в журнале и в SQLite строки
+    расходятся (пробелы, сокращения).
+    """
+    from utils.transfer_input import distinct_teams_from_league, resolve_team_name
+
+    direct = resolve_team_name(user_team, sess)
+    if direct:
+        return direct
+    raw = _as_in_db_team(user_team)
+    if len(raw) < 2:
+        return raw
+    want = _norm_cmp(raw)
+    teams = distinct_teams_from_league(sess)
+    for tm in teams:
+        if _norm_cmp(tm) == want:
+            return tm
+    subs: list[str] = []
+    for tm in teams:
+        tw = _norm_cmp(tm)
+        if len(want) >= 3 and (want in tw or tw in want):
+            subs.append(tm)
+    if len(subs) == 1:
+        return subs[0]
+    if len(subs) > 1:
+        subs.sort(key=lambda x: (abs(len(x) - len(raw)), x.lower()))
+        return subs[0]
+    return raw
+
+
+def _roster_buckets_for_canonical(
+    sess, canon_team: str
+) -> dict[str, list[tuple[str, str, int]]]:
     from data.defender import Defender
     from data.forward import Forward
     from data.goalkeeper import Goalkeeper
     from data.midfielder import Midfielder
-    from utils.player_transfer import _filter_team, resolve_team_name
-    from utils.utils import get_session
+    from utils.player_transfer import _filter_team
 
-    def _as_in_db(t: str) -> str:
-        if (t or "").strip().casefold() == "цска":
-            return "Цска"
-        return (t or "").strip()
-
-    sess = get_session(tournament)
-    resolved = resolve_team_name(team, sess)
-    t = resolved if resolved else _as_in_db(team)
+    t = canon_team
     buckets: dict[str, list[tuple[str, str, int]]] = {
         "start": [],
         "bench": [],
@@ -158,8 +190,23 @@ def _roster_buckets_by_status(team: str, tournament: str = "league") -> dict[str
     return buckets
 
 
-def build_roster_template(team: str, tournament: str = "league") -> tuple[str, dict[str, tuple[str, str, int]]]:
-    buckets = _roster_buckets_by_status(team, tournament)
+def _roster_buckets_by_status(team: str, tournament: str = "league") -> dict[str, list[tuple[str, str, int]]]:
+    from utils.utils import get_session
+
+    sess = get_session(tournament)
+    canon = _resolve_team_name_for_session(team, sess)
+    return _roster_buckets_for_canonical(sess, canon)
+
+
+def build_roster_template(
+    team: str, tournament: str = "league"
+) -> tuple[str, dict[str, tuple[str, str, int]], str]:
+    """Возвращает шаблон, карту строк и каноническое имя клуба в БД (для matches/stats)."""
+    from utils.utils import get_session
+
+    sess = get_session(tournament)
+    canon = _resolve_team_name_for_session(team, sess)
+    buckets = _roster_buckets_for_canonical(sess, canon)
     lines: list[str] = []
     key_map: dict[str, tuple[str, str, int]] = {}
     for sec in _SECTION_ORDER:
@@ -168,7 +215,7 @@ def build_roster_template(team: str, tournament: str = "league") -> tuple[str, d
             pk = player_row_key(nm, pos)
             lines.append(f"{nm} · {pos} · {ovr}")
             key_map[pk] = (nm, pos, ovr)
-    return "\n".join(lines), key_map
+    return "\n".join(lines), key_map, canon
 
 
 def _strip_first_emoji(line: str) -> tuple[str | None, str]:
