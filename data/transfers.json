@@ -2121,6 +2121,30 @@
       "free_agent": true,
       "overall": 77,
       "nation": "Бразилия"
+    },
+    {
+      "ts": "2026-05-04T10:28:58+00:00",
+      "user_id": 517240615,
+      "player": "Асенсио",
+      "from_team": "(свободный агент)",
+      "position": "ПФА",
+      "to_team": "Вольфсбург",
+      "new_status": "bench",
+      "free_agent": true,
+      "overall": 82,
+      "nation": "Испания"
+    },
+    {
+      "ts": "2026-05-04T10:29:45+00:00",
+      "user_id": 517240615,
+      "player": "Дест",
+      "from_team": "(свободный агент)",
+      "position": "ЛЗ",
+      "to_team": "Интер",
+      "new_status": "bench",
+      "free_agent": true,
+      "overall": 78,
+      "nation": "США"
     }
   ]
 }
