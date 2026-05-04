@@ -115,6 +115,16 @@
       "day": 1,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Милан",
+      "league": "cl",
+      "home_score": 5,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }
