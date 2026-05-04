@@ -2145,6 +2145,18 @@
       "free_agent": true,
       "overall": 78,
       "nation": "США"
+    },
+    {
+      "ts": "2026-05-04T10:55:04+00:00",
+      "user_id": 517240615,
+      "player": "Булка",
+      "from_team": "(свободный агент)",
+      "position": "ВРТ",
+      "to_team": "Фиорентина",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 78,
+      "nation": "Польша"
     }
   ]
 }

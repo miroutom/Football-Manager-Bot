@@ -28,6 +28,15 @@
       "away_score": 1,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Аталанта",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 4,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
     }
   ]
 }
