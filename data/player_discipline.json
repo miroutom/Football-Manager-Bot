@@ -52,16 +52,6 @@
       "league_code": "cl",
       "scope": "cl",
       "count": 1
-    },
-    {
-      "key": "гудель|севилья|esp|league",
-      "name": "Гудель",
-      "name_norm": "гудель",
-      "team": "Севилья",
-      "team_norm": "севилья",
-      "league_code": "esp",
-      "scope": "league",
-      "count": 1
     }
   ],
   "injuries": [
@@ -84,6 +74,20 @@
       "name_norm": "эриксен",
       "team": "Мю",
       "team_norm": "мю",
+      "return_month": 4
+    },
+    {
+      "name": "Гудель",
+      "name_norm": "гудель",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "return_month": 8
+    },
+    {
+      "name": "Лемар",
+      "name_norm": "лемар",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
       "return_month": 4
     }
   ]

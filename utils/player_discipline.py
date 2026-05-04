@@ -6,7 +6,7 @@
 - 4 жк = 1 матч дискв. (накопление в JSON, жк в БД копятся за сезон)
 - 2жк = КК = 1 матч +1 red в БД
 - прямая КК = 3 матча +1 red
-- травма: «имя Nм» или «имя Nm» (лат. m) — отдельной строкой, недоступен до месяца (календарь v3)
+- травма: «имя Nм» / «имя Nm» / «имя Nм тип» (тип — произвольный текст после месяцев; по умолчанию «травма»)
 """
 from __future__ import annotations
 
@@ -25,9 +25,10 @@ _YEL4 = 4
 _RE_2Y = re.compile(r"^(.+?)\s+2\s*жк\s*$", re.IGNORECASE | re.UNICODE)
 _RE_Y = re.compile(r"^(.+?)\s+жк\s*$", re.IGNORECASE | re.UNICODE)
 _RE_R = re.compile(r"^(.+?)\s+кк\s*$", re.IGNORECASE | re.UNICODE)
-# суффикс месяцев: кирил. «м» или лат. «m» (часто с англ. раскладки)
+# суффикс месяцев + опционально тип травмы до конца строки
 _RE_INJ = re.compile(
-    r"^(.+?)\s+(\d+)\s*(?:м|m)\s*$", re.IGNORECASE | re.UNICODE
+    r"^(.+?)\s+(\d+)\s*(?:[мМ]|[mM])\s*(.*?)\s*$",
+    re.IGNORECASE | re.UNICODE,
 )
 
 
@@ -116,9 +117,10 @@ def check_player_eligible(
         ret = int(inj.get("return_month") or 99)
         if month < ret:
             left = ret - month
+            kind = (inj.get("type") or "травма").strip() or "травма"
             return (
                 False,
-                f"🚫 {name} — выбыл на {left} мес. (травма; выход с {ret} месяца)",
+                f"🚫 {name} — выбыл на {left} мес. ({kind}; выход с {ret} месяца)",
             )
 
     row = _find_susp(st, name, team, lc, scope)
@@ -254,11 +256,24 @@ def try_apply_discipline_line(
         )
     m3 = _RE_INJ.match(raw)
     if m3:
+        from player_stats import find_player_by_name, get_session
+
         name, nm = m3.group(1).strip(), int(m3.group(2))
+        raw_type = (m3.group(3) or "").strip()
         if nm < 1 or nm > 10:
             return ("Некорректно: число месяцев 1–10.", True)
+        injury_type = raw_type if raw_type else "травма"
+        if len(injury_type) > 80:
+            injury_type = injury_type[:80].rstrip()
         return _apply_injury(
-            name, current_team, tournament, schedule_month, nm, find_player_by_name, get_session
+            name,
+            current_team,
+            tournament,
+            schedule_month,
+            nm,
+            injury_type,
+            find_player_by_name,
+            get_session,
         )
     if _RE_Y.match(raw):
         my = _RE_Y.match(raw)
@@ -363,6 +378,7 @@ def _apply_injury(
     tournament: str,
     month: int,
     nmonths: int,
+    injury_type: str,
     find_pl,
     get_sess,
 ) -> tuple[str | None, bool]:
@@ -388,13 +404,17 @@ def _apply_injury(
                     "team": team,
                     "team_norm": _norm(team),
                     "return_month": ret,
+                    "type": injury_type,
                 }
             )
         else:
             inj["return_month"] = ret
+            inj["type"] = injury_type
         _save(st)
+    tk = injury_type.strip() or "травма"
     return (
-        f"✓ Травма: {player.name} — недоступен до {ret} месяца (сейчас {cur}, срок {nmonths} мес).",
+        f"✓ Травма ({tk}): {player.name} — недоступен до {ret} месяца "
+        f"(сейчас {cur}, срок {nmonths} мес).",
         True,
     )
 
@@ -430,8 +450,9 @@ def format_discipline_pre_match_notice_html(
                 continue
             left = ret - month
             nm = esc(str(inj.get("name", "?")))
+            tk = esc((inj.get("type") or "травма").strip() or "травма")
             lines.append(
-                f"• {nm} — травма: вернётся с <b>{ret}</b>-го мес. календаря "
+                f"• {nm} — <b>{tk}</b>: вернётся с <b>{ret}</b>-го мес. календаря "
                 f"(сейчас <b>{month}</b>-й; осталось ≈<b>{left}</b> мес.)"
             )
         for row in st.get("suspensions", []):
@@ -473,8 +494,8 @@ def clear_discipline_state() -> None:
 
 
 def line_looks_discipline(s: str) -> bool:
-    t = (s or "").strip().lower()
-    if re.search(r"\d+\s*(?:м|m)\s*$", t, re.IGNORECASE):
+    t = (s or "").strip()
+    if _RE_INJ.match(t):
         return True
     if t.endswith("2жк"):
         return True
