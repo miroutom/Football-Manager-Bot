@@ -245,6 +245,35 @@ def _wz_sets_from_state(data: dict) -> tuple[set[int], set[int], set[int]]:
     return st, bn, rs
 
 
+def _wz_prefill_from_status(
+    players: list[dict[str, object]], limits: dict[str, int]
+) -> tuple[list[int], list[int], list[int]]:
+    """Предзаполнить wizard текущими status из БД."""
+    need_start = int(limits.get("start", 11))
+    need_bench = int(limits.get("bench", 7))
+    need_reserve = int(limits.get("reserve", 5))
+
+    start_idx: list[int] = []
+    bench_idx: list[int] = []
+    reserve_idx: list[int] = []
+    for i, p in enumerate(players):
+        st = str(p.get("status") or "").strip().lower()
+        if st == "start":
+            start_idx.append(i)
+        elif st == "reserve":
+            reserve_idx.append(i)
+        else:
+            # bench + любые невалидные статусы трактуем как скамейку
+            bench_idx.append(i)
+
+    sel_start = start_idx[:need_start]
+    used = set(sel_start)
+    sel_bench = [i for i in bench_idx if i not in used][:need_bench]
+    used.update(sel_bench)
+    sel_reserve = [i for i in reserve_idx if i not in used][:need_reserve]
+    return sel_start, sel_bench, sel_reserve
+
+
 def _wz_render_text(data: dict, *, phase: str, page: int, total_pages: int) -> str:
     title = _SQR_WZ_TITLES.get(phase, phase)
     limits = dict(data.get("sqr_wz_limits") or _SQR_WZ_LIMITS_DEFAULT)
@@ -535,13 +564,14 @@ async def cb_sqr_wizard_start(callback: CallbackQuery, state: FSMContext) -> Non
     reserve_need = 5 if total_players >= 23 else (total_players - 18)
     limits = {"start": 11, "bench": 7, "reserve": reserve_need}
     serial = [dict(p) for p in players]
+    wz_start, wz_bench, wz_reserve = _wz_prefill_from_status(serial, limits)
     await state.update_data(
         sqr_wz_players=serial,
         sqr_wz_total_players=total_players,
         sqr_wz_limits=limits,
-        sqr_wz_start=[],
-        sqr_wz_bench=[],
-        sqr_wz_reserve=[],
+        sqr_wz_start=wz_start,
+        sqr_wz_bench=wz_bench,
+        sqr_wz_reserve=wz_reserve,
         sqr_wz_page=0,
     )
     await state.set_state(SquadRosterEnter.wz_pick_start)
