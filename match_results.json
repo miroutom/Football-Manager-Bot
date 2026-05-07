@@ -339,6 +339,15 @@
       "away_score": 2,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Байер",
+      "away": "Боруссия М",
+      "league": "ger",
+      "home_score": 6,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
     }
   ]
 }
