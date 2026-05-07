@@ -158,6 +158,31 @@ def _sqr_choice_kb() -> InlineKeyboardMarkup:
     )
 
 
+def _sqr_continue_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="➡ Выбрать следующий клуб",
+                    callback_data="sqr:flow:next_team",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🏆 Сменить лигу",
+                    callback_data="sqr:flow:pick_lg",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✅ Завершить",
+                    callback_data="sqr:flow:finish",
+                )
+            ],
+        ]
+    )
+
+
 def _sqr_status_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -449,6 +474,44 @@ async def cb_sqr_team(callback: CallbackQuery, state: FSMContext) -> None:
         parse_mode="HTML",
         reply_markup=_sqr_choice_kb(),
     )
+
+
+@squad_roster_router.callback_query(F.data == "sqr:flow:next_team")
+async def cb_sqr_flow_next_team(callback: CallbackQuery, state: FSMContext) -> None:
+    if not await _ensure_squad_roster_fsm(callback, state):
+        return
+    await callback.answer()
+    data = await state.get_data()
+    code = str(data.get("sqr_lg") or "").strip()
+    if not code:
+        await state.set_state(SquadRosterEnter.pick_lg)
+        await callback.message.answer(
+            "Лига не выбрана. Выбери лигу:",
+            reply_markup=_sqr_league_kb(),
+        )
+        return
+    await state.set_state(SquadRosterEnter.pick_team)
+    await callback.message.answer(
+        f"{_league_title(code)} — выберите клуб:",
+        reply_markup=_sqr_teams_kb(code),
+    )
+
+
+@squad_roster_router.callback_query(F.data == "sqr:flow:pick_lg")
+async def cb_sqr_flow_pick_lg(callback: CallbackQuery, state: FSMContext) -> None:
+    if not await _ensure_squad_roster_fsm(callback, state):
+        return
+    await callback.answer()
+    await state.set_state(SquadRosterEnter.pick_lg)
+    await callback.message.answer("Выбери лигу:", reply_markup=_sqr_league_kb())
+
+
+@squad_roster_router.callback_query(F.data == "sqr:flow:finish")
+async def cb_sqr_flow_finish(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.clear()
+    if callback.message:
+        await callback.message.answer("Сессия завершена.")
 
 
 @squad_roster_router.callback_query(SquadRosterEnter.pick_choice, F.data == "sqr:do:wizard")
@@ -778,9 +841,12 @@ async def cb_sqr_wizard_edit_pick(callback: CallbackQuery, state: FSMContext) ->
 )
 async def cb_sqr_wizard_save(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
-    await state.clear()
+    await state.set_state(SquadRosterEnter.pick_team)
     if callback.message:
-        await callback.message.answer("✅ Состав сохранён.")
+        await callback.message.answer(
+            "✅ Состав сохранён.\nВыбери, что дальше:",
+            reply_markup=_sqr_continue_kb(),
+        )
 
 
 @squad_roster_router.callback_query(SquadRosterEnter.wz_edit_wait_line, F.data == "sqr:wz:eback")
@@ -940,7 +1006,7 @@ async def on_sqr_paste_squad(message: Message, state: FSMContext) -> None:
         logger.exception("apply_team_squad_declaration")
         await message.answer(f"Ошибка применения: {e}")
         return
-    await state.clear()
+    await state.set_state(SquadRosterEnter.pick_team)
     det = r.get("released_detail") or []
     det_tail = "\n".join(det[:15]) if det else ""
     more = f"\n… ещё {len(det) - 15}" if len(det) > 15 else ""
@@ -955,6 +1021,7 @@ async def on_sqr_paste_squad(message: Message, state: FSMContext) -> None:
         + (f"<pre>{det_tail}{more}</pre>" if det_tail else "")
         + "\n<code>common.db</code> / накопительные БД обновлены по режиму сезона.",
         parse_mode="HTML",
+        reply_markup=_sqr_continue_kb(),
     )
 
 
