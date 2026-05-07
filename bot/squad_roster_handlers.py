@@ -298,17 +298,21 @@ def _wz_pick_kb(data: dict, *, phase: str, page: int) -> tuple[InlineKeyboardMar
     players: list[dict] = list(data.get("sqr_wz_players") or [])
     st, bn, rs = _wz_sets_from_state(data)
     current = {"start": st, "bench": bn, "reserve": rs}[phase]
-    locked = (st | bn | rs) - current
-    available = [i for i in range(len(players)) if i not in locked]
-    n = len(available)
+    all_selected = st | bn | rs
+    n = len(players)
     total_pages = max(1, (n + _SQR_WZ_PAGE - 1) // _SQR_WZ_PAGE)
     page = max(0, min(int(page), total_pages - 1))
-    chunk = available[page * _SQR_WZ_PAGE : page * _SQR_WZ_PAGE + _SQR_WZ_PAGE]
+    chunk = list(range(len(players)))[page * _SQR_WZ_PAGE : page * _SQR_WZ_PAGE + _SQR_WZ_PAGE]
 
     rows: list[list[InlineKeyboardButton]] = []
     for gi in chunk:
         p = players[gi]
-        mark = "✅ " if gi in current else ""
+        if gi in current:
+            mark = "✅ "
+        elif gi in all_selected:
+            mark = "🔁 "
+        else:
+            mark = ""
         label = f"{mark}{p['name']} · {p['position']} · {p['overall']}"
         if len(label) > 60:
             label = label[:57] + "…"
@@ -688,10 +692,6 @@ async def cb_sqr_wizard_toggle(callback: CallbackQuery, state: FSMContext) -> No
     st, bn, rs = _wz_sets_from_state(data)
     limits = dict(data.get("sqr_wz_limits") or _SQR_WZ_LIMITS_DEFAULT)
     current = {"start": st, "bench": bn, "reserve": rs}[phase]
-    locked = (st | bn | rs) - current
-    if idx in locked:
-        await callback.answer("Игрок уже выбран на другом этапе.", show_alert=True)
-        return
     if idx in current:
         current.remove(idx)
     else:
@@ -699,6 +699,9 @@ async def cb_sqr_wizard_toggle(callback: CallbackQuery, state: FSMContext) -> No
         if len(current) >= limit:
             await callback.answer(f"Лимит: {limit}.", show_alert=True)
             return
+        st.discard(idx)
+        bn.discard(idx)
+        rs.discard(idx)
         current.add(idx)
     await state.update_data(
         sqr_wz_start=sorted(st),
