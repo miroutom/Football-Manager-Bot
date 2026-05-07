@@ -796,6 +796,150 @@ def render_cumulative_top_ga(league_code: str | None, limit: int = 30) -> str:
         e.dispose()
 
 
+def _league_team_set_for_filter(league_code: str | None) -> set[str] | None:
+    if not league_code or league_code in ("a", "all"):
+        return None
+    from player_stats import LEAGUE_TEAMS
+
+    teams = LEAGUE_TEAMS.get(league_code)
+    if not teams:
+        return set()
+    return {str(t).strip().casefold() for t in teams if str(t).strip()}
+
+
+def _render_cards_from_session(session, *, league_code: str | None, metric: str, limit: int, title_suffix: str) -> str:
+    from data.defender import Defender
+    from data.forward import Forward
+    from data.goalkeeper import Goalkeeper
+    from data.midfielder import Midfielder
+
+    m = metric.lower()
+    field = "yellow_cards" if m == "yc" else "red_cards"
+    title = "жёлтые карточки" if m == "yc" else "красные карточки"
+    team_set = _league_team_set_for_filter(league_code)
+    rows: list[tuple[str, str, int, int]] = []
+    for Cls in (Forward, Midfielder, Defender, Goalkeeper):
+        for r in session.query(Cls).all():
+            if team_set is not None and str(getattr(r, "team", "")).strip().casefold() not in team_set:
+                continue
+            val = int(getattr(r, field, 0) or 0)
+            if val <= 0:
+                continue
+            rows.append(
+                (
+                    str(getattr(r, "name", "")).strip(),
+                    str(getattr(r, "team", "")).strip(),
+                    val,
+                    int(getattr(r, "matches", 0) or 0),
+                )
+            )
+    rows.sort(key=lambda x: (-x[2], -x[3], x[0].casefold()))
+    out = [f"Топ {title}{title_suffix}"]
+    if league_code and league_code not in ("a", "all"):
+        out.append(f"Лига: {dict(LEAGUE_LABELS).get(league_code, league_code)}")
+    out.append("")
+    if not rows:
+        out.append("Нет данных.")
+        return "\n".join(out)
+    out.append(f"{'№':>2} {'Игрок':<24} {'Клуб':<18} {'Матч':>5} {'Знач':>5}")
+    for i, (nm, tm, val, mcnt) in enumerate(rows[:limit], start=1):
+        out.append(f"{i:>2} {nm[:24]:<24} {tm[:18]:<18} {mcnt:>5} {val:>5}")
+    return "\n".join(out)
+
+
+def _render_clean_sheets_from_session(session, *, league_code: str | None, limit: int, title_suffix: str) -> tuple[str, str]:
+    from data.defender import Defender
+    from data.goalkeeper import Goalkeeper
+
+    team_set = _league_team_set_for_filter(league_code)
+
+    def _collect(Cls) -> list[tuple[str, str, int, int]]:
+        out: list[tuple[str, str, int, int]] = []
+        for r in session.query(Cls).all():
+            if team_set is not None and str(getattr(r, "team", "")).strip().casefold() not in team_set:
+                continue
+            cs = int(getattr(r, "clean_sheets", 0) or 0)
+            if cs <= 0:
+                continue
+            out.append(
+                (
+                    str(getattr(r, "name", "")).strip(),
+                    str(getattr(r, "team", "")).strip(),
+                    cs,
+                    int(getattr(r, "matches", 0) or 0),
+                )
+            )
+        out.sort(key=lambda x: (-x[2], -x[3], x[0].casefold()))
+        return out
+
+    def _fmt(rows: list[tuple[str, str, int, int]], role: str) -> str:
+        title = f"Сухие матчи · {role}{title_suffix}"
+        out = [title]
+        if league_code and league_code not in ("a", "all"):
+            out.append(f"Лига: {dict(LEAGUE_LABELS).get(league_code, league_code)}")
+        out.append("")
+        if not rows:
+            out.append("Нет данных.")
+            return "\n".join(out)
+        out.append(f"{'№':>2} {'Игрок':<24} {'Клуб':<18} {'Матч':>5} {'Сух':>5}")
+        for i, (nm, tm, cs, mcnt) in enumerate(rows[:limit], start=1):
+            out.append(f"{i:>2} {nm[:24]:<24} {tm[:18]:<18} {mcnt:>5} {cs:>5}")
+        return "\n".join(out)
+
+    return _fmt(_collect(Goalkeeper), "вратари"), _fmt(_collect(Defender), "защитники")
+
+
+def render_cumulative_top_cards(league_code: str | None, metric: str, limit: int = 30) -> str:
+    import os
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from utils import season_paths
+
+    p = season_paths.get_cumulative_common_db_path()
+    if not os.path.isfile(p):
+        return (
+            "Накопительная база ещё пуста. После первого «Завершить сезон» "
+            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
+        )
+    e = create_engine(f"sqlite:///{p}")
+    S = sessionmaker(bind=e)()
+    try:
+        lc = None if not league_code or league_code in ("a", "all") else league_code
+        return _render_cards_from_session(
+            S, league_code=lc, metric=metric, limit=limit, title_suffix=" — все сезоны (common_synced.db)"
+        )
+    finally:
+        S.close()
+        e.dispose()
+
+
+def render_cumulative_top_clean_sheets(league_code: str | None, limit: int = 30) -> tuple[str, str]:
+    import os
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from utils import season_paths
+
+    p = season_paths.get_cumulative_common_db_path()
+    if not os.path.isfile(p):
+        msg = (
+            "Накопительная база ещё пуста. После первого «Завершить сезон» "
+            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
+        )
+        return msg, msg
+    e = create_engine(f"sqlite:///{p}")
+    S = sessionmaker(bind=e)()
+    try:
+        lc = None if not league_code or league_code in ("a", "all") else league_code
+        return _render_clean_sheets_from_session(
+            S, league_code=lc, limit=limit, title_suffix=" — все сезоны (common_synced.db)"
+        )
+    finally:
+        S.close()
+        e.dispose()
+
+
 def render_archived_season_stat(
     season_num: int,
     league_code: str | None,
@@ -803,7 +947,7 @@ def render_archived_season_stat(
     limit: int = 30,
 ) -> str:
     """
-    Топ из архива db/season_n: metric — ``g`` | ``as`` | ``ga`` (пересборка common во временный файл).
+    Топ из архива db/season_n: metric — ``g`` | ``as`` | ``ga`` | ``yc`` | ``rc`` (пересборка common во временный файл).
     """
     import os
     import tempfile
@@ -822,6 +966,10 @@ def render_archived_season_stat(
         mkey = "as"
     elif m in ("ga", "g+a"):
         mkey = "ga"
+    elif m in ("yc", "yellow", "yellow_cards"):
+        mkey = "yc"
+    elif m in ("rc", "red", "red_cards"):
+        mkey = "rc"
     else:
         return f"Неизвестная метрика: {metric!r}"
 
@@ -850,8 +998,12 @@ def render_archived_season_stat(
                 return player_stats.format_top_assists_from_session(
                     S, league_code=lc, limit=limit, title_suffix=suf
                 )
-            return player_stats.format_top_ga_from_session(
-                S, league_code=lc, limit=limit, title_suffix=suf
+            if mkey == "ga":
+                return player_stats.format_top_ga_from_session(
+                    S, league_code=lc, limit=limit, title_suffix=suf
+                )
+            return _render_cards_from_session(
+                S, league_code=lc, metric=mkey, limit=limit, title_suffix=suf
             )
         finally:
             S.close()
@@ -870,6 +1022,47 @@ def render_archived_season_top_scorers(
 ) -> str:
     """Топ бомбардиров из архива db/season_n."""
     return render_archived_season_stat(season_num, league_code, "g", limit)
+
+
+def render_archived_season_clean_sheets(
+    season_num: int,
+    league_code: str | None,
+    limit: int = 30,
+) -> tuple[str, str]:
+    import os
+    import tempfile
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from utils import season_paths
+    from utils.common_db import rebuild_common_database_for_disk_paths
+
+    base = season_paths.season_archive_directory(season_num)
+    lp = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
+    cp = os.path.join(base, season_paths.SEASON_CL_NAME)
+    if not os.path.isfile(lp) or not os.path.isfile(cp):
+        msg = f"В архиве сезона {season_num} нет league/cl."
+        return msg, msg
+    fd, tmp = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    suf = f" — сезон {season_num} (архив)"
+    try:
+        rebuild_common_database_for_disk_paths(lp, cp, tmp)
+        e = create_engine(f"sqlite:///{tmp}")
+        S = sessionmaker(bind=e)()
+        try:
+            lc = None if not league_code or league_code in ("a", "all") else league_code
+            return _render_clean_sheets_from_session(
+                S, league_code=lc, limit=limit, title_suffix=suf
+            )
+        finally:
+            S.close()
+            e.dispose()
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
 
 
 def split_text_chunks(text: str, max_len: int = 3800) -> list[str]:

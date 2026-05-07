@@ -940,7 +940,14 @@ def _schedule_pick_kb(
     for j, row in enumerate(chunk):
         idx = start + j
         lg = _league_title(row["league_code"])
-        label = f"{idx + 1}. д{row['day']} · {row['home']} — {row['away']} ({lg})"
+        from config.leagues_config import manager_session_label
+
+        mode = manager_session_label(str(row["home"]), str(row["away"])) or "?"
+        mode_short = "игра" if mode == "Игра" else ("сим" if mode == "Симуляция" else "?")
+        label = (
+            f"{idx + 1}. д{row['day']} · {row['home']} — {row['away']} "
+            f"({lg}, {mode_short})"
+        )
         if len(label) > 64:
             label = label[:61] + "…"
         rows.append(

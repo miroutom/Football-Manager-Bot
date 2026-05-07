@@ -25,8 +25,11 @@ from bot.image_render import render_monospace_png_bytes
 from bot.services import (
     LEAGUE_LABELS,
     render_archived_season_stat,
+    render_archived_season_clean_sheets,
     render_cl_bracket_text,
     render_cumulative_top_assists,
+    render_cumulative_top_cards,
+    render_cumulative_top_clean_sheets,
     render_cumulative_top_ga,
     render_cumulative_top_scorers,
     render_full_status_text,
@@ -452,6 +455,82 @@ def _league_keyboard_for_table(season_key: str) -> InlineKeyboardMarkup:
 
 
 def _stats_history_root_kb() -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for code, label in LEAGUE_LABELS:
+        row.append(
+            InlineKeyboardButton(
+                text=label,
+                callback_data=f"stats:hist:lg:{code}",
+            )
+        )
+        if len(row) == 3:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _stats_history_scope_kb(league_code: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📚 За всё время",
+                    callback_data=f"stats:hist:scope:life:{league_code}",
+                ),
+                InlineKeyboardButton(
+                    text="📅 Сезон",
+                    callback_data=f"stats:hist:scope:season:{league_code}",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="« Лиги",
+                    callback_data="stats:hist:backroot",
+                ),
+            ],
+        ]
+    )
+
+
+def _stats_history_metric_kb(
+    scope: str, league_code: str, season_num: int | None
+) -> InlineKeyboardMarkup:
+    base = (
+        f"stats:hist:run:{scope}:{league_code}:{season_num}"
+        if season_num is not None
+        else f"stats:hist:run:{scope}:{league_code}"
+    )
+    back = (
+        f"stats:hist:scope:season:{league_code}"
+        if scope == "season"
+        else f"stats:hist:scope:life:{league_code}"
+    )
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="⚽ Бомбардиры", callback_data=f"{base}:g"),
+                InlineKeyboardButton(text="🎯 Ассисты", callback_data=f"{base}:as"),
+                InlineKeyboardButton(text="📈 Г+А", callback_data=f"{base}:ga"),
+            ],
+            [
+                InlineKeyboardButton(text="🧤 Сухие матчи", callback_data=f"{base}:cs"),
+            ],
+            [
+                InlineKeyboardButton(text="🟨 ЖК", callback_data=f"{base}:yc"),
+                InlineKeyboardButton(text="🟥 КК", callback_data=f"{base}:rc"),
+            ],
+            [
+                InlineKeyboardButton(text="« Назад", callback_data=back),
+                InlineKeyboardButton(text="« Лиги", callback_data="stats:hist:backroot"),
+            ],
+        ]
+    )
+
+
+def _stats_history_root_kb_old_unused() -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = [
         [
             InlineKeyboardButton(
@@ -514,6 +593,37 @@ def _stats_history_seasons_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _stats_history_seasons_kb_for_league(league_code: str) -> InlineKeyboardMarkup:
+    nums = _season_numbers_for_stats_picker()
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for n in nums:
+        row.append(
+            InlineKeyboardButton(
+                text=f"Сезон {n}",
+                callback_data=f"stats:hist:sn:{league_code}:{n}",
+            )
+        )
+        if len(row) >= 4:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="« Назад",
+                callback_data=f"stats:hist:scope:season:{league_code}",
+            ),
+            InlineKeyboardButton(
+                text="« Лиги",
+                callback_data="stats:hist:backroot",
+            ),
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 def _stats_history_season_metric_kb(season_num: int) -> InlineKeyboardMarkup:
     p = f"stats:hist:sn:{season_num}"
     codes = [
@@ -567,34 +677,18 @@ def _schedule_menu_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="Журнал сыгранных",
-                    callback_data="sch:mix:p:xx",
-                ),
-                InlineKeyboardButton(
-                    text="Журнал · РПЛ",
-                    callback_data="sch:mix:p:rpl",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="Смеш · ЛЧ ост.",
-                    callback_data="sch:mix:r:cl",
-                ),
-                InlineKeyboardButton(
                     text="Туры РПЛ · ост.",
-                    callback_data="sch:in:rpl:r",
+                    callback_data="sch:mix:r:rpl",
                 ),
+                InlineKeyboardButton(text="Туры АПЛ · ост.", callback_data="sch:mix:r:eng"),
             ],
             [
-                InlineKeyboardButton(text="Туры АПЛ · ост.", callback_data="sch:in:eng:r"),
-                InlineKeyboardButton(text="Туры Ла Лига · ост.", callback_data="sch:in:esp:r"),
+                InlineKeyboardButton(text="Туры Ла Лига · ост.", callback_data="sch:mix:r:esp"),
+                InlineKeyboardButton(text="Туры Серия А · ост.", callback_data="sch:mix:r:ita"),
             ],
             [
-                InlineKeyboardButton(text="Туры Серия А · ост.", callback_data="sch:in:ita:r"),
-                InlineKeyboardButton(text="Туры Бундес · ост.", callback_data="sch:in:ger:r"),
-            ],
-            [
-                InlineKeyboardButton(text="Туры ЛЧ · ост.", callback_data="sch:in:cl:r"),
+                InlineKeyboardButton(text="Туры Бундес · ост.", callback_data="sch:mix:r:ger"),
+                InlineKeyboardButton(text="Туры ЛЧ · ост.", callback_data="sch:mix:r:cl"),
             ],
         ]
     )
@@ -657,11 +751,11 @@ async def cmd_start(message: Message) -> None:
         message,
         intro_text=(
             "⚽ Football Manager — журнал, расписание, таблицы, топы.\n"
-            "Запись счёта: «✅ Записать следующий», «✏️ Ручной матч», «📌 Из пропусков» или "
-            "/play_next, /match, /play_schedule, /play_skipped.\n"
+            "Запись счёта: «✏️ Ручной матч», «📌 Из пропусков», «📋 Из календаря» "
+            "или /match, /play_schedule, /play_skipped.\n"
             "Трансфер игрока — кнопка «🔄 Трансфер» или /transfer.\n"
             "📅 Расписание — весь календарь картинками; 📚 Стата сезонов — всё время и архив. "
-            "Топ-100, топы лига+ЛЧ, голеадоры, стата без матча — в меню или /help.\n"
+            "Топ-100, голеадоры, стата без матча — в меню или /help.\n"
             "Снизу экрана кнопка «📋 Меню» снова открывает главное меню."
         ),
         inline_title="Выберите действие:",
@@ -875,40 +969,48 @@ async def cb_menu_stats_history(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
         "<b>Стата сезонов</b>\n"
-        "• <b>Всё время</b> — <code>league_synced.db</code>, <code>champions_league_synced.db</code>, "
-        "<code>common_synced.db</code>.\n"
-        "• <b>Сезон</b> — снимок из <code>db/season_N/</code> (любой номер из списка).\n"
-        "Текущий игровой сезон — также «Бомбардиры», «Ещё топы»; архивные голеадоры по клубам — "
-        "кнопка «👥 Голеадоры по клубам» (выбор сезона там же).\n",
+        "Выбери лигу, затем период (<b>за всё время</b> или <b>сезон</b>), "
+        "потом метрику: бомбардиры, ассисты, Г+А, сухие, ЖК, КК.\n"
+        "• За всё время: <code>league_synced.db</code> + <code>champions_league_synced.db</code> "
+        "через <code>common_synced.db</code>\n"
+        "• Сезон: снимок из <code>db/season_N/</code>\n",
         parse_mode="HTML",
         reply_markup=_stats_history_root_kb(),
     )
 
 
-def _stats_hist_caption_life(metric: str, league_code: str | None) -> str:
+def _stats_hist_caption_life(metric: str, league_code: str) -> str:
     m = metric.lower()
     if m == "g":
         base = "Топ бомбардиров · всё время"
     elif m in ("as", "a"):
         base = "Топ ассистов · всё время"
+    elif m == "cs":
+        base = "Сухие матчи · всё время"
+    elif m == "yc":
+        base = "Жёлтые карточки · всё время"
+    elif m == "rc":
+        base = "Красные карточки · всё время"
     else:
         base = "Топ Г+А · всё время"
-    if league_code:
-        return f"{base} · {_league_title(league_code)}"
-    return base
+    return f"{base} · {_league_title(league_code)}"
 
 
-def _stats_hist_caption_season(sn: int, metric: str, league_code: str | None) -> str:
+def _stats_hist_caption_season(sn: int, metric: str, league_code: str) -> str:
     m = metric.lower()
     if m == "g":
         base = f"Сезон {sn} · бомбардиры"
     elif m in ("as", "a"):
         base = f"Сезон {sn} · ассисты"
+    elif m == "cs":
+        base = f"Сезон {sn} · сухие матчи"
+    elif m == "yc":
+        base = f"Сезон {sn} · жёлтые карточки"
+    elif m == "rc":
+        base = f"Сезон {sn} · красные карточки"
     else:
         base = f"Сезон {sn} · Г+А"
-    if league_code:
-        return f"{base} · {_league_title(league_code)}"
-    return base
+    return f"{base} · {_league_title(league_code)}"
 
 
 @router.callback_query(F.data.startswith("stats:hist:"))
@@ -921,77 +1023,164 @@ async def cb_stats_history_run(callback: CallbackQuery) -> None:
     if parts[2] == "backroot":
         await callback.answer()
         await callback.message.answer(
-            "Всё время и сезоны:",
+            "Выбери лигу:",
             reply_markup=_stats_history_root_kb(),
         )
         return
 
-    if parts[2] == "seasons":
-        await callback.answer()
-        nums = _season_numbers_for_stats_picker()
-        if not nums:
-            await callback.message.answer(
-                "Пока нет папок сезонов с league.db в db/. "
-                "После игры и завершения сезона появятся архивы."
-            )
+    if parts[2] == "lg":
+        if len(parts) != 4:
+            await callback.answer("Ошибка кнопки.", show_alert=True)
             return
+        code = parts[3]
+        await callback.answer()
         await callback.message.answer(
-            "Выберите номер сезона:",
-            reply_markup=_stats_history_seasons_kb(),
+            f"{_league_title(code)} — выбери период:",
+            reply_markup=_stats_history_scope_kb(code),
         )
         return
 
-    if parts[2] == "sn":
-        if len(parts) == 4:
-            await callback.answer()
-            sn = int(parts[3])
+    if parts[2] == "scope":
+        if len(parts) != 5:
+            await callback.answer("Ошибка кнопки.", show_alert=True)
+            return
+        scope = parts[3]
+        code = parts[4]
+        await callback.answer()
+        if scope == "life":
             await callback.message.answer(
-                f"Сезон {sn} — метрика и лига:",
-                reply_markup=_stats_history_season_metric_kb(sn),
+                f"{_league_title(code)} · всё время — выбери метрику:",
+                reply_markup=_stats_history_metric_kb("life", code, None),
             )
             return
-        if len(parts) == 6:
-            sn = int(parts[3])
-            metric, lg = parts[4], parts[5]
-            lc = None if lg == "a" else lg
-            await callback.answer("Считаю…")
-            try:
-                text = await asyncio.to_thread(
-                    render_archived_season_stat, sn, lc, metric, 30
+        if scope == "season":
+            nums = _season_numbers_for_stats_picker()
+            if not nums:
+                await callback.message.answer(
+                    "Пока нет папок сезонов с league.db в db/. "
+                    "После игры и завершения сезона появятся архивы."
                 )
-                cap = _stats_hist_caption_season(sn, metric, lc)
-                await answer_report_photos(callback.message, text, cap)
-            except Exception as e:
-                logger.exception("stats:hist sn")
-                await callback.message.answer(f"Ошибка: {e}")
+                return
+            await callback.message.answer(
+                f"{_league_title(code)} — выбери сезон:",
+                reply_markup=_stats_history_seasons_kb_for_league(code),
+            )
             return
+        await callback.answer("Неизвестный период.", show_alert=True)
+        return
 
-    if parts[2] != "life":
+    if parts[2] == "sn":
+        if len(parts) != 5:
+            await callback.answer("Ошибка кнопки.", show_alert=True)
+            return
+        code = parts[3]
+        try:
+            sn = int(parts[4])
+        except ValueError:
+            await callback.answer("Ошибка сезона.", show_alert=True)
+            return
+        await callback.answer()
+        await callback.message.answer(
+            f"{_league_title(code)} · сезон {sn} — выбери метрику:",
+            reply_markup=_stats_history_metric_kb("season", code, sn),
+        )
+        return
+
+    if parts[2] != "run":
         await callback.answer("Неизвестная команда.", show_alert=True)
         return
 
-    if len(parts) != 5:
+    if len(parts) not in (6, 7):
         await callback.answer("Ошибка кнопки.", show_alert=True)
         return
 
-    metric, code = parts[3], parts[4]
-    lc = None if code == "a" else code
+    scope = parts[3]
+    code = parts[4]
+    season_num = None
+    if scope == "season":
+        if len(parts) != 7:
+            await callback.answer("Ошибка кнопки.", show_alert=True)
+            return
+        try:
+            season_num = int(parts[5])
+        except ValueError:
+            await callback.answer("Ошибка сезона.", show_alert=True)
+            return
+        metric = parts[6]
+    else:
+        metric = parts[5]
+
     await callback.answer("Считаю…")
     try:
-        m = metric.lower()
-        if m == "g":
-            text = await asyncio.to_thread(render_cumulative_top_scorers, lc, 30)
-        elif m in ("as", "a"):
-            text = await asyncio.to_thread(render_cumulative_top_assists, lc, 30)
-        elif m in ("ga",):
-            text = await asyncio.to_thread(render_cumulative_top_ga, lc, 30)
+        m = metric.strip().lower()
+        if scope == "life":
+            if m == "g":
+                text = await asyncio.to_thread(render_cumulative_top_scorers, code, 30)
+                await answer_report_photos(
+                    callback.message, text, _stats_hist_caption_life(m, code)
+                )
+            elif m in ("as", "a"):
+                text = await asyncio.to_thread(render_cumulative_top_assists, code, 30)
+                await answer_report_photos(
+                    callback.message, text, _stats_hist_caption_life(m, code)
+                )
+            elif m == "ga":
+                text = await asyncio.to_thread(render_cumulative_top_ga, code, 30)
+                await answer_report_photos(
+                    callback.message, text, _stats_hist_caption_life(m, code)
+                )
+            elif m == "cs":
+                gk_text, df_text = await asyncio.to_thread(
+                    render_cumulative_top_clean_sheets, code, 30
+                )
+                await answer_report_photos(
+                    callback.message,
+                    gk_text,
+                    f"{_stats_hist_caption_life(m, code)} · вратари",
+                )
+                await answer_report_photos(
+                    callback.message,
+                    df_text,
+                    f"{_stats_hist_caption_life(m, code)} · защитники",
+                )
+            elif m in ("yc", "rc"):
+                text = await asyncio.to_thread(render_cumulative_top_cards, code, m, 30)
+                await answer_report_photos(
+                    callback.message, text, _stats_hist_caption_life(m, code)
+                )
+            else:
+                await callback.message.answer(f"Неизвестная метрика: {metric}")
+                return
+            return
+
+        if season_num is None:
+            await callback.message.answer("Ошибка: не указан сезон.")
+            return
+
+        if m in ("g", "as", "a", "ga"):
+            text = await asyncio.to_thread(
+                render_archived_season_stat, season_num, code, m, 30
+            )
+            cap = _stats_hist_caption_season(season_num, m, code)
+            await answer_report_photos(callback.message, text, cap)
+        elif m == "cs":
+            gk_text, df_text = await asyncio.to_thread(
+                render_archived_season_clean_sheets, season_num, code, 30
+            )
+            cap = _stats_hist_caption_season(season_num, m, code)
+            await answer_report_photos(callback.message, gk_text, f"{cap} · вратари")
+            await answer_report_photos(callback.message, df_text, f"{cap} · защитники")
+        elif m in ("yc", "rc"):
+            text = await asyncio.to_thread(
+                render_archived_season_stat, season_num, code, m, 30
+            )
+            cap = _stats_hist_caption_season(season_num, m, code)
+            await answer_report_photos(callback.message, text, cap)
         else:
             await callback.message.answer(f"Неизвестная метрика: {metric}")
             return
-        cap = _stats_hist_caption_life(metric, lc)
-        await answer_report_photos(callback.message, text, cap)
     except Exception as e:
-        logger.exception("stats:hist life")
+        logger.exception("stats:hist run")
         await callback.message.answer(f"Ошибка: {e}")
 
 
@@ -1113,7 +1302,7 @@ async def cb_menu_schedule(callback: CallbackQuery) -> None:
             "Смешанное расписание — все матчи",
         )
         await callback.message.answer(
-            "Другие срезы: остаток по лигам, туры лиг, сыгранное из журнала.",
+            "Другие срезы: общий остаток и остаток по каждой лиге.",
             reply_markup=_schedule_menu_kb(),
         )
     except Exception as e:

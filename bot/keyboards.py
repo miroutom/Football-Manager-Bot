@@ -60,10 +60,6 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
     rows: list[list[InlineKeyboardButton]] = [
         [
             InlineKeyboardButton(
-                text="✅ Записать следующий",
-                callback_data="play:next",
-            ),
-            InlineKeyboardButton(
                 text="✏️ Ручной матч",
                 callback_data="play:manual",
             ),
@@ -78,22 +74,13 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
                 callback_data="play:schedule",
             ),
             InlineKeyboardButton(text="📊 Таблица", callback_data="menu:table"),
-            InlineKeyboardButton(text="⚽ Бомбардиры", callback_data="menu:goals"),
         ],
         [
             InlineKeyboardButton(text="📜 История", callback_data="menu:history"),
         ],
         [
-            InlineKeyboardButton(text="🎯 Ассисты", callback_data="menu:assists"),
-            InlineKeyboardButton(text="📈 Г+А", callback_data="menu:ga"),
-        ],
-        [
             InlineKeyboardButton(text="🏟 Сетка ЛЧ", callback_data="menu:bracket"),
             InlineKeyboardButton(text="📌 Статус", callback_data="menu:status"),
-        ],
-        [
-            InlineKeyboardButton(text="⏭ След. матч", callback_data="menu:next"),
-            InlineKeyboardButton(text="⏸ Пропуски", callback_data="menu:skipped"),
         ],
         [
             InlineKeyboardButton(text="📅 Расписание", callback_data="menu:schedule"),
@@ -111,17 +98,12 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
         ],
         [
             InlineKeyboardButton(text="🔢 Топ-100 всего", callback_data="menu:top100"),
-            InlineKeyboardButton(text="📈 Ещё топы (+ЛЧ)", callback_data="menu:tops_plus"),
             InlineKeyboardButton(text="👥 Голеадоры по клубам", callback_data="menu:tgs_league"),
         ],
         [
             InlineKeyboardButton(
-                text="⚽ Состав клуба (схема)",
+                text="⚽ Схема",
                 callback_data="menu:squad_league",
-            ),
-            InlineKeyboardButton(
-                text="📋 Заявка (статусы)",
-                callback_data="menu:squad_status",
             ),
             InlineKeyboardButton(
                 text="📋 Список СА",

@@ -146,12 +146,6 @@ def _sqr_choice_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="📋 Полная заявка (текстом)",
-                    callback_data="sqr:do:set_squad",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
                     text="➕ Один игрок в состав", callback_data="sqr:do:add"
                 ),
             ],
@@ -396,9 +390,6 @@ async def cb_menu_squad_roster(callback: CallbackQuery, state: FSMContext) -> No
         "Выбери лигу и клуб.\n"
         "<b>Заявка кнопками (рекомендую):</b> выбери 11/7/5 кнопками, "
         "остальные автоматически уйдут в СА, затем можно точечно править игроков.\n"
-        "<b>Полная заявка:</b> черновик из нац. БД (start/bench/reserve); "
-        "одним сообщением — то же для ЛЧ у клубов из пула участников (отдельно в ЛЧ не нужно).\n"
-        "Кто <b>не</b> в списке, уходит в СА.\n"
         "<b>Один игрок:</b> если есть в <code>common_synced.db</code> — достаточно имени и позиции; "
         "иначе overall и нация.\n"
         f"При статистике клуб в БД станет «{FREE_AGENT_TEAM}».\n"
