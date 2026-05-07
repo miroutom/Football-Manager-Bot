@@ -3,9 +3,13 @@
 Травмы и дисквалификации: JSON (активные баны, накопление жк к 4) + колонки yellow_cards / red_cards в БД.
 
 Правила:
-- 4 жк = 1 матч дискв. (накопление в JSON, жк в БД копятся за сезон)
-- 2жк = КК = 1 матч +1 red в БД
-- прямая КК = 3 матча +1 red
+- 4 жк накопительно (за сезон в лиге/ЛЧ) = 1 матч пропуска **после** того матча, где получена 4-я жк
+- 2 жк в одном матче (второе предупреждение) = 1 матч пропуска **после** этого матча +1 red в БД
+- прямая КК = 3 матча пропуска **после** этого матча +1 red в БД
+
+Учёт «после матча»: при закрытии ввода статистики матча списание «−1 матч» к отбыванию дисквала
+применяется только к банам, которые **уже были** до начала этой сессии ввода; новые баны за текущий
+матч в этот же «−1» не попадают (см. ``register_match_played_for_discipline`` + снимок в боте).
 - травма: «имя Nм» / «имя Nm» / «имя Nм тип» (тип — произвольный текст после месяцев; по умолчанию «травма»)
 """
 from __future__ import annotations
@@ -23,6 +27,8 @@ _lock = threading.Lock()
 
 _YEL4 = 4
 _RE_2Y = re.compile(r"^(.+?)\s+2\s*жк\s*$", re.IGNORECASE | re.UNICODE)
+# «имя2жк» без пробела перед цифрой 2
+_RE_2Y_GLUE = re.compile(r"^(.+?)2\s*жк\s*$", re.IGNORECASE | re.UNICODE)
 _RE_Y = re.compile(r"^(.+?)\s+жк\s*$", re.IGNORECASE | re.UNICODE)
 _RE_R = re.compile(r"^(.+?)\s+кк\s*$", re.IGNORECASE | re.UNICODE)
 # суффикс месяцев + опционально тип травмы до конца строки
@@ -95,6 +101,39 @@ def _find_yellow_cycle(st: dict, name: str, team: str, league_code: str, scope: 
     return None
 
 
+def snapshot_suspensions_for_fixture(
+    home: str,
+    away: str,
+    league_code: str,
+    tournament: str,
+) -> dict[str, int]:
+    """
+    Снимок активных дисквалов (key → matches_left) по командам матча и турниру.
+
+    Нужен боту перед вводом статистики: после матча отбывание −1 матч только для ключей из снимка,
+    чтобы новые баны за этот же матч не уменьшались сразу на 1.
+    """
+    scope = "cl" if tournament == "cl" else "league"
+    lc = "cl" if scope == "cl" else league_code
+    th, ta = _norm(home), _norm(away)
+    out: dict[str, int] = {}
+    with _lock:
+        st = _load()
+        for row in st.get("suspensions", []):
+            if row.get("league_code") != lc or row.get("scope") != scope:
+                continue
+            rt = row.get("team_norm")
+            if rt not in (th, ta):
+                continue
+            key = row.get("key")
+            if not key:
+                continue
+            left = int(row.get("matches_left") or 0)
+            if left > 0:
+                out[str(key)] = left
+    return out
+
+
 def check_player_eligible(
     name: str,
     team: str,
@@ -137,8 +176,16 @@ def register_match_played_for_discipline(
     away: str,
     league_code: str,
     tournament: str,
+    *,
+    susp_snapshot_before_stats: dict[str, int] | None = None,
 ) -> None:
-    """После ввода статистики по матчу: −1 матч дискв. у игроков команд home/away в этом турнире."""
+    """
+    После ввода статистики по матчу: −1 матч дискв. у игроков команд home/away в этом турнире.
+
+    Если передан ``susp_snapshot_before_stats`` (снимок до начала ввода строк матча в боте),
+    уменьшаем только те ключи, что уже были в снимке — новые дисквалы за этот матч не трогаем.
+    Если ``None``, поведение как раньше: все активные дисквалы по матчу −1 (для совместимости).
+    """
     scope = "cl" if tournament == "cl" else "league"
     lc = "cl" if scope == "cl" else league_code
     th, ta = _norm(home), _norm(away)
@@ -151,10 +198,16 @@ def register_match_played_for_discipline(
             rt = row.get("team_norm")
             if rt not in (th, ta):
                 continue
+            key = row.get("key")
+            if not key:
+                continue
             left = int(row.get("matches_left") or 0)
-            if left > 0:
-                row["matches_left"] = left - 1
-                changed = True
+            if left <= 0:
+                continue
+            if susp_snapshot_before_stats is not None and str(key) not in susp_snapshot_before_stats:
+                continue
+            row["matches_left"] = left - 1
+            changed = True
         if changed:
             _save(st)
 
@@ -240,7 +293,7 @@ def try_apply_discipline_line(
     if not raw:
         return (None, False)
     # порядок: 2жк, жк, Nм, кк
-    m2 = _RE_2Y.match(raw)
+    m2 = _RE_2Y.match(raw) or _RE_2Y_GLUE.match(raw)
     if m2:
         name = m2.group(1).strip()
         return _apply_red_card(

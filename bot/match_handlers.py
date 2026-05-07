@@ -359,7 +359,15 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
             lc = infer_league_code_for_stats(h, a, tourn)
         from utils.player_discipline import register_match_played_for_discipline
 
-        await asyncio.to_thread(register_match_played_for_discipline, h, a, lc, tourn)
+        snap = data.get("stats_susp_snapshot")
+        await asyncio.to_thread(
+            register_match_played_for_discipline,
+            h,
+            a,
+            lc,
+            tourn,
+            susp_snapshot_before_stats=snap,
+        )
         from utils.player_loans import process_loan_expirations
 
         loan_logs = await asyncio.to_thread(
@@ -402,6 +410,7 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
 async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
     """Шпаргалка + инструкции для PostMatch.stats_lines (данные уже в state)."""
     from player_stats import format_roster_cheat_sheet_text
+    from utils.player_discipline import snapshot_suspensions_for_fixture
 
     data = await state.get_data()
     home = data["stats_home"]
@@ -409,6 +418,7 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
     hs = data["stats_hs"]
     aws = data["stats_aws"]
     tournament = data.get("stats_tournament", "league")
+    lc_raw = data.get("stats_league_code") or ""
 
     sheet = await asyncio.to_thread(
         format_roster_cheat_sheet_text, home, away, tournament
@@ -427,8 +437,19 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
         dry_lines.append(f"💪 {away} — сухой матч для хозяев (0 голов).")
     dry_txt = "\n".join(dry_lines)
 
+    susp_snap = await asyncio.to_thread(
+        snapshot_suspensions_for_fixture,
+        home,
+        away,
+        lc_raw,
+        tournament,
+    )
     await state.set_state(PostMatch.stats_lines)
-    await state.update_data(stats_current_team=home, stats_mode_new=False)
+    await state.update_data(
+        stats_current_team=home,
+        stats_mode_new=False,
+        stats_susp_snapshot=susp_snap,
+    )
 
     done_kb = InlineKeyboardMarkup(
         inline_keyboard=[
