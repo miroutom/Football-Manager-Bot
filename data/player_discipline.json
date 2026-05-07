@@ -9,7 +9,7 @@
       "team_norm": "хоффенхайм",
       "league_code": "ger",
       "scope": "league",
-      "matches_left": 3
+      "matches_left": 2
     },
     {
       "key": "мартинелли|мю|cl|cl",
@@ -171,6 +171,16 @@
       "team_norm": "динамо",
       "league_code": "cl",
       "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "каземиро|мю|eng|league",
+      "name": "Каземиро",
+      "name_norm": "каземиро",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "eng",
+      "scope": "league",
       "count": 1
     }
   ],
@@ -408,6 +418,22 @@
       "team": "Байер",
       "team_norm": "байер",
       "return_month": 2,
+      "type": "травма"
+    },
+    {
+      "name": "Мартинелли",
+      "name_norm": "мартинелли",
+      "team": "Мю",
+      "team_norm": "мю",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Удоджи",
+      "name_norm": "удоджи",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "return_month": 4,
       "type": "травма"
     }
   ]
