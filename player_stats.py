@@ -806,6 +806,10 @@ def apply_stats_bot_line(
     """
     Одна строка ввода статистики для бота (без input()).
     Возвращает (текст ответа, текущая сторона для следующей строки, режим «новый игрок»).
+
+    Строки гол/пас относятся к **этому же** уже записанному матчу: проверку травмы/дисквала
+    не делаем (иначе после строки «травма» или жк нельзя занести голы за тот же матч).
+    В следующих матчах ограничения снова действуют при других точках входа.
     """
     import contextlib
     import io
@@ -902,6 +906,7 @@ def apply_stats_bot_line(
             discipline_league_code=lc,
             schedule_day=schedule_day,
             increment_matches=False,
+            skip_discipline_check=True,
         )
     out = buf2.getvalue().strip()
     if not ok_add:
