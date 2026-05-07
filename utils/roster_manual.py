@@ -88,13 +88,14 @@ def _find_rows_cumulative_common(name: str, position: str) -> list[tuple[Any, ty
 
 
 def _purge_name_position_in_session(
-    sess: Any, name: str, position: str
+    sess: Any, name: str, position: str, team: str | None = None
 ) -> tuple[dict[str, Any] | None, int | None, str | None]:
     from utils.player_transfer import _norm_cmp
     from utils.squad_roster_sync import _carry_from_row, _merge_carry_dicts
 
     want_n = _norm_cmp(name)
     want_p = _norm_cmp(position)
+    want_t = _norm_cmp(team) if team else None
     merged: dict[str, Any] | None = None
     ovr: int | None = None
     nat: str | None = None
@@ -103,6 +104,8 @@ def _purge_name_position_in_session(
             if _norm_cmp(r.name or "") != want_n:
                 continue
             if _norm_cmp(r.position or "") != want_p:
+                continue
+            if want_t is not None and _norm_cmp(getattr(r, "team", "") or "") != want_t:
                 continue
             if ovr is None:
                 ovr = int(r.overall or 0)
@@ -232,8 +235,8 @@ def add_player_to_team_roster(
         raise ValueError("status: start | bench | reserve")
 
     cum = _find_rows_cumulative_common(nm, pos)
-    carry_l, ovr_l, nat_l = _purge_name_position_in_session(sleague, nm, pos)
-    carry_c, ovr_c, nat_c = _purge_name_position_in_session(scl, nm, pos)
+    carry_l, ovr_l, nat_l = _purge_name_position_in_session(sleague, nm, pos, team=team)
+    carry_c, ovr_c, nat_c = _purge_name_position_in_session(scl, nm, pos, team=team)
 
     carry: dict[str, Any] | None = carry_l
     if carry_c:
@@ -844,10 +847,10 @@ def rewrite_team_player_identity(
         scl.flush()
 
         carry_new_l, ovr_new_l, nat_new_l = _purge_name_position_in_session(
-            sleague, new_nm, new_pos
+            sleague, new_nm, new_pos, team=team
         )
         carry_new_c, ovr_new_c, nat_new_c = _purge_name_position_in_session(
-            scl, new_nm, new_pos
+            scl, new_nm, new_pos, team=team
         )
 
         merged = carry_l
