@@ -152,6 +152,111 @@
       "away_score": 7,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Байер",
+      "away": "Реал Сосьедад",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Атлетико",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Рома",
+      "league": "ita",
+      "home_score": 4,
+      "away_score": 3,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Лацио",
+      "league": "ita",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Севилья",
+      "away": "Цска",
+      "league": "cl",
+      "home_score": 5,
+      "away_score": 3,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Вольфсбург",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Спартак",
+      "away": "Лейпциг",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 5,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Аталанта",
+      "league": "ita",
+      "home_score": 3,
+      "away_score": 3,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Жирона",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ливерпуль",
+      "away": "Лейпциг",
+      "league": "cl",
+      "home_score": 4,
+      "away_score": 3,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Интер",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 5,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }

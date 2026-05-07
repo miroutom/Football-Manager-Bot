@@ -2166,6 +2166,15 @@
       "position": "ФРВ",
       "to_team": "Ньюкасл",
       "new_status": "start"
+    },
+    {
+      "ts": "2026-05-05T10:31:50+00:00",
+      "user_id": 517240615,
+      "player": "Агкацев",
+      "from_team": "Байер",
+      "position": "ВРТ",
+      "to_team": "Краснодар",
+      "new_status": "reserve"
     }
   ]
 }

@@ -29,7 +29,7 @@
       "team_norm": "рома",
       "league_code": "ita",
       "scope": "league",
-      "matches_left": 2
+      "matches_left": 1
     }
   ],
   "yellow_cycle": [
@@ -235,6 +235,62 @@
       "name_norm": "муса",
       "team": "Милан",
       "team_norm": "милан",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Эрмосо",
+      "name_norm": "эрмосо",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "return_month": 8,
+      "type": "травма"
+    },
+    {
+      "name": "Дансо",
+      "name_norm": "дансо",
+      "team": "Лацио",
+      "team_norm": "лацио",
+      "return_month": 8,
+      "type": "травма"
+    },
+    {
+      "name": "Бейси",
+      "name_norm": "бейси",
+      "team": "Лацио",
+      "team_norm": "лацио",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Симонс",
+      "name_norm": "симонс",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Йерай",
+      "name_norm": "йерай",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Чалханоглу",
+      "name_norm": "чалханоглу",
+      "team": "Интер",
+      "team_norm": "интер",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Мартинез",
+      "name_norm": "мартинез",
+      "team": "Интер",
+      "team_norm": "интер",
       "return_month": 4,
       "type": "травма"
     }
