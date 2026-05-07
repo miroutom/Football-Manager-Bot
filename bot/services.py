@@ -197,15 +197,30 @@ def render_team_goalscorers_league(league_code: str) -> str:
 
 def teams_ordered_for_goalscorers(league_code: str) -> list[str]:
     """Клубы лиги в том же порядке, что и в полном отчёте «голеадоры по клубам»."""
-    from player_stats import LEAGUE_TEAMS
-
     import teams as teams_mod
+    from config.leagues_config import ALL_LEAGUES
 
     if league_code == "cl":
         return sorted(teams_mod.teams_champ_league.keys())
-    if league_code not in LEAGUE_TEAMS:
+    if league_code not in ALL_LEAGUES:
         raise ValueError(f"Неизвестная лига: {league_code}")
-    return sorted(LEAGUE_TEAMS[league_code])
+    # Кнопки должны показывать только актуальный пул текущего сезона (8 клубов в нац. лигах).
+    current_pool = {
+        str(x).strip().title()
+        for x in (ALL_LEAGUES[league_code].get("teams") or [])
+        if str(x).strip()
+    }
+    if not current_pool:
+        return []
+    teams_map = {
+        "rpl": teams_mod.teams_rpl,
+        "eng": teams_mod.teams_eng,
+        "esp": teams_mod.teams_spain,
+        "ger": teams_mod.teams_germany,
+        "ita": teams_mod.teams_italy,
+    }
+    teams_dict = teams_map.get(league_code) or {}
+    return sorted([t for t in teams_dict.keys() if t in current_pool], key=lambda s: s.casefold())
 
 
 def cl_team_names_from_champions_db(db_path: str) -> list[str]:

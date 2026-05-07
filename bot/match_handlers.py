@@ -219,15 +219,16 @@ _MANUAL_PICK_PAGE = 10
 
 
 def _sorted_team_names_for_manual(league_code: str) -> list[str]:
-    """Имена клубов из pickle лиги (как в матч-дне), для кнопок ручного матча."""
+    """Имена клубов для кнопок ручного матча (актуальный пул текущего сезона)."""
+    from bot.services import teams_ordered_for_goalscorers
+
+    if league_code != "cl":
+        return teams_ordered_for_goalscorers(league_code)
+
+    # ЛЧ: берём текущий список участников из pickle.
     import teams as teams_mod
 
     m = {
-        "rpl": teams_mod.teams_rpl,
-        "eng": teams_mod.teams_eng,
-        "esp": teams_mod.teams_spain,
-        "ger": teams_mod.teams_germany,
-        "ita": teams_mod.teams_italy,
         "cl": teams_mod.teams_champ_league,
     }
     teams = m.get(league_code)
