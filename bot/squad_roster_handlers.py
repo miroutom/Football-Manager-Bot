@@ -805,7 +805,11 @@ async def cb_sqr_wizard_edit_back(callback: CallbackQuery, state: FSMContext) ->
 async def on_sqr_wizard_edit_line(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     team = (data.get("sqr_team") or "").strip()
-    idx = int(data.get("sqr_wz_edit_idx") or -1)
+    raw_idx = data.get("sqr_wz_edit_idx")
+    try:
+        idx = int(raw_idx) if raw_idx is not None else -1
+    except (TypeError, ValueError):
+        idx = -1
     selected: list[dict] = list(data.get("sqr_wz_selected") or [])
     if idx < 0 or idx >= len(selected) or not team:
         await state.clear()
