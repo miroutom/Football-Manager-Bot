@@ -7,6 +7,7 @@ import re
 from html import escape as html_escape
 
 from aiogram import F, Router
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
@@ -23,6 +24,7 @@ from utils.roster_manual import (
     apply_team_squad_declaration,
     build_squad_declaration_template_from_db,
     parse_squad_declaration_text,
+    rewrite_team_player_identity,
 )
 from utils.transfer_input import normalize_display_name, normalize_position
 
@@ -138,6 +140,12 @@ def _sqr_choice_kb() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
+                    text="🧩 Заявка кнопками (11/7/5)",
+                    callback_data="sqr:do:wizard",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
                     text="📋 Полная заявка (текстом)",
                     callback_data="sqr:do:set_squad",
                 ),
@@ -172,6 +180,210 @@ def _sqr_status_kb() -> InlineKeyboardMarkup:
     )
 
 
+_SQR_WZ_PAGE = 10
+_SQR_WZ_LIMITS_DEFAULT: dict[str, int] = {"start": 11, "bench": 7, "reserve": 5}
+_SQR_WZ_TITLES: dict[str, str] = {
+    "start": "Стартовый состав",
+    "bench": "Скамейка",
+    "reserve": "Резерв",
+}
+
+
+def _team_roster_records(team: str) -> list[dict[str, object]]:
+    """Текущий состав клуба в нац. БД с nation/status."""
+    from utils.player_transfer import _filter_team
+    from utils.utils import session_league
+
+    out: list[dict[str, object]] = []
+    for Cls in (
+        __import__("data.forward", fromlist=["Forward"]).Forward,
+        __import__("data.midfielder", fromlist=["Midfielder"]).Midfielder,
+        __import__("data.defender", fromlist=["Defender"]).Defender,
+        __import__("data.goalkeeper", fromlist=["Goalkeeper"]).Goalkeeper,
+    ):
+        for r in session_league.query(Cls).filter(_filter_team(Cls, team)).all():
+            nm = (getattr(r, "name", None) or "").strip()
+            pos = (getattr(r, "position", None) or "").strip().upper()
+            if not nm or not pos:
+                continue
+            out.append(
+                {
+                    "name": nm,
+                    "position": pos,
+                    "overall": int(getattr(r, "overall", 0) or 0),
+                    "nation": (getattr(r, "nation", None) or "").strip() or None,
+                    "status": (getattr(r, "status", None) or "bench").strip().lower(),
+                }
+            )
+    out.sort(key=lambda x: str(x["name"]).casefold())
+    return out
+
+
+def _wz_sets_from_state(data: dict) -> tuple[set[int], set[int], set[int]]:
+    st = {int(x) for x in (data.get("sqr_wz_start") or [])}
+    bn = {int(x) for x in (data.get("sqr_wz_bench") or [])}
+    rs = {int(x) for x in (data.get("sqr_wz_reserve") or [])}
+    return st, bn, rs
+
+
+def _wz_render_text(data: dict, *, phase: str, page: int, total_pages: int) -> str:
+    title = _SQR_WZ_TITLES.get(phase, phase)
+    limits = dict(data.get("sqr_wz_limits") or _SQR_WZ_LIMITS_DEFAULT)
+    limit = int(limits.get(phase, 0))
+    st, bn, rs = _wz_sets_from_state(data)
+    cur_n = len({"start": st, "bench": bn, "reserve": rs}[phase])
+    team = html_escape((data.get("sqr_team") or "").strip())
+    total_players = int(data.get("sqr_wz_total_players") or 0)
+    return (
+        f"<b>{team}</b>\n"
+        f"В составе: <b>{total_players}</b> игроков.\n"
+        f"Шаг 1: старт {limits.get('start', 11)} → "
+        f"шаг 2: скамейка {limits.get('bench', 7)} → "
+        f"шаг 3: резерв {limits.get('reserve', 5)}.\n\n"
+        f"<b>{title}</b>: выбрано <b>{cur_n}/{limit}</b>.\n"
+        f"Страница <b>{page + 1}</b>/<b>{total_pages}</b>.\n"
+        "Нажимай по игроку, чтобы добавить/убрать; затем «Готово»."
+    )
+
+
+def _wz_pick_kb(data: dict, *, phase: str, page: int) -> tuple[InlineKeyboardMarkup, int]:
+    players: list[dict] = list(data.get("sqr_wz_players") or [])
+    st, bn, rs = _wz_sets_from_state(data)
+    current = {"start": st, "bench": bn, "reserve": rs}[phase]
+    locked = (st | bn | rs) - current
+    available = [i for i in range(len(players)) if i not in locked]
+    n = len(available)
+    total_pages = max(1, (n + _SQR_WZ_PAGE - 1) // _SQR_WZ_PAGE)
+    page = max(0, min(int(page), total_pages - 1))
+    chunk = available[page * _SQR_WZ_PAGE : page * _SQR_WZ_PAGE + _SQR_WZ_PAGE]
+
+    rows: list[list[InlineKeyboardButton]] = []
+    for gi in chunk:
+        p = players[gi]
+        mark = "✅ " if gi in current else ""
+        label = f"{mark}{p['name']} · {p['position']} · {p['overall']}"
+        if len(label) > 60:
+            label = label[:57] + "…"
+        rows.append([InlineKeyboardButton(text=label, callback_data=f"sqr:wz:tg:{gi}")])
+
+    nav: list[InlineKeyboardButton] = []
+    if page > 0:
+        nav.append(InlineKeyboardButton(text="←", callback_data=f"sqr:wz:pg:{page - 1}"))
+    if page < total_pages - 1:
+        nav.append(InlineKeyboardButton(text="→", callback_data=f"sqr:wz:pg:{page + 1}"))
+    if nav:
+        rows.append(nav)
+    total_players = int(data.get("sqr_wz_total_players") or 0)
+    if phase == "reserve" and total_players <= 23:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="⚡ Автозаполнить резерв",
+                    callback_data="sqr:wz:auto_res",
+                )
+            ]
+        )
+    rows.append([InlineKeyboardButton(text="✅ Готово", callback_data="sqr:wz:done")])
+    return InlineKeyboardMarkup(inline_keyboard=rows), total_pages
+
+
+def _wz_edit_kb(data: dict, *, page: int) -> tuple[InlineKeyboardMarkup, int]:
+    selected: list[dict] = list(data.get("sqr_wz_selected") or [])
+    n = len(selected)
+    total_pages = max(1, (n + _SQR_WZ_PAGE - 1) // _SQR_WZ_PAGE)
+    page = max(0, min(int(page), total_pages - 1))
+    chunk = selected[page * _SQR_WZ_PAGE : page * _SQR_WZ_PAGE + _SQR_WZ_PAGE]
+    base = page * _SQR_WZ_PAGE
+    rows: list[list[InlineKeyboardButton]] = []
+    for i, p in enumerate(chunk):
+        gi = base + i
+        label = f"{p['name']} · {p['position']} · {p['overall']} · {p['status']}"
+        if len(label) > 60:
+            label = label[:57] + "…"
+        rows.append([InlineKeyboardButton(text=label, callback_data=f"sqr:wz:ep:{gi}")])
+    nav: list[InlineKeyboardButton] = []
+    if page > 0:
+        nav.append(InlineKeyboardButton(text="←", callback_data=f"sqr:wz:epg:{page - 1}"))
+    if page < total_pages - 1:
+        nav.append(InlineKeyboardButton(text="→", callback_data=f"sqr:wz:epg:{page + 1}"))
+    if nav:
+        rows.append(nav)
+    rows.append([InlineKeyboardButton(text="💾 Сохранить", callback_data="sqr:wz:save")])
+    return InlineKeyboardMarkup(inline_keyboard=rows), total_pages
+
+
+def _wz_edit_intro_html(data: dict, *, page: int, total_pages: int) -> str:
+    team = html_escape((data.get("sqr_team") or "").strip())
+    return (
+        f"<b>{team}</b>\n"
+        "Заявка применена. Можно точечно править игроков.\n"
+        "Нажми на игрока, я пришлю строку-шаблон: <code>Имя ПОЗ OVR Нация</code>.\n"
+        f"Страница <b>{page + 1}</b>/<b>{total_pages}</b>.\n"
+        "Кнопка «Сохранить» доступна всегда."
+    )
+
+
+def _parse_player_line_for_edit(
+    line: str,
+) -> tuple[tuple[str, str, int | None, str | None] | None, str | None]:
+    text = (line or "").strip()
+    if not text:
+        return None, "Пустая строка."
+    entries, errs = parse_squad_declaration_text("==== start ===\n" + text)
+    if errs:
+        return None, errs[0]
+    if not entries:
+        return None, "Не удалось разобрать строку."
+    nm, pos, _st, ovr, nat = entries[0]
+    return (nm, pos, ovr, nat), None
+
+
+async def _wz_apply_and_open_edit(
+    callback: CallbackQuery,
+    state: FSMContext,
+    *,
+    team: str,
+    players: list[dict],
+    st: set[int],
+    bn: set[int],
+    rs: set[int],
+) -> None:
+    entries: list[tuple[str, str, str, int | None, str | None]] = []
+    selected: list[dict[str, object]] = []
+    for idx in sorted(st):
+        p = players[idx]
+        entries.append((str(p["name"]), str(p["position"]), "start", int(p["overall"]), p.get("nation")))
+        selected.append({**p, "status": "start"})
+    for idx in sorted(bn):
+        p = players[idx]
+        entries.append((str(p["name"]), str(p["position"]), "bench", int(p["overall"]), p.get("nation")))
+        selected.append({**p, "status": "bench"})
+    for idx in sorted(rs):
+        p = players[idx]
+        entries.append((str(p["name"]), str(p["position"]), "reserve", int(p["overall"]), p.get("nation")))
+        selected.append({**p, "status": "reserve"})
+
+    await callback.answer("Применяю заявку...")
+    try:
+        r = await asyncio.to_thread(apply_team_squad_declaration, team, entries)
+    except Exception as e:
+        logger.exception("wizard apply_team_squad_declaration")
+        if callback.message:
+            await callback.message.answer(f"Ошибка применения заявки: {e}")
+        return
+    await state.update_data(sqr_wz_selected=selected, sqr_wz_edit_page=0)
+    await state.set_state(SquadRosterEnter.wz_edit_pick)
+    data3 = await state.get_data()
+    kb, total_pages = _wz_edit_kb(data3, page=0)
+    det = r.get("released", 0)
+    if callback.message:
+        await callback.message.edit_text(
+            _wz_edit_intro_html(data3, page=0, total_pages=total_pages)
+            + f"\n\nСнято в СА: <b>{det}</b>.",
+            parse_mode="HTML",
+            reply_markup=kb,
+        )
+
 @squad_roster_router.callback_query(F.data == "menu:squad_roster")
 async def cb_menu_squad_roster(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
@@ -182,6 +394,8 @@ async def cb_menu_squad_roster(callback: CallbackQuery, state: FSMContext) -> No
     await callback.message.answer(
         "👥 <b>В состав / из состава</b>\n\n"
         "Выбери лигу и клуб.\n"
+        "<b>Заявка кнопками (рекомендую):</b> выбери 11/7/5 кнопками, "
+        "остальные автоматически уйдут в СА, затем можно точечно править игроков.\n"
         "<b>Полная заявка:</b> черновик из нац. БД (start/bench/reserve); "
         "одним сообщением — то же для ЛЧ у клубов из пула участников (отдельно в ЛЧ не нужно).\n"
         "Кто <b>не</b> в списке, уходит в СА.\n"
@@ -235,12 +449,422 @@ async def cb_sqr_team(callback: CallbackQuery, state: FSMContext) -> None:
         return
     rows = _league_roster_tuples(team)
     canonical = (rows[0][3] or team) if rows else team
+    n_players = len(rows)
     await state.update_data(sqr_team=canonical, sqr_lg=code)
     await state.set_state(SquadRosterEnter.pick_choice)
     await callback.message.answer(
-        f"<b>{_league_title(code)}</b> · <b>{canonical}</b>\n\nЧто сделать?",
+        f"<b>{_league_title(code)}</b> · <b>{canonical}</b>\n"
+        f"Игроков в составе: <b>{n_players}</b>\n\nЧто сделать?",
         parse_mode="HTML",
         reply_markup=_sqr_choice_kb(),
+    )
+
+
+@squad_roster_router.callback_query(SquadRosterEnter.pick_choice, F.data == "sqr:do:wizard")
+async def cb_sqr_wizard_start(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if not callback.message:
+        return
+    data = await state.get_data()
+    team = (data.get("sqr_team") or "").strip()
+    if not team:
+        await callback.message.answer("Нет клуба в сессии. Начни с меню.")
+        return
+    players = _team_roster_records(team)
+    total_players = len(players)
+    if total_players < 18:
+        await callback.message.answer(
+            f"В составе {total_players} игроков, а нужно минимум 18 "
+            "(11 старт + 7 скамейка). Добавь игроков и повтори."
+        )
+        return
+    reserve_need = 5 if total_players >= 23 else (total_players - 18)
+    limits = {"start": 11, "bench": 7, "reserve": reserve_need}
+    serial = [dict(p) for p in players]
+    await state.update_data(
+        sqr_wz_players=serial,
+        sqr_wz_total_players=total_players,
+        sqr_wz_limits=limits,
+        sqr_wz_start=[],
+        sqr_wz_bench=[],
+        sqr_wz_reserve=[],
+        sqr_wz_page=0,
+    )
+    await state.set_state(SquadRosterEnter.wz_pick_start)
+    data2 = await state.get_data()
+    kb, total_pages = _wz_pick_kb(data2, phase="start", page=0)
+    await callback.message.answer(
+        _wz_render_text(data2, phase="start", page=0, total_pages=total_pages),
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
+@squad_roster_router.callback_query(
+    StateFilter(
+        SquadRosterEnter.wz_pick_start,
+        SquadRosterEnter.wz_pick_bench,
+        SquadRosterEnter.wz_pick_reserve,
+    ),
+    F.data.startswith("sqr:wz:pg:"),
+)
+async def cb_sqr_wizard_page(callback: CallbackQuery, state: FSMContext) -> None:
+    if not callback.message or not callback.data:
+        await callback.answer()
+        return
+    try:
+        page = int((callback.data or "").rsplit(":", 1)[-1])
+    except ValueError:
+        await callback.answer()
+        return
+    cur = await state.get_state()
+    phase = "start"
+    if cur == SquadRosterEnter.wz_pick_bench.state:
+        phase = "bench"
+    elif cur == SquadRosterEnter.wz_pick_reserve.state:
+        phase = "reserve"
+    await state.update_data(sqr_wz_page=page)
+    data = await state.get_data()
+    kb, total_pages = _wz_pick_kb(data, phase=phase, page=page)
+    text = _wz_render_text(
+        data,
+        phase=phase,
+        page=max(0, min(page, total_pages - 1)),
+        total_pages=total_pages,
+    )
+    try:
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+    except Exception:
+        await callback.message.edit_reply_markup(reply_markup=kb)
+    await callback.answer()
+
+
+@squad_roster_router.callback_query(
+    SquadRosterEnter.wz_pick_reserve, F.data == "sqr:wz:auto_res"
+)
+async def cb_sqr_wizard_auto_reserve(callback: CallbackQuery, state: FSMContext) -> None:
+    if not callback.message:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    total_players = int(data.get("sqr_wz_total_players") or 0)
+    if total_players > 23:
+        await callback.answer("Автозаполнение доступно только при составе до 23.", show_alert=True)
+        return
+    players: list[dict] = list(data.get("sqr_wz_players") or [])
+    st, bn, rs = _wz_sets_from_state(data)
+    limits = dict(data.get("sqr_wz_limits") or _SQR_WZ_LIMITS_DEFAULT)
+    need_reserve = int(limits.get("reserve", 0))
+    current_all = st | bn
+    remaining = [i for i in range(len(players)) if i not in current_all]
+    if len(remaining) < need_reserve:
+        await callback.answer(
+            f"Недостаточно игроков для резерва: нужно {need_reserve}, осталось {len(remaining)}.",
+            show_alert=True,
+        )
+        return
+    rs_new = set(remaining[:need_reserve])
+    await state.update_data(sqr_wz_reserve=sorted(rs_new))
+    data2 = await state.get_data()
+    kb, total_pages = _wz_pick_kb(data2, phase="reserve", page=0)
+    text = _wz_render_text(data2, phase="reserve", page=0, total_pages=total_pages)
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+    await callback.answer("Резерв заполнен автоматически.")
+
+
+@squad_roster_router.callback_query(
+    StateFilter(
+        SquadRosterEnter.wz_pick_start,
+        SquadRosterEnter.wz_pick_bench,
+        SquadRosterEnter.wz_pick_reserve,
+    ),
+    F.data.startswith("sqr:wz:tg:"),
+)
+async def cb_sqr_wizard_toggle(callback: CallbackQuery, state: FSMContext) -> None:
+    if not callback.message or not callback.data:
+        await callback.answer()
+        return
+    try:
+        idx = int((callback.data or "").rsplit(":", 1)[-1])
+    except ValueError:
+        await callback.answer()
+        return
+    cur = await state.get_state()
+    phase = "start"
+    if cur == SquadRosterEnter.wz_pick_bench.state:
+        phase = "bench"
+    elif cur == SquadRosterEnter.wz_pick_reserve.state:
+        phase = "reserve"
+
+    data = await state.get_data()
+    players: list[dict] = list(data.get("sqr_wz_players") or [])
+    if idx < 0 or idx >= len(players):
+        await callback.answer("Неверный игрок.", show_alert=True)
+        return
+    st, bn, rs = _wz_sets_from_state(data)
+    limits = dict(data.get("sqr_wz_limits") or _SQR_WZ_LIMITS_DEFAULT)
+    current = {"start": st, "bench": bn, "reserve": rs}[phase]
+    locked = (st | bn | rs) - current
+    if idx in locked:
+        await callback.answer("Игрок уже выбран на другом этапе.", show_alert=True)
+        return
+    if idx in current:
+        current.remove(idx)
+    else:
+        limit = int(limits.get(phase, 0))
+        if len(current) >= limit:
+            await callback.answer(f"Лимит: {limit}.", show_alert=True)
+            return
+        current.add(idx)
+    await state.update_data(
+        sqr_wz_start=sorted(st),
+        sqr_wz_bench=sorted(bn),
+        sqr_wz_reserve=sorted(rs),
+    )
+    page = int(data.get("sqr_wz_page") or 0)
+    data2 = await state.get_data()
+    kb, total_pages = _wz_pick_kb(data2, phase=phase, page=page)
+    text = _wz_render_text(
+        data2,
+        phase=phase,
+        page=max(0, min(page, total_pages - 1)),
+        total_pages=total_pages,
+    )
+    try:
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+    except Exception:
+        await callback.message.edit_reply_markup(reply_markup=kb)
+    await callback.answer()
+
+
+@squad_roster_router.callback_query(
+    StateFilter(
+        SquadRosterEnter.wz_pick_start,
+        SquadRosterEnter.wz_pick_bench,
+        SquadRosterEnter.wz_pick_reserve,
+    ),
+    F.data == "sqr:wz:done",
+)
+async def cb_sqr_wizard_done(callback: CallbackQuery, state: FSMContext) -> None:
+    if not callback.message:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    players: list[dict] = list(data.get("sqr_wz_players") or [])
+    st, bn, rs = _wz_sets_from_state(data)
+    limits = dict(data.get("sqr_wz_limits") or _SQR_WZ_LIMITS_DEFAULT)
+    need_start = int(limits.get("start", 11))
+    need_bench = int(limits.get("bench", 7))
+    need_reserve = int(limits.get("reserve", 5))
+    cur = await state.get_state()
+    if cur == SquadRosterEnter.wz_pick_start.state:
+        if len(st) != need_start:
+            await callback.answer(
+                f"Нужно выбрать ровно {need_start} игроков в старт.", show_alert=True
+            )
+            return
+        await state.set_state(SquadRosterEnter.wz_pick_bench)
+        await state.update_data(sqr_wz_page=0)
+        data2 = await state.get_data()
+        kb, total_pages = _wz_pick_kb(data2, phase="bench", page=0)
+        await callback.message.edit_text(
+            _wz_render_text(data2, phase="bench", page=0, total_pages=total_pages),
+            parse_mode="HTML",
+            reply_markup=kb,
+        )
+        await callback.answer()
+        return
+    if cur == SquadRosterEnter.wz_pick_bench.state:
+        if len(bn) != need_bench:
+            await callback.answer(
+                f"Нужно выбрать ровно {need_bench} игроков на скамейку.",
+                show_alert=True,
+            )
+            return
+        if need_reserve <= 0:
+            team = (data.get("sqr_team") or "").strip()
+            await _wz_apply_and_open_edit(
+                callback,
+                state,
+                team=team,
+                players=players,
+                st=st,
+                bn=bn,
+                rs=set(),
+            )
+            return
+        await state.set_state(SquadRosterEnter.wz_pick_reserve)
+        await state.update_data(sqr_wz_page=0)
+        data2 = await state.get_data()
+        kb, total_pages = _wz_pick_kb(data2, phase="reserve", page=0)
+        await callback.message.edit_text(
+            _wz_render_text(data2, phase="reserve", page=0, total_pages=total_pages),
+            parse_mode="HTML",
+            reply_markup=kb,
+        )
+        await callback.answer()
+        return
+    if len(rs) != need_reserve:
+        await callback.answer(
+            f"Нужно выбрать ровно {need_reserve} игроков в резерв.", show_alert=True
+        )
+        return
+    team = (data.get("sqr_team") or "").strip()
+    await _wz_apply_and_open_edit(
+        callback,
+        state,
+        team=team,
+        players=players,
+        st=st,
+        bn=bn,
+        rs=rs,
+    )
+
+
+@squad_roster_router.callback_query(SquadRosterEnter.wz_edit_pick, F.data.startswith("sqr:wz:epg:"))
+async def cb_sqr_wizard_edit_page(callback: CallbackQuery, state: FSMContext) -> None:
+    if not callback.message or not callback.data:
+        await callback.answer()
+        return
+    try:
+        page = int((callback.data or "").rsplit(":", 1)[-1])
+    except ValueError:
+        await callback.answer()
+        return
+    await state.update_data(sqr_wz_edit_page=page)
+    data = await state.get_data()
+    kb, total_pages = _wz_edit_kb(data, page=page)
+    text = _wz_edit_intro_html(
+        data, page=max(0, min(page, total_pages - 1)), total_pages=total_pages
+    )
+    try:
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+    except Exception:
+        await callback.message.edit_reply_markup(reply_markup=kb)
+    await callback.answer()
+
+
+@squad_roster_router.callback_query(SquadRosterEnter.wz_edit_pick, F.data.startswith("sqr:wz:ep:"))
+async def cb_sqr_wizard_edit_pick(callback: CallbackQuery, state: FSMContext) -> None:
+    if not callback.message or not callback.data:
+        await callback.answer()
+        return
+    try:
+        idx = int((callback.data or "").rsplit(":", 1)[-1])
+    except ValueError:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    selected: list[dict] = list(data.get("sqr_wz_selected") or [])
+    if idx < 0 or idx >= len(selected):
+        await callback.answer("Неверный выбор.", show_alert=True)
+        return
+    p = selected[idx]
+    nat = str(p.get("nation") or "—")
+    tpl = f"{p['name']} {p['position']} {p['overall']} {nat}"
+    await state.update_data(sqr_wz_edit_idx=idx)
+    await state.set_state(SquadRosterEnter.wz_edit_wait_line)
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="↩ К списку", callback_data="sqr:wz:eback")],
+            [InlineKeyboardButton(text="💾 Сохранить", callback_data="sqr:wz:save")],
+        ]
+    )
+    await callback.message.edit_text(
+        "Отправь строку в формате:\n"
+        "<code>Имя ПОЗ OVR Нация</code>\n\n"
+        "Шаблон:\n"
+        f"<pre>{html_escape(tpl)}</pre>",
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+    await callback.answer()
+
+
+@squad_roster_router.callback_query(
+    StateFilter(SquadRosterEnter.wz_edit_pick, SquadRosterEnter.wz_edit_wait_line),
+    F.data == "sqr:wz:save",
+)
+async def cb_sqr_wizard_save(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.clear()
+    if callback.message:
+        await callback.message.answer("✅ Состав сохранён.")
+
+
+@squad_roster_router.callback_query(SquadRosterEnter.wz_edit_wait_line, F.data == "sqr:wz:eback")
+async def cb_sqr_wizard_edit_back(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if not callback.message:
+        return
+    await state.set_state(SquadRosterEnter.wz_edit_pick)
+    data = await state.get_data()
+    page = int(data.get("sqr_wz_edit_page") or 0)
+    kb, total_pages = _wz_edit_kb(data, page=page)
+    await callback.message.edit_text(
+        _wz_edit_intro_html(
+            data, page=max(0, min(page, total_pages - 1)), total_pages=total_pages
+        ),
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
+@squad_roster_router.message(SquadRosterEnter.wz_edit_wait_line, _TEXT_NOT_CMD)
+async def on_sqr_wizard_edit_line(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    team = (data.get("sqr_team") or "").strip()
+    idx = int(data.get("sqr_wz_edit_idx") or -1)
+    selected: list[dict] = list(data.get("sqr_wz_selected") or [])
+    if idx < 0 or idx >= len(selected) or not team:
+        await state.clear()
+        await message.answer("Сессия сброшена. Начни заново из меню.")
+        return
+    parsed, err = _parse_player_line_for_edit(message.text or "")
+    if err:
+        await message.answer(f"Ошибка строки: {err}")
+        return
+    assert parsed is not None
+    nm_new, pos_new, ovr_new, nat_new = parsed
+    p = selected[idx]
+    old_nm = str(p["name"])
+    old_pos = str(p["position"])
+    st = str(p.get("status") or "bench")
+    try:
+        r = await asyncio.to_thread(
+            rewrite_team_player_identity,
+            team,
+            old_nm,
+            old_pos,
+            new_name=nm_new,
+            new_position=pos_new,
+            overall=ovr_new,
+            nation=nat_new,
+            status=st,
+        )
+    except Exception as e:
+        logger.exception("rewrite_team_player_identity")
+        await message.answer(f"Не удалось обновить игрока: {e}")
+        return
+    selected[idx] = {
+        "name": r["new"][0],
+        "position": r["new"][1],
+        "overall": r["overall"],
+        "nation": r.get("nation"),
+        "status": r["status"],
+    }
+    await state.update_data(sqr_wz_selected=selected)
+    await state.set_state(SquadRosterEnter.wz_edit_pick)
+    data2 = await state.get_data()
+    page = int(data2.get("sqr_wz_edit_page") or 0)
+    kb, total_pages = _wz_edit_kb(data2, page=page)
+    await message.answer(
+        "✅ Игрок обновлён.\n"
+        + _wz_edit_intro_html(
+            data2, page=max(0, min(page, total_pages - 1)), total_pages=total_pages
+        ),
+        parse_mode="HTML",
+        reply_markup=kb,
     )
 
 

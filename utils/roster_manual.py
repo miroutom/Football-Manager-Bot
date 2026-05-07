@@ -764,3 +764,178 @@ def apply_team_squad_declaration(
         "released_detail": released_labels,
         "cl_pool": bool(resolve_team_name_for_cl_pool(team)),
     }
+
+
+def rewrite_team_player_identity(
+    team: str,
+    old_name: str,
+    old_position: str,
+    *,
+    new_name: str,
+    new_position: str,
+    overall: int | None = None,
+    nation: str | None = None,
+    status: str | None = None,
+    session_league: Any | None = None,
+    session_cl: Any | None = None,
+    rebuild_common: bool = True,
+    mirror_synced: bool = True,
+) -> dict[str, Any]:
+    """
+    Переименовать/перепозиционировать игрока внутри клуба c переносом статистики.
+
+    Важный кейс: в БД уже есть строка в новой идентичности (новая позиция/имя). Тогда
+    статистика старой и новой строк объединяется; старая строка удаляется.
+    """
+    from utils import cumulative_mirror
+    from utils.common_db import rebuild_common_database, resolve_team_name_for_cl_pool
+    from utils.player_field_edit import find_player_row as fpr
+    from utils.player_transfer import normalize_player_name_for_db
+    from utils.squad_roster_sync import _carry_from_row, _merge_carry_dicts
+    from utils.transfer_input import normalize_nation, normalize_position, resolve_team_name
+    from utils.utils import session_cl as default_cl
+    from utils.utils import session_league as default_league
+
+    sleague = session_league or default_league
+    scl = session_cl or default_cl
+    team_raw = (team or "").strip()
+    if len(team_raw) < 2:
+        raise ValueError("Слишком короткое имя клуба")
+    team = resolve_team_name(team_raw, sleague) or team_raw
+
+    old_nm = normalize_player_name_for_db(old_name)
+    old_pos = normalize_position(old_position)
+    new_nm = normalize_player_name_for_db(new_name)
+    new_pos = normalize_position(new_position)
+    if not old_nm or not old_pos or not new_nm or not new_pos:
+        raise ValueError("Заполни old/new имя и позицию.")
+
+    _Cls_old_l, row_old_l = fpr(sleague, team, old_nm, old_pos)
+    if row_old_l is None:
+        raise ValueError(
+            f"В нац. БД не найден «{old_nm}» ({old_pos}) в клубе «{team}»."
+        )
+    old_status = (getattr(row_old_l, "status", None) or "bench").strip().lower()
+    st = (status or old_status).strip().lower()
+    if st not in ("start", "bench", "reserve"):
+        raise ValueError("status: start | bench | reserve")
+
+    carry_l = _carry_from_row(row_old_l)
+    ovr_from_old = int(getattr(row_old_l, "overall", 0) or 0)
+    nat_from_old = (getattr(row_old_l, "nation", None) or "").strip() or None
+
+    cl_team = resolve_team_name_for_cl_pool(team)
+    carry_c = None
+    ovr_from_old_c = 0
+    nat_from_old_c = None
+    row_old_c = None
+    if cl_team:
+        _Cls_old_c, row_old_c = fpr(scl, cl_team, old_nm, old_pos)
+        if row_old_c is not None:
+            carry_c = _carry_from_row(row_old_c)
+            ovr_from_old_c = int(getattr(row_old_c, "overall", 0) or 0)
+            nat_from_old_c = (getattr(row_old_c, "nation", None) or "").strip() or None
+
+    try:
+        if row_old_c is not None:
+            scl.delete(row_old_c)
+        sleague.delete(row_old_l)
+        sleague.flush()
+        scl.flush()
+
+        carry_new_l, ovr_new_l, nat_new_l = _purge_name_position_in_session(
+            sleague, new_nm, new_pos
+        )
+        carry_new_c, ovr_new_c, nat_new_c = _purge_name_position_in_session(
+            scl, new_nm, new_pos
+        )
+
+        merged = carry_l
+        if carry_c:
+            merged = _merge_carry_dicts(merged, carry_c)
+        if carry_new_l:
+            merged = _merge_carry_dicts(merged, carry_new_l)
+        if carry_new_c:
+            merged = _merge_carry_dicts(merged, carry_new_c)
+
+        ovr_res = int(
+            overall
+            if overall is not None
+            else (
+                ovr_new_l
+                or ovr_new_c
+                or ovr_from_old
+                or ovr_from_old_c
+                or 72
+            )
+        )
+        ovr_res = max(1, min(99, ovr_res))
+        if nation is not None:
+            ns = str(nation).strip()
+            nat_res = None if ns in ("", "-", "—") else normalize_nation(ns)
+        else:
+            nat_res = nat_new_l or nat_new_c or nat_from_old or nat_from_old_c
+            nat_res = normalize_nation(nat_res) if nat_res else None
+
+        _apply_upsert_and_cascade(
+            sleague,
+            team,
+            new_nm,
+            new_pos,
+            ovr_res,
+            nat_res,
+            st,
+            merged,
+            skip_status_cascade=True,
+        )
+        if cl_team:
+            _apply_upsert_and_cascade(
+                scl,
+                cl_team,
+                new_nm,
+                new_pos,
+                ovr_res,
+                nat_res,
+                st,
+                merged,
+                skip_status_cascade=True,
+            )
+        sleague.commit()
+        scl.commit()
+    except Exception:
+        sleague.rollback()
+        scl.rollback()
+        raise
+
+    if rebuild_common:
+        rebuild_common_database()
+
+    if mirror_synced:
+
+        def _dup(sl: Any, sc: Any) -> None:
+            rewrite_team_player_identity(
+                team,
+                old_nm,
+                old_pos,
+                new_name=new_nm,
+                new_position=new_pos,
+                overall=overall,
+                nation=nation,
+                status=st,
+                session_league=sl,
+                session_cl=sc,
+                rebuild_common=False,
+                mirror_synced=False,
+            )
+
+        cumulative_mirror.mirror_roster_manual(_dup)
+
+    return {
+        "team": team,
+        "old": (old_nm, old_pos),
+        "new": (new_nm, new_pos),
+        "overall": ovr_res,
+        "nation": nat_res,
+        "status": st,
+        "cl_pool": bool(cl_team),
+    }
