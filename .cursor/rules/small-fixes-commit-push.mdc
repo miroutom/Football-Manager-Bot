@@ -1,0 +1,10 @@
+---
+description: Auto commit and push small fixes
+alwaysApply: true
+---
+
+# Small Fixes: Commit And Push
+
+If a change is small and clearly self-contained (bugfix, mapping tweak, copy fix, minor handler/UI correction), finish it with a git commit and push by default.
+
+Do this unless the user explicitly says not to commit/push for this specific task.
