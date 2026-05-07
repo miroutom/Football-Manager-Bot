@@ -30,6 +30,26 @@
       "league_code": "ita",
       "scope": "league",
       "matches_left": 1
+    },
+    {
+      "key": "итакура|боруссия м|ger|league",
+      "name": "Итакура",
+      "name_norm": "итакура",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "league_code": "ger",
+      "scope": "league",
+      "matches_left": 2
+    },
+    {
+      "key": "кессие|боруссия м|ger|league",
+      "name": "Кессие",
+      "name_norm": "кессие",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "league_code": "ger",
+      "scope": "league",
+      "matches_left": 2
     }
   ],
   "yellow_cycle": [
@@ -111,6 +131,46 @@
       "team_norm": "милан",
       "league_code": "ita",
       "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "салиба|арсенал|eng|league",
+      "name": "Салиба",
+      "name_norm": "салиба",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "зобнин|спартак|rpl|league",
+      "name": "Зобнин",
+      "name_norm": "зобнин",
+      "team": "Спартак",
+      "team_norm": "спартак",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "коне|боруссия м|ger|league",
+      "name": "Коне",
+      "name_norm": "коне",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "гиттенс|динамо|cl|cl",
+      "name": "Гиттенс",
+      "name_norm": "гиттенс",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "league_code": "cl",
+      "scope": "cl",
       "count": 1
     }
   ],
@@ -292,6 +352,54 @@
       "team": "Интер",
       "team_norm": "интер",
       "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Рамсдейл",
+      "name_norm": "рамсдейл",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "return_month": 8,
+      "type": "травма"
+    },
+    {
+      "name": "О'райли",
+      "name_norm": "о'райли",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Фабиньо",
+      "name_norm": "фабиньо",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Хонорат",
+      "name_norm": "хонорат",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Траоре",
+      "name_norm": "траоре",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Ливакович",
+      "name_norm": "ливакович",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "return_month": 8,
       "type": "травма"
     }
   ]

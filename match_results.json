@@ -257,6 +257,88 @@
       "day": 1,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 7,
+      "away_score": 0,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Сити",
+      "league": "eng",
+      "home_score": 2,
+      "away_score": 7,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Астон Вилла",
+      "league": "eng",
+      "home_score": 2,
+      "away_score": 4,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Спартак",
+      "away": "Динамо",
+      "league": "rpl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Лейпциг",
+      "away": "Вольфсбург",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Франкфурт",
+      "away": "Боруссия М",
+      "league": "ger",
+      "home_score": 4,
+      "away_score": 4,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Динамо",
+      "away": "Фиорентина",
+      "league": "cl",
+      "home_score": 8,
+      "away_score": 0,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Бавария",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Зенит",
+      "away": "Цска",
+      "league": "rpl",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
     }
   ]
 }
