@@ -290,6 +290,7 @@ def _wz_render_text(data: dict, *, phase: str, page: int, total_pages: int) -> s
         f"шаг 3: резерв {limits.get('reserve', 5)}.\n\n"
         f"<b>{title}</b>: выбрано <b>{cur_n}/{limit}</b>.\n"
         f"Страница <b>{page + 1}</b>/<b>{total_pages}</b>.\n"
+        "✅ в текущем шаге · 🟦 старт · 🟨 скамейка · 🟥 резерв.\n"
         "Нажимай по игроку, чтобы добавить/убрать; затем «Готово»."
     )
 
@@ -309,8 +310,12 @@ def _wz_pick_kb(data: dict, *, phase: str, page: int) -> tuple[InlineKeyboardMar
         p = players[gi]
         if gi in current:
             mark = "✅ "
-        elif gi in all_selected:
-            mark = "🔁 "
+        elif gi in st:
+            mark = "🟦 "
+        elif gi in bn:
+            mark = "🟨 "
+        elif gi in rs:
+            mark = "🟥 "
         else:
             mark = ""
         label = f"{mark}{p['name']} · {p['position']} · {p['overall']}"
