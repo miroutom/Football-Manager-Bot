@@ -85,6 +85,13 @@ class LoanEnter(StatesGroup):
     wait_line = State()
 
 
+class InjuryEnter(StatesGroup):
+    """Травмы: лига → клуб → строка «имя Nм» / «имя Nм тип»."""
+    pick_lg = State()
+    pick_team = State()
+    wait_line = State()
+
+
 class SquadRosterEnter(StatesGroup):
     """Добавить / убрать игрока в составе клуба (лига → клуб → действие)."""
     pick_lg = State()

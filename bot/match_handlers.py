@@ -613,6 +613,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "SquadRosterEnter",
             "MatchPerfRatingEnter",
             "LoanEnter",
+            "InjuryEnter",
         ),
     ):
         return
@@ -637,6 +638,8 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         await message.answer("Ввод оценок отменён.")
     elif str(cur).startswith("LoanEnter"):
         await message.answer("Аренда отменена.")
+    elif str(cur).startswith("InjuryEnter"):
+        await message.answer("Ввод травм отменён.")
     else:
         await message.answer("Ввод счёта отменён.")
 

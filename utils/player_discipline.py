@@ -38,6 +38,11 @@ _RE_INJ = re.compile(
 )
 
 
+def is_injury_line(text: str) -> bool:
+    """Строка вида «имя Nм» / «имя Nм тип» для травмы (как в статистике матча)."""
+    return bool(_RE_INJ.match((text or "").strip()))
+
+
 def _norm(s: str) -> str:
     return (s or "").strip().lower()
 

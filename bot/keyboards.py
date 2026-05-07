@@ -91,6 +91,10 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
                 text="📝 Ввод оценки",
                 callback_data="menu:match_rating",
             ),
+            InlineKeyboardButton(
+                text="🏥 Травмы",
+                callback_data="menu:injury",
+            ),
         ],
         [
             InlineKeyboardButton(text="📊 Стата без матча", callback_data="menu:stats_match"),
