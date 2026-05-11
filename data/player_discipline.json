@@ -19,7 +19,7 @@
       "team_norm": "мю",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 3
+      "matches_left": 2
     },
     {
       "key": "манчини|рома|ita|league",
@@ -50,6 +50,26 @@
       "league_code": "ger",
       "scope": "league",
       "matches_left": 2
+    },
+    {
+      "key": "данило|локомотив|rpl|league",
+      "name": "Данило",
+      "name_norm": "данило",
+      "team": "Локомотив",
+      "team_norm": "локомотив",
+      "league_code": "rpl",
+      "scope": "league",
+      "matches_left": 1
+    },
+    {
+      "key": "кунде|барселона|cl|cl",
+      "name": "Кунде",
+      "name_norm": "кунде",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 3
     }
   ],
   "yellow_cycle": [
@@ -200,6 +220,56 @@
       "team": "Спартак",
       "team_norm": "спартак",
       "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "квара|наполи|cl|cl",
+      "name": "Квара",
+      "name_norm": "квара",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "мишкич|урал|rpl|league",
+      "name": "Мишкич",
+      "name_norm": "мишкич",
+      "team": "Урал",
+      "team_norm": "урал",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "бремер|ювентус|cl|cl",
+      "name": "Бремер",
+      "name_norm": "бремер",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "беллингем|милан|cl|cl",
+      "name": "Беллингем",
+      "name_norm": "беллингем",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "беннасер|милан|ita|league",
+      "name": "Беннасер",
+      "name_norm": "беннасер",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "ita",
       "scope": "league",
       "count": 1
     }
@@ -470,6 +540,62 @@
       "team": "Байер",
       "team_norm": "байер",
       "return_month": 9,
+      "type": "травма"
+    },
+    {
+      "name": "Нико",
+      "name_norm": "нико",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Де Йонг",
+      "name_norm": "де йонг",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Лофтус-Чик",
+      "name_norm": "лофтус-чик",
+      "team": "Милан",
+      "team_norm": "милан",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Лапорт",
+      "name_norm": "лапорт",
+      "team": "Милан",
+      "team_norm": "милан",
+      "return_month": 9,
+      "type": "травма"
+    },
+    {
+      "name": "Ди Лоренцо",
+      "name_norm": "ди лоренцо",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Тиау",
+      "name_norm": "тиау",
+      "team": "Милан",
+      "team_norm": "милан",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Копмейнерс",
+      "name_norm": "копмейнерс",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "return_month": 5,
       "type": "травма"
     }
   ]
