@@ -463,6 +463,14 @@
       "team_norm": "фиорентина",
       "return_month": 4,
       "type": "травма"
+    },
+    {
+      "name": "Градецки",
+      "name_norm": "градецки",
+      "team": "Байер",
+      "team_norm": "байер",
+      "return_month": 9,
+      "type": "травма"
     }
   ]
 }
