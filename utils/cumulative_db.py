@@ -26,6 +26,74 @@ from utils import season_paths
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
 
+def _identity_key(name: str, position: str) -> tuple[str, str]:
+    return ((name or "").strip().casefold(), (position or "").strip().upper())
+
+
+def _find_row_by_identity(dst: Any, Cls: type, name: str, position: str) -> Any | None:
+    want = _identity_key(name, position)
+    for row in dst.query(Cls).all():
+        if _identity_key(row.name, row.position) == want:
+            return row
+    return None
+
+
+def _fold_stats_into_row(dst_row: Any, src_row: Any) -> None:
+    dst_row.matches = int(getattr(dst_row, "matches", 0) or 0) + int(
+        getattr(src_row, "matches", 0) or 0
+    )
+    if hasattr(dst_row, "goals"):
+        dst_row.goals = int(getattr(dst_row, "goals", 0) or 0) + int(
+            getattr(src_row, "goals", 0) or 0
+        )
+        dst_row.assists = int(getattr(dst_row, "assists", 0) or 0) + int(
+            getattr(src_row, "assists", 0) or 0
+        )
+        dst_row.ga = int(getattr(dst_row, "ga", 0) or 0) + int(
+            getattr(src_row, "ga", 0) or 0
+        )
+    if hasattr(dst_row, "clean_sheets"):
+        dst_row.clean_sheets = int(getattr(dst_row, "clean_sheets", 0) or 0) + int(
+            getattr(src_row, "clean_sheets", 0) or 0
+        )
+    if hasattr(dst_row, "missed_goals"):
+        dst_row.missed_goals = int(getattr(dst_row, "missed_goals", 0) or 0) + int(
+            getattr(src_row, "missed_goals", 0) or 0
+        )
+    dst_row.trophies = int(getattr(dst_row, "trophies", 0) or 0) + int(
+        getattr(src_row, "trophies", 0) or 0
+    )
+    dst_row.yellow_cards = int(getattr(dst_row, "yellow_cards", 0) or 0) + int(
+        getattr(src_row, "yellow_cards", 0) or 0
+    )
+    dst_row.red_cards = int(getattr(dst_row, "red_cards", 0) or 0) + int(
+        getattr(src_row, "red_cards", 0) or 0
+    )
+    for attr in ("golden_balls", "golden_boots", "golden_boys", "golden_gloves"):
+        if hasattr(dst_row, attr):
+            setattr(
+                dst_row,
+                attr,
+                int(getattr(dst_row, attr, 0) or 0)
+                + int(getattr(src_row, attr, 0) or 0),
+            )
+
+
+def _consolidate_identity_duplicates(dst: Any, Cls: type) -> None:
+    """Слить дубли одного игрока (имя+позиция) после смены клуба в накопительной БД."""
+    groups: dict[tuple[str, str], list[Any]] = {}
+    for row in list(dst.query(Cls).all()):
+        groups.setdefault(_identity_key(row.name, row.position), []).append(row)
+    for rows in groups.values():
+        if len(rows) <= 1:
+            continue
+        rows.sort(key=lambda r: int(getattr(r, "id", 0) or 0))
+        keep = rows[-1]
+        for other in rows[:-1]:
+            _fold_stats_into_row(keep, other)
+            dst.delete(other)
+
+
 def _migrate_old_cumulative_subfolder() -> None:
     old_d = os.path.join(season_paths.PROJECT_ROOT, "db", "cumulative")
     if not os.path.isdir(old_d):
@@ -67,15 +135,7 @@ def _row_as_new(Cls: type, p: Any) -> Any:
 
 def _merge_player_tables(src: Any, dst: Any, Cls: type) -> None:
     for p in src.query(Cls).all():
-        row = (
-            dst.query(Cls)
-            .filter(
-                Cls.name == p.name,
-                Cls.team == p.team,
-                Cls.position == p.position,
-            )
-            .first()
-        )
+        row = _find_row_by_identity(dst, Cls, p.name, p.position)
         if row is None:
             dst.add(_row_as_new(Cls, p))
             continue
@@ -166,6 +226,8 @@ def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[s
             for Cls in _ALL:
                 _merge_player_tables(sl, sd, Cls)
                 _merge_player_tables(scl, scd, Cls)
+                _consolidate_identity_duplicates(sd, Cls)
+                _consolidate_identity_duplicates(scd, Cls)
             sd.commit()
             scd.commit()
             log["cumulative"].append("merged season snapshot into all-time league+cl")
@@ -196,6 +258,45 @@ def append_current_season_to_cumulative() -> dict[str, Any]:
         season_paths.get_league_db_path(),
         season_paths.get_cl_db_path(),
     )
+
+
+def rebuild_all_time_databases_from_season_archives() -> dict[str, Any]:
+    """Пересобрать ``*_synced.db`` из ``db/season_n/{league,champions_league}.db``."""
+    seasons = list_season_archives_with_db()
+    log: dict[str, Any] = {"cumulative": [], "seasons": seasons}
+    if not seasons:
+        log["cumulative"].append("no season archives")
+        return log
+
+    _migrate_old_cumulative_subfolder()
+    _migrate_flat_root_all_time_dbs()
+    db_dir = os.path.join(season_paths.PROJECT_ROOT, "db")
+    cum_l = season_paths.get_cumulative_league_db_path()
+    cum_c = season_paths.get_cumulative_cl_db_path()
+    cum_o = season_paths.get_cumulative_common_db_path()
+    for path in (cum_l, cum_c, cum_o):
+        if os.path.isfile(path):
+            os.unlink(path)
+
+    first = seasons[0]
+    lp1 = os.path.join(db_dir, f"season_{first}", season_paths.SEASON_LEAGUE_NAME)
+    cp1 = os.path.join(db_dir, f"season_{first}", season_paths.SEASON_CL_NAME)
+    shutil.copy2(lp1, cum_l)
+    shutil.copy2(cp1, cum_c)
+    log["cumulative"].append(f"seed season_{first}")
+
+    for sn in seasons[1:]:
+        lp = os.path.join(db_dir, f"season_{sn}", season_paths.SEASON_LEAGUE_NAME)
+        cp = os.path.join(db_dir, f"season_{sn}", season_paths.SEASON_CL_NAME)
+        part = append_season_snapshot_to_all_time(lp, cp)
+        log["cumulative"].extend(part.get("cumulative", []))
+
+    if len(seasons) == 1:
+        from utils.common_db import rebuild_common_database_for_disk_paths
+
+        rebuild_common_database_for_disk_paths(cum_l, cum_c, cum_o)
+        log["cumulative"].append("rebuilt db/common.db (all-time)")
+    return log
 
 
 def list_season_archives_with_db() -> list[int]:
