@@ -182,6 +182,26 @@
       "league_code": "eng",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "джикия|спартак|rpl|league",
+      "name": "Джикия",
+      "name_norm": "джикия",
+      "team": "Спартак",
+      "team_norm": "спартак",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "маркао|спартак|rpl|league",
+      "name": "Маркао",
+      "name_norm": "маркао",
+      "team": "Спартак",
+      "team_norm": "спартак",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [
@@ -433,6 +453,14 @@
       "name_norm": "удоджи",
       "team": "Тоттенхэм",
       "team_norm": "тоттенхэм",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Малком",
+      "name_norm": "малком",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
       "return_month": 4,
       "type": "травма"
     }
