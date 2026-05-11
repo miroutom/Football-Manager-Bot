@@ -544,6 +544,41 @@ def format_discipline_pre_match_notice_html(
     )
 
 
+def format_active_injuries_report_text(*, schedule_month: int | None = None) -> str:
+    """Моноширинный список всех активных травм (без фильтра по лиге/ЛЧ)."""
+    month = get_calendar_month(schedule_month)
+    with _lock:
+        st = _load()
+    rows: list[tuple[str, str, str, int, int]] = []
+    for inj in st.get("injuries", []):
+        ret = int(inj.get("return_month") or 99)
+        if month >= ret:
+            continue
+        left = ret - month
+        name = str(inj.get("name") or "?").strip()
+        team = str(inj.get("team") or "?").strip()
+        kind = (inj.get("type") or "травма").strip() or "травма"
+        rows.append((team, name, kind, ret, left))
+    if not rows:
+        return f"Месяц календаря: {month}\n\nАктивных травм нет."
+
+    rows.sort(key=lambda r: (r[0].casefold(), r[1].casefold()))
+    w_team = max(len("Клуб"), max(len(r[0]) for r in rows))
+    w_name = max(len("Игрок"), max(len(r[1]) for r in rows))
+    head = f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<12}  выход  осталось"
+    sep = "-" * len(head)
+    body_lines = [head, sep]
+    for team, name, kind, ret, left in rows:
+        body_lines.append(
+            f"{team:<{w_team}}  {name:<{w_name}}  {kind[:12]:<12}  "
+            f"м{ret:<4}  ≈{left} мес."
+        )
+    return (
+        f"Месяц календаря: {month}. Игроков: {len(rows)}.\n\n"
+        + "\n".join(body_lines)
+    )
+
+
 def clear_discipline_state() -> None:
     """Сброс JSON (например при новом сезоне)."""
     with _lock:

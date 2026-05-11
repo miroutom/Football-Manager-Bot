@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
-"""Меню «Травмы»: лига → клуб → строка как в статистике матча (без жк/кк)."""
+"""Меню «Травмы»: ввод (лига → клуб → строка) и просмотр всех активных травм."""
 from __future__ import annotations
 
 import asyncio
 import logging
 import re
+from functools import partial
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
+    BufferedInputFile,
     CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
 )
 
+from bot.image_render import render_monospace_png_bytes
 from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
 from bot.states import InjuryEnter
 
@@ -39,9 +42,35 @@ def _club_btn(text: str, max_chars: int = 40) -> str:
     return text[: max_chars - 1] + "…"
 
 
+def _injury_root_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✏️ Ввод травмы",
+                    callback_data="inj:root:enter",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="👁 Посмотреть травмы",
+                    callback_data="inj:root:view",
+                ),
+            ],
+        ]
+    )
+
+
 def _injury_league_kb() -> InlineKeyboardMarkup:
     row: list[InlineKeyboardButton] = []
-    rows: list[list[InlineKeyboardButton]] = []
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="← К травмам",
+                callback_data="inj:back:root",
+            )
+        ]
+    ]
     for code, label in LEAGUE_LABELS:
         row.append(
             InlineKeyboardButton(text=label, callback_data=f"inj:lg:{code}")
@@ -56,7 +85,14 @@ def _injury_league_kb() -> InlineKeyboardMarkup:
 
 def _injury_teams_kb(league_code: str) -> InlineKeyboardMarkup:
     teams = teams_ordered_for_goalscorers(league_code)
-    rows: list[list[InlineKeyboardButton]] = []
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="← К лигам",
+                callback_data="inj:back:lg",
+            )
+        ]
+    ]
     row: list[InlineKeyboardButton] = []
     for idx, team in enumerate(teams):
         row.append(
@@ -73,24 +109,93 @@ def _injury_teams_kb(league_code: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+async def _send_injury_root(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await message.answer(
+        "🏥 <b>Травмы</b>\n\n"
+        "«Ввод травмы» — лига и клуб, затем строка "
+        "<code>имя Nм</code> или <code>имя Nм тип</code>.\n"
+        "«Посмотреть травмы» — все активные травмы одной картинкой.\n\n"
+        "ЖК и КК — в статистике после матча, не здесь.",
+        parse_mode="HTML",
+        reply_markup=_injury_root_kb(),
+    )
+
+
 @injury_router.callback_query(F.data == "menu:injury")
 async def cb_menu_injury(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if callback.message is None:
+        return
+    await _send_injury_root(callback.message, state)
+
+
+@injury_router.callback_query(F.data == "inj:back:root")
+async def cb_injury_back_root(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if callback.message is None:
+        return
+    await _send_injury_root(callback.message, state)
+
+
+@injury_router.callback_query(F.data == "inj:root:enter")
+async def cb_injury_root_enter(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     if callback.message is None:
         return
     await state.clear()
     await state.set_state(InjuryEnter.pick_lg)
     await callback.message.answer(
-        "🏥 <b>Травмы</b>\n\n"
+        "✏️ <b>Ввод травмы</b>\n\n"
         "Выбери лигу и клуб, затем строку в формате:\n"
         "<code>имя Nм</code> или <code>имя Nм тип</code>\n\n"
         "Примеры: <code>Симонс 4м</code>, <code>Симонс 4м колено</code>\n"
-        "(число — месяцы календаря до возвращения; как при записи статистики матча).\n\n"
-        "ЖК и КК вводятся в статистике после матча, не здесь.\n"
+        "(число — месяцы календаря до возвращения).\n"
         "/cancel — отмена.",
         parse_mode="HTML",
         reply_markup=_injury_league_kb(),
     )
+
+
+@injury_router.callback_query(F.data == "inj:back:lg")
+async def cb_injury_back_lg(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if callback.message is None:
+        return
+    await state.set_state(InjuryEnter.pick_lg)
+    await callback.message.answer(
+        "Выбери лигу:",
+        reply_markup=_injury_league_kb(),
+    )
+
+
+@injury_router.callback_query(F.data == "inj:root:view")
+async def cb_injury_root_view(callback: CallbackQuery, state: FSMContext) -> None:
+    from utils.player_discipline import format_active_injuries_report_text
+
+    await callback.answer("Готовлю…")
+    if callback.message is None:
+        return
+    await state.clear()
+    try:
+        body = await asyncio.to_thread(format_active_injuries_report_text)
+        blobs = await asyncio.to_thread(
+            partial(render_monospace_png_bytes, body, title="Травмы"),
+        )
+    except Exception as e:
+        logger.exception("injury view report")
+        await callback.message.answer(f"Не удалось собрать список травм: {e}")
+        return
+    if not blobs:
+        await callback.message.answer("Список травм пуст.")
+        return
+    for i, blob in enumerate(blobs):
+        title = "Травмы" if i == 0 else "Травмы · продолж."
+        await callback.message.answer_photo(
+            BufferedInputFile(blob, filename=f"injuries_{i}.png"),
+            caption=f"<b>{title}</b>",
+            parse_mode="HTML",
+        )
 
 
 @injury_router.callback_query(F.data.regexp(_RE_INJ_LG))
