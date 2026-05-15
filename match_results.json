@@ -608,6 +608,15 @@
       "away_score": 4,
       "day": 2,
       "entry_type": "play"
+    },
+    {
+      "home": "Динамо",
+      "away": "Цска",
+      "league": "rpl",
+      "home_score": 8,
+      "away_score": 2,
+      "day": 2,
+      "entry_type": "play"
     }
   ]
 }

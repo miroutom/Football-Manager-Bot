@@ -332,6 +332,16 @@
       "league_code": "rpl",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "чилвелл|цска|rpl|league",
+      "name": "Чилвелл",
+      "name_norm": "чилвелл",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [
