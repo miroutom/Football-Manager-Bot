@@ -119,7 +119,7 @@
       "team_norm": "бетис",
       "league_code": "esp",
       "scope": "league",
-      "matches_left": 2
+      "matches_left": 1
     }
   ],
   "yellow_cycle": [
@@ -672,6 +672,16 @@
       "league_code": "eng",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "сансет|атлетик|esp|league",
+      "name": "Сансет",
+      "name_norm": "сансет",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [
@@ -1091,6 +1101,30 @@
       "name_norm": "вайгль",
       "team": "Боруссия М",
       "team_norm": "боруссия м",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Муниаин",
+      "name_norm": "муниаин",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "return_month": 9,
+      "type": "травма"
+    },
+    {
+      "name": "Гюсто",
+      "name_norm": "гюсто",
+      "team": "Челси",
+      "team_norm": "челси",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Гвардиоль",
+      "name_norm": "гвардиоль",
+      "team": "Сити",
+      "team_norm": "сити",
       "return_month": 5,
       "type": "травма"
     }

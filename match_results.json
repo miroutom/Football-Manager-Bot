@@ -899,6 +899,24 @@
       "away_score": 3,
       "day": 2,
       "entry_type": "play"
+    },
+    {
+      "home": "Бетис",
+      "away": "Атлетик",
+      "league": "esp",
+      "home_score": 4,
+      "away_score": 3,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Челси",
+      "away": "Сити",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 4,
+      "day": 2,
+      "entry_type": "play"
     }
   ]
 }
