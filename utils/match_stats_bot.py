@@ -88,6 +88,20 @@ class PlayerMatchAcc:
         )
 
 
+def validate_stat_delta(acc: PlayerMatchAcc, parsed: ParsedPlayerStatLine) -> list[str]:
+    """Нельзя убавить гол/пас ниже нуля в текущей сессии матча."""
+    errs: list[str] = []
+    if acc.goals + parsed.goals < 0:
+        errs.append(
+            f"Голов в матче уже {acc.goals} — убавить на {abs(parsed.goals)} нельзя."
+        )
+    if acc.assists + parsed.assists < 0:
+        errs.append(
+            f"Передач в матче уже {acc.assists} — убавить на {abs(parsed.assists)} нельзя."
+        )
+    return errs
+
+
 def merge_player_acc(acc: PlayerMatchAcc, parsed: ParsedPlayerStatLine) -> None:
     acc.goals += parsed.goals
     acc.assists += parsed.assists
@@ -185,7 +199,7 @@ def parse_player_stat_line(text: str) -> ParsedPlayerStatLine:
     nums: list[int] = []
     rest: list[str] = []
     for tok in tokens:
-        if len(nums) < 2 and re.fullmatch(r"\d+", tok):
+        if len(nums) < 2 and re.fullmatch(r"-?\d+", tok):
             nums.append(int(tok))
         else:
             rest.append(tok)
@@ -273,6 +287,7 @@ def apply_player_stat_line(
     player: MatchRosterPlayer,
     parsed: ParsedPlayerStatLine,
     *,
+    session_acc: PlayerMatchAcc | None = None,
     home_team: str,
     away_team: str,
     home_score: int,
@@ -289,6 +304,11 @@ def apply_player_stat_line(
     if parsed.parse_errors:
         return list(parsed.parse_errors)
 
+    acc = session_acc or PlayerMatchAcc()
+    delta_errs = validate_stat_delta(acc, parsed)
+    if delta_errs:
+        return delta_errs
+
     match_for_cs = (home_team, away_team, home_score, away_score)
     clean_sheet = parsed.clean_sheet
     if not clean_sheet and get_position_type(player.position) in ("defender", "goalkeeper"):
@@ -297,7 +317,7 @@ def apply_player_stat_line(
         elif player.team.lower() == away_team.lower() and home_score == 0:
             clean_sheet = True
 
-    if parsed.goals or parsed.assists or clean_sheet:
+    if parsed.goals != 0 or parsed.assists != 0 or clean_sheet:
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             ok = add_player_stats(
@@ -362,8 +382,8 @@ def apply_player_stat_line(
             logs.append(msg)
 
     if not logs and not (
-        parsed.goals
-        or parsed.assists
+        parsed.goals != 0
+        or parsed.assists != 0
         or parsed.clean_sheet
         or parsed.yellow
         or parsed.second_yellow

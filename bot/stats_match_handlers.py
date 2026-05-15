@@ -132,7 +132,7 @@ def _stat_intro_html(data: dict, *, page: int, total_pages: int) -> str:
         f"Выбери игрока (✅ на шаге 1). "
         f"Стр. <b>{page + 1}</b>/<b>{total_pages}</b>.\n\n"
         "Строка — любые фрагменты: <code>1 0</code>, <code>жк</code>, <code>3м</code>, "
-        "<code>cs</code>, <code>0 1</code>, <code>1 0 жк</code>…\n"
+        "<code>cs</code>, <code>-1 1</code> (убавить гол, если в матче уже есть)…\n"
         "Повторный выбор — дополняет (было <code>1+0 жк</code>, вводишь <code>0 1 жк</code> "
         "→ <code>1+1 2жк</code>).\n"
         "Не выбрал на шаге 2 — только +1 матч. «Готово» — завершить."
@@ -386,7 +386,7 @@ async def cb_stpw_pick_player(callback: CallbackQuery, state: FSMContext) -> Non
         else:
             cur_block = (
                 "Отправь строку — любые фрагменты:\n"
-                "<code>1 0</code> · <code>жк</code> · <code>3м</code> · "
+                "<code>1 0</code> · <code>-1 1</code> · <code>жк</code> · "
                 "<code>cs</code> · <code>1 0 жк</code>\n"
             )
         kb = InlineKeyboardMarkup(
@@ -446,10 +446,12 @@ async def on_stpw_player_line(message: Message, state: FSMContext) -> None:
         await message.answer("\n".join(parsed.parse_errors))
         return
 
+    acc = get_player_acc(data, int(idx))
     logs = await asyncio.to_thread(
         apply_player_stat_line,
         p,
         parsed,
+        session_acc=acc,
         home_team=data["stats_home"],
         away_team=data["stats_away"],
         home_score=int(data["stats_hs"]),
@@ -459,7 +461,15 @@ async def on_stpw_player_line(message: Message, state: FSMContext) -> None:
         schedule_day=data.get("stats_schedule_day"),
     )
 
-    acc = get_player_acc(data, int(idx))
+    if logs and any(
+        s.startswith("Голов в матче") or s.startswith("Передач в матче") for s in logs
+    ):
+        await message.answer("\n".join(logs))
+        return
+    if logs and any("✗" in s for s in logs):
+        await message.answer("\n".join(logs))
+        return
+
     merge_player_acc(acc, parsed)
     acc_bag = set_player_acc(data, int(idx), acc)
     await state.update_data(stats_player_acc=acc_bag)

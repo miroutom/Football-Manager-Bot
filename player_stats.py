@@ -125,8 +125,10 @@ def _validate_goals_vs_team_score(
     Один игрок за матч не может набрать больше голов, чем забила его команда,
     и больше «гол+пас» суммарно, чем голов у команды (нельзя обойти лимит двумя цифрами).
     """
-    if goals < 0 or assists < 0:
-        return False, "голы и передачи не могут быть отрицательными"
+    if goals == 0 and assists == 0:
+        return True, None
+    goals = max(0, goals)
+    assists = max(0, assists)
     if goals == 0 and assists == 0:
         return True, None
     ts = _team_score_in_match(team, match_for_cs)
@@ -390,6 +392,12 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
         player.matches += 1
 
     if pos_type in ['forward', 'midfielder', 'defender']:
+        if goals < 0 and player.goals + goals < 0:
+            print(f"  ✗ {name}: голов в БД {player.goals}, нельзя убавить на {abs(goals)}.")
+            return False
+        if assists < 0 and player.assists + assists < 0:
+            print(f"  ✗ {name}: передач в БД {player.assists}, нельзя убавить на {abs(assists)}.")
+            return False
         player.goals += goals
         player.assists += assists
         player.ga = player.goals + player.assists
