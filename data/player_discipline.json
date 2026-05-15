@@ -19,7 +19,7 @@
       "team_norm": "мю",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 2
+      "matches_left": 1
     },
     {
       "key": "манчини|рома|ita|league",
@@ -98,6 +98,26 @@
       "team": "Крылья Советов",
       "team_norm": "крылья советов",
       "league_code": "rpl",
+      "scope": "league",
+      "matches_left": 2
+    },
+    {
+      "key": "каземиро|мю|cl|cl",
+      "name": "Каземиро",
+      "name_norm": "каземиро",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 1
+    },
+    {
+      "key": "гидо родригез|бетис|esp|league",
+      "name": "Гидо Родригез",
+      "name_norm": "гидо родригез",
+      "team": "Бетис",
+      "team_norm": "бетис",
+      "league_code": "esp",
       "scope": "league",
       "matches_left": 3
     }
@@ -561,6 +581,96 @@
       "team_norm": "локомотив",
       "league_code": "cl",
       "scope": "cl",
+      "count": 2
+    },
+    {
+      "key": "салтыков|крылья советов|rpl|league",
+      "name": "Салтыков",
+      "name_norm": "салтыков",
+      "team": "Крылья Советов",
+      "team_norm": "крылья советов",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "бонджорно|крылья советов|rpl|league",
+      "name": "Бонджорно",
+      "name_norm": "бонджорно",
+      "team": "Крылья Советов",
+      "team_norm": "крылья советов",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "арнольд|вольфсбург|cl|cl",
+      "name": "Арнольд",
+      "name_norm": "арнольд",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "данило|локомотив|cl|cl",
+      "name": "Данило",
+      "name_norm": "данило",
+      "team": "Локомотив",
+      "team_norm": "локомотив",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "рэшфорд|сити|eng|league",
+      "name": "Рэшфорд",
+      "name_norm": "рэшфорд",
+      "team": "Сити",
+      "team_norm": "сити",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "васкез|бетис|esp|league",
+      "name": "Васкез",
+      "name_norm": "васкез",
+      "team": "Бетис",
+      "team_norm": "бетис",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "энцо|челси|eng|league",
+      "name": "Энцо",
+      "name_norm": "энцо",
+      "team": "Челси",
+      "team_norm": "челси",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "мэддисон|тоттенхэм|eng|league",
+      "name": "Мэддисон",
+      "name_norm": "мэддисон",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "флорентину|тоттенхэм|eng|league",
+      "name": "Флорентину",
+      "name_norm": "флорентину",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "league_code": "eng",
+      "scope": "league",
       "count": 1
     }
   ],
