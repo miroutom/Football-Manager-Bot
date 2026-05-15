@@ -80,6 +80,16 @@
       "league_code": "rpl",
       "scope": "league",
       "matches_left": 3
+    },
+    {
+      "key": "кастровилль|фиорентина|ita|league",
+      "name": "Кастровилль",
+      "name_norm": "кастровилль",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "league_code": "ita",
+      "scope": "league",
+      "matches_left": 3
     }
   ],
   "yellow_cycle": [
@@ -221,7 +231,7 @@
       "team_norm": "спартак",
       "league_code": "rpl",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "маркао|спартак|rpl|league",
@@ -231,7 +241,7 @@
       "team_norm": "спартак",
       "league_code": "rpl",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "квара|наполи|cl|cl",
@@ -340,6 +350,46 @@
       "team": "Цска",
       "team_norm": "цска",
       "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "корона|франкфурт|cl|cl",
+      "name": "Корона",
+      "name_norm": "корона",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "соттиль|фиорентина|ita|league",
+      "name": "Соттиль",
+      "name_norm": "соттиль",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "кимпембе|реал сосьедад|esp|league",
+      "name": "Кимпембе",
+      "name_norm": "кимпембе",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "тюрам|атлетико|esp|league",
+      "name": "Тюрам",
+      "name_norm": "тюрам",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "league_code": "esp",
       "scope": "league",
       "count": 1
     }
@@ -706,6 +756,54 @@
       "team": "Ливерпуль",
       "team_norm": "ливерпуль",
       "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Тезе",
+      "name_norm": "тезе",
+      "team": "Спартак",
+      "team_norm": "спартак",
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "name": "Риччи",
+      "name_norm": "риччи",
+      "team": "Крылья Советов",
+      "team_norm": "крылья советов",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Кастровилль",
+      "name_norm": "кастровилль",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Траоре",
+      "name_norm": "траоре",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Кубо",
+      "name_norm": "кубо",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Корреа",
+      "name_norm": "корреа",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "return_month": 9,
       "type": "травма"
     }
   ]
