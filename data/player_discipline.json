@@ -70,6 +70,16 @@
       "league_code": "cl",
       "scope": "cl",
       "matches_left": 3
+    },
+    {
+      "key": "бегич|урал|rpl|league",
+      "name": "Бегич",
+      "name_norm": "бегич",
+      "team": "Урал",
+      "team_norm": "урал",
+      "league_code": "rpl",
+      "scope": "league",
+      "matches_left": 3
     }
   ],
   "yellow_cycle": [
@@ -270,6 +280,56 @@
       "team": "Милан",
       "team_norm": "милан",
       "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "тута|франкфурт|ger|league",
+      "name": "Тута",
+      "name_norm": "тута",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "рейнилдо|атлетико|esp|league",
+      "name": "Рейнилдо",
+      "name_norm": "рейнилдо",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "сауль|атлетико|esp|league",
+      "name": "Сауль",
+      "name_norm": "сауль",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "дембеле|реал|esp|league",
+      "name": "Дембеле",
+      "name_norm": "дембеле",
+      "team": "Реал",
+      "team_norm": "реал",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "каштанов|урал|rpl|league",
+      "name": "Каштанов",
+      "name_norm": "каштанов",
+      "team": "Урал",
+      "team_norm": "урал",
+      "league_code": "rpl",
       "scope": "league",
       "count": 1
     }
@@ -595,6 +655,46 @@
       "name_norm": "копмейнерс",
       "team": "Аталанта",
       "team_norm": "аталанта",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Лопеш",
+      "name_norm": "лопеш",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "return_month": 3,
+      "type": "травма"
+    },
+    {
+      "name": "Заниоло",
+      "name_norm": "заниоло",
+      "team": "Астон Вилла",
+      "team_norm": "астон вилла",
+      "return_month": 9,
+      "type": "травма"
+    },
+    {
+      "name": "Педроса",
+      "name_norm": "педроса",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "return_month": 3,
+      "type": "травма"
+    },
+    {
+      "name": "Менди",
+      "name_norm": "менди",
+      "team": "Урал",
+      "team_norm": "урал",
+      "return_month": 9,
+      "type": "травма"
+    },
+    {
+      "name": "Мбаппе",
+      "name_norm": "мбаппе",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
       "return_month": 5,
       "type": "травма"
     }
