@@ -618,30 +618,62 @@ def _stats_history_season_metric_kb(season_num: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def _schedule_menu_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="Смеш · все", callback_data="sch:mix:a:xx"),
-                InlineKeyboardButton(text="Смеш · осталось", callback_data="sch:mix:r:xx"),
-            ],
+def _schedule_league_pick_kb() -> InlineKeyboardMarkup:
+    """Шаг 1 календаря: чемпионат или все."""
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="Все чемпионаты",
+                callback_data="sch:pick:all",
+            ),
+        ],
+    ]
+    row: list[InlineKeyboardButton] = []
+    for code, label in LEAGUE_LABELS:
+        row.append(InlineKeyboardButton(text=label, callback_data=f"sch:pick:{code}"))
+        if len(row) == 3:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _schedule_mixed_slice_kb(league_key: str) -> InlineKeyboardMarkup:
+    """
+    Шаг 2: смешанный календарь (матч-дни).
+    Строки — все / осталось / сыграно; столбцы — все типы / сим / игра.
+    ``league_key``: ``all`` или код лиги.
+    """
+    lg = league_key
+    mf_codes = ("a", "r", "p")
+    mf_labels = ("Все", "Ост", "Сыг")
+    sk_codes = ("x", "s", "g")
+    sk_labels = ("все", "сим", "игра")
+    rows: list[list[InlineKeyboardButton]] = []
+    for mf, mlab in zip(mf_codes, mf_labels):
+        row_btns: list[InlineKeyboardButton] = []
+        for sk, slab in zip(sk_codes, sk_labels):
+            row_btns.append(
+                InlineKeyboardButton(
+                    text=f"{mlab}·{slab}",
+                    callback_data=f"sch:mx:{lg}:{mf}:{sk}",
+                )
+            )
+        rows.append(row_btns)
+    rows.append(
+        [InlineKeyboardButton(text="← К выбору чемпионата", callback_data="sch:back:lg")]
+    )
+    if league_key != "all":
+        rows.append(
             [
                 InlineKeyboardButton(
-                    text="Туры РПЛ · ост.",
-                    callback_data="sch:mix:r:rpl",
+                    text="Туры (офиц.) · осталось",
+                    callback_data=f"sch:in2:{league_key}:r:x",
                 ),
-                InlineKeyboardButton(text="Туры АПЛ · ост.", callback_data="sch:mix:r:eng"),
-            ],
-            [
-                InlineKeyboardButton(text="Туры Ла Лига · ост.", callback_data="sch:mix:r:esp"),
-                InlineKeyboardButton(text="Туры Серия А · ост.", callback_data="sch:mix:r:ita"),
-            ],
-            [
-                InlineKeyboardButton(text="Туры Бундес · ост.", callback_data="sch:mix:r:ger"),
-                InlineKeyboardButton(text="Туры ЛЧ · ост.", callback_data="sch:mix:r:cl"),
-            ],
-        ]
-    )
+            ]
+        )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _tops_plus_kb() -> InlineKeyboardMarkup:
@@ -704,7 +736,7 @@ async def cmd_start(message: Message) -> None:
             "Запись счёта: «✏️ Ручной матч», «📌 Из пропусков», «📋 Из календаря» "
             "или /match, /play_schedule, /play_skipped.\n"
             "Трансфер игрока — кнопка «🔄 Трансфер» или /transfer.\n"
-            "📅 Расписание — весь календарь картинками; 📚 Стата сезонов — всё время и архив. "
+            "📅 Расписание — календарь по чемпионату и типу матча (сим/игра); 📚 Стата сезонов — всё время и архив. "
             "Топ-100, голеадоры, стата без матча — в меню или /help.\n"
             "Снизу экрана кнопка «📋 Меню» снова открывает главное меню."
         ),
@@ -1242,22 +1274,20 @@ async def cmd_journal(message: Message) -> None:
 
 @router.callback_query(F.data == "menu:schedule")
 async def cb_menu_schedule(callback: CallbackQuery) -> None:
-    """Сразу весь mixed_schedule.json (все слоты), как «Смеш · все»; подменю — для других срезов."""
-    await callback.answer("Генерация…")
-    try:
-        text = await asyncio.to_thread(render_schedule_mixed, None, "all")
-        await answer_report_photos(
-            callback.message,
-            text,
-            "Смешанное расписание — все матчи",
-        )
-        await callback.message.answer(
-            "Другие срезы: общий остаток и остаток по каждой лиге.",
-            reply_markup=_schedule_menu_kb(),
-        )
-    except Exception as e:
-        logger.exception("menu:schedule")
-        await callback.message.answer(f"Ошибка: {e}")
+    """Календарь: сначала чемпионат, затем сетка все/ост/сыг × все/сим/игра."""
+    await callback.answer()
+    if callback.message is None:
+        return
+    await callback.message.answer(
+        "📅 <b>Календарь</b>\n\n"
+        "1) Выберите чемпионат (или «Все»).\n"
+        "2) Смешанные <b>матч-дни</b>: строка — все слоты / только не сыгранные / только сыгранные в журнале; "
+        "столбец — все пары / только <b>сим</b> (один менеджер) / только <b>игра</b> (разные менеджеры). "
+        "Для сыгранных «сим» — записи с <code>entry_type: simulation</code> в журнале.\n"
+        "Для одной лиги есть быстрый переход «Туры (офиц.) · осталось» — календарь по турам из проекта.",
+        parse_mode=ParseMode.HTML,
+        reply_markup=_schedule_league_pick_kb(),
+    )
 
 
 @router.callback_query(F.data == "menu:stats_match")
@@ -1271,27 +1301,106 @@ async def cb_menu_stats_match(callback: CallbackQuery) -> None:
     )
 
 
-@router.callback_query(F.data.startswith("sch:mix:"))
-async def cb_sch_mixed(callback: CallbackQuery) -> None:
-    parts = callback.data.split(":")
-    if len(parts) != 4:
+@router.callback_query(F.data.startswith("sch:pick:"))
+async def cb_sch_pick_league(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    lg = parts[2].strip().lower()
+    valid = {"all", "rpl", "eng", "esp", "ita", "ger", "cl"}
+    if lg not in valid:
+        await callback.answer("Неизвестный выбор.", show_alert=True)
+        return
+    await callback.answer()
+    if callback.message is None:
+        return
+    title = "все чемпионаты" if lg == "all" else _league_title(lg)
+    await callback.message.answer(
+        f"Матч-дни ({title}): выберите срез.",
+        reply_markup=_schedule_mixed_slice_kb(lg),
+    )
+
+
+@router.callback_query(F.data == "sch:back:lg")
+async def cb_sch_back_league(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if callback.message is None:
+        return
+    await callback.message.answer(
+        "Выберите чемпионат:",
+        reply_markup=_schedule_league_pick_kb(),
+    )
+
+
+@router.callback_query(F.data.startswith("sch:mx:"))
+async def cb_sch_mixed_matrix(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 5:
         await callback.answer("Ошибка кнопки.", show_alert=True)
         return
-    fk = parts[2]
-    lg = parts[3]
+    _, _, lg, mfk, skk = parts
     mf_map = {"a": "all", "r": "remaining", "p": "played"}
-    if fk not in mf_map:
-        await callback.answer("Ошибка.", show_alert=True)
+    sk_map = {"x": None, "s": "sim", "g": "game"}
+    if mfk not in mf_map or skk not in sk_map:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
         return
-    mf_code = mf_map[fk]
-    lc = None if lg == "xx" else lg
+    lc = None if lg == "all" else lg
     await callback.answer("Генерация…")
     try:
-        text = await asyncio.to_thread(render_schedule_mixed, lc, mf_code)
-        await answer_report_photos(callback.message, text, "Расписание (смешанное)")
+        text = await asyncio.to_thread(
+            render_schedule_mixed,
+            lc,
+            mf_map[mfk],
+            sk_map[skk],
+        )
+        sk_label = {"x": "все типы", "s": "сим", "g": "игра"}.get(skk, skk)
+        cap = (
+            f"Календарь · {_league_title(lg) if lg != 'all' else 'все чемпионаты'} · "
+            f"{mf_map[mfk]} · {sk_label}"
+        )
+        await answer_report_photos(callback.message, text, cap)
     except Exception as e:
-        logger.exception("sch:mix")
+        logger.exception("sch:mx")
         await callback.message.answer(f"Ошибка: {e}")
+
+
+@router.callback_query(F.data.startswith("sch:in2:"))
+async def cb_sch_intrinsic_filtered(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 5:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    _, _, lg, mfk, skk = parts
+    mf_map = {"a": "all", "r": "remaining", "p": "played"}
+    sk_map = {"x": None, "s": "sim", "g": "game"}
+    if mfk not in mf_map or skk not in sk_map or lg in ("", "all"):
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    await callback.answer("Генерация…")
+    try:
+        text = await asyncio.to_thread(
+            render_schedule_intrinsic_rounds,
+            lg,
+            mf_map[mfk],
+            sk_map[skk],
+        )
+        await answer_report_photos(
+            callback.message,
+            text,
+            f"Туры · {_league_title(lg)}",
+        )
+    except Exception as e:
+        logger.exception("sch:in2")
+        await callback.message.answer(f"Ошибка: {e}")
+
+
+@router.callback_query(F.data.startswith("sch:mix:"))
+async def cb_sch_mixed_deprecated(callback: CallbackQuery) -> None:
+    await callback.answer(
+        "Меню календаря обновлено: снова откройте 📅 Расписание и выберите чемпионат, затем срез.",
+        show_alert=True,
+    )
 
 
 @router.callback_query(F.data.startswith("sch:in:"))

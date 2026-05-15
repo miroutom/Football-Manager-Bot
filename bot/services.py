@@ -422,11 +422,16 @@ def render_top100_all_leagues(sort_key: int = 1, limit: int = 100) -> str:
     return format_all_leagues_combined_list_str(limit=limit, sort_key=sort_key)
 
 
-def render_schedule_mixed(league_filter: str | None, match_filter_code: str) -> str:
+def render_schedule_mixed(
+    league_filter: str | None,
+    match_filter_code: str,
+    session_kind: str | None = None,
+) -> str:
     """
     Смешанное расписание матч-дней.
     league_filter: None — все лиги, иначе код лиги (например cl).
     match_filter_code: all | remaining | played
+    session_kind: None | ``sim`` | ``game`` — фильтр по парам менеджеров / типу записи в журнале.
     """
     from main import load_or_generate_mixed_schedule
 
@@ -443,6 +448,7 @@ def render_schedule_mixed(league_filter: str | None, match_filter_code: str) -> 
         "remaining": MATCH_FILTER_REMAINING,
         "played": MATCH_FILTER_PLAYED,
     }
+    sk = session_kind if session_kind in ("sim", "game") else None
     mf = mf_map.get(match_filter_code, MATCH_FILTER_ALL)
     mixed = load_or_generate_mixed_schedule()
 
@@ -454,6 +460,7 @@ def render_schedule_mixed(league_filter: str | None, match_filter_code: str) -> 
                     league_code=None,
                     team_query="",
                     title="Сыгранные матчи — все лиги (журнал)",
+                    session_kind=sk,
                 )
             else:
                 from player_stats import LEAGUE_NAMES
@@ -463,6 +470,7 @@ def render_schedule_mixed(league_filter: str | None, match_filter_code: str) -> 
                     league_code=league_filter,
                     team_query="",
                     title=f"Сыгранные матчи — {nm} ({league_filter}), журнал",
+                    session_kind=sk,
                 )
         else:
             from player_stats import LEAGUE_NAMES
@@ -483,11 +491,16 @@ def render_schedule_mixed(league_filter: str | None, match_filter_code: str) -> 
                 league_code=lc,
                 team_query="",
                 match_filter=mf,
+                session_kind=sk,
             )
     return buf.getvalue()
 
 
-def render_schedule_intrinsic_rounds(league_code: str, match_filter_code: str) -> str:
+def render_schedule_intrinsic_rounds(
+    league_code: str,
+    match_filter_code: str,
+    session_kind: str | None = None,
+) -> str:
     """Официальный календарь лиги по турам — режим «v»→4."""
     from schedule_view import (
         MATCH_FILTER_ALL,
@@ -503,6 +516,7 @@ def render_schedule_intrinsic_rounds(league_code: str, match_filter_code: str) -
         "played": MATCH_FILTER_PLAYED,
     }
     mf = mf_map.get(match_filter_code, MATCH_FILTER_ALL)
+    sk = session_kind if session_kind in ("sim", "game") else None
 
     titles = {
         "rpl": "РПЛ — туры",
@@ -519,6 +533,7 @@ def render_schedule_intrinsic_rounds(league_code: str, match_filter_code: str) -
                 league_code=league_code,
                 team_query="",
                 title=f"Сыгранные — {titles.get(league_code, league_code)} (журнал)",
+                session_kind=sk,
             )
         else:
             print_intrinsic_schedule(
@@ -526,6 +541,7 @@ def render_schedule_intrinsic_rounds(league_code: str, match_filter_code: str) -
                 title=titles.get(league_code, league_code),
                 team_query="",
                 match_filter=mf,
+                session_kind=sk,
             )
     return buf.getvalue()
 

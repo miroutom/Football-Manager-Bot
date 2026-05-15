@@ -1,12 +1,19 @@
 ---
-description: Always commit and push completed work unless opted out
+description: После любой правки в репозитории — коммит и push (если не попросили иначе)
 alwaysApply: true
 ---
 
-# Git: Commit And Push By Default
+# Git: после правки — коммит и push
 
-When you finish **any** coherent change (large or small)—feature slice, refactor, UX, data tweaks, fixes—finish with a **git commit and `git push`** by default.
+После **любой** завершённой правки кода/конфига в этом проекте (не только «мелкий фикс»): по умолчанию сделай **`git commit`** и **`git push`** в текущую ветку, если есть изменения для коммита.
 
-**Do not commit or push only if** the user explicitly asks to skip Git for _this task_ or says not to push.
+**Не коммить и не пушить**, только если пользователь **в этом чате** явно сказал не коммитить / не пушить / оставить рабочую копию.
 
-Use a clear conventional-style message summarizing intent. Never force-push to `main`/`master`; never destructive git unless the user explicitly requests it.
+## Как коммитить (кратко)
+
+1. Параллельно: `git status`, `git diff`, `git log -5 --oneline` — понять дифф и стиль сообщений.
+2. Не коммить секреты (`.env`, ключи и т.п.).
+3. `git add` нужные файлы, сообщение через HEREDOC в `git commit`.
+4. `git push` на `origin` для текущей ветки.
+
+Безопасность: не `push --force` на `main`/`master`, не деструктивные операции и не `git config`, не `--no-verify`, не `amend` после пуша — как в пользовательских правилах Git.

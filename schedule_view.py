@@ -22,6 +22,25 @@ from utils.utils import PROJECT_ROOT
 MIXED_SCHEDULE_FILE = os.path.join(PROJECT_ROOT, "mixed_schedule.json")
 
 
+def _line_session_kind(home: str, away: str) -> str | None:
+    """``sim`` | ``game`` по разбиению клубов по менеджерам; ``None`` если клуб не в конфиге."""
+    from config.leagues_config import manager_session_label
+
+    lab = manager_session_label((home or "").strip(), (away or "").strip())
+    if lab == "Симуляция":
+        return "sim"
+    if lab == "Игра":
+        return "game"
+    return None
+
+
+def _mixed_line_session_kind(line: str) -> str | None:
+    parts = line.split(";")
+    if len(parts) < 2:
+        return None
+    return _line_session_kind(parts[0], parts[1])
+
+
 def _skipped_slot(skip: dict, home: str, away: str, league_code: str, cl_phase_expected) -> bool:
     """Совпадение слота с пропуском (как в main.py)."""
     if skip["home"] != home or skip["away"] != away:
@@ -138,15 +157,18 @@ def print_journal_played_matches(
     league_code: Optional[str],
     team_query: str,
     title: str,
+    session_kind: Optional[str] = None,
 ) -> None:
     """
     Все сыгранные матчи из match_results.json по лиге (или по всем лигам).
 
     Не ограничивается смешанным календарём — только журнал и счёт.
+    ``session_kind``: ``sim`` — только ``entry_type: simulation``; ``game`` — без симуляций.
     """
     records, _ = load_records_and_keys()
     q = _norm_q(team_query)
     rows: list[tuple] = []
+    sk = session_kind if session_kind in ("sim", "game") else None
     for r in records:
         leg = str(r.get("league") or "").strip()
         if league_code is not None and leg != league_code:
@@ -160,6 +182,13 @@ def print_journal_played_matches(
             continue
         h = str(r.get("home") or "").strip()
         a = str(r.get("away") or "").strip()
+        if sk:
+            et = (r.get("entry_type") or "play").strip().lower()
+            is_sim = et == "simulation"
+            if sk == "sim" and not is_sim:
+                continue
+            if sk == "game" and is_sim:
+                continue
         if q and not (
             team_matches_query(h, q) or team_matches_query(a, q)
         ):
@@ -181,6 +210,10 @@ def print_journal_played_matches(
         )
     )
     print(note)
+    if sk == "sim":
+        print("  (только записи симуляций, entry_type: simulation)")
+    elif sk == "game":
+        print("  (только «игра»: без entry_type simulation)")
     if q:
         print(f"  (фильтр команды: «{_norm_q(team_query)}»)")
     print("=" * 70)
@@ -227,8 +260,9 @@ def iter_mixed_filtered(
     team_query: str = "",
     match_filter: str = MATCH_FILTER_ALL,
     skipped_list: Optional[list] = None,
+    session_kind: Optional[str] = None,
 ) -> Iterable[tuple[int, str]]:
-    """Пары (день, строка матча)."""
+    """Пары (день, строка матча). ``session_kind``: ``sim`` | ``game`` — только такие пары менеджеров."""
     q = _norm_q(team_query)
     skipped = skipped_list if skipped_list is not None else load_skipped_matches()
     mf = match_filter if match_filter in (
@@ -236,6 +270,7 @@ def iter_mixed_filtered(
         MATCH_FILTER_REMAINING,
         MATCH_FILTER_PLAYED,
     ) else MATCH_FILTER_ALL
+    sk = session_kind if session_kind in ("sim", "game") else None
     for day_data in mixed_schedule:
         day = int(day_data.get("day", 0))
         for line in day_data.get("matches", []):
@@ -250,6 +285,10 @@ def iter_mixed_filtered(
                 continue
             if mf == MATCH_FILTER_PLAYED and not _mixed_line_is_played(line, skipped):
                 continue
+            if sk:
+                lk = _mixed_line_session_kind(line)
+                if lk != sk:
+                    continue
             if q:
                 home, away = parts[0].strip(), parts[1].strip()
                 if not (
@@ -267,6 +306,7 @@ def print_mixed_schedule(
     team_query: str = "",
     match_filter: str = MATCH_FILTER_ALL,
     slot_label: Optional[str] = None,
+    session_kind: Optional[str] = None,
 ) -> None:
     if slot_label is None:
         from utils.schedule_by_months import read_mixed_slot_label
@@ -278,6 +318,7 @@ def print_mixed_schedule(
             league_code=league_code,
             team_query=team_query,
             match_filter=match_filter,
+            session_kind=session_kind,
         )
     )
     print("\n" + "=" * 70)
@@ -288,6 +329,10 @@ def print_mixed_schedule(
         print("  (только уже сыгранные по журналу match_results)")
     if team_query:
         print(f"  (фильтр команды: «{_norm_q(team_query)}»)")
+    if session_kind == "sim":
+        print("  (только слоты «Симуляция» — оба клуба одного менеджера)")
+    elif session_kind == "game":
+        print("  (только слоты «Игра» — клубы разных менеджеров)")
     print("=" * 70)
     if not lines_out:
         print("  Нет матчей по условию.")
@@ -306,6 +351,7 @@ def print_intrinsic_schedule(
     title: str,
     team_query: str = "",
     match_filter: str = MATCH_FILTER_ALL,
+    session_kind: Optional[str] = None,
 ) -> None:
     from table.schedule import get_schedule
 
@@ -317,12 +363,17 @@ def print_intrinsic_schedule(
         MATCH_FILTER_REMAINING,
         MATCH_FILTER_PLAYED,
     ) else MATCH_FILTER_ALL
+    sk = session_kind if session_kind in ("sim", "game") else None
     if mf == MATCH_FILTER_REMAINING:
         print(
             "  (только не сыгранные по журналу; пропуски по турам не учитываются)"
         )
     elif mf == MATCH_FILTER_PLAYED:
         print("  (только уже сыгранные по журналу)")
+    if sk == "sim":
+        print("  (только «Симуляция» по менеджерам)")
+    elif sk == "game":
+        print("  (только «Игра» по менеджерам)")
     if team_query:
         print(f"  (фильтр команды: «{_norm_q(team_query)}»)")
     print("=" * 70)
@@ -341,6 +392,10 @@ def print_intrinsic_schedule(
                 continue
             if mf == MATCH_FILTER_PLAYED and not _intrinsic_line_is_played(line):
                 continue
+            if sk:
+                lk = _line_session_kind(parts[0], parts[1])
+                if lk != sk:
+                    continue
             if q:
                 if not (
                     team_matches_query(parts[0], q)
