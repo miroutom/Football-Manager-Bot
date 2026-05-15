@@ -1,10 +1,12 @@
 ---
-description: Auto commit and push small fixes
+description: Always commit and push completed work unless opted out
 alwaysApply: true
 ---
 
-# Small Fixes: Commit And Push
+# Git: Commit And Push By Default
 
-If a change is small and clearly self-contained (bugfix, mapping tweak, copy fix, minor handler/UI correction), finish it with a git commit and push by default.
+When you finish **any** coherent change (large or small)—feature slice, refactor, UX, data tweaks, fixes—finish with a **git commit and `git push`** by default.
 
-Do this unless the user explicitly says not to commit/push for this specific task.
+**Do not commit or push only if** the user explicitly asks to skip Git for _this task_ or says not to push.
+
+Use a clear conventional-style message summarizing intent. Never force-push to `main`/`master`; never destructive git unless the user explicitly requests it.
