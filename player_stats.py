@@ -227,6 +227,16 @@ ALL_POSITION_CODES = tuple(
 )
 
 
+def _is_ga_int_token(tok: str) -> bool:
+    """Число в конце строки статы: в т.ч. отрицательное «-1» и «+1»."""
+    t = tok.strip()
+    if not t:
+        return False
+    if t[0] in "+-":
+        return len(t) > 1 and t[1:].isdigit()
+    return t.isdigit()
+
+
 def _strip_cs_and_goals(parts: list) -> tuple:
     """С конца: cs/сс/сухой, затем голы+ассисты (N+M или два числа или одно число)."""
     parts = list(parts)
@@ -240,13 +250,13 @@ def _strip_cs_and_goals(parts: list) -> tuple:
     if '+' in last:
         try:
             g, a = last.split('+', 1)
-            goals, assists = int(g), int(a)
+            goals, assists = int(g.strip()), int(a.strip())
             return goals, assists, clean_sheet, parts[:-1]
         except ValueError:
             pass
-    if len(parts) >= 2 and parts[-1].isdigit() and parts[-2].isdigit():
+    if len(parts) >= 2 and _is_ga_int_token(parts[-1]) and _is_ga_int_token(parts[-2]):
         return int(parts[-2]), int(parts[-1]), clean_sheet, parts[:-2]
-    if len(parts) >= 1 and parts[-1].isdigit():
+    if len(parts) >= 1 and _is_ga_int_token(parts[-1]):
         return int(parts[-1]), 0, clean_sheet, parts[:-1]
     return 0, 0, clean_sheet, parts
 
@@ -548,7 +558,8 @@ def parse_player_input(input_str: str, default_team: str = "", require_position:
     """
     Парсинг строки игрока.
 
-    Голы и ассисты (с конца строки): ``2+1`` или ``2 1`` или одно число ``2`` (= 2 гола, 0 передач).
+    Голы и ассисты (с конца строки): ``2+1`` или ``2 1`` или одно число ``2`` (= 2 гола, 0 передач);
+    можно отрицательные поправки: ``игрок -1 0``, ``игрок -1 +1``.
     Затем опционально ``cs`` / ``сс`` / ``сухой``.
 
     Без позиции в строке — поиск в БД по текущей команде (auto_find).
