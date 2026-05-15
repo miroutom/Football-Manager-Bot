@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import io
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from utils.utils import (
     Base,
@@ -178,6 +178,80 @@ def find_player_by_name(session, name: str, team: str = None):
             pass
 
     return None, None
+
+
+def pick_starting_goalkeeper_row(session, team: str) -> tuple[str | None, str | None]:
+    """Имя и позицию основного вратаря (предпочтительно ``status=start``), иначе (None, None)."""
+    team_t = (team or "").strip().title()
+    rows = session.query(Goalkeeper).filter(Goalkeeper.team == team_t).all()
+    if not rows:
+        return None, None
+
+    def sort_key(r: Goalkeeper) -> tuple[int, int, str]:
+        st = (getattr(r, "status", None) or "").strip().lower()
+        pr = 0 if st == "start" else 1
+        return (pr, -int(r.overall or 0), (r.name or "").lower())
+
+    rows.sort(key=sort_key)
+    g = rows[0]
+    return g.name, g.position
+
+
+def credit_goalkeepers_for_manual_fixture(
+    *,
+    home: str,
+    away: str,
+    score_home: int,
+    score_away: int,
+    tournament: str,
+    listed_players: list[dict[str, Any]],
+) -> None:
+    """
+    Если соперник не забил — основному вратарю +1 матч и сухой (через ``match_for_cs``).
+
+    Команды с ручной строкой ВРТ в ``listed_players`` пропускаем.
+    """
+    home_t = (home or "").strip().title()
+    away_t = (away or "").strip().title()
+    match_for_cs = (home_t, away_t, int(score_home), int(score_away))
+    teams_with_manual_gk: set[str] = set()
+    for pl in listed_players or []:
+        if (pl.get("position") or "").strip().upper() == "ВРТ":
+            teams_with_manual_gk.add((pl.get("team") or "").strip().title())
+
+    session = get_session(tournament)
+    if score_away == 0 and home_t not in teams_with_manual_gk:
+        nm, pos = pick_starting_goalkeeper_row(session, home_t)
+        if nm and pos:
+            add_player_stats(
+                nm,
+                pos,
+                home_t,
+                0,
+                0,
+                clean_sheet=False,
+                tournament=tournament,
+                match_for_cs=match_for_cs,
+                create_if_missing=False,
+                skip_discipline_check=True,
+                increment_matches=True,
+            )
+    if score_home == 0 and away_t not in teams_with_manual_gk:
+        nm, pos = pick_starting_goalkeeper_row(session, away_t)
+        if nm and pos:
+            add_player_stats(
+                nm,
+                pos,
+                away_t,
+                0,
+                0,
+                clean_sheet=False,
+                tournament=tournament,
+                match_for_cs=match_for_cs,
+                create_if_missing=False,
+                skip_discipline_check=True,
+                increment_matches=True,
+            )
 
 
 def find_or_create_player(session, name: str, position: str, team: str):

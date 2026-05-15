@@ -7,18 +7,20 @@
 ВАЖНО
 ------
 - По умолчанию ничего не пишет в БД: только проверки и план (--dry-run).
-- Режим --apply делает ЖЁСТКОЕ обнуление goals/assists/matches/ga у всех
-  forwards/midfielders/defenders в db/season_2/league.db и champions_league.db,
-  затем заново добавляет вклад из ``ALL_SEASON2_MANUAL_FIXTURES`` (месяц 1 + месяц 2).
-  Карточки, травмы, clean_sheets, вратари и overall не трогаются.
+- Режим --apply делает ЖЁСТКОЕ обнуление goals/assists/matches/ga у полевых и
+  matches/clean_sheets/missed_goals у вратарей, а также yellow_cards/red_cards у всех
+  игроков (включая ВРТ) в db/season_2/league.db и champions_league.db; затем заново
+  добавляет вклад из ``ALL_SEASON2_MANUAL_FIXTURES`` (месяц 1 + месяц 2).
+  Для матчей, где соперник не забил, основному вратарю (status=start, иначе лучший overall)
+  засчитывается матч и сухой, если в ``players`` нет ручной строки с позицией ВРТ для этой команды.
+  После заливки матчей: ``yellow_cards`` из ``data/player_discipline.json`` (цикл жк);
+  травмы и дисквалы остаются только в JSON (см. ``utils/discipline_db_sync``). overall не трогаем.
   Не используйте --apply, пока дополняете список матчей — потеряете остальную стату S2.
   Пока в объединённом списке есть матчи с голами в счёте и пустым ``players``, ``--apply``
   по умолчанию запрещён; матчи **0-0** с пустым ``players`` не считаются дырой.
   Для осознанной частичной заливки добавь ``--allow-partial-fixtures``.
 - После успешной заливки: пересборка common активного сезона и всех *_synced.db из архивов season_*.
 - Перед боевым запуском проверьте db/season_state.json: active_season == 2 (или скрипт откажется).
-
-ЖК / КК / травмы сознательно не сверяем (как в ТЗ пользователя).
 
 Сумма голов в ``players`` по команде не должна превышать счёт (автоголы в чате могут не
 разноситься по полевым — равенство счёту не требуется).
@@ -1628,12 +1630,13 @@ def validate_fixture_scores(fixtures: list[dict[str, Any]]) -> list[str]:
 
 
 def zero_outfield_match_counters_season2() -> None:
-    """Обнулить только goals, assists, matches, ga у полевых в обоих файлах сезона 2."""
+    """Обнулить матчевую стату полевых, матчи/сухие/пропущенные у ВРТ, жк/кк у всех (S2 league+cl)."""
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
     from data.defender import Defender
     from data.forward import Forward
+    from data.goalkeeper import Goalkeeper
     from data.midfielder import Midfielder
     from utils import season_paths
 
@@ -1659,6 +1662,14 @@ def zero_outfield_match_counters_season2() -> None:
                     row.assists = 0
                     row.matches = 0
                     row.ga = 0
+                    row.yellow_cards = 0
+                    row.red_cards = 0
+            for row in s.query(Goalkeeper).all():
+                row.matches = 0
+                row.clean_sheets = 0
+                row.missed_goals = 0
+                row.yellow_cards = 0
+                row.red_cards = 0
             s.commit()
         finally:
             s.close()
@@ -1667,18 +1678,28 @@ def zero_outfield_match_counters_season2() -> None:
 
 def apply_fixtures(fixtures: list[dict[str, Any]]) -> None:
     """Добавить вклад матчей через player_stats (после обнуления — единственный источник g/a/m)."""
-    from player_stats import add_player_stats
+    from player_stats import add_player_stats, credit_goalkeepers_for_manual_fixture
 
     for fx in fixtures:
         players = fx.get("players") or []
-        if not players:
-            continue
         h = (fx["home"] or "").strip().title()
         a = (fx["away"] or "").strip().title()
         hs = int(fx["score_home"])
         aws = int(fx["score_away"])
         tourn = fx["tournament"]
         match_for_cs = (h, a, hs, aws)
+
+        credit_goalkeepers_for_manual_fixture(
+            home=h,
+            away=a,
+            score_home=hs,
+            score_away=aws,
+            tournament=tourn,
+            listed_players=list(players),
+        )
+
+        if not players:
+            continue
         for pl in players:
             ok = add_player_stats(
                 pl["name"],
@@ -1721,17 +1742,22 @@ def main() -> None:
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="Обнулить матчевую стату полевых S2 и залить ALL_SEASON2_MANUAL_FIXTURES (м1+m2), затем common+synced.",
+        help="Обнулить матчевую стату полевых+ВРТ и жк/кк S2, залить ALL_SEASON2_MANUAL_FIXTURES, синк жк из JSON, затем common+synced.",
     )
     parser.add_argument(
         "--i-understand-destroy-stats",
         action="store_true",
-        help="Обязательный флаг вместе с --apply (тупиковое обнуление g/a/m/ga по всем полевым S2).",
+        help="Обязательный флаг вместе с --apply (тупиковое обнуление g/a/m/ga, жк/кк, ВРТ m/cs/mg по S2).",
     )
     parser.add_argument(
         "--allow-partial-fixtures",
         action="store_true",
         help="Разрешить --apply при незаполненных матчах (остальная стата S2 обнулится без восстановления!).",
+    )
+    parser.add_argument(
+        "--no-discipline-sync",
+        action="store_true",
+        help="С --apply не выставлять yellow_cards из data/player_discipline.json после матчей.",
     )
     args = parser.parse_args()
 
@@ -1760,8 +1786,8 @@ def main() -> None:
     if args.apply and incomplete and not args.allow_partial_fixtures:
         raise SystemExit(
             "Есть матчи с пустым players — дополни MONTH1_FIXTURES / MONTH2_FIXTURES или явно передай "
-            "--allow-partial-fixtures (вся матчевая стата полевых S2 обнулится, "
-            "а зальются только матчи со списком!)."
+            "--allow-partial-fixtures (стата S2 обнулится, "
+            "а зальются только матчи со списком игроков; сухие для ВРТ считаются по всем матчам!)."
         )
 
     if args.dry_run and not args.apply:
@@ -1771,10 +1797,16 @@ def main() -> None:
     if args.apply:
         if not args.i_understand_destroy_stats:
             raise SystemExit("С --apply нужен --i-understand-destroy-stats")
-        print("Обнуление goals/assists/matches/ga (полевые) в league+cl сезона 2…")
+        print("Обнуление g/a/m/ga, жк/кк (все), m/cs/mg (ВРТ) в league+cl сезона 2…")
         zero_outfield_match_counters_season2()
         print("Заливка эталонных матчей…")
         apply_fixtures(ALL_SEASON2_MANUAL_FIXTURES)
+        if not args.no_discipline_sync:
+            from utils.discipline_db_sync import sync_yellow_cards_from_discipline_json
+
+            print("Синхронизация yellow_cards из player_discipline.json…")
+            for line in sync_yellow_cards_from_discipline_json():
+                print("  ", line)
         print("Пересборка common.db и *_synced.db…")
         rebuild_common_and_synced()
         print("Готово.")
