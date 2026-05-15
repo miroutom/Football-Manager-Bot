@@ -43,6 +43,26 @@ def is_injury_line(text: str) -> bool:
     return bool(_RE_INJ.match((text or "").strip()))
 
 
+def extract_discipline_player_name(line: str) -> str | None:
+    """Фамилия/имя из строки дисциплины (как в try_apply_discipline_line); иначе None."""
+    raw = (line or "").strip()
+    if not raw:
+        return None
+    m2 = _RE_2Y.match(raw) or _RE_2Y_GLUE.match(raw)
+    if m2:
+        return m2.group(1).strip()
+    m_inj = _RE_INJ.match(raw)
+    if m_inj:
+        return m_inj.group(1).strip()
+    my = _RE_Y.match(raw)
+    if my:
+        return my.group(1).strip()
+    mr = _RE_R.match(raw)
+    if mr:
+        return mr.group(1).strip()
+    return None
+
+
 def _norm(s: str) -> str:
     return (s or "").strip().lower()
 

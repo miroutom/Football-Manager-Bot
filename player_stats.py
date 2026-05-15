@@ -798,6 +798,65 @@ def format_roster_cheat_sheet_text(
     return buf.getvalue().strip()
 
 
+def _stats_session_key(name: str, team: str) -> str:
+    from utils.player_transfer import _norm_cmp
+
+    return f"{_norm_cmp((name or '').strip())}|{_norm_cmp((team or '').strip())}"
+
+
+def _default_session_acc_entry() -> dict:
+    return {
+        "display_name": "",
+        "position": "",
+        "team": "",
+        "goals": 0,
+        "assists": 0,
+        "yellow_count": 0,
+        "second_yellow": False,
+        "red_direct": False,
+        "injury_months": None,
+        "clean_sheet": False,
+    }
+
+
+def _merge_session_acc_discipline(acc: dict, raw: str) -> None:
+    from utils.player_discipline import _RE_2Y, _RE_2Y_GLUE, _RE_INJ, _RE_R, _RE_Y
+
+    s = (raw or "").strip()
+    if _RE_2Y.match(s) or _RE_2Y_GLUE.match(s):
+        acc["second_yellow"] = True
+        return
+    m_inj = _RE_INJ.match(s)
+    if m_inj:
+        acc["injury_months"] = int(m_inj.group(2))
+        return
+    if _RE_Y.match(s):
+        acc["yellow_count"] = int(acc.get("yellow_count") or 0) + 1
+        return
+    if _RE_R.match(s):
+        acc["red_direct"] = True
+
+
+def format_stats_session_summary_line(acc: dict) -> str:
+    """Одна строка «имя позиция G+A жк …» для саммари после ввода."""
+    nm = (acc.get("display_name") or "").strip()
+    pos = (acc.get("position") or "").strip()
+    g, a = int(acc.get("goals") or 0), int(acc.get("assists") or 0)
+    parts = [nm, pos, f"{g} {a}"]
+    if acc.get("red_direct"):
+        parts.append("кк")
+    elif acc.get("second_yellow") or int(acc.get("yellow_count") or 0) >= 2:
+        parts.append("2жк")
+    elif int(acc.get("yellow_count") or 0) >= 1:
+        parts.append("жк")
+    ij = acc.get("injury_months")
+    if ij is not None:
+        parts.append(f"{int(ij)}м")
+    if acc.get("clean_sheet"):
+        parts.append("cs")
+    return " ".join(x for x in parts if x)
+
+
 def apply_stats_bot_line(
     line: str,
     *,
@@ -811,23 +870,28 @@ def apply_stats_bot_line(
     league_code: str | None = None,
     schedule_day: int | None = None,
     increment_matches: bool = True,
+    session_match_players: set[str] | None = None,
+    session_acc: dict[str, dict] | None = None,
 ) -> tuple[str, str, bool]:
     """
     Одна строка ввода статистики для бота (без input()).
     Возвращает (текст ответа, текущая сторона для следующей строки, режим «новый игрок»).
 
-    ``increment_matches`` — как в консоли: зачёт строки добавляет сыгравшему игроку +1 матч
-    в БД (для ручного ввода после матча). Режим с отдельным шагом «кто сыграл»
-    передаёт ``increment_matches=False``.
+    Если переданы оба ``session_match_players`` и ``session_acc``, у каждого игрока поле matches
+    в БД растёт только при первой строке этого игрока в сессии; в ответ добавляется строка
+    саммари «📋 имя позиция G+A жк …».
 
-    Строки гол/пас относятся к **этому же** уже записанному матчу: проверку травмы/дисквала
-    не делаем (иначе после строки «травма» или жк нельзя занести голы за тот же матч).
-    В следующих матчах ограничения снова действуют при других точках входа.
+    Иначе ``increment_matches`` задаёт поведение по строке как раньше (консоль / без сессии).
     """
     import contextlib
     import io
 
-    from utils.player_discipline import get_calendar_month, line_looks_discipline, try_apply_discipline_line
+    from utils.player_discipline import (
+        extract_discipline_player_name,
+        get_calendar_month,
+        line_looks_discipline,
+        try_apply_discipline_line,
+    )
 
     raw = (line or "").strip()
     if not raw:
@@ -850,6 +914,7 @@ def apply_stats_bot_line(
     st_tourn = "cl" if (tournament or "") == "cl" else "league"
     lc = league_code or infer_league_code_for_stats(home_team, away_team, st_tourn)
     msched = get_calendar_month(schedule_day)
+    use_session = session_match_players is not None and session_acc is not None
 
     if line_looks_discipline(raw):
         dmsg, handled = try_apply_discipline_line(
@@ -860,7 +925,50 @@ def apply_stats_bot_line(
             schedule_month=msched,
         )
         if handled:
-            return (dmsg or "—", current_team, mode_new)
+            tail = ""
+            if use_session:
+                pname_raw = extract_discipline_player_name(raw)
+                if pname_raw:
+                    sess = get_session(st_tourn)
+                    pl, _ = find_player_by_name(
+                        sess,
+                        pname_raw.strip().title(),
+                        current_team.strip().title(),
+                    )
+                    if pl:
+                        key_d = _stats_session_key(pl.name, pl.team)
+                        if key_d not in session_acc:
+                            session_acc[key_d] = _default_session_acc_entry()
+                            session_acc[key_d]["display_name"] = pl.name.strip()
+                            session_acc[key_d]["position"] = (pl.position or "").strip()
+                            session_acc[key_d]["team"] = (pl.team or "").strip().title()
+                        _merge_session_acc_discipline(session_acc[key_d], raw)
+                        if key_d not in session_match_players and increment_matches:
+                            match_for_cs_d = (home_team, away_team, home_score, away_score)
+                            bufm = io.StringIO()
+                            with contextlib.redirect_stdout(bufm):
+                                ok_m = add_player_stats(
+                                    pl.name,
+                                    pl.position,
+                                    pl.team,
+                                    0,
+                                    0,
+                                    clean_sheet=False,
+                                    tournament=tournament,
+                                    auto_find=True,
+                                    match_for_cs=match_for_cs_d,
+                                    create_if_missing=False,
+                                    discipline_league_code=lc,
+                                    schedule_day=schedule_day,
+                                    increment_matches=True,
+                                    skip_discipline_check=True,
+                                )
+                            if ok_m:
+                                session_match_players.add(key_d)
+                        tail = "\n📋 " + format_stats_session_summary_line(
+                            session_acc[key_d]
+                        )
+            return ((dmsg or "—") + tail, current_team, mode_new)
         return (
             "Не удалось разобрать дисциплину. Формат: «фамилия жк» / «… 2жк» / «… кк» / «… 4м» или «… 4m»",
             current_team,
@@ -903,6 +1011,11 @@ def apply_stats_bot_line(
         elif pdata["team"].lower() == away_team.lower() and away_cs:
             pdata["clean_sheet"] = True
 
+    key_g = _stats_session_key(pdata["name"], pdata["team"]) if use_session else None
+    do_incr = increment_matches
+    if use_session and key_g is not None:
+        do_incr = increment_matches and (key_g not in session_match_players)
+
     buf2 = io.StringIO()
     with contextlib.redirect_stdout(buf2):
         ok_add = add_player_stats(
@@ -918,7 +1031,7 @@ def apply_stats_bot_line(
             create_if_missing=mode_new,
             discipline_league_code=lc,
             schedule_day=schedule_day,
-            increment_matches=increment_matches,
+            increment_matches=do_incr,
             skip_discipline_check=True,
         )
     out = buf2.getvalue().strip()
@@ -928,6 +1041,23 @@ def apply_stats_bot_line(
             current_team,
             mode_new,
         )
+    if use_session and key_g is not None:
+        session_match_players.add(key_g)
+        if key_g not in session_acc:
+            session_acc[key_g] = _default_session_acc_entry()
+            session_acc[key_g]["display_name"] = pdata["name"].strip().title()
+            session_acc[key_g]["position"] = (pdata.get("position") or "").strip()
+            session_acc[key_g]["team"] = (pdata.get("team") or "").strip().title()
+        session_acc[key_g]["goals"] = int(session_acc[key_g].get("goals") or 0) + int(
+            pdata.get("goals") or 0
+        )
+        session_acc[key_g]["assists"] = int(session_acc[key_g].get("assists") or 0) + int(
+            pdata.get("assists") or 0
+        )
+        if pdata.get("clean_sheet"):
+            session_acc[key_g]["clean_sheet"] = True
+        tail = "\n📋 " + format_stats_session_summary_line(session_acc[key_g])
+        return ((out or "✓") + tail, current_team, mode_new)
     return (out or "✓", current_team, mode_new)
 
 

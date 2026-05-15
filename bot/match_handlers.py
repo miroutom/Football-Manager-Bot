@@ -427,6 +427,8 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
         stats_current_team=data["stats_home"],
         stats_mode_new=False,
         stats_susp_snapshot=snap,
+        stats_session_match_keys=[],
+        stats_session_acc={},
     )
     await state.set_state(PostMatch.stats_wait_lines)
 
@@ -453,7 +455,8 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
     )
     await message.answer(
         f"<b>Статистика</b> · {hn} ({hs}:{aws}) {an}\n\n"
-        f"Строки как в консоли: <code>имя голы передачи</code>, разные строки как в шапке консоли. "
+        f"Строки как в консоли: <code>имя голы передачи</code>. Несколько строк на игрока слаживаются; "
+        "<b>+1 матч</b> в БД у него только за первую строку. После ответа — <code>📋 …</code> с накопленным саммари.\n"
         f"Хозяева: <code>х</code> / хоз · гости: <code>г</code> / гость. Режим: <code>1</code> только БД · "
         f"<code>2</code> новый игрок. Дисциплина: <code>фамилия жк</code>, <code>… 8м</code> и т.д.\n"
         "Закончить — кнопка ниже или <code>/done</code>. /cancel — отмена.",
@@ -1339,6 +1342,8 @@ async def on_postmatch_stats_line(message: Message, state: FSMContext) -> None:
         return
     cur_team = data.get("stats_current_team") or home
     mode_new = bool(data.get("stats_mode_new"))
+    session_seen = set(data.get("stats_session_match_keys") or [])
+    session_acc: dict[str, dict] = dict(data.get("stats_session_acc") or {})
     reply, new_team, new_mode = await asyncio.to_thread(
         apply_stats_bot_line,
         message.text or "",
@@ -1352,8 +1357,15 @@ async def on_postmatch_stats_line(message: Message, state: FSMContext) -> None:
         league_code=data.get("stats_league_code"),
         schedule_day=data.get("stats_schedule_day"),
         increment_matches=True,
+        session_match_players=session_seen,
+        session_acc=session_acc,
     )
-    await state.update_data(stats_current_team=new_team, stats_mode_new=new_mode)
+    await state.update_data(
+        stats_current_team=new_team,
+        stats_mode_new=new_mode,
+        stats_session_match_keys=sorted(session_seen),
+        stats_session_acc=session_acc,
+    )
     await message.answer(html_escape(reply), parse_mode="HTML")
 
 
