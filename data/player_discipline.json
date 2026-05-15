@@ -39,7 +39,7 @@
       "team_norm": "боруссия м",
       "league_code": "ger",
       "scope": "league",
-      "matches_left": 2
+      "matches_left": 1
     },
     {
       "key": "кессие|боруссия м|ger|league",
@@ -49,7 +49,7 @@
       "team_norm": "боруссия м",
       "league_code": "ger",
       "scope": "league",
-      "matches_left": 2
+      "matches_left": 1
     },
     {
       "key": "данило|локомотив|rpl|league",
@@ -59,7 +59,7 @@
       "team_norm": "локомотив",
       "league_code": "rpl",
       "scope": "league",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "кунде|барселона|cl|cl",
@@ -88,6 +88,16 @@
       "team": "Фиорентина",
       "team_norm": "фиорентина",
       "league_code": "ita",
+      "scope": "league",
+      "matches_left": 3
+    },
+    {
+      "key": "бабкин|крылья советов|rpl|league",
+      "name": "Бабкин",
+      "name_norm": "бабкин",
+      "team": "Крылья Советов",
+      "team_norm": "крылья советов",
+      "league_code": "rpl",
       "scope": "league",
       "matches_left": 3
     }
@@ -390,6 +400,56 @@
       "team": "Атлетико",
       "team_norm": "атлетико",
       "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "хакими|милан|cl|cl",
+      "name": "Хакими",
+      "name_norm": "хакими",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "фомин|зенит|cl|cl",
+      "name": "Фомин",
+      "name_norm": "фомин",
+      "team": "Зенит",
+      "team_norm": "зенит",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "сантос|зенит|cl|cl",
+      "name": "Сантос",
+      "name_norm": "сантос",
+      "team": "Зенит",
+      "team_norm": "зенит",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "лукаку|реал|esp|league",
+      "name": "Лукаку",
+      "name_norm": "лукаку",
+      "team": "Реал",
+      "team_norm": "реал",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "миранчук|локомотив|rpl|league",
+      "name": "Миранчук",
+      "name_norm": "миранчук",
+      "team": "Локомотив",
+      "team_norm": "локомотив",
+      "league_code": "rpl",
       "scope": "league",
       "count": 1
     }
@@ -804,6 +864,14 @@
       "team": "Атлетико",
       "team_norm": "атлетико",
       "return_month": 9,
+      "type": "травма"
+    },
+    {
+      "name": "Вайгль",
+      "name_norm": "вайгль",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "return_month": 5,
       "type": "травма"
     }
   ]
