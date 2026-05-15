@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
+from team_squad_schemas import get_slots_for_formation_key
+
 from utils.match_stats_bot import (
     PlayerMatchAcc,
     format_player_acc,
     merge_player_acc,
     parse_player_stat_line,
+    sort_slots_for_pitch_list,
     validate_stat_delta,
 )
 
@@ -42,3 +45,10 @@ def test_validate_delta_floor():
     assert not validate_stat_delta(acc, parse_player_stat_line("-1 1"))
     assert validate_stat_delta(acc, parse_player_stat_line("-2 0"))
     assert not validate_stat_delta(PlayerMatchAcc(), parse_player_stat_line("-1 0"))
+
+
+def test_formation_attack_order_left_to_right_fid2():
+    """4-3-3 уд: первые outfield-слоты — ЛФА, ФРВ, ПФА по x."""
+    slots = get_slots_for_formation_key("fid_2")
+    ordered = sort_slots_for_pitch_list(slots)
+    assert [s.slot_id for s in ordered[:3]] == ["LW", "ST", "RW"]

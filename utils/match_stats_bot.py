@@ -7,15 +7,94 @@ import io
 import re
 from dataclasses import dataclass, field
 
-from utils.match_ratings import build_roster_template, player_row_key
+from utils.player_transfer import _norm_cmp
+from coach_squad_state import resolve_formation_key_for_team
+from team_squad_schemas import SquadSlot, get_slots_for_formation_key
+
+
+def player_row_key(name: str, pos: str) -> str:
+    """Как в utils.match_ratings.player_row_key — локально, без импорта match_ratings."""
+
+    return f"{_norm_cmp(name)}|{_norm_cmp(pos)}"
+
 
 _PAGE = 10
+
+# Порядок по схеме: атака слева направо → полузащита → защита → вратарь
+_FWD_SLOT_IDS = frozenset({"LW", "RW", "ST", "CF", "STL", "STR"})
+_MID_SLOT_IDS = frozenset(
+    {
+        "CDM",
+        "LCM",
+        "RCM",
+        "CAM",
+        "CCM",
+        "LM",
+        "RM",
+        "LDM",
+        "RDM",
+    }
+)
+_DEF_SLOT_IDS = frozenset({"LB", "RB", "LCB", "RCB", "CB", "LWB", "RWB"})
+_RU_FWD_POS = frozenset({"ЛФА", "ПФА", "ФРВ", "ЦФД", "ЛФД", "ПФД"})
+_RU_DEF_POS = frozenset({"ЛЗ", "ПЗ", "ЦЗ", "ЛЦЗ", "ПЦЗ", "ЛФЗ", "ПФЗ"})
 
 _RE_INJ_TOKEN = re.compile(r"^(\d+)\s*[мm]$", re.IGNORECASE | re.UNICODE)
 _RE_2Y_TOKEN = re.compile(r"^2\s*жк$", re.IGNORECASE | re.UNICODE)
 _RE_Y_TOKEN = re.compile(r"^жк$", re.IGNORECASE | re.UNICODE)
 _RE_R_TOKEN = re.compile(r"^кк$", re.IGNORECASE | re.UNICODE)
 _RE_CS = re.compile(r"^cs$", re.IGNORECASE)
+
+
+def _slot_line_group(slot: SquadSlot) -> int:
+    """0 — атака … 3 — вратарь (внутри линии — по x слева направо)."""
+    sid = (slot.slot_id or "").strip().upper()
+    if sid == "GK":
+        return 3
+    if sid in _FWD_SLOT_IDS:
+        return 0
+    if sid in _DEF_SLOT_IDS:
+        return 2
+    if sid in _MID_SLOT_IDS:
+        return 1
+    ap = slot.allowed_positions
+    if ap <= frozenset({"ВРТ"}):
+        return 3
+    if ap & _RU_FWD_POS:
+        return 0
+    if ap & _RU_DEF_POS:
+        return 2
+    return 1
+
+
+def sort_slots_for_pitch_list(slots: tuple[SquadSlot, ...]) -> list[SquadSlot]:
+    return sorted(slots, key=lambda s: (_slot_line_group(s), s.x))
+
+
+def order_players_by_slots(
+    rows: list[tuple[str, str, int]],
+    sorted_slots: list[SquadSlot],
+) -> list[tuple[str, str, int]]:
+    """Жадно сопоставить игроков слотам активной схемы (сильнее OVR раньше)."""
+    remaining = list(rows)
+    out: list[tuple[str, str, int]] = []
+    for slot in sorted_slots:
+        allowed = slot.allowed_positions
+        cand_i: list[int] = []
+        for i, (_nm, pos, _ovr) in enumerate(remaining):
+            pst = (pos or "").strip()
+            if pst in allowed:
+                cand_i.append(i)
+        if not cand_i:
+            continue
+        pick = max(
+            cand_i,
+            key=lambda i: (remaining[i][2], remaining[i][0].lower()),
+        )
+        out.append(remaining.pop(pick))
+    remaining.sort(key=lambda r: (-r[2], r[0].lower()))
+    out.extend(remaining)
+    return out
 
 
 @dataclass
@@ -25,6 +104,7 @@ class MatchRosterPlayer:
     position: str
     team: str
     side_label: str  # «хоз» / «гост»
+    squad_status: str = ""  # start | bench | reserve
 
 
 @dataclass
@@ -157,30 +237,43 @@ def load_match_roster(
     away: str,
     tournament: str,
 ) -> list[MatchRosterPlayer]:
-    """Игроки обеих команд из БД турнира (start/bench/reserve)."""
+    """Игроки обеих команд: старт → бенч → резерв, в каждом блоке — порядок по схеме клуба."""
+    from utils.match_ratings import _resolve_team_name_for_session, _roster_buckets_for_canonical
+    from utils.utils import get_session
+
     out: list[MatchRosterPlayer] = []
     idx = 0
-    for team, side in ((home, "хоз"), (away, "гост")):
+    sess = get_session(tournament)
+    for raw_team, side in ((home, "хоз"), (away, "гост")):
         try:
-            _tpl, key_map, canon = build_roster_template(team, tournament)
+            canon = _resolve_team_name_for_session(raw_team.strip(), sess)
+            buckets = _roster_buckets_for_canonical(sess, canon)
+            form_key = resolve_formation_key_for_team(canon)
+            slot_tpl = get_slots_for_formation_key(form_key)
+            sorted_slots = sort_slots_for_pitch_list(slot_tpl)
         except Exception:
-            key_map = {}
-            canon = team
-        seen: set[str] = set()
-        for pk, (nm, pos, _ovr) in key_map.items():
-            if pk in seen:
-                continue
-            seen.add(pk)
-            out.append(
-                MatchRosterPlayer(
-                    idx=idx,
-                    name=nm,
-                    position=pos,
-                    team=canon,
-                    side_label=side,
+            canon = (raw_team or "").strip()
+            buckets = {"start": [], "bench": [], "reserve": []}
+            sorted_slots = []
+        sec_order = ("start", "bench", "reserve")
+        for sec in sec_order:
+            rows = list(buckets.get(sec) or [])
+            if sorted_slots:
+                ordered = order_players_by_slots(rows, sorted_slots)
+            else:
+                ordered = sorted(rows, key=lambda r: (-r[2], r[0].lower()))
+            for nm, pos, ovr in ordered:
+                out.append(
+                    MatchRosterPlayer(
+                        idx=idx,
+                        name=nm,
+                        position=pos,
+                        team=canon,
+                        side_label=side,
+                        squad_status=sec,
+                    )
                 )
-            )
-            idx += 1
+                idx += 1
     return out
 
 
@@ -411,6 +504,7 @@ def serialize_roster(players: list[MatchRosterPlayer]) -> list[dict]:
             "position": p.position,
             "team": p.team,
             "side_label": p.side_label,
+            "squad_status": getattr(p, "squad_status", "") or "",
         }
         for p in players
     ]
@@ -426,6 +520,7 @@ def deserialize_roster(raw: list) -> list[MatchRosterPlayer]:
                 position=str(d["position"]),
                 team=str(d["team"]),
                 side_label=str(d.get("side_label") or ""),
+                squad_status=str(d.get("squad_status") or ""),
             )
         )
     return out

@@ -47,6 +47,17 @@ def _roster(data: dict):
     return deserialize_roster(data.get("stats_roster") or [])
 
 
+def _squad_btn_prefix(p) -> str:
+    st = (getattr(p, "squad_status", None) or "").strip().lower()
+    if st == "start":
+        return "⚑ "
+    if st == "bench":
+        return "▫ "
+    if st == "reserve":
+        return "◇ "
+    return ""
+
+
 def _played_intro_html(data: dict, *, page: int, total_pages: int) -> str:
     home = html_escape(data.get("stats_home") or "")
     away = html_escape(data.get("stats_away") or "")
@@ -58,6 +69,9 @@ def _played_intro_html(data: dict, *, page: int, total_pages: int) -> str:
         f"<b>Шаг 1/2 — кто играл</b>\n"
         f"{home} — {away} (<b>{sc}</b>)\n\n"
         f"Отмечено: <b>{len(played)}</b>. Страница <b>{page + 1}</b>/<b>{total_pages}</b>.\n"
+        "Порядок: <b>старт</b> → <b>бенч</b> → <b>резерв</b>, внутри — как на схеме клуба "
+        "(атака слева направо, полузащита, защита, вратарь).\n"
+        "⚑ старт · ▫ бенч · ◇ резерв\n"
         "Нажимай по игроку. «Далее к стате» — когда все отмечены."
     )
 
@@ -86,7 +100,7 @@ def _played_pick_kb(data: dict, *, page: int) -> tuple[InlineKeyboardMarkup, int
     for gi in chunk:
         p = next(x for x in players if x.idx == gi)
         mark = "✅ " if gi in played else ""
-        label = f"{mark}{p.side_label} · {p.name} · {p.position}"
+        label = f"{mark}{_squad_btn_prefix(p)}{p.side_label} · {p.name} · {p.position}"
         if len(label) > 60:
             label = label[:57] + "…"
         rows.append(
@@ -130,7 +144,9 @@ def _stat_intro_html(data: dict, *, page: int, total_pages: int) -> str:
     return (
         f"<b>Шаг 2/2 — стата</b>\n{home} — {away}{cur_name}\n"
         f"Выбери игрока (✅ на шаге 1). "
-        f"Стр. <b>{page + 1}</b>/<b>{total_pages}</b>.\n\n"
+        f"Стр. <b>{page + 1}</b>/<b>{total_pages}</b>.\n"
+        "Тот же порядок: старт → бенч → резерв, по схеме. "
+        "Фильтр: Все / Хозяева / Гости.\n\n"
         "Строка — любые фрагменты: <code>1 0</code>, <code>жк</code>, <code>3м</code>, "
         "<code>cs</code>, <code>-1 1</code> (убавить гол, если в матче уже есть)…\n"
         "Повторный выбор — дополняет (было <code>1+0 жк</code>, вводишь <code>0 1 жк</code> "
@@ -142,7 +158,18 @@ def _stat_intro_html(data: dict, *, page: int, total_pages: int) -> str:
 def _stat_pick_kb(data: dict, *, page: int) -> tuple[InlineKeyboardMarkup, int]:
     players = _roster(data)
     played = _played_set(data)
-    plist = [p for p in players if p.idx in played]
+    side_filter = data.get("stats_stat_side_filter")  # None | "home" | "away"
+    home_c = (data.get("stats_home_canon") or data.get("stats_home") or "").strip()
+    away_c = (data.get("stats_away_canon") or data.get("stats_away") or "").strip()
+    plist: list = []
+    for p in players:
+        if p.idx not in played:
+            continue
+        if side_filter == "home" and p.team.casefold() != home_c.casefold():
+            continue
+        if side_filter == "away" and p.team.casefold() != away_c.casefold():
+            continue
+        plist.append(p)
     n = len(plist)
     total_pages = max(1, (n + _PAGE - 1) // _PAGE)
     page = max(0, min(int(page), total_pages - 1))
@@ -152,7 +179,7 @@ def _stat_pick_kb(data: dict, *, page: int) -> tuple[InlineKeyboardMarkup, int]:
     rows: list[list[InlineKeyboardButton]] = []
     for p in chunk:
         acc_s = format_player_acc(acc_bag.get(str(p.idx)))
-        label = f"{p.name} · {p.position}"
+        label = f"{_squad_btn_prefix(p)}{p.name} · {p.position}"
         if acc_s:
             label = f"{label} · {acc_s}"
         if len(label) > 60:
@@ -169,6 +196,13 @@ def _stat_pick_kb(data: dict, *, page: int) -> tuple[InlineKeyboardMarkup, int]:
     if nav:
         rows.append(nav)
 
+    rows.append(
+        [
+            InlineKeyboardButton(text="Все", callback_data="stpw:ssf:all"),
+            InlineKeyboardButton(text="Хозяева", callback_data="stpw:ssf:home"),
+            InlineKeyboardButton(text="Гости", callback_data="stpw:ssf:away"),
+        ]
+    )
     rows.append(
         [
             InlineKeyboardButton(
@@ -216,6 +250,7 @@ async def start_stats_match_wizard(message: Message, state: FSMContext) -> None:
         stats_played_page=0,
         stats_stat_page=0,
         stats_side_filter=None,
+        stats_stat_side_filter=None,
         stats_susp_snapshot=susp_snap,
         stats_cur_player_idx=None,
         stats_player_acc={},
@@ -329,7 +364,11 @@ async def cb_stpw_played_done(callback: CallbackQuery, state: FSMContext) -> Non
     more = f"\n…ещё {len(logs) - 12}" if len(logs) > 12 else ""
 
     await state.set_state(PostMatch.stats_pick_player)
-    await state.update_data(stats_stat_page=0, stats_cur_player_idx=None)
+    await state.update_data(
+        stats_stat_page=0,
+        stats_stat_side_filter=None,
+        stats_cur_player_idx=None,
+    )
     if callback.message:
         kb, tp = _stat_pick_kb(await state.get_data(), page=0)
         await callback.message.answer(
@@ -356,6 +395,19 @@ async def cb_stpw_stat_page(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     await state.set_state(PostMatch.stats_pick_player)
     await _edit_stat_ui(callback, state, page)
+
+
+@stats_match_router.callback_query(
+    StateFilter(PostMatch.stats_pick_player, PostMatch.stats_wait_player_line),
+    F.data.startswith("stpw:ssf:"),
+)
+async def cb_stpw_stat_side_filter(callback: CallbackQuery, state: FSMContext) -> None:
+    side = (callback.data or "").rsplit(":", 1)[-1]
+    filt = None if side == "all" else side
+    await callback.answer()
+    await state.update_data(stats_stat_side_filter=filt, stats_stat_page=0)
+    await state.set_state(PostMatch.stats_pick_player)
+    await _edit_stat_ui(callback, state, 0)
 
 
 @stats_match_router.callback_query(
