@@ -738,6 +738,83 @@
       "away_score": 1,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Барселона",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Барселона",
+      "away": "Динамо",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Краснодар",
+      "away": "Урал",
+      "league": "rpl",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Урал",
+      "away": "Цска",
+      "league": "rpl",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Севилья",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Реал Сосьедад",
+      "league": "esp",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Зенит",
+      "away": "Арсенал",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Локомотив",
+      "away": "Дортмунд",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 4,
+      "day": 1,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }
