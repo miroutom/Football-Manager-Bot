@@ -8,7 +8,7 @@
       "home_score": 1,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -45,7 +45,7 @@
       "home_score": 6,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -73,7 +73,7 @@
       "home_score": 1,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -83,7 +83,7 @@
       "home_score": 6,
       "away_score": 3,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -93,7 +93,7 @@
       "home_score": 4,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -113,7 +113,7 @@
       "home_score": 2,
       "away_score": 4,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -123,7 +123,7 @@
       "home_score": 5,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -160,7 +160,7 @@
       "home_score": 0,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -170,7 +170,7 @@
       "home_score": 2,
       "away_score": 3,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -198,7 +198,7 @@
       "home_score": 5,
       "away_score": 3,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -217,7 +217,7 @@
       "home_score": 1,
       "away_score": 5,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -245,7 +245,7 @@
       "home_score": 4,
       "away_score": 3,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -255,7 +255,7 @@
       "home_score": 2,
       "away_score": 5,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -466,7 +466,7 @@
       "home_score": 2,
       "away_score": 5,
       "day": 2,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -494,7 +494,7 @@
       "home_score": 1,
       "away_score": 4,
       "day": 2,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -504,7 +504,7 @@
       "home_score": 5,
       "away_score": 2,
       "day": 2,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -514,7 +514,7 @@
       "home_score": 2,
       "away_score": 3,
       "day": 2,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -533,7 +533,7 @@
       "home_score": 5,
       "away_score": 2,
       "day": 2,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -588,7 +588,7 @@
       "home_score": 3,
       "away_score": 3,
       "day": 2,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -625,7 +625,7 @@
       "home_score": 0,
       "away_score": 6,
       "day": 2,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -708,7 +708,7 @@
       "home_score": 1,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -718,7 +718,7 @@
       "home_score": 1,
       "away_score": 3,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -756,7 +756,7 @@
       "home_score": 2,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -784,7 +784,7 @@
       "home_score": 2,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -803,7 +803,7 @@
       "home_score": 1,
       "away_score": 3,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -813,7 +813,7 @@
       "home_score": 2,
       "away_score": 4,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -832,7 +832,7 @@
       "home_score": 4,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -842,7 +842,7 @@
       "home_score": 1,
       "away_score": 1,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {
@@ -852,7 +852,7 @@
       "home_score": 1,
       "away_score": 3,
       "day": 1,
-      "cl_phase": "knockout",
+      "cl_phase": "league",
       "entry_type": "play"
     },
     {

@@ -1,6 +1,8 @@
 """
 Модуль для записи статистики игроков после матчей
 """
+from __future__ import annotations
+
 import contextlib
 import io
 from typing import Optional, Tuple
