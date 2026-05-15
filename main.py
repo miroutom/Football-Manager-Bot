@@ -176,14 +176,32 @@ def count_remaining_in_schedule(mixed_schedule):
     return count
 
 
-def list_remaining_schedule_matches(mixed_schedule):
+def list_remaining_schedule_matches(
+    mixed_schedule,
+    *,
+    league_filter: str | None = None,
+    session_kind: str | None = None,
+):
     """
     Все слоты смешанного расписания, которые ещё не сыграны и не в skipped_matches
     (тот же порядок обхода, что у ``find_next_match_in_schedule``).
 
     Каждый элемент — dict с ключами: ``day``, ``match_str``, ``home``, ``away``,
     ``league_code``, ``cl_ph``.
+
+    ``league_filter``: ``None`` / ``""`` / ``"all"`` — все лиги; иначе код (``rpl``, ``cl``, …).
+    ``session_kind``: ``None`` / ``""`` / ``"all"`` — все; ``"sim"`` — только «Симуляция»;
+    ``"game"`` — только «Игра» (по ``manager_session_label``).
     """
+    from config.leagues_config import manager_session_label
+
+    lf = (league_filter or "").strip().lower()
+    if lf in ("", "all"):
+        lf = None
+    sk = (session_kind or "").strip().lower()
+    if sk in ("", "all"):
+        sk = None
+
     skipped = load_skipped_matches()
     out = []
     for day_data in mixed_schedule:
@@ -193,6 +211,8 @@ def list_remaining_schedule_matches(mixed_schedule):
             if len(parts) < 3:
                 continue
             home, away, league_code = parts[0], parts[1], parts[2]
+            if lf and str(league_code).strip().lower() != lf:
+                continue
             cl_ph = (
                 cl_phase_from_mixed_schedule_line(match_str)
                 if league_code == "cl"
@@ -208,6 +228,14 @@ def list_remaining_schedule_matches(mixed_schedule):
                 for s in skipped
             ):
                 continue
+            if sk in ("sim", "game"):
+                lab = manager_session_label(home.strip(), away.strip())
+                if sk == "sim" and lab != "Симуляция":
+                    continue
+                if sk == "game" and lab != "Игра":
+                    continue
+                if lab is None:
+                    continue
             out.append(
                 {
                     "day": day_num,
