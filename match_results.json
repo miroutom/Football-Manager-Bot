@@ -917,6 +917,16 @@
       "away_score": 4,
       "day": 2,
       "entry_type": "play"
+    },
+    {
+      "home": "Тоттенхэм",
+      "away": "Байер",
+      "league": "cl",
+      "home_score": 5,
+      "away_score": 1,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
     }
   ]
 }

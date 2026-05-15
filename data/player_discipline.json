@@ -682,6 +682,16 @@
       "league_code": "esp",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "шик|байер|cl|cl",
+      "name": "Шик",
+      "name_norm": "шик",
+      "team": "Байер",
+      "team_norm": "байер",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
     }
   ],
   "injuries": [
