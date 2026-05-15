@@ -300,78 +300,6 @@ def render_team_squad_pitch_png_bytes(league_code: str, team_index: int) -> byte
     return render_squad_pitch_png_bytes(team, tournament)
 
 
-def render_team_goalscorers_common_for_season_context(
-    season_key: str, team: str, league_code: str
-) -> str:
-    """
-    Голеадоры клуба: **национальная лига** и **ЛЧ** отдельно (``league.db`` и ``champions_league.db``).
-
-    ``season_key``: ``\"cur\"`` — рабочие БД активного сезона; иначе номер архива ``\"1\"``, ``\"2\"``, …
-    ``league_code``: код нац. чемпионата (rpl, eng, …), не ``cl``.
-    """
-    import os
-
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    import teams as teams_mod
-    from player_stats import format_team_goalscorers_table_str
-    from utils import season_paths
-
-    team = (team or "").strip()
-    code = (league_code or "").strip().lower()
-    if code == "cl":
-        return "Для этого отчёта выберите национальный чемпионат, не «ЛЧ»."
-
-    if season_key == "cur":
-        lp = season_paths.get_league_db_path()
-        cp = season_paths.get_cl_db_path()
-        suf_base = "текущий сезон"
-    else:
-        base = season_paths.season_archive_directory(int(season_key))
-        lp = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
-        cp = os.path.join(base, season_paths.SEASON_CL_NAME)
-        suf_base = f"сезон {int(season_key)} (архив)"
-    if not os.path.isfile(lp) or not os.path.isfile(cp):
-        return f"Нет league или cl: {lp!s} / {cp!s}"
-
-    standings_by_code = {
-        "rpl": teams_mod.teams_rpl,
-        "eng": teams_mod.teams_eng,
-        "esp": teams_mod.teams_spain,
-        "ita": teams_mod.teams_italy,
-        "ger": teams_mod.teams_germany,
-        "cl": teams_mod.teams_champ_league,
-    }
-    standings = standings_by_code.get(code)
-
-    el = create_engine(f"sqlite:///{lp}")
-    ec = create_engine(f"sqlite:///{cp}")
-    Sl = sessionmaker(bind=el)()
-    Sc = sessionmaker(bind=ec)()
-    try:
-        a = format_team_goalscorers_table_str(
-            team,
-            "league",
-            standings,
-            session=Sl,
-            title_suffix=f"{suf_base} · национальные лиги (league.db)",
-        ).rstrip()
-        b = format_team_goalscorers_table_str(
-            team,
-            "cl",
-            None,
-            session=Sc,
-            title_suffix=f"{suf_base} · Лига чемпионов (champions_league.db)",
-        ).rstrip()
-        return f"{a}\n\n{b}"
-    finally:
-        Sl.close()
-        Sc.close()
-        el.dispose()
-        ec.dispose()
-
-
 def render_team_goalscorers_single(league_code: str, team_index: int) -> str:
     """Голеадоры одного клуба."""
     teams = teams_ordered_for_goalscorers(league_code)
@@ -830,11 +758,15 @@ def render_cumulative_top_ga(league_code: str | None, limit: int = 30) -> str:
 def _league_team_set_for_filter(league_code: str | None) -> set[str] | None:
     if not league_code or league_code in ("a", "all"):
         return None
+    if league_code == "cl":
+        import teams as teams_mod
+
+        return {str(t).strip().casefold() for t in teams_mod.teams_champ_league.keys()}
     from player_stats import LEAGUE_TEAMS
 
     teams = LEAGUE_TEAMS.get(league_code)
     if not teams:
-        return set()
+        return None
     return {str(t).strip().casefold() for t in teams if str(t).strip()}
 
 
@@ -978,9 +910,10 @@ def render_archived_season_stat(
     limit: int = 30,
 ) -> str:
     """
-    Топ из архива db/season_n: metric — ``g`` | ``as`` | ``ga`` | ``yc`` | ``rc``.
+    Топ из архива ``db/season_n``: ``g`` | ``as`` | ``ga`` | ``yc`` | ``rc``.
 
-    Лига и ЛЧ **раздельно** (из ``league.db`` и ``champions_league.db``), без сборки common.
+    Одна БД по выбранной кнопке: **ЛЧ** — только ``champions_league.db``; любая нац. лига
+    или «все» — только ``league.db`` (без подмешивания ЛЧ).
     """
     import os
 
@@ -1007,88 +940,47 @@ def render_archived_season_stat(
     base = season_paths.season_archive_directory(season_num)
     lp = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
     cp = os.path.join(base, season_paths.SEASON_CL_NAME)
-    if not os.path.isfile(lp):
-        return f"В архиве нет league.db для сезона {season_num}."
-    if not os.path.isfile(cp):
-        return f"В архиве нет champions_league.db для сезона {season_num}."
-
     lc = None if not league_code or league_code in ("a", "all") else league_code
     suf = f" — сезон {season_num} (архив)"
 
+    def _block(session, filter_code: str | None, db_label: str) -> str:
+        tsuf = f"{suf} · {db_label}"
+        if mkey == "g":
+            return player_stats.format_top_scorers_from_session(
+                session, league_code=filter_code, limit=limit, title_suffix=tsuf
+            )
+        if mkey == "as":
+            return player_stats.format_top_assists_from_session(
+                session, league_code=filter_code, limit=limit, title_suffix=tsuf
+            )
+        if mkey == "ga":
+            return player_stats.format_top_ga_from_session(
+                session, league_code=filter_code, limit=limit, title_suffix=tsuf
+            )
+        return _render_cards_from_session(
+            session, league_code=filter_code, metric=mkey, limit=limit, title_suffix=tsuf
+        )
+
+    if lc == "cl":
+        if not os.path.isfile(cp):
+            return f"В архиве нет champions_league.db для сезона {season_num}."
+        ec = create_engine(f"sqlite:///{cp}")
+        Sc = sessionmaker(bind=ec)()
+        try:
+            return _block(Sc, "cl", "champions_league.db (только ЛЧ)").rstrip()
+        finally:
+            Sc.close()
+            ec.dispose()
+
+    if not os.path.isfile(lp):
+        return f"В архиве нет league.db для сезона {season_num}."
     el = create_engine(f"sqlite:///{lp}")
-    ec = create_engine(f"sqlite:///{cp}")
     Sl = sessionmaker(bind=el)()
-    Sc = sessionmaker(bind=ec)()
     try:
-
-        def _one_block_league() -> str:
-            if mkey == "g":
-                return player_stats.format_top_scorers_from_session(
-                    Sl,
-                    league_code=lc,
-                    limit=limit,
-                    title_suffix=f"{suf} · национальные лиги (league.db)",
-                )
-            if mkey == "as":
-                return player_stats.format_top_assists_from_session(
-                    Sl,
-                    league_code=lc,
-                    limit=limit,
-                    title_suffix=f"{suf} · национальные лиги (league.db)",
-                )
-            if mkey == "ga":
-                return player_stats.format_top_ga_from_session(
-                    Sl,
-                    league_code=lc,
-                    limit=limit,
-                    title_suffix=f"{suf} · национальные лиги (league.db)",
-                )
-            return _render_cards_from_session(
-                Sl,
-                league_code=lc,
-                metric=mkey,
-                limit=limit,
-                title_suffix=f"{suf} · национальные лиги (league.db)",
-            )
-
-        def _one_block_cl() -> str:
-            if mkey == "g":
-                return player_stats.format_top_scorers_from_session(
-                    Sc,
-                    league_code=lc,
-                    limit=limit,
-                    title_suffix=f"{suf} · Лига чемпионов (champions_league.db)",
-                )
-            if mkey == "as":
-                return player_stats.format_top_assists_from_session(
-                    Sc,
-                    league_code=lc,
-                    limit=limit,
-                    title_suffix=f"{suf} · Лига чемпионов (champions_league.db)",
-                )
-            if mkey == "ga":
-                return player_stats.format_top_ga_from_session(
-                    Sc,
-                    league_code=lc,
-                    limit=limit,
-                    title_suffix=f"{suf} · Лига чемпионов (champions_league.db)",
-                )
-            return _render_cards_from_session(
-                Sc,
-                league_code=lc,
-                metric=mkey,
-                limit=limit,
-                title_suffix=f"{suf} · Лига чемпионов (champions_league.db)",
-            )
-
-        a = _one_block_league().rstrip()
-        b = _one_block_cl().rstrip()
-        return f"{a}\n\n{b}"
+        return _block(Sl, lc, "league.db (только национальные матчи)").rstrip()
     finally:
         Sl.close()
-        Sc.close()
         el.dispose()
-        ec.dispose()
 
 
 def render_archived_season_top_scorers(
@@ -1105,7 +997,7 @@ def render_archived_season_clean_sheets(
     league_code: str | None,
     limit: int = 30,
 ) -> tuple[str, str]:
-    """Сухие из архива: лига и ЛЧ раздельно (league.db / champions_league.db)."""
+    """Сухие из архива: только ``league.db`` для нац. лиг / «все», только ``champions_league.db`` для ЛЧ."""
     import os
 
     from sqlalchemy import create_engine
@@ -1115,35 +1007,41 @@ def render_archived_season_clean_sheets(
     base = season_paths.season_archive_directory(season_num)
     lp = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
     cp = os.path.join(base, season_paths.SEASON_CL_NAME)
-    if not os.path.isfile(lp) or not os.path.isfile(cp):
-        msg = f"В архиве сезона {season_num} нет league/cl."
-        return msg, msg
     suf = f" — сезон {season_num} (архив)"
     lc = None if not league_code or league_code in ("a", "all") else league_code
 
+    if lc == "cl":
+        if not os.path.isfile(cp):
+            msg = f"В архиве сезона {season_num} нет champions_league.db."
+            return msg, msg
+        ec = create_engine(f"sqlite:///{cp}")
+        Sc = sessionmaker(bind=ec)()
+        try:
+            return _render_clean_sheets_from_session(
+                Sc,
+                league_code="cl",
+                limit=limit,
+                title_suffix=f"{suf} · champions_league.db (только ЛЧ)",
+            )
+        finally:
+            Sc.close()
+            ec.dispose()
+
+    if not os.path.isfile(lp):
+        msg = f"В архиве сезона {season_num} нет league.db."
+        return msg, msg
     el = create_engine(f"sqlite:///{lp}")
-    ec = create_engine(f"sqlite:///{cp}")
     Sl = sessionmaker(bind=el)()
-    Sc = sessionmaker(bind=ec)()
     try:
-        gk_l, df_l = _render_clean_sheets_from_session(
+        return _render_clean_sheets_from_session(
             Sl,
             league_code=lc,
             limit=limit,
-            title_suffix=f"{suf} · национальные лиги (league.db)",
+            title_suffix=f"{suf} · league.db (только национальные матчи)",
         )
-        gk_c, df_c = _render_clean_sheets_from_session(
-            Sc,
-            league_code=lc,
-            limit=limit,
-            title_suffix=f"{suf} · Лига чемпионов (champions_league.db)",
-        )
-        return f"{gk_l}\n\n{gk_c}", f"{df_l}\n\n{df_c}"
     finally:
         Sl.close()
-        Sc.close()
         el.dispose()
-        ec.dispose()
 
 
 def split_text_chunks(text: str, max_len: int = 3800) -> list[str]:

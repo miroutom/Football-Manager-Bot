@@ -88,7 +88,7 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
         ],
         [
             InlineKeyboardButton(
-                text="🏥 Травмы",
+                text="🏥 Травмы · жк/кк",
                 callback_data="menu:injury",
             ),
         ],

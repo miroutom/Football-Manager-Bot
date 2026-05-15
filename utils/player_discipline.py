@@ -26,6 +26,22 @@ _CAL_PATH = _ROOT / "data" / "calendar_month.txt"
 _lock = threading.Lock()
 
 _YEL4 = 4
+
+# Подписи чемпионатов для текстовых отчётов (без импорта player_stats — циклы).
+_LEAGUE_DISPLAY: dict[str, str] = {
+    "rpl": "РПЛ",
+    "eng": "АПЛ",
+    "esp": "Ла Лига",
+    "ger": "Бундеслига",
+    "ita": "Серия А",
+    "cl": "ЛЧ",
+}
+
+
+def _tournament_label(league_code: str, scope: str) -> str:
+    if (scope or "").strip().lower() == "cl":
+        return "ЛЧ"
+    return _LEAGUE_DISPLAY.get((league_code or "").strip().lower(), league_code or "?")
 _RE_2Y = re.compile(r"^(.+?)\s+2\s*жк\s*$", re.IGNORECASE | re.UNICODE)
 # «имя2жк» без пробела перед цифрой 2
 _RE_2Y_GLUE = re.compile(r"^(.+?)2\s*жк\s*$", re.IGNORECASE | re.UNICODE)
@@ -565,11 +581,20 @@ def format_discipline_pre_match_notice_html(
 
 
 def format_active_injuries_report_text(*, schedule_month: int | None = None) -> str:
-    """Моноширинный список всех активных травм (без фильтра по лиге/ЛЧ)."""
+    """
+    Моноширинный отчёт: травмы, активные дисквалы (после жк/кк), накопление жк к 4-й.
+
+    Дисквалы: ``matches_left`` — сколько ещё **закрытых** матчей команды в этом турнире
+    до снятия (см. ``register_match_played_for_discipline``).
+    """
     month = get_calendar_month(schedule_month)
     with _lock:
         st = _load()
-    rows: list[tuple[str, str, str, int, int]] = []
+
+    chunks: list[str] = [f"Месяц календаря: {month}.", ""]
+
+    # --- травмы ---
+    inj_rows: list[tuple[str, str, str, int, int]] = []
     for inj in st.get("injuries", []):
         ret = int(inj.get("return_month") or 99)
         if month >= ret:
@@ -578,25 +603,83 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
         name = str(inj.get("name") or "?").strip()
         team = str(inj.get("team") or "?").strip()
         kind = (inj.get("type") or "травма").strip() or "травма"
-        rows.append((team, name, kind, ret, left))
-    if not rows:
-        return f"Месяц календаря: {month}\n\nАктивных травм нет."
+        inj_rows.append((team, name, kind, ret, left))
+    chunks.append("── ТРАВМЫ ──")
+    if not inj_rows:
+        chunks.append("Активных травм нет.")
+    else:
+        inj_rows.sort(key=lambda r: (r[0].casefold(), r[1].casefold()))
+        w_team = max(len("Клуб"), max(len(r[0]) for r in inj_rows))
+        w_name = max(len("Игрок"), max(len(r[1]) for r in inj_rows))
+        head = f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<12}  выход  осталось"
+        sep = "-" * len(head)
+        lines = [head, sep]
+        for team, name, kind, ret, left in inj_rows:
+            lines.append(
+                f"{team:<{w_team}}  {name:<{w_name}}  {kind[:12]:<12}  "
+                f"м{ret:<4}  ≈{left} мес."
+            )
+        chunks.append(f"Игроков: {len(inj_rows)}.")
+        chunks.extend(lines)
 
-    rows.sort(key=lambda r: (r[0].casefold(), r[1].casefold()))
-    w_team = max(len("Клуб"), max(len(r[0]) for r in rows))
-    w_name = max(len("Игрок"), max(len(r[1]) for r in rows))
-    head = f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<12}  выход  осталось"
-    sep = "-" * len(head)
-    body_lines = [head, sep]
-    for team, name, kind, ret, left in rows:
-        body_lines.append(
-            f"{team:<{w_team}}  {name:<{w_name}}  {kind[:12]:<12}  "
-            f"м{ret:<4}  ≈{left} мес."
-        )
-    return (
-        f"Месяц календаря: {month}. Игроков: {len(rows)}.\n\n"
-        + "\n".join(body_lines)
+    chunks.append("")
+    chunks.append("── ДИСКВАЛЫ (после жк/кк в матче) ──")
+    chunks.append(
+        "Осталось матчей — сколько закрытых матчей команды в этом турнире до снятия дисквала."
     )
+    susp_rows: list[tuple[str, str, str, int]] = []
+    for row in st.get("suspensions", []):
+        left = int(row.get("matches_left") or 0)
+        if left <= 0:
+            continue
+        team = str(row.get("team") or "?").strip()
+        name = str(row.get("name") or "?").strip()
+        lab = _tournament_label(str(row.get("league_code") or ""), str(row.get("scope") or ""))
+        susp_rows.append((team, name, lab, left))
+    if not susp_rows:
+        chunks.append("Активных дисквалов нет.")
+    else:
+        susp_rows.sort(key=lambda r: (r[2].casefold(), r[0].casefold(), r[1].casefold()))
+        w_team = max(len("Клуб"), max(len(r[0]) for r in susp_rows))
+        w_name = max(len("Игрок"), max(len(r[1]) for r in susp_rows))
+        w_tour = max(len("Турнир"), max(len(r[2]) for r in susp_rows))
+        head = f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Турнир':<{w_tour}}  осталось"
+        sep = "-" * len(head)
+        lines = [head, sep]
+        for team, name, lab, left in susp_rows:
+            wn = "матч" if left == 1 else "матча" if 2 <= left <= 4 else "матчей"
+            lines.append(f"{team:<{w_team}}  {name:<{w_name}}  {lab:<{w_tour}}  {left} {wn}")
+        chunks.append(f"Игроков: {len(susp_rows)}.")
+        chunks.extend(lines)
+
+    chunks.append("")
+    chunks.append("── НАКОПЛЕНИЕ ЖК (к 4-й в сезоне лиги / ЛЧ) ──")
+    chunks.append("При 4-й жёлтой в цикле — 1 матч дисквала, счётчик жк обнуляется.")
+    yel_rows: list[tuple[str, str, str, int]] = []
+    for row in st.get("yellow_cycle", []):
+        cnt = int(row.get("count") or 0)
+        if cnt <= 0:
+            continue
+        team = str(row.get("team") or "?").strip()
+        name = str(row.get("name") or "?").strip()
+        lab = _tournament_label(str(row.get("league_code") or ""), str(row.get("scope") or ""))
+        yel_rows.append((team, name, lab, cnt))
+    if not yel_rows:
+        chunks.append("Нет записей с ненулевым счётчиком жк.")
+    else:
+        yel_rows.sort(key=lambda r: (r[2].casefold(), r[0].casefold(), r[1].casefold()))
+        w_team = max(len("Клуб"), max(len(r[0]) for r in yel_rows))
+        w_name = max(len("Игрок"), max(len(r[1]) for r in yel_rows))
+        w_tour = max(len("Турнир"), max(len(r[2]) for r in yel_rows))
+        head = f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Турнир':<{w_tour}}  жк"
+        sep = "-" * len(head)
+        lines = [head, sep]
+        for team, name, lab, cnt in yel_rows:
+            lines.append(f"{team:<{w_team}}  {name:<{w_name}}  {lab:<{w_tour}}  {cnt}/{_YEL4}")
+        chunks.append(f"Игроков: {len(yel_rows)}.")
+        chunks.extend(lines)
+
+    return "\n".join(chunks)
 
 
 def clear_discipline_state() -> None:

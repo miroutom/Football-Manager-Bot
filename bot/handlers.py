@@ -41,7 +41,6 @@ from bot.services import (
     render_standings,
     render_archived_season_team_goalscorers_league,
     render_archived_season_team_goalscorers_single,
-    render_team_goalscorers_common_for_season_context,
     render_team_goalscorers_league,
     render_team_goalscorers_single,
     render_team_squad_pitch_png_bytes,
@@ -138,62 +137,13 @@ def _league_keyboard(prefix: str) -> InlineKeyboardMarkup:
 
 
 def _goalscorers_league_pick_keyboard(season_key: str) -> InlineKeyboardMarkup:
-    """Лиги + ЛЧ + кнопка «Лига и ЛЧ отдельно» (два блока в одном отчёте). ``season_key``: ``cur`` или номер архива."""
+    """Лиги + ЛЧ: каждая кнопка — свой турнир (``league.db`` или ``champions_league.db``). ``season_key``: ``cur`` или архив."""
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
     for code, label in LEAGUE_LABELS:
         cb = f"tgs:{code}" if season_key == "cur" else f"tgssn:{season_key}:{code}"
         row.append(InlineKeyboardButton(text=label, callback_data=cb))
         if len(row) == 3:
-            rows.append(row)
-            row = []
-    if row:
-        rows.append(row)
-    rows.append(
-        [
-            InlineKeyboardButton(
-                text="📊 Лига и ЛЧ отдельно",
-                callback_data=f"tgsgen:{season_key}",
-            ),
-        ]
-    )
-    return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
-def _national_bundle_league_keyboard(season_key: str) -> InlineKeyboardMarkup:
-    """Только национальные лиги (без ЛЧ) — шаг после «Лига и ЛЧ отдельно»."""
-    rows: list[list[InlineKeyboardButton]] = []
-    row: list[InlineKeyboardButton] = []
-    for code, label in LEAGUE_LABELS:
-        if code == "cl":
-            continue
-        row.append(
-            InlineKeyboardButton(
-                text=label,
-                callback_data=f"tgsgensub:{season_key}:{code}",
-            )
-        )
-        if len(row) == 2:
-            rows.append(row)
-            row = []
-    if row:
-        rows.append(row)
-    return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
-def _tgclub_keyboard_common_bundle(season_key: str, league_code: str) -> InlineKeyboardMarkup:
-    """Клубы нац. лиги; отчёт — два блока (league.db и champions_league.db)."""
-    teams = teams_ordered_for_goalscorers(league_code)
-    rows: list[list[InlineKeyboardButton]] = []
-    row: list[InlineKeyboardButton] = []
-    for idx, team in enumerate(teams):
-        row.append(
-            InlineKeyboardButton(
-                text=_club_btn_label(team),
-                callback_data=f"tgscb:{season_key}:{league_code}:{idx}",
-            )
-        )
-        if len(row) == 2:
             rows.append(row)
             row = []
     if row:
@@ -1159,20 +1109,20 @@ async def cb_stats_history_run(callback: CallbackQuery) -> None:
 
         if m in ("g", "as", "a", "ga"):
             text = await asyncio.to_thread(
-                render_archived_season_stat, season_num, code, m, 30
+                render_archived_season_stat, season_num, code, m, 50
             )
             cap = _stats_hist_caption_season(season_num, m, code)
             await answer_report_photos(callback.message, text, cap)
         elif m == "cs":
             gk_text, df_text = await asyncio.to_thread(
-                render_archived_season_clean_sheets, season_num, code, 30
+                render_archived_season_clean_sheets, season_num, code, 50
             )
             cap = _stats_hist_caption_season(season_num, m, code)
             await answer_report_photos(callback.message, gk_text, f"{cap} · вратари")
             await answer_report_photos(callback.message, df_text, f"{cap} · защитники")
         elif m in ("yc", "rc"):
             text = await asyncio.to_thread(
-                render_archived_season_stat, season_num, code, m, 30
+                render_archived_season_stat, season_num, code, m, 50
             )
             cap = _stats_hist_caption_season(season_num, m, code)
             await answer_report_photos(callback.message, text, cap)
@@ -1446,10 +1396,10 @@ async def cb_tcp_tops(callback: CallbackQuery) -> None:
 async def cb_menu_tgs_league(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Голеадоры по клубу: сначала выберите <b>сезон</b> "
-        "(текущие рабочие БД или архив <code>db/season_N</code>), затем лигу и клуб "
-        "(или «Все клубы подряд»). Кнопка <b>«Лига и ЛЧ отдельно»</b> — только нац. чемпионаты: "
-        "в отчёте два блока — <code>league.db</code> и <code>champions_league.db</code> отдельно:",
+        "Голеадоры по клубу: выберите <b>сезон</b> "
+        "(текущие БД или архив <code>db/season_N</code>), затем чемпионат и клуб. "
+        "Нац. лига — только матчи чемпионата страны (<code>league.db</code>); "
+        "<b>ЛЧ</b> — только Лига чемпионов (<code>champions_league.db</code>).",
         parse_mode=ParseMode.HTML,
         reply_markup=_tgs_season_root_keyboard(),
     )
@@ -1466,8 +1416,8 @@ async def cb_tgsroot_season(callback: CallbackQuery) -> None:
     await callback.answer()
     if key == "cur":
         await callback.message.answer(
-            "Текущий сезон — выберите лигу, затем клуб (или «Все клубы подряд»). "
-            "«Общая» — два блока: национальные лиги (<code>league.db</code>) и ЛЧ (<code>champions_league.db</code>):",
+            "Текущий сезон — выберите чемпионат, затем клуб (или «Все клубы подряд»). "
+            "Каждая лига — только своя БД (нац. чемпионат или ЛЧ):",
             parse_mode=ParseMode.HTML,
             reply_markup=_goalscorers_league_pick_keyboard("cur"),
         )
@@ -1478,8 +1428,8 @@ async def cb_tgsroot_season(callback: CallbackQuery) -> None:
         await callback.message.answer("Неверный выбор сезона.")
         return
     await callback.message.answer(
-        f"Сезон {sn} (архив) — выберите лигу, затем клуб (или «Все клубы подряд»). "
-        f"«Общая» — два блока: <code>league.db</code> и <code>champions_league.db</code> в папке сезона:",
+        f"Сезон {sn} (архив) — выберите чемпионат, затем клуб (или «Все клубы подряд»). "
+        f"Данные только из соответствующего файла в <code>db/season_{sn}/</code>:",
         parse_mode=ParseMode.HTML,
         reply_markup=_goalscorers_league_pick_keyboard(str(sn)),
     )
@@ -1511,75 +1461,18 @@ async def cb_tgssn_pick_league_archived(callback: CallbackQuery) -> None:
     )
 
 
-@router.callback_query(F.data.startswith("tgsgen:"))
-async def cb_tgsgen_common_bundle_entry(callback: CallbackQuery) -> None:
-    parts = callback.data.split(":")
-    if len(parts) != 2:
-        await callback.answer()
-        return
-    sk = parts[1]
-    await callback.answer()
-    await callback.message.answer(
-        "Выберите чемпионат — затем клуб. "
-        "Два блока: <code>league.db</code> и <code>champions_league.db</code> (без суммы в common):",
-        parse_mode=ParseMode.HTML,
-        reply_markup=_national_bundle_league_keyboard(sk),
+@router.callback_query(
+    F.data.startswith("tgsgen:")
+    | F.data.startswith("tgsgensub:")
+    | F.data.startswith("tgscb:")
+)
+async def cb_goalscorers_old_bundle_callbacks(callback: CallbackQuery) -> None:
+    """Старые inline-кнопки после смены логики (одна БД на чемпионат)."""
+    await callback.answer(
+        "Отчёт перенесён: откройте «Голеадоры по клубу» заново и выберите РПЛ / Серию А / ЛЧ — "
+        "каждая кнопка даёт только свою базу.",
+        show_alert=True,
     )
-
-
-@router.callback_query(F.data.startswith("tgsgensub:"))
-async def cb_tgsgensub_national_pick(callback: CallbackQuery) -> None:
-    parts = callback.data.split(":")
-    if len(parts) != 3:
-        await callback.answer()
-        return
-    _, sk, code = parts
-    if code == "cl":
-        await callback.answer("Выберите национальный чемпионат.", show_alert=True)
-        return
-    await callback.answer()
-    try:
-        kb = _tgclub_keyboard_common_bundle(sk, code)
-    except Exception as e:
-        logger.exception("tgsgensub_kb")
-        await callback.message.answer(f"Ошибка: {e}")
-        return
-    await callback.message.answer(
-        f"{_league_title(code)} — выберите клуб (лига и ЛЧ отдельно):",
-        reply_markup=kb,
-    )
-
-
-@router.callback_query(F.data.startswith("tgscb:"))
-async def cb_tgscb_common_bundle_team(callback: CallbackQuery) -> None:
-    parts = callback.data.split(":")
-    if len(parts) != 4:
-        await callback.answer()
-        return
-    _, sk, code, idx_s = parts
-    if code == "cl":
-        await callback.answer()
-        return
-    try:
-        idx = int(idx_s)
-    except ValueError:
-        await callback.answer()
-        return
-    await callback.answer("Считаю…")
-    try:
-        teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
-        if not (0 <= idx < len(teams)):
-            raise IndexError("Некорректный выбор команды")
-        team_name = teams[idx]
-        text = await asyncio.to_thread(
-            render_team_goalscorers_common_for_season_context, sk, team_name, code
-        )
-        ctx = "текущий сезон" if sk == "cur" else f"сезон {sk}"
-        title = f"Голеадоры · лига и ЛЧ · {ctx} · {_league_title(code)} · {team_name}"
-        await answer_report_photos(callback.message, text, title)
-    except Exception as e:
-        logger.exception("tgscb")
-        await callback.message.answer(f"Ошибка: {e}")
 
 
 @router.callback_query(F.data.startswith("tgs:"))

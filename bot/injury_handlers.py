@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Меню «Травмы»: ввод (лига → клуб → строка) и просмотр всех активных травм."""
+"""Меню «Травмы»: ввод травмы и сводка травм + дисквалы + накопление жк."""
 from __future__ import annotations
 
 import asyncio
@@ -53,7 +53,7 @@ def _injury_root_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="👁 Посмотреть травмы",
+                    text="👁 Травмы · дисквалы · жк",
                     callback_data="inj:root:view",
                 ),
             ],
@@ -112,11 +112,13 @@ def _injury_teams_kb(league_code: str) -> InlineKeyboardMarkup:
 async def _send_injury_root(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
-        "🏥 <b>Травмы</b>\n\n"
+        "🏥 <b>Травмы и дисциплина</b>\n\n"
         "«Ввод травмы» — лига и клуб, затем строка "
         "<code>имя Nм</code> или <code>имя Nм тип</code>.\n"
-        "«Посмотреть травмы» — все активные травмы одной картинкой.\n\n"
-        "ЖК и КК — в статистике после матча, не здесь.",
+        "«Травмы · дисквалы · жк» — сводка: активные травмы (месяц календаря), "
+        "дисквалы после жк/кк (сколько матчей в турнире осталось отбыть), "
+        "накопление жк к 4-й в лиге или ЛЧ.\n\n"
+        "Начисление жк и кк — в статистике матча после счёта.",
         parse_mode="HTML",
         reply_markup=_injury_root_kb(),
     )
@@ -180,17 +182,17 @@ async def cb_injury_root_view(callback: CallbackQuery, state: FSMContext) -> Non
     try:
         body = await asyncio.to_thread(format_active_injuries_report_text)
         blobs = await asyncio.to_thread(
-            partial(render_monospace_png_bytes, body, title="Травмы"),
+            partial(render_monospace_png_bytes, body, title="Травмы и дисциплина"),
         )
     except Exception as e:
         logger.exception("injury view report")
-        await callback.message.answer(f"Не удалось собрать список травм: {e}")
+        await callback.message.answer(f"Не удалось собрать отчёт: {e}")
         return
     if not blobs:
-        await callback.message.answer("Список травм пуст.")
+        await callback.message.answer("Отчёт пуст.")
         return
     for i, blob in enumerate(blobs):
-        title = "Травмы" if i == 0 else "Травмы · продолж."
+        title = "Травмы и дисциплина" if i == 0 else "Травмы и дисциплина · продолж."
         await callback.message.answer_photo(
             BufferedInputFile(blob, filename=f"injuries_{i}.png"),
             caption=f"<b>{title}</b>",
