@@ -9,7 +9,7 @@ from typing import Final
 from unicodedata import normalize
 
 from aiogram import F, Router
-from aiogram.filters import BaseFilter, Command
+from aiogram.filters import BaseFilter, Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
@@ -408,80 +408,22 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
 
 
 async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
-    """Шпаргалка + инструкции для PostMatch.stats_lines (данные уже в state)."""
-    from player_stats import format_roster_cheat_sheet_text
-    from utils.player_discipline import snapshot_suspensions_for_fixture
+    """Двухшаговый ввод: кто играл → стата по игроку (кнопки + строка)."""
+    from bot.stats_match_handlers import start_stats_match_wizard
 
     data = await state.get_data()
     home = data["stats_home"]
     away = data["stats_away"]
     hs = data["stats_hs"]
     aws = data["stats_aws"]
-    tournament = data.get("stats_tournament", "league")
-    lc_raw = data.get("stats_league_code") or ""
-
-    sheet = await asyncio.to_thread(
-        format_roster_cheat_sheet_text, home, away, tournament
-    )
-    body = sheet or "(игроков в БД для этих команд не найдено)"
-    for chunk in split_text_chunks(body, 3500):
-        await message.answer(
-            f"<pre>{html_escape(chunk)}</pre>",
-            parse_mode="HTML",
-        )
-
     dry_lines: list[str] = []
     if aws == 0:
         dry_lines.append(f"💪 {home} — сухой матч для гостей (0 голов).")
     if hs == 0:
         dry_lines.append(f"💪 {away} — сухой матч для хозяев (0 голов).")
-    dry_txt = "\n".join(dry_lines)
-
-    susp_snap = await asyncio.to_thread(
-        snapshot_suspensions_for_fixture,
-        home,
-        away,
-        lc_raw,
-        tournament,
-    )
-    await state.set_state(PostMatch.stats_lines)
-    await state.update_data(
-        stats_current_team=home,
-        stats_mode_new=False,
-        stats_susp_snapshot=susp_snap,
-    )
-
-    done_kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="✓ Готово",
-                    callback_data="stats:done",
-                ),
-            ]
-        ]
-    )
-    instr = (
-        "Счётчик матчей в БД (поле <code>matches</code>) здесь <b>не</b> увеличивается — "
-        "кто сыграл, отмечай в меню «📝 Ввод оценки» (оценки за матч).\n\n"
-        "В шпаргалке — полная заявка по БД: <code>reserve</code> / <code>bench</code> / "
-        "<code>start</code> (резерв тоже в списке, имя вводи как в строке).\n\n"
-        "Вводи по одной строке: голы/пасы как раньше; дисциплина/травмы: "
-        "<code>бастони жк</code>, <code>бастони 2жк</code>, <code>бастони кк</code>, "
-        "<code>симонс 4м</code> или <code>симонс 4m</code> — травма <b>отдельной строкой</b>, "
-        "не смешивать с голами.\n"
-        "Как в консоли: <code>Салах 2 1</code>, <code>ван дейк цз 0 0 cs</code>.\n"
-        "<code>1</code> — только из БД, <code>2</code> — новый игрок; "
-        "<code>h</code>/<code>х</code> — хозяева, <code>a</code>/<code>г</code> — гости.\n"
-        "/done или «Готово» — закончить; /cancel — отмена."
-    )
-    if dry_txt:
-        instr = html_escape(dry_txt) + "\n\n" + instr
-    await message.answer(
-        instr,
-        reply_markup=done_kb,
-        parse_mode="HTML",
-    )
+    if dry_lines:
+        await message.answer(html_escape("\n".join(dry_lines)), parse_mode="HTML")
+    await start_stats_match_wizard(message, state)
 
 
 async def _prompt_score_for_scheduled_slot(
@@ -1335,16 +1277,25 @@ async def cb_postmatch_stats_yes(callback: CallbackQuery, state: FSMContext) -> 
     await _send_stats_lines_ui(callback.message, state)
 
 
-@match_router.callback_query(F.data == "stats:done")
+@match_router.callback_query(
+    StateFilter(
+        PostMatch.stats_pick_player,
+        PostMatch.stats_wait_player_line,
+    ),
+    F.data == "stats:done",
+)
 async def cb_stats_done(callback: CallbackQuery, state: FSMContext) -> None:
-    if await state.get_state() != PostMatch.stats_lines:
-        await callback.answer()
-        return
     await callback.answer()
     await _finalize_stats_session(callback.message, state)
 
 
-@match_router.message(PostMatch.stats_lines, Command("done"))
+@match_router.message(
+    StateFilter(
+        PostMatch.stats_pick_player,
+        PostMatch.stats_wait_player_line,
+    ),
+    Command("done"),
+)
 async def cmd_stats_done_cmd(message: Message, state: FSMContext) -> None:
     await _finalize_stats_session(message, state)
 
@@ -1461,42 +1412,3 @@ async def on_ason_score(message: Message, state: FSMContext) -> None:
     await _send_stats_lines_ui(message, state)
 
 
-@match_router.message(PostMatch.stats_lines, _TEXT_NOT_CMD)
-async def on_stats_line(message: Message, state: FSMContext) -> None:
-    from player_stats import apply_stats_bot_line
-
-    data = await state.get_data()
-    home = data.get("stats_home")
-    away = data.get("stats_away")
-    if not home:
-        await state.clear()
-        await message.answer("Сессия сброшена.")
-        return
-
-    hs = data["stats_hs"]
-    aws = data["stats_aws"]
-    tournament = data.get("stats_tournament", "league")
-    cur_team = data.get("stats_current_team", home)
-    mode_new = bool(data.get("stats_mode_new", False))
-
-    def run_line() -> tuple[str, str, bool]:
-        return apply_stats_bot_line(
-            message.text or "",
-            home_team=home,
-            away_team=away,
-            home_score=hs,
-            away_score=aws,
-            tournament=tournament,
-            current_team=cur_team,
-            mode_new=mode_new,
-            league_code=data.get("stats_league_code"),
-            schedule_day=data.get("stats_schedule_day"),
-        )
-
-    reply, new_team, new_mode = await asyncio.to_thread(run_line)
-    await state.update_data(stats_current_team=new_team, stats_mode_new=new_mode)
-
-    tail = html_escape(reply)
-    if len(tail) > 3800:
-        tail = tail[:3797] + "…"
-    await message.answer(f"<pre>{tail}</pre>", parse_mode="HTML")
