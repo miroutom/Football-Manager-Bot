@@ -22,7 +22,6 @@ from bot.player_edit_handlers import player_edit_router
 from bot.squad_roster_handlers import squad_roster_router
 from bot.squad_status_handlers import squad_status_router
 from bot.history_handlers import history_router
-from bot.match_rating_handlers import match_rating_router
 from bot.loan_handlers import loan_router
 from bot.injury_handlers import injury_router
 from bot.stats_match_handlers import stats_match_router
@@ -85,8 +84,6 @@ async def main() -> None:
     squad_status_router.callback_query.middleware(AccessMiddleware())
     history_router.message.middleware(AccessMiddleware())
     history_router.callback_query.middleware(AccessMiddleware())
-    match_rating_router.message.middleware(AccessMiddleware())
-    match_rating_router.callback_query.middleware(AccessMiddleware())
     loan_router.message.middleware(AccessMiddleware())
     loan_router.callback_query.middleware(AccessMiddleware())
     injury_router.message.middleware(AccessMiddleware())
@@ -105,7 +102,6 @@ async def main() -> None:
     dp.include_router(squad_roster_router)
     dp.include_router(squad_status_router)
     dp.include_router(history_router)
-    dp.include_router(match_rating_router)
     dp.include_router(loan_router)
     dp.include_router(injury_router)
     dp.include_router(stats_match_router)

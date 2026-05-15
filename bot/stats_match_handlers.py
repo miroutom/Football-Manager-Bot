@@ -22,10 +22,14 @@ from utils.match_stats_bot import (
     apply_played_appearances,
     apply_player_stat_line,
     deserialize_roster,
+    format_player_acc,
+    get_player_acc,
     load_match_roster,
+    merge_player_acc,
     parse_player_stat_line,
     player_by_idx,
     serialize_roster,
+    set_player_acc,
 )
 
 logger = logging.getLogger(__name__)
@@ -118,14 +122,20 @@ def _stat_intro_html(data: dict, *, page: int, total_pages: int) -> str:
     if cur is not None:
         p = player_by_idx(_roster(data), int(cur))
         if p:
-            cur_name = f"\nСейчас: <b>{html_escape(p.name)}</b> ({html_escape(p.team)})\n"
+            acc_s = format_player_acc(get_player_acc(data, int(cur)))
+            acc_line = f" · <code>{html_escape(acc_s)}</code>" if acc_s else ""
+            cur_name = (
+                f"\nСейчас: <b>{html_escape(p.name)}</b>{acc_line}\n"
+            )
     return (
         f"<b>Шаг 2/2 — стата</b>\n{home} — {away}{cur_name}\n"
-        f"Выбери игрока (только отмеченные на шаге 1). "
+        f"Выбери игрока (✅ на шаге 1). "
         f"Стр. <b>{page + 1}</b>/<b>{total_pages}</b>.\n\n"
-        "Формат строки: <code>голы передачи …</code>\n"
-        "Пример: <code>1 0 жк 3м</code> — 1 гол, 0 пас, жк, травма 3 мес.\n"
-        "Также: <code>2жк</code>, <code>кк</code>, <code>cs</code> (сухой матч)."
+        "Строка — любые фрагменты: <code>1 0</code>, <code>жк</code>, <code>3м</code>, "
+        "<code>cs</code>, <code>0 1</code>, <code>1 0 жк</code>…\n"
+        "Повторный выбор — дополняет (было <code>1+0 жк</code>, вводишь <code>0 1 жк</code> "
+        "→ <code>1+1 2жк</code>).\n"
+        "Не выбрал на шаге 2 — только +1 матч. «Готово» — завершить."
     )
 
 
@@ -138,9 +148,13 @@ def _stat_pick_kb(data: dict, *, page: int) -> tuple[InlineKeyboardMarkup, int]:
     page = max(0, min(int(page), total_pages - 1))
     chunk = plist[page * _PAGE : page * _PAGE + _PAGE]
 
+    acc_bag = data.get("stats_player_acc") or {}
     rows: list[list[InlineKeyboardButton]] = []
     for p in chunk:
+        acc_s = format_player_acc(acc_bag.get(str(p.idx)))
         label = f"{p.name} · {p.position}"
+        if acc_s:
+            label = f"{label} · {acc_s}"
         if len(label) > 60:
             label = label[:57] + "…"
         rows.append(
@@ -204,6 +218,7 @@ async def start_stats_match_wizard(message: Message, state: FSMContext) -> None:
         stats_side_filter=None,
         stats_susp_snapshot=susp_snap,
         stats_cur_player_idx=None,
+        stats_player_acc={},
     )
     await state.set_state(PostMatch.stats_pick_played)
 
@@ -362,6 +377,18 @@ async def cb_stpw_pick_player(callback: CallbackQuery, state: FSMContext) -> Non
     await state.update_data(stats_cur_player_idx=idx)
     await state.set_state(PostMatch.stats_wait_player_line)
     if callback.message:
+        acc_s = format_player_acc(get_player_acc(data, idx))
+        if acc_s:
+            cur_block = (
+                f"Текущий итог: <code>{html_escape(acc_s)}</code>\n"
+                "Дополни строкой, например: <code>0 1 жк</code>\n"
+            )
+        else:
+            cur_block = (
+                "Отправь строку — любые фрагменты:\n"
+                "<code>1 0</code> · <code>жк</code> · <code>3м</code> · "
+                "<code>cs</code> · <code>1 0 жк</code>\n"
+            )
         kb = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -374,8 +401,7 @@ async def cb_stpw_pick_player(callback: CallbackQuery, state: FSMContext) -> Non
         )
         await callback.message.edit_text(
             f"<b>{html_escape(p.name)}</b> · {html_escape(p.position)} · "
-            f"{html_escape(p.team)}\n\n"
-            "Отправь строку, например:\n<code>1 0 жк 3м</code>",
+            f"{html_escape(p.team)}\n\n{cur_block}",
             parse_mode="HTML",
             reply_markup=kb,
         )
@@ -416,6 +442,10 @@ async def on_stpw_player_line(message: Message, state: FSMContext) -> None:
         return
 
     parsed = parse_player_stat_line(message.text or "")
+    if parsed.parse_errors:
+        await message.answer("\n".join(parsed.parse_errors))
+        return
+
     logs = await asyncio.to_thread(
         apply_player_stat_line,
         p,
@@ -429,8 +459,17 @@ async def on_stpw_player_line(message: Message, state: FSMContext) -> None:
         schedule_day=data.get("stats_schedule_day"),
     )
 
+    acc = get_player_acc(data, int(idx))
+    merge_player_acc(acc, parsed)
+    acc_bag = set_player_acc(data, int(idx), acc)
+    await state.update_data(stats_player_acc=acc_bag)
+
     await state.set_state(PostMatch.stats_pick_player)
-    tail = html_escape("\n".join(logs))
+    acc_after = format_player_acc(acc)
+    tail_lines = list(logs)
+    if acc_after:
+        tail_lines.append(f"Итог: {acc_after}")
+    tail = html_escape("\n".join(tail_lines))
     page = int(data.get("stats_stat_page") or 0)
     kb, tp = _stat_pick_kb(await state.get_data(), page=page)
     await message.answer(f"<pre>{tail}</pre>", parse_mode="HTML")

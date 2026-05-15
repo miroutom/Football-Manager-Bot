@@ -39,6 +39,105 @@ class ParsedPlayerStatLine:
     parse_errors: list[str] = field(default_factory=list)
 
 
+@dataclass
+class PlayerMatchAcc:
+    """Накопленная стата игрока за текущую сессию матча (для показа и дозаписи)."""
+
+    goals: int = 0
+    assists: int = 0
+    yellow_count: int = 0
+    second_yellow_token: bool = False
+    red_direct: bool = False
+    injury_months: int | None = None
+    clean_sheet: bool = False
+
+    def has_content(self) -> bool:
+        return bool(
+            self.goals
+            or self.assists
+            or self.yellow_count
+            or self.second_yellow_token
+            or self.red_direct
+            or self.injury_months is not None
+            or self.clean_sheet
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "goals": self.goals,
+            "assists": self.assists,
+            "yellow_count": self.yellow_count,
+            "second_yellow_token": self.second_yellow_token,
+            "red_direct": self.red_direct,
+            "injury_months": self.injury_months,
+            "clean_sheet": self.clean_sheet,
+        }
+
+    @classmethod
+    def from_dict(cls, raw: dict | None) -> PlayerMatchAcc:
+        if not raw:
+            return cls()
+        return cls(
+            goals=int(raw.get("goals") or 0),
+            assists=int(raw.get("assists") or 0),
+            yellow_count=int(raw.get("yellow_count") or 0),
+            second_yellow_token=bool(raw.get("second_yellow_token")),
+            red_direct=bool(raw.get("red_direct")),
+            injury_months=raw.get("injury_months"),
+            clean_sheet=bool(raw.get("clean_sheet")),
+        )
+
+
+def merge_player_acc(acc: PlayerMatchAcc, parsed: ParsedPlayerStatLine) -> None:
+    acc.goals += parsed.goals
+    acc.assists += parsed.assists
+    if parsed.clean_sheet:
+        acc.clean_sheet = True
+    if parsed.yellow:
+        acc.yellow_count += 1
+    if parsed.second_yellow:
+        acc.second_yellow_token = True
+    if parsed.red_direct:
+        acc.red_direct = True
+    if parsed.injury_months is not None:
+        acc.injury_months = parsed.injury_months
+
+
+def format_player_acc(acc: PlayerMatchAcc | dict | None) -> str:
+    if acc is None:
+        return ""
+    if isinstance(acc, dict):
+        acc = PlayerMatchAcc.from_dict(acc)
+    if not acc.has_content():
+        return ""
+    parts: list[str] = [f"{acc.goals}+{acc.assists}"]
+    if acc.red_direct:
+        parts.append("кк")
+    elif acc.second_yellow_token or acc.yellow_count >= 2:
+        parts.append("2жк")
+    elif acc.yellow_count >= 1:
+        parts.append("жк")
+    if acc.injury_months is not None:
+        parts.append(f"{acc.injury_months}м")
+    if acc.clean_sheet:
+        parts.append("cs")
+    return " ".join(parts)
+
+
+def get_player_acc(data: dict, idx: int) -> PlayerMatchAcc:
+    raw = (data.get("stats_player_acc") or {}).get(str(idx))
+    return PlayerMatchAcc.from_dict(raw)
+
+
+def set_player_acc(data: dict, idx: int, acc: PlayerMatchAcc) -> dict:
+    bag = dict(data.get("stats_player_acc") or {})
+    if acc.has_content():
+        bag[str(idx)] = acc.to_dict()
+    else:
+        bag.pop(str(idx), None)
+    return bag
+
+
 def load_match_roster(
     home: str,
     away: str,
@@ -262,8 +361,18 @@ def apply_player_stat_line(
         if msg:
             logs.append(msg)
 
-    if not logs:
-        logs.append("Ничего не записано (все нули и без дисциплины?).")
+    if not logs and not (
+        parsed.goals
+        or parsed.assists
+        or parsed.clean_sheet
+        or parsed.yellow
+        or parsed.second_yellow
+        or parsed.red_direct
+        or parsed.injury_months is not None
+    ):
+        logs.append("Пустая строка — без изменений.")
+    elif not logs:
+        logs.append("✓ записано")
     return logs
 
 
