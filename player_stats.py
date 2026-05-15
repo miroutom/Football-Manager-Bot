@@ -810,10 +810,15 @@ def apply_stats_bot_line(
     mode_new: bool,
     league_code: str | None = None,
     schedule_day: int | None = None,
+    increment_matches: bool = True,
 ) -> tuple[str, str, bool]:
     """
     Одна строка ввода статистики для бота (без input()).
     Возвращает (текст ответа, текущая сторона для следующей строки, режим «новый игрок»).
+
+    ``increment_matches`` — как в консоли: зачёт строки добавляет сыгравшему игроку +1 матч
+    в БД (для ручного ввода после матча). Режим с отдельным шагом «кто сыграл»
+    передаёт ``increment_matches=False``.
 
     Строки гол/пас относятся к **этому же** уже записанному матчу: проверку травмы/дисквала
     не делаем (иначе после строки «травма» или жк нельзя занести голы за тот же матч).
@@ -913,7 +918,7 @@ def apply_stats_bot_line(
             create_if_missing=mode_new,
             discipline_league_code=lc,
             schedule_day=schedule_day,
-            increment_matches=False,
+            increment_matches=increment_matches,
             skip_discipline_check=True,
         )
     out = buf2.getvalue().strip()

@@ -408,14 +408,28 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
 
 
 async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
-    """Двухшаговый ввод: кто играл → стата по игроку (кнопки + строка)."""
-    from bot.stats_match_handlers import start_stats_match_wizard
+    """Шпаргалка + построчный ввод статистики (как консоль / старый бот)."""
+    from bot.services import split_text_chunks
+    from player_stats import format_roster_cheat_sheet_text
+    from utils.player_discipline import snapshot_suspensions_for_fixture
 
     data = await state.get_data()
     home = data["stats_home"]
     away = data["stats_away"]
     hs = data["stats_hs"]
     aws = data["stats_aws"]
+    lc = data.get("stats_league_code") or ""
+    tourn = data.get("stats_tournament", "league")
+    snap = await asyncio.to_thread(
+        snapshot_suspensions_for_fixture, home, away, lc, tourn
+    )
+    await state.update_data(
+        stats_current_team=data["stats_home"],
+        stats_mode_new=False,
+        stats_susp_snapshot=snap,
+    )
+    await state.set_state(PostMatch.stats_wait_lines)
+
     dry_lines: list[str] = []
     if aws == 0:
         dry_lines.append(f"💪 {home} — сухой матч для гостей (0 голов).")
@@ -423,7 +437,29 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
         dry_lines.append(f"💪 {away} — сухой матч для хозяев (0 голов).")
     if dry_lines:
         await message.answer(html_escape("\n".join(dry_lines)), parse_mode="HTML")
-    await start_stats_match_wizard(message, state)
+
+    cheat_txt = await asyncio.to_thread(format_roster_cheat_sheet_text, home, away, tourn)
+    for chunk in split_text_chunks(html_escape(cheat_txt or "(шаблон пуст)")):
+        await message.answer(f"<pre>{chunk}</pre>", parse_mode="HTML")
+
+    hn = html_escape(home)
+    an = html_escape(away)
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✓ Готово", callback_data="stats:done"),
+            ]
+        ]
+    )
+    await message.answer(
+        f"<b>Статистика</b> · {hn} ({hs}:{aws}) {an}\n\n"
+        f"Строки как в консоли: <code>имя голы передачи</code>, разные строки как в шапке консоли. "
+        f"Хозяева: <code>х</code> / хоз · гости: <code>г</code> / гость. Режим: <code>1</code> только БД · "
+        f"<code>2</code> новый игрок. Дисциплина: <code>фамилия жк</code>, <code>… 8м</code> и т.д.\n"
+        "Закончить — кнопка ниже или <code>/done</code>. /cancel — отмена.",
+        reply_markup=kb,
+        parse_mode="HTML",
+    )
 
 
 async def _prompt_score_for_scheduled_slot(
@@ -1277,27 +1313,48 @@ async def cb_postmatch_stats_yes(callback: CallbackQuery, state: FSMContext) -> 
     await _send_stats_lines_ui(callback.message, state)
 
 
-@match_router.callback_query(
-    StateFilter(
-        PostMatch.stats_pick_player,
-        PostMatch.stats_wait_player_line,
-    ),
-    F.data == "stats:done",
-)
+@match_router.callback_query(StateFilter(PostMatch.stats_wait_lines), F.data == "stats:done")
 async def cb_stats_done(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     await _finalize_stats_session(callback.message, state)
 
 
-@match_router.message(
-    StateFilter(
-        PostMatch.stats_pick_player,
-        PostMatch.stats_wait_player_line,
-    ),
-    Command("done"),
-)
+@match_router.message(StateFilter(PostMatch.stats_wait_lines), Command("done"))
 async def cmd_stats_done_cmd(message: Message, state: FSMContext) -> None:
     await _finalize_stats_session(message, state)
+
+
+@match_router.message(StateFilter(PostMatch.stats_wait_lines), _TEXT_NOT_CMD)
+async def on_postmatch_stats_line(message: Message, state: FSMContext) -> None:
+    from player_stats import apply_stats_bot_line
+
+    data = await state.get_data()
+    home = data.get("stats_home")
+    away = data.get("stats_away")
+    hs = data.get("stats_hs")
+    aws = data.get("stats_aws")
+    if home is None or away is None or hs is None or aws is None:
+        await message.answer("Сессия устарела. Начни снова с записи счёта.")
+        await state.clear()
+        return
+    cur_team = data.get("stats_current_team") or home
+    mode_new = bool(data.get("stats_mode_new"))
+    reply, new_team, new_mode = await asyncio.to_thread(
+        apply_stats_bot_line,
+        message.text or "",
+        home_team=str(home),
+        away_team=str(away),
+        home_score=int(hs),
+        away_score=int(aws),
+        tournament=str(data.get("stats_tournament", "league")),
+        current_team=str(cur_team),
+        mode_new=mode_new,
+        league_code=data.get("stats_league_code"),
+        schedule_day=data.get("stats_schedule_day"),
+        increment_matches=True,
+    )
+    await state.update_data(stats_current_team=new_team, stats_mode_new=new_mode)
+    await message.answer(html_escape(reply), parse_mode="HTML")
 
 
 @match_router.callback_query(F.data.startswith("ason:"))
