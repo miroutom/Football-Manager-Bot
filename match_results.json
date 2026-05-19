@@ -1427,6 +1427,16 @@
       "away_score": 2,
       "day": 2,
       "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Ливерпуль",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
     }
   ]
 }

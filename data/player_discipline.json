@@ -175,6 +175,16 @@
       "league_code": "ger",
       "scope": "league",
       "matches_left": 1
+    },
+    {
+      "key": "коке|ливерпуль|cl|cl",
+      "name": "Коке",
+      "name_norm": "коке",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 1
     }
   ],
   "yellow_cycle": [
@@ -1376,6 +1386,16 @@
       "team_norm": "жирона",
       "league_code": "esp",
       "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "кроос|реал|cl|cl",
+      "name": "Кроос",
+      "name_norm": "кроос",
+      "team": "Реал",
+      "team_norm": "реал",
+      "league_code": "cl",
+      "scope": "cl",
       "count": 1
     }
   ],
