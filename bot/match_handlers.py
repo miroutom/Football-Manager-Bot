@@ -436,14 +436,22 @@ async def _peek_next_schedule_slot(session_kind: str | None) -> dict | None:
     return _slot_from_schedule_tuple(tup)
 
 
-def _next_match_btn_label(slot: dict, *, prefix: str) -> str:
+def _next_match_btn_label(slot: dict) -> str:
+    """Подпись кнопки — только матч (лимит Telegram 64 символа)."""
     h = (slot.get("home") or "?").strip()
     a = (slot.get("away") or "?").strip()
     d = slot.get("day", "?")
-    label = f"{prefix} д{d} · {h}—{a}"
-    if len(label) > 64:
-        label = label[:61] + "…"
-    return label
+    label = f"д{d} · {h} — {a}"
+    if len(label) <= 64:
+        return label
+    label = f"д{d} · {h}—{a}"
+    if len(label) <= 64:
+        return label
+    budget = 64 - len(f"д{d} · ") - 1
+    half = max(8, budget // 2)
+    h_s = h if len(h) <= half else h[: half - 1].rstrip() + "…"
+    a_s = a if len(a) <= (budget - len(h_s)) else a[: budget - len(h_s) - 1].rstrip() + "…"
+    return f"д{d} · {h_s}—{a_s}"[:64]
 
 
 def _post_match_continue_kb(
@@ -454,7 +462,7 @@ def _post_match_continue_kb(
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=_next_match_btn_label(sim_slot, prefix="▶ Сим"),
+                    text=_next_match_btn_label(sim_slot),
                     callback_data="play:next:sim",
                 )
             ]
@@ -463,7 +471,7 @@ def _post_match_continue_kb(
         rows.append(
             [
                 InlineKeyboardButton(
-                    text="— Сим: нет в очереди",
+                    text="— нет сим-матча в очереди",
                     callback_data="play:post:noop:sim",
                 )
             ]
@@ -472,7 +480,7 @@ def _post_match_continue_kb(
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=_next_match_btn_label(game_slot, prefix="▶ Игра"),
+                    text=_next_match_btn_label(game_slot),
                     callback_data="play:next:game",
                 )
             ]
@@ -481,7 +489,7 @@ def _post_match_continue_kb(
         rows.append(
             [
                 InlineKeyboardButton(
-                    text="— Игра: нет в очереди",
+                    text="— нет игрового матча в очереди",
                     callback_data="play:post:noop:game",
                 )
             ]
@@ -503,8 +511,23 @@ async def _send_post_match_continue_prompt(message: Message) -> None:
             reply_markup=_post_match_continue_kb(None, None),
         )
         return
+
+    lines = ["<b>Что дальше?</b>"]
+    if sim_slot:
+        lines.append(
+            f"Симуляция — <b>д{sim_slot['day']}</b> · "
+            f"{html_escape(str(sim_slot['home']))} — "
+            f"{html_escape(str(sim_slot['away']))}"
+        )
+    if game_slot:
+        lines.append(
+            f"Игра — <b>д{game_slot['day']}</b> · "
+            f"{html_escape(str(game_slot['home']))} — "
+            f"{html_escape(str(game_slot['away']))}"
+        )
+    lines.append("Кнопки ниже — тот же матч, можно сразу открыть счёт.")
     await message.answer(
-        "<b>Что дальше?</b>",
+        "\n".join(lines),
         reply_markup=_post_match_continue_kb(sim_slot, game_slot),
         parse_mode="HTML",
     )
