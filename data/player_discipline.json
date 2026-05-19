@@ -765,7 +765,7 @@
       "name_norm": "викарио",
       "team": "Тоттенхэм",
       "team_norm": "тоттенхэм",
-      "return_month": 8,
+      "return_month": 4,
       "type": "травма"
     },
     {
@@ -805,7 +805,7 @@
       "name_norm": "эдерсон",
       "team": "Сити",
       "team_norm": "сити",
-      "return_month": 8,
+      "return_month": 4,
       "type": "травма"
     },
     {
@@ -909,7 +909,7 @@
       "name_norm": "рамсдейл",
       "team": "Арсенал",
       "team_norm": "арсенал",
-      "return_month": 8,
+      "return_month": 4,
       "type": "травма"
     },
     {
@@ -949,7 +949,7 @@
       "name_norm": "ливакович",
       "team": "Боруссия М",
       "team_norm": "боруссия м",
-      "return_month": 8,
+      "return_month": 4,
       "type": "травма"
     },
     {
@@ -989,7 +989,7 @@
       "name_norm": "градецки",
       "team": "Байер",
       "team_norm": "байер",
-      "return_month": 9,
+      "return_month": 5,
       "type": "травма"
     },
     {
@@ -1053,7 +1053,7 @@
       "name_norm": "лопеш",
       "team": "Тоттенхэм",
       "team_norm": "тоттенхэм",
-      "return_month": 3,
+      "return_month": 4,
       "type": "травма"
     },
     {
@@ -1077,7 +1077,7 @@
       "name_norm": "менди",
       "team": "Урал",
       "team_norm": "урал",
-      "return_month": 8,
+      "return_month": 4,
       "type": "травма"
     },
     {
