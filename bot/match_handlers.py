@@ -87,6 +87,7 @@ async def _finish_match_and_offer_stats(
 
     if not INPUT_PLAYER_STATS:
         await state.clear()
+        await _send_post_match_continue_prompt(message)
         return
 
     await state.clear()
@@ -405,6 +406,108 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
             extra = "\nМатч добавлен в журнал match_results.json."
 
     await message.answer(f"Готово. Статистика сохранена в базу.{extra}")
+    await _send_post_match_continue_prompt(message)
+
+
+def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
+    day, match_str, home, away, league_code = tup
+    if day is None:
+        return None
+    from match_results import cl_phase_from_mixed_schedule_line
+
+    cl_ph = (
+        cl_phase_from_mixed_schedule_line(match_str) if league_code == "cl" else None
+    )
+    return {
+        "day": day,
+        "match_str": match_str,
+        "home": home,
+        "away": away,
+        "league_code": league_code,
+        "cl_ph": cl_ph,
+    }
+
+
+async def _peek_next_schedule_slot(session_kind: str | None) -> dict | None:
+    from main import find_next_match_in_schedule, load_or_generate_mixed_schedule
+
+    sch = await asyncio.to_thread(load_or_generate_mixed_schedule)
+    tup = await asyncio.to_thread(find_next_match_in_schedule, sch, session_kind)
+    return _slot_from_schedule_tuple(tup)
+
+
+def _next_match_btn_label(slot: dict, *, prefix: str) -> str:
+    h = (slot.get("home") or "?").strip()
+    a = (slot.get("away") or "?").strip()
+    d = slot.get("day", "?")
+    label = f"{prefix} д{d} · {h}—{a}"
+    if len(label) > 64:
+        label = label[:61] + "…"
+    return label
+
+
+def _post_match_continue_kb(
+    sim_slot: dict | None, game_slot: dict | None
+) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    if sim_slot:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_next_match_btn_label(sim_slot, prefix="▶ Сим"),
+                    callback_data="play:next:sim",
+                )
+            ]
+        )
+    else:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="— Сим: нет в очереди",
+                    callback_data="play:post:noop:sim",
+                )
+            ]
+        )
+    if game_slot:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_next_match_btn_label(game_slot, prefix="▶ Игра"),
+                    callback_data="play:next:game",
+                )
+            ]
+        )
+    else:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="— Игра: нет в очереди",
+                    callback_data="play:post:noop:game",
+                )
+            ]
+        )
+    rows.append(
+        [InlineKeyboardButton(text="📋 Меню", callback_data="play:post:menu")]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def _send_post_match_continue_prompt(message: Message) -> None:
+    sim_slot, game_slot = await asyncio.gather(
+        _peek_next_schedule_slot("sim"),
+        _peek_next_schedule_slot("game"),
+    )
+    if not sim_slot and not game_slot:
+        await message.answer(
+            "В календаре не осталось несыгранных матчей (или только отложенные).",
+            reply_markup=_post_match_continue_kb(None, None),
+        )
+        return
+    await message.answer(
+        "<b>Что дальше?</b>",
+        reply_markup=_post_match_continue_kb(sim_slot, game_slot),
+        parse_mode="HTML",
+    )
 
 
 async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
@@ -530,35 +633,26 @@ async def _prompt_score_for_scheduled_slot(
     )
 
 
-async def _begin_play_next(message: Message, state: FSMContext) -> None:
+async def _begin_play_next(
+    message: Message,
+    state: FSMContext,
+    *,
+    session_kind: str | None = None,
+) -> None:
     from main import find_next_match_in_schedule, load_or_generate_mixed_schedule
-    from match_results import cl_phase_from_mixed_schedule_line
 
-    sch = load_or_generate_mixed_schedule()
-    tup = find_next_match_in_schedule(sch)
-    if tup[0] is None:
+    sch = await asyncio.to_thread(load_or_generate_mixed_schedule)
+    tup = await asyncio.to_thread(find_next_match_in_schedule, sch, session_kind)
+    slot = _slot_from_schedule_tuple(tup)
+    if slot is None:
+        kind = {"sim": "симуляции", "game": "игры"}.get(session_kind or "", "")
+        extra = f" ({kind})" if kind else ""
         await message.answer(
-            "Следующего матча нет (всё сыграно или остались только отложенные)."
+            f"Следующего матча{extra} нет (всё сыграно или только отложенные)."
         )
         return
 
-    day, match_str, home, away, league_code = tup
-    cl_ph = (
-        cl_phase_from_mixed_schedule_line(match_str) if league_code == "cl" else None
-    )
-
-    await _prompt_score_for_scheduled_slot(
-        message,
-        state,
-        {
-            "day": day,
-            "match_str": match_str,
-            "home": home,
-            "away": away,
-            "league_code": league_code,
-            "cl_ph": cl_ph,
-        },
-    )
+    await _prompt_score_for_scheduled_slot(message, state, slot)
 
 
 @match_router.message(Command("menu"))
@@ -634,6 +728,37 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
 async def cb_play_next(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     await _begin_play_next(callback.message, state)
+
+
+@match_router.callback_query(F.data == "play:next:sim")
+async def cb_play_next_sim(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.clear()
+    if callback.message:
+        await _begin_play_next(callback.message, state, session_kind="sim")
+
+
+@match_router.callback_query(F.data == "play:next:game")
+async def cb_play_next_game(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.clear()
+    if callback.message:
+        await _begin_play_next(callback.message, state, session_kind="game")
+
+
+@match_router.callback_query(F.data.startswith("play:post:noop"))
+async def cb_play_post_noop(callback: CallbackQuery) -> None:
+    tag = (callback.data or "").split(":")[-1]
+    lab = "симуляции" if tag == "sim" else "игры" if tag == "game" else "этого типа"
+    await callback.answer(f"Нет несыгранных матчей ({lab}).", show_alert=True)
+
+
+@match_router.callback_query(F.data == "play:post:menu")
+async def cb_play_post_menu(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.clear()
+    if callback.message:
+        await deliver_main_menu_refresh(callback.message)
 
 
 @match_router.message(Command("play_next"))
@@ -1488,6 +1613,7 @@ async def cb_postmatch_stats_no(callback: CallbackQuery, state: FSMContext) -> N
     await callback.answer()
     await state.clear()
     await callback.message.answer("Без статистики.")
+    await _send_post_match_continue_prompt(callback.message)
 
 
 @match_router.callback_query(F.data == "postmatch:stats_y")

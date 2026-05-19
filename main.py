@@ -113,11 +113,19 @@ def get_teams_by_league(league_code):
     return m.get(league_code)
 
 
-def find_next_match_in_schedule(mixed_schedule):
+def find_next_match_in_schedule(mixed_schedule, session_kind=None):
     """
     Найти следующий матч в смешанном расписании (не сыгран, не пропущен).
-    Возвращает (day_num, match_str, home, away, league_code) или (None,)*5
+    Возвращает (day_num, match_str, home, away, league_code) или (None,)*5.
+
+    ``session_kind``: ``None`` / ``all`` — любой; ``sim`` — «Симуляция»; ``game`` — «Игра».
     """
+    from config.leagues_config import manager_session_label
+
+    sk = (session_kind or "").strip().lower()
+    if sk in ("", "all"):
+        sk = None
+
     skipped = load_skipped_matches()
     for day_data in mixed_schedule:
         day_num = day_data['day']
@@ -142,6 +150,14 @@ def find_next_match_in_schedule(mixed_schedule):
             )
             if is_skipped:
                 continue
+            if sk in ("sim", "game"):
+                lab = manager_session_label(home.strip(), away.strip())
+                if sk == "sim" and lab != "Симуляция":
+                    continue
+                if sk == "game" and lab != "Игра":
+                    continue
+                if lab is None:
+                    continue
             return day_num, match_str, home, away, league_code
     return None, None, None, None, None
 

@@ -2001,9 +2001,9 @@
       "name_norm": "брозович",
       "team": "Мю",
       "team_norm": "мю",
-      "return_month": 4,
+      "return_month": 2,
       "type": "травма",
-      "out_from_month": 3
+      "out_from_month": 1
     },
     {
       "name": "Самба",
