@@ -1,4 +1,15 @@
 {
   "version": 1,
-  "loans": []
+  "loans": [
+    {
+      "name": "Шелиа",
+      "name_norm": "шелиа",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
+      "position": "ВРТ",
+      "end_month": 5,
+      "started_month": 1,
+      "months_planned": 4
+    }
+  ]
 }
