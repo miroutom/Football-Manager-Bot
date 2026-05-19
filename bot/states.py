@@ -86,7 +86,7 @@ class LoanEnter(StatesGroup):
 
 
 class InjuryEnter(StatesGroup):
-    """Травмы: лига → клуб → строка «имя Nм» / «имя Nм тип»."""
+    """Травмы: лига → клуб → строка «имя Nм» / «имя сM Nм» / «имя Nм тип»."""
     pick_lg = State()
     pick_team = State()
     wait_line = State()

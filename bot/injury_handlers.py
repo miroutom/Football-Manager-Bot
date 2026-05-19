@@ -113,8 +113,9 @@ async def _send_injury_root(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
         "🏥 <b>Травмы и дисциплина</b>\n\n"
-        "«Ввод травмы» — лига и клуб, затем строка "
-        "<code>имя Nм</code> или <code>имя Nм тип</code>.\n"
+        "«Ввод травмы» — лига и клуб, затем строка:\n"
+        "<code>имя Nм</code> / <code>имя Nм тип</code> — с текущего месяца календаря;\n"
+        "<code>имя с3 4м</code> — с 3-го месяца на 4 месяца.\n"
         "«Травмы · дисквалы · жк» — сводка: активные травмы (месяц календаря), "
         "дисквалы после жк/кк (сколько матчей в турнире осталось отбыть), "
         "накопление жк к 4-й в лиге или ЛЧ.\n\n"
@@ -149,10 +150,10 @@ async def cb_injury_root_enter(callback: CallbackQuery, state: FSMContext) -> No
     await state.set_state(InjuryEnter.pick_lg)
     await callback.message.answer(
         "✏️ <b>Ввод травмы</b>\n\n"
-        "Выбери лигу и клуб, затем строку в формате:\n"
-        "<code>имя Nм</code> или <code>имя Nм тип</code>\n\n"
-        "Примеры: <code>Симонс 4м</code>, <code>Симонс 4м колено</code>\n"
-        "(число — месяцы календаря до возвращения).\n"
+        "Выбери лигу и клуб, затем строку:\n"
+        "<code>имя Nм</code> — с текущего месяца календаря на N месяцев;\n"
+        "<code>имя сM Nм</code> — с месяца M на N месяцев.\n\n"
+        "Примеры: <code>Брозович с3 1м</code>, <code>Симонс 4м колено</code>\n"
         "/cancel — отмена.",
         parse_mode="HTML",
         reply_markup=_injury_league_kb(),
@@ -243,7 +244,8 @@ async def cb_injury_team(callback: CallbackQuery, state: FSMContext) -> None:
     if callback.message:
         await callback.message.answer(
             f"<b>{_league_title(code)}</b> · <b>{team}</b>\n\n"
-            "Отправь строку травмы, например:\n<code>Симонс 4м</code>\n\n"
+            "Отправь строку травмы, например:\n"
+            "<code>Брозович с3 1м</code> или <code>Симонс 4м</code>\n\n"
             "Можно несколько строк подряд; /cancel — выход.",
             parse_mode="HTML",
         )
@@ -269,8 +271,7 @@ async def on_injury_line(message: Message, state: FSMContext) -> None:
     raw = (message.text or "").strip()
     if not is_injury_line(raw):
         await message.answer(
-            "Здесь только травмы: <code>имя Nм</code> или <code>имя Nм тип</code> "
-            "(лат. <code>m</code> или кирил. <code>м</code>). "
+            "Здесь только травмы: <code>имя Nм</code>, <code>имя сM Nм</code> или с типом. "
             "Жёлтые и красные карточки — в статистике матча после счёта.",
             parse_mode="HTML",
         )

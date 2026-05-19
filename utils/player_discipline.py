@@ -10,7 +10,10 @@
 Учёт «после матча»: при закрытии ввода статистики матча списание «−1 матч» к отбыванию дисквала
 применяется только к банам, которые **уже были** до начала этой сессии ввода; новые баны за текущий
 матч в этот же «−1» не попадают (см. ``register_match_played_for_discipline`` + снимок в боте).
-- травма: «имя Nм» / «имя Nm» / «имя Nм тип» (тип — произвольный текст после месяцев; по умолчанию «травма»)
+- травма: «имя Nм» / «имя Nm» / «имя Nм тип» — срок с текущего месяца календаря;
+  «имя сM Nм» / «имя @M Nм» — с месяца M календаря на N месяцев (тип после месяцев опционально).
+  В JSON: ``out_from_month`` (с какого месяца недоступен), ``return_month`` (с какого снова доступен).
+- дисквал: в JSON ``unavailable_from_round`` — с какого тура чемпионата бан действует (null = как раньше).
 """
 from __future__ import annotations
 
@@ -47,7 +50,12 @@ _RE_2Y = re.compile(r"^(.+?)\s+2\s*жк\s*$", re.IGNORECASE | re.UNICODE)
 _RE_2Y_GLUE = re.compile(r"^(.+?)2\s*жк\s*$", re.IGNORECASE | re.UNICODE)
 _RE_Y = re.compile(r"^(.+?)\s+жк\s*$", re.IGNORECASE | re.UNICODE)
 _RE_R = re.compile(r"^(.+?)\s+кк\s*$", re.IGNORECASE | re.UNICODE)
-# суффикс месяцев + опционально тип травмы до конца строки
+# «имя с3 4м [тип]» — с месяца 3, на 4 месяца
+_RE_INJ_FROM = re.compile(
+    r"^(.+?)\s+(?:с|@)(\d{1,2})\s+(\d{1,2})\s*(?:[мМ]|[mM])\s*(.*?)\s*$",
+    re.IGNORECASE | re.UNICODE,
+)
+# «имя 4м [тип]» — с текущего месяца календаря
 _RE_INJ = re.compile(
     r"^(.+?)\s+(\d+)\s*(?:[мМ]|[mM])\s*(.*?)\s*$",
     re.IGNORECASE | re.UNICODE,
@@ -55,8 +63,9 @@ _RE_INJ = re.compile(
 
 
 def is_injury_line(text: str) -> bool:
-    """Строка вида «имя Nм» / «имя Nм тип» для травмы (как в статистике матча)."""
-    return bool(_RE_INJ.match((text or "").strip()))
+    """Строка травмы: «имя Nм» или «имя сM Nм»."""
+    t = (text or "").strip()
+    return bool(_RE_INJ_FROM.match(t) or _RE_INJ.match(t))
 
 
 def extract_discipline_player_name(line: str) -> str | None:
@@ -67,6 +76,9 @@ def extract_discipline_player_name(line: str) -> str | None:
     m2 = _RE_2Y.match(raw) or _RE_2Y_GLUE.match(raw)
     if m2:
         return m2.group(1).strip()
+    m_inj_f = _RE_INJ_FROM.match(raw)
+    if m_inj_f:
+        return m_inj_f.group(1).strip()
     m_inj = _RE_INJ.match(raw)
     if m_inj:
         return m_inj.group(1).strip()
@@ -112,6 +124,101 @@ def get_calendar_month(schedule_day: int | None) -> int:
         except (OSError, ValueError):
             pass
     return 1
+
+
+def find_fixture_round(
+    home: str,
+    away: str,
+    league_code: str,
+    *,
+    cl_phase: str | None = None,
+) -> int | None:
+    """
+    Номер тура в официальном расписании лиги/ЛЧ для пары (дом, гости).
+
+    Если пара встречается в нескольких турах (два матча в ЛЧ), предпочитаем
+    первый ещё не сыгранный тур; иначе — последний найденный.
+    """
+    lc = (league_code or "").strip().lower()
+    if lc not in ("rpl", "eng", "esp", "ger", "ita", "cl"):
+        return None
+    from table.schedule import get_schedule
+
+    h, a = _norm(home), _norm(away)
+    sch = get_schedule(lc)
+    if not sch:
+        return None
+
+    candidates: list[int] = []
+    for rnd, lines in sorted(sch.items(), key=lambda kv: int(kv[0])):
+        try:
+            ri = int(rnd)
+        except (TypeError, ValueError):
+            continue
+        for line in lines:
+            parts = line.split(";")
+            if len(parts) < 2:
+                continue
+            if _norm(parts[0]) != h or _norm(parts[1]) != a:
+                continue
+            if lc == "cl" and cl_phase:
+                from match_results import cl_phase_from_mixed_schedule_line
+
+                line_lc = line if len(parts) >= 3 else f"{parts[0]};{parts[1]};cl"
+                got = cl_phase_from_mixed_schedule_line(line_lc)
+                exp = (cl_phase or "").strip().lower()
+                if exp in ("league", "group") and got not in ("league", "group"):
+                    continue
+                if exp == "knockout" and got not in ("knockout", None):
+                    if got == "league":
+                        continue
+            candidates.append(ri)
+
+    if not candidates:
+        return None
+
+    try:
+        from main import get_teams_by_league
+        from match_results import is_match_played
+
+        teams = get_teams_by_league(lc)
+        if teams:
+            for ri in candidates:
+                if not is_match_played(
+                    home, away, lc, teams, cl_phase=cl_phase if lc == "cl" else None
+                ):
+                    return ri
+    except Exception:
+        pass
+    return candidates[-1]
+
+
+def _injury_blocks_at_month(inj: dict, month: int) -> bool:
+    ofm = inj.get("out_from_month")
+    if ofm is None:
+        return False
+    ret = int(inj.get("return_month") or 99)
+    try:
+        start = int(ofm)
+    except (TypeError, ValueError):
+        return False
+    m = max(1, min(10, int(month)))
+    return start <= m < ret
+
+
+def _suspension_blocks_at_round(row: dict, fixture_round: int | None) -> bool:
+    left = int(row.get("matches_left") or 0)
+    if left <= 0:
+        return False
+    ufr = row.get("unavailable_from_round")
+    if ufr is None:
+        return True
+    if fixture_round is None:
+        return True
+    try:
+        return int(fixture_round) >= int(ufr)
+    except (TypeError, ValueError):
+        return True
 
 
 def _susp_key(name: str, team: str, league_code: str, scope: str) -> str:
@@ -182,6 +289,7 @@ def check_player_eligible(
     league_code: str,
     tournament: str,
     schedule_month: int,
+    fixture_round: int | None = None,
 ) -> tuple[bool, str | None]:
     """
     Можно ли вписать матчевую стату (голы и т.д.). Возвращает (ok, сообщение при запрете).
@@ -193,21 +301,22 @@ def check_player_eligible(
     month = max(1, min(10, int(schedule_month)))
 
     inj = _find_injury(st, name, team)
-    if inj:
+    if inj and _injury_blocks_at_month(inj, month):
         ret = int(inj.get("return_month") or 99)
-        if month < ret:
-            left = ret - month
-            kind = (inj.get("type") or "травма").strip() or "травма"
-            return (
-                False,
-                f"🚫 {name} — выбыл на {left} мес. ({kind}; выход с {ret} месяца)",
-            )
+        ofm = int(inj.get("out_from_month") or month)
+        kind = (inj.get("type") or "травма").strip() or "травма"
+        return (
+            False,
+            f"🚫 {name} — травма с {ofm} мес., выход с {ret} ({kind})",
+        )
 
     row = _find_susp(st, name, team, lc, scope)
-    if row and int(row.get("matches_left") or 0) > 0:
+    if row and _suspension_blocks_at_round(row, fixture_round):
         m = int(row["matches_left"])
         w = "матч" if m == 1 else "матча" if 2 <= m <= 4 else "матчей"
-        return (False, f"🚫 {name} — {m} {w} дисквалификации (турнир: {lc})")
+        ufr = row.get("unavailable_from_round")
+        extra = f", с тура {ufr}" if ufr is not None else ""
+        return (False, f"🚫 {name} — {m} {w} дисквалификации (турнир: {lc}{extra})")
 
     return (True, None)
 
@@ -254,29 +363,53 @@ def register_match_played_for_discipline(
 
 
 def _upsert_susp(
-    st: dict, name: str, team: str, league_code: str, scope: str, add: int
+    st: dict,
+    name: str,
+    team: str,
+    league_code: str,
+    scope: str,
+    add: int,
+    *,
+    unavailable_from_round: int | None = None,
 ) -> None:
     k = _susp_key(name, team, league_code, scope)
     row = _find_susp(st, name, team, league_code, scope)
     if row is None:
-        st.setdefault("suspensions", []).append(
-            {
-                "key": k,
-                "name": name.strip().title(),
-                "name_norm": _norm(name),
-                "team": team.strip().title(),
-                "team_norm": _norm(team),
-                "league_code": league_code,
-                "scope": scope,
-                "matches_left": add,
-            }
-        )
+        entry: dict[str, Any] = {
+            "key": k,
+            "name": name.strip().title(),
+            "name_norm": _norm(name),
+            "team": team.strip().title(),
+            "team_norm": _norm(team),
+            "league_code": league_code,
+            "scope": scope,
+            "matches_left": add,
+        }
+        if unavailable_from_round is not None:
+            entry["unavailable_from_round"] = int(unavailable_from_round)
+        st.setdefault("suspensions", []).append(entry)
     else:
         row["matches_left"] = int(row.get("matches_left") or 0) + add
+        if unavailable_from_round is not None:
+            old = row.get("unavailable_from_round")
+            ufr = int(unavailable_from_round)
+            if old is None:
+                row["unavailable_from_round"] = ufr
+            else:
+                try:
+                    row["unavailable_from_round"] = min(int(old), ufr)
+                except (TypeError, ValueError):
+                    row["unavailable_from_round"] = ufr
 
 
 def _inc_yellow_cycle(
-    st: dict, name: str, team: str, league_code: str, scope: str
+    st: dict,
+    name: str,
+    team: str,
+    league_code: str,
+    scope: str,
+    *,
+    unavailable_from_round: int | None = None,
 ) -> str | None:
     """
     +1 к циклу жк. При достижении 4 — бан 1 матч, цикл 0. Возвращает сообщение при бане.
@@ -298,7 +431,15 @@ def _inc_yellow_cycle(
         ylist.append(row)
     c = int(row.get("count") or 0) + 1
     if c >= _YEL4:
-        _upsert_susp(st, name, team, league_code, scope, 1)
+        _upsert_susp(
+            st,
+            name,
+            team,
+            league_code,
+            scope,
+            1,
+            unavailable_from_round=unavailable_from_round,
+        )
         row["count"] = 0
         return (
             f"⚠ 4-я жёлтая: {name} — 1 матч дисквалификации (и отсечка жк сброшена)."
@@ -318,6 +459,23 @@ def _bump_db_cards(
         player.red_cards = r
 
 
+def _ban_from_round_after_card(
+    *,
+    fixture_home: str | None,
+    fixture_away: str | None,
+    league_code: str,
+    cl_phase: str | None,
+) -> int | None:
+    if not fixture_home or not fixture_away:
+        return None
+    rnd = find_fixture_round(
+        fixture_home, fixture_away, league_code, cl_phase=cl_phase
+    )
+    if rnd is None:
+        return None
+    return int(rnd) + 1
+
+
 def try_apply_discipline_line(
     line: str,
     *,
@@ -325,6 +483,9 @@ def try_apply_discipline_line(
     tournament: str,
     league_code: str,
     schedule_month: int,
+    fixture_home: str | None = None,
+    fixture_away: str | None = None,
+    cl_phase: str | None = None,
 ) -> tuple[str | None, bool]:
     """
     Разбор строки дисциплины/травмы. (сообщение, обработано_ли).
@@ -333,7 +494,14 @@ def try_apply_discipline_line(
     raw = (line or "").strip()
     if not raw:
         return (None, False)
-    # порядок: 2жк, жк, Nм, кк
+    lc = league_code
+    ban_from = _ban_from_round_after_card(
+        fixture_home=fixture_home,
+        fixture_away=fixture_away,
+        league_code=lc,
+        cl_phase=cl_phase,
+    )
+    # порядок: 2жк, травма (с M), травма (Nм), жк, кк
     m2 = _RE_2Y.match(raw) or _RE_2Y_GLUE.match(raw)
     if m2:
         name = m2.group(1).strip()
@@ -347,6 +515,31 @@ def try_apply_discipline_line(
             add_yellow=0,
             add_red=1,
             kind_label="2-я жёлтая (кк)",
+            unavailable_from_round=ban_from,
+        )
+    m3f = _RE_INJ_FROM.match(raw)
+    if m3f:
+        from player_stats import find_player_by_name, get_session
+
+        name = m3f.group(1).strip()
+        out_from = int(m3f.group(2))
+        nm = int(m3f.group(3))
+        raw_type = (m3f.group(4) or "").strip()
+        if not (1 <= out_from <= 10 and 1 <= nm <= 10):
+            return ("Некорректно: месяцы 1–10.", True)
+        injury_type = raw_type if raw_type else "травма"
+        if len(injury_type) > 80:
+            injury_type = injury_type[:80].rstrip()
+        return _apply_injury(
+            name,
+            current_team,
+            tournament,
+            schedule_month,
+            nm,
+            injury_type,
+            find_player_by_name,
+            get_session,
+            out_from_month=out_from,
         )
     m3 = _RE_INJ.match(raw)
     if m3:
@@ -377,6 +570,7 @@ def try_apply_discipline_line(
             current_team,
             tournament,
             league_code,
+            unavailable_from_round=ban_from,
         )
     if _RE_R.match(raw) and not m2:
         mr = _RE_R.match(raw)
@@ -391,6 +585,7 @@ def try_apply_discipline_line(
             add_yellow=0,
             add_red=1,
             kind_label="прямая кк",
+            unavailable_from_round=ban_from,
         )
     return (None, False)
 
@@ -400,6 +595,8 @@ def _apply_yellow(
     current_team: str,
     tournament: str,
     league_code: str,
+    *,
+    unavailable_from_round: int | None = None,
 ) -> tuple[str | None, bool]:
     from player_stats import find_player_by_name, get_session
     from utils.common_db import rebuild_common_database
@@ -415,7 +612,14 @@ def _apply_yellow(
     lc = "cl" if scope == "cl" else league_code
     with _lock:
         st = _load()
-        msg_c = _inc_yellow_cycle(st, player.name, team, lc, scope)
+        msg_c = _inc_yellow_cycle(
+            st,
+            player.name,
+            team,
+            lc,
+            scope,
+            unavailable_from_round=unavailable_from_round,
+        )
         _bump_db_cards(sess, player, add_yellow=1)
         sess.commit()
         _save(st)
@@ -437,6 +641,7 @@ def _apply_red_card(
     add_yellow: int,
     add_red: int,
     kind_label: str,
+    unavailable_from_round: int | None = None,
 ) -> tuple[str | None, bool]:
     from player_stats import find_player_by_name, get_session
     from utils.common_db import rebuild_common_database
@@ -452,7 +657,15 @@ def _apply_red_card(
     lc = "cl" if scope == "cl" else league_code
     with _lock:
         st = _load()
-        _upsert_susp(st, player.name, team, lc, scope, matches)
+        _upsert_susp(
+            st,
+            player.name,
+            team,
+            lc,
+            scope,
+            matches,
+            unavailable_from_round=unavailable_from_round,
+        )
         _bump_db_cards(sess, player, add_yellow=add_yellow, add_red=add_red)
         sess.commit()
         _save(st)
@@ -460,8 +673,13 @@ def _apply_red_card(
         rebuild_common_database()
     except Exception:
         pass
+    ufr_note = (
+        f" Бан с тура {unavailable_from_round}."
+        if unavailable_from_round is not None
+        else ""
+    )
     return (
-        f"✓ {kind_label}: {player.name} — +{matches} к дискв., кк в БД +1.",
+        f"✓ {kind_label}: {player.name} — +{matches} к дискв., кк в БД +1.{ufr_note}",
         True,
     )
 
@@ -475,6 +693,8 @@ def _apply_injury(
     injury_type: str,
     find_pl,
     get_sess,
+    *,
+    out_from_month: int | None = None,
 ) -> tuple[str | None, bool]:
     t = "cl" if tournament == "cl" else "league"
     sess = get_sess(t)
@@ -483,7 +703,7 @@ def _apply_injury(
     player, _ = find_pl(sess, nmt, team)
     if not player:
         return (f"✗ Не найден: {nmt} ({team})", True)
-    cur = max(1, min(10, int(month)))
+    cur = max(1, min(10, int(out_from_month if out_from_month is not None else month)))
     ret = cur + int(nmonths)
     if ret > 10:
         ret = 10
@@ -497,18 +717,20 @@ def _apply_injury(
                     "name_norm": _norm(player.name),
                     "team": team,
                     "team_norm": _norm(team),
+                    "out_from_month": cur,
                     "return_month": ret,
                     "type": injury_type,
                 }
             )
         else:
+            inj["out_from_month"] = cur
             inj["return_month"] = ret
             inj["type"] = injury_type
         _save(st)
     tk = injury_type.strip() or "травма"
     return (
-        f"✓ Травма ({tk}): {player.name} — недоступен до {ret} месяца "
-        f"(сейчас {cur}, срок {nmonths} мес).",
+        f"✓ Травма ({tk}): {player.name} — с <b>{cur}</b> мес., выход с <b>{ret}</b> "
+        f"(срок {nmonths} мес.).",
         True,
     )
 
@@ -519,6 +741,8 @@ def format_discipline_pre_match_notice_html(
     *,
     league_code: str,
     schedule_day: int | None = None,
+    cl_phase: str | None = None,
+    fixture_round: int | None = None,
 ) -> str:
     """
     Краткий блок для экрана выбора матча: активные травмы и дисквалы по обеим командам
@@ -530,6 +754,8 @@ def format_discipline_pre_match_notice_html(
     month = get_calendar_month(schedule_day)
     scope = "cl" if league_code == "cl" else "league"
     lc = "cl" if scope == "cl" else league_code
+    if fixture_round is None:
+        fixture_round = find_fixture_round(home, away, lc, cl_phase=cl_phase)
 
     with _lock:
         st = _load()
@@ -539,27 +765,40 @@ def format_discipline_pre_match_notice_html(
         for inj in st.get("injuries", []):
             if inj.get("team_norm") != team_norm:
                 continue
-            ret = int(inj.get("return_month") or 99)
-            if month >= ret:
+            if not _injury_blocks_at_month(inj, month):
                 continue
-            left = ret - month
+            ret = int(inj.get("return_month") or 99)
+            ofm = inj.get("out_from_month")
             nm = esc(str(inj.get("name", "?")))
             tk = esc((inj.get("type") or "травма").strip() or "травма")
-            lines.append(
-                f"• {nm} — <b>{tk}</b>: вернётся с <b>{ret}</b>-го мес. календаря "
-                f"(сейчас <b>{month}</b>-й; осталось ≈<b>{left}</b> мес.)"
-            )
+            if ofm is not None:
+                lines.append(
+                    f"• {nm} — <b>{tk}</b>: с <b>{int(ofm)}</b>-го мес., выход с <b>{ret}</b>-го "
+                    f"(слот <b>{month}</b>-й)"
+                )
+            else:
+                lines.append(
+                    f"• {nm} — <b>{tk}</b>: выход с <b>{ret}</b>-го мес. "
+                    f"(⚠ задайте <code>out_from_month</code> в JSON)"
+                )
         for row in st.get("suspensions", []):
             if row.get("team_norm") != team_norm:
                 continue
             if row.get("scope") != scope or row.get("league_code") != lc:
                 continue
-            left = int(row.get("matches_left") or 0)
-            if left <= 0:
+            if not _suspension_blocks_at_round(row, fixture_round):
                 continue
+            left = int(row.get("matches_left") or 0)
             nm = esc(str(row.get("name", "?")))
             w = "матч" if left == 1 else "матча" if 2 <= left <= 4 else "матчей"
-            lines.append(f"• {nm} — дискв. <b>{left}</b> {w} (турнир: {esc(lc)})")
+            ufr = row.get("unavailable_from_round")
+            ufr_txt = f", с тура <b>{int(ufr)}</b>" if ufr is not None else ""
+            rnd_txt = (
+                f" (тур слота <b>{fixture_round}</b>)" if fixture_round is not None else ""
+            )
+            lines.append(
+                f"• {nm} — дискв. <b>{left}</b> {w}{ufr_txt}{rnd_txt} ({esc(lc)})"
+            )
         if not lines:
             return None
         return f"<b>{esc(team_label)}</b>\n" + "\n".join(lines)
@@ -594,30 +833,35 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
     chunks: list[str] = [f"Месяц календаря: {month}.", ""]
 
     # --- травмы ---
-    inj_rows: list[tuple[str, str, str, int, int]] = []
+    inj_rows: list[tuple[str, str, str, str, int]] = []
     for inj in st.get("injuries", []):
         ret = int(inj.get("return_month") or 99)
         if month >= ret:
             continue
-        left = ret - month
+        ofm = inj.get("out_from_month")
+        ofm_s = str(int(ofm)) if ofm is not None else "?"
         name = str(inj.get("name") or "?").strip()
         team = str(inj.get("team") or "?").strip()
         kind = (inj.get("type") or "травма").strip() or "травма"
-        inj_rows.append((team, name, kind, ret, left))
+        inj_rows.append((team, name, kind, ofm_s, ret))
     chunks.append("── ТРАВМЫ ──")
+    chunks.append(
+        "«с» — out_from_month (с какого мес. недоступен); «до» — return_month. "
+        "? — задайте out_from_month в JSON."
+    )
     if not inj_rows:
         chunks.append("Активных травм нет.")
     else:
         inj_rows.sort(key=lambda r: (r[0].casefold(), r[1].casefold()))
         w_team = max(len("Клуб"), max(len(r[0]) for r in inj_rows))
         w_name = max(len("Игрок"), max(len(r[1]) for r in inj_rows))
-        head = f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<12}  выход  осталось"
+        head = f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<10}  с   до"
         sep = "-" * len(head)
         lines = [head, sep]
-        for team, name, kind, ret, left in inj_rows:
+        for team, name, kind, ofm_s, ret in inj_rows:
             lines.append(
-                f"{team:<{w_team}}  {name:<{w_name}}  {kind[:12]:<12}  "
-                f"м{ret:<4}  ≈{left} мес."
+                f"{team:<{w_team}}  {name:<{w_name}}  {kind[:10]:<10}  "
+                f"{ofm_s:<3} м{ret}"
             )
         chunks.append(f"Игроков: {len(inj_rows)}.")
         chunks.extend(lines)
@@ -627,7 +871,7 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
     chunks.append(
         "Осталось матчей — сколько закрытых матчей команды в этом турнире до снятия дисквала."
     )
-    susp_rows: list[tuple[str, str, str, int]] = []
+    susp_rows: list[tuple[str, str, str, int, str]] = []
     for row in st.get("suspensions", []):
         left = int(row.get("matches_left") or 0)
         if left <= 0:
@@ -635,7 +879,9 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
         team = str(row.get("team") or "?").strip()
         name = str(row.get("name") or "?").strip()
         lab = _tournament_label(str(row.get("league_code") or ""), str(row.get("scope") or ""))
-        susp_rows.append((team, name, lab, left))
+        ufr = row.get("unavailable_from_round")
+        ufr_s = str(int(ufr)) if ufr is not None else "?"
+        susp_rows.append((team, name, lab, left, ufr_s))
     if not susp_rows:
         chunks.append("Активных дисквалов нет.")
     else:
@@ -643,12 +889,18 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
         w_team = max(len("Клуб"), max(len(r[0]) for r in susp_rows))
         w_name = max(len("Игрок"), max(len(r[1]) for r in susp_rows))
         w_tour = max(len("Турнир"), max(len(r[2]) for r in susp_rows))
-        head = f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Турнир':<{w_tour}}  осталось"
+        head = (
+            f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Турнир':<{w_tour}}  "
+            f"с тура  ост."
+        )
         sep = "-" * len(head)
         lines = [head, sep]
-        for team, name, lab, left in susp_rows:
+        for team, name, lab, left, ufr_s in susp_rows:
             wn = "матч" if left == 1 else "матча" if 2 <= left <= 4 else "матчей"
-            lines.append(f"{team:<{w_team}}  {name:<{w_name}}  {lab:<{w_tour}}  {left} {wn}")
+            lines.append(
+                f"{team:<{w_team}}  {name:<{w_name}}  {lab:<{w_tour}}  "
+                f"{ufr_s:<5} {left} {wn}"
+            )
         chunks.append(f"Игроков: {len(susp_rows)}.")
         chunks.extend(lines)
 
@@ -691,7 +943,7 @@ def clear_discipline_state() -> None:
 
 def line_looks_discipline(s: str) -> bool:
     t = (s or "").strip()
-    if _RE_INJ.match(t):
+    if _RE_INJ_FROM.match(t) or _RE_INJ.match(t):
         return True
     if t.endswith("2жк"):
         return True

@@ -444,6 +444,13 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
         if lc is None and match_for_cs and len(match_for_cs) >= 2:
             lc = infer_league_code_for_stats(match_for_cs[0], match_for_cs[1], tournament)
         msched = get_calendar_month(schedule_day)
+        fixture_round = None
+        if match_for_cs and len(match_for_cs) >= 2 and lc:
+            from utils.player_discipline import find_fixture_round
+
+            fixture_round = find_fixture_round(
+                match_for_cs[0], match_for_cs[1], lc
+            )
         if lc:
             el, msg = check_player_eligible(
                 player.name,
@@ -451,6 +458,7 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
                 league_code=lc,
                 tournament=tournament,
                 schedule_month=msched,
+                fixture_round=fixture_round,
             )
             if not el:
                 print(f"  {msg}")
@@ -730,7 +738,7 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
     print("Режимы: 1 — только из БД (по умолчанию)  |  2 — новый игрок (создать при отсутствии)")
     print("Сторона: h/х — хозяева, a/г — гости")
     print(
-        "Дисциплина/травмы: бастони жк  |  бастони 2жк  |  бастони кк  |  симонс 4м/4m "
+        "Дисциплина/травмы: бастони жк  |  бастони 2жк  |  бастони кк  |  симонс 4м  |  брозович с3 1м "
         "(травма — отдельной строкой, лат. m OK; calendar_month.txt при вводе без слота)"
     )
     print("-" * 50)
@@ -791,6 +799,8 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
                 tournament=st_tourn,
                 league_code=lc_inf,
                 schedule_month=msched,
+                fixture_home=home_team,
+                fixture_away=away_team,
             )
             if h:
                 if dm:
@@ -1010,6 +1020,8 @@ def apply_stats_bot_line(
             tournament=st_tourn,
             league_code=lc,
             schedule_month=msched,
+            fixture_home=home_team,
+            fixture_away=away_team,
         )
         if handled:
             tail = ""

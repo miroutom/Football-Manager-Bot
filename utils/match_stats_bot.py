@@ -440,6 +440,8 @@ def apply_player_stat_line(
             tournament=st_tourn,
             league_code=lc,
             schedule_month=msched,
+            fixture_home=home_team,
+            fixture_away=away_team,
         )
         if msg:
             logs.append(msg)
@@ -450,6 +452,8 @@ def apply_player_stat_line(
             tournament=st_tourn,
             league_code=lc,
             schedule_month=msched,
+            fixture_home=home_team,
+            fixture_away=away_team,
         )
         if msg:
             logs.append(msg)
@@ -460,6 +464,8 @@ def apply_player_stat_line(
             tournament=st_tourn,
             league_code=lc,
             schedule_month=msched,
+            fixture_home=home_team,
+            fixture_away=away_team,
         )
         if msg:
             logs.append(msg)
@@ -470,6 +476,8 @@ def apply_player_stat_line(
             tournament=st_tourn,
             league_code=lc,
             schedule_month=msched,
+            fixture_home=home_team,
+            fixture_away=away_team,
         )
         if msg:
             logs.append(msg)

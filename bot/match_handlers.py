@@ -510,7 +510,11 @@ async def _prompt_score_for_scheduled_slot(
     mode_line = f"<b>{mode}</b>\n\n" if mode else ""
 
     disc_html = format_discipline_pre_match_notice_html(
-        home, away, league_code=league_code, schedule_day=day
+        home,
+        away,
+        league_code=league_code,
+        schedule_day=day,
+        cl_phase=cl_ph,
     )
     disc_block = f"{disc_html}\n\n" if disc_html else ""
 
@@ -1379,7 +1383,9 @@ async def cb_skip_pick(callback: CallbackQuery, state: FSMContext) -> None:
         row["home"],
         row["away"],
         league_code=row["tournament"],
-        schedule_day=rnd,
+        schedule_day=None,
+        cl_phase=row.get("cl_phase") if row["tournament"] == "cl" else None,
+        fixture_round=rnd,
     )
     disc_block = f"{disc_html}\n\n" if disc_html else ""
 
