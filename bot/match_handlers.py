@@ -418,6 +418,9 @@ def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
     cl_ph = (
         cl_phase_from_mixed_schedule_line(match_str) if league_code == "cl" else None
     )
+    from utils.calendar_slot_labels import home_display_tour
+    from utils.player_discipline import find_fixture_round
+
     slot = {
         "day": day,
         "match_str": match_str,
@@ -425,25 +428,36 @@ def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
         "away": away,
         "league_code": league_code,
         "cl_ph": cl_ph,
+        "display_round": home_display_tour(home, league_code),
+        "fixture_round": find_fixture_round(
+            home, away, league_code, cl_phase=cl_ph
+        ),
     }
-    from utils.player_discipline import find_fixture_round
-
-    slot["fixture_round"] = find_fixture_round(
-        home, away, league_code, cl_phase=cl_ph
-    )
     return slot
 
 
 def _skipped_row_to_slot(row: dict) -> dict:
     """Слот отложенного матча: ``round`` в JSON — месяц календаря при отложении."""
+    from utils.calendar_slot_labels import home_display_tour
+    from utils.player_discipline import find_fixture_round
+
     lc = str(row.get("tournament") or "")
     cl_ph = row.get("cl_phase") if lc == "cl" else None
+    home = row.get("home")
+    away = row.get("away")
     return {
         "day": row.get("round"),
-        "home": row.get("home"),
-        "away": row.get("away"),
+        "home": home,
+        "away": away,
         "league_code": lc,
         "cl_ph": cl_ph,
+        "display_round": home_display_tour(str(home or ""), lc),
+        "fixture_round": find_fixture_round(
+            str(home or ""),
+            str(away or ""),
+            lc,
+            cl_phase=cl_ph,
+        ),
     }
 
 
@@ -457,25 +471,22 @@ async def _peek_next_schedule_slot(session_kind: str | None) -> dict | None:
 
 def _calendar_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     """
-    Подпись кнопки: месяц, тур чемпионата, матч, турнир, сим/игра.
-    Пример: ``1. м2 т4 · Реал — Ливерпуль (ЛЧ, сим)``.
+    Подпись кнопки: месяц, тур (лига: след. у хозяев), матч, турнир, сим/игра.
+    Пример: ``1. м2 т6 · Бавария — Вольфсбург (Бундеслига, сим)``; ЛЧ без ``т``.
     """
     from config.leagues_config import manager_session_label
-    from utils.player_discipline import find_fixture_round
+    from utils.calendar_slot_labels import home_display_tour
 
     home = str(slot.get("home") or "?").strip()
     away = str(slot.get("away") or "?").strip()
     lc_code = str(slot.get("league_code") or slot.get("tournament") or "")
     lg = _league_title(lc_code)
-    cl_ph = slot.get("cl_ph")
-    if cl_ph is None and lc_code == "cl":
-        cl_ph = slot.get("cl_phase")
 
     month = slot.get("day", "?")
-    rnd = slot.get("fixture_round")
-    if rnd is None and lc_code:
-        rnd = find_fixture_round(home, away, lc_code, cl_phase=cl_ph)
-    rnd_part = f" т{rnd}" if rnd is not None else " т?"
+    rnd = slot.get("display_round")
+    if rnd is None:
+        rnd = home_display_tour(home, lc_code)
+    rnd_part = f" т{rnd}" if rnd is not None else ""
 
     mode = manager_session_label(home, away) or "?"
     mode_short = "игра" if mode == "Игра" else ("сим" if mode == "Симуляция" else "?")
