@@ -19,7 +19,7 @@
       "team_norm": "мю",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "манчини|рома|ita|league",
@@ -69,7 +69,7 @@
       "team_norm": "барселона",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "бегич|урал|rpl|league",
@@ -99,7 +99,7 @@
       "team_norm": "крылья советов",
       "league_code": "rpl",
       "scope": "league",
-      "matches_left": 2
+      "matches_left": 1
     },
     {
       "key": "каземиро|мю|cl|cl",
@@ -109,7 +109,7 @@
       "team_norm": "мю",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "гидо родригез|бетис|esp|league",
@@ -491,7 +491,7 @@
       "team_norm": "барселона",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "бальде|барселона|cl|cl",
@@ -689,6 +689,36 @@
       "name_norm": "шик",
       "team": "Байер",
       "team_norm": "байер",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "симакан|лейпциг|cl|cl",
+      "name": "Симакан",
+      "name_norm": "симакан",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "боржес|краснодар|cl|cl",
+      "name": "Боржес",
+      "name_norm": "боржес",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "диоманде|краснодар|cl|cl",
+      "name": "Диоманде",
+      "name_norm": "диоманде",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
       "league_code": "cl",
       "scope": "cl",
       "count": 1
@@ -1135,6 +1165,86 @@
       "name_norm": "гвардиоль",
       "team": "Сити",
       "team_norm": "сити",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Осимен",
+      "name_norm": "осимен",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "return_month": 6,
+      "type": "травма"
+    },
+    {
+      "name": "Смолов",
+      "name_norm": "смолов",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "return_month": 10,
+      "type": "травма"
+    },
+    {
+      "name": "Коман",
+      "name_norm": "коман",
+      "team": "Бавария",
+      "team_norm": "бавария",
+      "return_month": 7,
+      "type": "травма"
+    },
+    {
+      "name": "Салах",
+      "name_norm": "салах",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Батши",
+      "name_norm": "батши",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Дивеев",
+      "name_norm": "дивеев",
+      "team": "Цска",
+      "team_norm": "цска",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Палинья",
+      "name_norm": "палинья",
+      "team": "Сити",
+      "team_norm": "сити",
+      "return_month": 3,
+      "type": "травма"
+    },
+    {
+      "name": "Сильва",
+      "name_norm": "сильва",
+      "team": "Сити",
+      "team_norm": "сити",
+      "return_month": 9,
+      "type": "травма"
+    },
+    {
+      "name": "Сафонов",
+      "name_norm": "сафонов",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "name": "Агкацев",
+      "name_norm": "агкацев",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
       "return_month": 5,
       "type": "травма"
     }

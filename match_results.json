@@ -927,6 +927,124 @@
       "day": 2,
       "cl_phase": "league",
       "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Лейпциг",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Барселона",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Арсенал",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 4,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Лейпциг",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 8,
+      "day": 4,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетико",
+      "away": "Ювентус",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 4,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Бавария",
+      "away": "Реал Сосьедад",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 5,
+      "day": 4,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Крылья Советов",
+      "away": "Цска",
+      "league": "rpl",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Краснодар",
+      "away": "Реал Сосьедад",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 4,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Цска",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Зенит",
+      "away": "Спартак",
+      "league": "rpl",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Спартак",
+      "league": "cl",
+      "home_score": 5,
+      "away_score": 3,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Краснодар",
+      "league": "cl",
+      "home_score": 5,
+      "away_score": 1,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
     }
   ]
 }
