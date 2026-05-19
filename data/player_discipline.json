@@ -1406,7 +1406,8 @@
       "team": "Фиорентина",
       "team_norm": "фиорентина",
       "return_month": 4,
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "бонавентура|фиорентина|1|4"
     },
     {
       "name": "Пашалич",
@@ -1414,7 +1415,8 @@
       "team": "Аталанта",
       "team_norm": "аталанта",
       "return_month": 4,
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "пашалич|аталанта|1|4"
     },
     {
       "name": "Эриксен",
@@ -1422,7 +1424,8 @@
       "team": "Мю",
       "team_norm": "мю",
       "return_month": 4,
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "эриксен|мю|1|4"
     },
     {
       "name": "Гудель",
@@ -1430,7 +1433,8 @@
       "team": "Севилья",
       "team_norm": "севилья",
       "return_month": 8,
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "гудель|севилья|1|8"
     },
     {
       "name": "Лемар",
@@ -1438,7 +1442,8 @@
       "team": "Атлетико",
       "team_norm": "атлетико",
       "return_month": 4,
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "лемар|атлетико|1|4"
     },
     {
       "name": "Викарио",
@@ -1447,7 +1452,8 @@
       "team_norm": "тоттенхэм",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "викарио|тоттенхэм|1|4"
     },
     {
       "name": "Лориент",
@@ -1456,7 +1462,8 @@
       "team_norm": "реал сосьедад",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "лориент|реал сосьедад|1|4"
     },
     {
       "name": "Тюкавин",
@@ -1465,7 +1472,8 @@
       "team_norm": "реал сосьедад",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "тюкавин|реал сосьедад|1|4"
     },
     {
       "name": "Гюлер",
@@ -1474,7 +1482,8 @@
       "team_norm": "байер",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "гюлер|байер|1|4"
     },
     {
       "name": "Иньяки",
@@ -1483,7 +1492,8 @@
       "team_norm": "атлетик",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "иньяки|атлетик|1|4"
     },
     {
       "name": "Эдерсон",
@@ -1492,7 +1502,8 @@
       "team_norm": "сити",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "эдерсон|сити|1|4"
     },
     {
       "name": "Ван Де Вен",
@@ -1501,7 +1512,8 @@
       "team_norm": "тоттенхэм",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "ван де вен|тоттенхэм|1|4"
     },
     {
       "name": "Собослай",
@@ -1510,7 +1522,8 @@
       "team_norm": "ливерпуль",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "собослай|ливерпуль|1|4"
     },
     {
       "name": "Рабьо",
@@ -1519,7 +1532,8 @@
       "team_norm": "ливерпуль",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "рабьо|ливерпуль|1|4"
     },
     {
       "name": "Перейра",
@@ -1528,7 +1542,8 @@
       "team_norm": "ньюкасл",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "перейра|ньюкасл|1|4"
     },
     {
       "name": "Муса",
@@ -1537,7 +1552,8 @@
       "team_norm": "милан",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "муса|милан|1|4"
     },
     {
       "name": "Эрмосо",
@@ -1546,7 +1562,8 @@
       "team_norm": "атлетико",
       "return_month": 8,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "эрмосо|атлетико|1|8"
     },
     {
       "name": "Дансо",
@@ -1555,7 +1572,8 @@
       "team_norm": "лацио",
       "return_month": 8,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "дансо|лацио|1|8"
     },
     {
       "name": "Бейси",
@@ -1564,7 +1582,8 @@
       "team_norm": "лацио",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "бейси|лацио|1|4"
     },
     {
       "name": "Симонс",
@@ -1573,7 +1592,8 @@
       "team_norm": "аталанта",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "симонс|аталанта|1|4"
     },
     {
       "name": "Йерай",
@@ -1582,7 +1602,8 @@
       "team_norm": "атлетик",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "йерай|атлетик|1|4"
     },
     {
       "name": "Чалханоглу",
@@ -1591,16 +1612,28 @@
       "team_norm": "интер",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "чалханоглу|интер|1|4"
     },
     {
+      "key": "мартинез|интер|1|4",
       "name": "Мартинез",
       "name_norm": "мартинез",
       "team": "Интер",
       "team_norm": "интер",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "key": "мартинез|интер|4|10",
+      "name": "Мартинез",
+      "name_norm": "мартинез",
+      "team": "Интер",
+      "team_norm": "интер",
+      "out_from_month": 4,
       "return_month": 10,
-      "type": "травма",
-      "out_from_month": 4
+      "type": "травма"
     },
     {
       "name": "Рамсдейл",
@@ -1609,7 +1642,8 @@
       "team_norm": "арсенал",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "рамсдейл|арсенал|1|4"
     },
     {
       "name": "О'райли",
@@ -1618,7 +1652,8 @@
       "team_norm": "динамо",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "о'райли|динамо|1|4"
     },
     {
       "name": "Фабиньо",
@@ -1627,7 +1662,8 @@
       "team_norm": "лейпциг",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "фабиньо|лейпциг|1|4"
     },
     {
       "name": "Хонорат",
@@ -1636,7 +1672,8 @@
       "team_norm": "боруссия м",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "хонорат|боруссия м|1|4"
     },
     {
       "name": "Траоре",
@@ -1645,7 +1682,8 @@
       "team_norm": "боруссия м",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "траоре|боруссия м|1|4"
     },
     {
       "name": "Ливакович",
@@ -1654,7 +1692,8 @@
       "team_norm": "боруссия м",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "ливакович|боруссия м|1|4"
     },
     {
       "name": "Амири",
@@ -1663,7 +1702,8 @@
       "team_norm": "байер",
       "return_month": 2,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "амири|байер|1|2"
     },
     {
       "name": "Мартинелли",
@@ -1672,7 +1712,8 @@
       "team_norm": "мю",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "мартинелли|мю|1|4"
     },
     {
       "name": "Удоджи",
@@ -1681,7 +1722,8 @@
       "team_norm": "тоттенхэм",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "удоджи|тоттенхэм|1|4"
     },
     {
       "name": "Малком",
@@ -1690,7 +1732,8 @@
       "team_norm": "фиорентина",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "малком|фиорентина|1|4"
     },
     {
       "name": "Градецки",
@@ -1699,7 +1742,8 @@
       "team_norm": "байер",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "градецки|байер|2|5"
     },
     {
       "name": "Нико",
@@ -1708,7 +1752,8 @@
       "team_norm": "атлетик",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "нико|атлетик|2|5"
     },
     {
       "name": "Де Йонг",
@@ -1717,7 +1762,8 @@
       "team_norm": "барселона",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "де йонг|барселона|2|5"
     },
     {
       "name": "Лофтус-Чик",
@@ -1726,7 +1772,8 @@
       "team_norm": "милан",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "лофтус-чик|милан|2|5"
     },
     {
       "name": "Лапорт",
@@ -1735,7 +1782,8 @@
       "team_norm": "милан",
       "return_month": 9,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "лапорт|милан|2|9"
     },
     {
       "name": "Ди Лоренцо",
@@ -1744,7 +1792,8 @@
       "team_norm": "наполи",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "ди лоренцо|наполи|2|5"
     },
     {
       "name": "Тиау",
@@ -1753,7 +1802,8 @@
       "team_norm": "милан",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "тиау|милан|2|5"
     },
     {
       "name": "Копмейнерс",
@@ -1762,7 +1812,8 @@
       "team_norm": "аталанта",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "копмейнерс|аталанта|2|5"
     },
     {
       "name": "Лопеш",
@@ -1771,7 +1822,8 @@
       "team_norm": "тоттенхэм",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "лопеш|тоттенхэм|1|4"
     },
     {
       "name": "Заниоло",
@@ -1780,7 +1832,8 @@
       "team_norm": "астон вилла",
       "return_month": 9,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "заниоло|астон вилла|2|9"
     },
     {
       "name": "Педроса",
@@ -1789,7 +1842,8 @@
       "team_norm": "севилья",
       "return_month": 3,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "педроса|севилья|2|3"
     },
     {
       "name": "Менди",
@@ -1798,7 +1852,8 @@
       "team_norm": "урал",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "менди|урал|1|4"
     },
     {
       "name": "Мбаппе",
@@ -1807,7 +1862,8 @@
       "team_norm": "ливерпуль",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "мбаппе|ливерпуль|2|5"
     },
     {
       "name": "Тезе",
@@ -1816,7 +1872,8 @@
       "team_norm": "спартак",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "тезе|спартак|1|4"
     },
     {
       "name": "Риччи",
@@ -1825,7 +1882,8 @@
       "team_norm": "крылья советов",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "риччи|крылья советов|2|5"
     },
     {
       "name": "Кастровилль",
@@ -1834,7 +1892,8 @@
       "team_norm": "фиорентина",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "кастровилль|фиорентина|2|5"
     },
     {
       "name": "Траоре",
@@ -1843,7 +1902,8 @@
       "team_norm": "реал сосьедад",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "траоре|реал сосьедад|2|5"
     },
     {
       "name": "Кубо",
@@ -1852,7 +1912,8 @@
       "team_norm": "реал сосьедад",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "кубо|реал сосьедад|2|5"
     },
     {
       "name": "Корреа",
@@ -1861,7 +1922,8 @@
       "team_norm": "атлетико",
       "return_month": 9,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "корреа|атлетико|2|9"
     },
     {
       "name": "Вайгль",
@@ -1870,7 +1932,8 @@
       "team_norm": "боруссия м",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "вайгль|боруссия м|2|5"
     },
     {
       "name": "Муниаин",
@@ -1879,7 +1942,8 @@
       "team_norm": "атлетик",
       "return_month": 9,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "муниаин|атлетик|2|9"
     },
     {
       "name": "Гюсто",
@@ -1888,7 +1952,8 @@
       "team_norm": "челси",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "гюсто|челси|2|5"
     },
     {
       "name": "Гвардиоль",
@@ -1897,7 +1962,8 @@
       "team_norm": "сити",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "гвардиоль|сити|2|5"
     },
     {
       "name": "Осимен",
@@ -1906,7 +1972,8 @@
       "team_norm": "наполи",
       "return_month": 6,
       "type": "травма",
-      "out_from_month": 3
+      "out_from_month": 3,
+      "key": "осимен|наполи|3|6"
     },
     {
       "name": "Смолов",
@@ -1915,7 +1982,8 @@
       "team_norm": "ювентус",
       "return_month": 10,
       "type": "травма",
-      "out_from_month": 3
+      "out_from_month": 3,
+      "key": "смолов|ювентус|3|10"
     },
     {
       "name": "Коман",
@@ -1924,7 +1992,8 @@
       "team_norm": "бавария",
       "return_month": 7,
       "type": "травма",
-      "out_from_month": 4
+      "out_from_month": 4,
+      "key": "коман|бавария|4|7"
     },
     {
       "name": "Салах",
@@ -1933,7 +2002,8 @@
       "team_norm": "краснодар",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "салах|краснодар|2|5"
     },
     {
       "name": "Батши",
@@ -1942,7 +2012,8 @@
       "team_norm": "краснодар",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "батши|краснодар|2|5"
     },
     {
       "name": "Дивеев",
@@ -1951,7 +2022,8 @@
       "team_norm": "цска",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "дивеев|цска|2|5"
     },
     {
       "name": "Палинья",
@@ -1960,7 +2032,8 @@
       "team_norm": "сити",
       "return_month": 3,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "палинья|сити|2|3"
     },
     {
       "name": "Сильва",
@@ -1969,7 +2042,8 @@
       "team_norm": "сити",
       "return_month": 9,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "сильва|сити|2|9"
     },
     {
       "name": "Сафонов",
@@ -1978,7 +2052,8 @@
       "team_norm": "краснодар",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "сафонов|краснодар|2|5"
     },
     {
       "name": "Агкацев",
@@ -1987,7 +2062,8 @@
       "team_norm": "краснодар",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "агкацев|краснодар|2|5"
     },
     {
       "name": "Неймар",
@@ -1996,7 +2072,8 @@
       "team_norm": "барселона",
       "return_month": 5,
       "type": "травма",
-      "out_from_month": 2
+      "out_from_month": 2,
+      "key": "неймар|барселона|2|5"
     },
     {
       "name": "Коке",
@@ -2005,7 +2082,8 @@
       "team_norm": "ливерпуль",
       "return_month": 6,
       "type": "травма",
-      "out_from_month": 3
+      "out_from_month": 3,
+      "key": "коке|ливерпуль|3|6"
     },
     {
       "name": "Кепа",
@@ -2014,7 +2092,8 @@
       "team_norm": "реал",
       "return_month": 4,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "кепа|реал|1|4"
     },
     {
       "name": "Брозович",
@@ -2023,7 +2102,8 @@
       "team_norm": "мю",
       "return_month": 2,
       "type": "травма",
-      "out_from_month": 1
+      "out_from_month": 1,
+      "key": "брозович|мю|1|2"
     },
     {
       "name": "Самба",
@@ -2032,7 +2112,8 @@
       "team_norm": "сити",
       "out_from_month": 3,
       "return_month": 10,
-      "type": "травма"
+      "type": "травма",
+      "key": "самба|сити|3|10"
     },
     {
       "name": "Борнау",
@@ -2041,7 +2122,8 @@
       "team_norm": "вольфсбург",
       "out_from_month": 3,
       "return_month": 6,
-      "type": "травма"
+      "type": "травма",
+      "key": "борнау|вольфсбург|3|6"
     },
     {
       "name": "Дуарте",
@@ -2050,7 +2132,8 @@
       "team_norm": "спартак",
       "out_from_month": 3,
       "return_month": 6,
-      "type": "травма"
+      "type": "травма",
+      "key": "дуарте|спартак|3|6"
     },
     {
       "name": "Хлусевич",
@@ -2059,7 +2142,8 @@
       "team_norm": "спартак",
       "out_from_month": 3,
       "return_month": 6,
-      "type": "травма"
+      "type": "травма",
+      "key": "хлусевич|спартак|3|6"
     }
   ]
 }
