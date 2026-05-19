@@ -1397,6 +1397,16 @@
       "league_code": "cl",
       "scope": "cl",
       "count": 1
+    },
+    {
+      "key": "аит-нури|ньюкасл|cl|cl",
+      "name": "Аит-Нури",
+      "name_norm": "аит-нури",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
     }
   ],
   "injuries": [

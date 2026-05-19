@@ -1437,6 +1437,16 @@
       "day": 2,
       "cl_phase": "league",
       "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Ньюкасл",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
     }
   ]
 }
