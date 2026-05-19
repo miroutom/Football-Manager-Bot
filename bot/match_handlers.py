@@ -436,22 +436,24 @@ async def _peek_next_schedule_slot(session_kind: str | None) -> dict | None:
     return _slot_from_schedule_tuple(tup)
 
 
-def _next_match_btn_label(slot: dict) -> str:
-    """Подпись кнопки — только матч (лимит Telegram 64 символа)."""
-    h = (slot.get("home") or "?").strip()
-    a = (slot.get("away") or "?").strip()
-    d = slot.get("day", "?")
-    label = f"д{d} · {h} — {a}"
-    if len(label) <= 64:
-        return label
-    label = f"д{d} · {h}—{a}"
-    if len(label) <= 64:
-        return label
-    budget = 64 - len(f"д{d} · ") - 1
-    half = max(8, budget // 2)
-    h_s = h if len(h) <= half else h[: half - 1].rstrip() + "…"
-    a_s = a if len(a) <= (budget - len(h_s)) else a[: budget - len(h_s) - 1].rstrip() + "…"
-    return f"д{d} · {h_s}—{a_s}"[:64]
+def _calendar_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
+    """
+    Подпись кнопки слота календаря (как «Из календаря»):
+    ``1. м2 · Реал — Ливерпуль (ЛЧ, сим)``. Поле ``day`` в JSON — номер месяца.
+    """
+    lg = _league_title(str(slot.get("league_code") or ""))
+    from config.leagues_config import manager_session_label
+
+    home = str(slot.get("home") or "?").strip()
+    away = str(slot.get("away") or "?").strip()
+    mode = manager_session_label(home, away) or "?"
+    mode_short = "игра" if mode == "Игра" else ("сим" if mode == "Симуляция" else "?")
+    m = slot.get("day", "?")
+    head = f"{index}. " if index is not None else ""
+    label = f"{head}м{m} · {home} — {away} ({lg}, {mode_short})"
+    if len(label) > 64:
+        label = label[:61] + "…"
+    return label
 
 
 def _post_match_continue_kb(
@@ -462,7 +464,7 @@ def _post_match_continue_kb(
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=_next_match_btn_label(sim_slot),
+                    text=_calendar_slot_btn_label(sim_slot, index=1),
                     callback_data="play:next:sim",
                 )
             ]
@@ -480,7 +482,9 @@ def _post_match_continue_kb(
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=_next_match_btn_label(game_slot),
+                    text=_calendar_slot_btn_label(
+                        game_slot, index=2 if sim_slot else 1
+                    ),
                     callback_data="play:next:game",
                 )
             ]
@@ -512,22 +516,8 @@ async def _send_post_match_continue_prompt(message: Message) -> None:
         )
         return
 
-    lines = ["<b>Что дальше?</b>"]
-    if sim_slot:
-        lines.append(
-            f"Симуляция — <b>д{sim_slot['day']}</b> · "
-            f"{html_escape(str(sim_slot['home']))} — "
-            f"{html_escape(str(sim_slot['away']))}"
-        )
-    if game_slot:
-        lines.append(
-            f"Игра — <b>д{game_slot['day']}</b> · "
-            f"{html_escape(str(game_slot['home']))} — "
-            f"{html_escape(str(game_slot['away']))}"
-        )
-    lines.append("Кнопки ниже — тот же матч, можно сразу открыть счёт.")
     await message.answer(
-        "\n".join(lines),
+        "<b>Что дальше?</b> Выбери матч кнопкой (как в «Из календаря»).",
         reply_markup=_post_match_continue_kb(sim_slot, game_slot),
         parse_mode="HTML",
     )
@@ -806,7 +796,7 @@ async def cb_play_skip(callback: CallbackQuery, state: FSMContext) -> None:
 
     add_skipped_match(home, away, lg, day, cl_phase=cl_ph if lg == "cl" else None)
     await state.clear()
-    await callback.message.answer(f"Отложено: {home} — {away} (тур дня {day}).")
+    await callback.message.answer(f"Отложено: {home} — {away} (месяц {day}).")
 
 
 @match_router.message(MatchEnter.next_score, _TEXT_NOT_CMD)
@@ -1163,17 +1153,7 @@ def _schedule_pick_kb(
     rows: list[list[InlineKeyboardButton]] = []
     for j, row in enumerate(chunk):
         idx = start + j
-        lg = _league_title(row["league_code"])
-        from config.leagues_config import manager_session_label
-
-        mode = manager_session_label(str(row["home"]), str(row["away"])) or "?"
-        mode_short = "игра" if mode == "Игра" else ("сим" if mode == "Симуляция" else "?")
-        label = (
-            f"{idx + 1}. д{row['day']} · {row['home']} — {row['away']} "
-            f"({lg}, {mode_short})"
-        )
-        if len(label) > 64:
-            label = label[:61] + "…"
+        label = _calendar_slot_btn_label(row, index=idx + 1)
         rows.append(
             [
                 InlineKeyboardButton(
@@ -1542,7 +1522,7 @@ async def cb_skip_pick(callback: CallbackQuery, state: FSMContext) -> None:
 
     await callback.message.answer(
         f"{mode_line}"
-        f"Отложенный матч · <b>{lg}</b>, тур дня <b>{rnd}</b>{extra}\n"
+        f"Отложенный матч · <b>{lg}</b>, месяц <b>{rnd}</b>{extra}\n"
         f"<b>{row['home']}</b> — <b>{row['away']}</b>\n\n"
         f"{disc_block}"
         f"Отправь счёт через пробел (хозяева гости), например: <code>2 1</code>\n"

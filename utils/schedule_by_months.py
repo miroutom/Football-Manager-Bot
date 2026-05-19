@@ -418,10 +418,8 @@ def is_schedule_v3(data: list[dict] | dict) -> bool:
 
 
 def mixed_slot_label_from_raw(raw: Any) -> str:
-    """Подпись для UI: «Месяц» (v3) или «Матч-день» (старый список)."""
-    if isinstance(raw, dict) and int(raw.get("version") or 0) >= 3:
-        return "Месяц"
-    return "Матч-день"
+    """Подпись периода в UI (в календаре v3 и в боте — всегда «месяц»)."""
+    return "Месяц"
 
 
 def read_mixed_slot_label(path: Path | str | None = None) -> str:

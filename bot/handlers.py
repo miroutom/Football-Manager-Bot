@@ -641,7 +641,7 @@ def _schedule_league_pick_kb() -> InlineKeyboardMarkup:
 
 def _schedule_mixed_slice_kb(league_key: str) -> InlineKeyboardMarkup:
     """
-    Шаг 2: смешанный календарь (матч-дни).
+    Шаг 2: смешанный календарь (месяцы).
     Строки — все / осталось / сыграно; столбцы — все типы / сим / игра.
     ``league_key``: ``all`` или код лиги.
     """
@@ -854,7 +854,7 @@ async def cb_menu_status(callback: CallbackQuery) -> None:
     await callback.answer()
     try:
         text = await asyncio.to_thread(render_full_status_text)
-        await answer_report_photos(callback.message, text, "Статус матч-дня")
+        await answer_report_photos(callback.message, text, "Статус месяца")
     except Exception as e:
         logger.exception("status")
         await callback.message.answer(f"Ошибка статуса: {e}")
@@ -1240,7 +1240,7 @@ async def cmd_bracket(message: Message) -> None:
 async def cmd_status(message: Message) -> None:
     try:
         text = await asyncio.to_thread(render_full_status_text)
-        await answer_report_photos(message, text, "Статус матч-дня")
+        await answer_report_photos(message, text, "Статус месяца")
     except Exception as e:
         logger.exception("status")
         await message.answer(f"Ошибка: {e}")
@@ -1281,7 +1281,7 @@ async def cb_menu_schedule(callback: CallbackQuery) -> None:
     await callback.message.answer(
         "📅 <b>Календарь</b>\n\n"
         "1) Выберите чемпионат (или «Все»).\n"
-        "2) Смешанные <b>матч-дни</b>: строка — все слоты / только не сыгранные / только сыгранные в журнале; "
+        "2) Смешанный календарь по <b>месяцам</b>: строка — все слоты / только не сыгранные / только сыгранные в журнале; "
         "столбец — все пары / только <b>сим</b> (один менеджер) / только <b>игра</b> (разные менеджеры). "
         "Для сыгранных «сим» — записи с <code>entry_type: simulation</code> в журнале.\n"
         "Для одной лиги есть быстрый переход «Туры (офиц.) · осталось» — календарь по турам из проекта.",
@@ -1294,7 +1294,7 @@ async def cb_menu_schedule(callback: CallbackQuery) -> None:
 async def cb_menu_stats_match(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Статистика по матчу без прохождения матч-дня (как «a»): "
+        "Статистика по матчу без прохождения месяца календаря (как «a»): "
         "лига → хозяева → гости → счёт → строки статы.\n"
         "/cancel — отмена.",
         reply_markup=build_ason_league_kb(),
