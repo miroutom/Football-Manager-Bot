@@ -1045,6 +1045,199 @@
       "day": 2,
       "cl_phase": "league",
       "entry_type": "play"
+    },
+    {
+      "home": "Зенит",
+      "away": "Франкфурт",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал Сосьедад",
+      "away": "Севилья",
+      "league": "esp",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Краснодар",
+      "away": "Атлетико",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Спартак",
+      "away": "Фиорентина",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Дортмунд",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Бавария",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 0,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Рома",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ньюкасл",
+      "away": "Арсенал",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 0,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Вольфсбург",
+      "away": "Мю",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Локомотив",
+      "away": "Севилья",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 4,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Динамо",
+      "away": "Лейпциг",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Динамо",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Цска",
+      "away": "Атлетико",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Вольфсбург",
+      "away": "Франкфурт",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Хоффенхайм",
+      "away": "Лейпциг",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Тоттенхэм",
+      "away": "Дортмунд",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 3,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Барселона",
+      "away": "Байер",
+      "league": "cl",
+      "home_score": 5,
+      "away_score": 1,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Тоттенхэм",
+      "away": "Ливерпуль",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал Сосьедад",
+      "away": "Реал",
+      "league": "esp",
+      "home_score": 0,
+      "away_score": 3,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Динамо",
+      "league": "cl",
+      "home_score": 4,
+      "away_score": 1,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
     }
   ]
 }
