@@ -418,12 +418,31 @@ def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
     cl_ph = (
         cl_phase_from_mixed_schedule_line(match_str) if league_code == "cl" else None
     )
-    return {
+    slot = {
         "day": day,
         "match_str": match_str,
         "home": home,
         "away": away,
         "league_code": league_code,
+        "cl_ph": cl_ph,
+    }
+    from utils.player_discipline import find_fixture_round
+
+    slot["fixture_round"] = find_fixture_round(
+        home, away, league_code, cl_phase=cl_ph
+    )
+    return slot
+
+
+def _skipped_row_to_slot(row: dict) -> dict:
+    """Слот отложенного матча: ``round`` в JSON — месяц календаря при отложении."""
+    lc = str(row.get("tournament") or "")
+    cl_ph = row.get("cl_phase") if lc == "cl" else None
+    return {
+        "day": row.get("round"),
+        "home": row.get("home"),
+        "away": row.get("away"),
+        "league_code": lc,
         "cl_ph": cl_ph,
     }
 
@@ -438,22 +457,53 @@ async def _peek_next_schedule_slot(session_kind: str | None) -> dict | None:
 
 def _calendar_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     """
-    Подпись кнопки слота календаря (как «Из календаря»):
-    ``1. м2 · Реал — Ливерпуль (ЛЧ, сим)``. Поле ``day`` в JSON — номер месяца.
+    Подпись кнопки: месяц, тур чемпионата, матч, турнир, сим/игра.
+    Пример: ``1. м2 т4 · Реал — Ливерпуль (ЛЧ, сим)``.
     """
-    lg = _league_title(str(slot.get("league_code") or ""))
     from config.leagues_config import manager_session_label
+    from utils.player_discipline import find_fixture_round
 
     home = str(slot.get("home") or "?").strip()
     away = str(slot.get("away") or "?").strip()
+    lc_code = str(slot.get("league_code") or slot.get("tournament") or "")
+    lg = _league_title(lc_code)
+    cl_ph = slot.get("cl_ph")
+    if cl_ph is None and lc_code == "cl":
+        cl_ph = slot.get("cl_phase")
+
+    month = slot.get("day", "?")
+    rnd = slot.get("fixture_round")
+    if rnd is None and lc_code:
+        rnd = find_fixture_round(home, away, lc_code, cl_phase=cl_ph)
+    rnd_part = f" т{rnd}" if rnd is not None else " т?"
+
     mode = manager_session_label(home, away) or "?"
     mode_short = "игра" if mode == "Игра" else ("сим" if mode == "Симуляция" else "?")
-    m = slot.get("day", "?")
+
     head = f"{index}. " if index is not None else ""
-    label = f"{head}м{m} · {home} — {away} ({lg}, {mode_short})"
-    if len(label) > 64:
-        label = label[:61] + "…"
-    return label
+    meta = f"({lg}, {mode_short})"
+
+    def _pack(h: str, a: str, sep: str = " — ") -> str:
+        return f"{head}м{month}{rnd_part} · {h}{sep}{a} {meta}"
+
+    for h, a, sep in (
+        (home, away, " — "),
+        (home, away, "—"),
+    ):
+        label = _pack(h, a, sep)
+        if len(label) <= 64:
+            return label
+
+    budget = 64 - len(f"{head}м{month}{rnd_part} · ") - len(f" {meta}")
+    if budget < 10:
+        short = f"{head}м{month}{rnd_part} {meta}"
+        return short if len(short) <= 64 else short[:61] + "…"
+    half = max(4, (budget - 1) // 2)
+    h_s = home if len(home) <= half else home[: half - 1].rstrip() + "…"
+    rem = budget - len(h_s) - 1
+    a_s = away if len(away) <= rem else away[: max(3, rem - 1)].rstrip() + "…"
+    label = f"{head}м{month}{rnd_part} · {h_s}—{a_s} {meta}"
+    return label if len(label) <= 64 else label[:61] + "…"
 
 
 def _post_match_continue_kb(
@@ -1431,12 +1481,8 @@ def _skipped_pick_kb(matches_slice: list) -> InlineKeyboardMarkup:
     """Кнопки skipm:<индекс в полном упорядоченном списке>."""
     rows: list[list[InlineKeyboardButton]] = []
     for j, m in enumerate(matches_slice):
-        i = j
-        lg = _league_title(m["tournament"])
-        label = f"{i + 1}. т{m['round']} · {m['home']} — {m['away']} ({lg})"
-        if len(label) > 64:
-            label = label[:61] + "…"
-        rows.append([InlineKeyboardButton(text=label, callback_data=f"skipm:{i}")])
+        label = _calendar_slot_btn_label(_skipped_row_to_slot(m), index=j + 1)
+        rows.append([InlineKeyboardButton(text=label, callback_data=f"skipm:{j}")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -1500,20 +1546,33 @@ async def cb_skip_pick(callback: CallbackQuery, state: FSMContext) -> None:
     from config.leagues_config import manager_session_label
 
     lg = _league_title(row["tournament"])
-    rnd = row["round"]
+    month = row["round"]
     extra = ""
     if row["tournament"] == "cl":
         extra = f"\nФаза ЛЧ: <code>{row.get('cl_phase') or 'knockout'}</code>"
     mode = manager_session_label(row["home"], row["away"])
     mode_line = f"<b>{mode}</b>\n\n" if mode else ""
 
+    slot = _skipped_row_to_slot(row)
+    fixture_rnd = slot.get("fixture_round")
+    if fixture_rnd is None:
+        from utils.player_discipline import find_fixture_round
+
+        fixture_rnd = find_fixture_round(
+            row["home"],
+            row["away"],
+            row["tournament"],
+            cl_phase=row.get("cl_phase") if row["tournament"] == "cl" else None,
+        )
+    tour_line = f", тур <b>{fixture_rnd}</b>" if fixture_rnd is not None else ""
+
     disc_html = format_discipline_pre_match_notice_html(
         row["home"],
         row["away"],
         league_code=row["tournament"],
-        schedule_day=None,
+        schedule_day=row.get("round"),
         cl_phase=row.get("cl_phase") if row["tournament"] == "cl" else None,
-        fixture_round=rnd,
+        fixture_round=fixture_rnd,
     )
     disc_block = f"{disc_html}\n\n" if disc_html else ""
 
@@ -1522,7 +1581,7 @@ async def cb_skip_pick(callback: CallbackQuery, state: FSMContext) -> None:
 
     await callback.message.answer(
         f"{mode_line}"
-        f"Отложенный матч · <b>{lg}</b>, месяц <b>{rnd}</b>{extra}\n"
+        f"Отложенный матч · <b>{lg}</b>, месяц <b>{month}</b>{tour_line}{extra}\n"
         f"<b>{row['home']}</b> — <b>{row['away']}</b>\n\n"
         f"{disc_block}"
         f"Отправь счёт через пробел (хозяева гости), например: <code>2 1</code>\n"
