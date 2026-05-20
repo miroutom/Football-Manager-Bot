@@ -1407,6 +1407,26 @@
       "league_code": "cl",
       "scope": "cl",
       "count": 1
+    },
+    {
+      "key": "герхардт|вольфсбург|ger|league",
+      "name": "Герхардт",
+      "name_norm": "герхардт",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "лакруа|вольфсбург|ger|league",
+      "name": "Лакруа",
+      "name_norm": "лакруа",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [
