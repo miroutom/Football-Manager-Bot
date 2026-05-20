@@ -1475,6 +1475,61 @@
       "away_score": 5,
       "day": 3,
       "entry_type": "play"
+    },
+    {
+      "home": "Астон Вилла",
+      "away": "Сити",
+      "league": "eng",
+      "home_score": 4,
+      "away_score": 4,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Бетис",
+      "away": "Барселона",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 6,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал Сосьедад",
+      "away": "Атлетико",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 4,
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Реал",
+      "league": "esp",
+      "home_score": 7,
+      "away_score": 1,
+      "day": 4,
+      "entry_type": "play"
+    },
+    {
+      "home": "Лацио",
+      "away": "Рома",
+      "league": "ita",
+      "home_score": 3,
+      "away_score": 3,
+      "day": 4,
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Севилья",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
     }
   ]
 }

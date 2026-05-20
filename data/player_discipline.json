@@ -130,7 +130,7 @@
       "team_norm": "бетис",
       "league_code": "esp",
       "scope": "league",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 1
     },
     {
@@ -1096,7 +1096,7 @@
       "team_norm": "реал",
       "league_code": "esp",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "алаба|реал|esp|league",
@@ -1456,6 +1456,36 @@
       "team_norm": "урал",
       "league_code": "rpl",
       "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "аке|сити|eng|league",
+      "name": "Аке",
+      "name_norm": "аке",
+      "team": "Сити",
+      "team_norm": "сити",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "сёюнджю|атлетико|esp|league",
+      "name": "Сёюнджю",
+      "name_norm": "сёюнджю",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "соу|севилья|cl|cl",
+      "name": "Соу",
+      "name_norm": "соу",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "league_code": "cl",
+      "scope": "cl",
       "count": 1
     }
   ],
@@ -2213,6 +2243,36 @@
       "team_norm": "зенит",
       "out_from_month": 3,
       "return_month": 4,
+      "type": "травма"
+    },
+    {
+      "key": "кунде|барселона|3|10",
+      "name": "Кунде",
+      "name_norm": "кунде",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "out_from_month": 3,
+      "return_month": 10,
+      "type": "травма"
+    },
+    {
+      "key": "ди мария|реал сосьедад|4|7",
+      "name": "Ди Мария",
+      "name_norm": "ди мария",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма"
+    },
+    {
+      "key": "муньоз|реал сосьедад|4|7",
+      "name": "Муньоз",
+      "name_norm": "муньоз",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "out_from_month": 4,
+      "return_month": 7,
       "type": "травма"
     }
   ]
