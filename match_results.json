@@ -1525,8 +1525,8 @@
       "home": "Сити",
       "away": "Севилья",
       "league": "cl",
-      "home_score": 2,
-      "away_score": 1,
+      "home_score": 1,
+      "away_score": 2,
       "day": 2,
       "cl_phase": "league",
       "entry_type": "play"

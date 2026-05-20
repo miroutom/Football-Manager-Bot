@@ -1487,6 +1487,16 @@
       "league_code": "cl",
       "scope": "cl",
       "count": 1
+    },
+    {
+      "key": "рамос|севилья|cl|cl",
+      "name": "Рамос",
+      "name_norm": "рамос",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
     }
   ],
   "injuries": [
