@@ -26,14 +26,18 @@ from utils import season_paths
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
 
-def _identity_key(name: str, position: str) -> tuple[str, str]:
-    return ((name or "").strip().casefold(), (position or "").strip().upper())
+def _row_key(name: str, team: str, position: str) -> tuple[str, str, str]:
+    return (
+        (name or "").strip().casefold(),
+        (team or "").strip().casefold(),
+        (position or "").strip().upper(),
+    )
 
 
-def _find_row_by_identity(dst: Any, Cls: type, name: str, position: str) -> Any | None:
-    want = _identity_key(name, position)
+def _find_row_by_key(dst: Any, Cls: type, name: str, team: str, position: str) -> Any | None:
+    want = _row_key(name, team, position)
     for row in dst.query(Cls).all():
-        if _identity_key(row.name, row.position) == want:
+        if _row_key(row.name, row.team, row.position) == want:
             return row
     return None
 
@@ -80,10 +84,10 @@ def _fold_stats_into_row(dst_row: Any, src_row: Any) -> None:
 
 
 def _consolidate_identity_duplicates(dst: Any, Cls: type) -> None:
-    """Слить дубли одного игрока (имя+позиция) после смены клуба в накопительной БД."""
-    groups: dict[tuple[str, str], list[Any]] = {}
+    """Слить дубли одной строки (имя+клуб+позиция) в накопительной БД."""
+    groups: dict[tuple[str, str, str], list[Any]] = {}
     for row in list(dst.query(Cls).all()):
-        groups.setdefault(_identity_key(row.name, row.position), []).append(row)
+        groups.setdefault(_row_key(row.name, row.team, row.position), []).append(row)
     for rows in groups.values():
         if len(rows) <= 1:
             continue
@@ -135,7 +139,7 @@ def _row_as_new(Cls: type, p: Any) -> Any:
 
 def _merge_player_tables(src: Any, dst: Any, Cls: type) -> None:
     for p in src.query(Cls).all():
-        row = _find_row_by_identity(dst, Cls, p.name, p.position)
+        row = _find_row_by_key(dst, Cls, p.name, p.team, p.position)
         if row is None:
             dst.add(_row_as_new(Cls, p))
             continue

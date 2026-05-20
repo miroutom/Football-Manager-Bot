@@ -74,6 +74,8 @@ router = Router()
 
 
 def _league_title(code: str) -> str:
+    if code in ("a", "all"):
+        return "Все чемпионаты"
     return dict(LEAGUE_LABELS).get(code, code)
 
 
@@ -405,7 +407,14 @@ def _league_keyboard_for_table(season_key: str) -> InlineKeyboardMarkup:
 
 
 def _stats_history_root_kb() -> InlineKeyboardMarkup:
-    rows: list[list[InlineKeyboardButton]] = []
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="Все чемпионаты",
+                callback_data="stats:hist:lg:all",
+            ),
+        ],
+    ]
     row: list[InlineKeyboardButton] = []
     for code, label in LEAGUE_LABELS:
         row.append(
@@ -951,11 +960,11 @@ async def cb_menu_stats_history(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
         "<b>Стата сезонов</b>\n"
-        "Выбери лигу, затем период (<b>за всё время</b> или <b>сезон</b>), "
+        "Выбери чемпионат (или <b>все</b>), затем период (<b>за всё время</b> или <b>сезон</b>), "
         "потом метрику: бомбардиры, ассисты, Г+А, сухие, ЖК, КК.\n"
-        "• За всё время: <code>league_synced.db</code> + <code>champions_league_synced.db</code> "
-        "через <code>common_synced.db</code>\n"
-        "• Сезон: снимок из <code>db/season_N/</code>\n",
+        "• <b>За всё время</b> по лиге — сумма снимков <code>db/season_N/</code> "
+        "(отдельно по клубам: смена РПЛ→Серия А не смешивает голы)\n"
+        "• <b>Сезон</b> — один снимок из архива\n",
         parse_mode="HTML",
         reply_markup=_stats_history_root_kb(),
     )

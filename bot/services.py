@@ -679,96 +679,45 @@ def render_journal_report(limit: int = 120) -> str:
 
 
 def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> str:
-    """Топ бомбардиров из db/common_synced.db (накопление по всем сезонам)."""
-    import os
+    """Топ бомбардиров за все сезоны (сумма снимков db/season_N)."""
+    from utils.stats_history_agg import format_life_top_scorers, life_has_archive_data
 
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    import player_stats
-    from utils import season_paths
-
-    p = season_paths.get_cumulative_common_db_path()
-    if not os.path.isfile(p):
+    lc = None if not league_code or league_code in ("a", "all") else league_code
+    cl = lc == "cl"
+    if not life_has_archive_data(cl=cl):
         return (
-            "Накопительная база ещё пуста. После первого «Завершить сезон» "
-            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
+            "Пока нет архивов сезонов с league.db. "
+            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
         )
-    e = create_engine(f"sqlite:///{p}")
-    S = sessionmaker(bind=e)()
-    try:
-        lc = None if not league_code or league_code in ("a", "all") else league_code
-        return player_stats.format_top_scorers_from_session(
-            S,
-            league_code=lc,
-            limit=limit,
-            title_suffix=" — все сезоны (common_synced.db)",
-        )
-    finally:
-        S.close()
-        e.dispose()
+    return format_life_top_scorers(lc if cl else league_code, limit=limit)
 
 
 def render_cumulative_top_assists(league_code: str | None, limit: int = 30) -> str:
-    """Топ ассистов из db/common_synced.db (все сезоны)."""
-    import os
+    """Топ ассистов за все сезоны (сумма снимков db/season_N)."""
+    from utils.stats_history_agg import format_life_top_assists, life_has_archive_data
 
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    import player_stats
-    from utils import season_paths
-
-    p = season_paths.get_cumulative_common_db_path()
-    if not os.path.isfile(p):
+    lc = None if not league_code or league_code in ("a", "all") else league_code
+    cl = lc == "cl"
+    if not life_has_archive_data(cl=cl):
         return (
-            "Накопительная база ещё пуста. После первого «Завершить сезон» "
-            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
+            "Пока нет архивов сезонов с league.db. "
+            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
         )
-    e = create_engine(f"sqlite:///{p}")
-    S = sessionmaker(bind=e)()
-    try:
-        lc = None if not league_code or league_code in ("a", "all") else league_code
-        return player_stats.format_top_assists_from_session(
-            S,
-            league_code=lc,
-            limit=limit,
-            title_suffix=" — все сезоны (common_synced.db)",
-        )
-    finally:
-        S.close()
-        e.dispose()
+    return format_life_top_assists(lc if cl else league_code, limit=limit)
 
 
 def render_cumulative_top_ga(league_code: str | None, limit: int = 30) -> str:
-    """Топ Г+А из db/common_synced.db (все сезоны)."""
-    import os
+    """Топ Г+А за все сезоны (сумма снимков db/season_N)."""
+    from utils.stats_history_agg import format_life_top_ga, life_has_archive_data
 
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    import player_stats
-    from utils import season_paths
-
-    p = season_paths.get_cumulative_common_db_path()
-    if not os.path.isfile(p):
+    lc = None if not league_code or league_code in ("a", "all") else league_code
+    cl = lc == "cl"
+    if not life_has_archive_data(cl=cl):
         return (
-            "Накопительная база ещё пуста. После первого «Завершить сезон» "
-            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
+            "Пока нет архивов сезонов с league.db. "
+            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
         )
-    e = create_engine(f"sqlite:///{p}")
-    S = sessionmaker(bind=e)()
-    try:
-        lc = None if not league_code or league_code in ("a", "all") else league_code
-        return player_stats.format_top_ga_from_session(
-            S,
-            league_code=lc,
-            limit=limit,
-            title_suffix=" — все сезоны (common_synced.db)",
-        )
-    finally:
-        S.close()
-        e.dispose()
+    return format_life_top_ga(lc if cl else league_code, limit=limit)
 
 
 def _league_team_set_for_filter(league_code: str | None) -> set[str] | None:
@@ -869,54 +818,30 @@ def _render_clean_sheets_from_session(session, *, league_code: str | None, limit
 
 
 def render_cumulative_top_cards(league_code: str | None, metric: str, limit: int = 30) -> str:
-    import os
+    from utils.stats_history_agg import format_life_top_cards, life_has_archive_data
 
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    from utils import season_paths
-
-    p = season_paths.get_cumulative_common_db_path()
-    if not os.path.isfile(p):
+    lc = None if not league_code or league_code in ("a", "all") else league_code
+    cl = lc == "cl"
+    if not life_has_archive_data(cl=cl):
         return (
-            "Накопительная база ещё пуста. После первого «Завершить сезон» "
-            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
+            "Пока нет архивов сезонов с league.db. "
+            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
         )
-    e = create_engine(f"sqlite:///{p}")
-    S = sessionmaker(bind=e)()
-    try:
-        lc = None if not league_code or league_code in ("a", "all") else league_code
-        return _render_cards_from_session(
-            S, league_code=lc, metric=metric, limit=limit, title_suffix=" — все сезоны (common_synced.db)"
-        )
-    finally:
-        S.close()
-        e.dispose()
+    return format_life_top_cards(lc if cl else league_code, metric, limit=limit)
 
 
 def render_cumulative_top_clean_sheets(league_code: str | None, limit: int = 30) -> tuple[str, str]:
-    import os
+    from utils.stats_history_agg import format_life_clean_sheets, life_has_archive_data
 
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    from utils import season_paths
-
-    p = season_paths.get_cumulative_common_db_path()
-    if not os.path.isfile(p):
+    lc = None if not league_code or league_code in ("a", "all") else league_code
+    cl = lc == "cl"
+    if not life_has_archive_data(cl=cl):
         msg = (
-            "Накопительная база ещё пуста. После первого «Завершить сезон» "
-            "заполняются db/league_synced.db, db/champions_league_synced.db и db/common_synced.db."
+            "Пока нет архивов сезонов с league.db. "
+            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
         )
         return msg, msg
-    e = create_engine(f"sqlite:///{p}")
-    S = sessionmaker(bind=e)()
-    try:
-        lc = None if not league_code or league_code in ("a", "all") else league_code
-        return _render_clean_sheets_from_session(
-            S, league_code=lc, limit=limit, title_suffix=" — все сезоны (common_synced.db)"
-        )
-    finally:
-        S.close()
-        e.dispose()
+    return format_life_clean_sheets(lc if cl else league_code, limit=limit)
 
 
 def render_archived_season_stat(
