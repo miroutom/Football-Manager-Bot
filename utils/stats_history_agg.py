@@ -79,7 +79,7 @@ def _apply_last_club(
 
 
 def _apply_last_club_by_matches(b: dict, p: Any, *, merge_by_player: bool) -> None:
-    """Последний клуб в накопительной БД — у строки с наибольшим числом матчей."""
+    """За всё время: клуб с наибольшим числом матчей в выборке."""
     if not merge_by_player:
         return
     m = int(getattr(p, "matches", 0) or 0)
@@ -87,6 +87,35 @@ def _apply_last_club_by_matches(b: dict, p: Any, *, merge_by_player: bool) -> No
         b["_pick_m"] = m
         b["team"] = p.team
         b["name"] = p.name
+
+
+def _apply_last_club_latest_row(b: dict, p: Any, *, merge_by_player: bool) -> None:
+    """Один сезон, 2+ клуба в той же лиге: последняя запись в БД (обычно финальный клуб)."""
+    if not merge_by_player:
+        return
+    rid = int(getattr(p, "id", 0) or 0)
+    if rid >= int(b.get("_pick_id", -1)):
+        b["_pick_id"] = rid
+        b["team"] = p.team
+        b["name"] = p.name
+
+
+def _apply_club_label(
+    b: dict,
+    p: Any,
+    season_num: int,
+    *,
+    merge_by_player: bool,
+    pick_club: str | None,
+) -> None:
+    if not merge_by_player:
+        return
+    if pick_club == "matches":
+        _apply_last_club_by_matches(b, p, merge_by_player=True)
+    elif pick_club == "latest_row":
+        _apply_last_club_latest_row(b, p, merge_by_player=True)
+    else:
+        _apply_last_club(b, p, season_num, merge_by_player=True)
 
 
 def _life_cumulative_db(league_code: str | None) -> tuple[str, str]:
@@ -153,7 +182,7 @@ def _fold_outfield_bucket(
     season_num: int,
     *,
     merge_by_player: bool,
-    pick_club_by_matches: bool = False,
+    pick_club: str | None = None,
 ) -> None:
     k = _bucket_key(p.name, p.team, p.position, merge_by_player=merge_by_player)
     if k not in buckets:
@@ -174,10 +203,9 @@ def _fold_outfield_bucket(
     b["assists"] += a
     b["ga"] += int(getattr(p, "ga", 0) or 0) or (g + a)
     b["matches"] += int(getattr(p, "matches", 0) or 0)
-    if pick_club_by_matches:
-        _apply_last_club_by_matches(b, p, merge_by_player=merge_by_player)
-    else:
-        _apply_last_club(b, p, season_num, merge_by_player=merge_by_player)
+    _apply_club_label(
+        b, p, season_num, merge_by_player=merge_by_player, pick_club=pick_club
+    )
 
 
 def _fold_cards_bucket(
@@ -186,7 +214,7 @@ def _fold_cards_bucket(
     season_num: int,
     *,
     merge_by_player: bool,
-    pick_club_by_matches: bool = False,
+    pick_club: str | None = None,
 ) -> None:
     k = _bucket_key(p.name, p.team, p.position, merge_by_player=merge_by_player)
     if k not in buckets:
@@ -203,10 +231,9 @@ def _fold_cards_bucket(
     b["yellow_cards"] += int(getattr(p, "yellow_cards", 0) or 0)
     b["red_cards"] += int(getattr(p, "red_cards", 0) or 0)
     b["matches"] += int(getattr(p, "matches", 0) or 0)
-    if pick_club_by_matches:
-        _apply_last_club_by_matches(b, p, merge_by_player=merge_by_player)
-    else:
-        _apply_last_club(b, p, season_num, merge_by_player=merge_by_player)
+    _apply_club_label(
+        b, p, season_num, merge_by_player=merge_by_player, pick_club=pick_club
+    )
 
 
 def _fold_cs_bucket(
@@ -215,7 +242,7 @@ def _fold_cs_bucket(
     season_num: int,
     *,
     merge_by_player: bool,
-    pick_club_by_matches: bool = False,
+    pick_club: str | None = None,
 ) -> None:
     k = _bucket_key(p.name, p.team, p.position, merge_by_player=merge_by_player)
     if k not in buckets:
@@ -230,10 +257,9 @@ def _fold_cs_bucket(
     b = buckets[k]
     b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)
     b["matches"] += int(getattr(p, "matches", 0) or 0)
-    if pick_club_by_matches:
-        _apply_last_club_by_matches(b, p, merge_by_player=merge_by_player)
-    else:
-        _apply_last_club(b, p, season_num, merge_by_player=merge_by_player)
+    _apply_club_label(
+        b, p, season_num, merge_by_player=merge_by_player, pick_club=pick_club
+    )
 
 
 def _filter_code_for_life(league_code: str | None) -> str | None:
@@ -247,7 +273,7 @@ def _aggregate_outfield_from_db(
     filter_code: str | None,
     *,
     merge_by_player: bool,
-    pick_club_by_matches: bool,
+    pick_club: str | None,
     skip_zero_ga_cl: bool = False,
 ) -> list[dict]:
     if not os.path.isfile(db_path):
@@ -270,7 +296,7 @@ def _aggregate_outfield_from_db(
                     p,
                     0,
                     merge_by_player=merge_by_player,
-                    pick_club_by_matches=pick_club_by_matches,
+                    pick_club=pick_club,
                 )
     finally:
         session.close()
@@ -333,7 +359,7 @@ def aggregate_outfield(
                         p,
                         season_num,
                         merge_by_player=merge_by_player,
-                        pick_club_by_matches=kind == "common",
+                        pick_club="latest_row",
                     )
         finally:
             session.close()
@@ -353,7 +379,7 @@ def aggregate_life_outfield(
         db_path,
         _filter_code_for_life(code),
         merge_by_player=merge_by_player,
-        pick_club_by_matches=True,
+        pick_club="matches",
         skip_zero_ga_cl=code == "cl",
     )
 
@@ -367,7 +393,7 @@ def _aggregate_cards_from_db(
     filter_code: str | None,
     *,
     merge_by_player: bool,
-    pick_club_by_matches: bool,
+    pick_club: str | None,
     season_num: int = 0,
 ) -> list[dict]:
     if not os.path.isfile(db_path):
@@ -385,7 +411,7 @@ def _aggregate_cards_from_db(
                     p,
                     season_num,
                     merge_by_player=merge_by_player,
-                    pick_club_by_matches=pick_club_by_matches,
+                    pick_club=pick_club,
                 )
     finally:
         session.close()
@@ -418,7 +444,7 @@ def aggregate_cards(
                         p,
                         season_num,
                         merge_by_player=merge_by_player,
-                        pick_club_by_matches=kind == "common",
+                        pick_club="latest_row",
                     )
         finally:
             session.close()
@@ -438,7 +464,7 @@ def aggregate_life_cards(
         db_path,
         _filter_code_for_life(code),
         merge_by_player=merge_by_player,
-        pick_club_by_matches=True,
+        pick_club="matches",
     )
 
 
@@ -467,7 +493,7 @@ def aggregate_clean_sheets(
                     p,
                     season_num,
                     merge_by_player=merge_by_player,
-                    pick_club_by_matches=kind == "common",
+                    pick_club="latest_row",
                 )
             for p in session.query(Defender).all():
                 if team_set is not None and _norm_team(p.team) not in team_set:
@@ -477,7 +503,7 @@ def aggregate_clean_sheets(
                     p,
                     season_num,
                     merge_by_player=merge_by_player,
-                    pick_club_by_matches=kind == "common",
+                    pick_club="latest_row",
                 )
         finally:
             session.close()
@@ -508,7 +534,7 @@ def aggregate_life_clean_sheets(
                 p,
                 0,
                 merge_by_player=merge_by_player,
-                pick_club_by_matches=True,
+                pick_club="matches",
             )
         for p in session.query(Defender).all():
             if team_set is not None and _norm_team(p.team) not in team_set:
@@ -518,7 +544,7 @@ def aggregate_life_clean_sheets(
                 p,
                 0,
                 merge_by_player=merge_by_player,
-                pick_club_by_matches=True,
+                pick_club="matches",
             )
     finally:
         session.close()
@@ -563,7 +589,7 @@ def _life_title_suffix(league_code: str | None, *, cl: bool) -> str:
 
 def _season_title_suffix(season_num: int, league_code: str | None, *, cl: bool) -> str:
     del league_code, cl
-    return f" — сезон {season_num} (сумма по игроку)"
+    return f" — сезон {season_num} (один игрок · сумма в лиге · финальный клуб)"
 
 
 def life_has_archive_data(*, cl: bool = False) -> bool:
