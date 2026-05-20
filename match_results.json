@@ -1456,6 +1456,25 @@
       "away_score": 4,
       "day": 2,
       "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Байер",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Урал",
+      "away": "Зенит",
+      "league": "rpl",
+      "home_score": 2,
+      "away_score": 5,
+      "day": 3,
+      "entry_type": "play"
     }
   ]
 }

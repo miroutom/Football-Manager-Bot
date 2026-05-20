@@ -86,7 +86,7 @@
       "team_norm": "урал",
       "league_code": "rpl",
       "scope": "league",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 1
     },
     {
@@ -185,6 +185,16 @@
       "league_code": "cl",
       "scope": "cl",
       "matches_left": 1
+    },
+    {
+      "key": "де врей|интер|cl|cl",
+      "name": "Де Врей",
+      "name_norm": "де врей",
+      "team": "Интер",
+      "team_norm": "интер",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 3
     }
   ],
   "yellow_cycle": [
@@ -1427,6 +1437,26 @@
       "league_code": "ger",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "клаус|байер|cl|cl",
+      "name": "Клаус",
+      "name_norm": "клаус",
+      "team": "Байер",
+      "team_norm": "байер",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "палмер|урал|rpl|league",
+      "name": "Палмер",
+      "name_norm": "палмер",
+      "team": "Урал",
+      "team_norm": "урал",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [
@@ -2174,6 +2204,16 @@
       "return_month": 6,
       "type": "травма",
       "key": "хлусевич|спартак|3|6"
+    },
+    {
+      "key": "коваленко|зенит|3|4",
+      "name": "Коваленко",
+      "name_norm": "коваленко",
+      "team": "Зенит",
+      "team_norm": "зенит",
+      "out_from_month": 3,
+      "return_month": 4,
+      "type": "травма"
     }
   ]
 }
