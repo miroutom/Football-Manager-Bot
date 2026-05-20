@@ -174,17 +174,17 @@ def render_full_status_text() -> str:
 
 
 def render_top_scorers_common(league_code: str, limit: int = 25) -> str:
-    """Топ бомбардиров: лига + ЛЧ из common_synced.db (все сезоны)."""
+    """Топ бомбардиров за всё время (league_synced / cl_synced / common_synced)."""
     return render_cumulative_top_scorers(league_code, limit)
 
 
 def render_top_assists_common(league_code: str, limit: int = 25) -> str:
-    """Топ ассистов: common_synced.db (все сезоны)."""
+    """Топ ассистов за всё время."""
     return render_cumulative_top_assists(league_code, limit)
 
 
 def render_top_ga_common(league_code: str, limit: int = 25) -> str:
-    """Топ Г+А: common_synced.db (все сезоны)."""
+    """Топ Г+А за всё время."""
     return render_cumulative_top_ga(league_code, limit)
 
 
@@ -680,44 +680,74 @@ def render_journal_report(limit: int = 120) -> str:
 
 def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> str:
     """Топ бомбардиров за все сезоны (сумма снимков db/season_N)."""
-    from utils.stats_history_agg import format_life_top_scorers, life_has_archive_data
+    from utils.stats_history_agg import (
+        format_life_top_scorers,
+        is_all_championships,
+        life_has_archive_data,
+        life_has_combined_archive_data,
+    )
 
-    lc = None if not league_code or league_code in ("a", "all") else league_code
-    cl = lc == "cl"
-    if not life_has_archive_data(cl=cl):
+    code = league_code if league_code not in ("a",) else "all"
+    if is_all_championships(code) or code == "cl":
+        if not life_has_combined_archive_data():
+            return (
+                "Пока нет архивов сезонов. "
+                "После «Завершить сезон» появятся снимки в db/season_N/."
+            )
+    elif not life_has_archive_data():
         return (
             "Пока нет архивов сезонов с league.db. "
-            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+            "После «Завершить сезон» появятся снимки в db/season_N/."
         )
-    return format_life_top_scorers(lc if cl else league_code, limit=limit)
+    return format_life_top_scorers(code, limit=limit)
 
 
 def render_cumulative_top_assists(league_code: str | None, limit: int = 30) -> str:
     """Топ ассистов за все сезоны (сумма снимков db/season_N)."""
-    from utils.stats_history_agg import format_life_top_assists, life_has_archive_data
+    from utils.stats_history_agg import (
+        format_life_top_assists,
+        is_all_championships,
+        life_has_archive_data,
+        life_has_combined_archive_data,
+    )
 
-    lc = None if not league_code or league_code in ("a", "all") else league_code
-    cl = lc == "cl"
-    if not life_has_archive_data(cl=cl):
+    code = league_code if league_code not in ("a",) else "all"
+    if is_all_championships(code) or code == "cl":
+        if not life_has_combined_archive_data():
+            return (
+                "Пока нет архивов сезонов. "
+                "После «Завершить сезон» появятся снимки в db/season_N/."
+            )
+    elif not life_has_archive_data():
         return (
             "Пока нет архивов сезонов с league.db. "
-            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+            "После «Завершить сезон» появятся снимки в db/season_N/."
         )
-    return format_life_top_assists(lc if cl else league_code, limit=limit)
+    return format_life_top_assists(code, limit=limit)
 
 
 def render_cumulative_top_ga(league_code: str | None, limit: int = 30) -> str:
     """Топ Г+А за все сезоны (сумма снимков db/season_N)."""
-    from utils.stats_history_agg import format_life_top_ga, life_has_archive_data
+    from utils.stats_history_agg import (
+        format_life_top_ga,
+        is_all_championships,
+        life_has_archive_data,
+        life_has_combined_archive_data,
+    )
 
-    lc = None if not league_code or league_code in ("a", "all") else league_code
-    cl = lc == "cl"
-    if not life_has_archive_data(cl=cl):
+    code = league_code if league_code not in ("a",) else "all"
+    if is_all_championships(code) or code == "cl":
+        if not life_has_combined_archive_data():
+            return (
+                "Пока нет архивов сезонов. "
+                "После «Завершить сезон» появятся снимки в db/season_N/."
+            )
+    elif not life_has_archive_data():
         return (
             "Пока нет архивов сезонов с league.db. "
-            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+            "После «Завершить сезон» появятся снимки в db/season_N/."
         )
-    return format_life_top_ga(lc if cl else league_code, limit=limit)
+    return format_life_top_ga(code, limit=limit)
 
 
 def _league_team_set_for_filter(league_code: str | None) -> set[str] | None:
@@ -818,30 +848,51 @@ def _render_clean_sheets_from_session(session, *, league_code: str | None, limit
 
 
 def render_cumulative_top_cards(league_code: str | None, metric: str, limit: int = 30) -> str:
-    from utils.stats_history_agg import format_life_top_cards, life_has_archive_data
+    from utils.stats_history_agg import (
+        format_life_top_cards,
+        is_all_championships,
+        life_has_archive_data,
+        life_has_combined_archive_data,
+    )
 
-    lc = None if not league_code or league_code in ("a", "all") else league_code
-    cl = lc == "cl"
-    if not life_has_archive_data(cl=cl):
+    code = league_code if league_code not in ("a",) else "all"
+    if is_all_championships(code) or code == "cl":
+        if not life_has_combined_archive_data():
+            return (
+                "Пока нет архивов сезонов. "
+                "После «Завершить сезон» появятся снимки в db/season_N/."
+            )
+    elif not life_has_archive_data():
         return (
             "Пока нет архивов сезонов с league.db. "
-            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+            "После «Завершить сезон» появятся снимки в db/season_N/."
         )
-    return format_life_top_cards(lc if cl else league_code, metric, limit=limit)
+    return format_life_top_cards(code, metric, limit=limit)
 
 
 def render_cumulative_top_clean_sheets(league_code: str | None, limit: int = 30) -> tuple[str, str]:
-    from utils.stats_history_agg import format_life_clean_sheets, life_has_archive_data
+    from utils.stats_history_agg import (
+        format_life_clean_sheets,
+        is_all_championships,
+        life_has_archive_data,
+        life_has_combined_archive_data,
+    )
 
-    lc = None if not league_code or league_code in ("a", "all") else league_code
-    cl = lc == "cl"
-    if not life_has_archive_data(cl=cl):
+    code = league_code if league_code not in ("a",) else "all"
+    if is_all_championships(code) or code == "cl":
+        if not life_has_combined_archive_data():
+            msg = (
+                "Пока нет архивов сезонов. "
+                "После «Завершить сезон» появятся снимки в db/season_N/."
+            )
+            return msg, msg
+    elif not life_has_archive_data():
         msg = (
             "Пока нет архивов сезонов с league.db. "
-            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+            "После «Завершить сезон» появятся снимки в db/season_N/."
         )
         return msg, msg
-    return format_life_clean_sheets(lc if cl else league_code, limit=limit)
+    return format_life_clean_sheets(code, limit=limit)
 
 
 def render_archived_season_stat(
@@ -850,78 +901,13 @@ def render_archived_season_stat(
     metric: str,
     limit: int = 30,
 ) -> str:
-    """
-    Топ из архива ``db/season_n``: ``g`` | ``as`` | ``ga`` | ``yc`` | ``rc``.
+    """Топ из архива ``db/season_n``: ``g`` | ``as`` | ``ga`` | ``yc`` | ``rc``."""
+    from utils.stats_history_agg import format_season_stat, season_has_db
 
-    Одна БД по выбранной кнопке: **ЛЧ** — только ``champions_league.db``; любая нац. лига
-    или «все» — только ``league.db`` (без подмешивания ЛЧ).
-    """
-    import os
-
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    import player_stats
-    from utils import season_paths
-
-    m = (metric or "g").lower()
-    if m in ("goals", "g"):
-        mkey = "g"
-    elif m in ("assists", "as", "a"):
-        mkey = "as"
-    elif m in ("ga", "g+a"):
-        mkey = "ga"
-    elif m in ("yc", "yellow", "yellow_cards"):
-        mkey = "yc"
-    elif m in ("rc", "red", "red_cards"):
-        mkey = "rc"
-    else:
-        return f"Неизвестная метрика: {metric!r}"
-
-    base = season_paths.season_archive_directory(season_num)
-    lp = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
-    cp = os.path.join(base, season_paths.SEASON_CL_NAME)
-    lc = None if not league_code or league_code in ("a", "all") else league_code
-    suf = f" — сезон {season_num} (архив)"
-
-    def _block(session, filter_code: str | None, db_label: str) -> str:
-        tsuf = f"{suf} · {db_label}"
-        if mkey == "g":
-            return player_stats.format_top_scorers_from_session(
-                session, league_code=filter_code, limit=limit, title_suffix=tsuf
-            )
-        if mkey == "as":
-            return player_stats.format_top_assists_from_session(
-                session, league_code=filter_code, limit=limit, title_suffix=tsuf
-            )
-        if mkey == "ga":
-            return player_stats.format_top_ga_from_session(
-                session, league_code=filter_code, limit=limit, title_suffix=tsuf
-            )
-        return _render_cards_from_session(
-            session, league_code=filter_code, metric=mkey, limit=limit, title_suffix=tsuf
-        )
-
-    if lc == "cl":
-        if not os.path.isfile(cp):
-            return f"В архиве нет champions_league.db для сезона {season_num}."
-        ec = create_engine(f"sqlite:///{cp}")
-        Sc = sessionmaker(bind=ec)()
-        try:
-            return _block(Sc, "cl", "champions_league.db (только ЛЧ)").rstrip()
-        finally:
-            Sc.close()
-            ec.dispose()
-
-    if not os.path.isfile(lp):
-        return f"В архиве нет league.db для сезона {season_num}."
-    el = create_engine(f"sqlite:///{lp}")
-    Sl = sessionmaker(bind=el)()
-    try:
-        return _block(Sl, lc, "league.db (только национальные матчи)").rstrip()
-    finally:
-        Sl.close()
-        el.dispose()
+    code = league_code if league_code not in ("a",) else "all"
+    if not season_has_db(season_num, code):
+        return f"В архиве сезона {season_num} нет данных для выбранного чемпионата."
+    return format_season_stat(season_num, code, metric, limit).rstrip()
 
 
 def render_archived_season_top_scorers(
@@ -938,51 +924,14 @@ def render_archived_season_clean_sheets(
     league_code: str | None,
     limit: int = 30,
 ) -> tuple[str, str]:
-    """Сухие из архива: только ``league.db`` для нац. лиг / «все», только ``champions_league.db`` для ЛЧ."""
-    import os
+    """Сухие из архива сезона (нац. лиги + ЛЧ для «все чемпионаты»)."""
+    from utils.stats_history_agg import format_season_clean_sheets, season_has_db
 
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    from utils import season_paths
-
-    base = season_paths.season_archive_directory(season_num)
-    lp = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
-    cp = os.path.join(base, season_paths.SEASON_CL_NAME)
-    suf = f" — сезон {season_num} (архив)"
-    lc = None if not league_code or league_code in ("a", "all") else league_code
-
-    if lc == "cl":
-        if not os.path.isfile(cp):
-            msg = f"В архиве сезона {season_num} нет champions_league.db."
-            return msg, msg
-        ec = create_engine(f"sqlite:///{cp}")
-        Sc = sessionmaker(bind=ec)()
-        try:
-            return _render_clean_sheets_from_session(
-                Sc,
-                league_code="cl",
-                limit=limit,
-                title_suffix=f"{suf} · champions_league.db (только ЛЧ)",
-            )
-        finally:
-            Sc.close()
-            ec.dispose()
-
-    if not os.path.isfile(lp):
-        msg = f"В архиве сезона {season_num} нет league.db."
+    code = league_code if league_code not in ("a",) else "all"
+    if not season_has_db(season_num, code):
+        msg = f"В архиве сезона {season_num} нет данных для выбранного чемпионата."
         return msg, msg
-    el = create_engine(f"sqlite:///{lp}")
-    Sl = sessionmaker(bind=el)()
-    try:
-        return _render_clean_sheets_from_session(
-            Sl,
-            league_code=lc,
-            limit=limit,
-            title_suffix=f"{suf} · league.db (только национальные матчи)",
-        )
-    finally:
-        Sl.close()
-        el.dispose()
+    return format_season_clean_sheets(season_num, code, limit)
 
 
 def split_text_chunks(text: str, max_len: int = 3800) -> list[str]:

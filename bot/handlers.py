@@ -75,7 +75,7 @@ router = Router()
 
 def _league_title(code: str) -> str:
     if code in ("a", "all"):
-        return "Все чемпионаты"
+        return "Все чемпионаты (лиги + ЛЧ)"
     return dict(LEAGUE_LABELS).get(code, code)
 
 
@@ -595,9 +595,9 @@ def _stats_history_season_metric_kb(season_num: int) -> InlineKeyboardMarkup:
     ]
     rows: list[list[InlineKeyboardButton]] = [
         [
-            InlineKeyboardButton(text="⚽ Все лиги", callback_data=f"{p}:g:a"),
-            InlineKeyboardButton(text="🎯 Все лиги", callback_data=f"{p}:as:a"),
-            InlineKeyboardButton(text="📈 Все лиги", callback_data=f"{p}:ga:a"),
+            InlineKeyboardButton(text="⚽ Все чемп.", callback_data=f"{p}:g:a"),
+            InlineKeyboardButton(text="🎯 Все чемп.", callback_data=f"{p}:as:a"),
+            InlineKeyboardButton(text="📈 Все чемп.", callback_data=f"{p}:ga:a"),
         ],
     ]
     for metric, em in (("g", "⚽"), ("as", "🎯"), ("ga", "📈")):
@@ -962,8 +962,9 @@ async def cb_menu_stats_history(callback: CallbackQuery) -> None:
         "<b>Стата сезонов</b>\n"
         "Выбери чемпионат (или <b>все</b>), затем период (<b>за всё время</b> или <b>сезон</b>), "
         "потом метрику: бомбардиры, ассисты, Г+А, сухие, ЖК, КК.\n"
-        "• <b>За всё время</b> по лиге — сумма снимков <code>db/season_N/</code> "
-        "(отдельно по клубам: смена РПЛ→Серия А не смешивает голы)\n"
+        "• <b>Все чемпионаты</b> — национальные лиги + ЛЧ\n"
+        "• <b>За всё время</b> — одна строка на игрока (сумма по сезонам), "
+        "клуб — последний в архиве\n"
         "• <b>Сезон</b> — один снимок из архива\n",
         parse_mode="HTML",
         reply_markup=_stats_history_root_kb(),
@@ -1477,7 +1478,8 @@ async def cb_top100_sort(callback: CallbackQuery) -> None:
 async def cb_menu_tops_plus(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Топы лига + ЛЧ из <code>common_synced.db</code> (все сезоны), как «b» с «+» в консоли. "
+        "Топы за всё время: нац. лига — <code>league_synced.db</code>, "
+        "ЛЧ — <code>champions_league_synced.db</code>. "
         "⚽ бомбардиры · 🎯 ассисты · 📈 гол+пас:",
         reply_markup=_tops_plus_kb(),
     )
@@ -1494,13 +1496,13 @@ async def cb_tcp_tops(callback: CallbackQuery) -> None:
     try:
         if kind == "g":
             text = await asyncio.to_thread(render_top_scorers_common, code)
-            title = f"Бомбардиры · {_league_title(code)} · лига+ЛЧ"
+            title = f"Бомбардиры · {_league_title(code)} · всё время"
         elif kind == "a":
             text = await asyncio.to_thread(render_top_assists_common, code)
-            title = f"Ассисты · {_league_title(code)} · лига+ЛЧ"
+            title = f"Ассисты · {_league_title(code)} · всё время"
         elif kind == "ga":
             text = await asyncio.to_thread(render_top_ga_common, code)
-            title = f"Г+А · {_league_title(code)} · лига+ЛЧ"
+            title = f"Г+А · {_league_title(code)} · всё время"
         else:
             await callback.message.answer("Неизвестный тип топа.")
             return

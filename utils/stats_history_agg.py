@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Суммарная «стата за всё время» по национальной лиге / ЛЧ из снимков сезонов.
+Статистика для бота «Стата сезонов» и топов.
 
-Не использует common_synced с фильтром по клубу лиги: там после merge по (имя, позиция)
-голы из РПЛ могут оказаться у строки с клубом Серии А. Здесь суммируются сезоны
-отдельно по (имя, клуб, позиция).
+**За всё время**
+- нац. лига (rpl, ita, …) → ``league_synced.db``, только клубы этой лиги;
+- ЛЧ → ``champions_league_synced.db``;
+- все чемпионаты → ``common_synced.db`` (лига + ЛЧ).
+
+**Один сезон** — снимок ``db/season_N/``: ``league.db`` / ``champions_league.db`` / ``common.db``.
+
+Везде одна строка на игрока (имя + позиция), клуб — с максимумом матчей в выборке.
 """
 from __future__ import annotations
 
@@ -26,8 +31,20 @@ _OUTFIELD = (Forward, Midfielder, Defender)
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
 
+def is_all_championships(league_code: str | None) -> bool:
+    """Все чемпионаты = национальные лиги + ЛЧ."""
+    return not league_code or league_code in ("a", "all")
+
+
 def _norm_team(s: str) -> str:
     return (s or "").strip().casefold()
+
+
+def _identity_key(name: str, position: str) -> tuple[str, str]:
+    return (
+        (name or "").strip().casefold(),
+        (position or "").strip().upper(),
+    )
 
 
 def _player_key(name: str, team: str, position: str) -> tuple[str, str, str]:
@@ -36,6 +53,69 @@ def _player_key(name: str, team: str, position: str) -> tuple[str, str, str]:
         _norm_team(team),
         (position or "").strip().upper(),
     )
+
+
+def _bucket_key(
+    name: str, team: str, position: str, *, merge_by_player: bool
+) -> tuple:
+    if merge_by_player:
+        return _identity_key(name, position)
+    return _player_key(name, team, position)
+
+
+def _apply_last_club(
+    b: dict, p: Any, season_num: int, *, merge_by_player: bool
+) -> None:
+    if not merge_by_player:
+        return
+    prev = int(b.get("last_season", -1))
+    if season_num > prev:
+        b["last_season"] = season_num
+        b["team"] = p.team
+        b["name"] = p.name
+    elif season_num == prev:
+        b["team"] = p.team
+        b["name"] = p.name
+
+
+def _apply_last_club_by_matches(b: dict, p: Any, *, merge_by_player: bool) -> None:
+    """Последний клуб в накопительной БД — у строки с наибольшим числом матчей."""
+    if not merge_by_player:
+        return
+    m = int(getattr(p, "matches", 0) or 0)
+    if m >= int(b.get("_pick_m", -1)):
+        b["_pick_m"] = m
+        b["team"] = p.team
+        b["name"] = p.name
+
+
+def _life_cumulative_db(league_code: str | None) -> tuple[str, str]:
+    if is_all_championships(league_code):
+        return (
+            season_paths.get_cumulative_common_db_path(),
+            "common_synced.db",
+        )
+    if league_code == "cl":
+        return (
+            season_paths.get_cumulative_cl_db_path(),
+            "champions_league_synced.db",
+        )
+    return (
+        season_paths.get_cumulative_league_db_path(),
+        "league_synced.db",
+    )
+
+
+def _season_common_path(season_num: int) -> str | None:
+    active = season_paths.get_active_season()
+    if season_num == active:
+        path = season_paths.get_common_db_path()
+    else:
+        path = os.path.join(
+            season_paths.season_archive_directory(season_num),
+            season_paths.SEASON_COMMON_NAME,
+        )
+    return path if os.path.isfile(path) else None
 
 
 def _team_filter_set(league_code: str | None) -> set[str] | None:
@@ -67,8 +147,15 @@ def _open_session(path: str) -> tuple[Session, Any]:
     return sessionmaker(bind=eng)(), eng
 
 
-def _fold_outfield_bucket(buckets: dict, p: Any) -> None:
-    k = _player_key(p.name, p.team, p.position)
+def _fold_outfield_bucket(
+    buckets: dict,
+    p: Any,
+    season_num: int,
+    *,
+    merge_by_player: bool,
+    pick_club_by_matches: bool = False,
+) -> None:
+    k = _bucket_key(p.name, p.team, p.position, merge_by_player=merge_by_player)
     if k not in buckets:
         buckets[k] = {
             "name": p.name,
@@ -78,6 +165,7 @@ def _fold_outfield_bucket(buckets: dict, p: Any) -> None:
             "assists": 0,
             "ga": 0,
             "matches": 0,
+            "last_season": season_num if merge_by_player else None,
         }
     b = buckets[k]
     g = int(getattr(p, "goals", 0) or 0)
@@ -86,10 +174,21 @@ def _fold_outfield_bucket(buckets: dict, p: Any) -> None:
     b["assists"] += a
     b["ga"] += int(getattr(p, "ga", 0) or 0) or (g + a)
     b["matches"] += int(getattr(p, "matches", 0) or 0)
+    if pick_club_by_matches:
+        _apply_last_club_by_matches(b, p, merge_by_player=merge_by_player)
+    else:
+        _apply_last_club(b, p, season_num, merge_by_player=merge_by_player)
 
 
-def _fold_cards_bucket(buckets: dict, p: Any) -> None:
-    k = _player_key(p.name, p.team, p.position)
+def _fold_cards_bucket(
+    buckets: dict,
+    p: Any,
+    season_num: int,
+    *,
+    merge_by_player: bool,
+    pick_club_by_matches: bool = False,
+) -> None:
+    k = _bucket_key(p.name, p.team, p.position, merge_by_player=merge_by_player)
     if k not in buckets:
         buckets[k] = {
             "name": p.name,
@@ -98,15 +197,27 @@ def _fold_cards_bucket(buckets: dict, p: Any) -> None:
             "yellow_cards": 0,
             "red_cards": 0,
             "matches": 0,
+            "last_season": season_num if merge_by_player else None,
         }
     b = buckets[k]
     b["yellow_cards"] += int(getattr(p, "yellow_cards", 0) or 0)
     b["red_cards"] += int(getattr(p, "red_cards", 0) or 0)
     b["matches"] += int(getattr(p, "matches", 0) or 0)
+    if pick_club_by_matches:
+        _apply_last_club_by_matches(b, p, merge_by_player=merge_by_player)
+    else:
+        _apply_last_club(b, p, season_num, merge_by_player=merge_by_player)
 
 
-def _fold_cs_bucket(buckets: dict, p: Any) -> None:
-    k = _player_key(p.name, p.team, p.position)
+def _fold_cs_bucket(
+    buckets: dict,
+    p: Any,
+    season_num: int,
+    *,
+    merge_by_player: bool,
+    pick_club_by_matches: bool = False,
+) -> None:
+    k = _bucket_key(p.name, p.team, p.position, merge_by_player=merge_by_player)
     if k not in buckets:
         buckets[k] = {
             "name": p.name,
@@ -114,86 +225,304 @@ def _fold_cs_bucket(buckets: dict, p: Any) -> None:
             "position": p.position,
             "clean_sheets": 0,
             "matches": 0,
+            "last_season": season_num if merge_by_player else None,
         }
     b = buckets[k]
     b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)
     b["matches"] += int(getattr(p, "matches", 0) or 0)
+    if pick_club_by_matches:
+        _apply_last_club_by_matches(b, p, merge_by_player=merge_by_player)
+    else:
+        _apply_last_club(b, p, season_num, merge_by_player=merge_by_player)
 
 
-def aggregate_life_outfield(league_code: str | None, *, cl: bool = False) -> list[dict]:
-    team_set = _team_filter_set("cl" if cl else league_code)
-    buckets: dict[tuple[str, str, str], dict] = {}
-    seasons = list_season_archives_with_db() if not cl else _list_season_archives_with_cl()
-    if not seasons:
+def _filter_code_for_life(league_code: str | None) -> str | None:
+    if is_all_championships(league_code):
+        return None
+    return league_code
+
+
+def _aggregate_outfield_from_db(
+    db_path: str,
+    filter_code: str | None,
+    *,
+    merge_by_player: bool,
+    pick_club_by_matches: bool,
+    skip_zero_ga_cl: bool = False,
+) -> list[dict]:
+    if not os.path.isfile(db_path):
         return []
+    team_set = _team_filter_set(filter_code)
+    buckets: dict[tuple, dict] = {}
+    session, eng = _open_session(db_path)
+    try:
+        for Cls in _OUTFIELD:
+            for p in session.query(Cls).all():
+                if team_set is not None and _norm_team(p.team) not in team_set:
+                    continue
+                if skip_zero_ga_cl:
+                    if int(getattr(p, "goals", 0) or 0) == 0 and int(
+                        getattr(p, "assists", 0) or 0
+                    ) == 0:
+                        continue
+                _fold_outfield_bucket(
+                    buckets,
+                    p,
+                    0,
+                    merge_by_player=merge_by_player,
+                    pick_club_by_matches=pick_club_by_matches,
+                )
+    finally:
+        session.close()
+        eng.dispose()
+    return list(buckets.values())
 
-    for sn in seasons:
-        path = _season_db_path(sn, cl=cl)
+
+def _all_season_numbers(*, include_cl: bool) -> list[int]:
+    nums = set(list_season_archives_with_db())
+    if include_cl:
+        nums |= set(_list_season_archives_with_cl())
+    return sorted(nums)
+
+
+def _db_passes_for_season(league_code: str | None) -> list[tuple[str, str | None]]:
+    """kind: league | cl | common → filter_code для клубов."""
+    if is_all_championships(league_code):
+        return [("common", None)]
+    if league_code == "cl":
+        return [("cl", "cl")]
+    return [("league", league_code)]
+
+
+def _season_path_by_kind(season_num: int, kind: str) -> str | None:
+    if kind == "common":
+        return _season_common_path(season_num)
+    if kind == "cl":
+        return _season_db_path(season_num, cl=True)
+    return _season_db_path(season_num, cl=False)
+
+
+def aggregate_outfield(
+    league_code: str | None,
+    *,
+    season_num: int | None = None,
+    merge_by_player: bool = True,
+) -> list[dict]:
+    """Снимок одного сезона (не накопительные synced)."""
+    if season_num is None:
+        return aggregate_life_outfield(league_code, merge_by_player=merge_by_player)
+    buckets: dict[tuple, dict] = {}
+    for kind, filter_code in _db_passes_for_season(league_code):
+        path = _season_path_by_kind(season_num, kind)
         if not path:
             continue
+        team_set = _team_filter_set(filter_code)
         session, eng = _open_session(path)
         try:
             for Cls in _OUTFIELD:
                 for p in session.query(Cls).all():
                     if team_set is not None and _norm_team(p.team) not in team_set:
                         continue
-                    if cl:
+                    if kind == "cl":
                         if int(getattr(p, "goals", 0) or 0) == 0 and int(
                             getattr(p, "assists", 0) or 0
                         ) == 0:
                             continue
-                    _fold_outfield_bucket(buckets, p)
+                    _fold_outfield_bucket(
+                        buckets,
+                        p,
+                        season_num,
+                        merge_by_player=merge_by_player,
+                        pick_club_by_matches=kind == "common",
+                    )
         finally:
             session.close()
             eng.dispose()
     return list(buckets.values())
 
 
-def aggregate_life_cards(league_code: str | None, *, cl: bool = False) -> list[dict]:
-    team_set = _team_filter_set("cl" if cl else league_code)
-    buckets: dict[tuple[str, str, str], dict] = {}
-    seasons = list_season_archives_with_db() if not cl else _list_season_archives_with_cl()
-    for sn in seasons:
-        path = _season_db_path(sn, cl=cl)
+def aggregate_life_outfield(
+    league_code: str | None,
+    *,
+    cl: bool = False,
+    merge_by_player: bool = True,
+) -> list[dict]:
+    code = "cl" if cl else league_code
+    db_path, _ = _life_cumulative_db(code)
+    return _aggregate_outfield_from_db(
+        db_path,
+        _filter_code_for_life(code),
+        merge_by_player=merge_by_player,
+        pick_club_by_matches=True,
+        skip_zero_ga_cl=code == "cl",
+    )
+
+
+def aggregate_life_combined_outfield(*, merge_by_player: bool = True) -> list[dict]:
+    return aggregate_life_outfield("all", merge_by_player=merge_by_player)
+
+
+def _aggregate_cards_from_db(
+    db_path: str,
+    filter_code: str | None,
+    *,
+    merge_by_player: bool,
+    pick_club_by_matches: bool,
+    season_num: int = 0,
+) -> list[dict]:
+    if not os.path.isfile(db_path):
+        return []
+    team_set = _team_filter_set(filter_code)
+    buckets: dict[tuple, dict] = {}
+    session, eng = _open_session(db_path)
+    try:
+        for Cls in _ALL:
+            for p in session.query(Cls).all():
+                if team_set is not None and _norm_team(p.team) not in team_set:
+                    continue
+                _fold_cards_bucket(
+                    buckets,
+                    p,
+                    season_num,
+                    merge_by_player=merge_by_player,
+                    pick_club_by_matches=pick_club_by_matches,
+                )
+    finally:
+        session.close()
+        eng.dispose()
+    return list(buckets.values())
+
+
+def aggregate_cards(
+    league_code: str | None,
+    *,
+    season_num: int | None = None,
+    merge_by_player: bool = True,
+) -> list[dict]:
+    if season_num is None:
+        return aggregate_life_cards(league_code, merge_by_player=merge_by_player)
+    buckets: dict[tuple, dict] = {}
+    for kind, filter_code in _db_passes_for_season(league_code):
+        path = _season_path_by_kind(season_num, kind)
         if not path:
             continue
+        team_set = _team_filter_set(filter_code)
         session, eng = _open_session(path)
         try:
             for Cls in _ALL:
                 for p in session.query(Cls).all():
                     if team_set is not None and _norm_team(p.team) not in team_set:
                         continue
-                    _fold_cards_bucket(buckets, p)
+                    _fold_cards_bucket(
+                        buckets,
+                        p,
+                        season_num,
+                        merge_by_player=merge_by_player,
+                        pick_club_by_matches=kind == "common",
+                    )
         finally:
             session.close()
             eng.dispose()
     return list(buckets.values())
 
 
-def aggregate_life_clean_sheets(
-    league_code: str | None, *, cl: bool = False
+def aggregate_life_cards(
+    league_code: str | None,
+    *,
+    cl: bool = False,
+    merge_by_player: bool = True,
+) -> list[dict]:
+    code = "cl" if cl else league_code
+    db_path, _ = _life_cumulative_db(code)
+    return _aggregate_cards_from_db(
+        db_path,
+        _filter_code_for_life(code),
+        merge_by_player=merge_by_player,
+        pick_club_by_matches=True,
+    )
+
+
+def aggregate_clean_sheets(
+    league_code: str | None,
+    *,
+    season_num: int | None = None,
+    merge_by_player: bool = True,
 ) -> tuple[list[dict], list[dict]]:
-    team_set = _team_filter_set("cl" if cl else league_code)
-    gk_buckets: dict[tuple[str, str, str], dict] = {}
-    df_buckets: dict[tuple[str, str, str], dict] = {}
-    seasons = list_season_archives_with_db() if not cl else _list_season_archives_with_cl()
-    for sn in seasons:
-        path = _season_db_path(sn, cl=cl)
+    if season_num is None:
+        return aggregate_life_clean_sheets(league_code, merge_by_player=merge_by_player)
+    gk_buckets: dict[tuple, dict] = {}
+    df_buckets: dict[tuple, dict] = {}
+    for kind, filter_code in _db_passes_for_season(league_code):
+        path = _season_path_by_kind(season_num, kind)
         if not path:
             continue
+        team_set = _team_filter_set(filter_code)
         session, eng = _open_session(path)
         try:
             for p in session.query(Goalkeeper).all():
                 if team_set is not None and _norm_team(p.team) not in team_set:
                     continue
-                _fold_cs_bucket(gk_buckets, p)
+                _fold_cs_bucket(
+                    gk_buckets,
+                    p,
+                    season_num,
+                    merge_by_player=merge_by_player,
+                    pick_club_by_matches=kind == "common",
+                )
             for p in session.query(Defender).all():
                 if team_set is not None and _norm_team(p.team) not in team_set:
                     continue
-                _fold_cs_bucket(df_buckets, p)
+                _fold_cs_bucket(
+                    df_buckets,
+                    p,
+                    season_num,
+                    merge_by_player=merge_by_player,
+                    pick_club_by_matches=kind == "common",
+                )
         finally:
             session.close()
             eng.dispose()
+    return list(gk_buckets.values()), list(df_buckets.values())
+
+
+def aggregate_life_clean_sheets(
+    league_code: str | None,
+    *,
+    cl: bool = False,
+    merge_by_player: bool = True,
+) -> tuple[list[dict], list[dict]]:
+    code = "cl" if cl else league_code
+    db_path, _ = _life_cumulative_db(code)
+    if not os.path.isfile(db_path):
+        return [], []
+    team_set = _team_filter_set(_filter_code_for_life(code))
+    gk_buckets: dict[tuple, dict] = {}
+    df_buckets: dict[tuple, dict] = {}
+    session, eng = _open_session(db_path)
+    try:
+        for p in session.query(Goalkeeper).all():
+            if team_set is not None and _norm_team(p.team) not in team_set:
+                continue
+            _fold_cs_bucket(
+                gk_buckets,
+                p,
+                0,
+                merge_by_player=merge_by_player,
+                pick_club_by_matches=True,
+            )
+        for p in session.query(Defender).all():
+            if team_set is not None and _norm_team(p.team) not in team_set:
+                continue
+            _fold_cs_bucket(
+                df_buckets,
+                p,
+                0,
+                merge_by_player=merge_by_player,
+                pick_club_by_matches=True,
+            )
+    finally:
+        session.close()
+        eng.dispose()
     return list(gk_buckets.values()), list(df_buckets.values())
 
 
@@ -218,20 +547,33 @@ def _list_season_archives_with_cl() -> list[int]:
     return sorted(set(out))
 
 
-def _life_title_suffix(league_code: str | None, *, cl: bool) -> str:
+def _display_league_name(league_code: str | None, *, cl: bool = False) -> str:
     if cl:
-        name = LEAGUE_NAMES["cl"]
-    elif not league_code or league_code in ("a", "all"):
-        name = "Все чемпионаты"
-    else:
-        name = LEAGUE_NAMES.get(league_code, league_code)
-    return f" — все сезоны ({name}, по снимкам сезонов)"
+        return LEAGUE_NAMES["cl"]
+    if is_all_championships(league_code):
+        return "Все чемпионаты (лиги + ЛЧ)"
+    return LEAGUE_NAMES.get(league_code or "", league_code or "?")
+
+
+def _life_title_suffix(league_code: str | None, *, cl: bool) -> str:
+    code = "cl" if cl else league_code
+    _, db_label = _life_cumulative_db(code)
+    return f" — все сезоны ({db_label}, сумма по игроку)"
+
+
+def _season_title_suffix(season_num: int, league_code: str | None, *, cl: bool) -> str:
+    del league_code, cl
+    return f" — сезон {season_num} (сумма по игроку)"
 
 
 def life_has_archive_data(*, cl: bool = False) -> bool:
     if cl:
-        return bool(_list_season_archives_with_cl())
-    return bool(list_season_archives_with_db())
+        return os.path.isfile(season_paths.get_cumulative_cl_db_path())
+    return os.path.isfile(season_paths.get_cumulative_league_db_path())
+
+
+def life_has_combined_archive_data() -> bool:
+    return os.path.isfile(season_paths.get_cumulative_common_db_path())
 
 
 def format_life_top_scorers(league_code: str | None, limit: int = 30) -> str:
@@ -239,17 +581,12 @@ def format_life_top_scorers(league_code: str | None, limit: int = 30) -> str:
     import io
 
     cl = league_code == "cl"
-    players = aggregate_life_outfield(league_code if not cl else "cl", cl=cl)
+    players = aggregate_life_outfield(league_code, merge_by_player=True)
     players = [p for p in players if int(p.get("goals", 0) or 0) > 0]
     players.sort(key=lambda x: (-x["goals"], -x["assists"]))
-    if cl:
-        league_name = LEAGUE_NAMES["cl"] + _life_title_suffix(None, cl=True)
-    elif not league_code or league_code in ("a", "all"):
-        league_name = "Все чемпионаты" + _life_title_suffix(None, cl=False)
-    else:
-        league_name = LEAGUE_NAMES.get(league_code, league_code) + _life_title_suffix(
-            league_code, cl=False
-        )
+    league_name = _display_league_name(league_code, cl=cl) + _life_title_suffix(
+        league_code, cl=cl
+    )
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -276,17 +613,12 @@ def format_life_top_assists(league_code: str | None, limit: int = 30) -> str:
     import io
 
     cl = league_code == "cl"
-    players = aggregate_life_outfield(league_code if not cl else "cl", cl=cl)
+    players = aggregate_life_outfield(league_code, merge_by_player=True)
     players = [p for p in players if int(p.get("assists", 0) or 0) > 0]
     players.sort(key=lambda x: (-x["assists"], -x["goals"]))
-    if cl:
-        league_name = LEAGUE_NAMES["cl"] + _life_title_suffix(None, cl=True)
-    elif not league_code or league_code in ("a", "all"):
-        league_name = "Все чемпионаты" + _life_title_suffix(None, cl=False)
-    else:
-        league_name = LEAGUE_NAMES.get(league_code, league_code) + _life_title_suffix(
-            league_code, cl=False
-        )
+    league_name = _display_league_name(league_code, cl=cl) + _life_title_suffix(
+        league_code, cl=cl
+    )
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -313,17 +645,12 @@ def format_life_top_ga(league_code: str | None, limit: int = 30) -> str:
     import io
 
     cl = league_code == "cl"
-    players = aggregate_life_outfield(league_code if not cl else "cl", cl=cl)
+    players = aggregate_life_outfield(league_code, merge_by_player=True)
     players = [p for p in players if int(p.get("ga", 0) or 0) > 0]
     players.sort(key=lambda x: (-x["ga"], -x["goals"]))
-    if cl:
-        league_name = LEAGUE_NAMES["cl"] + _life_title_suffix(None, cl=True)
-    elif not league_code or league_code in ("a", "all"):
-        league_name = "Все чемпионаты" + _life_title_suffix(None, cl=False)
-    else:
-        league_name = LEAGUE_NAMES.get(league_code, league_code) + _life_title_suffix(
-            league_code, cl=False
-        )
+    league_name = _display_league_name(league_code, cl=cl) + _life_title_suffix(
+        league_code, cl=cl
+    )
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -349,7 +676,7 @@ def format_life_top_cards(
     league_code: str | None, metric: str, limit: int = 30
 ) -> str:
     cl = league_code == "cl"
-    rows = aggregate_life_cards(league_code if not cl else "cl", cl=cl)
+    rows = aggregate_cards(league_code, merge_by_player=True)
     m = metric.lower()
     field = "yellow_cards" if m == "yc" else "red_cards"
     title = "жёлтые карточки" if m == "yc" else "красные карточки"
@@ -361,12 +688,7 @@ def format_life_top_cards(
             str(x.get("name", "")).casefold(),
         )
     )
-    if cl:
-        lg_label = LEAGUE_NAMES["cl"]
-    elif not league_code or league_code in ("a", "all"):
-        lg_label = "Все чемпионаты"
-    else:
-        lg_label = LEAGUE_NAMES.get(league_code, league_code)
+    lg_label = _display_league_name(league_code, cl=cl)
     out = [f"Топ {title}{_life_title_suffix(league_code, cl=cl)}"]
     out.append(f"Лига: {lg_label}")
     out.append("")
@@ -386,9 +708,7 @@ def format_life_clean_sheets(
     league_code: str | None, limit: int = 30
 ) -> tuple[str, str]:
     cl = league_code == "cl"
-    gk_rows, df_rows = aggregate_life_clean_sheets(
-        league_code if not cl else "cl", cl=cl
-    )
+    gk_rows, df_rows = aggregate_clean_sheets(league_code, merge_by_player=True)
 
     def _sort(rows: list[dict]) -> list[dict]:
         rows = [r for r in rows if int(r.get("clean_sheets", 0) or 0) > 0]
@@ -403,12 +723,7 @@ def format_life_clean_sheets(
 
     gk_rows = _sort(gk_rows)
     df_rows = _sort(df_rows)
-    if cl:
-        lg_label = LEAGUE_NAMES["cl"]
-    elif not league_code or league_code in ("a", "all"):
-        lg_label = "Все чемпионаты"
-    else:
-        lg_label = LEAGUE_NAMES.get(league_code, league_code)
+    lg_label = _display_league_name(league_code, cl=cl)
     suf = _life_title_suffix(league_code, cl=cl)
 
     def _fmt(rows: list[dict], role: str) -> str:
@@ -427,3 +742,210 @@ def format_life_clean_sheets(
         return "\n".join(out)
 
     return _fmt(gk_rows, "вратари"), _fmt(df_rows, "защитники")
+
+
+def season_has_db(season_num: int, league_code: str | None) -> bool:
+    for kind, _fc in _db_passes_for_season(league_code):
+        if _season_path_by_kind(season_num, kind):
+            return True
+    return False
+
+
+def format_season_stat(
+    season_num: int,
+    league_code: str | None,
+    metric: str,
+    limit: int = 30,
+) -> str:
+    """Топ из одного сезона: g | as | ga | yc | rc."""
+    import contextlib
+    import io
+
+    m = (metric or "g").lower()
+    cl = league_code == "cl"
+    suf = _season_title_suffix(season_num, league_code, cl=cl)
+    league_name = _display_league_name(league_code, cl=cl) + suf
+
+    if m in ("yc", "rc"):
+        rows = aggregate_cards(league_code, season_num=season_num, merge_by_player=True)
+        field = "yellow_cards" if m == "yc" else "red_cards"
+        title = "жёлтые карточки" if m == "yc" else "красные карточки"
+        picked = [r for r in rows if int(r.get(field, 0) or 0) > 0]
+        picked.sort(
+            key=lambda x: (
+                -int(x.get(field, 0) or 0),
+                -int(x.get("matches", 0) or 0),
+                str(x.get("name", "")).casefold(),
+            )
+        )
+        out = [f"Топ {title}{suf}", f"Лига: {_display_league_name(league_code, cl=cl)}", ""]
+        if not picked:
+            out.append("Нет данных.")
+            return "\n".join(out)
+        out.append(f"{'№':>2} {'Игрок':<24} {'Клуб':<18} {'Матч':>5} {'Знач':>5}")
+        for i, r in enumerate(picked[:limit], start=1):
+            out.append(
+                f"{i:>2} {str(r['name'])[:24]:<24} {str(r['team'])[:18]:<18} "
+                f"{int(r.get('matches', 0) or 0):>5} {int(r.get(field, 0) or 0):>5}"
+            )
+        return "\n".join(out)
+
+    players = aggregate_outfield(
+        league_code, season_num=season_num, merge_by_player=True
+    )
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        if m in ("g", "goals"):
+            players = [p for p in players if int(p.get("goals", 0) or 0) > 0]
+            players.sort(key=lambda x: (-x["goals"], -x["assists"]))
+            print(f"\n{'='*65}")
+            print(f"  ТОП-{limit} БОМБАРДИРОВ - {league_name}")
+            print(f"{'='*65}")
+            print(
+                f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} "
+                f"{'Г':<4} {'А':<4} {'Г+А':<5}"
+            )
+            print("-" * 65)
+            if not players:
+                print("  Нет данных")
+            else:
+                for i, p in enumerate(players[:limit], 1):
+                    print(
+                        f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
+                        f"{p['goals']:<4} {p['assists']:<4} {p['ga']:<5}"
+                    )
+        elif m in ("as", "a", "assists"):
+            players = [p for p in players if int(p.get("assists", 0) or 0) > 0]
+            players.sort(key=lambda x: (-x["assists"], -x["goals"]))
+            print(f"\n{'='*65}")
+            print(f"  ТОП-{limit} АССИСТЕНТОВ - {league_name}")
+            print(f"{'='*65}")
+            print(
+                f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} "
+                f"{'А':<4} {'Г':<4} {'Г+А':<5}"
+            )
+            print("-" * 65)
+            if not players:
+                print("  Нет данных")
+            else:
+                for i, p in enumerate(players[:limit], 1):
+                    print(
+                        f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
+                        f"{p['assists']:<4} {p['goals']:<4} {p['ga']:<5}"
+                    )
+        elif m in ("ga", "g+a"):
+            players = [p for p in players if int(p.get("ga", 0) or 0) > 0]
+            players.sort(key=lambda x: (-x["ga"], -x["goals"]))
+            print(f"\n{'='*65}")
+            print(f"  ТОП-{limit} ПО Г+А - {league_name}")
+            print(f"{'='*65}")
+            print(
+                f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} "
+                f"{'Г+А':<5} {'Г':<4} {'А':<4}"
+            )
+            print("-" * 65)
+            if not players:
+                print("  Нет данных")
+            else:
+                for i, p in enumerate(players[:limit], 1):
+                    print(
+                        f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
+                        f"{p['ga']:<5} {p['goals']:<4} {p['assists']:<4}"
+                    )
+        else:
+            return f"Неизвестная метрика: {metric!r}"
+    return buf.getvalue()
+
+
+def format_season_clean_sheets(
+    season_num: int,
+    league_code: str | None,
+    limit: int = 30,
+) -> tuple[str, str]:
+    cl = league_code == "cl"
+    gk_rows, df_rows = aggregate_clean_sheets(
+        league_code, season_num=season_num, merge_by_player=True
+    )
+    suf = _season_title_suffix(season_num, league_code, cl=cl)
+    lg_label = _display_league_name(league_code, cl=cl)
+
+    def _sort(rows: list[dict]) -> list[dict]:
+        rows = [r for r in rows if int(r.get("clean_sheets", 0) or 0) > 0]
+        rows.sort(
+            key=lambda x: (
+                -int(x.get("clean_sheets", 0) or 0),
+                -int(x.get("matches", 0) or 0),
+                str(x.get("name", "")).casefold(),
+            )
+        )
+        return rows
+
+    def _fmt(rows: list[dict], role: str) -> str:
+        title = f"Сухие матчи · {role}{suf}"
+        out = [title, f"Лига: {lg_label}", ""]
+        if not rows:
+            out.append("Нет данных.")
+            return "\n".join(out)
+        out.append(f"{'№':>2} {'Игрок':<24} {'Клуб':<18} {'Матч':>5} {'Сух':>5}")
+        for i, r in enumerate(rows[:limit], start=1):
+            out.append(
+                f"{i:>2} {str(r['name'])[:24]:<24} {str(r['team'])[:18]:<18} "
+                f"{int(r.get('matches', 0) or 0):>5} "
+                f"{int(r.get('clean_sheets', 0) or 0):>5}"
+            )
+        return "\n".join(out)
+
+    return _fmt(_sort(gk_rows), "вратари"), _fmt(_sort(df_rows), "защитники")
+
+
+def format_top100_combined_str(limit: int = 100, sort_key: int = 1) -> str:
+    """Топ-100: лига + ЛЧ, одна строка на игрока, клуб из последнего сезона."""
+    import contextlib
+    import io
+
+    if not life_has_combined_archive_data():
+        return (
+            "Пока нет архивов сезонов с league.db / champions_league.db. "
+            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+        )
+
+    rows = aggregate_life_outfield("all", merge_by_player=True)
+    rows = [
+        r
+        for r in rows
+        if int(r.get("goals", 0) or 0) > 0 or int(r.get("assists", 0) or 0) > 0
+    ]
+    n_cand = len(rows)
+
+    if sort_key == 2:
+        rows.sort(key=lambda x: (-x["assists"], -x["goals"], x["name"].casefold()))
+    elif sort_key == 3:
+        rows.sort(key=lambda x: (-x["ga"], -x["goals"], x["name"].casefold()))
+    else:
+        rows.sort(key=lambda x: (-x["goals"], -x["assists"], x["name"].casefold()))
+
+    rows = rows[:limit]
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        print("\n" + "=" * 76)
+        print(
+            f"  ТОП-{limit} — лига + ЛЧ, все лиги (снимки сезонов, сумма по игроку) "
+            f"(с голом или передачей; кандидатов: {n_cand})"
+        )
+        print("=" * 76)
+        hdr = (
+            f"{'#':<4} {'Игрок':<20} {'Команда':<18} {'Поз':<5} "
+            f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5}"
+        )
+        print()
+        print(hdr)
+        print("-" * 76)
+        for i, p in enumerate(rows, 1):
+            print(
+                f"{i:<4} {p['name']:<20} {p['team']:<18} {p['position']:<5} "
+                f"{int(p.get('matches', 0) or 0):>4} {p['goals']:>4} {p['assists']:>4} "
+                f"{p['ga']:>5}"
+            )
+        print("-" * 76)
+    return buf.getvalue().strip()

@@ -1835,80 +1835,9 @@ def format_team_goalscorers_league_report(
 
 def format_all_leagues_combined_list_str(limit: int = 100, sort_key: int = 1) -> str:
     """
-    Топ игроков из ``common_synced.db`` (накопление всех сезонов) — как «b»→5.
+    Топ-100: лига + ЛЧ по снимкам сезонов, одна строка на игрока.
     sort_key: 1 — голы, 2 — передачи, 3 — Г+А.
     """
-    import os
+    from utils.stats_history_agg import format_top100_combined_str
 
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    from utils import season_paths
-
-    common_path = season_paths.get_cumulative_common_db_path()
-    if not os.path.isfile(common_path):
-        return (
-            "Накопительная база ещё не создана: нет файла common_synced.db.\n"
-            "После «Завершить сезон» появятся league_synced.db, champions_league_synced.db "
-            "и common_synced.db."
-        )
-
-    engine = create_engine(f"sqlite:///{common_path}")
-    session = sessionmaker(bind=engine)()
-    rows = []
-    try:
-        for PlayerClass in (Forward, Midfielder, Defender):
-            for p in session.query(PlayerClass).all():
-                g = int(p.goals or 0)
-                a = int(p.assists or 0)
-                ga = int(getattr(p, "ga", None) or (g + a))
-                if g == 0 and a == 0:
-                    continue
-                rows.append(
-                    {
-                        "name": p.name,
-                        "team": p.team,
-                        "position": p.position,
-                        "matches": int(p.matches or 0),
-                        "goals": g,
-                        "assists": a,
-                        "ga": ga,
-                    }
-                )
-    finally:
-        session.close()
-        engine.dispose()
-
-    n_cand = len(rows)
-
-    if sort_key == 2:
-        rows.sort(key=lambda x: (-x["assists"], -x["goals"], x["name"].lower()))
-    elif sort_key == 3:
-        rows.sort(key=lambda x: (-x["ga"], -x["goals"], x["name"].lower()))
-    else:
-        rows.sort(key=lambda x: (-x["goals"], -x["assists"], x["name"].lower()))
-
-    rows = rows[:limit]
-
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        print("\n" + "=" * 76)
-        print(
-            f"  ТОП-{limit} — лига + ЛЧ, все лиги (common_synced.db, все сезоны) "
-            f"(с голом или передачей; кандидатов: {n_cand})"
-        )
-        print("=" * 76)
-        hdr = (
-            f"{'#':<4} {'Игрок':<20} {'Команда':<18} {'Поз':<5} "
-            f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5}"
-        )
-        print()
-        print(hdr)
-        print("-" * 76)
-        for i, p in enumerate(rows, 1):
-            print(
-                f"{i:<4} {p['name']:<20} {p['team']:<18} {p['position']:<5} "
-                f"{p['matches']:>4} {p['goals']:>4} {p['assists']:>4} {p['ga']:>5}"
-            )
-        print("-" * 76)
-    return buf.getvalue().strip()
+    return format_top100_combined_str(limit=limit, sort_key=sort_key)
