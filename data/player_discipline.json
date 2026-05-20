@@ -195,6 +195,17 @@
       "league_code": "cl",
       "scope": "cl",
       "matches_left": 3
+    },
+    {
+      "key": "залевски|рома|ita|league",
+      "name": "Залевски",
+      "name_norm": "залевски",
+      "team": "Рома",
+      "team_norm": "рома",
+      "league_code": "ita",
+      "scope": "league",
+      "matches_left": 1,
+      "unavailable_from_round": 4
     }
   ],
   "yellow_cycle": [
@@ -636,7 +647,7 @@
       "team_norm": "севилья",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "вендел|реал сосьедад|esp|league",
@@ -656,7 +667,7 @@
       "team_norm": "локомотив",
       "league_code": "cl",
       "scope": "cl",
-      "count": 2
+      "count": 3
     },
     {
       "key": "салтыков|крылья советов|rpl|league",
@@ -796,7 +807,7 @@
       "team_norm": "краснодар",
       "league_code": "cl",
       "scope": "cl",
-      "count": 2
+      "count": 3
     },
     {
       "key": "зубименди|реал сосьедад|esp|league",
@@ -816,7 +827,7 @@
       "team_norm": "реал сосьедад",
       "league_code": "esp",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "родри|атлетико|cl|cl",
@@ -926,7 +937,7 @@
       "team_norm": "динамо",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "вернер|лейпциг|cl|cl",
@@ -1376,7 +1387,7 @@
       "team_norm": "бавария",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "гутиеррез|жирона|esp|league",
@@ -1494,6 +1505,106 @@
       "name_norm": "рамос",
       "team": "Севилья",
       "team_norm": "севилья",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "мендез|реал сосьедад|esp|league",
+      "name": "Мендез",
+      "name_norm": "мендез",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "навас|севилья|cl|cl",
+      "name": "Навас",
+      "name_norm": "навас",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "корона|франкфурт|ger|league",
+      "name": "Корона",
+      "name_norm": "корона",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "сане|бавария|ger|league",
+      "name": "Сане",
+      "name_norm": "сане",
+      "team": "Бавария",
+      "team_norm": "бавария",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "хатебур|аталанта|cl|cl",
+      "name": "Хатебур",
+      "name_norm": "хатебур",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "вивиан|атлетик|esp|league",
+      "name": "Вивиан",
+      "name_norm": "вивиан",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "бителло|динамо|rpl|league",
+      "name": "Бителло",
+      "name_norm": "бителло",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "силас|динамо|rpl|league",
+      "name": "Силас",
+      "name_norm": "силас",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "кокшаров|краснодар|cl|cl",
+      "name": "Кокшаров",
+      "name_norm": "кокшаров",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "люка эрнандез|наполи|cl|cl",
+      "name": "Люка Эрнандез",
+      "name_norm": "люка эрнандез",
+      "team": "Наполи",
+      "team_norm": "наполи",
       "league_code": "cl",
       "scope": "cl",
       "count": 1

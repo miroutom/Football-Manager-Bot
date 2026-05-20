@@ -1530,6 +1530,101 @@
       "day": 2,
       "cl_phase": "league",
       "entry_type": "play"
+    },
+    {
+      "home": "Барселона",
+      "away": "Реал Сосьедад",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ньюкасл",
+      "away": "Севилья",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Франкфурт",
+      "away": "Бавария",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Локомотив",
+      "away": "Аталанта",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Рома",
+      "away": "Милан",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 0,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Динамо",
+      "away": "Севилья",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Севилья",
+      "away": "Атлетик",
+      "league": "esp",
+      "home_score": 1,
+      "away_score": 0,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Динамо",
+      "away": "Локомотив",
+      "league": "rpl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Краснодар",
+      "away": "Милан",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Бавария",
+      "away": "Наполи",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 3,
+      "cl_phase": "league",
+      "entry_type": "play"
     }
   ]
 }
