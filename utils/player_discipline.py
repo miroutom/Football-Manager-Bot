@@ -26,7 +26,7 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 _STATE_PATH = _ROOT / "data" / "player_discipline.json"
-_CAL_PATH = _ROOT / "data" / "calendar_month.txt"
+_MATCH_RESULTS_PATH = _ROOT / "match_results.json"
 _lock = threading.Lock()
 
 _YEL4 = 4
@@ -109,22 +109,54 @@ def _save(data: dict[str, Any]) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def get_calendar_month(schedule_day: int | None) -> int:
+def infer_current_calendar_month() -> int:
+    """Текущий «месяц» календаря из ``match_results.json``: ``max(day)`` среди
+    сыгранных матчей (``entry_type`` != ``simulation``). Если журнала нет
+    или в нём только симуляции — возвращает ``1``.
+
+    Единый источник истины: достаточно записать матч через бота / скрипт —
+    «текущий месяц» обновляется автоматически везде, где используется
+    ``get_calendar_month``.
     """
-    Текущий «месяц» календаря: из слота матча (1–10) или data/calendar_month.txt, иначе 1.
+    if not _MATCH_RESULTS_PATH.is_file():
+        return 1
+    try:
+        with open(_MATCH_RESULTS_PATH, encoding="utf-8") as f:
+            raw = json.load(f)
+    except (OSError, ValueError):
+        return 1
+    matches = []
+    if isinstance(raw, dict):
+        matches = raw.get("matches") or []
+    elif isinstance(raw, list):
+        matches = raw
+    best = 0
+    for m in matches:
+        if not isinstance(m, dict):
+            continue
+        et = (m.get("entry_type") or "play").strip().lower()
+        if et == "simulation":
+            continue
+        d = m.get("day")
+        try:
+            di = int(d)
+        except (TypeError, ValueError):
+            continue
+        if 1 <= di <= 10 and di > best:
+            best = di
+    return best or 1
+
+
+def get_calendar_month(schedule_day: int | None) -> int:
+    """Текущий «месяц» календаря.
+
+    Если передан валидный ``schedule_day`` (1..10) — он и возвращается.
+    Иначе — ``infer_current_calendar_month()``: ``max(day)`` среди сыгранных
+    в ``match_results.json``. Единого «бумажного» файла больше нет.
     """
     if schedule_day is not None and 1 <= int(schedule_day) <= 10:
         return int(schedule_day)
-    if _CAL_PATH.is_file():
-        try:
-            t = _CAL_PATH.read_text(encoding="utf-8").strip().split()
-            if t:
-                m = int(t[0])
-                if 1 <= m <= 10:
-                    return m
-        except (OSError, ValueError):
-            pass
-    return 1
+    return infer_current_calendar_month()
 
 
 def find_fixture_round(

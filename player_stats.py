@@ -739,7 +739,7 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
     print("Сторона: h/х — хозяева, a/г — гости")
     print(
         "Дисциплина/травмы: бастони жк  |  бастони 2жк  |  бастони кк  |  симонс 4м  |  брозович с3 1м "
-        "(травма — отдельной строкой, лат. m OK; calendar_month.txt при вводе без слота)"
+        "(травма — отдельной строкой, лат. m OK; месяц без слота берётся из max(day) сыгранных в match_results.json)"
     )
     print("-" * 50)
 
