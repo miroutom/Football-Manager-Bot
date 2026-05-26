@@ -194,17 +194,53 @@ def find_fixture_round(
     return candidates[-1]
 
 
-def _injury_blocks_at_month(inj: dict, month: int) -> bool:
+_SEASON_MONTHS = 10
+
+
+def _injury_total_months(inj: dict) -> int:
+    """Полная длительность периода (в месяцах) — для выбора иконки и подписи."""
+    ofm = inj.get("out_from_month")
+    ret = inj.get("return_month")
+    if ofm is None or ret is None:
+        return 0
+    try:
+        return max(0, int(ret) - int(ofm))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _injury_blocks_at_month(
+    inj: dict,
+    month: int,
+    *,
+    current_season: int | None = None,
+) -> bool:
+    """Блокирует ли травма игрока в данном месяце ``month`` в сезоне ``current_season``.
+
+    Поддерживает «перенос остатка» в следующие сезоны: если травма создана в сезоне S
+    с ``return_month`` > 10, в сезоне S+1 она блокирует месяцы 1..(return_month-10) и т. д.
+    Для старых записей без поля ``season`` поведение прежнее (тот же сезон).
+    """
     ofm = inj.get("out_from_month")
     if ofm is None:
         return False
-    ret = int(inj.get("return_month") or 99)
     try:
         start = int(ofm)
+        ret = int(inj.get("return_month") or 99)
     except (TypeError, ValueError):
         return False
-    m = max(1, min(10, int(month)))
-    return start <= m < ret
+    m = max(1, min(_SEASON_MONTHS, int(month)))
+    inj_season = inj.get("season")
+    if inj_season is None or current_season is None:
+        return start <= m < ret
+    try:
+        elapsed = int(current_season) - int(inj_season)
+    except (TypeError, ValueError):
+        elapsed = 0
+    if elapsed < 0:
+        return False
+    global_m = m + _SEASON_MONTHS * elapsed
+    return start <= global_m < ret
 
 
 def _suspension_blocks_at_round(row: dict, fixture_round: int | None) -> bool:
@@ -263,13 +299,63 @@ def _find_injury_period(
 
 
 def _injury_blocking_at_month(
-    st: dict, name: str, team: str, month: int
+    st: dict,
+    name: str,
+    team: str,
+    month: int,
+    *,
+    current_season: int | None = None,
 ) -> dict | None:
     """Период травмы, который закрывает игрока в данном месяце календаря (если есть)."""
     for inj in _injuries_for_player(st, name, team):
-        if _injury_blocks_at_month(inj, month):
+        if _injury_blocks_at_month(inj, month, current_season=current_season):
             return inj
     return None
+
+
+def _get_active_season_or_default() -> int:
+    """Безопасное чтение активного сезона (1, если структура сезонов не настроена)."""
+    try:
+        from utils.season_paths import get_active_season
+
+        return int(get_active_season() or 1)
+    except Exception:
+        return 1
+
+
+def get_active_injuries_for_team(
+    team: str,
+    *,
+    schedule_month: int | None = None,
+    current_season: int | None = None,
+) -> list[dict]:
+    """Активные травмы клуба в указанном месяце/сезоне.
+
+    Возвращает список dict-периодов из ``data/player_discipline.json``,
+    которые блокируют игроков команды ``team`` в данный момент. Для каждого
+    добавлены поля ``total_months`` (полная длительность периода) и
+    ``carryover`` (``True``, если период начался в прошлом сезоне).
+    """
+    month = get_calendar_month(schedule_month)
+    season = int(current_season) if current_season is not None else _get_active_season_or_default()
+    tn = _norm(team)
+    out: list[dict] = []
+    with _lock:
+        st = _load()
+    for inj in st.get("injuries", []):
+        if inj.get("team_norm") != tn:
+            continue
+        if not _injury_blocks_at_month(inj, month, current_season=season):
+            continue
+        row = dict(inj)
+        row["total_months"] = _injury_total_months(inj)
+        inj_season = inj.get("season")
+        row["carryover"] = (
+            inj_season is not None
+            and int(inj_season) < season
+        )
+        out.append(row)
+    return out
 
 
 def _find_susp(st: dict, name: str, team: str, league_code: str, scope: str) -> dict | None:
@@ -339,7 +425,8 @@ def check_player_eligible(
         st = _load()
     month = max(1, min(10, int(schedule_month)))
 
-    inj = _injury_blocking_at_month(st, name, team, month)
+    season_now = _get_active_season_or_default()
+    inj = _injury_blocking_at_month(st, name, team, month, current_season=season_now)
     if inj:
         ret = int(inj.get("return_month") or 99)
         ofm = int(inj.get("out_from_month") or month)
@@ -744,8 +831,7 @@ def _apply_injury(
         return (f"✗ Не найден: {nmt} ({team})", True)
     cur = max(1, min(10, int(out_from_month if out_from_month is not None else month)))
     ret = cur + int(nmonths)
-    if ret > 10:
-        ret = 10
+    season_now = _get_active_season_or_default()
     with _lock:
         st = _load()
         inj = _find_injury_period(st, player.name, team, cur, ret)
@@ -760,6 +846,7 @@ def _apply_injury(
                     "out_from_month": cur,
                     "return_month": ret,
                     "type": injury_type,
+                    "season": season_now,
                 }
             )
             added = True
@@ -767,6 +854,7 @@ def _apply_injury(
             inj["type"] = injury_type
             if not inj.get("key"):
                 inj["key"] = _injury_period_key(player.name, team, cur, ret)
+            inj.setdefault("season", season_now)
             added = False
         _save(st)
     tk = injury_type.strip() or "травма"
@@ -775,9 +863,16 @@ def _apply_injury(
         if added
         else "Период уже был — обновлён только тип."
     )
+    carry = ""
+    if ret > _SEASON_MONTHS:
+        in_this = max(0, _SEASON_MONTHS + 1 - cur)
+        in_next = (ret - cur) - in_this
+        carry = (
+            f" Переход на следующий сезон: ~{in_this} мес. в этом, ~{in_next} мес. в следующем."
+        )
     return (
         f"✓ Травма ({tk}): {player.name} — с <b>{cur}</b> мес., выход с <b>{ret}</b> "
-        f"(срок {nmonths} мес.). {note}",
+        f"(срок {nmonths} мес.).{carry} {note}",
         True,
     )
 
@@ -799,6 +894,7 @@ def format_discipline_pre_match_notice_html(
 
     esc = html_module.escape
     month = get_calendar_month(schedule_day)
+    season_now = _get_active_season_or_default()
     scope = "cl" if league_code == "cl" else "league"
     lc = "cl" if scope == "cl" else league_code
     if fixture_round is None:
@@ -812,7 +908,7 @@ def format_discipline_pre_match_notice_html(
         for inj in st.get("injuries", []):
             if inj.get("team_norm") != team_norm:
                 continue
-            if not _injury_blocks_at_month(inj, month):
+            if not _injury_blocks_at_month(inj, month, current_season=season_now):
                 continue
             ret = int(inj.get("return_month") or 99)
             ofm = inj.get("out_from_month")
@@ -874,10 +970,11 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
     до снятия (см. ``register_match_played_for_discipline``).
     """
     month = get_calendar_month(schedule_month)
+    season_now = _get_active_season_or_default()
     with _lock:
         st = _load()
 
-    chunks: list[str] = [f"Месяц календаря: {month}.", ""]
+    chunks: list[str] = [f"Месяц календаря: {month} (сезон {season_now}).", ""]
 
     # --- травмы ---
     inj_rows: list[tuple[str, str, str, str, int, str]] = []
@@ -890,9 +987,15 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
         kind = (inj.get("type") or "травма").strip() or "травма"
         if ofm is None:
             st_mark = "?"
-        elif _injury_blocks_at_month(inj, month):
+        elif _injury_blocks_at_month(inj, month, current_season=season_now):
             st_mark = "активна"
-        elif month >= ret:
+        elif (
+            inj.get("season") is not None
+            and int(inj.get("season")) < season_now
+            and ret <= _SEASON_MONTHS * (season_now - int(inj.get("season"))) + month
+        ):
+            st_mark = "прошла"
+        elif (inj.get("season") in (None, season_now)) and month >= ret:
             st_mark = "прошла"
         else:
             st_mark = "позже"

@@ -79,6 +79,84 @@ _SIDEBAR_LIST_TOP = 108
 _SIDEBAR_ROW_H = 28
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _CREST_DIR = _PROJECT_ROOT / "assets" / "crests"
+_ICONS_DIR = _PROJECT_ROOT / "assets" / "icons"
+
+# Длительность травмы → файл иконки (chosen on TOTAL months of the period).
+_INJURY_ICON_NAMES = {
+    "plaster": "injury_plaster.png",
+    "cross": "injury_cross.png",
+    "ambulance": "injury_ambulance.png",
+}
+_INJ_ICON_CACHE: dict[tuple[str, int], "Image.Image"] = {}
+
+
+def _pick_injury_icon_kind(total_months: int) -> str | None:
+    """≤1 мес — пластырь; 2..3 — крестик; 4+ — скорая."""
+    n = max(0, int(total_months or 0))
+    if n <= 0:
+        return None
+    if n <= 1:
+        return "plaster"
+    if n <= 3:
+        return "cross"
+    return "ambulance"
+
+
+def _load_injury_icon(kind: str, size_px: int) -> "Image.Image | None":
+    key = (kind, int(size_px))
+    cached = _INJ_ICON_CACHE.get(key)
+    if cached is not None:
+        return cached
+    fname = _INJURY_ICON_NAMES.get(kind)
+    if not fname:
+        return None
+    path = _ICONS_DIR / fname
+    if not path.is_file():
+        return None
+    try:
+        im = Image.open(path).convert("RGBA")
+    except OSError:
+        logger.warning("Состав: не удалось открыть иконку травмы %s", path)
+        return None
+    im.thumbnail((size_px, size_px), Image.Resampling.LANCZOS)
+    _INJ_ICON_CACHE[key] = im
+    return im
+
+
+def _paste_injury_badge(
+    im: "Image.Image",
+    draw: ImageDraw.ImageDraw,
+    cx: int,
+    cy: int,
+    total_months: int,
+) -> None:
+    """Рисует светлый круг и поверх — иконку травмы по длительности периода."""
+    kind = _pick_injury_icon_kind(total_months)
+    if kind is None:
+        return
+    badge_d = 30
+    icon_d = 24
+    icon = _load_injury_icon(kind, icon_d)
+    if icon is None:
+        return
+    pad = (badge_d - icon_d) // 2
+    bx0 = int(cx - badge_d // 2)
+    by0 = int(cy - badge_d // 2)
+    bx1 = bx0 + badge_d
+    by1 = by0 + badge_d
+    badge = Image.new("RGBA", (badge_d, badge_d), (0, 0, 0, 0))
+    bdraw = ImageDraw.Draw(badge)
+    bdraw.ellipse(
+        [0, 0, badge_d - 1, badge_d - 1],
+        fill=(248, 250, 252, 235),
+        outline=(15, 23, 42, 220),
+        width=1,
+    )
+    iw, ih = icon.size
+    ix = pad + (icon_d - iw) // 2
+    iy = pad + (icon_d - ih) // 2
+    badge.alpha_composite(icon, (ix, iy))
+    im.paste(badge, (bx0, by0), badge)
 
 
 def _try_truetype(path: Path, size: int, index: int = 0) -> ImageFont.FreeTypeFont | None:
@@ -1326,6 +1404,23 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     pos_font = _pick_font(11, bold=False)
     crest_font = _pick_font(22, bold=True)
 
+    try:
+        from utils.player_discipline import get_active_injuries_for_team
+
+        _injuries = get_active_injuries_for_team(team_db)
+    except Exception:
+        logger.exception("Состав: не удалось получить активные травмы для %s", team_db)
+        _injuries = []
+    injuries_by_name: dict[str, int] = {}
+    for inj in _injuries:
+        nn = _player_name_key(str(inj.get("name") or ""))
+        if not nn:
+            continue
+        tm = int(inj.get("total_months") or 0)
+        prev = injuries_by_name.get(nn, 0)
+        if tm > prev:
+            injuries_by_name[nn] = tm
+
     crest_cx = int(px1)
     crest_cy = int(py0 + 56)
     crest_max = 78
@@ -1359,6 +1454,9 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
             name_y = y1 + 10
             draw.text((ix, name_y), sur, fill=_SLATE_BRIGHT, font=name_font, anchor="mt")
             draw.text((ix, name_y + 21), label, fill=_SLATE_MUTED, font=pos_font, anchor="mt")
+            total_months = injuries_by_name.get(_player_name_key(pl.name), 0)
+            if total_months > 0:
+                _paste_injury_badge(im, draw, x0, y0, total_months)
         else:
             draw.text((cx, cy), "—", fill=_SLATE_MUTED, font=name_font, anchor="mm")
 
