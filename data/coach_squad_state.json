@@ -429,9 +429,9 @@
       "formation_ids": [
         5,
         3,
-        6
+        1
       ],
-      "active_formation_id": 3
+      "active_formation_id": 1
     },
     "allegri": {
       "name": "Аллегри",
