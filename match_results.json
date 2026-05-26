@@ -2190,6 +2190,78 @@
       "away_score": 2,
       "day": 4,
       "entry_type": "play"
+    },
+    {
+      "home": "Челси",
+      "away": "Мю",
+      "league": "eng",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 4,
+      "entry_type": "play"
+    },
+    {
+      "home": "Франкфурт",
+      "away": "Байер",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 4,
+      "entry_type": "play"
+    },
+    {
+      "home": "Франкфурт",
+      "away": "Хоффенхайм",
+      "league": "ger",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 5,
+      "entry_type": "play"
+    },
+    {
+      "home": "Боруссия М",
+      "away": "Вольфсбург",
+      "league": "ger",
+      "home_score": 4,
+      "away_score": 4,
+      "day": 5,
+      "entry_type": "play"
+    },
+    {
+      "home": "Челси",
+      "away": "Тоттенхэм",
+      "league": "eng",
+      "home_score": 8,
+      "away_score": 1,
+      "day": 5,
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал Сосьедад",
+      "away": "Бетис",
+      "league": "esp",
+      "home_score": 0,
+      "away_score": 3,
+      "day": 5,
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Мю",
+      "league": "eng",
+      "home_score": 8,
+      "away_score": 1,
+      "day": 5,
+      "entry_type": "play"
+    },
+    {
+      "home": "Севилья",
+      "away": "Жирона",
+      "league": "esp",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 5,
+      "entry_type": "play"
     }
   ]
 }

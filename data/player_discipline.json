@@ -226,6 +226,27 @@
       "league_code": "cl",
       "scope": "cl",
       "matches_left": 3
+    },
+    {
+      "key": "марсиаль|мю|eng|league",
+      "name": "Марсиаль",
+      "name_norm": "марсиаль",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "eng",
+      "scope": "league",
+      "matches_left": 3
+    },
+    {
+      "key": "медина|жирона|esp|league",
+      "name": "Медина",
+      "name_norm": "медина",
+      "team": "Жирона",
+      "team_norm": "жирона",
+      "league_code": "esp",
+      "scope": "league",
+      "matches_left": 3,
+      "unavailable_from_round": 4
     }
   ],
   "yellow_cycle": [
@@ -927,7 +948,7 @@
       "team_norm": "арсенал",
       "league_code": "eng",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "маласия|мю|cl|cl",
@@ -1557,7 +1578,7 @@
       "team_norm": "франкфурт",
       "league_code": "ger",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "сане|бавария|ger|league",
@@ -1826,6 +1847,36 @@
       "team": "Наполи",
       "team_norm": "наполи",
       "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "мармуш|франкфурт|ger|league",
+      "name": "Мармуш",
+      "name_norm": "мармуш",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "кох|франкфурт|ger|league",
+      "name": "Кох",
+      "name_norm": "кох",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "витинья|бетис|esp|league",
+      "name": "Витинья",
+      "name_norm": "витинья",
+      "team": "Бетис",
+      "team_norm": "бетис",
+      "league_code": "esp",
       "scope": "league",
       "count": 1
     }
@@ -2724,6 +2775,16 @@
       "team_norm": "цска",
       "out_from_month": 5,
       "return_month": 8,
+      "type": "травма"
+    },
+    {
+      "key": "трусар|боруссия м|5|10",
+      "name": "Трусар",
+      "name_norm": "трусар",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "out_from_month": 5,
+      "return_month": 10,
       "type": "травма"
     }
   ]
