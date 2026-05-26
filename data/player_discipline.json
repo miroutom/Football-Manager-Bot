@@ -204,7 +204,7 @@
       "team_norm": "рома",
       "league_code": "ita",
       "scope": "league",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 4
     },
     {
@@ -247,6 +247,17 @@
       "scope": "league",
       "matches_left": 3,
       "unavailable_from_round": 4
+    },
+    {
+      "key": "бебу|хоффенхайм|ger|league",
+      "name": "Бебу",
+      "name_norm": "бебу",
+      "team": "Хоффенхайм",
+      "team_norm": "хоффенхайм",
+      "league_code": "ger",
+      "scope": "league",
+      "matches_left": 1,
+      "unavailable_from_round": 11
     }
   ],
   "yellow_cycle": [
@@ -1879,6 +1890,16 @@
       "league_code": "esp",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "тилеманс|астон вилла|eng|league",
+      "name": "Тилеманс",
+      "name_norm": "тилеманс",
+      "team": "Астон Вилла",
+      "team_norm": "астон вилла",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [
@@ -2784,6 +2805,66 @@
       "team": "Боруссия М",
       "team_norm": "боруссия м",
       "out_from_month": 5,
+      "return_month": 10,
+      "type": "травма"
+    },
+    {
+      "key": "шевалье|аталанта|5|8",
+      "name": "Шевалье",
+      "name_norm": "шевалье",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "out_from_month": 5,
+      "return_month": 8,
+      "type": "травма"
+    },
+    {
+      "key": "купмайнерс|аталанта|5|8",
+      "name": "Купмайнерс",
+      "name_norm": "купмайнерс",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "out_from_month": 5,
+      "return_month": 8,
+      "type": "травма"
+    },
+    {
+      "key": "исак|ньюкасл|5|8",
+      "name": "Исак",
+      "name_norm": "исак",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "out_from_month": 5,
+      "return_month": 8,
+      "type": "травма"
+    },
+    {
+      "key": "довбык|хоффенхайм|6|9",
+      "name": "Довбык",
+      "name_norm": "довбык",
+      "team": "Хоффенхайм",
+      "team_norm": "хоффенхайм",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма"
+    },
+    {
+      "key": "лекуе|хоффенхайм|6|9",
+      "name": "Лекуе",
+      "name_norm": "лекуе",
+      "team": "Хоффенхайм",
+      "team_norm": "хоффенхайм",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма"
+    },
+    {
+      "key": "бауманн|хоффенхайм|6|10",
+      "name": "Бауманн",
+      "name_norm": "бауманн",
+      "team": "Хоффенхайм",
+      "team_norm": "хоффенхайм",
+      "out_from_month": 6,
       "return_month": 10,
       "type": "травма"
     }
