@@ -153,6 +153,13 @@ def _pfp_fields_keyboard(fields: list[str]) -> InlineKeyboardMarkup:
             row = []
     if row:
         rows.append(row)
+    rows.append([
+        InlineKeyboardButton(text="◀ К игрокам клуба", callback_data="pfp:nav:roster"),
+        InlineKeyboardButton(text="◀ К клубам лиги", callback_data="pfp:nav:teams"),
+    ])
+    rows.append([
+        InlineKeyboardButton(text="✅ Завершить", callback_data="pfp:nav:done"),
+    ])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -373,12 +380,84 @@ async def on_pfp_value(message: Message, state: FSMContext) -> None:
         logger.exception("apply_player_field_update")
         await message.answer(f"Ошибка: {e}")
         return
-    await state.clear()
+    fields: list[str] = list(data.get("pfp_fields") or [])
+    if not fields:
+        fields = list_editable_fields_for_player(team, name, pos)
+        await state.update_data(pfp_fields=fields)
+    await state.update_data(pfp_field=None)
+    await state.set_state(PlayerFieldEnter.pick_field)
     cl_note = f", ЛЧ строк: <b>{r['cl_updated']}</b>" if r.get("cl_updated") else ""
     await message.answer(
         "✅ Обновлено.\n"
         f"Таблица: <code>{r['league_table']}</code>, поле <code>{r['field']}</code>.\n"
         f"Было: <code>{r['before']!r}</code> → стало: <code>{r['after']!r}</code>{cl_note}.\n"
-        "<code>common.db</code> пересобран.",
+        "<code>common.db</code> пересобран.\n\n"
+        f"<b>{html_escape(name)}</b> ({html_escape(pos)}) · {html_escape(team)} — выбери ещё поле "
+        "или завершить:",
         parse_mode="HTML",
+        reply_markup=_pfp_fields_keyboard(fields),
+    )
+
+
+@player_edit_router.callback_query(F.data == "pfp:nav:done")
+async def cb_pfp_nav_done(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.clear()
+    if callback.message is not None:
+        await callback.message.answer("Готово. Сессия редактирования завершена.")
+
+
+@player_edit_router.callback_query(F.data == "pfp:nav:roster")
+async def cb_pfp_nav_roster(callback: CallbackQuery, state: FSMContext) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    code = (data.get("pfp_lg") or "").strip()
+    team = (data.get("pfp_team") or "").strip()
+    raw = data.get("pfp_candidates") or []
+    cands = [tuple(x) for x in raw]
+    if not (code and team and cands):
+        await callback.answer("Сессия устарела. Открой снова из меню.", show_alert=True)
+        await state.clear()
+        return
+    await callback.answer()
+    await state.update_data(pfp_name=None, pfp_pos=None, pfp_field=None, pfp_fields=None)
+    await state.set_state(PlayerFieldEnter.pick_player)
+    page = int(data.get("pfp_roster_page") or 0)
+    ps = _ROSTER_PAGE_SIZE
+    total_pages = max(1, (len(cands) + ps - 1) // ps)
+    page = max(0, min(page, total_pages - 1))
+    await callback.message.answer(
+        _pfp_roster_caption_html(data, page, total_pages),
+        parse_mode="HTML",
+        reply_markup=_pfp_roster_keyboard(cands, page),
+    )
+
+
+@player_edit_router.callback_query(F.data == "pfp:nav:teams")
+async def cb_pfp_nav_teams(callback: CallbackQuery, state: FSMContext) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    code = (data.get("pfp_lg") or "").strip()
+    if not code:
+        await callback.answer("Сессия устарела. Открой снова из меню.", show_alert=True)
+        await state.clear()
+        return
+    await callback.answer()
+    await state.update_data(
+        pfp_team=None,
+        pfp_candidates=None,
+        pfp_roster_page=0,
+        pfp_name=None,
+        pfp_pos=None,
+        pfp_field=None,
+        pfp_fields=None,
+    )
+    await state.set_state(PlayerFieldEnter.pick_team)
+    await callback.message.answer(
+        f"{_league_title(code)} — выберите клуб:",
+        reply_markup=_pfp_teams_kb(code),
     )
