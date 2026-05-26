@@ -77,6 +77,29 @@ def _squad_teams_kb(league_code: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _squad_after_apply_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="◀ К клубам лиги",
+                    callback_data="st1:nav:teams",
+                ),
+                InlineKeyboardButton(
+                    text="◀ К лигам",
+                    callback_data="st1:nav:lg",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✅ Завершить",
+                    callback_data="st1:nav:done",
+                ),
+            ],
+        ]
+    )
+
+
 @squad_status_router.callback_query(F.data == "menu:squad_status")
 async def cb_menu_squad_status(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
@@ -173,6 +196,7 @@ async def cb_squad_team(callback: CallbackQuery, state: FSMContext) -> None:
 async def on_squad_status_lines(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     team = (data.get("sq_team") or "").strip()
+    code = (data.get("sq_lg") or "").strip()
     if not team:
         await state.clear()
         await message.answer("Сброс. Открой снова из меню «Заявка».")
@@ -188,7 +212,6 @@ async def on_squad_status_lines(message: Message, state: FSMContext) -> None:
         logger.exception("apply_player_status_lines")
         await message.answer(f"Ошибка: {e}")
         return
-    await state.clear()
     lines: list[str] = []
     if r.ok:
         lines.append("✅ Обновлено:")
@@ -198,4 +221,49 @@ async def on_squad_status_lines(message: Message, state: FSMContext) -> None:
         lines.extend(f"  · {x}" for x in r.errors)
     if not lines:
         lines.append("Пусто — нечего применить.")
-    await message.answer("\n".join(lines))
+    lines.append("")
+    lines.append(f"{_league_title(code)} · {team} — можно ещё строки или навигация:")
+    await message.answer(
+        "\n".join(lines),
+        reply_markup=_squad_after_apply_kb(),
+    )
+
+
+@squad_status_router.callback_query(F.data == "st1:nav:done")
+async def cb_st1_nav_done(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.clear()
+    if callback.message is not None:
+        await callback.message.answer("Готово. Сессия «Заявка» завершена.")
+
+
+@squad_status_router.callback_query(F.data == "st1:nav:teams")
+async def cb_st1_nav_teams(callback: CallbackQuery, state: FSMContext) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    code = (data.get("sq_lg") or "").strip()
+    if not code:
+        await callback.answer("Сессия устарела. Открой снова из меню.", show_alert=True)
+        await state.clear()
+        return
+    await callback.answer()
+    await state.update_data(sq_team=None)
+    await callback.message.answer(
+        f"{_league_title(code)} — выберите клуб:",
+        reply_markup=_squad_teams_kb(code),
+    )
+
+
+@squad_status_router.callback_query(F.data == "st1:nav:lg")
+async def cb_st1_nav_lg(callback: CallbackQuery, state: FSMContext) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+    await callback.answer()
+    await state.update_data(sq_lg=None, sq_team=None)
+    await callback.message.answer(
+        "Выбери лигу:",
+        reply_markup=_squad_league_kb(),
+    )

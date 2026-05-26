@@ -73,6 +73,29 @@ def _loan_teams_kb(league_code: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _loan_after_apply_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="◀ К клубам лиги",
+                    callback_data="loan:nav:teams",
+                ),
+                InlineKeyboardButton(
+                    text="◀ К лигам",
+                    callback_data="loan:nav:lg",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✅ Завершить",
+                    callback_data="loan:nav:done",
+                ),
+            ],
+        ]
+    )
+
+
 @loan_router.callback_query(F.data == "menu:loan")
 async def cb_menu_loan(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
@@ -144,6 +167,7 @@ async def cb_loan_team(callback: CallbackQuery, state: FSMContext) -> None:
 async def on_loan_line(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     team = (data.get("loan_team") or "").strip()
+    code = (data.get("loan_lg") or "").strip()
     if not team:
         await state.clear()
         await message.answer("Сессия сброшена. Начни с меню → аренда.")
@@ -156,8 +180,57 @@ async def on_loan_line(message: Message, state: FSMContext) -> None:
         message.text or "",
         schedule_day=None,
     )
+    suffix = (
+        f"\n\n<b>{_league_title(code)}</b> · <b>{team}</b> — можно ещё одну строку аренды "
+        "или навигация:"
+    )
+    await message.answer(
+        (msg or "Готово.") + suffix,
+        parse_mode="HTML",
+        reply_markup=_loan_after_apply_kb(),
+    )
+
+
+@loan_router.callback_query(F.data == "loan:nav:done")
+async def cb_loan_nav_done(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
     await state.clear()
-    await message.answer(msg, parse_mode="HTML")
+    if callback.message is not None:
+        await callback.message.answer("Готово. Сессия аренды завершена.")
+
+
+@loan_router.callback_query(F.data == "loan:nav:teams")
+async def cb_loan_nav_teams(callback: CallbackQuery, state: FSMContext) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    code = (data.get("loan_lg") or "").strip()
+    if not code:
+        await callback.answer("Сессия устарела. Открой снова из меню.", show_alert=True)
+        await state.clear()
+        return
+    await callback.answer()
+    await state.update_data(loan_team=None)
+    await state.set_state(LoanEnter.pick_team)
+    await callback.message.answer(
+        f"{_league_title(code)} — выбери клуб:",
+        reply_markup=_loan_teams_kb(code),
+    )
+
+
+@loan_router.callback_query(F.data == "loan:nav:lg")
+async def cb_loan_nav_lg(callback: CallbackQuery, state: FSMContext) -> None:
+    if callback.message is None:
+        await callback.answer()
+        return
+    await callback.answer()
+    await state.update_data(loan_lg=None, loan_team=None)
+    await state.set_state(LoanEnter.pick_lg)
+    await callback.message.answer(
+        "Выбери лигу:",
+        reply_markup=_loan_league_kb(),
+    )
 
 
 @loan_router.message(LoanEnter.pick_lg, _TEXT_NOT_CMD)
