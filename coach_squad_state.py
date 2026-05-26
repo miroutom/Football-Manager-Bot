@@ -226,6 +226,34 @@ def set_active_formation_id(coach_id: str, tactical_id: int) -> None:
         _save(data)
 
 
+def set_active_formation_id_any(coach_id: str, tactical_id: int) -> None:
+    """Сделать active **любую** из 10 схем.
+
+    Если ``tactical_id`` уже есть в тройке тренера — просто переключает active.
+    Если нет — встраивает её в тройку, заменяя один из неактивных слотов
+    (предпочтение последнему), и делает её активной. Инвариант
+    ``active_formation_id ∈ formation_ids`` сохраняется.
+    """
+    validate_formation_id(tactical_id)
+    rec = get_coach_record(coach_id)
+    if not rec:
+        raise KeyError(f"Нет тренера {coach_id!r}.")
+    if tactical_id in rec.formation_ids:
+        set_active_formation_id(coach_id, tactical_id)
+        return
+    cur = list(rec.formation_ids)
+    replace_idx = None
+    for i in range(len(cur) - 1, -1, -1):
+        if cur[i] != rec.active_formation_id:
+            replace_idx = i
+            break
+    if replace_idx is None:
+        replace_idx = len(cur) - 1
+    cur[replace_idx] = tactical_id
+    new_triplet = (cur[0], cur[1], cur[2])
+    set_coach_formations(coach_id, new_triplet, tactical_id)
+
+
 def assign_coach_to_team(*, team_db: str, coach_id: str | None) -> None:
     team = (team_db or "").strip()
     if not team:

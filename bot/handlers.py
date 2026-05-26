@@ -64,9 +64,9 @@ from coach_squad_state import (
     get_coach_id_for_team,
     get_coach_record,
     list_coach_ids,
-    set_active_formation_id,
+    set_active_formation_id_any,
 )
-from formation_catalog import label_for_formation_id
+from formation_catalog import FORMATION_ID_LABELS, label_for_formation_id
 
 logger = logging.getLogger(__name__)
 
@@ -253,18 +253,25 @@ def _active_formation_keyboard(league_code: str, team_idx: int) -> InlineKeyboar
     rec = get_coach_record(cid)
     if not rec:
         return None
-    row = []
-    for fid in rec.formation_ids:
-        lab = f"{fid} · {label_for_formation_id(fid)}"
+    rows: list[list[InlineKeyboardButton]] = []
+    current_row: list[InlineKeyboardButton] = []
+    for fid in sorted(FORMATION_ID_LABELS):
+        marker = "✓ " if fid == rec.active_formation_id else ""
+        lab = f"{marker}{fid} · {label_for_formation_id(fid)}"
         if len(lab) > 60:
             lab = lab[:57] + "…"
-        row.append(
+        current_row.append(
             InlineKeyboardButton(
                 text=lab,
                 callback_data=f"formset:{league_code}:{team_idx}:{fid}",
             )
         )
-    return InlineKeyboardMarkup(inline_keyboard=[row])
+        if len(current_row) == 2:
+            rows.append(current_row)
+            current_row = []
+    if current_row:
+        rows.append(current_row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _tgclub_keyboard(league_code: str) -> InlineKeyboardMarkup:
@@ -1846,7 +1853,7 @@ async def cb_formation_set(callback: CallbackQuery) -> None:
         return
     await callback.answer()
     try:
-        set_active_formation_id(cid, fid)
+        set_active_formation_id_any(cid, fid)
         lab = label_for_formation_id(fid)
         await callback.message.answer(
             f"✓ <b>{team_name}</b>: активная схема — <b>{lab}</b> (id {fid}).",
