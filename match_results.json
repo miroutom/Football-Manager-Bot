@@ -2127,6 +2127,69 @@
       "day": 5,
       "cl_phase": "league",
       "entry_type": "play"
+    },
+    {
+      "home": "Лацио",
+      "away": "Ювентус",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Аталанта",
+      "away": "Интер",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Вольфсбург",
+      "away": "Байер",
+      "league": "ger",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Боруссия М",
+      "away": "Лейпциг",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 1,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Хоффенхайм",
+      "away": "Дортмунд",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Жирона",
+      "away": "Атлетико",
+      "league": "esp",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Аталанта",
+      "away": "Ювентус",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 4,
+      "entry_type": "play"
     }
   ]
 }
