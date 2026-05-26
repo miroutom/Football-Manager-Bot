@@ -97,7 +97,7 @@
       "team_norm": "фиорентина",
       "league_code": "ita",
       "scope": "league",
-      "matches_left": 2,
+      "matches_left": 1,
       "unavailable_from_round": 1
     },
     {
@@ -108,7 +108,7 @@
       "team_norm": "крылья советов",
       "league_code": "rpl",
       "scope": "league",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 1
     },
     {
@@ -152,7 +152,7 @@
       "team_norm": "арсенал",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 1
     },
     {
@@ -163,7 +163,7 @@
       "team_norm": "тоттенхэм",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 1
     },
     {
@@ -174,7 +174,7 @@
       "team_norm": "хоффенхайм",
       "league_code": "ger",
       "scope": "league",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "коке|ливерпуль|cl|cl",
@@ -184,7 +184,7 @@
       "team_norm": "ливерпуль",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "де врей|интер|cl|cl",
@@ -194,7 +194,7 @@
       "team_norm": "интер",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 3
+      "matches_left": 1
     },
     {
       "key": "залевски|рома|ita|league",
@@ -206,6 +206,26 @@
       "scope": "league",
       "matches_left": 1,
       "unavailable_from_round": 4
+    },
+    {
+      "key": "адингра|цска|cl|cl",
+      "name": "Адингра",
+      "name_norm": "адингра",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 2
+    },
+    {
+      "key": "зджелар|цска|cl|cl",
+      "name": "Зджелар",
+      "name_norm": "зджелар",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 3
     }
   ],
   "yellow_cycle": [
@@ -867,7 +887,7 @@
       "team_norm": "интер",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "мален|дортмунд|cl|cl",
@@ -967,7 +987,7 @@
       "team_norm": "цска",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "савич|атлетико|cl|cl",
@@ -1347,7 +1367,7 @@
       "team_norm": "спартак",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "додо|фиорентина|cl|cl",
@@ -1547,7 +1567,7 @@
       "team_norm": "бавария",
       "league_code": "ger",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "хатебур|аталанта|cl|cl",
@@ -1607,6 +1627,206 @@
       "team_norm": "наполи",
       "league_code": "cl",
       "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "тьяго|ливерпуль|cl|cl",
+      "name": "Тьяго",
+      "name_norm": "тьяго",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "конате|ливерпуль|cl|cl",
+      "name": "Конате",
+      "name_norm": "конате",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "синго|байер|cl|cl",
+      "name": "Синго",
+      "name_norm": "синго",
+      "team": "Байер",
+      "team_norm": "байер",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "руис|байер|cl|cl",
+      "name": "Руис",
+      "name_norm": "руис",
+      "team": "Байер",
+      "team_norm": "байер",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "элустондо|реал сосьедад|cl|cl",
+      "name": "Элустондо",
+      "name_norm": "элустондо",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "мендес|цска|rpl|league",
+      "name": "Мендес",
+      "name_norm": "мендес",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "гайич|цска|rpl|league",
+      "name": "Гайич",
+      "name_norm": "гайич",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "пруцев|спартак|rpl|league",
+      "name": "Пруцев",
+      "name_norm": "пруцев",
+      "team": "Спартак",
+      "team_norm": "спартак",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "бастони|интер|cl|cl",
+      "name": "Бастони",
+      "name_norm": "бастони",
+      "team": "Интер",
+      "team_norm": "интер",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "сака|наполи|ita|league",
+      "name": "Сака",
+      "name_norm": "сака",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "рахмани|наполи|ita|league",
+      "name": "Рахмани",
+      "name_norm": "рахмани",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "мендес|цска|cl|cl",
+      "name": "Мендес",
+      "name_norm": "мендес",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "одриозола|локомотив|cl|cl",
+      "name": "Одриозола",
+      "name_norm": "одриозола",
+      "team": "Локомотив",
+      "team_norm": "локомотив",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "мармуш|франкфурт|cl|cl",
+      "name": "Мармуш",
+      "name_norm": "мармуш",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "упамекано|бавария|ger|league",
+      "name": "Упамекано",
+      "name_norm": "упамекано",
+      "team": "Бавария",
+      "team_norm": "бавария",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "лемар|атлетико|cl|cl",
+      "name": "Лемар",
+      "name_norm": "лемар",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "рейнилдо|атлетико|cl|cl",
+      "name": "Рейнилдо",
+      "name_norm": "рейнилдо",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "костанца|крылья советов|rpl|league",
+      "name": "Костанца",
+      "name_norm": "костанца",
+      "team": "Крылья Советов",
+      "team_norm": "крылья советов",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "самошников|локомотив|cl|cl",
+      "name": "Самошников",
+      "name_norm": "самошников",
+      "team": "Локомотив",
+      "team_norm": "локомотив",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "романьоли|наполи|ita|league",
+      "name": "Романьоли",
+      "name_norm": "романьоли",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "ita",
+      "scope": "league",
       "count": 1
     }
   ],
@@ -2394,6 +2614,116 @@
       "team_norm": "реал сосьедад",
       "out_from_month": 4,
       "return_month": 7,
+      "type": "травма"
+    },
+    {
+      "key": "орбан|аталанта|3|6",
+      "name": "Орбан",
+      "name_norm": "орбан",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "out_from_month": 3,
+      "return_month": 6,
+      "type": "травма"
+    },
+    {
+      "key": "гьокереш|франкфурт|4|10",
+      "name": "Гьокереш",
+      "name_norm": "гьокереш",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "out_from_month": 4,
+      "return_month": 10,
+      "type": "травма"
+    },
+    {
+      "key": "лукман|аталанта|4|7",
+      "name": "Лукман",
+      "name_norm": "лукман",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма"
+    },
+    {
+      "key": "ломаев|крылья советов|3|10",
+      "name": "Ломаев",
+      "name_norm": "ломаев",
+      "team": "Крылья Советов",
+      "team_norm": "крылья советов",
+      "out_from_month": 3,
+      "return_month": 10,
+      "type": "травма"
+    },
+    {
+      "key": "бабкин|крылья советов|4|7",
+      "name": "Бабкин",
+      "name_norm": "бабкин",
+      "team": "Крылья Советов",
+      "team_norm": "крылья советов",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма"
+    },
+    {
+      "key": "газинский|урал|4|7",
+      "name": "Газинский",
+      "name_norm": "газинский",
+      "team": "Урал",
+      "team_norm": "урал",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма"
+    },
+    {
+      "key": "джонсон|тоттенхэм|4|5",
+      "name": "Джонсон",
+      "name_norm": "джонсон",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "out_from_month": 4,
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "key": "одриозола|локомотив|4|5",
+      "name": "Одриозола",
+      "name_norm": "одриозола",
+      "team": "Локомотив",
+      "team_norm": "локомотив",
+      "out_from_month": 4,
+      "return_month": 5,
+      "type": "травма"
+    },
+    {
+      "key": "мартинелли|мю|4|7",
+      "name": "Мартинелли",
+      "name_norm": "мартинелли",
+      "team": "Мю",
+      "team_norm": "мю",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма"
+    },
+    {
+      "key": "рейна|хоффенхайм|4|7",
+      "name": "Рейна",
+      "name_norm": "рейна",
+      "team": "Хоффенхайм",
+      "team_norm": "хоффенхайм",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма"
+    },
+    {
+      "key": "мудрык|цска|5|8",
+      "name": "Мудрык",
+      "name_norm": "мудрык",
+      "team": "Цска",
+      "team_norm": "цска",
+      "out_from_month": 5,
+      "return_month": 8,
       "type": "травма"
     }
   ]
