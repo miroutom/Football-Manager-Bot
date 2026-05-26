@@ -2175,6 +2175,18 @@
       "position": "ВРТ",
       "to_team": "Краснодар",
       "new_status": "reserve"
+    },
+    {
+      "ts": "2026-05-26T21:32:43+00:00",
+      "user_id": 517240615,
+      "player": "Стах",
+      "from_team": "(свободный агент)",
+      "position": "ЦП",
+      "to_team": "Хоффенхайм",
+      "new_status": "start",
+      "free_agent": true,
+      "overall": 75,
+      "nation": "Германия"
     }
   ]
 }
