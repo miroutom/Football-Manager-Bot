@@ -104,6 +104,7 @@ class SquadRosterEnter(StatesGroup):
     wz_edit_wait_line = State()
     wait_paste_squad = State()
     pick_rm = State()
+    wait_bulk_add = State()
     add_name = State()
     add_pos = State()
     add_ovr = State()

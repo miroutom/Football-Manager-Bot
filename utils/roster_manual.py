@@ -400,6 +400,144 @@ def remove_player_from_team_roster(
     return {"removed_as": FREE_AGENT_TEAM if stats else "deleted", "player": nm}
 
 
+def parse_roster_add_lines(text: str) -> tuple[list[tuple[str, str, int | None, str | None]], list[str]]:
+    """
+  Разбор построчного ввода для добавления в состав:
+  ``имя позиция [overall] [нация]`` — по одной строке; статус по умолчанию bench.
+  """
+    blob = "==== bench ===\n" + (text or "").strip()
+    entries, errs = parse_squad_declaration_text(blob)
+    out: list[tuple[str, str, int | None, str | None]] = []
+    for nm, pos, _st, ovr, nat in entries:
+        out.append((nm, pos, ovr, nat))
+    return out, errs
+
+
+def add_players_to_team_roster_bulk(
+    team: str,
+    players: list[tuple[str, str, int | None, str | None]],
+    *,
+    status: str = "bench",
+) -> dict[str, Any]:
+    """Добавить нескольких игроков; одна транзакция нац.+ЛЧ и пересборка common/synced."""
+    from utils.utils import session_cl, session_league
+
+    if not players:
+        return {"team": team, "added": [], "errors": []}
+    team = (team or "").strip()
+    st = (status or "bench").strip().lower()
+    sleague = session_league
+    scl = session_cl
+    added: list[str] = []
+    errors: list[str] = []
+    ok_rows: list[tuple[str, str, int | None, str | None]] = []
+    for nm, pos, ovr, nat in players:
+        try:
+            add_player_to_team_roster(
+                team,
+                nm,
+                pos,
+                overall=ovr,
+                nation=nat,
+                status=st,
+                session_league=sleague,
+                session_cl=scl,
+                rebuild_common=False,
+                mirror_synced=False,
+                commit=False,
+            )
+            added.append(f"{nm} ({pos})")
+            ok_rows.append((nm, pos, ovr, nat))
+        except Exception as e:
+            errors.append(f"{nm} ({pos}): {e}")
+    if ok_rows:
+        sleague.commit()
+        scl.commit()
+        from utils.common_db import rebuild_common_database
+
+        rebuild_common_database()
+        from utils import cumulative_mirror
+
+        def _dup(sl: Any, sc: Any) -> None:
+            for nm, pos, ovr, nat in ok_rows:
+                add_player_to_team_roster(
+                    team,
+                    nm,
+                    pos,
+                    overall=ovr,
+                    nation=nat,
+                    status=st,
+                    session_league=sl,
+                    session_cl=sc,
+                    rebuild_common=False,
+                    mirror_synced=False,
+                    commit=True,
+                )
+
+        cumulative_mirror.mirror_roster_manual(_dup)
+    return {"team": team, "added": added, "errors": errors}
+
+
+def remove_players_from_team_roster_bulk(
+    team: str,
+    players: list[tuple[str, str]],
+) -> dict[str, Any]:
+    """Исключить нескольких игроков; одна транзакция и пересборка common/synced."""
+    from utils.player_transfer import normalize_player_name_for_db
+    from utils.transfer_input import normalize_position
+    from utils.utils import session_cl, session_league
+
+    if not players:
+        return {"team": team, "removed": [], "errors": []}
+    team = (team or "").strip()
+    sleague = session_league
+    scl = session_cl
+    removed: list[str] = []
+    errors: list[str] = []
+    ok_rows: list[tuple[str, str]] = []
+    for name, position in players:
+        nm = normalize_player_name_for_db(name)
+        pos = normalize_position(position)
+        try:
+            remove_player_from_team_roster(
+                team,
+                nm,
+                pos,
+                session_league=sleague,
+                session_cl=scl,
+                rebuild_common=False,
+                mirror_synced=False,
+                commit=False,
+            )
+            removed.append(f"{nm} ({pos})")
+            ok_rows.append((name, position))
+        except Exception as e:
+            errors.append(f"{nm} ({pos}): {e}")
+    if ok_rows:
+        sleague.commit()
+        scl.commit()
+        from utils.common_db import rebuild_common_database
+
+        rebuild_common_database()
+        from utils import cumulative_mirror
+
+        def _dup(sl: Any, sc: Any) -> None:
+            for name, position in ok_rows:
+                remove_player_from_team_roster(
+                    team,
+                    normalize_player_name_for_db(name),
+                    normalize_position(position),
+                    session_league=sl,
+                    session_cl=sc,
+                    rebuild_common=False,
+                    mirror_synced=False,
+                    commit=True,
+                )
+
+        cumulative_mirror.mirror_roster_manual(_dup)
+    return {"team": team, "removed": removed, "errors": errors}
+
+
 def _is_valid_game_position(s: str) -> bool:
     from utils.utils import defenders, forwards, goalkeepers, midfielders
 

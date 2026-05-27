@@ -21,10 +21,20 @@ from bot.states import SquadRosterEnter
 from bot.transfer_handlers import _ROSTER_PAGE_SIZE, _league_roster_tuples
 from utils.roster_manual import (
     FREE_AGENT_TEAM,
+    add_players_to_team_roster_bulk,
     apply_team_squad_declaration,
     build_squad_declaration_template_from_db,
+    parse_roster_add_lines,
     parse_squad_declaration_text,
+    remove_players_from_team_roster_bulk,
     rewrite_team_player_identity,
+)
+from utils.squad_limits import (
+    SQUAD_BENCH,
+    SQUAD_MAX,
+    SQUAD_MIN_FOR_WIZARD,
+    SQUAD_START,
+    squad_limits_for_total,
 )
 from utils.transfer_input import normalize_display_name, normalize_position
 
@@ -96,6 +106,61 @@ def _sqr_teams_kb(league_code: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _sqr_rm_multi_kb(
+    candidates: list[tuple[str, str, int, str]],
+    page: int,
+    selected: set[int],
+) -> InlineKeyboardMarkup:
+    """Список игроков с галочками для массового удаления."""
+    n = len(candidates)
+    ps = _ROSTER_PAGE_SIZE
+    total_pages = max(1, (n + ps - 1) // ps)
+    page = max(0, min(int(page), total_pages - 1))
+    chunk = candidates[page * ps : page * ps + ps]
+    base = page * ps
+    rows: list[list[InlineKeyboardButton]] = []
+    for i, (nm, pos, ov, _dbt) in enumerate(chunk):
+        gidx = base + i
+        mark = "☑ " if gidx in selected else "☐ "
+        label = f"{mark}{nm} · {pos} · {ov}"
+        if len(label) > 60:
+            label = label[:57] + "…"
+        rows.append(
+            [InlineKeyboardButton(text=label, callback_data=f"sqr:rm:tg:{gidx}")]
+        )
+    if total_pages > 1:
+        nav: list[InlineKeyboardButton] = []
+        if page > 0:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"« {page + 1}/{total_pages}",
+                    callback_data=f"sqr:rm:pg:{page - 1}",
+                )
+            )
+        if page < total_pages - 1:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"{page + 2}/{total_pages} »",
+                    callback_data=f"sqr:rm:pg:{page + 1}",
+                )
+            )
+        if nav:
+            rows.append(nav)
+    n_sel = len(selected)
+    del_label = f"🗑 Удалить выбранных ({n_sel})" if n_sel else "🗑 Удалить выбранных"
+    rows.append([InlineKeyboardButton(text=del_label, callback_data="sqr:rm:apply")])
+    rows.append([InlineKeyboardButton(text="↩ Назад", callback_data="sqr:rm:back")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _sqr_rm_multi_caption(team: str, page: int, total_pages: int, selected: set[int]) -> str:
+    return (
+        f"Клуб <b>{html_escape(team)}</b> — отметь игроков для <b>исключения</b> "
+        f"(☑). Выбрано: <b>{len(selected)}</b>.\n"
+        f"Стр. <b>{page + 1}</b>/<b>{total_pages}</b>."
+    )
+
+
 def _sqr_roster_kb(
     candidates: list[tuple[str, str, int, str]], page: int
 ) -> InlineKeyboardMarkup:
@@ -140,7 +205,7 @@ def _sqr_choice_kb() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🧩 Заявка кнопками (11/7/5)",
+                    text=f"🧩 Заявка кнопками (11/7/до {SQUAD_MAX})",
                     callback_data="sqr:do:wizard",
                 ),
             ],
@@ -148,10 +213,13 @@ def _sqr_choice_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="➕ Один игрок в состав", callback_data="sqr:do:add"
                 ),
+                InlineKeyboardButton(
+                    text="➕ Несколько (строки)", callback_data="sqr:do:add_bulk"
+                ),
             ],
             [
                 InlineKeyboardButton(
-                    text="➖ Один из состава", callback_data="sqr:do:rm"
+                    text="➖ Исключить (галочки)", callback_data="sqr:do:rm"
                 ),
             ],
         ]
@@ -200,7 +268,7 @@ def _sqr_status_kb() -> InlineKeyboardMarkup:
 
 
 _SQR_WZ_PAGE = 10
-_SQR_WZ_LIMITS_DEFAULT: dict[str, int] = {"start": 11, "bench": 7, "reserve": 5}
+_SQR_WZ_LIMITS_DEFAULT: dict[str, int] = squad_limits_for_total(SQUAD_MAX)
 _SQR_WZ_TITLES: dict[str, str] = {
     "start": "Стартовый состав",
     "bench": "Скамейка",
@@ -330,8 +398,8 @@ def _wz_pick_kb(data: dict, *, phase: str, page: int) -> tuple[InlineKeyboardMar
         nav.append(InlineKeyboardButton(text="→", callback_data=f"sqr:wz:pg:{page + 1}"))
     if nav:
         rows.append(nav)
-    total_players = int(data.get("sqr_wz_total_players") or 0)
-    if phase == "reserve" and total_players <= 23:
+    limits = dict(data.get("sqr_wz_limits") or _SQR_WZ_LIMITS_DEFAULT)
+    if phase == "reserve" and int(limits.get("reserve", 0)) > 0:
         rows.append(
             [
                 InlineKeyboardButton(
@@ -451,10 +519,11 @@ async def cb_menu_squad_roster(callback: CallbackQuery, state: FSMContext) -> No
     await callback.message.answer(
         "👥 <b>В состав / из состава</b>\n\n"
         "Выбери лигу и клуб.\n"
-        "<b>Заявка кнопками (рекомендую):</b> выбери 11/7/5 кнопками, "
-        "остальные автоматически уйдут в СА, затем можно точечно править игроков.\n"
-        "<b>Один игрок:</b> если есть в <code>common_synced.db</code> — достаточно имени и позиции; "
-        "иначе overall и нация.\n"
+        f"<b>Заявка кнопками:</b> 11 старт + 7 скамейка + резерв (до <b>{SQUAD_MAX}</b> в клубе), "
+        "затем точечная правка.\n"
+        "<b>Добавление:</b> один игрок или <b>несколько строк</b> "
+        "(<code>имя позиция [overall] [нация]</code> — в нац. БД и ЛЧ, если клуб в пуле).\n"
+        "<b>Исключение:</b> галочками, затем «Удалить выбранных».\n"
         f"При статистике клуб в БД станет «{FREE_AGENT_TEAM}».\n"
         "/cancel — отмена.",
         parse_mode="HTML",
@@ -564,14 +633,19 @@ async def cb_sqr_wizard_start(callback: CallbackQuery, state: FSMContext) -> Non
         return
     players = _team_roster_records(team)
     total_players = len(players)
-    if total_players < 18:
+    if total_players < SQUAD_MIN_FOR_WIZARD:
         await callback.message.answer(
-            f"В составе {total_players} игроков, а нужно минимум 18 "
-            "(11 старт + 7 скамейка). Добавь игроков и повтори."
+            f"В составе {total_players} игроков, а нужно минимум {SQUAD_MIN_FOR_WIZARD} "
+            f"({SQUAD_START} старт + {SQUAD_BENCH} скамейка). Добавь игроков и повтори."
         )
         return
-    reserve_need = 5 if total_players >= 23 else (total_players - 18)
-    limits = {"start": 11, "bench": 7, "reserve": reserve_need}
+    if total_players > SQUAD_MAX:
+        await callback.message.answer(
+            f"В составе {total_players} игроков — максимум заявки <b>{SQUAD_MAX}</b>.",
+            parse_mode="HTML",
+        )
+        return
+    limits = squad_limits_for_total(total_players)
     serial = [dict(p) for p in players]
     wz_start, wz_bench, wz_reserve = _wz_prefill_from_status(serial, limits)
     await state.update_data(
@@ -640,10 +714,6 @@ async def cb_sqr_wizard_auto_reserve(callback: CallbackQuery, state: FSMContext)
         await callback.answer()
         return
     data = await state.get_data()
-    total_players = int(data.get("sqr_wz_total_players") or 0)
-    if total_players > 23:
-        await callback.answer("Автозаполнение доступно только при составе до 23.", show_alert=True)
-        return
     players: list[dict] = list(data.get("sqr_wz_players") or [])
     st, bn, rs = _wz_sets_from_state(data)
     limits = dict(data.get("sqr_wz_limits") or _SQR_WZ_LIMITS_DEFAULT)
@@ -1063,6 +1133,10 @@ async def on_sqr_paste_squad(message: Message, state: FSMContext) -> None:
     )
 
 
+def _sqr_rm_selected_set(data: dict) -> set[int]:
+    return {int(x) for x in (data.get("sqr_rm_selected") or [])}
+
+
 @squad_roster_router.callback_query(SquadRosterEnter.pick_choice, F.data == "sqr:do:rm")
 async def cb_sqr_choice_remove(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
@@ -1073,20 +1147,37 @@ async def cb_sqr_choice_remove(callback: CallbackQuery, state: FSMContext) -> No
     rows = _league_roster_tuples(team)
     if not rows:
         await callback.message.answer("Состав пуст.")
-        await state.clear()
         return
     serial = [list(x) for x in rows]
-    await state.update_data(sqr_rm_candidates=serial, sqr_rm_page=0)
+    await state.update_data(sqr_rm_candidates=serial, sqr_rm_page=0, sqr_rm_selected=[])
     await state.set_state(SquadRosterEnter.pick_rm)
     cands = [tuple(x) for x in serial]
+    ps = _ROSTER_PAGE_SIZE
+    total_pages = max(1, (len(cands) + ps - 1) // ps)
     await callback.message.answer(
-        "Выбери игрока для <b>исключения</b> из состава:",
+        _sqr_rm_multi_caption(team, 0, total_pages, set()),
         parse_mode="HTML",
-        reply_markup=_sqr_roster_kb(cands, 0),
+        reply_markup=_sqr_rm_multi_kb(cands, 0, set()),
     )
 
 
-@squad_roster_router.callback_query(SquadRosterEnter.pick_rm, F.data.startswith("sqr:rpg:"))
+@squad_roster_router.callback_query(SquadRosterEnter.pick_rm, F.data == "sqr:rm:back")
+async def cb_sqr_rm_back(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if not callback.message:
+        return
+    data = await state.get_data()
+    team = (data.get("sqr_team") or "").strip()
+    n_players = len(_team_roster_records(team)) if team else 0
+    await state.set_state(SquadRosterEnter.pick_choice)
+    await callback.message.answer(
+        f"Клуб <b>{html_escape(team)}</b> · игроков: <b>{n_players}</b>.\nЧто сделать?",
+        parse_mode="HTML",
+        reply_markup=_sqr_choice_kb(),
+    )
+
+
+@squad_roster_router.callback_query(SquadRosterEnter.pick_rm, F.data.startswith("sqr:rm:pg:"))
 async def cb_sqr_rm_page(callback: CallbackQuery, state: FSMContext) -> None:
     if not callback.message or not callback.data:
         await callback.answer()
@@ -1102,34 +1193,26 @@ async def cb_sqr_rm_page(callback: CallbackQuery, state: FSMContext) -> None:
     if not cands:
         await callback.answer("Сессия устарела.", show_alert=True)
         return
+    selected = _sqr_rm_selected_set(data)
     ps = _ROSTER_PAGE_SIZE
     total_pages = max(1, (len(cands) + ps - 1) // ps)
     page = max(0, min(page, total_pages - 1))
     team = (data.get("sqr_team") or "").strip()
-    kb = _sqr_roster_kb(cands, page)
-    caption = (
-        f"Клуб <b>{html_escape(team)}</b> — выбери игрока для <b>исключения</b> из состава.\n"
-        f"Стр. <b>{page + 1}</b>/<b>{total_pages}</b>."
-    )
+    await state.update_data(sqr_rm_page=page)
+    kb = _sqr_rm_multi_kb(cands, page, selected)
+    caption = _sqr_rm_multi_caption(team, page, total_pages, selected)
     try:
-        await callback.message.edit_text(
-            caption,
-            parse_mode="HTML",
-            reply_markup=kb,
-        )
+        await callback.message.edit_text(caption, parse_mode="HTML", reply_markup=kb)
     except Exception:
         try:
             await callback.message.edit_reply_markup(reply_markup=kb)
         except Exception:
-            await callback.message.answer(
-                f"Стр. {page + 1}/{total_pages}:",
-                reply_markup=kb,
-            )
+            await callback.message.answer(caption, parse_mode="HTML", reply_markup=kb)
     await callback.answer()
 
 
-@squad_roster_router.callback_query(SquadRosterEnter.pick_rm, F.data.startswith("sqr:rp:"))
-async def cb_sqr_rm_pick(callback: CallbackQuery, state: FSMContext) -> None:
+@squad_roster_router.callback_query(SquadRosterEnter.pick_rm, F.data.startswith("sqr:rm:tg:"))
+async def cb_sqr_rm_toggle(callback: CallbackQuery, state: FSMContext) -> None:
     if not callback.message or not callback.data:
         await callback.answer()
         return
@@ -1139,31 +1222,145 @@ async def cb_sqr_rm_pick(callback: CallbackQuery, state: FSMContext) -> None:
         await callback.answer()
         return
     data = await state.get_data()
-    team = (data.get("sqr_team") or "").strip()
     raw = data.get("sqr_rm_candidates") or []
     cands = [tuple(x) for x in raw]
     if not cands or idx < 0 or idx >= len(cands):
         await callback.answer("Неверный выбор.", show_alert=True)
         return
-    name, pos, _ov, _t = cands[idx]
-    await callback.answer()
+    selected = _sqr_rm_selected_set(data)
+    if idx in selected:
+        selected.remove(idx)
+    else:
+        selected.add(idx)
+    await state.update_data(sqr_rm_selected=sorted(selected))
+    page = int(data.get("sqr_rm_page") or 0)
+    team = (data.get("sqr_team") or "").strip()
+    ps = _ROSTER_PAGE_SIZE
+    total_pages = max(1, (len(cands) + ps - 1) // ps)
+    page = max(0, min(page, total_pages - 1))
+    kb = _sqr_rm_multi_kb(cands, page, selected)
+    caption = _sqr_rm_multi_caption(team, page, total_pages, selected)
     try:
-        r = await asyncio.to_thread(
-            __import__("utils.roster_manual", fromlist=["remove_player_from_team_roster"]).remove_player_from_team_roster,
-            team,
-            name,
-            pos,
-        )
+        await callback.message.edit_text(caption, parse_mode="HTML", reply_markup=kb)
+    except Exception:
+        await callback.message.edit_reply_markup(reply_markup=kb)
+    await callback.answer()
+
+
+@squad_roster_router.callback_query(SquadRosterEnter.pick_rm, F.data == "sqr:rm:apply")
+async def cb_sqr_rm_apply(callback: CallbackQuery, state: FSMContext) -> None:
+    if not callback.message:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    team = (data.get("sqr_team") or "").strip()
+    raw = data.get("sqr_rm_candidates") or []
+    cands = [tuple(x) for x in raw]
+    selected = _sqr_rm_selected_set(data)
+    if not selected:
+        await callback.answer("Никого не выбрано.", show_alert=True)
+        return
+    to_remove = [(str(cands[i][0]), str(cands[i][1])) for i in sorted(selected) if 0 <= i < len(cands)]
+    await callback.answer("Удаляю…")
+    try:
+        r = await asyncio.to_thread(remove_players_from_team_roster_bulk, team, to_remove)
     except Exception as e:
-        logger.exception("remove_player_from_team_roster")
+        logger.exception("remove_players_from_team_roster_bulk")
         await callback.message.answer(f"Ошибка: {e}")
         return
-    await state.clear()
+    await state.set_state(SquadRosterEnter.pick_choice)
+    lines = [f"✅ Исключено: <b>{len(r.get('removed') or [])}</b>."]
+    if r.get("errors"):
+        lines.append("⚠️ Ошибки:")
+        lines.extend(f"  · {html_escape(x)}" for x in r["errors"][:20])
+    if r.get("removed"):
+        lines.append("Сняты:")
+        lines.extend(f"  · {html_escape(x)}" for x in r["removed"][:25])
+        if len(r["removed"]) > 25:
+            lines.append(f"  … ещё {len(r['removed']) - 25}")
+    lines.append("Накопительные БД обновлены по режиму сезона.")
     await callback.message.answer(
-        f"✅ Игрок <b>{name}</b> ({pos}) — клуб «{team}».\n"
-        f"Результат: <code>{r.get('removed_as')}</code>.\n"
-        "Справочник <code>free_agents.db</code> обновлён; нац./ЛЧ/common пересобраны.",
+        "\n".join(lines),
         parse_mode="HTML",
+        reply_markup=_sqr_continue_kb(),
+    )
+
+
+@squad_roster_router.callback_query(SquadRosterEnter.pick_choice, F.data == "sqr:do:add_bulk")
+async def cb_sqr_choice_add_bulk(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if not callback.message:
+        return
+    data = await state.get_data()
+    team = (data.get("sqr_team") or "").strip()
+    cur = len(_team_roster_records(team)) if team else 0
+    await state.set_state(SquadRosterEnter.wait_bulk_add)
+    await callback.message.answer(
+        f"Клуб <b>{html_escape(team)}</b> · сейчас в составе: <b>{cur}</b> "
+        f"(макс. <b>{SQUAD_MAX}</b>).\n\n"
+        "Отправь <b>несколько строк</b> — по одному игроку на строку:\n"
+        "<code>имя позиция [overall] [нация]</code>\n\n"
+        "Примеры:\n"
+        "<code>Нубель ВРТ 76</code>\n"
+        "<code>Игрок ЦП 72 Германия</code>\n\n"
+        "Если игрок есть в <code>common_synced</code> — overall и нацию можно не писать.\n"
+        "Добавление в <b>нац. БД</b> и <b>ЛЧ</b> (если клуб в пуле).\n"
+        "Статус новых — <b>скамейка</b> (заявку start/bench/reserve — через кнопки).\n"
+        "/cancel — отмена.",
+        parse_mode="HTML",
+    )
+
+
+@squad_roster_router.message(SquadRosterEnter.wait_bulk_add, _TEXT_NOT_CMD)
+async def on_sqr_bulk_add_lines(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    team = (data.get("sqr_team") or "").strip()
+    if not team:
+        await state.clear()
+        await message.answer("Сессия сброшена. Начни с меню.")
+        return
+    rows, p_errors = parse_roster_add_lines(message.text or "")
+    if p_errors:
+        await message.answer(
+            "Ошибки разбора:\n" + "\n".join(p_errors[:25])
+            + ("\n…" if len(p_errors) > 25 else ""),
+            parse_mode="HTML",
+        )
+        return
+    if not rows:
+        await message.answer("Нет ни одной строки. Формат: имя позиция [overall] [нация].")
+        return
+    cur = len(_team_roster_records(team))
+    if cur + len(rows) > SQUAD_MAX:
+        await message.answer(
+            f"Сейчас в клубе <b>{cur}</b> игроков, добавляешь <b>{len(rows)}</b> — "
+            f"лимит заявки <b>{SQUAD_MAX}</b>. Убери лишние строки.",
+            parse_mode="HTML",
+        )
+        return
+    try:
+        r = await asyncio.to_thread(add_players_to_team_roster_bulk, team, rows)
+    except Exception as e:
+        logger.exception("add_players_to_team_roster_bulk")
+        await message.answer(f"Ошибка: {e}")
+        return
+    await state.set_state(SquadRosterEnter.pick_choice)
+    lines = [f"✅ Добавлено: <b>{len(r.get('added') or [])}</b>."]
+    if r.get("errors"):
+        lines.append("⚠️ Не добавлены:")
+        lines.extend(f"  · {html_escape(x)}" for x in r["errors"][:20])
+    if r.get("added"):
+        lines.extend(f"  · {html_escape(x)}" for x in r["added"][:25])
+        if len(r["added"]) > 25:
+            lines.append(f"  … ещё {len(r['added']) - 25}")
+    lines.append(
+        f"В клубе теперь <b>{len(_team_roster_records(team))}</b> игроков "
+        f"(макс. {SQUAD_MAX})."
+    )
+    await message.answer(
+        "\n".join(lines),
+        parse_mode="HTML",
+        reply_markup=_sqr_continue_kb(),
     )
 
 
@@ -1262,6 +1459,13 @@ async def on_sqr_add_status(callback: CallbackQuery, state: FSMContext) -> None:
         await state.clear()
         await callback.message.answer("Сессия сброшена.")
         return
+    cur = len(_team_roster_records(team))
+    if cur >= SQUAD_MAX:
+        await callback.message.answer(
+            f"В клубе уже <b>{SQUAD_MAX}</b> игроков — сначала кого-то исключи.",
+            parse_mode="HTML",
+        )
+        return
     try:
         r = await asyncio.to_thread(
             __import__("utils.roster_manual", fromlist=["add_player_to_team_roster"]).add_player_to_team_roster,
@@ -1276,10 +1480,11 @@ async def on_sqr_add_status(callback: CallbackQuery, state: FSMContext) -> None:
         logger.exception("add_player_to_team_roster")
         await callback.message.answer(f"Ошибка: {e}")
         return
-    await state.clear()
+    await state.set_state(SquadRosterEnter.pick_choice)
     await callback.message.answer(
         f"✅ Игрок <b>{r['player']}</b> ({r['position']}) добавлен в <b>{r['team']}</b>, "
         f"overall <b>{r['overall']}</b>.\n"
         "Накопительные *_synced обновлены (если не legacy).",
         parse_mode="HTML",
+        reply_markup=_sqr_continue_kb(),
     )
