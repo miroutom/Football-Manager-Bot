@@ -1910,6 +1910,16 @@
       "league_code": "cl",
       "scope": "cl",
       "count": 1
+    },
+    {
+      "key": "влашич|ювентус|cl|cl",
+      "name": "Влашич",
+      "name_norm": "влашич",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
     }
   ],
   "injuries": [
