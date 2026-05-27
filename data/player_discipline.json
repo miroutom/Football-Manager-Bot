@@ -1900,6 +1900,16 @@
       "league_code": "eng",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "йерай|атлетик|cl|cl",
+      "name": "Йерай",
+      "name_norm": "йерай",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
     }
   ],
   "injuries": [
@@ -2876,6 +2886,39 @@
       "team_norm": "фиорентина",
       "out_from_month": 5,
       "return_month": 8,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "максимин|франкфурт|6|13",
+      "name": "Максимин",
+      "name_norm": "максимин",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "симон|атлетик|6|9",
+      "name": "Симон",
+      "name_norm": "симон",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "льорис|севилья|6|9",
+      "name": "Льорис",
+      "name_norm": "льорис",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "out_from_month": 6,
+      "return_month": 9,
       "type": "травма",
       "season": 2
     }
