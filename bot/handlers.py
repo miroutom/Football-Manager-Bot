@@ -11,6 +11,7 @@ from aiogram import F, Router
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     BufferedInputFile,
     CallbackQuery,
@@ -1308,14 +1309,12 @@ async def cb_menu_schedule(callback: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data == "menu:stats_match")
-async def cb_menu_stats_match(callback: CallbackQuery) -> None:
+async def cb_menu_stats_match(callback: CallbackQuery, state: FSMContext) -> None:
+    from bot.match_handlers import _send_ason_stats_intro
+
     await callback.answer()
-    await callback.message.answer(
-        "Статистика по матчу без прохождения месяца календаря (как «a»): "
-        "лига → хозяева → гости → счёт → строки статы.\n"
-        "/cancel — отмена.",
-        reply_markup=build_ason_league_kb(),
-    )
+    if callback.message:
+        await _send_ason_stats_intro(callback.message, state)
 
 
 @router.callback_query(F.data.startswith("sch:pick:"))

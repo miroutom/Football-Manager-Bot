@@ -500,6 +500,39 @@ def list_journal_records_for_ratings() -> list[dict[str, Any]]:
     return out
 
 
+def find_journal_match_record(
+    home: str,
+    away: str,
+    tournament: str,
+    *,
+    cl_phase: str | None = None,
+) -> dict[str, Any] | None:
+    """Запись матча из журнала (со счётом и метаданными) или ``None``."""
+    records, _ = load_records_and_keys()
+    h, a = _norm(home), _norm(away)
+    lc = (tournament or "").strip().lower()
+    if lc != "cl":
+        for r in records:
+            if str(r.get("league") or "").strip().lower() != lc:
+                continue
+            if _norm(r.get("home", "")) == h and _norm(r.get("away", "")) == a:
+                return dict(r)
+        return None
+    phases = [_normalize_cl_phase(cl_phase)]
+    alt = "knockout" if phases[0] == "league" else "league"
+    if alt not in phases:
+        phases.append(alt)
+    for ph in phases:
+        for r in records:
+            if str(r.get("league") or "").strip().lower() != "cl":
+                continue
+            if _normalize_cl_phase(r.get("cl_phase")) != ph:
+                continue
+            if _norm(r.get("home", "")) == h and _norm(r.get("away", "")) == a:
+                return dict(r)
+    return None
+
+
 def is_match_played(home, away, tournament, cl_phase=None):
     """Проверить, сыгран ли конкретный матч.
 

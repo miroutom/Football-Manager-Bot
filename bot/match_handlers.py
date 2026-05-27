@@ -331,11 +331,18 @@ async def _answer_manual_score_prompt(
 
 
 def build_ason_league_kb() -> InlineKeyboardMarkup:
-    """Выбор лиги для режима «статистика без записи счёта в матч-дне» (как «a»)."""
-    rows: list[list[InlineKeyboardButton]] = []
+    """Выбор лиги: сыгранные матчи из календаря (как «Из календаря», но только журнал)."""
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="Все чемпионаты",
+                callback_data="asonf:all",
+            ),
+        ],
+    ]
     row: list[InlineKeyboardButton] = []
     for code, label in LEAGUE_LABELS:
-        row.append(InlineKeyboardButton(text=label, callback_data=f"ason:{code}"))
+        row.append(InlineKeyboardButton(text=label, callback_data=f"asonf:{code}"))
         if len(row) == 3:
             rows.append(row)
             row = []
@@ -515,6 +522,201 @@ def _calendar_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     a_s = away if len(away) <= rem else away[: max(3, rem - 1)].rstrip() + "…"
     label = f"{head}м{month}{rnd_part} · {h_s}—{a_s} {meta}"
     return label if len(label) <= 64 else label[:61] + "…"
+
+
+def _played_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
+    """Как календарь, но со счётом из журнала: ``… · Х 2:1 Г (лига, сим)``."""
+    hs = slot.get("home_score")
+    aws = slot.get("away_score")
+    score_s = f" {hs}:{aws}" if hs is not None and aws is not None else ""
+    home = str(slot.get("home") or "?").strip()
+    away = str(slot.get("away") or "?").strip()
+    lc_code = str(slot.get("league_code") or slot.get("tournament") or "")
+    lg = _league_title(lc_code)
+    from config.leagues_config import manager_session_label
+    from utils.calendar_slot_labels import home_display_tour
+
+    month = slot.get("day", "?")
+    rnd = slot.get("display_round")
+    if rnd is None:
+        rnd = home_display_tour(home, lc_code)
+    rnd_part = f" т{rnd}" if rnd is not None else ""
+    mode = manager_session_label(home, away) or "?"
+    mode_short = "игра" if mode == "Игра" else ("сим" if mode == "Симуляция" else "?")
+    head = f"{index}. " if index is not None else ""
+    meta = f"({lg}, {mode_short})"
+    core = f"{head}м{month}{rnd_part} · {home}{score_s} — {away} {meta}"
+    if len(core) <= 64:
+        return core
+    short_meta = f"({lg})"
+    core2 = f"{head}м{month} · {home}{score_s}—{away} {short_meta}"
+    return core2 if len(core2) <= 64 else core2[:61] + "…"
+
+
+def _ason_play_kind_kb(league_key: str) -> InlineKeyboardMarkup:
+    lg = league_key
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Все типы", callback_data=f"asonpk:{lg}:all"),
+                InlineKeyboardButton(text="Симуляция", callback_data=f"asonpk:{lg}:sim"),
+                InlineKeyboardButton(text="Игра", callback_data=f"asonpk:{lg}:game"),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="← К выбору чемпионата",
+                    callback_data="asonf:back",
+                ),
+            ],
+        ]
+    )
+
+
+def _ason_pick_kb(
+    ordered: list,
+    *,
+    page: int,
+    league_filter: str = "all",
+    session_kind: str = "all",
+) -> InlineKeyboardMarkup:
+    n = len(ordered)
+    if not ordered:
+        raise ValueError("ason pick keyboard requires non-empty list")
+    lf = (league_filter or "all").strip().lower() or "all"
+    sk = (session_kind or "all").strip().lower() or "all"
+    total_pages = max(1, (n + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
+    page = max(0, min(int(page), total_pages - 1))
+    start = page * _SCHED_PAGE_SIZE
+    chunk = ordered[start : start + _SCHED_PAGE_SIZE]
+
+    rows: list[list[InlineKeyboardButton]] = []
+    for j, row in enumerate(chunk):
+        idx = start + j
+        label = _played_slot_btn_label(row, index=idx + 1)
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=label,
+                    callback_data=f"asonpick:{idx}:{lf}:{sk}",
+                ),
+            ]
+        )
+
+    nav: list[InlineKeyboardButton] = []
+    if page > 0:
+        nav.append(
+            InlineKeyboardButton(
+                text=f"« {page}",
+                callback_data=f"asonpage:{page - 1}:{lf}:{sk}",
+            )
+        )
+    nav.append(
+        InlineKeyboardButton(
+            text=f"{page + 1}/{total_pages}",
+            callback_data="ason:noop",
+        )
+    )
+    if page < total_pages - 1:
+        nav.append(
+            InlineKeyboardButton(
+                text=f"{page + 2} »",
+                callback_data=f"asonpage:{page + 1}:{lf}:{sk}",
+            )
+        )
+    rows.append(nav)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="← Фильтры (лига / тип)",
+                callback_data="asonf:back",
+            ),
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _ason_pick_intro_html(
+    page: int,
+    total_pages: int,
+    *,
+    league_filter: str = "all",
+    session_kind: str = "all",
+) -> str:
+    note = (
+        f"\nСтраница <b>{page + 1}</b> из <b>{total_pages}</b> "
+        f"(по {_SCHED_PAGE_SIZE} матчей; порядок как в mixed_schedule)."
+    )
+    cap = _schedule_play_filter_caption(league_filter, session_kind)
+    return (
+        f"{cap}\n\n"
+        "<b>Сыгранные матчи</b> — счёт уже в журнале. Выбери матч, затем вводи только "
+        "строки статистики (или «Готово» / /cancel).\n"
+        f"{note}"
+    )
+
+
+async def _ordered_played_filtered(league_filter: str, session_kind: str) -> list:
+    from main import list_played_schedule_matches, load_or_generate_mixed_schedule
+
+    lf = (league_filter or "all").strip().lower() or "all"
+    sk = (session_kind or "all").strip().lower() or "all"
+    sch = await asyncio.to_thread(load_or_generate_mixed_schedule)
+    return await asyncio.to_thread(
+        list_played_schedule_matches,
+        sch,
+        league_filter=None if lf == "all" else lf,
+        session_kind=None if sk == "all" else sk,
+    )
+
+
+async def _send_ason_stats_intro(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await state.set_state(AddOnlyStats.browsing)
+    await message.answer(
+        "📊 <b>Стата без матча</b> — выбери чемпионат, затем тип (сим / игра / всё). "
+        "Покажу только <b>уже сыгранные</b> слоты со счётом из журнала; вводить счёт не нужно.\n"
+        "/cancel — отмена.",
+        reply_markup=build_ason_league_kb(),
+        parse_mode="HTML",
+    )
+
+
+async def _begin_stats_for_played_slot(
+    message: Message,
+    state: FSMContext,
+    slot: dict,
+) -> None:
+    from match_results import find_journal_match_record
+
+    home = str(slot["home"]).strip().title()
+    away = str(slot["away"]).strip().title()
+    hs = int(slot["home_score"])
+    aws = int(slot["away_score"])
+    lc = str(slot["league_code"])
+    cl_ph = slot.get("cl_ph")
+    rec = await asyncio.to_thread(
+        find_journal_match_record, home, away, lc, cl_phase=cl_ph
+    )
+    if rec and lc == "cl":
+        cl_ph = rec.get("cl_phase") or cl_ph
+
+    await state.clear()
+    await state.update_data(
+        stats_home=home,
+        stats_away=away,
+        stats_hs=hs,
+        stats_aws=aws,
+        stats_tournament="cl" if lc == "cl" else "league",
+        stats_league_code=lc,
+        stats_schedule_day=slot.get("day"),
+    )
+    hn = html_escape(home)
+    an = html_escape(away)
+    await message.answer(
+        f"Матч: <b>{hn}</b> <code>{hs}:{aws}</code> <b>{an}</b> — счёт из журнала.",
+        parse_mode="HTML",
+    )
+    await _send_stats_lines_ui(message, state)
 
 
 def _post_match_continue_kb(
@@ -1761,115 +1963,217 @@ async def on_postmatch_stats_line(message: Message, state: FSMContext) -> None:
     await message.answer(html_escape(reply), parse_mode="HTML")
 
 
-@match_router.callback_query(F.data.startswith("ason:"))
-async def cb_ason_league(callback: CallbackQuery, state: FSMContext) -> None:
-    code = callback.data.split(":", 1)[1]
+@match_router.callback_query(F.data == "ason:noop")
+async def cb_ason_noop(callback: CallbackQuery) -> None:
     await callback.answer()
-    await state.clear()
-    await state.update_data(ason_league=code)
-    if code == "cl":
-        await state.set_state(AddOnlyStats.cl_phase)
-        await callback.message.answer(
-            "Лига: <b>ЛЧ</b>\n"
-            "Выбери фазу (для группы и нокаута разные записи в журнале):",
-            reply_markup=_cl_phase_kb("asoncl"),
-            parse_mode="HTML",
-        )
+
+
+@match_router.callback_query(F.data.startswith("asonf:"))
+async def cb_ason_filter_league(callback: CallbackQuery, state: FSMContext) -> None:
+    raw = (callback.data or "").split(":", 2)
+    if len(raw) < 2:
+        await callback.answer()
         return
-    await state.set_state(AddOnlyStats.home)
-    await state.update_data(ason_cl_ph=None)
-    await callback.message.answer(
-        f"Лига: <b>{_league_title(code)}</b>\n"
-        f"Введи название <b>хозяев</b> (как в базе):",
-        parse_mode="HTML",
-    )
+    tag = raw[1].strip().lower()
+    if tag == "back":
+        await callback.answer()
+        await state.set_state(AddOnlyStats.browsing)
+        if callback.message:
+            try:
+                await callback.message.edit_text(
+                    "📊 <b>Стата без матча</b> — выбери чемпионат, затем тип матча.\n/cancel — отмена.",
+                    reply_markup=build_ason_league_kb(),
+                    parse_mode="HTML",
+                )
+            except Exception:
+                await _send_ason_stats_intro(callback.message, state)
+        return
+    await callback.answer()
+    await state.set_state(AddOnlyStats.browsing)
+    await state.update_data(ason_league=tag, ason_cl_ph=None)
+    if tag == "cl":
+        await state.set_state(AddOnlyStats.cl_phase)
+        if callback.message:
+            await callback.message.answer(
+                "Лига: <b>ЛЧ</b>\n"
+                "Выбери фазу (группа / нокаут — как в журнале):",
+                reply_markup=_cl_phase_kb("asoncl"),
+                parse_mode="HTML",
+            )
+        return
+    if callback.message:
+        try:
+            await callback.message.edit_text(
+                f"Чемпионат: <b>{html_escape(_league_title(tag) if tag != 'all' else 'все')}</b>.\n"
+                "Теперь выбери тип слотов:",
+                reply_markup=_ason_play_kind_kb(tag),
+                parse_mode="HTML",
+            )
+        except Exception:
+            await callback.message.answer(
+                f"Чемпионат: <b>{html_escape(_league_title(tag) if tag != 'all' else 'все')}</b>.\n"
+                "Теперь выбери тип слотов:",
+                reply_markup=_ason_play_kind_kb(tag),
+                parse_mode="HTML",
+            )
 
 
 @match_router.callback_query(F.data.startswith("asoncl:"))
 async def cb_ason_cl_phase(callback: CallbackQuery, state: FSMContext) -> None:
     if await state.get_state() != AddOnlyStats.cl_phase:
-        await callback.answer("Сначала выбери режим статистики и лигу.", show_alert=True)
+        await callback.answer("Сначала выбери «Стата без матча» и ЛЧ.", show_alert=True)
         return
     phase = callback.data.split(":", 1)[1]
     if phase not in ("league", "knockout"):
         await callback.answer("Неверная фаза.", show_alert=True)
         return
     await callback.answer()
-    await state.update_data(ason_cl_ph=phase)
-    await state.set_state(AddOnlyStats.home)
-    await callback.message.answer(
-        f"Лига: <b>ЛЧ</b> · фаза: <b>{_cl_phase_short_label(phase)}</b>\n"
-        f"Введи название <b>хозяев</b> (как в базе):",
-        parse_mode="HTML",
+    await state.update_data(ason_league="cl", ason_cl_ph=phase)
+    await state.set_state(AddOnlyStats.browsing)
+    if callback.message:
+        await callback.message.answer(
+            f"Лига: <b>ЛЧ</b> · фаза: <b>{_cl_phase_short_label(phase)}</b>\n"
+            "Теперь выбери тип слотов:",
+            reply_markup=_ason_play_kind_kb("cl"),
+            parse_mode="HTML",
+        )
+
+
+@match_router.callback_query(F.data.startswith("asonpk:"))
+async def cb_ason_filter_kind(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    league_key = parts[1].strip().lower() or "all"
+    sk = parts[2].strip().lower() or "all"
+    if sk not in ("all", "sim", "game"):
+        await callback.answer("Неизвестный тип.", show_alert=True)
+        return
+    await callback.answer()
+    if not callback.message:
+        return
+    data = await state.get_data()
+    ason_lg = (data.get("ason_league") or league_key).strip().lower()
+    if ason_lg == "cl" and league_key == "cl":
+        cl_ph = data.get("ason_cl_ph")
+        if not cl_ph:
+            await callback.answer("Сначала выбери фазу ЛЧ.", show_alert=True)
+            return
+    ordered = await _ordered_played_filtered(league_key, sk)
+    if league_key == "cl" and data.get("ason_cl_ph"):
+        cph = data["ason_cl_ph"]
+        ordered = [r for r in ordered if (r.get("cl_ph") or "knockout") == cph]
+    if not ordered:
+        try:
+            await callback.message.edit_text(
+                "По фильтру нет сыгранных матчей со счётом в журнале. "
+                "Попробуй другой чемпионат или тип.",
+                reply_markup=_ason_play_kind_kb(league_key),
+                parse_mode="HTML",
+            )
+        except Exception:
+            await callback.message.answer(
+                "По фильтру нет сыгранных матчей со счётом в журнале.",
+                reply_markup=_ason_play_kind_kb(league_key),
+                parse_mode="HTML",
+            )
+        return
+
+    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
+    page = 0
+    kb = _ason_pick_kb(
+        ordered,
+        page=page,
+        league_filter=league_key,
+        session_kind=sk,
     )
+    text = _ason_pick_intro_html(
+        page,
+        total_pages,
+        league_filter=league_key,
+        session_kind=sk,
+    )
+    await state.update_data(
+        ason_pick_lf=league_key,
+        ason_pick_sk=sk,
+        ason_pick_cl_ph=data.get("ason_cl_ph"),
+    )
+    try:
+        await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+    except Exception:
+        await callback.message.answer(text, reply_markup=kb, parse_mode="HTML")
+
+
+@match_router.callback_query(F.data.startswith("asonpage:"))
+async def cb_ason_page(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = (callback.data or "").split(":")
+    lf, sk = "all", "all"
+    try:
+        page = int(parts[1])
+    except (IndexError, ValueError):
+        await callback.answer()
+        return
+    if len(parts) >= 4:
+        lf = (parts[2] or "all").strip().lower() or "all"
+        sk = (parts[3] or "all").strip().lower() or "all"
+    await callback.answer()
+    ordered = await _ordered_played_filtered(lf, sk)
+    data = await state.get_data()
+    if lf == "cl" and data.get("ason_pick_cl_ph"):
+        cph = data["ason_pick_cl_ph"]
+        ordered = [r for r in ordered if (r.get("cl_ph") or "knockout") == cph]
+    if not ordered:
+        if callback.message:
+            await callback.message.answer(
+                "Нет матчей по этому фильтру.",
+                parse_mode="HTML",
+            )
+        return
+    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
+    page = max(0, min(page, total_pages - 1))
+    kb = _ason_pick_kb(ordered, page=page, league_filter=lf, session_kind=sk)
+    text = _ason_pick_intro_html(
+        page,
+        total_pages,
+        league_filter=lf,
+        session_kind=sk,
+    )
+    if callback.message:
+        try:
+            await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+        except Exception:
+            await callback.message.answer(text, reply_markup=kb, parse_mode="HTML")
+
+
+@match_router.callback_query(F.data.startswith("asonpick:"))
+async def cb_ason_pick(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = (callback.data or "").split(":")
+    lf, sk = "all", "all"
+    try:
+        idx = int(parts[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    if len(parts) >= 4:
+        lf = (parts[2] or "all").strip().lower() or "all"
+        sk = (parts[3] or "all").strip().lower() or "all"
+    ordered = await _ordered_played_filtered(lf, sk)
+    data = await state.get_data()
+    if lf == "cl" and data.get("ason_pick_cl_ph"):
+        cph = data["ason_pick_cl_ph"]
+        ordered = [r for r in ordered if (r.get("cl_ph") or "knockout") == cph]
+    if idx < 0 or idx >= len(ordered):
+        await callback.answer("Матча нет в списке. Обнови список.", show_alert=True)
+        return
+    slot = ordered[idx]
+    await callback.answer()
+    if callback.message:
+        await _begin_stats_for_played_slot(callback.message, state, slot)
 
 
 @match_router.message(Command("stats_match"))
 async def cmd_stats_match(message: Message, state: FSMContext) -> None:
-    await state.clear()
-    await message.answer(
-        "Статистика по уже сыгранному матчу (как «a» в консоли).\n"
-        "Выбери лигу — затем хозяева, гости, счёт и строки статистики.\n"
-        "/cancel — отмена.",
-        reply_markup=build_ason_league_kb(),
-    )
-
-
-@match_router.message(AddOnlyStats.home, _TEXT_NOT_CMD)
-async def on_ason_home(message: Message, state: FSMContext) -> None:
-    await state.update_data(ason_home=message.text.strip())
-    await state.set_state(AddOnlyStats.away)
-    await message.answer("Введи название гостей:")
-
-
-@match_router.message(AddOnlyStats.away, _TEXT_NOT_CMD)
-async def on_ason_away(message: Message, state: FSMContext) -> None:
-    await state.update_data(ason_away=message.text.strip())
-    await state.set_state(AddOnlyStats.score)
-    await message.answer(
-        "Введи счёт два числа через пробел (хозяева гости), например: 2 1"
-    )
-
-
-@match_router.message(AddOnlyStats.score, _TEXT_NOT_CMD)
-async def on_ason_score(message: Message, state: FSMContext) -> None:
-    raw = message.text.strip()
-    m = _SCORE_RE.match(raw)
-    if not m:
-        await message.answer("Нужны два числа через пробел, например: 2 1")
-        return
-
-    hs, aws = int(m.group(1)), int(m.group(2))
-    data = await state.get_data()
-    lc = data["ason_league"]
-    home = data["ason_home"].strip().title()
-    away = data["ason_away"].strip().title()
-
-    pending_journal = {
-        "home": home,
-        "away": away,
-        "lc": lc,
-        "hs": hs,
-        "aws": aws,
-    }
-    if lc == "cl":
-        cph = data.get("ason_cl_ph")
-        if not cph:
-            await message.answer("Не выбрана фаза ЛЧ. Начни снова: /stats_match")
-            await state.clear()
-            return
-        pending_journal["cl_phase"] = cph
-
-    await state.update_data(
-        stats_home=home,
-        stats_away=away,
-        stats_hs=hs,
-        stats_aws=aws,
-        stats_tournament="cl" if lc == "cl" else "league",
-        stats_league_code=lc,
-        stats_schedule_day=None,
-        pending_journal=pending_journal,
-    )
-    await _send_stats_lines_ui(message, state)
+    await _send_ason_stats_intro(message, state)
 
 

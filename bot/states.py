@@ -26,11 +26,9 @@ class PostMatch(StatesGroup):
 
 
 class AddOnlyStats(StatesGroup):
-    """Статистика по матчу без записи счёта через матч-день (как «a» в консоли)."""
+    """Статистика по уже сыгранному матчу (выбор из календаря, без ввода счёта)."""
     cl_phase = State()
-    home = State()
-    away = State()
-    score = State()
+    browsing = State()
 
 
 class ClPenalties(StatesGroup):

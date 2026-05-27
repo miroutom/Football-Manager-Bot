@@ -19,7 +19,7 @@ async def setup_bot_commands(bot: Bot) -> None:
             BotCommand(command="transfer", description="Записать трансфер игрока"),
             BotCommand(command="squad_status", description="Правка заявки start/bench/reserve по строкам"),
             BotCommand(command="awards", description="Награда сезона (+1: мяч, бутса, перчатка, Golden Boy)"),
-            BotCommand(command="stats_match", description="Стата игроков по матчу без записи матча"),
+            BotCommand(command="stats_match", description="Стата по сыгранному матчу из календаря"),
             BotCommand(command="done", description="Закончить ввод статистики после матча"),
             BotCommand(command="table", description="Таблица (картинка)"),
             BotCommand(command="goals", description="Бомбардиры (картинка)"),

@@ -265,6 +265,86 @@ def list_remaining_schedule_matches(
     return out
 
 
+def list_played_schedule_matches(
+    mixed_schedule,
+    *,
+    league_filter: str | None = None,
+    session_kind: str | None = None,
+):
+    """
+    Слоты смешанного расписания, уже сыгранные и записанные в журнале со счётом.
+
+    Порядок обхода как у ``list_remaining_schedule_matches``. Каждый элемент — dict
+    с ключами ``day``, ``match_str``, ``home``, ``away``, ``league_code``, ``cl_ph``,
+    ``home_score``, ``away_score``, ``display_round``, ``fixture_round``.
+    """
+    from config.leagues_config import manager_session_label
+    from match_results import find_journal_match_record
+    from utils.calendar_slot_labels import home_display_tour
+    from utils.player_discipline import find_fixture_round
+
+    lf = (league_filter or "").strip().lower()
+    if lf in ("", "all"):
+        lf = None
+    sk = (session_kind or "").strip().lower()
+    if sk in ("", "all"):
+        sk = None
+
+    out = []
+    for day_data in mixed_schedule:
+        day_num = day_data["day"]
+        for match_str in day_data["matches"]:
+            parts = match_str.split(";")
+            if len(parts) < 3:
+                continue
+            home, away, league_code = parts[0], parts[1], parts[2]
+            if lf and str(league_code).strip().lower() != lf:
+                continue
+            cl_ph = (
+                cl_phase_from_mixed_schedule_line(match_str)
+                if league_code == "cl"
+                else None
+            )
+            teams = get_teams_by_league(league_code)
+            if not teams:
+                continue
+            if not is_match_played(home, away, league_code, teams, cl_phase=cl_ph):
+                continue
+            rec = find_journal_match_record(
+                home, away, league_code, cl_phase=cl_ph
+            )
+            if not rec:
+                continue
+            hs, aws = rec.get("home_score"), rec.get("away_score")
+            if hs is None or aws is None:
+                continue
+            if sk in ("sim", "game"):
+                lab = manager_session_label(home.strip(), away.strip())
+                if sk == "sim" and lab != "Симуляция":
+                    continue
+                if sk == "game" and lab != "Игра":
+                    continue
+                if lab is None:
+                    continue
+            out.append(
+                {
+                    "day": day_num,
+                    "match_str": match_str,
+                    "home": home,
+                    "away": away,
+                    "league_code": league_code,
+                    "cl_ph": cl_ph,
+                    "home_score": int(hs),
+                    "away_score": int(aws),
+                    "display_round": home_display_tour(home, league_code),
+                    "fixture_round": find_fixture_round(
+                        home, away, league_code, cl_phase=cl_ph
+                    ),
+                }
+            )
+    return out
+
+
 def get_current_league():
     """Получить данные текущей лиги"""
     for key, league in LEAGUES.items():
