@@ -564,12 +564,58 @@ def _ason_play_kind_kb(league_key: str) -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="← К выбору чемпионата",
-                    callback_data="asonf:back",
+                    text="← К выбору месяца",
+                    callback_data=f"asonmo:{lg}",
                 ),
             ],
         ]
     )
+
+
+def _ason_play_month_kb(league_key: str, months: list[int]) -> InlineKeyboardMarkup:
+    """Месяц календаря: «все» или конкретный ``мN`` (только месяцы с сыгранными матчами)."""
+    lg = league_key
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="Все месяцы",
+                callback_data=f"asonm:{lg}:all",
+            ),
+        ],
+    ]
+    row: list[InlineKeyboardButton] = []
+    for m in months:
+        row.append(
+            InlineKeyboardButton(text=f"м{m}", callback_data=f"asonm:{lg}:{m}")
+        )
+        if len(row) == 4:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="← К выбору чемпионата",
+                callback_data="asonf:back",
+            ),
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _ason_month_filter_label(month_filter: int | None) -> str:
+    if month_filter is None:
+        return "все месяцы"
+    return f"месяц {month_filter}"
+
+
+def _ason_filter_played_list(ordered: list, data: dict) -> list:
+    cph = data.get("ason_pick_cl_ph") or data.get("ason_cl_ph")
+    lf = (data.get("ason_pick_lf") or data.get("ason_league") or "").strip().lower()
+    if lf == "cl" and cph:
+        ordered = [r for r in ordered if (r.get("cl_ph") or "knockout") == cph]
+    return ordered
 
 
 def _ason_pick_kb(
@@ -627,8 +673,8 @@ def _ason_pick_kb(
     rows.append(
         [
             InlineKeyboardButton(
-                text="← Фильтры (лига / тип)",
-                callback_data="asonf:back",
+                text="← Фильтры (месяц / тип)",
+                callback_data=f"asonmo:{lf}",
             ),
         ]
     )
@@ -641,21 +687,28 @@ def _ason_pick_intro_html(
     *,
     league_filter: str = "all",
     session_kind: str = "all",
+    month_filter: int | None = None,
 ) -> str:
     note = (
         f"\nСтраница <b>{page + 1}</b> из <b>{total_pages}</b> "
         f"(по {_SCHED_PAGE_SIZE} матчей; порядок как в mixed_schedule)."
     )
     cap = _schedule_play_filter_caption(league_filter, session_kind)
+    mo = html_escape(_ason_month_filter_label(month_filter))
     return (
-        f"{cap}\n\n"
+        f"{cap} · <b>{mo}</b>\n\n"
         "<b>Сыгранные матчи</b> — счёт уже в журнале. Выбери матч, затем вводи только "
         "строки статистики (или «Готово» / /cancel).\n"
         f"{note}"
     )
 
 
-async def _ordered_played_filtered(league_filter: str, session_kind: str) -> list:
+async def _ordered_played_filtered(
+    league_filter: str,
+    session_kind: str,
+    *,
+    month_filter: int | None = None,
+) -> list:
     from main import list_played_schedule_matches, load_or_generate_mixed_schedule
 
     lf = (league_filter or "all").strip().lower() or "all"
@@ -666,14 +719,118 @@ async def _ordered_played_filtered(league_filter: str, session_kind: str) -> lis
         sch,
         league_filter=None if lf == "all" else lf,
         session_kind=None if sk == "all" else sk,
+        month_filter=month_filter,
     )
+
+
+async def _ason_played_months_for_league(league_key: str, data: dict) -> list[int]:
+    """Номера месяцев календаря, в которых есть сыгранные матчи (по лиге / фазе ЛЧ)."""
+    ordered = await _ordered_played_filtered(league_key, "all", month_filter=None)
+    ordered = _ason_filter_played_list(ordered, data)
+    return sorted({int(r["day"]) for r in ordered if r.get("day") is not None})
+
+
+async def _send_ason_month_step(
+    message: Message,
+    state: FSMContext,
+    league_key: str,
+    *,
+    edit: bool = False,
+) -> None:
+    data = await state.get_data()
+    months = await _ason_played_months_for_league(league_key, data)
+    lg_title = html_escape(_league_title(league_key) if league_key != "all" else "все чемпионаты")
+    phase = data.get("ason_cl_ph")
+    phase_s = ""
+    if league_key == "cl" and phase:
+        phase_s = f" · {_cl_phase_short_label(phase)}"
+    if not months:
+        text = (
+            f"Чемпионат: <b>{lg_title}</b>{phase_s}\n"
+            "Нет сыгранных матчей со счётом в журнале — выбери другой чемпионат."
+        )
+        kb = build_ason_league_kb()
+    else:
+        text = (
+            f"Чемпионат: <b>{lg_title}</b>{phase_s}\n"
+            "Выбери <b>месяц</b> календаря или «Все месяцы», затем тип матча."
+        )
+        kb = _ason_play_month_kb(league_key, months)
+    if edit:
+        try:
+            await message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+            return
+        except Exception:
+            pass
+    await message.answer(text, reply_markup=kb, parse_mode="HTML")
+
+
+async def _show_ason_pick_list(
+    message: Message,
+    state: FSMContext,
+    *,
+    league_key: str,
+    session_kind: str,
+    page: int = 0,
+    edit: bool = True,
+) -> None:
+    data = await state.get_data()
+    month = data.get("ason_month")
+    if month is not None:
+        month = int(month)
+    ordered = await _ordered_played_filtered(
+        league_key, session_kind, month_filter=month
+    )
+    ordered = _ason_filter_played_list(ordered, data)
+    if not ordered:
+        text = (
+            "По фильтру нет сыгранных матчей со счётом в журнале. "
+            "Попробуй другой месяц, тип или чемпионат."
+        )
+        kb = _ason_play_kind_kb(league_key)
+        if edit:
+            try:
+                await message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+                return
+            except Exception:
+                pass
+        await message.answer(text, reply_markup=kb, parse_mode="HTML")
+        return
+
+    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
+    page = max(0, min(page, total_pages - 1))
+    kb = _ason_pick_kb(
+        ordered,
+        page=page,
+        league_filter=league_key,
+        session_kind=session_kind,
+    )
+    text = _ason_pick_intro_html(
+        page,
+        total_pages,
+        league_filter=league_key,
+        session_kind=session_kind,
+        month_filter=month,
+    )
+    await state.update_data(
+        ason_pick_lf=league_key,
+        ason_pick_sk=session_kind,
+        ason_pick_cl_ph=data.get("ason_cl_ph"),
+    )
+    if edit:
+        try:
+            await message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+            return
+        except Exception:
+            pass
+    await message.answer(text, reply_markup=kb, parse_mode="HTML")
 
 
 async def _send_ason_stats_intro(message: Message, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(AddOnlyStats.browsing)
     await message.answer(
-        "📊 <b>Стата без матча</b> — выбери чемпионат, затем тип (сим / игра / всё). "
+        "📊 <b>Стата без матча</b> — чемпионат → месяц (или все) → тип (сим / игра / всё). "
         "Покажу только <b>уже сыгранные</b> слоты со счётом из журнала; вводить счёт не нужно.\n"
         "/cancel — отмена.",
         reply_markup=build_ason_league_kb(),
@@ -1981,7 +2138,7 @@ async def cb_ason_filter_league(callback: CallbackQuery, state: FSMContext) -> N
         if callback.message:
             try:
                 await callback.message.edit_text(
-                    "📊 <b>Стата без матча</b> — выбери чемпионат, затем тип матча.\n/cancel — отмена.",
+                    "📊 <b>Стата без матча</b> — чемпионат → месяц → тип матча.\n/cancel — отмена.",
                     reply_markup=build_ason_league_kb(),
                     parse_mode="HTML",
                 )
@@ -1990,7 +2147,12 @@ async def cb_ason_filter_league(callback: CallbackQuery, state: FSMContext) -> N
         return
     await callback.answer()
     await state.set_state(AddOnlyStats.browsing)
-    await state.update_data(ason_league=tag, ason_cl_ph=None)
+    await state.update_data(
+        ason_league=tag,
+        ason_cl_ph=None,
+        ason_month=None,
+        ason_month_chosen=False,
+    )
     if tag == "cl":
         await state.set_state(AddOnlyStats.cl_phase)
         if callback.message:
@@ -2002,20 +2164,7 @@ async def cb_ason_filter_league(callback: CallbackQuery, state: FSMContext) -> N
             )
         return
     if callback.message:
-        try:
-            await callback.message.edit_text(
-                f"Чемпионат: <b>{html_escape(_league_title(tag) if tag != 'all' else 'все')}</b>.\n"
-                "Теперь выбери тип слотов:",
-                reply_markup=_ason_play_kind_kb(tag),
-                parse_mode="HTML",
-            )
-        except Exception:
-            await callback.message.answer(
-                f"Чемпионат: <b>{html_escape(_league_title(tag) if tag != 'all' else 'все')}</b>.\n"
-                "Теперь выбери тип слотов:",
-                reply_markup=_ason_play_kind_kb(tag),
-                parse_mode="HTML",
-            )
+        await _send_ason_month_step(callback.message, state, tag, edit=True)
 
 
 @match_router.callback_query(F.data.startswith("asoncl:"))
@@ -2028,13 +2177,69 @@ async def cb_ason_cl_phase(callback: CallbackQuery, state: FSMContext) -> None:
         await callback.answer("Неверная фаза.", show_alert=True)
         return
     await callback.answer()
-    await state.update_data(ason_league="cl", ason_cl_ph=phase)
+    await state.update_data(
+        ason_league="cl",
+        ason_cl_ph=phase,
+        ason_month=None,
+        ason_month_chosen=False,
+    )
     await state.set_state(AddOnlyStats.browsing)
     if callback.message:
-        await callback.message.answer(
-            f"Лига: <b>ЛЧ</b> · фаза: <b>{_cl_phase_short_label(phase)}</b>\n"
+        await _send_ason_month_step(callback.message, state, "cl", edit=False)
+
+
+@match_router.callback_query(F.data.startswith("asonmo:"))
+async def cb_ason_month_reopen(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) < 2:
+        await callback.answer()
+        return
+    league_key = parts[1].strip().lower() or "all"
+    await callback.answer()
+    if callback.message:
+        await _send_ason_month_step(callback.message, state, league_key, edit=True)
+
+
+@match_router.callback_query(F.data.startswith("asonm:"))
+async def cb_ason_month_pick(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    league_key = parts[1].strip().lower() or "all"
+    mo_raw = parts[2].strip().lower()
+    if mo_raw == "all":
+        month_val = None
+    else:
+        try:
+            month_val = int(mo_raw)
+        except ValueError:
+            await callback.answer("Неверный месяц.", show_alert=True)
+            return
+    await callback.answer()
+    await state.update_data(
+        ason_month=month_val,
+        ason_month_chosen=True,
+        ason_pick_lf=league_key,
+    )
+    if not callback.message:
+        return
+    mo_label = html_escape(_ason_month_filter_label(month_val))
+    lg_title = html_escape(
+        _league_title(league_key) if league_key != "all" else "все чемпионаты"
+    )
+    try:
+        await callback.message.edit_text(
+            f"Чемпионат: <b>{lg_title}</b> · <b>{mo_label}</b>\n"
             "Теперь выбери тип слотов:",
-            reply_markup=_ason_play_kind_kb("cl"),
+            reply_markup=_ason_play_kind_kb(league_key),
+            parse_mode="HTML",
+        )
+    except Exception:
+        await callback.message.answer(
+            f"Чемпионат: <b>{lg_title}</b> · <b>{mo_label}</b>\n"
+            "Теперь выбери тип слотов:",
+            reply_markup=_ason_play_kind_kb(league_key),
             parse_mode="HTML",
         )
 
@@ -2050,8 +2255,8 @@ async def cb_ason_filter_kind(callback: CallbackQuery, state: FSMContext) -> Non
     if sk not in ("all", "sim", "game"):
         await callback.answer("Неизвестный тип.", show_alert=True)
         return
-    await callback.answer()
     if not callback.message:
+        await callback.answer()
         return
     data = await state.get_data()
     ason_lg = (data.get("ason_league") or league_key).strip().lower()
@@ -2060,49 +2265,19 @@ async def cb_ason_filter_kind(callback: CallbackQuery, state: FSMContext) -> Non
         if not cl_ph:
             await callback.answer("Сначала выбери фазу ЛЧ.", show_alert=True)
             return
-    ordered = await _ordered_played_filtered(league_key, sk)
-    if league_key == "cl" and data.get("ason_cl_ph"):
-        cph = data["ason_cl_ph"]
-        ordered = [r for r in ordered if (r.get("cl_ph") or "knockout") == cph]
-    if not ordered:
-        try:
-            await callback.message.edit_text(
-                "По фильтру нет сыгранных матчей со счётом в журнале. "
-                "Попробуй другой чемпионат или тип.",
-                reply_markup=_ason_play_kind_kb(league_key),
-                parse_mode="HTML",
-            )
-        except Exception:
-            await callback.message.answer(
-                "По фильтру нет сыгранных матчей со счётом в журнале.",
-                reply_markup=_ason_play_kind_kb(league_key),
-                parse_mode="HTML",
-            )
+    if not data.get("ason_month_chosen"):
+        await callback.answer("Сначала выбери месяц.", show_alert=True)
         return
-
-    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
-    page = 0
-    kb = _ason_pick_kb(
-        ordered,
-        page=page,
-        league_filter=league_key,
-        session_kind=sk,
-    )
-    text = _ason_pick_intro_html(
-        page,
-        total_pages,
-        league_filter=league_key,
-        session_kind=sk,
-    )
-    await state.update_data(
-        ason_pick_lf=league_key,
-        ason_pick_sk=sk,
-        ason_pick_cl_ph=data.get("ason_cl_ph"),
-    )
-    try:
-        await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
-    except Exception:
-        await callback.message.answer(text, reply_markup=kb, parse_mode="HTML")
+    await callback.answer()
+    if callback.message:
+        await _show_ason_pick_list(
+            callback.message,
+            state,
+            league_key=league_key,
+            session_kind=sk,
+            page=0,
+            edit=True,
+        )
 
 
 @match_router.callback_query(F.data.startswith("asonpage:"))
@@ -2118,32 +2293,15 @@ async def cb_ason_page(callback: CallbackQuery, state: FSMContext) -> None:
         lf = (parts[2] or "all").strip().lower() or "all"
         sk = (parts[3] or "all").strip().lower() or "all"
     await callback.answer()
-    ordered = await _ordered_played_filtered(lf, sk)
-    data = await state.get_data()
-    if lf == "cl" and data.get("ason_pick_cl_ph"):
-        cph = data["ason_pick_cl_ph"]
-        ordered = [r for r in ordered if (r.get("cl_ph") or "knockout") == cph]
-    if not ordered:
-        if callback.message:
-            await callback.message.answer(
-                "Нет матчей по этому фильтру.",
-                parse_mode="HTML",
-            )
-        return
-    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
-    page = max(0, min(page, total_pages - 1))
-    kb = _ason_pick_kb(ordered, page=page, league_filter=lf, session_kind=sk)
-    text = _ason_pick_intro_html(
-        page,
-        total_pages,
-        league_filter=lf,
-        session_kind=sk,
-    )
     if callback.message:
-        try:
-            await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
-        except Exception:
-            await callback.message.answer(text, reply_markup=kb, parse_mode="HTML")
+        await _show_ason_pick_list(
+            callback.message,
+            state,
+            league_key=lf,
+            session_kind=sk,
+            page=page,
+            edit=True,
+        )
 
 
 @match_router.callback_query(F.data.startswith("asonpick:"))
@@ -2158,11 +2316,12 @@ async def cb_ason_pick(callback: CallbackQuery, state: FSMContext) -> None:
     if len(parts) >= 4:
         lf = (parts[2] or "all").strip().lower() or "all"
         sk = (parts[3] or "all").strip().lower() or "all"
-    ordered = await _ordered_played_filtered(lf, sk)
     data = await state.get_data()
-    if lf == "cl" and data.get("ason_pick_cl_ph"):
-        cph = data["ason_pick_cl_ph"]
-        ordered = [r for r in ordered if (r.get("cl_ph") or "knockout") == cph]
+    month = data.get("ason_month")
+    if month is not None:
+        month = int(month)
+    ordered = await _ordered_played_filtered(lf, sk, month_filter=month)
+    ordered = _ason_filter_played_list(ordered, data)
     if idx < 0 or idx >= len(ordered):
         await callback.answer("Матча нет в списке. Обнови список.", show_alert=True)
         return

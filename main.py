@@ -270,6 +270,7 @@ def list_played_schedule_matches(
     *,
     league_filter: str | None = None,
     session_kind: str | None = None,
+    month_filter: int | None = None,
 ):
     """
     Слоты смешанного расписания, уже сыгранные и записанные в журнале со счётом.
@@ -277,6 +278,8 @@ def list_played_schedule_matches(
     Порядок обхода как у ``list_remaining_schedule_matches``. Каждый элемент — dict
     с ключами ``day``, ``match_str``, ``home``, ``away``, ``league_code``, ``cl_ph``,
     ``home_score``, ``away_score``, ``display_round``, ``fixture_round``.
+
+    ``month_filter``: если задан — только слоты с ``day`` равным этому месяцу календаря.
     """
     from config.leagues_config import manager_session_label
     from match_results import find_journal_match_record
@@ -289,10 +292,15 @@ def list_played_schedule_matches(
     sk = (session_kind or "").strip().lower()
     if sk in ("", "all"):
         sk = None
+    mf = month_filter
+    if mf is not None:
+        mf = int(mf)
 
     out = []
     for day_data in mixed_schedule:
         day_num = day_data["day"]
+        if mf is not None and day_num != mf:
+            continue
         for match_str in day_data["matches"]:
             parts = match_str.split(";")
             if len(parts) < 3:
