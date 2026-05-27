@@ -2867,6 +2867,17 @@
       "out_from_month": 6,
       "return_month": 10,
       "type": "травма"
+    },
+    {
+      "key": "малком|фиорентина|5|8",
+      "name": "Малком",
+      "name_norm": "малком",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "out_from_month": 5,
+      "return_month": 8,
+      "type": "травма",
+      "season": 2
     }
   ]
 }
