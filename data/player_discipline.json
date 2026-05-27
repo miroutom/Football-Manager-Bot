@@ -215,7 +215,7 @@
       "team_norm": "цска",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 2
+      "matches_left": 1
     },
     {
       "key": "зджелар|цска|cl|cl",
@@ -225,7 +225,7 @@
       "team_norm": "цска",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 3
+      "matches_left": 2
     },
     {
       "key": "марсиаль|мю|eng|league",
@@ -1917,6 +1917,16 @@
       "name_norm": "влашич",
       "team": "Ювентус",
       "team_norm": "ювентус",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "роша|цска|cl|cl",
+      "name": "Роша",
+      "name_norm": "роша",
+      "team": "Цска",
+      "team_norm": "цска",
       "league_code": "cl",
       "scope": "cl",
       "count": 1
