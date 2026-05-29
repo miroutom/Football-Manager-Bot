@@ -365,6 +365,25 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
             from player_stats import infer_league_code_for_stats
 
             lc = infer_league_code_for_stats(h, a, tourn)
+        cl_ph = None
+        if tourn == "cl" or lc == "cl":
+            from match_results import find_journal_match_record
+
+            rec = await asyncio.to_thread(
+                find_journal_match_record, h, a, lc or "cl", cl_phase=None
+            )
+            if rec:
+                cl_ph = rec.get("cl_phase")
+        from matches_stats_tracking import mark_stats_completed
+
+        await asyncio.to_thread(
+            mark_stats_completed,
+            h,
+            a,
+            tourn,
+            cl_phase=cl_ph,
+            day=data.get("stats_schedule_day"),
+        )
         from utils.player_discipline import register_match_played_for_discipline
 
         snap = data.get("stats_susp_snapshot")
@@ -697,8 +716,8 @@ def _ason_pick_intro_html(
     mo = html_escape(_ason_month_filter_label(month_filter))
     return (
         f"{cap} · <b>{mo}</b>\n\n"
-        "<b>Сыгранные матчи</b> — счёт уже в журнале. Выбери матч, затем вводи только "
-        "строки статистики (или «Готово» / /cancel).\n"
+        "<b>Матчи без статистики</b> — счёт уже в журнале, стата ещё не внесена. "
+        "Выбери матч, затем вводи только строки статистики (или «Готово» / /cancel).\n"
         f"{note}"
     )
 
@@ -720,6 +739,7 @@ async def _ordered_played_filtered(
         league_filter=None if lf == "all" else lf,
         session_kind=None if sk == "all" else sk,
         month_filter=month_filter,
+        only_without_stats=True,
     )
 
 
@@ -747,7 +767,7 @@ async def _send_ason_month_step(
     if not months:
         text = (
             f"Чемпионат: <b>{lg_title}</b>{phase_s}\n"
-            "Нет сыгранных матчей со счётом в журнале — выбери другой чемпионат."
+            "Нет матчей без статистики по этому фильтру — выбери другой чемпионат."
         )
         kb = build_ason_league_kb()
     else:
@@ -784,7 +804,7 @@ async def _show_ason_pick_list(
     ordered = _ason_filter_played_list(ordered, data)
     if not ordered:
         text = (
-            "По фильтру нет сыгранных матчей со счётом в журнале. "
+            "По фильтру нет матчей без статистики. "
             "Попробуй другой месяц, тип или чемпионат."
         )
         kb = _ason_play_kind_kb(league_key)
@@ -831,7 +851,7 @@ async def _send_ason_stats_intro(message: Message, state: FSMContext) -> None:
     await state.set_state(AddOnlyStats.browsing)
     await message.answer(
         "📊 <b>Стата без матча</b> — чемпионат → месяц (или все) → тип (сим / игра / всё). "
-        "Покажу только <b>уже сыгранные</b> слоты со счётом из журнала; вводить счёт не нужно.\n"
+        "Только <b>сыгранные матчи без статистики</b> (если после матча нажал «Нет» — матч попадёт сюда).\n"
         "/cancel — отмена.",
         reply_markup=build_ason_league_kb(),
         parse_mode="HTML",
@@ -2042,9 +2062,40 @@ async def cb_postmatch_stats_no(callback: CallbackQuery, state: FSMContext) -> N
     if await state.get_state() != PostMatch.offer_stats:
         await callback.answer()
         return
+    data = await state.get_data()
+    home = data.get("stats_home")
+    away = data.get("stats_away")
+    tourn = data.get("stats_tournament", "league")
+    lc = data.get("stats_league_code")
+    cl_ph = None
+    if home and away and (tourn == "cl" or lc == "cl"):
+        from match_results import find_journal_match_record
+
+        rec = await asyncio.to_thread(
+            find_journal_match_record,
+            home,
+            away,
+            lc or "cl",
+            cl_phase=None,
+        )
+        if rec:
+            cl_ph = rec.get("cl_phase")
+    if home and away:
+        from matches_stats_tracking import mark_stats_pending
+
+        await asyncio.to_thread(
+            mark_stats_pending,
+            home,
+            away,
+            tourn,
+            cl_phase=cl_ph,
+            day=data.get("stats_schedule_day"),
+        )
     await callback.answer()
     await state.clear()
-    await callback.message.answer("Без статистики.")
+    await callback.message.answer(
+        "Без статистики. Матч в очереди «Стата без матча» — можно внести позже из меню."
+    )
     await _send_post_match_continue_prompt(callback.message)
 
 

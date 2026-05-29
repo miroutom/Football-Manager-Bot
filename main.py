@@ -271,6 +271,7 @@ def list_played_schedule_matches(
     league_filter: str | None = None,
     session_kind: str | None = None,
     month_filter: int | None = None,
+    only_without_stats: bool = False,
 ):
     """
     Слоты смешанного расписания, уже сыгранные и записанные в журнале со счётом.
@@ -280,6 +281,9 @@ def list_played_schedule_matches(
     ``home_score``, ``away_score``, ``display_round``, ``fixture_round``.
 
     ``month_filter``: если задан — только слоты с ``day`` равным этому месяцу календаря.
+
+    ``only_without_stats``: только матчи со счётом в журнале, по которым статистика
+    игроков ещё не отмечена как внесённая (см. ``matches_stats_tracking``).
     """
     from config.leagues_config import manager_session_label
     from match_results import find_journal_match_record
@@ -350,6 +354,10 @@ def list_played_schedule_matches(
                     ),
                 }
             )
+    if only_without_stats:
+        from matches_stats_tracking import filter_played_without_stats
+
+        out = filter_played_without_stats(out)
     return out
 
 

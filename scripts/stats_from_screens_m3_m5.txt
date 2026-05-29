@@ -376,3 +376,28 @@ Molina 0 1
 Костич 1 0
 Влашич 0 1
 Миретти 0 1
+
+# === м6 · CL · Франкфурт 5:4 Севилья ===
+Marmoush 1 1
+Musiala 1 1
+Koch 1 1
+Gotze 1 1
+Pacho 1 0
+Carrasco 1 0
+Goncalves 3 0
+Lukebakio 0 1
+Kaku 0 2
+Joelinton 0 1
+Ramos 1 0
+
+# === м6 · CL · Атлетик 3:2 Мю ===
+Kulusevski 1 0
+Leao 1 1
+I Williams 1 0
+N Williams 0 1
+Lerma 0 1
+Martial 1 1
+Nunez 1 0
+Milinkovic-Savic 1 0
+Brozovic 0 1
+de Ligt 0 1
