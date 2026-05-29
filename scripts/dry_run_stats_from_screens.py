@@ -182,6 +182,8 @@ NAME_MAP: dict[str, str] = {
     "Ignatov": "Игнатов",
     "Maksimenko": "Максименко",
     "Davies": "Дэвис",
+    "Kane": "Кейн",
+    "Frimpong": "Фримпонг",
 }
 
 TEAM_HINT: dict[str, str] = {
