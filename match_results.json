@@ -2518,6 +2518,42 @@
       "day": 6,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Тоттенхэм",
+      "away": "Мю",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 6,
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Мю",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 6,
+      "entry_type": "play"
+    },
+    {
+      "home": "Астон Вилла",
+      "away": "Арсенал",
+      "league": "eng",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 6,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ньюкасл",
+      "away": "Ливерпуль",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 6,
+      "entry_type": "play"
     }
   ]
 }
