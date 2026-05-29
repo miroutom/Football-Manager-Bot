@@ -172,6 +172,16 @@ NAME_MAP: dict[str, str] = {
     "Beier": "Исаксен",
     "Sommer": "Зоммер",
     "Barella": "Барелла",
+    "Messi": "Месси",
+    "Ortega": "Ортега",
+    "Corona": "Корона",
+    "Musiala": "Мусиаля",
+    "Koksharov": "Кокшаров",
+    "Alonso": "Алонсо",
+    "Max": "Макс",
+    "Ignatov": "Игнатов",
+    "Maksimenko": "Максименко",
+    "Davies": "Дэвис",
 }
 
 TEAM_HINT: dict[str, str] = {
@@ -332,6 +342,18 @@ TEAM_HINT: dict[str, str] = {
     "Giroud": "Жирона",
     "Icardi": "Атлетико",
     "Beier": "Лацио",
+    "Messi": "Сити",
+    "Ortega": "Сити",
+    "Corona": "Франкфурт",
+    "Musiala": "Франкфурт",
+    "Koksharov": "Краснодар",
+    "Alonso": "Краснодар",
+    "Max": "Краснодар",
+    "Ignatov": "Спартак",
+    "Maksimenko": "Спартак",
+    "Davies": "Бавария",
+    "Frimpong": "Бавария",
+    "Kane": "Бавария",
 }
 
 
