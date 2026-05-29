@@ -94,7 +94,7 @@ Hernandez жк
 Ramos 1 0
 Olmo 1 0
 Carrasco жк
-Bade жк
+# Bade жк — игрок удалён из БД
 
 # === м5 · Ювентус 1:0 Арсенал ===
 Alba 1 0
@@ -140,7 +140,7 @@ Nmecha 1 0
 Kaminski 1 0
 Hernandez 1 0
 Rrahmani 1 0
-Zesiger 0 1
+# Zesiger 0 1 — удалён из БД
 Wimmer 0 1
 Lobotka 0 1
 Di Lorenzo жк
@@ -166,7 +166,7 @@ Gotze 0 1
 Andrich 0 1
 Tapsoba жк
 
-# === м4 · league · Ттх 1:2 Ньюкасл ===
+# === м4 · league · Тоттенхэм 1:2 Ньюкасл ===
 Maddison 1 0
 Willock 1 0
 Tonali 1 0
@@ -182,7 +182,7 @@ Goncalves 1 1
 Palazon 0 1
 Joelinton жк
 
-# === м4 · league · Вилла 2:1 Ливерпуль ===
+# === м4 · league · Астон Вилла 2:1 Ливерпуль ===
 Jota 1 0
 Rovella 1 0
 Wirtz 1 0
@@ -302,7 +302,6 @@ Frattesi 1 0
 Locatelli 1 0
 Vlasic 1 0
 Kin 1 0
-# в FIFA в бомбардирах был Torres (Юве) → Кин в БД
 Immobile жк
 
 # === м3 · CL · Сити 3:0 Зенит ===
@@ -369,8 +368,11 @@ Icardi 1 0
 Llorente 1 0
 Molina 0 1
 
-# === м3 · league · Аталанта 2:2 Ювентус ===
-# TODO: в журнале только день 4; скринов нет — см. блок м4
-
 # === м4 · league · Аталанта 2:2 Ювентус ===
-# TODO: скринов нет в assets — допиши
+Миранчук 1 0
+Симонс 1 0
+Пашалич 0 1
+Кьеза 1 0
+Костич 1 0
+Влашич 0 1
+Миретти 0 1

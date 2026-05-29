@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from player_stats import find_player_by_name, get_session
+from player_stats import _norm_cmp, find_player_by_name, get_session
 from scripts.stats_screens_load import blocks_with_tournament
 from utils.transfer_input import resolve_team_name
 from utils.utils import session_league
@@ -184,6 +184,26 @@ NAME_MAP: dict[str, str] = {
     "Davies": "Дэвис",
     "Kane": "Кейн",
     "Frimpong": "Фримпонг",
+    "Joelinton": "Жоелинтон",
+    "Traore": "Траоре",
+    "Depay": "Депай",
+    "Galan": "Галан",
+    "Maddison": "Мэддисон",
+    "Willock": "Уиллок",
+    "Tonali": "Тонали",
+    "Ait-Nouri": "Аит-Нури",
+    "Rovella": "Ровелла",
+    "Wirtz": "Виртц",
+    "Gakpo": "Гакпо",
+    "Gravenberch": "Гравенберх",
+    "Lobotka": "Лоботка",
+    "Torres": "Торрес",
+}
+
+HEADER_TEAM_ALIAS: dict[str, str] = {
+    "Ттх": "Тоттенхэм",
+    "Вилла": "Астон Вилла",
+    "Фио": "Фиорентина",
 }
 
 TEAM_HINT: dict[str, str] = {
@@ -271,6 +291,8 @@ TEAM_HINT: dict[str, str] = {
     "Nmecha": "Вольфсбург",
     "Kaminski": "Вольфсбург",
     "Rrahmani": "Наполи",
+    "Lobotka": "Наполи",
+    "Zesiger": "Вольфсбург",
     "Arnold": "Вольфсбург",
     "Di Lorenzo": "Наполи",
     "Morata": "Атлетико",
@@ -356,7 +378,49 @@ TEAM_HINT: dict[str, str] = {
     "Davies": "Бавария",
     "Frimpong": "Бавария",
     "Kane": "Бавария",
+    "Joelinton": "Севилья",
+    "Traore": "Боруссия М",
+    "Depay": "Атлетико",
+    "Galan": "Атлетико",
+    "Maddison": "Тоттенхэм",
+    "Willock": "Ньюкасл",
+    "Tonali": "Ньюкасл",
+    "Ait-Nouri": "Ньюкасл",
+    "Rovella": "Астон Вилла",
+    "Wirtz": "Астон Вилла",
+    "Torres": "Астон Вилла",
+    "Gakpo": "Ливерпуль",
+    "Gravenberch": "Ливерпуль",
+    "Миранчук": "Аталанта",
+    "Симонс": "Аталанта",
+    "Пашалич": "Аталанта",
+    "Кьеза": "Ювентус",
+    "Костич": "Ювентус",
+    "Влашич": "Ювентус",
+    "Миретти": "Ювентус",
 }
+
+
+def _canon_header_team(name: str) -> str:
+    n = name.strip()
+    return HEADER_TEAM_ALIAS.get(n, n)
+
+
+def _lookup_player(sess, fifa_name: str):
+    """Имя FIFA → игрок в БД; при смене клуба — поиск по имени без фильтра команды."""
+    db_name = NAME_MAP.get(fifa_name, fifa_name)
+    team = TEAM_HINT.get(fifa_name) or TEAM_HINT.get(db_name)
+    if team:
+        rt = resolve_team_name(team, session_league) or team
+        pl, _ = find_player_by_name(sess, db_name, rt)
+        if pl:
+            return pl, db_name, rt
+    pl, _ = find_player_by_name(sess, db_name, None)
+    if pl:
+        hinted = TEAM_HINT.get(fifa_name) or TEAM_HINT.get(db_name)
+        return pl, db_name, hinted
+    rt = resolve_team_name(team, session_league) or team if team else "?"
+    return None, db_name, rt
 
 
 def _parse_line(line: str) -> tuple[str, int, int, bool, str | None]:
@@ -384,9 +448,11 @@ def main() -> None:
         "Матчи **уже в журнале**. Запись не выполнялась.\n\n",
     ]
     for label, home, away, hs, aws, month, tournament, stat_lines in blocks_with_tournament():
+        home_c = _canon_header_team(home)
+        away_c = _canon_header_team(away)
         if not stat_lines:
-            rh = resolve_team_name(home, session_league) or home
-            ra = resolve_team_name(away, session_league) or away
+            rh = resolve_team_name(home_c, session_league) or home_c
+            ra = resolve_team_name(away_c, session_league) or away_c
             lines_out.append(
                 f"## {label} · {rh} {hs}:{aws} {ra} → {tournament.upper()}, day={month}\n\n"
             )
@@ -394,17 +460,14 @@ def main() -> None:
             skip += 1
             continue
         sess = get_session(tournament)
-        rh = resolve_team_name(home, session_league) or home
-        ra = resolve_team_name(away, session_league) or away
+        rh = resolve_team_name(home_c, session_league) or home_c
+        ra = resolve_team_name(away_c, session_league) or away_c
         lines_out.append(
             f"## {label} · {rh} {hs}:{aws} {ra} → {tournament}, day={month}\n\n"
         )
         for raw in stat_lines:
             fifa_name, g, a, cs, disc = _parse_line(raw)
-            db_name = NAME_MAP.get(fifa_name, fifa_name)
-            team = TEAM_HINT.get(fifa_name, rh)
-            rt = resolve_team_name(team, session_league) or team
-            pl, _ = find_player_by_name(sess, db_name, rt)
+            pl, db_name, hinted = _lookup_player(sess, fifa_name)
             if pl:
                 if disc:
                     bot_line = f"{fifa_name} {disc}"
@@ -414,9 +477,17 @@ def main() -> None:
                     bot_line = f"{fifa_name} {g} {a}"
                 else:
                     bot_line = fifa_name
-                lines_out.append(f"- `{bot_line}` → `{pl.name}` ({pl.team})\n")
+                extra = ""
+                if hinted:
+                    ht = resolve_team_name(hinted, session_league) or hinted
+                    if _norm_cmp(pl.team) != _norm_cmp(ht):
+                        extra = f" · в матче: {ht}"
+                lines_out.append(
+                    f"- `{bot_line}` → `{pl.name}` ({pl.team}){extra}\n"
+                )
                 ok += 1
             else:
+                rt = resolve_team_name(hinted, session_league) or hinted if hinted else "?"
                 lines_out.append(
                     f"- **НЕ НАЙДЕН** `{db_name}` @ `{rt}` ← `{raw}`\n"
                 )
