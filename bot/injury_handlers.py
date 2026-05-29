@@ -153,6 +153,8 @@ async def cb_injury_root_enter(callback: CallbackQuery, state: FSMContext) -> No
         "Выбери лигу и клуб, затем строку:\n"
         "<code>имя Nм</code> — с текущего месяца календаря на N месяцев;\n"
         "<code>имя сM Nм</code> — с месяца M на N месяцев.\n\n"
+        "Новая травма — сразу к рейтингу: 1–2 мес. без изменений; 3–6 мес. −2; "
+        "7 мес. −4; 8+ мес. −7.\n\n"
         "Примеры: <code>Брозович с3 1м</code>, <code>Симонс 4м колено</code>\n"
         "/cancel — отмена.",
         parse_mode="HTML",

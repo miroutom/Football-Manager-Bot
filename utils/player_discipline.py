@@ -14,6 +14,8 @@
   «имя сM Nм» / «имя @M Nм» — с месяца M календаря на N месяцев (тип после месяцев опционально).
   В JSON травмы — **список периодов** на игрока (несколько строк: м1→м4, потом м4→м10).
   Поля периода: ``key``, ``out_from_month``, ``return_month``, ``type``.
+  **Новый** период (не дубликат с тем же с/до): сразу к overall — 1–2 мес. 0; 3–6 мес. −2;
+  7 мес. −4; 8+ мес. −7 (лига + ЛЧ + common + cumulative).
 - дисквал: в JSON ``unavailable_from_round`` — с какого тура чемпионата бан действует (null = как раньше).
 """
 from __future__ import annotations
@@ -67,6 +69,18 @@ def is_injury_line(text: str) -> bool:
     """Строка травмы: «имя Nм» или «имя сM Nм»."""
     t = (text or "").strip()
     return bool(_RE_INJ_FROM.match(t) or _RE_INJ.match(t))
+
+
+def injury_overall_penalty(months: int) -> int:
+    """Штраф к overall при **новой** травме по сроку N месяцев (см. ``_apply_injury``)."""
+    m = int(months)
+    if m <= 2:
+        return 0
+    if m < 7:
+        return -2
+    if m == 7:
+        return -4
+    return -7
 
 
 def extract_discipline_player_name(line: str) -> str | None:
@@ -889,6 +903,17 @@ def _apply_injury(
             inj.setdefault("season", season_now)
             added = False
         _save(st)
+    rating_note = ""
+    if added:
+        delta = injury_overall_penalty(nmonths)
+        if delta:
+            from utils.player_overall_bumps import apply_overall_bumps_for_team
+
+            bump_res = apply_overall_bumps_for_team(team, f"{player.name} {delta:+d}")
+            if bump_res.ok:
+                rating_note = f" Рейтинг <b>{delta:+d}</b>."
+            elif bump_res.errors:
+                rating_note = f" (рейтинг: {bump_res.errors[0]})"
     tk = injury_type.strip() or "травма"
     note = (
         f"Добавлен период (всего у игрока: {len(_injuries_for_player(st, player.name, team))})."
@@ -904,7 +929,7 @@ def _apply_injury(
         )
     return (
         f"✓ Травма ({tk}): {player.name} — с <b>{cur}</b> мес., выход с <b>{ret}</b> "
-        f"(срок {nmonths} мес.).{carry} {note}",
+        f"(срок {nmonths} мес.).{carry}{rating_note} {note}",
         True,
     )
 
