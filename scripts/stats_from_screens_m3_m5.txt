@@ -1,0 +1,282 @@
+# Стата со скринов FIFA → м3–м5 (ЛЧ и лига)
+# Заголовок: # === мN · CL|league · Хозяева A:B Гости ===
+# Формат:
+#   имя голы передачи   — голы и ассисты
+#   имя cs              — сухой матч (вратарь)
+#   имя жк              — жёлтая
+#   имя кк              — красная
+# Матчи уже в журнале — только add_player_stats, tournament=cl, schedule_day=месяц
+
+# === м3 · Атлетик 1:1 Лейпциг ===
+Guruzeta 1 0
+Ben Yedder 1 0
+Sancet 0 1
+Baumgartner жк
+Vivian жк
+
+# === м3 · Атлетик 0:2 Дортмунд ===
+Cassierra 1 0
+Adeyemi 1 0
+Dybala 0 2
+Kobel cs
+
+# === м3 · Реал 3:2 Франкфурт ===
+Kroos 2 0
+Nkunku 1 0
+Nkounkou 1 0
+Marmoush 1 0
+Gotze 0 1
+Garcia жк
+
+# === м4 · Дортмунд 1:2 Сити ===
+De Bruyne 1 1
+Foden 1 0
+Adeyemi 1 0
+Malen 0 1
+Haaland жк
+
+# === м4 · Интер 0:3 Барселона ===
+Gundogan 1 0
+Palazon 1 0
+Gavi 1 0
+Cancelo 0 1
+ter Stegen cs
+Arnautovic жк
+Calhanoglu кк
+
+# === м4 · Атлетик 2:4 Динамо ===
+Silas 2 0
+Carrascal 1 0
+O'Riley 1 0
+Leao 1 0
+Sancet 1 0
+Chavez жк
+Chavez 0 1
+# Sesko 0 1 — нет в БД (допиши, если игрок есть в save)
+Ruiz de Galarreta жк
+
+# === м4 · Зенит 2:1 Севилья ===
+Fernandes 1 0
+Zaha 1 0
+Sow 1 0
+Alip 0 1
+Du Queiroz 0 1
+Zaha жк
+Sow жк
+
+# === м4 · Реал 1:1 Вольфсбург ===
+Nkunku 1 0
+Wimmer 1 0
+Lukaku 0 1
+Lukaku жк
+Rodrygo жк
+
+# === м4 · Цска 2:4 Фиорентина ===
+Kuchaev 1 0
+Simeone 1 0
+Malcom 1 0
+Lopez 1 0
+Barak 1 0
+Sottil 1 0
+Biraghi 0 1
+Malcom 0 1
+Sottil 0 1
+Rocha жк
+
+# === м4 · Наполи 1:3 Ливерпуль ===
+Jota 2 0
+Szoboszlai 1 1
+Saka 1 0
+Mario Rui жк
+Hernandez жк
+
+# === м5 · Севилья 1:1 Лейпциг ===
+Ramos 1 0
+Olmo 1 0
+Carrasco жк
+Bade жк
+
+# === м5 · Ювентус 1:0 Арсенал ===
+Alba 1 0
+Kostic 0 1
+Szczesny cs
+Kostic жк
+Gabriel кк
+
+# === м5 · Зенит 0:1 Дортмунд ===
+Adeyemi 1 0
+Kobel cs
+Adeyemi жк
+Sutalo жк
+
+# === м5 · Бавария 2:1 Мю ===
+Sane 1 0
+Kim Min Jae 1 0
+Garnacho 1 0
+Goretzka 0 1
+Martial 0 1
+Sane 0 1
+Joao Mario жк
+Brozovic жк
+
+# === м5 · Атлетик 1:3 Сити ===
+De Bruyne 1 1
+Palhinha 1 0
+Haaland 1 0
+Sancet 1 0
+Stones 0 1
+Vanaken кк
+Dias кк
+
+# === м5 · CL · Фиорентина 1:1 Байер ===
+Malcom 1 0
+Schick 1 0
+Ikoné 0 1
+Alderweireld жк
+
+# === м5 · CL · Вольфсбург 4:2 Наполи ===
+Lindstrom 2 0
+Nmecha 1 0
+Kaminski 1 0
+Hernandez 1 0
+Rrahmani 1 0
+Arnold 0 1
+Wimmer 0 1
+Di Lorenzo жк
+
+# === м5 · league · Милан 0:2 Атлетико ===
+Morata 1 0
+Molina 1 0
+Llorente 0 1
+Reinildo жк
+Oblak cs
+
+# === м4 · league · Челси 0:2 Мю ===
+Otavio 1 0
+Martial 1 0
+Brozovic 0 1
+
+# === м4 · league · Франкфурт 1:2 Байер ===
+Ruiz 1 0
+Ikoné 1 0
+Marmoush 1 0
+Gotze 0 1
+Andrich 0 1
+Tapsoba жк
+
+# === м4 · league · Ттх 1:2 Ньюкасл ===
+# TODO: нет скрина бомбардиров/ГП в батче — допиши строки
+
+# === м4 · league · Севилья 2:3 Барселона ===
+Lewandowski 1 0
+Raphinha 1 0
+Pedri 1 0
+Lukébakio 1 0
+Goncalves 1 0
+Palazon 0 1
+Raphinha 0 1
+Goncalves 0 1
+# Joelinton жк — нет в составе Севильи в БД
+
+# === м4 · league · Вилла 2:1 Ливерпуль ===
+# TODO: нет скрина статы в батче — допиши строки
+
+# === м4 · league · Боруссия М 0:0 Дортмунд ===
+Kobel cs
+Livakovic cs
+Kone кк
+
+# === м4 · league · Фио 2:1 Милан ===
+Benzema 1 0
+Malcom 1 0
+Gonzalez 1 0
+Bennacer 0 1
+Milenkovic 0 1
+Kjaer жк
+Bonaventura жк
+Gonzalez жк
+
+# === м4 · league · Динамо 0:2 Зенит ===
+Fomin 1 0
+Zaha 1 0
+Kerzhakov cs
+
+# === м4 · league · Арсенал 1:2 Сити ===
+Havertz 1 0
+Palhinha 1 0
+Rashford 1 0
+Kolo Muani 0 1
+Haaland 0 1
+Rice жк
+Dias жк
+
+# === м4 · league · Жирона 2:1 Бетис ===
+ElShaarawy 1 0
+Pulisic 1 0
+Herrera 1 0
+Isco 0 1
+
+# === м4 · league · Спартак 1:1 Краснодар ===
+Promes 1 0
+Bouanga 1 0
+Pepe 0 1
+
+# === м5 · league · Байер 1:0 Бавария ===
+Schick 1 0
+Andrich жк
+
+# === м5 · league · Лейпциг 2:2 Дортмунд ===
+Klostermann 1 0
+Openda 1 0
+Cassierra 1 0
+Can 1 0
+Fred 0 2
+Kokcu 0 1
+Olmo 0 1
+Seiwald 0 1
+
+# === м5 · league · Динамо 1:1 Крылья Советов ===
+Pisarskiy 1 0
+Silas 1 0
+Ricci 0 1
+Gare жк
+
+# === м5 · league · Наполи 2:0 Милан ===
+Saka 1 0
+Raspadori 1 0
+
+# === м5 · league · Ювентус 1:2 Интер ===
+Arnautovic 1 0
+Berardi 1 0
+Chiesa 1 0
+Mkhitaryan жк
+Vlasic жк
+
+# === м5 · league · Краснодар 0:0 Цска ===
+Safonov cs
+Sportiello cs
+
+# === м5 · league · Спартак 2:1 Урал ===
+Martins 1 0
+Promes 1 0
+Kashtanov 1 0
+Egorychev жк
+
+# === м5 · league · Локо 0:2 Зенит ===
+Ngamaleu 1 0
+Fomin 1 0
+Miranchuk жк
+Kerzhakov cs
+
+# === м5 · league · Атлетико 1:2 Реал ===
+# TODO: нет скрина бомбардиров в батче — допиши строки
+
+# === м5 · league · Атлетик 3:1 Барселона ===
+Leao 1 0
+Sancet 1 0
+Williams 1 0
+Roberto 1 0
+Gundogan 0 1
+Williams 0 1
+Leao 0 1
+Hartman 0 1
