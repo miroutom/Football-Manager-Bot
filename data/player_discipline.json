@@ -2941,6 +2941,204 @@
       "return_month": 9,
       "type": "травма",
       "season": 2
+    },
+    {
+      "key": "рэмзи|астон вилла|6|13",
+      "name": "Рэмзи",
+      "name_norm": "рэмзи",
+      "team": "Астон Вилла",
+      "team_norm": "астон вилла",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "миретти|ювентус|6|9",
+      "name": "Миретти",
+      "name_norm": "миретти",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "фаджиоли с6 3м",
+      "season": 2
+    },
+    {
+      "key": "фаджиоли|ювентус|6|9",
+      "name": "Фаджиоли",
+      "name_norm": "фаджиоли",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "эль ямик|милан|6|13",
+      "name": "Эль Ямик",
+      "name_norm": "эль ямик",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "куадрадо|тоттенхэм|6|9",
+      "name": "Куадрадо",
+      "name_norm": "куадрадо",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "мэддисон|тоттенхэм|6|13",
+      "name": "Мэддисон",
+      "name_norm": "мэддисон",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "сон|тоттенхэм|6|9",
+      "name": "Сон",
+      "name_norm": "сон",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "мусиаля|франкфурт|6|9",
+      "name": "Мусиаля",
+      "name_norm": "мусиаля",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "карраско|севилья|6|13",
+      "name": "Карраско",
+      "name_norm": "карраско",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "жоелинтон|севилья|6|13",
+      "name": "Жоелинтон",
+      "name_norm": "жоелинтон",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "облак|атлетико|6|9",
+      "name": "Облак",
+      "name_norm": "облак",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "алмада|атлетико|6|9",
+      "name": "Алмада",
+      "name_norm": "алмада",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "браим|реал|6|9",
+      "name": "Браим",
+      "name_norm": "браим",
+      "team": "Реал",
+      "team_norm": "реал",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "эдерсон|сити|6|16",
+      "name": "Эдерсон",
+      "name_norm": "эдерсон",
+      "team": "Сити",
+      "team_norm": "сити",
+      "out_from_month": 6,
+      "return_month": 16,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "тапсоба|милан|6|9",
+      "name": "Тапсоба",
+      "name_norm": "тапсоба",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "кунья|ньюкасл|6|9",
+      "name": "Кунья",
+      "name_norm": "кунья",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "коронадо|боруссия м|6|9",
+      "name": "Коронадо",
+      "name_norm": "коронадо",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "упамекано|бавария|6|7",
+      "name": "Упамекано",
+      "name_norm": "упамекано",
+      "team": "Бавария",
+      "team_norm": "бавария",
+      "out_from_month": 6,
+      "return_month": 7,
+      "type": "травма",
+      "season": 2
     }
   ]
 }

@@ -11,5 +11,81 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 6
+  },
+  {
+    "home": "Боруссия М",
+    "away": "Байер",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Лейпциг",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Арсенал",
+    "away": "Милан",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Интер",
+    "away": "Рома",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Бавария",
+    "away": "Хоффенхайм",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Тоттенхэм",
+    "away": "Атлетико",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Боруссия М",
+    "away": "Франкфурт",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Севилья",
+    "away": "Атлетико",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Ювентус",
+    "away": "Реал",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Реал Сосьедад",
+    "away": "Бавария",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Реал",
+    "away": "Барселона",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Интер",
+    "away": "Милан",
+    "tournament": "league",
+    "day": 6
   }
 ]
