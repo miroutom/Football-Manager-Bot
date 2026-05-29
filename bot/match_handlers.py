@@ -83,7 +83,7 @@ async def _finish_match_and_offer_stats(
         await message.answer(f"✗ {txt}")
         return
 
-    await message.answer(f"✓ Записано.\n<pre>{log_html}</pre>", parse_mode="HTML")
+    await message.answer(f"✓ Записано.\n{log_html}", parse_mode="HTML")
 
     if not INPUT_PLAYER_STATS:
         await state.clear()
@@ -148,7 +148,11 @@ async def _record_match_or_request_penalties(
             pen_round=round_num,
             pen_cl_ph=cl_ph,
         )
+        from utils.cl_knockout_schedule import format_first_leg_score_html
+
+        first_leg = format_first_leg_score_html(hn, an)
         await message.answer(
+            f"{first_leg}"
             "По сумме двух матчей ничья — нужна серия пенальти после ответного матча.\n"
             f"Введи два числа через пробел: голы в серии <b>{hn}</b> (хозяева ответного) "
             f"и <b>{an}</b> (гости), например: <code>5 4</code>\n"
@@ -321,10 +325,18 @@ async def _answer_manual_score_prompt(
 
     mode = manager_session_label(home, away)
     mode_head = f"<b>{html_escape(mode)}</b>\n\n" if mode else ""
+    data = await state.get_data()
+    cl_ph = data.get("cl_ph") if data.get("league_code") == "cl" else None
+    first_leg_block = ""
+    if cl_ph == "knockout":
+        from utils.cl_knockout_schedule import format_first_leg_score_html
+
+        first_leg_block = format_first_leg_score_html(home, away)
     await state.update_data(away_raw=away)
     await state.set_state(MatchEnter.manual_score)
     await message.answer(
         f"{mode_head}"
+        f"{first_leg_block}"
         "Введи счёт два числа через пробел (хозяева гости), например: 2 1",
         parse_mode="HTML",
     )
@@ -1074,10 +1086,17 @@ async def _prompt_score_for_scheduled_slot(
     )
     disc_block = f"{disc_html}\n\n" if disc_html else ""
 
+    first_leg_block = ""
+    if league_code == "cl" and (cl_ph or "knockout") == "knockout":
+        from utils.cl_knockout_schedule import format_first_leg_score_html
+
+        first_leg_block = format_first_leg_score_html(home, away)
+
     await message.answer(
         f"{mode_line}"
         f"{slot_label} <b>{day}</b> · {lg}\n"
         f"<b>{home}</b> — <b>{away}</b>\n\n"
+        f"{first_leg_block}"
         f"{disc_block}"
         f"Ответь сообщением со счётом через пробел, например: <code>2 1</code>\n"
         f"или нажми «Отложить».",

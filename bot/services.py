@@ -1024,4 +1024,19 @@ def run_process_match_bot(
             process_loan_expirations(round_num)
         except Exception:
             logging.getLogger(__name__).exception("process_loan_expirations")
+        if league_code == "cl":
+            try:
+                from utils.cl_knockout_schedule import cl_knockout_post_match_messages
+
+                extra = cl_knockout_post_match_messages(
+                    home,
+                    away,
+                    league_code,
+                    cl_phase,
+                    penalties_by_team=penalties_override,
+                )
+                if extra:
+                    buf.write("\n" + "\n".join(extra))
+            except Exception:
+                logging.getLogger(__name__).exception("cl_knockout_post_match_messages")
     return ok, (buf.getvalue() or "").strip()
