@@ -140,14 +140,16 @@ Nmecha 1 0
 Kaminski 1 0
 Hernandez 1 0
 Rrahmani 1 0
-Arnold 0 1
+Zesiger 0 1
 Wimmer 0 1
+Lobotka 0 1
 Di Lorenzo жк
 
 # === м5 · league · Милан 0:2 Атлетико ===
 Morata 1 0
 Molina 1 0
 Llorente 0 1
+Llorente жк
 Reinildo жк
 Oblak cs
 
@@ -165,26 +167,34 @@ Andrich 0 1
 Tapsoba жк
 
 # === м4 · league · Ттх 1:2 Ньюкасл ===
-# TODO: нет скрина бомбардиров/ГП в батче — допиши строки
+Maddison 1 0
+Willock 1 0
+Tonali 1 0
+Ait-Nouri 0 1
+Tonali жк
 
 # === м4 · league · Севилья 2:3 Барселона ===
 Lewandowski 1 0
-Raphinha 1 0
+Raphinha 1 1
 Pedri 1 0
 Lukébakio 1 0
-Goncalves 1 0
+Goncalves 1 1
 Palazon 0 1
-Raphinha 0 1
-Goncalves 0 1
-# Joelinton жк — нет в составе Севильи в БД
+Joelinton жк
 
 # === м4 · league · Вилла 2:1 Ливерпуль ===
-# TODO: нет скрина статы в батче — допиши строки
+Jota 1 0
+Rovella 1 0
+Wirtz 1 0
+Gakpo 0 1
+Gravenberch 0 1
+Torres жк
 
 # === м4 · league · Боруссия М 0:0 Дортмунд ===
 Kobel cs
 Livakovic cs
-Kone кк
+Traore жк
+Malen жк
 
 # === м4 · league · Фио 2:1 Милан ===
 Benzema 1 0
@@ -269,7 +279,12 @@ Miranchuk жк
 Kerzhakov cs
 
 # === м5 · league · Атлетико 1:2 Реал ===
-# TODO: нет скрина бомбардиров в батче — допиши строки
+Lukaku 1 0
+Morata 1 0
+Rodrygo 1 0
+Depay 0 1
+Nkunku 0 1
+Galan жк
 
 # === м5 · league · Атлетик 3:1 Барселона ===
 Leao 1 0
@@ -280,3 +295,62 @@ Gundogan 0 1
 Williams 0 1
 Leao 0 1
 Hartman 0 1
+
+# === м3 · league · Лацио 2:3 Ювентус ===
+Immobile 1 0
+Frattesi 1 0
+Locatelli 1 0
+Vlasic 1 0
+Kin 1 0
+# в FIFA в бомбардирах был Torres (Юве) → Кин в БД
+Immobile жк
+
+# === м3 · CL · Сити 3:0 Зенит ===
+# TODO: скринов нет в assets — допиши голов/ассистов/карт
+
+# === м3 · CL · Фиорентина 1:1 Франкфурт ===
+# TODO: скринов нет в assets — допиши
+
+# === м3 · CL · Краснодар 1:3 Вольфсбург ===
+# TODO: скринов нет в assets — допиши
+
+# === м3 · CL · Спартак 1:2 Бавария ===
+# TODO: скринов нет в assets — допиши
+
+# === м3 · league · Аталанта 0:2 Интер ===
+Mane 1 0
+Dumfries 1 0
+Barella 0 2
+Sommer cs
+
+# === м3 · league · Вольфсбург 3:1 Байер ===
+Maehle 1 0
+Lindstrom 1 0
+Wimmer 1 0
+Ikoné 1 0
+Arnold 0 1
+Wimmer 0 1
+Andrich жк
+
+# === м3 · league · Боруссия М 0:1 Лейпциг ===
+Olmo 1 0
+Seiwald 0 1
+
+# === м3 · league · Хоффенхайм 1:3 Дортмунд ===
+Malen 2 0
+Adeyemi 1 0
+Dovbyk 1 0
+Guimaraes 0 1
+Kramaric 1 0
+
+# === м3 · league · Жирона 1:2 Атлетико ===
+Giroud 1 0
+Icardi 1 0
+Llorente 1 0
+Molina 0 1
+
+# === м3 · league · Аталанта 2:2 Ювентус ===
+# TODO: в журнале только день 4; скринов нет — см. блок м4
+
+# === м4 · league · Аталанта 2:2 Ювентус ===
+# TODO: скринов нет в assets — допиши
