@@ -324,8 +324,10 @@ def _mixed_schedule_line_played(match_str: str, played_keys: set[tuple]) -> bool
     a = _norm_schedule_name(away)
     if lg != "cl":
         return (h, a, lg) in played_keys
-    # ЛЧ: в журнале одно направление пары, в новом календаре после перегенерации —
-    # то же столкновение может быть в обратном порядке (одна встреча на пару за фазу).
+    parts_full = [x.strip() for x in match_str.split(";")]
+    if len(parts_full) >= 4:
+        phase = _normalize_cl_phase_journal(parts_full[3])
+        return (h, a, "cl", phase) in played_keys or (a, h, "cl", phase) in played_keys
     for phase in ("league", "knockout"):
         if (h, a, "cl", phase) in played_keys or (a, h, "cl", phase) in played_keys:
             return True
