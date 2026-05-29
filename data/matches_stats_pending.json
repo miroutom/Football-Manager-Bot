@@ -87,5 +87,25 @@
     "away": "Милан",
     "tournament": "league",
     "day": 6
+  },
+  {
+    "home": "Бавария",
+    "away": "Дортмунд",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Милан",
+    "away": "Арсенал",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Атлетико",
+    "away": "Тоттенхэм",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
   }
 ]

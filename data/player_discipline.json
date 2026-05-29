@@ -3139,6 +3139,17 @@
       "return_month": 7,
       "type": "травма",
       "season": 2
+    },
+    {
+      "key": "дибала|дортмунд|6|9",
+      "name": "Дибала",
+      "name_norm": "дибала",
+      "team": "Дортмунд",
+      "team_norm": "дортмунд",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 2
     }
   ]
 }

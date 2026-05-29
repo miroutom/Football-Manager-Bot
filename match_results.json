@@ -2695,6 +2695,35 @@
       "day": 6,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Бавария",
+      "away": "Дортмунд",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 3,
+      "day": 6,
+      "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Арсенал",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетико",
+      "away": "Тоттенхэм",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 3,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }
