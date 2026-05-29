@@ -2724,6 +2724,16 @@
       "day": 6,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Ювентус",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 4,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }

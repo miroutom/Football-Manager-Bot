@@ -107,5 +107,12 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 6
+  },
+  {
+    "home": "Реал",
+    "away": "Ювентус",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
   }
 ]
