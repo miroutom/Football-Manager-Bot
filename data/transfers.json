@@ -2627,7 +2627,8 @@
       "from_team": "Лацио",
       "position": "ЛЗ",
       "to_team": "Дортмунд",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:10:12+00:00",
@@ -2636,7 +2637,8 @@
       "from_team": "Лацио",
       "position": "ЛФА",
       "to_team": "Дортмунд",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:10:31+00:00",
@@ -2645,7 +2647,8 @@
       "from_team": "Краснодар",
       "position": "ПФА",
       "to_team": "Вольфсбург",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:10:36+00:00",
@@ -2654,7 +2657,8 @@
       "from_team": "Наполи",
       "position": "ЛЗ",
       "to_team": "Вольфсбург",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     }
   ]
 }
