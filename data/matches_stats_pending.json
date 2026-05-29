@@ -1,0 +1,15 @@
+[
+  {
+    "home": "Рома",
+    "away": "Ювентус",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Вольфсбург",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  }
+]
