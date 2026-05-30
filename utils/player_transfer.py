@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Трансфер игрока: обновление клуба во всех рабочих SQLite (лига + ЛЧ) и пересборка common.db.
+Трансфер игрока: новая строка в клубе «куда», строка в клубе «откуда» **остаётся** со статой.
+
+В ``league.db`` / ``champions_league.db`` после трансфера:
+  - у **прежнего** клуба — та же строка (имя+позиция+клуб), матчи/голы/передачи не трогаем
+    (в «Голеадоры клуба» и отчётах по команде видна стата за время в этом клубе);
+  - у **нового** клуба — новая строка с нулевой полевой статой, overall/нация/заявка как в боте.
+
+Раньше менялось только поле ``team`` — стата «уезжала» с игроком; это исправлено.
+
+При переходе **между** нац. лигами сбрасывается накопление жк к 4-й в JSON (не колонки
+``yellow_cards`` в БД). См. ``reset_yellow_accumulation_for_player``.
 
 Дополнительно: удаление строк из БД ЛЧ (один игрок или вся команда), затем пересборка common.
 CLI: см. ``python utils/player_transfer.py -h``.
@@ -168,6 +178,53 @@ def _cascade_status(
         worst.status = "reserve"
 
 
+def _row_exists_at_team(sess, Cls, name: str, team: str, position: str) -> bool:
+    want_name = _norm_cmp(name)
+    want_pos = _norm_cmp(position)
+    tn = _norm_cmp(team)
+    for r in sess.query(Cls).filter(_filter_team(Cls, team)).all():
+        if _norm_cmp(getattr(r, "name", "") or "") != want_name:
+            continue
+        if _norm_cmp(getattr(r, "position", "") or "") != want_pos:
+            continue
+        if _norm_cmp(getattr(r, "team", "") or "") != tn:
+            continue
+        return True
+    return False
+
+
+def _insert_fresh_row_at_team(
+    sess,
+    Cls,
+    src,
+    to_team: str,
+    position: str,
+    new_status: str | None,
+    *,
+    new_overall: int | None = None,
+    nation_update: bool = False,
+    new_nation: str | None = None,
+) -> None:
+    """Новая строка в ``to_team``; полевая стата с нуля, overall/нация из трансфера."""
+    pos_u = position.strip().upper()
+    ovr = int(new_overall) if new_overall is not None else int(getattr(src, "overall", 0) or 72)
+    nat = (new_nation or "").strip() or None if nation_update else getattr(src, "nation", None)
+    if nat is not None and isinstance(nat, str):
+        nat = nat.strip() or None
+    kw = _new_player_kwargs(
+        Cls,
+        name=str(getattr(src, "name", "") or ""),
+        team=to_team,
+        position=pos_u,
+        overall=ovr,
+        nation=nat if nation_update else getattr(src, "nation", None),
+    )
+    row = Cls(**kw)
+    sess.add(row)
+    sess.flush()
+    _cascade_status(sess, Cls, to_team, pos_u, row, new_status)
+
+
 def _apply_transfer_with_status_to_sessions(
     sess_league,
     sess_cl,
@@ -181,7 +238,7 @@ def _apply_transfer_with_status_to_sessions(
     nation_update: bool = False,
     new_nation: str | None = None,
 ) -> dict[str, int]:
-    """Трансфер в указанных сессиях; коммитит обе."""
+    """Трансфер: копия в новый клуб, стата остаётся у прежнего; коммитит обе сессии."""
     player = player.strip()
     from_team = from_team.strip()
     to_team = to_team.strip()
@@ -198,12 +255,21 @@ def _apply_transfer_with_status_to_sessions(
                     continue
                 if _norm_cmp(getattr(r, "position", "") or "") != want_pos:
                     continue
-                r.team = to_team
-                if new_overall is not None:
-                    r.overall = max(1, min(99, int(new_overall)))
-                if nation_update:
-                    r.nation = (new_nation or "").strip() or None
-                _cascade_status(sess, Cls, to_team, position, r, new_status)
+                if _row_exists_at_team(sess, Cls, player, to_team, position):
+                    raise ValueError(
+                        f"Уже есть строка: {player} ({position}) в «{to_team}»."
+                    )
+                _insert_fresh_row_at_team(
+                    sess,
+                    Cls,
+                    r,
+                    to_team,
+                    position,
+                    new_status,
+                    new_overall=new_overall,
+                    nation_update=nation_update,
+                    new_nation=new_nation,
+                )
                 counts[key] += 1
 
     _run_session(sess_league, "league")
@@ -247,6 +313,19 @@ def apply_transfer_with_status(
         from utils.common_db import rebuild_common_database
 
         rebuild_common_database()
+
+    from player_stats import national_league_code_for_team
+    from utils.player_discipline import reset_yellow_accumulation_for_player
+
+    from_lc = national_league_code_for_team(from_team)
+    to_lc = national_league_code_for_team(to_team)
+    if from_lc and to_lc and from_lc != to_lc:
+        reset_yellow_accumulation_for_player(
+            player,
+            league_codes=[from_lc, to_lc],
+            include_cl=True,
+        )
+
     from utils import cumulative_mirror
 
     cumulative_mirror.mirror_transfer_with_status(
@@ -271,11 +350,10 @@ def apply_transfer(
     rebuild_common: bool = True,
 ) -> dict[str, int]:
     """
-    Ищет игрока по имени (без учёта регистра), клубу «откуда» и позиции (как в БД),
-    поле ``team`` меняет на новый клуб в национальной БД и в БД ЛЧ.
-    ``status`` сбрасывается (см. ``apply_transfer_with_status`` для start/bench/reserve).
+    Ищет игрока в клубе «откуда», добавляет строку в клуб «куда» (стата там с нуля).
+    Строка в старом клубе и её матчи/голы/передачи не меняются.
 
-    Возвращает счётчики обновлённых строк: ``league``, ``cl``.
+    Возвращает счётчики **добавленных** строк: ``league``, ``cl``.
     """
     return apply_transfer_with_status(
         player, from_team, position, to_team, None, rebuild_common=rebuild_common

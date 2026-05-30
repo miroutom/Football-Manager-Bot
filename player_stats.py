@@ -57,6 +57,18 @@ LEAGUE_NAMES = {
 }
 
 
+def national_league_code_for_team(team: str) -> str | None:
+    """Код нац. лиги (rpl, eng, …) по имени клуба из LEAGUE_TEAMS; иначе None."""
+    t = _norm_cmp(team)
+    if not t:
+        return None
+    for code, tlist in LEAGUE_TEAMS.items():
+        for tname in tlist:
+            if _norm_cmp(tname) == t:
+                return code
+    return None
+
+
 def infer_league_code_for_stats(
     home_team: str, away_team: str, tournament: str
 ) -> str:

@@ -1150,6 +1150,51 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
     return "\n".join(chunks)
 
 
+def reset_yellow_accumulation_for_player(
+    name: str,
+    *,
+    league_codes: list[str] | None = None,
+    include_cl: bool = True,
+) -> int:
+    """
+    Обнулить накопление жк к 4-й (``yellow_cycle.count``), не трогая ``yellow_cards`` в SQLite.
+
+    ``league_codes`` — только эти нац. лиги (rpl, eng, …); ``None`` — все циклы игрока.
+    ``include_cl`` — сбрасывать ли цикл в ЛЧ (scope/league_code cl).
+    """
+    name_norm = _norm(name)
+    if not name_norm:
+        return 0
+    codes = (
+        {c.strip().lower() for c in league_codes if c}
+        if league_codes is not None
+        else None
+    )
+    n = 0
+    with _lock:
+        st = _load()
+        for row in st.get("yellow_cycle", []):
+            if row.get("name_norm") != name_norm:
+                continue
+            lc = (row.get("league_code") or "").strip().lower()
+            scope = (row.get("scope") or "league").strip().lower()
+            is_cl = scope == "cl" or lc == "cl"
+            if codes is not None:
+                if is_cl:
+                    if not include_cl:
+                        continue
+                elif lc not in codes:
+                    continue
+            elif is_cl and not include_cl:
+                continue
+            if int(row.get("count") or 0) != 0:
+                row["count"] = 0
+                n += 1
+        if n:
+            _save(st)
+    return n
+
+
 def clear_discipline_state() -> None:
     """Сброс JSON (например при новом сезоне)."""
     with _lock:
