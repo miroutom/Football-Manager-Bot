@@ -7,15 +7,19 @@
   python3 scripts/compare_season2_ga_xlsx.py
   python3 scripts/compare_season2_ga_xlsx.py --xlsx path/to/file.xlsx
   python3 scripts/compare_season2_ga_xlsx.py --summary   # только счётчики
+  python3 scripts/compare_season2_ga_xlsx.py --apply     # записать г/гп/г+а из xlsx (матчи не трогаем)
 """
 from __future__ import annotations
 
 import argparse
 import os
 import re
+import shutil
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 _NAME_NOTE_RE = re.compile(r"\s*\([^)]*\)\s*$")
 
@@ -130,26 +134,47 @@ def _db_ga(row) -> int:
     return int(getattr(row, "ga", None) if getattr(row, "ga", None) is not None else g + a)
 
 
-def find_all_in_team(session, team: str, name: str) -> list[DbPlayerRow]:
+def find_orm_in_team(session, team: str, name: str) -> list[Any]:
     want_name = _norm_cmp(name)
     want_team = _norm_cmp(team)
-    found: list[DbPlayerRow] = []
+    found: list[Any] = []
     for cls in PLAYER_CLASSES:
         for r in session.query(cls).all():
             if _norm_cmp(r.team) != want_team:
                 continue
             if _norm_cmp(r.name) != want_name:
                 continue
-            found.append(
-                DbPlayerRow(
-                    name=r.name,
-                    position=r.position,
-                    goals=int(r.goals or 0),
-                    assists=int(r.assists or 0),
-                    ga=_db_ga(r),
-                )
-            )
+            found.append(r)
     return found
+
+
+def find_all_in_team(session, team: str, name: str) -> list[DbPlayerRow]:
+    return [
+        DbPlayerRow(
+            name=r.name,
+            position=r.position,
+            goals=int(r.goals or 0),
+            assists=int(r.assists or 0),
+            ga=_db_ga(r),
+        )
+        for r in find_orm_in_team(session, team, name)
+    ]
+
+
+def _triple_differs(row, triple: StatTriple) -> bool:
+    return (
+        int(row.goals or 0) != triple.goals
+        or int(row.assists or 0) != triple.assists
+        or _db_ga(row) != triple.ga
+    )
+
+
+def _apply_triple(row, triple: StatTriple) -> tuple[int, int, int]:
+    """Записать г/гп/г+а; матчи не меняются. Возвращает (g, a, ga) после записи."""
+    row.goals = int(triple.goals)
+    row.assists = int(triple.assists)
+    row.ga = int(triple.ga)
+    return row.goals, row.assists, row.ga
 
 
 def _resolve_league_team(team_raw: str) -> str | None:
@@ -254,6 +279,115 @@ def compare_row(
     return [], "ok"
 
 
+@dataclass
+class AppliedChange:
+    tournament: str
+    team: str
+    name: str
+    position: str
+    before: StatTriple
+    after: StatTriple
+
+
+def apply_row_fixes(
+    x: XlsxPlayerRow,
+    league_team: str | None,
+    cl_team: str | None,
+) -> tuple[list[AppliedChange], list[str], str]:
+    """Записать г/гп/г+а из xlsx при расхождении. Возвращает (изменения, ошибки, категория)."""
+    if league_team is None:
+        return [], [f"«{x.team_raw}» · {x.name}: клуб не найден в league.db"], "team_missing"
+
+    s_league = get_session("league")
+    s_cl = get_session("cl")
+
+    league_orm = find_orm_in_team(s_league, league_team, x.name)
+    cl_orm: list[Any] = []
+    if cl_team:
+        cl_orm = find_orm_in_team(s_cl, cl_team, x.name)
+
+    has_league_xlsx = x.league.goals or x.league.assists
+    has_cl_xlsx = x.cl.goals or x.cl.assists
+
+    if len(league_orm) > 1 or len(cl_orm) > 1:
+        return [], [f"«{league_team}» · {x.name}: несколько строк в БД"], "ambiguous"
+
+    if not league_orm and not cl_orm:
+        if has_league_xlsx or has_cl_xlsx:
+            label = x.name_raw if x.name_raw != x.name else x.name
+            return [], [f"«{league_team}» · {label}: нет в БД"], "not_found"
+        return [], [], "ok"
+
+    changes: list[AppliedChange] = []
+    errs: list[str] = []
+
+    if league_orm:
+        row = league_orm[0]
+        if _triple_differs(row, x.league):
+            before = StatTriple(int(row.goals or 0), int(row.assists or 0))
+            g, a, ga = _apply_triple(row, x.league)
+            changes.append(
+                AppliedChange(
+                    "league",
+                    league_team,
+                    row.name,
+                    row.position,
+                    before,
+                    StatTriple(g, a),
+                )
+            )
+    elif has_league_xlsx:
+        errs.append(f"«{league_team}» · {x.name}: лига — строки в БД нет")
+
+    if cl_team or has_cl_xlsx:
+        if cl_orm:
+            row = cl_orm[0]
+            if _triple_differs(row, x.cl):
+                before = StatTriple(int(row.goals or 0), int(row.assists or 0))
+                g, a, ga = _apply_triple(row, x.cl)
+                changes.append(
+                    AppliedChange(
+                        "cl",
+                        cl_team or row.team,
+                        row.name,
+                        row.position,
+                        before,
+                        StatTriple(g, a),
+                    )
+                )
+        elif has_cl_xlsx:
+            errs.append(
+                f"«{cl_team or league_team}» · {x.name}: ЛЧ — строки в БД нет "
+                f"(xlsx г={x.cl.goals} гп={x.cl.assists})"
+            )
+
+    if errs:
+        return changes, errs, "partial"
+    if changes:
+        return changes, [], "mismatch"
+    return [], [], "ok"
+
+
+def _backup_dbs() -> str:
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    dest = Path(ROOT) / "db" / "season_2" / f"backup_{ts}"
+    dest.mkdir(parents=True, exist_ok=True)
+    for fn in ("league.db", "champions_league.db", "common.db"):
+        src = Path(ROOT) / "db" / "season_2" / fn
+        if src.is_file():
+            shutil.copy2(src, dest / fn)
+    return str(dest)
+
+
+def _print_applied(changes: list[AppliedChange]) -> None:
+    for c in changes:
+        print(
+            f"  {c.tournament:<6} {c.team:<14} {c.name} ({c.position})  "
+            f"г/гп/г+а {c.before.goals}/{c.before.assists}/{c.before.ga} → "
+            f"{c.after.goals}/{c.after.assists}/{c.after.ga}"
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -266,6 +400,16 @@ def main() -> int:
         "--summary",
         action="store_true",
         help="Только итоговые счётчики, без списка расхождений",
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Записать в БД голы, ГП и г+а из xlsx для всех расхождений (матчи не меняются)",
+    )
+    parser.add_argument(
+        "--no-cumulative-rebuild",
+        action="store_true",
+        help="С --apply: не пересобирать *_synced.db",
     )
     args = parser.parse_args()
 
@@ -284,8 +428,11 @@ def main() -> int:
         "not_found": 0,
         "ambiguous": 0,
         "team_missing": 0,
+        "partial": 0,
     }
     report_blocks: list[str] = []
+    all_changes: list[AppliedChange] = []
+    apply_errs: list[str] = []
 
     for row in players:
         league_team = _resolve_league_team(row.team_raw)
@@ -294,6 +441,18 @@ def main() -> int:
             if league_team
             else None
         )
+        if args.apply:
+            changes, errs, cat = apply_row_fixes(row, league_team, cl_team)
+            all_changes.extend(changes)
+            apply_errs.extend(errs)
+            if changes:
+                counts["mismatch"] += 1
+            elif cat == "ok":
+                counts["ok"] += 1
+            else:
+                counts[cat] = counts.get(cat, 0) + 1
+            continue
+
         lines, cat = compare_row(row, league_team, cl_team)
         counts[cat] = counts.get(cat, 0) + 1
         if lines:
@@ -301,6 +460,54 @@ def main() -> int:
 
     print(f"Файл: {path}")
     print(f"Игроков в xlsx: {len(players)}")
+
+    if args.apply:
+        if apply_errs:
+            print("\n=== Ошибки (без записи по этим строкам) ===")
+            for e in apply_errs:
+                print(" ", e)
+            if apply_errs and not all_changes:
+                return 1
+
+        if not all_changes:
+            print("\nРасхождений для записи нет (или всё уже совпадает).")
+            return 0
+
+        print(f"\nПлан записи: {len(all_changes)} обновлений (только г / гп / г+а)")
+        _print_applied(all_changes)
+
+        dest = _backup_dbs()
+        print(f"\nБэкап: {dest}")
+        s_league = get_session("league")
+        s_cl = get_session("cl")
+        s_league.commit()
+        s_cl.commit()
+        print(f"Записано обновлений: {len(all_changes)}")
+
+        from utils.common_db import rebuild_common_database
+
+        rebuild_common_database()
+        print("common.db пересобран")
+
+        if not args.no_cumulative_rebuild:
+            from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
+
+            log = rebuild_all_time_databases_from_season_archives()
+            print("synced:", log.get("cumulative"))
+
+        print("\nПовторная сверка:")
+        args.apply = False
+        # re-run compare only for mismatches count
+        m2 = 0
+        for row in players:
+            lt = _resolve_league_team(row.team_raw)
+            ct = resolve_team_name_for_cl_pool(lt) if lt else None
+            lines, cat = compare_row(row, lt, ct)
+            if cat == "mismatch":
+                m2 += 1
+        print(f"Осталось расхождений: {m2}")
+        return 0 if m2 == 0 else 1
+
     print(
         f"Совпало: {counts['ok']} | расхождения: {counts['mismatch']} | "
         f"не найден: {counts['not_found']} | неоднозначно: {counts['ambiguous']} | "
