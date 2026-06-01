@@ -35,5 +35,8 @@ def ensure_season_player_columns(season_num: int) -> list[str]:
     return log
 
 
+prepare_season_archive_schema = ensure_season_player_columns
+
+
 if __name__ == "__main__":
     print("Миграция surname отключена (только name).")

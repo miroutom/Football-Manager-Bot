@@ -5,6 +5,7 @@
   python3 scripts/remove_season2_roster_players.py
   python3 scripts/remove_season2_roster_players.py --apply
   python3 scripts/remove_season2_roster_players.py --apply --cl
+  python3 scripts/remove_season2_roster_players.py --apply --also-synced
 """
 from __future__ import annotations
 
@@ -36,7 +37,7 @@ _REMOVALS: list[tuple[str | None, str, str, tuple[str, ...]]] = [
     _r("Дортмунд", "Бенсебаини", "ЛЗ"),
     _r("Барселона", "Ромеу", "ЦОП"),
     _r("Барселона", "Алонсо", "ЛЗ"),
-    _r("Барселона", "Ли Кан", "ЛФА"),
+    _r("Барселона", "Ли Кан Ин", "ЛФА", "Ли Кан"),
     _r("Барселона", "Пенья", "ВРТ"),
     _r("Барселона", "Фалл", "ЦЗ"),
     _r("Атлетико", "Икарди", "ФРВ"),
@@ -53,7 +54,7 @@ _REMOVALS: list[tuple[str | None, str, str, tuple[str, ...]]] = [
     _r("Арсенал", "Элнени", "ЦП"),
     _r("Лейпциг", "Кампль", "ЦП"),
     _r("Лейпциг", "Паульсен", "ФРВ"),
-    _r("Боруссия М", "Беренгер", "ЛФА"),
+    _r("Боруссия М", "Беренгер", "ЛФА", "ЛП"),
     _r("Боруссия М", "Омлин", "ВРТ"),
     _r("Боруссия М", "Янтшке", "ЦЗ"),
     _r("Байер", "Хложек", "ФРВ"),
@@ -75,7 +76,7 @@ _REMOVALS: list[tuple[str | None, str, str, tuple[str, ...]]] = [
     _r("Атлетик", "Рауль", "ФРВ"),
     _r("Атлетик", "Гарсия", "ЦП"),
     _r("Мю", "Линделёф", "ЦЗ"),
-    _r("Мю", "Маунт", "ЦАП"),
+    _r("Мю", "Маунт", "ЦАП", "ЦП"),
     # остатки на Free Agent (клуб уже снят)
     _r(None, "Бериша", "ФРВ"),
     _r(None, "Бонифасе", "ФРВ"),
@@ -188,11 +189,23 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--cl", action="store_true", help="Также champions_league.db")
+    ap.add_argument(
+        "--also-synced",
+        action="store_true",
+        help="Также db/league_synced.db и champions_league_synced.db",
+    )
     args = ap.parse_args()
 
     paths = [os.path.join(ROOT, "db", "season_2", "league.db")]
     if args.cl:
         paths.append(os.path.join(ROOT, "db", "season_2", "champions_league.db"))
+    if args.also_synced:
+        paths.extend(
+            [
+                os.path.join(ROOT, "db", "league_synced.db"),
+                os.path.join(ROOT, "db", "champions_league_synced.db"),
+            ]
+        )
 
     total = 0
     found = 0
@@ -207,10 +220,28 @@ def main() -> None:
         total += n
 
     if args.apply:
-        from utils.common_db import rebuild_common_database
+        if args.also_synced:
+            from utils.common_db import (
+                rebuild_common_database,
+                rebuild_common_database_for_disk_paths,
+            )
+            from utils import season_paths
 
-        rebuild_common_database()
-        print(f"Удалено строк: {total}. common.db пересобран.")
+            rebuild_common_database_for_disk_paths(
+                os.path.join(ROOT, "db", season_paths.LEGACY_LEAGUE),
+                os.path.join(ROOT, "db", season_paths.LEGACY_CL),
+                os.path.join(ROOT, "db", season_paths.LEGACY_COMMON),
+            )
+            rebuild_common_database()
+            print(
+                f"Удалено строк: {total}. "
+                "season_2/common.db и common_synced.db пересобраны."
+            )
+        else:
+            from utils.common_db import rebuild_common_database
+
+            rebuild_common_database()
+            print(f"Удалено строк: {total}. season_2/common.db пересобран.")
     else:
         print(f"(dry-run) Найдено к удалению: {found}. Для записи: --apply")
 
