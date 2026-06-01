@@ -9,7 +9,8 @@
 (в т.ч. трансфер в другой клуб на той же позиции — проверьте глазами).
 
   python3 scripts/list_surname_homonyms.py
-  python3 scripts/list_surname_homonyms.py --positions-only
+  python3 scripts/list_surname_homonyms.py --season 2
+  python3 scripts/list_surname_homonyms.py --season 2 --positions-only
   python3 scripts/list_surname_homonyms.py --json -o data/surname_homonyms_report.json
 """
 from __future__ import annotations
@@ -29,7 +30,7 @@ from player_stats import _norm_cmp
 
 _TABLES = ("forwards", "midfielders", "defenders", "goalkeepers")
 
-_DB_TARGETS = [
+_ALL_DB_TARGETS = [
     ("season_1/league.db", "s1:league"),
     ("season_1/champions_league.db", "s1:cl"),
     ("season_1/common.db", "s1:common"),
@@ -40,6 +41,16 @@ _DB_TARGETS = [
     ("champions_league_synced.db", "sync:cl"),
     ("common_synced.db", "sync:common"),
 ]
+
+
+def _db_targets(season: int | None, *, include_cl_common: bool) -> list[tuple[str, str]]:
+    if season is None:
+        return list(_ALL_DB_TARGETS)
+    prefix = f"season_{season}/"
+    out = [(rel, label) for rel, label in _ALL_DB_TARGETS if rel.startswith(prefix)]
+    if not include_cl_common:
+        out = [(rel, label) for rel, label in out if label.endswith(":league")]
+    return out
 
 
 def _surname_token(name: str, surname: str | None) -> str:
@@ -109,11 +120,16 @@ def _iter_players(path: str, db_label: str):
         conn.close()
 
 
-def _find_homonyms(*, positions_only: bool = False, min_variants: int = 2) -> list[dict]:
+def _find_homonyms(
+    db_targets: list[tuple[str, str]],
+    *,
+    positions_only: bool = False,
+    min_variants: int = 2,
+) -> list[dict]:
     by_sur: dict[str, list[dict]] = defaultdict(list)
     display: dict[str, str] = {}
 
-    for rel, label in _DB_TARGETS:
+    for rel, label in db_targets:
         path = os.path.join(ROOT, "db", rel)
         for row in _iter_players(path, label):
             sn = row["surname_norm"]
@@ -170,33 +186,30 @@ def _find_homonyms(*, positions_only: bool = False, min_variants: int = 2) -> li
     return out
 
 
-def _print_report(groups: list[dict]) -> None:
-    print(f"Омонимов (фамилия → ≥2 позиций или ≥2 пар позиция+клуб): {len(groups)}\n")
+def _print_report(groups: list[dict], *, scope: str) -> None:
+    print(f"[{scope}] Омонимов: {len(groups)}\n")
     for g in groups:
         print(f"=== {g['surname']} ===  позиции: {', '.join(g['positions'])}")
         for p in g["profiles"]:
             ex = p["example_name"]
             ov = p["example_overall"]
             print(f"  • {p['position']:<4} {p['team']:<22}  пример: {ex!r}  OVR {ov}")
-            seen_db: set[str] = set()
-            for occ in p["occurrences"]:
-                key = f"{occ['db']}:{occ['id']}"
-                if key in seen_db:
-                    continue
-                seen_db.add(key)
-                if len(seen_db) <= 6:
-                    print(
-                        f"      {occ['db']} {occ['table']} id={occ['id']} "
-                        f"name={occ['name']!r} ovr={occ['overall']}"
-                    )
-            extra = len(p["occurrences"]) - min(6, len(p["occurrences"]))
-            if extra > 0:
-                print(f"      … ещё {extra} строк в БД")
+            for occ in p["occurrences"][:1]:
+                print(
+                    f"      {occ['table']} id={occ['id']} "
+                    f"name={occ['name']!r} ovr={occ['overall']}"
+                )
         print()
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--season", type=int, choices=(1, 2), help="Только архив сезона N")
+    ap.add_argument(
+        "--with-cl-common",
+        action="store_true",
+        help="С --season: ещё champions_league.db и common.db",
+    )
     ap.add_argument(
         "--positions-only",
         action="store_true",
@@ -206,9 +219,14 @@ def main() -> int:
     ap.add_argument("-o", "--output", help="Файл для JSON")
     args = ap.parse_args()
 
-    groups = _find_homonyms(positions_only=args.positions_only)
+    targets = _db_targets(args.season, include_cl_common=args.with_cl_common)
+    if args.season:
+        scope = f"season_{args.season}" + ("" if args.with_cl_common else ", league.db")
+    else:
+        scope = "все БД"
+    groups = _find_homonyms(targets, positions_only=args.positions_only)
     if args.json or args.output:
-        payload = {"homonyms": groups, "count": len(groups)}
+        payload = {"scope": scope, "homonyms": groups, "count": len(groups)}
         text = json.dumps(payload, ensure_ascii=False, indent=2)
         if args.output:
             os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
@@ -218,7 +236,7 @@ def main() -> int:
         else:
             print(text)
     else:
-        _print_report(groups)
+        _print_report(groups, scope=scope)
     return 0
 
 
