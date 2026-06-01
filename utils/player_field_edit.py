@@ -59,7 +59,7 @@ def find_player_row(
         )
         return pick
     canon = resolve_canonical_name(team, name)
-    if _norm_cmp(canon) != want_n:
+    if _norm_cmp(canon) != _norm_cmp(name):
         return find_player_row(sess, team, canon, position)
     return None, None
 
@@ -224,7 +224,7 @@ def apply_player_field_update(
                 session_league.delete(other)
                 merged += 1
                 _sync_ga_if_needed(row_l, field)
-    merge_same_name_duplicates_in_session(
+    merged += merge_same_name_duplicates_in_session(
         session_league, team_t, (getattr(row_l, "name", None) or "").strip() or name
     )
 
