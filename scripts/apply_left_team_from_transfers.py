@@ -3,8 +3,8 @@
 """
 Проставить ``left_team=True`` по журналу ``data/transfers.json``.
 
-Для каждой записи (кроме из «свободный агент») помечает строки игрока
-в ``from_team`` (имя + позиция) — ``team`` и стата не меняются, из заявки скрываются.
+Для каждой записи (кроме из «свободный агент») помечает **все** строки игрока
+в ``from_team`` (имя; позиция в журнале — новая роль, может отличаться) — стата не трогается.
 
 БД: активный сезон (league/cl/common) + ``*_synced.db``.
 
@@ -78,7 +78,6 @@ def _mark_left_in_db(
     dry_run: bool,
 ) -> list[str]:
     want_n = _norm_cmp(player)
-    want_pos = _norm_cmp(position) if position else ""
     touched: list[str] = []
     conn = sqlite3.connect(db_path)
     try:
@@ -102,8 +101,6 @@ def _mark_left_in_db(
                 if _norm_cmp(name or "") != want_n:
                     continue
                 pos_u = (pos or "").strip().upper()
-                if want_pos and _norm_cmp(pos_u) != want_pos:
-                    continue
                 line = (
                     f"  {table} id={rid} {name} {pos_u} @ {team} m={matches}"
                 )
@@ -135,7 +132,7 @@ def main() -> int:
 
     transfers = _load_transfers()
     skipped_fa = 0
-    seen: set[tuple[str, str, str, str]] = set()
+    seen: set[tuple[str, str, str]] = set()
     total_lines = 0
 
     db_paths = season_paths.iter_player_roster_db_paths(include_synced=True)
@@ -154,7 +151,7 @@ def main() -> int:
         if _is_free_agent_team(from_team):
             skipped_fa += 1
             continue
-        key = (_norm_cmp(player), _norm_cmp(from_team), _norm_cmp(to_team), _norm_cmp(pos))
+        key = (_norm_cmp(player), _norm_cmp(from_team), _norm_cmp(to_team))
         if key in seen:
             continue
         seen.add(key)

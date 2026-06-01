@@ -47,6 +47,10 @@ def _key(p: Any) -> tuple:
     )
 
 
+def _player_left_team_flag(p: Any) -> bool:
+    return bool(getattr(p, "left_team", False))
+
+
 def _apply_roster_fields(b: dict, p: Any, *, is_cl: bool) -> None:
     """``name`` в common — из лиги; из ЛЧ только если в бакете ещё пусто."""
     nm = (getattr(p, "name", None) or "").strip()
@@ -54,6 +58,8 @@ def _apply_roster_fields(b: dict, p: Any, *, is_cl: bool) -> None:
         return
     if not is_cl or not (b.get("name") or "").strip():
         b["name"] = nm
+    if _player_left_team_flag(p):
+        b["left_team"] = True
 
 
 def resolve_team_name_for_cl_pool(team_name: str) -> str | None:
@@ -101,6 +107,7 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
                     "name": p.name,
                     "team": p.team,
                     "position": p.position,
+                    "left_team": False,
                     "matches": 0,
                     "goals": 0,
                     "assists": 0,
@@ -184,6 +191,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     golden_boys=b["golden_boys"],
                     nation=b.get("nation"),
                     status=b.get("status"),
+                    left_team=bool(b.get("left_team", False)),
                     yellow_cards=int(b.get("yellow_cards", 0) or 0),
                     red_cards=int(b.get("red_cards", 0) or 0),
                 )
@@ -205,6 +213,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     golden_boys=b["golden_boys"],
                     nation=b.get("nation"),
                     status=b.get("status"),
+                    left_team=bool(b.get("left_team", False)),
                     yellow_cards=int(b.get("yellow_cards", 0) or 0),
                     red_cards=int(b.get("red_cards", 0) or 0),
                 )
@@ -226,6 +235,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     golden_boys=b["golden_boys"],
                     nation=b.get("nation"),
                     status=b.get("status"),
+                    left_team=bool(b.get("left_team", False)),
                     yellow_cards=int(b.get("yellow_cards", 0) or 0),
                     red_cards=int(b.get("red_cards", 0) or 0),
                 )
@@ -348,6 +358,7 @@ def rebuild_common_database(
                 golden_boys=b["golden_boys"],
                 nation=b.get("nation"),
                 status=b.get("status"),
+                left_team=bool(b.get("left_team", False)),
                 yellow_cards=int(b.get("yellow_cards", 0) or 0),
                 red_cards=int(b.get("red_cards", 0) or 0),
             )

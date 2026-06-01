@@ -264,29 +264,47 @@ def _apply_transfer_with_status_to_sessions(
     want_pos = _norm_cmp(position)
 
     def _run_session(sess, key: str) -> None:
+        sources: list[tuple[type, Any]] = []
         for Cls in _ALL_PLAYER:
-            for r in sess.query(Cls).filter(_filter_team(Cls, from_team)).all():
+            for r in sess.query(Cls).filter(
+                _filter_team(Cls, from_team, include_left=True)
+            ).all():
                 if _norm_cmp(getattr(r, "name", "") or "") != want_name:
                     continue
-                if _norm_cmp(getattr(r, "position", "") or "") != want_pos:
-                    continue
-                if _row_exists_at_team(sess, Cls, player, to_team, position):
-                    raise ValueError(
-                        f"Уже есть строка: {player} ({position}) в «{to_team}»."
-                    )
-                _insert_fresh_row_at_team(
-                    sess,
-                    Cls,
-                    r,
-                    to_team,
-                    position,
-                    new_status,
-                    new_overall=new_overall,
-                    nation_update=nation_update,
-                    new_nation=new_nation,
-                )
-                mark_player_left_team(r)
-                counts[key] += 1
+                sources.append((Cls, r))
+        if not sources:
+            return
+
+        def _donor_score(item: tuple[type, Any]) -> tuple:
+            _Cls, row = item
+            pos_match = (
+                _norm_cmp(getattr(row, "position", "") or "") == want_pos
+            )
+            return (
+                pos_match,
+                int(getattr(row, "matches", 0) or 0),
+                int(getattr(row, "id", 0) or 0),
+            )
+
+        donor_cls, donor = max(sources, key=_donor_score)
+        if _row_exists_at_team(sess, donor_cls, player, to_team, position):
+            raise ValueError(
+                f"Уже есть строка: {player} ({position}) в «{to_team}»."
+            )
+        _insert_fresh_row_at_team(
+            sess,
+            donor_cls,
+            donor,
+            to_team,
+            position,
+            new_status,
+            new_overall=new_overall,
+            nation_update=nation_update,
+            new_nation=new_nation,
+        )
+        for Cls, r in sources:
+            mark_player_left_team(r)
+            counts[key] += 1
 
     _run_session(sess_league, "league")
     sess_league.commit()
