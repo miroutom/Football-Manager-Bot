@@ -1959,6 +1959,6 @@ def format_all_leagues_combined_list_str(limit: int = 100, sort_key: int = 1) ->
     Топ-100: лига + ЛЧ по снимкам сезонов, одна строка на игрока.
     sort_key: 1 — голы, 2 — передачи, 3 — Г+А.
     """
-    from utils.stats_history_agg import format_top100_combined_str
+    from utils.stats_history_agg import format_top100_str
 
-    return format_top100_combined_str(limit=limit, sort_key=sort_key)
+    return format_top100_str("allcl", limit=limit, sort_key=sort_key)

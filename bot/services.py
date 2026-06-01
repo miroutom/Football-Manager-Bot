@@ -415,11 +415,24 @@ def render_archived_season_team_goalscorers_single(
         e.dispose()
 
 
-def render_top100_all_leagues(sort_key: int = 1, limit: int = 100) -> str:
-    """Топ-100 объединённая БД — как «b»→5; sort_key 1/2/3."""
-    from player_stats import format_all_leagues_combined_list_str
+def render_top100(
+    league_code: str,
+    sort_key: int = 1,
+    limit: int = 100,
+) -> str:
+    """Топ-100 за всё время: ``all`` | ``allcl``; sort_key 1/2/3."""
+    from utils.stats_history_agg import format_top100_str
 
-    return format_all_leagues_combined_list_str(limit=limit, sort_key=sort_key)
+    code = _normalize_cumulative_league_code(league_code)
+    err = _cumulative_archive_error(league_code)
+    if err:
+        return err
+    return format_top100_str(code, limit=limit, sort_key=sort_key)
+
+
+def render_top100_all_leagues(sort_key: int = 1, limit: int = 100) -> str:
+    """Совместимость: топ-100 лига+ЛЧ."""
+    return render_top100("allcl", sort_key=sort_key, limit=limit)
 
 
 def render_schedule_mixed(

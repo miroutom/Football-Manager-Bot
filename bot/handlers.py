@@ -45,7 +45,6 @@ from bot.services import (
     render_team_goalscorers_league,
     render_team_goalscorers_single,
     render_team_squad_pitch_png_bytes,
-    render_top100_all_leagues,
     teams_ordered_for_goalscorers,
     teams_ordered_for_goalscorers_season_archive,
     render_top_assists,
@@ -1491,33 +1490,92 @@ async def cb_sch_intrinsic(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "menu:top100")
 async def cb_menu_top100(callback: CallbackQuery) -> None:
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="По голам", callback_data="top100:1"),
-                InlineKeyboardButton(text="По передачам", callback_data="top100:2"),
-                InlineKeyboardButton(text="По Г+А", callback_data="top100:3"),
-            ]
-        ]
-    )
     await callback.answer()
     await callback.message.answer(
-        "Топ-100 (лига + ЛЧ, все лиги), только игроки с голом или передачей:",
-        reply_markup=kb,
+        "Топ-100 за всё время (только игроки с голом или передачей). Выбери чемпионат:",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="Все чемпионаты",
+                        callback_data="top100:lg:all",
+                    ),
+                    InlineKeyboardButton(
+                        text="Все чемпионаты + ЛЧ",
+                        callback_data="top100:lg:allcl",
+                    ),
+                ],
+            ]
+        ),
+    )
+
+
+def _top100_sort_kb(league_code: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="По голам",
+                    callback_data=f"top100:{league_code}:1",
+                ),
+                InlineKeyboardButton(
+                    text="По передачам",
+                    callback_data=f"top100:{league_code}:2",
+                ),
+                InlineKeyboardButton(
+                    text="По Г+А",
+                    callback_data=f"top100:{league_code}:3",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="« Чемпионат",
+                    callback_data="menu:top100",
+                ),
+            ],
+        ]
+    )
+
+
+@router.callback_query(F.data.startswith("top100:lg:"))
+async def cb_top100_pick_sort(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    code = parts[2]
+    if code not in ("all", "allcl"):
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    await callback.answer()
+    await callback.message.answer(
+        f"Топ-100 · {_league_title(code)} — сортировка:",
+        reply_markup=_top100_sort_kb(code),
     )
 
 
 @router.callback_query(F.data.startswith("top100:"))
 async def cb_top100_sort(callback: CallbackQuery) -> None:
-    try:
-        sk = int(callback.data.split(":")[1])
-    except (IndexError, ValueError):
+    parts = callback.data.split(":")
+    # Старые кнопки top100:1 → лига+ЛЧ
+    if len(parts) == 2 and parts[1].isdigit():
+        league_code, sk = "allcl", int(parts[1])
+    elif len(parts) == 3 and parts[1] in ("all", "allcl") and parts[2].isdigit():
+        league_code, sk = parts[1], int(parts[2])
+    else:
         await callback.answer()
         return
     await callback.answer("Считаю…")
     try:
-        text = await asyncio.to_thread(render_top100_all_leagues, sk, 100)
-        await answer_report_photos(callback.message, text, f"Топ-100 (сортировка {sk})")
+        from bot.services import render_top100
+
+        text = await asyncio.to_thread(render_top100, league_code, sk, 100)
+        sort_label = {1: "голы", 2: "передачи", 3: "Г+А"}.get(sk, str(sk))
+        await answer_report_photos(
+            callback.message,
+            text,
+            f"Топ-100 · {_league_title(league_code)} · {sort_label}",
+        )
     except Exception as e:
         logger.exception("top100")
         await callback.message.answer(f"Ошибка: {e}")

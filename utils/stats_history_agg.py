@@ -1035,18 +1035,34 @@ def format_season_clean_sheets(
     return _fmt(_sort(gk_rows), "вратари"), _fmt(_sort(df_rows), "защитники")
 
 
-def format_top100_combined_str(limit: int = 100, sort_key: int = 1) -> str:
-    """Топ-100: лига + ЛЧ, одна строка на игрока, клуб из активного сезона."""
+def format_top100_str(
+    league_code: str | None,
+    limit: int = 100,
+    sort_key: int = 1,
+) -> str:
+    """Топ-100 за всё время: ``all`` — нац. лиги; ``allcl`` — лига + ЛЧ."""
     import contextlib
     import io
 
-    if not life_has_combined_archive_data():
-        return (
-            "Пока нет архивов сезонов с league.db / champions_league.db. "
-            "После игры и «Завершить сезон» появятся снимки в db/season_N/."
-        )
+    code = normalize_stats_league_code(league_code) or league_code
+    if is_all_leagues_plus_cl(code):
+        if not life_has_combined_archive_data():
+            return (
+                "Пока нет архивов сезонов с league.db / champions_league.db. "
+                "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+            )
+        scope_line = "лига + ЛЧ, все лиги"
+    elif is_all_leagues_only(code):
+        if not life_has_archive_data():
+            return (
+                "Пока нет архивов сезонов с league.db. "
+                "После «Завершить сезон» появятся снимки в db/season_N/."
+            )
+        scope_line = "все нац. лиги (без ЛЧ)"
+    else:
+        return "Топ-100: укажите all или allcl."
 
-    rows = aggregate_life_outfield("allcl", merge_by_player=True)
+    rows = aggregate_life_outfield(code, merge_by_player=True)
     rows = [
         r
         for r in rows
@@ -1067,7 +1083,7 @@ def format_top100_combined_str(limit: int = 100, sort_key: int = 1) -> str:
     with contextlib.redirect_stdout(buf):
         print("\n" + "=" * 76)
         print(
-            f"  ТОП-{limit} — лига + ЛЧ, все лиги (снимки сезонов, сумма по игроку) "
+            f"  ТОП-{limit} — {scope_line} (снимки сезонов, сумма по игроку) "
             f"(с голом или передачей; кандидатов: {n_cand})"
         )
         print("=" * 76)
@@ -1086,3 +1102,8 @@ def format_top100_combined_str(limit: int = 100, sort_key: int = 1) -> str:
             )
         print("-" * 76)
     return buf.getvalue().strip()
+
+
+def format_top100_combined_str(limit: int = 100, sort_key: int = 1) -> str:
+    """Топ-100: лига + ЛЧ (``allcl``)."""
+    return format_top100_str("allcl", limit=limit, sort_key=sort_key)
