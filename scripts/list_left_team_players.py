@@ -148,11 +148,16 @@ def main() -> None:
 
     for r in left_rows:
         cur = active.get(_norm_cmp(r["name"]), [])
-        cur_s = "— (нет активной строки)" if not cur else "; ".join(cur)
+        if not cur:
+            cur_s = "— (нет активной строки)"
+        elif len(cur) == 1:
+            cur_s = cur[0]
+        else:
+            cur_s = f"⚠ омоним ({len(cur)}): " + "; ".join(cur)
         print(
             f"{r['team']:<{w_team}}  {r['name']:<{w_name}}  {r['position']:<{w_pos}}  "
             f"{r['overall']:>3}  {r['matches']:>3}  {r['goals']:>3}  {r['assists']:>3}  "
-            f"{cur_s}"
+            f"{cur_s}  [id={r['id']}]"
         )
         if len(paths) > 1 or args.db == "both":
             print(f"  └ [{r['db']}] id={r['id']} ({r['table']})")
