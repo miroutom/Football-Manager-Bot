@@ -100,6 +100,7 @@ async def _finish_match_and_offer_stats(
         stats_tournament="cl" if league_code == "cl" else "league",
         stats_league_code=league_code,
         stats_schedule_day=schedule_day,
+        stats_continue_source="calendar",
     )
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -443,8 +444,14 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
             )
             extra = "\nМатч добавлен в журнал match_results.json."
 
+    continue_src = (data.get("stats_continue_source") or "calendar").strip().lower()
+    ason_ctx = dict(data.get("stats_ason_ctx") or {})
+
     await message.answer(f"Готово. Статистика сохранена в базу.{extra}")
-    await _send_post_match_continue_prompt(message)
+    if continue_src == "ason":
+        await _send_ason_continue_after_stats(message, state, ason_ctx)
+    else:
+        await _send_post_match_continue_prompt(message)
 
 
 def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
@@ -878,6 +885,17 @@ async def _begin_stats_for_played_slot(
 ) -> None:
     from match_results import find_journal_match_record
 
+    prev = await state.get_data()
+    ason_ctx = {
+        "lf": (prev.get("ason_pick_lf") or prev.get("ason_league") or "all")
+        .strip()
+        .lower()
+        or "all",
+        "sk": (prev.get("ason_pick_sk") or "all").strip().lower() or "all",
+        "month": prev.get("ason_month"),
+        "cl_ph": prev.get("ason_pick_cl_ph") or prev.get("ason_cl_ph"),
+    }
+
     home = str(slot["home"]).strip().title()
     away = str(slot["away"]).strip().title()
     hs = int(slot["home_score"])
@@ -899,6 +917,8 @@ async def _begin_stats_for_played_slot(
         stats_tournament="cl" if lc == "cl" else "league",
         stats_league_code=lc,
         stats_schedule_day=slot.get("day"),
+        stats_continue_source="ason",
+        stats_ason_ctx=ason_ctx,
     )
     hn = html_escape(home)
     an = html_escape(away)
@@ -955,6 +975,60 @@ def _post_match_continue_kb(
         [InlineKeyboardButton(text="📋 Меню", callback_data="play:post:menu")]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def _send_ason_continue_after_stats(
+    message: Message,
+    state: FSMContext,
+    ctx: dict,
+) -> None:
+    """После статы из «Стата без матча» — следующие матчи из pending-очереди."""
+    lf = (ctx.get("lf") or "all").strip().lower() or "all"
+    sk = (ctx.get("sk") or "all").strip().lower() or "all"
+    month = ctx.get("month")
+    if month is not None:
+        month = int(month)
+    cl_ph = ctx.get("cl_ph")
+
+    await state.set_state(AddOnlyStats.browsing)
+    patch: dict = {
+        "ason_pick_lf": lf,
+        "ason_pick_sk": sk,
+        "ason_month": month,
+        "ason_month_chosen": month is not None,
+    }
+    if lf == "cl":
+        patch["ason_league"] = "cl"
+        if cl_ph:
+            patch["ason_cl_ph"] = cl_ph
+            patch["ason_pick_cl_ph"] = cl_ph
+    elif lf != "all":
+        patch["ason_league"] = lf
+    await state.update_data(**patch)
+
+    data = await state.get_data()
+    ordered = await _ordered_played_filtered(lf, sk, month_filter=month)
+    ordered = _ason_filter_played_list(ordered, data)
+    if not ordered:
+        await message.answer(
+            "В очереди «Стата без матча» по этому фильтру больше нет матчей.",
+            reply_markup=build_ason_league_kb(),
+            parse_mode="HTML",
+        )
+        return
+
+    await message.answer(
+        "<b>Что дальше?</b> Следующие матчи из очереди «Стата без матча»:",
+        parse_mode="HTML",
+    )
+    await _show_ason_pick_list(
+        message,
+        state,
+        league_key=lf,
+        session_kind=sk,
+        page=0,
+        edit=False,
+    )
 
 
 async def _send_post_match_continue_prompt(message: Message) -> None:
