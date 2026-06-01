@@ -398,6 +398,11 @@ def rebuild_common_database_for_disk_paths(
     parent = os.path.dirname(os.path.abspath(common_path))
     if parent:
         os.makedirs(parent, exist_ok=True)
+    from utils.migrate_player_left_team import migrate_left_team_for_sqlite
+    from utils.migrate_player_surname import migrate_surname_columns_for_sqlite
+
+    migrate_surname_columns_for_sqlite(common_path, label=common_path)
+    migrate_left_team_for_sqlite(common_path, label=common_path)
     el = create_engine(f"sqlite:///{league_path}")
     ec = create_engine(f"sqlite:///{cl_path}")
     eo = create_engine(f"sqlite:///{common_path}")
