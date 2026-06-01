@@ -96,6 +96,13 @@ _TEAM_POS_DB_HINT: dict[tuple[str, str, str], str] = {
     ("вольфсбург", "гарсия", "ЦП"): "саму",
 }
 
+# В xlsx есть блок, но в архиве season_1 этого игрока нет (появился в S2)
+_SEASON1_XLSX_SKIP: frozenset[tuple[str, str]] = frozenset(
+    {
+        (_norm_cmp("Аталанта"), _norm_cmp("Сильва")),
+    }
+)
+
 
 def _canonical_xlsx_team(team: str) -> str:
     s = (team or "").strip()
@@ -189,20 +196,6 @@ def _narrow_by_team_pos_hint(
         c for c in cands if any(hint in lab for lab in _db_labels(c[1]))
     ]
     return filt if filt else cands
-
-
-def _cands_at_xlsx_team(
-    cands: list[tuple[str, object]], entry: XlsxPlayer
-) -> list[tuple[str, object]]:
-    """Игроки только из клуба, указанного в блоке xlsx (кроме явных cross-club подсказок)."""
-    if not entry.team or _team_pos_hint(entry):
-        return cands
-    at_club = [
-        c
-        for c in cands
-        if _norm_cmp((c[1].team or "")) == _norm_cmp(entry.team)
-    ]
-    return at_club
 
 
 def _filter_by_first_name(
@@ -366,37 +359,32 @@ def _candidates_team_surname(
 
 
 def find_db_row_season1(session, entry: XlsxPlayer):
-    """Сезон 1: фамилия+нация; клуб из xlsx обязателен (кроме cross-club подсказок)."""
+    """Сезон 1: фамилия+нация по всей БД; клуб из xlsx — для уточнения."""
+    if (_norm_cmp(entry.team), _norm_cmp(entry.surname_label)) in _SEASON1_XLSX_SKIP:
+        return None, "не найден"
+
     cands = _candidates_surname_nation(session, entry)
     cands = _narrow_by_team_pos_hint(cands, entry)
     cands = _filter_by_first_name(cands, entry)
-
-    cross_club = bool(_team_pos_hint(entry))
-    if cross_club:
-        hit, err = _pick_one(cands, entry, prefer_team=False)
-    else:
-        scoped = _cands_at_xlsx_team(cands, entry)
-        if entry.team and cands and not scoped:
-            # Однофамильцы в других клубах, в блоке xlsx этого игрока в S1 нет
-            hit, err = None, None
-        else:
-            pool = scoped if entry.team else cands
-            hit, err = _pick_one(pool, entry, prefer_team=not entry.team)
-            if err and "неоднознач" in err and entry.team:
-                hit, err = None, None
-
+    hit, err = _pick_one(cands, entry, prefer_team=True)
     if hit:
         return hit, err
+    # Неоднозначно только среди чужих клубов → в S1 в этом клубе игрока не было
+    if err and "неоднознач" in err and entry.team and cands:
+        at_club = any(
+            _norm_cmp(c[1].team or "") == _norm_cmp(entry.team) for c in cands
+        )
+        if not at_club:
+            return None, "не найден"
 
-    if entry.team and not cross_club:
+    if entry.team:
         fb = _candidates_team_label(session, entry, require_nation=False)
         fb = _filter_by_first_name(fb, entry)
-        if fb:
-            hit, err = _pick_one(fb, entry, prefer_team=False)
-            if hit:
-                return hit, err
+        hit, err = _pick_one(fb, entry, prefer_team=False)
+        if hit:
+            return hit, err
 
-    return None, "не найден"
+    return None, err or "не найден"
 
 
 def find_db_row_season2(session, entry: XlsxPlayer):
