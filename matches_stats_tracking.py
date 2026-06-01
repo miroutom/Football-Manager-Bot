@@ -89,6 +89,25 @@ def is_stats_completed(
     return any(_same_slot(m, key) for m in load_stats_completed())
 
 
+def is_stats_pending(
+    home: str,
+    away: str,
+    tournament: str,
+    *,
+    cl_phase: str | None = None,
+) -> bool:
+    """Матч в очереди «Стата без матча» (после «Нет» сразу после счёта)."""
+    key = _slot_row(home, away, tournament, cl_phase=cl_phase)
+    return any(_same_slot(m, key) for m in load_stats_pending())
+
+
+def _tournament_from_slot(slot: dict) -> tuple[str, str | None]:
+    lc = str(slot.get("league_code") or "league").strip().lower()
+    tourn = "cl" if lc == "cl" else "league"
+    cl_ph = slot.get("cl_ph") if tourn == "cl" else None
+    return tourn, cl_ph
+
+
 def mark_stats_completed(
     home: str,
     away: str,
@@ -140,18 +159,18 @@ def remove_stats_pending(
 
 
 def filter_played_without_stats(slots: list[dict]) -> list[dict]:
-    """Оставить только сыгранные слоты, по которым стата ещё не закрыта."""
+    """
+    Очередь «Стата без матча»: только матчи из ``matches_stats_pending.json``
+    (после «Нет» на экране статы), ещё не в ``matches_stats_completed.json``.
+    """
     out = []
     for slot in slots:
-        lc = str(slot.get("league_code") or "league").strip().lower()
-        tourn = "cl" if lc == "cl" else "league"
-        cl_ph = slot.get("cl_ph") if tourn == "cl" else None
-        if is_stats_completed(
-            slot["home"],
-            slot["away"],
-            tourn,
-            cl_phase=cl_ph,
-        ):
+        tourn, cl_ph = _tournament_from_slot(slot)
+        home = slot["home"]
+        away = slot["away"]
+        if is_stats_completed(home, away, tourn, cl_phase=cl_ph):
+            continue
+        if not is_stats_pending(home, away, tourn, cl_phase=cl_ph):
             continue
         out.append(slot)
     return out

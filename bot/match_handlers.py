@@ -728,8 +728,8 @@ def _ason_pick_intro_html(
     mo = html_escape(_ason_month_filter_label(month_filter))
     return (
         f"{cap} · <b>{mo}</b>\n\n"
-        "<b>Матчи без статистики</b> — счёт уже в журнале, стата ещё не внесена. "
-        "Выбери матч, затем вводи только строки статистики (или «Готово» / /cancel).\n"
+        "<b>Очередь «без статы»</b> — только матчи, где после счёта нажали «Нет» "
+        "(см. <code>data/matches_stats_pending.json</code>). Выбери матч → ввод статы.\n"
         f"{note}"
     )
 
@@ -863,7 +863,8 @@ async def _send_ason_stats_intro(message: Message, state: FSMContext) -> None:
     await state.set_state(AddOnlyStats.browsing)
     await message.answer(
         "📊 <b>Стата без матча</b> — чемпионат → месяц (или все) → тип (сим / игра / всё). "
-        "Только <b>сыгранные матчи без статистики</b> (если после матча нажал «Нет» — матч попадёт сюда).\n"
+        "Только матчи из очереди: после счёта нажал «Нет» на стате — попадёт в "
+        "<code>matches_stats_pending.json</code> и отобразится здесь.\n"
         "/cancel — отмена.",
         reply_markup=build_ason_league_kb(),
         parse_mode="HTML",

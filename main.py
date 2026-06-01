@@ -282,7 +282,8 @@ def list_played_schedule_matches(
 
     ``month_filter``: если задан — только слоты с ``day`` равным этому месяцу календаря.
 
-    ``only_without_stats``: только матчи со счётом в журнале, по которым статистика
+    ``only_without_stats``: только матчи из очереди ``data/matches_stats_pending.json``
+    (после «Нет» на предложении ввести стату), ещё не в ``matches_stats_completed.json``
     игроков ещё не отмечена как внесённая (см. ``matches_stats_tracking``).
     """
     from config.leagues_config import manager_session_label
