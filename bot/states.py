@@ -22,7 +22,6 @@ class SkipPlay(StatesGroup):
 class PostMatch(StatesGroup):
     """После записи счёта — предложение ввести статистику игроков."""
     offer_stats = State()
-    stats_roster_list = State()
     stats_wait_lines = State()
 
 
