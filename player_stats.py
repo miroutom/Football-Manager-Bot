@@ -995,6 +995,28 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
     print("✓ Статистика сохранена")
 
 
+def format_single_team_roster_text(team: str, tournament: str = "league") -> str:
+    """Состав одного клуба для подсказки при вводе «кто сыграл»."""
+    from utils.match_ratings import build_roster_template
+
+    team = (team or "").strip().title()
+    try:
+        kw = (
+            {"roster_from": "league"}
+            if (tournament or "").strip() in ("cl", "champ_league")
+            else {}
+        )
+        tpl, _, _canon = build_roster_template(team, tournament, **kw)
+    except Exception:
+        return ""
+    lines: list[str] = []
+    for line in (tpl or "").splitlines():
+        s = line.strip()
+        if s:
+            lines.append(s)
+    return "\n".join(lines)
+
+
 def format_roster_cheat_sheet_text(
     home_team: str, away_team: str, tournament: str = "league"
 ) -> str:

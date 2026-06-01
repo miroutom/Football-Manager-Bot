@@ -6,6 +6,7 @@ import contextlib
 import io
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 from utils.player_transfer import _norm_cmp
 from coach_squad_state import resolve_formation_key_for_team
@@ -546,6 +547,107 @@ def deserialize_roster(raw: list) -> list[MatchRosterPlayer]:
 
 def roster_pk(player: MatchRosterPlayer) -> str:
     return player_row_key(player.name, player.position)
+
+
+def parse_roster_name_lines(text: str) -> list[str]:
+    """Строки «кто сыграл» — по одному игроку, можно несколько в одном сообщении."""
+    out: list[str] = []
+    for line in (text or "").replace("\r", "").split("\n"):
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        out.append(s)
+    return out
+
+
+def resolve_player_in_team(session, raw_name: str, team: str) -> tuple[Any | None, str]:
+    """
+    Найти игрока в клубе: точное имя, иначе единственное совпадение по фрагменту/фамилии.
+    Возвращает (row SQLAlchemy, ошибка).
+    """
+    from player_stats import Forward, Goalkeeper, Defender, Midfielder, find_player_by_name
+
+    team_t = (team or "").strip().title()
+    name_try = (raw_name or "").strip().title()
+    if not name_try:
+        return None, "Пустая строка."
+
+    pl, _ = find_player_by_name(session, name_try, team_t)
+    if pl:
+        return pl, ""
+
+    q = _norm_cmp(raw_name)
+    team_n = _norm_cmp(team_t)
+    found: list[Any] = []
+    seen: set[str] = set()
+    for Cls in (Forward, Midfielder, Defender, Goalkeeper):
+        for p in session.query(Cls).all():
+            if _norm_cmp(p.team) != team_n:
+                continue
+            pn = _norm_cmp(p.name)
+            if pn in seen:
+                continue
+            parts = pn.split()
+            hit = (
+                pn == q
+                or q in pn
+                or any(p.startswith(q) or q == p for p in parts)
+            )
+            if hit:
+                seen.add(pn)
+                found.append(p)
+    if len(found) == 1:
+        return found[0], ""
+    if len(found) > 1:
+        names = ", ".join(sorted({p.name for p in found})[:6])
+        extra = "…" if len(found) > 6 else ""
+        return None, f"Неоднозначно «{raw_name}»: {names}{extra}"
+    return None, f"Не найден в БД «{raw_name}» ({team_t})"
+
+
+def apply_roster_names_for_team(
+    names: list[str],
+    team: str,
+    *,
+    tournament: str,
+) -> tuple[list[str], list[str], list[str]]:
+    """
+  Засчитать +1 матч каждому из списка имён.
+  Возвращает (session_keys, ok_lines, err_lines).
+    """
+    from player_stats import _stats_session_key, add_player_stats
+    from utils.utils import get_session
+
+    sess = get_session(tournament)
+    keys: list[str] = []
+    ok: list[str] = []
+    err: list[str] = []
+    for raw in names:
+        pl, emsg = resolve_player_in_team(sess, raw, team)
+        if not pl:
+            err.append(emsg or raw)
+            continue
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            success = add_player_stats(
+                pl.name,
+                pl.position,
+                pl.team,
+                0,
+                0,
+                clean_sheet=False,
+                tournament=tournament,
+                auto_find=True,
+                increment_matches=True,
+                skip_discipline_check=True,
+            )
+        line = buf.getvalue().strip() or (f"✓ {pl.name}" if success else f"✗ {pl.name}")
+        if success:
+            keys.append(_stats_session_key(pl.name, pl.team))
+            ok.append(line)
+        else:
+            err.append(line or pl.name)
+    return keys, ok, err
 
 
 def _played_side_filter(side: str) -> str:
