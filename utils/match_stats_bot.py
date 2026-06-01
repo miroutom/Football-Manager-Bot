@@ -8,6 +8,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from utils.player_names import player_display_name, player_surname
 from utils.player_transfer import _norm_cmp
 from coach_squad_state import resolve_formation_key_for_team
 from team_squad_schemas import SquadSlot, get_slots_for_formation_key
@@ -357,7 +358,7 @@ def apply_played_appearances(
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             ok = add_player_stats(
-                p.name,
+                player_display_name(p),
                 p.position,
                 p.team,
                 0,
@@ -371,9 +372,9 @@ def apply_played_appearances(
             )
         line = buf.getvalue().strip()
         if ok:
-            logs.append(line or f"✓ {p.name} · матч")
+            logs.append(line or f"✓ {player_display_name(p)} · матч")
         else:
-            logs.append(line or f"✗ {p.name}")
+            logs.append(line or f"✗ {player_display_name(p)}")
     return logs
 
 
@@ -421,7 +422,7 @@ def apply_player_stat_line(
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             ok = add_player_stats(
-                player.name,
+                player_display_name(player),
                 player.position,
                 player.team,
                 parsed.goals,
@@ -446,7 +447,7 @@ def apply_player_stat_line(
 
     if parsed.yellow:
         msg, _ = try_apply_discipline_line(
-            f"{player.name} жк",
+            f"{player_display_name(player)} жк",
             current_team=player.team,
             tournament=st_tourn,
             league_code=lc,
@@ -458,7 +459,7 @@ def apply_player_stat_line(
             logs.append(msg)
     if parsed.second_yellow:
         msg, _ = try_apply_discipline_line(
-            f"{player.name} 2жк",
+            f"{player_display_name(player)} 2жк",
             current_team=player.team,
             tournament=st_tourn,
             league_code=lc,
@@ -470,7 +471,7 @@ def apply_player_stat_line(
             logs.append(msg)
     if parsed.red_direct:
         msg, _ = try_apply_discipline_line(
-            f"{player.name} кк",
+            f"{player_display_name(player)} кк",
             current_team=player.team,
             tournament=st_tourn,
             league_code=lc,
@@ -482,7 +483,7 @@ def apply_player_stat_line(
             logs.append(msg)
     if parsed.injury_months is not None:
         msg, _ = try_apply_discipline_line(
-            f"{player.name} {parsed.injury_months}м",
+            f"{player_display_name(player)} {parsed.injury_months}м",
             current_team=player.team,
             tournament=st_tourn,
             league_code=lc,
@@ -519,7 +520,7 @@ def serialize_roster(players: list[MatchRosterPlayer]) -> list[dict]:
     return [
         {
             "idx": p.idx,
-            "name": p.name,
+            "name": player_display_name(p),
             "position": p.position,
             "team": p.team,
             "side_label": p.side_label,
@@ -546,7 +547,7 @@ def deserialize_roster(raw: list) -> list[MatchRosterPlayer]:
 
 
 def roster_pk(player: MatchRosterPlayer) -> str:
-    return player_row_key(player.name, player.position)
+    return player_row_key(player_surname(player), player.position)
 
 
 def parse_roster_name_lines(text: str) -> list[str]:
@@ -584,7 +585,7 @@ def resolve_player_in_team(session, raw_name: str, team: str) -> tuple[Any | Non
         for p in session.query(Cls).all():
             if _norm_cmp(p.team) != team_n:
                 continue
-            pn = _norm_cmp(p.name)
+            pn = _norm_cmp(player_surname(p))
             if pn in seen:
                 continue
             parts = pn.split()
@@ -599,7 +600,7 @@ def resolve_player_in_team(session, raw_name: str, team: str) -> tuple[Any | Non
     if len(found) == 1:
         return found[0], ""
     if len(found) > 1:
-        if len({_norm_cmp(p.name) for p in found}) == 1:
+        if len({_norm_cmp(player_surname(p)) for p in found}) == 1:
             pick = max(
                 found,
                 key=lambda p: (
@@ -610,7 +611,7 @@ def resolve_player_in_team(session, raw_name: str, team: str) -> tuple[Any | Non
             )
             return pick, ""
         names = ", ".join(
-            sorted({f"{p.name} {p.position}" for p in found})[:6]
+            sorted({f"{player_display_name(p)} {p.position}" for p in found})[:6]
         )
         extra = "…" if len(found) > 6 else ""
         return None, f"Неоднозначно «{raw_name}»: {names}{extra}"
@@ -642,7 +643,7 @@ def apply_roster_names_for_team(
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             success = add_player_stats(
-                pl.name,
+                player_display_name(pl),
                 pl.position,
                 pl.team,
                 0,
@@ -653,12 +654,14 @@ def apply_roster_names_for_team(
                 increment_matches=True,
                 skip_discipline_check=True,
             )
-        line = buf.getvalue().strip() or (f"✓ {pl.name}" if success else f"✗ {pl.name}")
+        line = buf.getvalue().strip() or (
+            f"✓ {player_display_name(pl)}" if success else f"✗ {player_display_name(pl)}"
+        )
         if success:
-            keys.append(_stats_session_key(pl.name, pl.team))
+            keys.append(_stats_session_key(player_surname(pl), pl.team))
             ok.append(line)
         else:
-            err.append(line or pl.name)
+            err.append(line or player_display_name(pl))
     return keys, ok, err
 
 
@@ -701,7 +704,7 @@ def build_stats_played_keyboard(
             sec = "·б "
         elif p.squad_status == "reserve":
             sec = "·р "
-        label = f"{mark}{p.name} {sec}{p.position}"
+        label = f"{mark}{player_display_name(p)} {sec}{p.position}"
         if len(label) > 58:
             label = label[:55] + "…"
         rows.append(

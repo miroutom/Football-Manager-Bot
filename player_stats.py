@@ -264,7 +264,9 @@ def find_player_by_name(
             for player in session.query(PlayerClass).all():
                 if want_team is not None and _norm_cmp(player.team) != want_team:
                     continue
-                if _norm_cmp(player.name) != want_name:
+                from utils.player_names import player_row_matches_query
+
+                if not player_row_matches_query(player, name):
                     continue
                 if want_nat is not None:
                     pn = _norm_cmp(getattr(player, "nation", None) or "")
@@ -1871,9 +1873,11 @@ def show_team_goalscorers_table(
             if g <= 0 and a <= 0:
                 continue
             ga = int(getattr(p, "ga", None) or (g + a))
+            from utils.player_names import player_display_name
+
             rows.append(
                 {
-                    "name": p.name,
+                    "name": player_display_name(p),
                     "pos": p.position,
                     "matches": int(p.matches or 0),
                     "g": g,

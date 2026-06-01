@@ -48,6 +48,7 @@ class Goalkeeper(Base):
     __tablename__ = 'goalkeepers'
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    surname = Column(String, nullable=True)
     overall = Column(Integer, nullable=False)
     team = Column(String, nullable=False)
     position = Column(String, nullable=False)

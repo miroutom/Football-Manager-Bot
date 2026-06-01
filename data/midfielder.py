@@ -51,6 +51,7 @@ class Midfielder(Base):
     __tablename__ = 'midfielders'
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    surname = Column(String, nullable=True)
     overall = Column(Integer, nullable=False)
     team = Column(String, nullable=False)
     position = Column(String, nullable=False)

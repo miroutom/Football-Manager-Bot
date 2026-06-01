@@ -57,10 +57,11 @@ def _cls_for_position(position: str) -> type:
 
 
 def find_player_row(session, name: str, team: str) -> tuple[Any, type | None]:
-    nl = (name or "").strip().lower()
+    from utils.player_names import player_row_matches_query
+
     for Cls in _ALL_PLAYER:
         for r in session.query(Cls).filter(_filter_team(Cls, team)).all():
-            if (r.name or "").strip().lower() == nl:
+            if player_row_matches_query(r, name):
                 return r, Cls
     return None, None
 
@@ -84,11 +85,12 @@ def find_player_row_first_match(
 
 
 def _all_rows_same_player(session, name: str, team: str) -> list[tuple[Any, type]]:
-    nl = (name or "").strip().lower()
+    from utils.player_names import player_row_matches_query
+
     out: list[tuple[Any, type]] = []
     for Cls in _ALL_PLAYER:
         for r in session.query(Cls).filter(_filter_team(Cls, team)).all():
-            if (r.name or "").strip().lower() == nl:
+            if player_row_matches_query(r, name):
                 out.append((r, Cls))
     return out
 

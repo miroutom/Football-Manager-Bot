@@ -17,6 +17,7 @@ from utils.player_identity import (
     register_name_change,
     resolve_canonical_name,
 )
+from utils.player_names import player_display_name, player_surname
 from utils.player_transfer import _filter_team, _norm_cmp
 
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
@@ -34,12 +35,13 @@ def find_player_row(
     sess: Session, team: str, name: str, position: str
 ) -> tuple[type | None, Any]:
     """Точное имя+позиция, иначе единственный игрок с таким именем в клубе."""
-    want_n = _norm_cmp(name)
+    from utils.player_names import player_row_matches_query
+
     want_p = _norm_cmp(position)
     by_name: list[tuple[type, Any]] = []
     for Cls in _ALL:
         for r in sess.query(Cls).filter(_filter_team(Cls, team)).all():
-            if _norm_cmp(getattr(r, "name", "") or "") != want_n:
+            if not player_row_matches_query(r, name):
                 continue
             if _norm_cmp(getattr(r, "position", "") or "") == want_p:
                 return Cls, r
@@ -126,6 +128,10 @@ def parse_field_value(Cls: type, field: str, raw: str) -> Any:
         if field == "name":
             from utils.player_transfer import normalize_player_name_for_db
 
+            return normalize_player_name_for_db(s) or ""
+        if field == "surname":
+            from utils.player_transfer import normalize_player_name_for_db
+
             return normalize_player_name_for_db(s) or None
         return s or None
     raise ValueError(f"Тип поля «{field}» не поддерживается через бота.")
@@ -204,7 +210,7 @@ def apply_player_field_update(
             f"Не найден игрок «{name}» ({position}) в клубе «{team_t}» в нац. лиге."
         )
 
-    old_name = (row_l.name or "").strip().title()
+    old_name = player_surname(row_l)
     old_pos = (row_l.position or "").strip().upper()
     val = parse_field_value(Cls_l, field, raw)
     old = getattr(row_l, field, None)
@@ -222,7 +228,19 @@ def apply_player_field_update(
                 session_league.delete(other)
                 merged += 1
                 _sync_ga_if_needed(row_l, field)
-    merge_same_name_duplicates_in_session(session_league, team_t, row_l.name or name)
+    if field == "surname":
+        new_sn = player_surname(row_l)
+        if new_sn and _norm_cmp(new_sn) != _norm_cmp(old_name):
+            register_name_change(team_t, old_name, new_sn)
+            other, ocls = find_by_name_only(session_league, new_sn, team_t)
+            if other is not None and int(other.id) != int(row_l.id):
+                merge_row_stats_into(row_l, other)
+                session_league.delete(other)
+                merged += 1
+                _sync_ga_if_needed(row_l, field)
+    merge_same_name_duplicates_in_session(
+        session_league, team_t, player_surname(row_l) or name
+    )
 
     session_league.commit()
 
@@ -246,7 +264,7 @@ def apply_player_field_update(
         "league_table": Cls_l.__tablename__,
         "cl_updated": cl_updated,
         "merged_rows": merged,
-        "display_name": (row_l.name or "").strip().title(),
+        "display_name": player_display_name(row_l),
         "display_pos": (row_l.position or "").strip().upper(),
     }
 

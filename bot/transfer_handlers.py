@@ -91,7 +91,9 @@ def _league_roster_tuples(team: str) -> list[tuple[str, str, int, str]]:
     out: list[tuple[str, str, int, str]] = []
     for Cls in (Forward, Midfielder, Defender, Goalkeeper):
         for r in session_league.query(Cls).filter(_filter_team(Cls, t)).all():
-            nm = (r.name or "").strip()
+            from utils.player_names import player_display_name
+
+            nm = player_display_name(r)
             pos = (r.position or "").strip()
             db_team = (r.team or "").strip()
             if not nm:
@@ -517,7 +519,7 @@ async def cb_transfer_kind(callback: CallbackQuery, state: FSMContext) -> None:
         "Тип: <b>свободный агент</b> (данные из базы <code>free_agents.db</code>).\n\n"
         "Шаг 1 — <b>выбери игрока</b> кнопками (рейтинг и нация не вводятся).\n"
         "/cancel — отмена.",
-    )
+        )
 
 
 @transfer_router.message(Command("transfer"))
@@ -830,7 +832,7 @@ async def cb_transfer_pick_player(callback: CallbackQuery, state: FSMContext) ->
             f"Выбрано: <b>{name}</b> ({pos}), откуда: <b>{from_t}</b>.\n\n"
             f"Шаг 3/6 — клуб <b>куда</b>.\n/cancel — отмена.",
             parse_mode="HTML",
-        )
+    )
 
 
 @transfer_router.message(TransferEnter.player_name, _TEXT_NOT_CMD)
@@ -1013,7 +1015,7 @@ async def cb_fa_catalog_pick(callback: CallbackQuery, state: FSMContext) -> None
     to_t = (data.get("tr_to") or "").strip()
     nat_h = nation if nation else "—"
     if to_t:
-        await state.set_state(TransferEnter.new_status)
+    await state.set_state(TransferEnter.new_status)
         text = (
             f"Выбрано: <b>{name}</b> ({pos}), <b>{ovr_i}</b>, нация: <b>{nat_h}</b>\n"
             f"Куда: <b>{to_t}</b>\n\n"
@@ -1028,9 +1030,9 @@ async def cb_fa_catalog_pick(callback: CallbackQuery, state: FSMContext) -> None
         except Exception:
             await callback.message.answer(
                 text,
-                parse_mode="HTML",
-                reply_markup=_status_keyboard(),
-            )
+        parse_mode="HTML",
+        reply_markup=_status_keyboard(),
+    )
         return
     await state.set_state(TransferEnter.to_team)
     text = (
@@ -1105,7 +1107,7 @@ async def on_transfer_status(
                 f"Базы обновлены, но журнал не записан: {e}",
             )
             if not data.get("tr_batch_active"):
-                await state.clear()
+            await state.clear()
             return
         batch_active = bool(data.get("tr_batch_active"))
         lines = [
@@ -1117,10 +1119,10 @@ async def on_transfer_status(
             lines.append(f"Нация: <b>{nation_fa}</b>.")
         lines.extend(
             [
-                "",
-                f"<b>{player}</b> ({pos}) → {to_t}",
-                "Журнал: <code>data/transfers.json</code>",
-            ]
+            "",
+            f"<b>{player}</b> ({pos}) → {to_t}",
+            "Журнал: <code>data/transfers.json</code>",
+        ]
         )
         await callback.message.answer("\n".join(lines), parse_mode="HTML")
         if batch_active:
@@ -1170,7 +1172,7 @@ async def on_transfer_status(
         )
         if not data.get("tr_batch_active"):
             save_transfer_shortcut(uid, from_t, to_t)
-            await state.clear()
+        await state.clear()
         return
 
     batch_active = bool(data.get("tr_batch_active"))
@@ -1199,12 +1201,12 @@ async def on_transfer_status(
         lines.append("")
     lines.extend(
         [
-            f"Заявка: <b>{st}</b>",
-            "Журнал: <code>data/transfers.json</code>",
-            "",
-            f"<b>{player}</b> ({pos})",
-            f"{from_t} → {to_t}",
-        ]
+        f"Заявка: <b>{st}</b>",
+        "Журнал: <code>data/transfers.json</code>",
+        "",
+        f"<b>{player}</b> ({pos})",
+        f"{from_t} → {to_t}",
+    ]
     )
     await callback.message.answer("\n".join(lines), parse_mode="HTML")
     if batch_active:

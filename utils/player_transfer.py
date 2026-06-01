@@ -398,9 +398,14 @@ def _new_player_kwargs(
     u = max(1, min(99, int(overall)))
     pos_u = position.strip().upper()
     nat = (nation or "").strip() or None
-    nm = normalize_player_name_for_db(name)
+    from utils.player_names import parse_name_surname_input
+
+    first, sur = parse_name_surname_input(name)
+    if not sur:
+        sur = normalize_player_name_for_db(name)
     kw: dict[str, Any] = dict(
-        name=nm,
+        name=first or "",
+        surname=sur,
         team=team.strip(),
         position=pos_u,
         overall=u,

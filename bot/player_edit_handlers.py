@@ -22,6 +22,7 @@ from utils.player_field_edit import (
     apply_player_field_update,
     list_editable_fields_for_player,
 )
+from utils.player_names import player_display_name, player_surname
 from utils.player_transfer import _filter_team, _norm_cmp, resolve_team_name
 
 logger = logging.getLogger(__name__)
@@ -119,15 +120,15 @@ def _pfp_roster_entries(team: str) -> list[tuple[str, str, int, str, str, int]]:
     for Cls in (Forward, Midfielder, Defender, Goalkeeper):
         tbl = Cls.__tablename__
         for r in session_league.query(Cls).filter(_filter_team(Cls, t)).all():
-            nm = (r.name or "").strip()
-            pos = (r.position or "").strip()
-            if not nm:
+            disp = player_display_name(r)
+            if not disp:
                 continue
+            pos = (r.position or "").strip()
             db_team = (r.team or "").strip()
             ovr = int(r.overall or 0)
             rid = int(r.id or 0)
-            nk = _norm_cmp(nm)
-            row = (nm, pos, ovr, db_team, tbl, rid)
+            nk = _norm_cmp(player_surname(r))
+            row = (disp, pos, ovr, db_team, tbl, rid)
             prev = best.get(nk)
             if prev is None or (ovr, rid) > (prev[2], prev[5]):
                 best[nk] = row
