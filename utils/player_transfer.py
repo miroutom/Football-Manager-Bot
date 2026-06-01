@@ -450,7 +450,6 @@ def _new_player_kwargs(
             goals=0,
             assists=0,
             ga=0,
-            clean_sheets=0,
             golden_boots=0,
             golden_boys=0,
         )

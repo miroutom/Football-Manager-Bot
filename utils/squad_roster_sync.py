@@ -188,7 +188,6 @@ def _new_player_kwargs(
             goals=int(c.get("goals", 0) or 0),
             assists=int(c.get("assists", 0) or 0),
             ga=int(c.get("ga", 0) or 0),
-            clean_sheets=int(c.get("clean_sheets", 0) or 0),
             golden_boots=int(c.get("golden_boots", 0) or 0),
         )
     else:
@@ -216,8 +215,6 @@ def _carry_from_row(row: Any) -> dict[str, Any]:
     if hasattr(row, "golden_boys"):
         out["golden_boys"] = getattr(row, "golden_boys", 0)
     if hasattr(row, "clean_sheets") and not hasattr(row, "goals"):
-        out["clean_sheets"] = getattr(row, "clean_sheets", 0)
-    elif hasattr(row, "clean_sheets"):
         out["clean_sheets"] = getattr(row, "clean_sheets", 0)
     if hasattr(row, "missed_goals"):
         out["missed_goals"] = getattr(row, "missed_goals", 0)
