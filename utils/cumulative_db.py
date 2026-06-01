@@ -26,21 +26,79 @@ from utils.player_names import player_stats_identity_token
 
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
+# (tablename, row_id) → номер сезона, откуда взяты имя/клуб/рейтинг
+_roster_season_meta: dict[tuple[str, int], int] = {}
 
-def _row_key(row: Any) -> tuple[str, str, str]:
+
+def _clear_roster_season_meta() -> None:
+    _roster_season_meta.clear()
+
+
+def _player_identity_key(row: Any) -> tuple[str, str]:
+    """Один игрок за карьеру: фамилия (identity token) + позиция, без клуба."""
     return (
         player_stats_identity_token(row).casefold(),
-        (row.team or "").strip().casefold(),
         (row.position or "").strip().upper(),
     )
 
 
-def _find_row_by_key(dst: Any, Cls: type, src_row: Any) -> Any | None:
-    want = _row_key(src_row)
+def _row_key(row: Any) -> tuple[str, str]:
+    return _player_identity_key(row)
+
+
+def _find_row_by_identity(dst: Any, Cls: type, src_row: Any) -> Any | None:
+    want = _player_identity_key(src_row)
     for row in dst.query(Cls).all():
-        if _row_key(row) == want:
+        if _player_identity_key(row) == want:
             return row
     return None
+
+
+def _roster_score(row: Any) -> int:
+    """Выше — осмысленнее раздельные имя и фамилия (не «Фати / Фати»)."""
+    fn = (getattr(row, "name", None) or "").strip()
+    sn = (getattr(row, "surname", None) or "").strip()
+    if fn and sn and fn.casefold() != sn.casefold():
+        return 3
+    if sn and fn and fn.casefold() in sn.casefold() and len(sn.split()) > len(fn.split()):
+        return 2
+    if sn:
+        return 1
+    return 0
+
+
+def _apply_roster_from_source(dst: Any, src: Any, *, season_num: int, tbl: str) -> None:
+    """Имя, фамилия, клуб, рейтинг — из более позднего сезона; при равенстве — лучшая подпись."""
+    meta_key = (tbl, int(getattr(dst, "id", 0) or 0))
+    prev_season = _roster_season_meta.get(meta_key, 0)
+    src_score = _roster_score(src)
+    dst_score = _roster_score(dst)
+
+    if season_num > prev_season:
+        take = True
+    elif season_num < prev_season:
+        take = False
+    else:
+        take = src_score > dst_score or (
+            src_score == dst_score
+            and int(getattr(src, "overall", 0) or 0) >= int(getattr(dst, "overall", 0) or 0)
+        )
+
+    if not take:
+        return
+
+    dst.name = getattr(src, "name", dst.name)
+    if hasattr(dst, "surname") and hasattr(src, "surname"):
+        sn = (getattr(src, "surname", None) or "").strip()
+        dst.surname = sn or getattr(dst, "surname", None)
+    dst.overall = int(getattr(src, "overall", 0) or 0)
+    dst.team = getattr(src, "team", dst.team)
+    dst.position = getattr(src, "position", dst.position)
+    if hasattr(dst, "status"):
+        dst.status = getattr(src, "status", None)
+    if hasattr(dst, "nation"):
+        dst.nation = getattr(src, "nation", None)
+    _roster_season_meta[meta_key] = season_num
 
 
 def _fold_stats_into_row(dst_row: Any, src_row: Any) -> None:
@@ -141,66 +199,36 @@ def _row_as_new(Cls: type, p: Any) -> Any:
     return Cls(**d)
 
 
-def _merge_player_tables(src: Any, dst: Any, Cls: type) -> None:
-    for p in src.query(Cls).all():
-        row = _find_row_by_key(dst, Cls, p)
+def _merge_player_tables(
+    src: Any, dst: Any, Cls: type, *, season_num: int
+) -> None:
+    tbl = Cls.__tablename__
+    players = list(src.query(Cls).all())
+    # Сначала слабые подписи (Фати/Фати), потом нормальные (Ансу/Фати)
+    players.sort(
+        key=lambda p: (
+            _roster_score(p),
+            int(getattr(p, "matches", 0) or 0),
+            int(getattr(p, "id", 0) or 0),
+        )
+    )
+    for p in players:
+        row = _find_row_by_identity(dst, Cls, p)
         if row is None:
-            dst.add(_row_as_new(Cls, p))
+            new_row = _row_as_new(Cls, p)
+            dst.add(new_row)
+            dst.flush()
+            _apply_roster_from_source(new_row, p, season_num=season_num, tbl=tbl)
             continue
-        row.name = getattr(p, "name", row.name)
-        if hasattr(row, "surname") and hasattr(p, "surname"):
-            row.surname = getattr(p, "surname", None) or getattr(p, "name", None)
-        old_m = int(getattr(row, "matches", 0) or 0)
-        add_m = int(getattr(p, "matches", 0) or 0)
-        row.matches = old_m + add_m
-        if hasattr(row, "goals"):
-            row.goals = int(getattr(row, "goals", 0) or 0) + int(
-                getattr(p, "goals", 0) or 0
-            )
-            row.assists = int(getattr(row, "assists", 0) or 0) + int(
-                getattr(p, "assists", 0) or 0
-            )
-            row.ga = int(getattr(row, "ga", 0) or 0) + int(getattr(p, "ga", 0) or 0)
-        if hasattr(row, "clean_sheets"):
-            row.clean_sheets = int(getattr(row, "clean_sheets", 0) or 0) + int(
-                getattr(p, "clean_sheets", 0) or 0
-            )
-        if hasattr(row, "missed_goals"):
-            row.missed_goals = int(getattr(row, "missed_goals", 0) or 0) + int(
-                getattr(p, "missed_goals", 0) or 0
-            )
-        row.trophies = int(getattr(row, "trophies", 0) or 0) + int(
-            getattr(p, "trophies", 0) or 0
-        )
-        row.yellow_cards = max(
-            int(getattr(row, "yellow_cards", 0) or 0),
-            int(getattr(p, "yellow_cards", 0) or 0),
-        )
-        row.red_cards = max(
-            int(getattr(row, "red_cards", 0) or 0),
-            int(getattr(p, "red_cards", 0) or 0),
-        )
-        for attr in (
-            "golden_balls",
-            "golden_boots",
-            "golden_boys",
-            "golden_gloves",
-        ):
-            if hasattr(row, attr):
-                setattr(
-                    row,
-                    attr,
-                    int(getattr(row, attr, 0) or 0)
-                    + int(getattr(p, attr, 0) or 0),
-                )
-        # Ростер из снимка только что завершённого сезона (совпадает с активной заявкой в архиве)
-        row.overall = int(getattr(p, "overall", 0) or 0)
-        row.team = getattr(p, "team", row.team)
-        row.position = getattr(p, "position", row.position)
-        if hasattr(row, "status"):
-            row.status = getattr(p, "status", None)
-        if hasattr(row, "nation"):
-            row.nation = getattr(p, "nation", None)
+        _fold_stats_into_row(row, p)
+        _apply_roster_from_source(row, p, season_num=season_num, tbl=tbl)
+
+
+def _season_num_from_path(league_path: str) -> int:
+    import re
+
+    m = re.search(r"season_(\d+)", league_path.replace("\\", "/"))
+    return int(m.group(1)) if m else 0
 
 
 def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[str, Any]:
@@ -220,10 +248,32 @@ def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[s
     cum_l = season_paths.get_cumulative_league_db_path()
     cum_c = season_paths.get_cumulative_cl_db_path()
 
+    season_num = _season_num_from_path(league_path)
     fresh = not os.path.isfile(cum_l) and not os.path.isfile(cum_c)
     if fresh:
         shutil.copy2(league_path, cum_l)
         shutil.copy2(cl_path, cum_c)
+        _clear_roster_season_meta()
+        if season_num:
+            from sqlalchemy import create_engine as ce
+            from sqlalchemy.orm import sessionmaker as sm
+
+            for path, Cls_list in (
+                (cum_l, _ALL),
+                (cum_c, _ALL),
+            ):
+                eng = ce(f"sqlite:///{path}")
+                S = sm(bind=eng)
+                sess = S()
+                try:
+                    for Cls in Cls_list:
+                        tbl = Cls.__tablename__
+                        for row in sess.query(Cls).all():
+                            _roster_season_meta[(tbl, int(row.id))] = season_num
+                    sess.commit()
+                finally:
+                    sess.close()
+                    eng.dispose()
         log["cumulative"].append("initialized all-time DB (copy of ended season)")
     else:
         el_src = create_engine(f"sqlite:///{league_path}")
@@ -236,9 +286,10 @@ def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[s
         Scd = sessionmaker(bind=ec_dst)
         sl, scl, sd, scd = Sl(), Scl(), Sd(), Scd()
         try:
+            sn = season_num or 99
             for Cls in _ALL:
-                _merge_player_tables(sl, sd, Cls)
-                _merge_player_tables(scl, scd, Cls)
+                _merge_player_tables(sl, sd, Cls, season_num=sn)
+                _merge_player_tables(scl, scd, Cls, season_num=sn)
                 _consolidate_identity_duplicates(sd, Cls)
                 _consolidate_identity_duplicates(scd, Cls)
             sd.commit()
@@ -275,6 +326,7 @@ def append_current_season_to_cumulative() -> dict[str, Any]:
 
 def rebuild_all_time_databases_from_season_archives() -> dict[str, Any]:
     """Пересобрать ``*_synced.db`` из ``db/season_n/{league,champions_league}.db``."""
+    _clear_roster_season_meta()
     seasons = list_season_archives_with_db()
     log: dict[str, Any] = {"cumulative": [], "seasons": seasons}
     if not seasons:
