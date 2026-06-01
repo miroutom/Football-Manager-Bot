@@ -1,11 +1,5 @@
 [
   {
-    "home": "Рома",
-    "away": "Ювентус",
-    "tournament": "league",
-    "day": 6
-  },
-  {
     "home": "Боруссия М",
     "away": "Байер",
     "tournament": "league",
@@ -114,11 +108,5 @@
     "tournament": "cl",
     "day": 6,
     "cl_phase": "knockout"
-  },
-  {
-      "home": "Ньюкасл",
-      "away": "Ливерпуль",
-      "tournament": "league",
-      "day": 6
-    }
+  }
 ]

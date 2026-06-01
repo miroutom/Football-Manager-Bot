@@ -258,6 +258,16 @@
       "scope": "league",
       "matches_left": 1,
       "unavailable_from_round": 11
+    },
+    {
+      "key": "бергвин|рома|ita|league",
+      "name": "Бергвин",
+      "name_norm": "бергвин",
+      "team": "Рома",
+      "team_norm": "рома",
+      "league_code": "ita",
+      "scope": "league",
+      "matches_left": 1
     }
   ],
   "yellow_cycle": [
