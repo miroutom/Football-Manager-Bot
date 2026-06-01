@@ -90,6 +90,10 @@ _SURNAME_SPELLING_ALIASES: dict[str, str] = {
 _TEAM_POS_DB_HINT: dict[tuple[str, str, str], str] = {
     ("атлетик", "вильямс", "ЛФА"): "нико",
     ("атлетик", "вильямс", "ПФА"): "иньяки",
+    ("жирона", "гарсия", "ЦП"): "алейш",
+    ("жирона", "гарсия", "ЦЗ"): "эрик",
+    # S1: в xlsx блок Вольфсбург, в архиве — Саму в Жироне
+    ("вольфсбург", "гарсия", "ЦП"): "саму",
 }
 
 
@@ -162,10 +166,29 @@ def _label_matches_db(
                 return True
     if entry:
         pos = (entry.position or "").strip().upper()
-        hint = _TEAM_POS_DB_HINT.get((_norm_cmp(entry.team), want, pos))
+        hint = _team_pos_hint(entry)
         if hint and any(hint in lab for lab in labels):
             return True
     return False
+
+
+def _team_pos_hint(entry: XlsxPlayer) -> str | None:
+    pos = (entry.position or "").strip().upper()
+    want = _norm_cmp(entry.surname_label)
+    return _TEAM_POS_DB_HINT.get((_norm_cmp(entry.team), want, pos))
+
+
+def _narrow_by_team_pos_hint(
+    cands: list[tuple[str, object]], entry: XlsxPlayer
+) -> list[tuple[str, object]]:
+    """Точечные случаи: клуб+фамилия+позиция → один игрок по фрагменту имени в БД."""
+    hint = _team_pos_hint(entry)
+    if not hint:
+        return cands
+    filt = [
+        c for c in cands if any(hint in lab for lab in _db_labels(c[1]))
+    ]
+    return filt if filt else cands
 
 
 def _filter_by_first_name(
@@ -331,6 +354,8 @@ def _candidates_team_surname(
 def find_db_row_season1(session, entry: XlsxPlayer):
     """Сезон 1: сначала фамилия+нация по всей БД; клуб — только уточнение."""
     cands = _candidates_surname_nation(session, entry)
+    cands = _narrow_by_team_pos_hint(cands, entry)
+    cands = _filter_by_first_name(cands, entry)
     hit, err = _pick_one(cands, entry, prefer_team=True)
     if hit:
         return hit, err
