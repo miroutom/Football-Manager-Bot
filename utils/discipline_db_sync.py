@@ -2,9 +2,9 @@
 """
 Синхронизация дисциплины из ``data/player_discipline.json`` в SQLite сезона (лига / ЛЧ).
 
-- **ЖК (накопительно к 4):** для каждой записи ``yellow_cycle`` **перезаписывает** ``yellow_cards = count``
-  в БД — это только счётчик цикла (0–3), **не** карьерная сумма жк. Для истории жк/кк в БД
-  используйте ввод статы матча (``_bump_db_cards``), не этот sync. После смены сезона цикл
+- **ЖК (накопительно к 4):** для ``yellow_cycle`` выставляет ``yellow_cards = max(текущее, count)``
+  на строке клуба — цикл 0–3, **не** полная карьерная сумма. История жк/кк: ввод матча
+  (``_bump_db_cards``) или ``scripts/restore_season2_cards_history.py``. После смены сезона цикл
   сбрасывается в JSON; колонки ``yellow_cards``/``red_cards`` в SQLite не обнуляются при
   ``finalize_season``.
 - **КК / травмы:** в JSON нет отдельного поля «число кк»; травмы хранятся только в JSON
@@ -42,7 +42,8 @@ def sync_yellow_cards_from_discipline_json() -> list[str]:
             if player is None or not hasattr(player, "yellow_cards"):
                 log.append(f"{tkey}: не найден {name} ({team})")
                 continue
-            player.yellow_cards = c
+            # История в БД не уменьшаем: count в JSON — только цикл 0–3 на клуб.
+            player.yellow_cards = max(int(getattr(player, "yellow_cards", 0) or 0), c)
             touched = True
         if touched:
             sess.commit()
