@@ -24,6 +24,7 @@ from data.defender import Defender
 from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
+from config.squad_team_aliases import canonical_team_name
 from utils.migrate_player_surname import prepare_season_archive_schema
 from utils.player_names import is_empty_first_name_value
 from utils.player_transfer import _norm_cmp, normalize_player_name_for_db
@@ -70,7 +71,36 @@ _NATION_CANON: dict[str, str] = {
     "саудовская аравия": "саудовская аравия",
     "англия": "англия",
     "англ": "англия",
+    "корея": "южная корея",
 }
+
+# Название клуба в xlsx → как в БД (МЮ и т.п.)
+_XLSX_TEAM_CANON: dict[str, str] = {
+    "мю": "Мю",
+    "манчестер юнайтед": "Мю",
+}
+
+# Опечатки в xlsx → подпись в БД (norm_cmp)
+_SURNAME_SPELLING_ALIASES: dict[str, str] = {
+    "купмайнерс": "копмейнерс",
+    "заппакоста": "дзаппакоста",
+}
+
+# (клуб, фамилия в xlsx, позиция) → фрагмент имени в БД
+_TEAM_POS_DB_HINT: dict[tuple[str, str, str], str] = {
+    ("атлетик", "вильямс", "ЛФА"): "нико",
+    ("атлетик", "вильямс", "ПФА"): "иньяки",
+}
+
+
+def _canonical_xlsx_team(team: str) -> str:
+    s = (team or "").strip()
+    if not s:
+        return s
+    key = s.casefold()
+    if key in _XLSX_TEAM_CANON:
+        return _XLSX_TEAM_CANON[key]
+    return canonical_team_name(s)
 
 
 def _norm_nat(s: str) -> str:
@@ -91,21 +121,69 @@ def _db_listing_label(row) -> str:
     return sn or fn
 
 
-def _label_matches_db(xlsx_surname: str, row) -> bool:
+def _db_labels(row) -> set[str]:
+    """Все варианты подписи игрока в БД (включая последнее слово составного имени)."""
+    fn = (getattr(row, "name", None) or "").strip()
+    sn = (getattr(row, "surname", None) or "").strip()
+    labels = {
+        _norm_cmp(_db_listing_label(row)),
+        _norm_cmp(fn),
+        _norm_cmp(sn),
+    }
+    if fn and sn:
+        labels.add(_norm_cmp(f"{fn} {sn}"))
+    for raw in (fn, sn, f"{fn} {sn}".strip()):
+        if not raw:
+            continue
+        parts = raw.split()
+        if len(parts) > 1:
+            labels.add(_norm_cmp(parts[-1]))
+    return {x for x in labels if x}
+
+
+def _label_matches_db(
+    xlsx_surname: str, row, *, entry: XlsxPlayer | None = None
+) -> bool:
     """Совпадение подписи в xlsx с тем, что сейчас в БД."""
     want = _norm_cmp(xlsx_surname)
     if not want:
         return True
-    labels = {
-        _norm_cmp(_db_listing_label(row)),
-        _norm_cmp(getattr(row, "name", None) or ""),
-        _norm_cmp(getattr(row, "surname", None) or ""),
-    }
-    fn = (getattr(row, "name", None) or "").strip()
-    sn = (getattr(row, "surname", None) or "").strip()
-    if fn and sn:
-        labels.add(_norm_cmp(f"{fn} {sn}"))
-    return want in labels
+    labels = _db_labels(row)
+    seeks = {want}
+    alt = _SURNAME_SPELLING_ALIASES.get(want)
+    if alt:
+        seeks.add(_norm_cmp(alt))
+    for seek in seeks:
+        if seek in labels:
+            return True
+        for lab in labels:
+            parts = lab.split()
+            if parts and parts[-1] == seek:
+                return True
+    if entry:
+        pos = (entry.position or "").strip().upper()
+        hint = _TEAM_POS_DB_HINT.get((_norm_cmp(entry.team), want, pos))
+        if hint and any(hint in lab for lab in labels):
+            return True
+    return False
+
+
+def _filter_by_first_name(
+    cands: list[tuple[str, object]], entry: XlsxPlayer
+) -> list[tuple[str, object]]:
+    fn = (entry.first_name or "").strip()
+    if not fn:
+        return cands
+    want = _norm_cmp(fn)
+    filt = [
+        c
+        for c in cands
+        if any(
+            want in lab or lab.startswith(want)
+            for lab in _db_labels(c[1])
+        )
+    ]
+    return filt if filt else cands
 
 
 def load_names_xlsx(path: str) -> list[XlsxPlayer]:
@@ -126,7 +204,7 @@ def load_names_xlsx(path: str) -> list[XlsxPlayer]:
             s0 = str(c0).strip()
             if c1 is None or str(c1).strip() == "":
                 if s0.lower() != "surname":
-                    team = s0
+                    team = _canonical_xlsx_team(s0)
                 continue
             if str(c1).strip().lower() == "position":
                 continue
@@ -186,10 +264,25 @@ def _candidates_surname_nation(session, entry: XlsxPlayer) -> list[tuple[str, ob
     for tbl, r in _iter_rows(session, None, include_left=False):
         if _norm_nat(getattr(r, "nation", None) or "") != _norm_nat(entry.nation):
             continue
-        if not _label_matches_db(entry.surname_label, r):
+        if not _label_matches_db(entry.surname_label, r, entry=entry):
             continue
         out.append((tbl, r))
     return out
+
+
+def _candidates_team_label(
+    session, entry: XlsxPlayer, *, require_nation: bool
+) -> list[tuple[str, object]]:
+    out: list[tuple[str, object]] = []
+    for tbl, r in _iter_rows(session, entry.team, include_left=False):
+        if require_nation and _norm_nat(
+            getattr(r, "nation", None) or ""
+        ) != _norm_nat(entry.nation):
+            continue
+        if not _label_matches_db(entry.surname_label, r, entry=entry):
+            continue
+        out.append((tbl, r))
+    return _filter_by_first_name(out, entry)
 
 
 def _pick_one(
@@ -224,23 +317,37 @@ def _pick_one(
 def _candidates_team_surname(
     session, entry: XlsxPlayer
 ) -> list[tuple[str, object]]:
-    out: list[tuple[str, object]] = []
-    for tbl, r in _iter_rows(session, entry.team, include_left=False):
-        if _label_matches_db(entry.surname_label, r):
-            out.append((tbl, r))
-    return out
+    return _candidates_team_label(session, entry, require_nation=False)
+
+
+def find_db_row_season1(session, entry: XlsxPlayer):
+    """Сезон 1: при указанном клубе — только его состав; иначе фамилия+нация."""
+    err: str | None = None
+    if entry.team:
+        for require_nat in (True, False):
+            cands = _candidates_team_label(
+                session, entry, require_nation=require_nat
+            )
+            hit, err = _pick_one(cands, entry, prefer_team=False)
+            if hit:
+                return hit, err
+            if err and "неоднознач" in err:
+                return None, err
+        return None, "не найден"
+
+    cands = _candidates_surname_nation(session, entry)
+    return _pick_one(cands, entry, prefer_team=True)
 
 
 def find_db_row(session, entry: XlsxPlayer, *, require_team: bool):
     if not require_team:
-        cands = _candidates_surname_nation(session, entry)
-        return _pick_one(cands, entry, prefer_team=True)
+        return find_db_row_season1(session, entry)
 
     strict: list[tuple[str, object]] = []
     for tbl, r in _iter_rows(session, entry.team, include_left=False):
         if not _match_row(entry, r, require_team=True):
             continue
-        if _label_matches_db(entry.surname_label, r):
+        if _label_matches_db(entry.surname_label, r, entry=entry):
             strict.append((tbl, r))
     if len(strict) == 1:
         return strict[0], None
