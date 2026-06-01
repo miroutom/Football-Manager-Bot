@@ -1,5 +1,7 @@
 # Правила отображения статистики
 
+Полная формулировка из чата (примеры Смолов, Батши, Ангисса): [`stats_menu_rules_full.md`](stats_menu_rules_full.md).
+
 Реализация: `utils/stats_history_agg.py`, пересборка `common` — `utils/common_db.py`,
 голеадоры клуба — `player_stats.py`, накопление жёлтых к 4-й — `utils/player_discipline.py`.
 
