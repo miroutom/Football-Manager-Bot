@@ -60,6 +60,19 @@ def player_full_name(row: Any) -> str:
     return sn
 
 
+def player_stats_identity_token(row: Any) -> str:
+    """
+    Стабильный идентификатор для слияния сезонов и топ-100.
+
+    Фамилия (``surname``), если есть; иначе ``name`` — чтобы в season_1 было
+    «Хаверц», а в season_2 «Кай» + «Хаверц» попали в одну строку.
+    """
+    sn = (getattr(row, "surname", None) or "").strip()
+    if sn:
+        return sn
+    return (getattr(row, "name", None) or "").strip()
+
+
 def _parse_initial_surname_query(query: str) -> tuple[str | None, str | None]:
     """«Л. Мартинез», «Л Мартинез», «л.мартинез» → (буква, фамилия)."""
     s = (query or "").strip()

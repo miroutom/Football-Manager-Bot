@@ -54,6 +54,32 @@ def migrate_all_player_left_team_columns() -> list[str]:
     return _legacy_add_left_team_via_sql()
 
 
+def migrate_left_team_for_sqlite(db_path: str, *, label: str = "") -> list[str]:
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.exc import OperationalError
+
+    if not Path(db_path).is_file():
+        return []
+    tag = label or Path(db_path).name
+    out: list[str] = []
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        for table in _TABLES:
+            try:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE {table} ADD COLUMN left_team BOOLEAN "
+                        f"NOT NULL DEFAULT 0"
+                    )
+                )
+                out.append(f"{tag}:{table}")
+            except OperationalError as e:
+                if "duplicate column name" not in str(e).lower():
+                    raise
+    engine.dispose()
+    return out
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     added = migrate_all_player_left_team_columns()

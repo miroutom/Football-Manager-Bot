@@ -66,27 +66,28 @@ def _norm_team(s: str) -> str:
     return (s or "").strip().casefold()
 
 
-def _identity_key(name: str, position: str) -> tuple[str, str]:
+def _identity_key(identity: str, position: str) -> tuple[str, str]:
     return (
-        (name or "").strip().casefold(),
+        (identity or "").strip().casefold(),
         (position or "").strip().upper(),
     )
 
 
-def _player_key(name: str, team: str, position: str) -> tuple[str, str, str]:
+def _player_key(identity: str, team: str, position: str) -> tuple[str, str, str]:
     return (
-        (name or "").strip().casefold(),
+        (identity or "").strip().casefold(),
         _norm_team(team),
         (position or "").strip().upper(),
     )
 
 
-def _bucket_key(
-    name: str, team: str, position: str, *, merge_by_player: bool
-) -> tuple:
+def _bucket_key_for_row(p: Any, *, merge_by_player: bool) -> tuple:
+    from utils.player_names import player_stats_identity_token
+
+    ident = player_stats_identity_token(p)
     if merge_by_player:
-        return _identity_key(name, position)
-    return _player_key(name, team, position)
+        return _identity_key(ident, p.position)
+    return _player_key(ident, p.team, p.position)
 
 
 def _apply_last_club(
@@ -158,7 +159,11 @@ def _build_active_season_club_map() -> dict[tuple[str, str], tuple[str, str]]:
         try:
             for Cls in _ALL:
                 for p in session.query(Cls).all():
-                    k = _identity_key(p.name, p.position)
+                    from utils.player_names import player_stats_identity_token
+
+                    k = _identity_key(
+                        player_stats_identity_token(p), p.position
+                    )
                     rid = int(getattr(p, "id", 0) or 0)
                     prev = best.get(k)
                     if prev is None or rid > prev[0]:
@@ -174,7 +179,8 @@ def _apply_active_season_club_labels(rows: list[dict]) -> None:
     if not club_map:
         return
     for b in rows:
-        k = _identity_key(str(b.get("name", "")), str(b.get("position", "")))
+        ident = str(b.get("identity") or b.get("name", ""))
+        k = _identity_key(ident, str(b.get("position", "")))
         hit = club_map.get(k)
         if hit:
             b["name"], b["team"] = hit
@@ -260,10 +266,13 @@ def _fold_outfield_bucket(
     merge_by_player: bool,
     pick_club: str | None = None,
 ) -> None:
-    k = _bucket_key(p.name, p.team, p.position, merge_by_player=merge_by_player)
+    from utils.player_names import player_stats_identity_token
+
+    k = _bucket_key_for_row(p, merge_by_player=merge_by_player)
     if k not in buckets:
         buckets[k] = {
             "name": p.name,
+            "identity": player_stats_identity_token(p),
             "team": p.team,
             "position": p.position,
             "goals": 0,
@@ -292,10 +301,13 @@ def _fold_cards_bucket(
     merge_by_player: bool,
     pick_club: str | None = None,
 ) -> None:
-    k = _bucket_key(p.name, p.team, p.position, merge_by_player=merge_by_player)
+    from utils.player_names import player_stats_identity_token
+
+    k = _bucket_key_for_row(p, merge_by_player=merge_by_player)
     if k not in buckets:
         buckets[k] = {
             "name": p.name,
+            "identity": player_stats_identity_token(p),
             "team": p.team,
             "position": p.position,
             "yellow_cards": 0,
@@ -320,10 +332,13 @@ def _fold_cs_bucket(
     merge_by_player: bool,
     pick_club: str | None = None,
 ) -> None:
-    k = _bucket_key(p.name, p.team, p.position, merge_by_player=merge_by_player)
+    from utils.player_names import player_stats_identity_token
+
+    k = _bucket_key_for_row(p, merge_by_player=merge_by_player)
     if k not in buckets:
         buckets[k] = {
             "name": p.name,
+            "identity": player_stats_identity_token(p),
             "team": p.team,
             "position": p.position,
             "clean_sheets": 0,

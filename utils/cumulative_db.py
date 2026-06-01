@@ -22,22 +22,23 @@ from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from utils import season_paths
+from utils.player_names import player_stats_identity_token
 
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
 
-def _row_key(name: str, team: str, position: str) -> tuple[str, str, str]:
+def _row_key(row: Any) -> tuple[str, str, str]:
     return (
-        (name or "").strip().casefold(),
-        (team or "").strip().casefold(),
-        (position or "").strip().upper(),
+        player_stats_identity_token(row).casefold(),
+        (row.team or "").strip().casefold(),
+        (row.position or "").strip().upper(),
     )
 
 
-def _find_row_by_key(dst: Any, Cls: type, name: str, team: str, position: str) -> Any | None:
-    want = _row_key(name, team, position)
+def _find_row_by_key(dst: Any, Cls: type, src_row: Any) -> Any | None:
+    want = _row_key(src_row)
     for row in dst.query(Cls).all():
-        if _row_key(row.name, row.team, row.position) == want:
+        if _row_key(row) == want:
             return row
     return None
 
@@ -90,7 +91,7 @@ def _consolidate_identity_duplicates(dst: Any, Cls: type) -> None:
     """Слить дубли одной строки (имя+клуб+позиция) в накопительной БД."""
     groups: dict[tuple[str, str, str], list[Any]] = {}
     for row in list(dst.query(Cls).all()):
-        groups.setdefault(_row_key(row.name, row.team, row.position), []).append(row)
+        groups.setdefault(_row_key(row), []).append(row)
     for rows in groups.values():
         if len(rows) <= 1:
             continue
@@ -142,10 +143,13 @@ def _row_as_new(Cls: type, p: Any) -> Any:
 
 def _merge_player_tables(src: Any, dst: Any, Cls: type) -> None:
     for p in src.query(Cls).all():
-        row = _find_row_by_key(dst, Cls, p.name, p.team, p.position)
+        row = _find_row_by_key(dst, Cls, p)
         if row is None:
             dst.add(_row_as_new(Cls, p))
             continue
+        row.name = getattr(p, "name", row.name)
+        if hasattr(row, "surname") and hasattr(p, "surname"):
+            row.surname = getattr(p, "surname", None) or getattr(p, "name", None)
         old_m = int(getattr(row, "matches", 0) or 0)
         add_m = int(getattr(p, "matches", 0) or 0)
         row.matches = old_m + add_m

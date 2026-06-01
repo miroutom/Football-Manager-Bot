@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """
-Предложить разбиение имени/фамилии для игроков сезона.
+Предложить разбиение имени/фамилии для игроков сезона (или всех архивов).
 
-Не использует реальные составы клубов (в БД игроки могут быть не в тех командах, что в жизни).
-Сначала разбирает уже записанные полные имена; затем (опционально) Wikidata по фамилии + стране.
+Не использует реальные составы клубов. Wikidata — только фамилия + страна.
+
+После ``--apply`` для всех сезонов пересобери накопительные БД::
+
+  python3 -c "from utils.cumulative_db import rebuild_all_time_databases_from_season_archives; print(rebuild_all_time_databases_from_season_archives())"
 
 Формат вывода::
 
+  === Сезон 1 ===
   Арсенал
   Хаверц ФРВ 85 Германия -> Кай Хаверц
-  Коло Муани ЛФА 84 Франция -> Рандал Коло Муани
 
   python3 scripts/suggest_player_real_names.py --season 2
-  python3 scripts/suggest_player_real_names.py --season 2 --no-lookup
-  python3 scripts/suggest_player_real_names.py --season 2 --apply
+  python3 scripts/suggest_player_real_names.py --all-seasons
+  python3 scripts/suggest_player_real_names.py --all-seasons --apply
 """
 from __future__ import annotations
 
@@ -29,7 +32,11 @@ from data.defender import Defender
 from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
-from utils.migrate_player_surname import migrate_all_player_surname_columns
+from utils.cumulative_db import list_season_archives_with_db
+from utils.migrate_player_surname import (
+    migrate_all_player_surname_columns,
+    prepare_season_archive_schema,
+)
 from utils.player_name_propose import (
     WikidataNameLookup,
     format_player_line,
@@ -67,151 +74,9 @@ def _collect_rows(session, *, team_filter: str, skip_free: bool, limit: int | No
     return out
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--season", type=int, default=2)
-    ap.add_argument(
-        "--apply",
-        action="store_true",
-        help="Записать в БД (по умолчанию только просмотр)",
-    )
-    ap.add_argument(
-        "--no-lookup",
-        action="store_true",
-        help="Только разбор уже записанных полных имён, без Wikidata",
-    )
-    ap.add_argument("--team", default="", help="Фильтр по одной команде")
-    ap.add_argument("--limit", type=int, default=0, help="Макс. строк (0 = все)")
-    ap.add_argument(
-        "--hints",
-        default=os.path.join(ROOT, "data", "player_first_name_hints.json"),
-        help="Ручные подсказки: фамилия|страна или table:id → имя",
-    )
-    ap.add_argument(
-        "--cache",
-        default=os.path.join(ROOT, "data", "wikidata_player_name_cache.json"),
-    )
-    ap.add_argument(
-        "--all",
-        action="store_true",
-        help="Показать и строки без изменений (помечены «=»)",
-    )
-    args = ap.parse_args()
-
-    dry_run = not args.apply
-    if dry_run:
-        print("Режим просмотра (без записи в БД). Для применения: --apply\n")
-
-    migrate_all_player_surname_columns()
-
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    from utils.utils import Base
-
-    path = os.path.join(ROOT, "db", f"season_{args.season}", "league.db")
-    if not os.path.isfile(path):
-        print(f"Нет {path}")
-        sys.exit(1)
-
-    hints = load_manual_hints(args.hints)
-    lookup = None if args.no_lookup else WikidataNameLookup(args.cache)
-
-    engine = create_engine(f"sqlite:///{path}")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    lim = args.limit if args.limit > 0 else None
-    rows = _collect_rows(
-        session,
-        team_filter=args.team.strip(),
-        skip_free=True,
-        limit=lim,
-    )
-
-    by_team: dict[str, list[tuple[str, Any, str, str, str]]] = {}
-    stats = {
-        "split": 0,
-        "lookup": 0,
-        "manual": 0,
-        "ok_skip": 0,
-        "multi": 0,
-        "miss": 0,
-    }
-
-    try:
-        for team, tbl, r in rows:
-            first, surname, kind, note = _propose_for_row(
-                r, tbl, hints, lookup, no_lookup=args.no_lookup
-            )
-            if kind == "skip":
-                stats["ok_skip"] += 1
-                if args.all:
-                    sn = player_surname(r)
-                    by_team.setdefault(team, []).append(
-                        (tbl, r, sn, sn, "=")
-                    )
-                continue
-            if kind == "multi":
-                stats["multi"] += 1
-            elif kind == "miss":
-                stats["miss"] += 1
-            elif kind == "split":
-                stats["split"] += 1
-            elif kind == "lookup":
-                stats["lookup"] += 1
-            elif kind == "manual":
-                stats["manual"] += 1
-
-            line_left = format_player_line(r)
-            if kind == "multi":
-                cands = note
-                right = " | ".join(format_proposed_full(a, b) for a, b in cands)
-                right = f"? ({right})"
-            elif first:
-                right = format_proposed_full(first, surname)
-            else:
-                right = note or "—"
-
-            by_team.setdefault(team, []).append((tbl, r, line_left, right, kind))
-
-            if args.apply and first and kind in ("split", "lookup", "manual"):
-                r.name = first
-                r.surname = surname
-
-        if args.apply:
-            session.commit()
-            print("Изменения записаны в БД.\n")
-        if lookup is not None:
-            lookup.save_cache()
-
-        for team in sorted(by_team.keys()):
-            print(team)
-            for _tbl, _r, left, right, kind in by_team[team]:
-                mark = ""
-                if kind == "=":
-                    print(f"  {left}  =")
-                    continue
-                print(f"  {left} -> {right}")
-            print()
-
-        print(
-            "Итого: "
-            f"разбор {stats['split']}, "
-            f"wikidata {stats['lookup']}, "
-            f"ручные подсказки {stats['manual']}, "
-            f"без изменений {stats['ok_skip']}, "
-            f"неоднозначно {stats['multi']}, "
-            f"не найдено {stats['miss']}."
-        )
-        if args.no_lookup:
-            print("(Wikidata отключён: --no-lookup)")
-    finally:
-        session.close()
-
-
-def _propose_for_row(r, table: str, hints: dict, lookup: WikidataNameLookup | None, *, no_lookup: bool):
+def _propose_for_row(
+    r, table: str, hints: dict, lookup: WikidataNameLookup | None, *, no_lookup: bool
+):
     sn = player_surname(r)
     nation = (getattr(r, "nation", None) or "").strip()
 
@@ -245,6 +110,192 @@ def _propose_for_row(r, table: str, hints: dict, lookup: WikidataNameLookup | No
     if not names_need_update(r, first, surname):
         return "", "", "skip", ""
     return first, surname, "lookup", ""
+
+
+def _run_season(
+    season_num: int,
+    *,
+    apply: bool,
+    no_lookup: bool,
+    team_filter: str,
+    limit: int | None,
+    hints: dict,
+    lookup: WikidataNameLookup | None,
+    show_unchanged: bool,
+) -> dict[str, int]:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from utils.utils import Base
+
+    path = os.path.join(ROOT, "db", f"season_{season_num}", "league.db")
+    if not os.path.isfile(path):
+        print(f"Пропуск сезона {season_num}: нет {path}\n")
+        return {}
+
+    prepare_season_archive_schema(season_num)
+
+    engine = create_engine(f"sqlite:///{path}")
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    stats = {
+        "split": 0,
+        "lookup": 0,
+        "manual": 0,
+        "ok_skip": 0,
+        "multi": 0,
+        "miss": 0,
+    }
+    by_team: dict[str, list[tuple]] = {}
+
+    try:
+        rows = _collect_rows(
+            session,
+            team_filter=team_filter,
+            skip_free=True,
+            limit=limit,
+        )
+        for team, tbl, r in rows:
+            first, surname, kind, note = _propose_for_row(
+                r, tbl, hints, lookup, no_lookup=no_lookup
+            )
+            if kind == "skip":
+                stats["ok_skip"] += 1
+                if show_unchanged:
+                    by_team.setdefault(team, []).append(
+                        (format_player_line(r), "=", kind)
+                    )
+                continue
+            stats[kind] = stats.get(kind, 0) + 1
+
+            line_left = format_player_line(r)
+            if kind == "multi":
+                cands = note
+                right = " | ".join(format_proposed_full(a, b) for a, b in cands)
+                right = f"? ({right})"
+            elif first:
+                right = format_proposed_full(first, surname)
+            else:
+                right = note or "—"
+
+            by_team.setdefault(team, []).append((line_left, right, kind))
+
+            if apply and first and kind in ("split", "lookup", "manual"):
+                r.name = first
+                r.surname = surname
+
+        if apply:
+            session.commit()
+    finally:
+        session.close()
+        engine.dispose()
+
+    print(f"=== Сезон {season_num} ===")
+    if apply:
+        print("(записано в db/season_{}/league.db)\n".format(season_num))
+    for team in sorted(by_team.keys()):
+        print(team)
+        for left, right, kind in by_team[team]:
+            if kind == "=":
+                print(f"  {left}  =")
+            else:
+                print(f"  {left} -> {right}")
+        print()
+
+    print(
+        f"Сезон {season_num}: разбор {stats.get('split', 0)}, "
+        f"wikidata {stats.get('lookup', 0)}, "
+        f"ручные {stats.get('manual', 0)}, "
+        f"без изменений {stats.get('ok_skip', 0)}, "
+        f"неоднозначно {stats.get('multi', 0)}, "
+        f"не найдено {stats.get('miss', 0)}."
+    )
+    print()
+    return stats
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--season", type=int, default=0, help="Один сезон (0 = не задан)")
+    ap.add_argument(
+        "--all-seasons",
+        action="store_true",
+        help="Все папки db/season_N/ с league.db (1, 2, …)",
+    )
+    ap.add_argument(
+        "--apply",
+        action="store_true",
+        help="Записать в БД (по умолчанию только просмотр)",
+    )
+    ap.add_argument(
+        "--no-lookup",
+        action="store_true",
+        help="Только разбор полных имён + hints, без Wikidata",
+    )
+    ap.add_argument("--team", default="", help="Фильтр по одной команде")
+    ap.add_argument("--limit", type=int, default=0, help="Макс. строк на сезон (0 = все)")
+    ap.add_argument(
+        "--hints",
+        default=os.path.join(ROOT, "data", "player_first_name_hints.json"),
+    )
+    ap.add_argument(
+        "--cache",
+        default=os.path.join(ROOT, "data", "wikidata_player_name_cache.json"),
+    )
+    ap.add_argument(
+        "--all",
+        action="store_true",
+        help="Показать строки без изменений (=)",
+    )
+    args = ap.parse_args()
+
+    if args.all_seasons:
+        seasons = list_season_archives_with_db()
+    elif args.season > 0:
+        seasons = [args.season]
+    else:
+        seasons = [2]
+
+    if not seasons:
+        print("Нет архивов season_N с league.db")
+        sys.exit(1)
+
+    if not args.apply:
+        print("Режим просмотра. Для записи: --apply\n")
+
+    migrate_all_player_surname_columns()
+
+    hints = load_manual_hints(args.hints)
+    lookup = None if args.no_lookup else WikidataNameLookup(args.cache)
+    lim = args.limit if args.limit > 0 else None
+    team = args.team.strip()
+
+    for sn in seasons:
+        _run_season(
+            sn,
+            apply=args.apply,
+            no_lookup=args.no_lookup,
+            team_filter=team,
+            limit=lim,
+            hints=hints,
+            lookup=lookup,
+            show_unchanged=args.all,
+        )
+
+    if lookup is not None:
+        lookup.save_cache()
+
+    if args.apply and len(seasons) > 0:
+        print(
+            "Дальше пересобери *_synced.db:\n"
+            "  python3 -c \"from utils.cumulative_db import "
+            "rebuild_all_time_databases_from_season_archives; "
+            "print(rebuild_all_time_databases_from_season_archives())\""
+        )
+    if args.no_lookup:
+        print("(Wikidata отключён: --no-lookup)")
 
 
 if __name__ == "__main__":
