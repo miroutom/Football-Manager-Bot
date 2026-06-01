@@ -3,7 +3,7 @@
 Импорт имён из ``db/names.xlsx`` (блоки по командам).
 
 Сезон 2: сопоставление по клубу + позиция + рейтинг + нация (+ подпись в БД).
-Сезон 1: без клуба — позиция + рейтинг + нация + подпись.
+Сезон 1: фамилия + нация (позиция/рейтинг/клуб из xlsx — только для уточнения).
 
   python3 scripts/import_player_names_xlsx.py --season 2
   python3 scripts/import_player_names_xlsx.py --season 2 --apply
@@ -53,8 +53,27 @@ def _first_name_from_cell(raw: str) -> str:
     return s
 
 
+# Синонимы национальности (xlsx ↔ БД)
+_NATION_CANON: dict[str, str] = {
+    "босния и герцеговина": "босния",
+    "босния и герц": "босния",
+    "юж. корея": "южная корея",
+    "южная корея": "южная корея",
+    "кот-д'ивуар": "кот д ивуар",
+    "кот-д ивуар": "кот д ивуар",
+    "др конго": "др конго",
+    "конго": "др конго",
+    "оаэ": "оаэ",
+    "сауд. аравия": "саудовская аравия",
+    "саудовская аравия": "саудовская аравия",
+    "англия": "англия",
+    "англ": "англия",
+}
+
+
 def _norm_nat(s: str) -> str:
-    return (s or "").strip().casefold()
+    n = (s or "").strip().casefold()
+    return _NATION_CANON.get(n, n)
 
 
 def _db_listing_label(row) -> str:
@@ -158,13 +177,55 @@ def _match_row(entry: XlsxPlayer, row, *, require_team: bool) -> bool:
     return True
 
 
+def _candidates_surname_nation(session, entry: XlsxPlayer) -> list[tuple[str, object]]:
+    out: list[tuple[str, object]] = []
+    for tbl, r in _iter_rows(session, None, include_left=False):
+        if _norm_nat(getattr(r, "nation", None) or "") != _norm_nat(entry.nation):
+            continue
+        if not _label_matches_db(entry.surname_label, r):
+            continue
+        out.append((tbl, r))
+    return out
+
+
+def _pick_one(
+    cands: list[tuple[str, object]], entry: XlsxPlayer, *, prefer_team: bool
+) -> tuple[tuple[str, object] | None, str | None]:
+    if not cands:
+        return None, "не найден"
+    if len(cands) == 1:
+        return cands[0], None
+
+    def _filt(rows: list[tuple[str, object]], pred) -> list[tuple[str, object]]:
+        x = [c for c in rows if pred(c[1])]
+        return x if x else rows
+
+    pool = list(cands)
+    pool = _filt(
+        pool,
+        lambda r: (getattr(r, "position", None) or "").strip().upper() == entry.position,
+    )
+    pool = _filt(pool, lambda r: int(getattr(r, "overall", 0) or 0) == entry.rating)
+    if prefer_team:
+        pool = _filt(
+            pool, lambda r: _norm_cmp(r.team or "") == _norm_cmp(entry.team)
+        )
+    if len(pool) == 1:
+        return pool[0], None
+    clubs = sorted({(c[1].team or "").strip() for c in pool if (c[1].team or "").strip()})
+    extra = f" ({', '.join(clubs[:4])}{'…' if len(clubs) > 4 else ''})" if clubs else ""
+    return None, f"неоднозначно: {len(pool)}{extra}"
+
+
 def find_db_row(session, entry: XlsxPlayer, *, require_team: bool):
+    if not require_team:
+        cands = _candidates_surname_nation(session, entry)
+        return _pick_one(cands, entry, prefer_team=True)
+
     strict: list[tuple[str, object]] = []
     loose: list[tuple[str, object]] = []
-    for tbl, r in _iter_rows(
-        session, entry.team if require_team else None, include_left=False
-    ):
-        if not _match_row(entry, r, require_team=require_team):
+    for tbl, r in _iter_rows(session, entry.team, include_left=False):
+        if not _match_row(entry, r, require_team=True):
             continue
         loose.append((tbl, r))
         if _label_matches_db(entry.surname_label, r):
@@ -172,11 +233,11 @@ def find_db_row(session, entry: XlsxPlayer, *, require_team: bool):
     if len(strict) == 1:
         return strict[0], None
     if len(strict) > 1:
-        return None, f"неоднозначно (подпись): {len(strict)}"
+        return _pick_one(strict, entry, prefer_team=False)
     if len(loose) == 1:
         return loose[0], None
     if len(loose) > 1:
-        return None, f"неоднозначно: {len(loose)}"
+        return _pick_one(loose, entry, prefer_team=False)
     return None, "не найден"
 
 
@@ -271,7 +332,9 @@ def main() -> None:
         sys.exit(1)
 
     require_team = args.season >= 2
-    mode = f"сезон {args.season}" + (" + клуб" if require_team else ", без клуба")
+    mode = f"сезон {args.season}" + (
+        " + клуб + позиция + рейтинг" if require_team else " — фамилия + нация"
+    )
     print(f"{'Запись' if args.apply else 'Просмотр'} ({mode}), строк в файле: {len(entries)}\n")
 
     prepare_season_archive_schema(args.season)
