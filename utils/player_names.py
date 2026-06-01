@@ -13,6 +13,15 @@ from utils.player_transfer import _filter_team, _norm_cmp, normalize_player_name
 
 _ALL_PLAYER_CLASSES: tuple[type, ...] | None = None
 
+# В CSV/БД: нет отдельного имени, в боте показывается только surname (прозвище).
+_EMPTY_FIRST_NAME_MARKERS = frozenset(
+    {"", "-", "—", "–", "нет", "n/a", "na", "прочерк", "без имени"}
+)
+
+
+def is_empty_first_name_value(value: str | None) -> bool:
+    return (value or "").strip().casefold() in _EMPTY_FIRST_NAME_MARKERS
+
 
 def _all_classes() -> tuple[type, ...]:
     global _ALL_PLAYER_CLASSES
@@ -27,7 +36,10 @@ def _all_classes() -> tuple[type, ...]:
 
 
 def player_first_name(row: Any) -> str:
-    return (getattr(row, "name", None) or "").strip().title()
+    fn = (getattr(row, "name", None) or "").strip()
+    if is_empty_first_name_value(fn):
+        return ""
+    return fn.title()
 
 
 def player_surname(row: Any) -> str:

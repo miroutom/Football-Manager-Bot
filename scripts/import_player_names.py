@@ -23,6 +23,7 @@ from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from utils.migrate_player_surname import migrate_all_player_surname_columns
+from utils.player_names import is_empty_first_name_value
 from utils.player_transfer import normalize_player_name_for_db
 
 _TABLE_TO_CLS = {
@@ -31,6 +32,14 @@ _TABLE_TO_CLS = {
     "defenders": Defender,
     "goalkeepers": Goalkeeper,
 }
+
+
+def _first_name_from_csv(raw: str) -> str:
+    """Пустая ячейка или «-» → нет отдельного имени (прозвище в surname)."""
+    s = normalize_player_name_for_db(raw)
+    if is_empty_first_name_value(s):
+        return ""
+    return s
 
 
 def main() -> None:
@@ -71,7 +80,7 @@ def main() -> None:
                 if r is None:
                     missing += 1
                     continue
-                fn = normalize_player_name_for_db(row.get("first_name") or "") or ""
+                fn = _first_name_from_csv(row.get("first_name") or "")
                 sn = (
                     normalize_player_name_for_db(row.get("surname") or "")
                     or fn
