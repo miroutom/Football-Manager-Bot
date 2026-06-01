@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Проставить ``left_team=True`` по журналу ``data/transfers.json``.
 
-Для каждой записи (кроме из «свободный агент») помечает все строки игрока
-в ``from_team`` — стата и ``team`` не меняются, из заявки скрываются.
+Для каждой записи (кроме из «свободный агент») помечает строки игрока
+в ``from_team`` (имя + позиция) — ``team`` и стата не меняются, из заявки скрываются.
+
+БД: активный сезон (league/cl/common) + ``*_synced.db``.
 
   python3 scripts/apply_left_team_from_transfers.py --dry-run
   python3 scripts/apply_left_team_from_transfers.py --apply
@@ -19,17 +22,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from data.defender import Defender
-from data.forward import Forward
-from data.goalkeeper import Goalkeeper
-from data.midfielder import Midfielder
+import sqlite3
+
 from player_stats import _norm_cmp
 from utils import season_paths
 from utils.migrate_player_left_team import migrate_all_player_left_team_columns
-from utils.player_transfer import _filter_team, mark_player_left_team
-from utils.transfer_input import normalize_position, resolve_team_name
+from utils.transfer_input import _team_name_as_in_db, normalize_position
 
-_ALL = (Forward, Midfielder, Defender, Goalkeeper)
+_TABLES = ("forwards", "midfielders", "defenders", "goalkeepers")
 _TRANSFERS_PATH = os.path.join(ROOT, "data", "transfers.json")
 _FA_MARKERS = ("(свободный агент)", "свободный агент", "free agent")
 
@@ -45,28 +45,83 @@ def _load_transfers() -> list[dict]:
     return list(data.get("transfers") or [])
 
 
-def _mark_left_in_session(sess, from_team: str, player: str, *, dry_run: bool) -> list[str]:
-    resolved = resolve_team_name(from_team, sess) or from_team.strip()
+def _resolve_team_in_db(conn: sqlite3.Connection, from_team: str) -> str:
+    """Точное имя клуба в этой БД (casefold)."""
+    raw = _team_name_as_in_db((from_team or "").strip())
+    want = _norm_cmp(raw)
+    teams: set[str] = set()
+    for table in _TABLES:
+        try:
+            for (tm,) in conn.execute(
+                f"SELECT DISTINCT team FROM {table} WHERE team IS NOT NULL"
+            ):
+                if tm:
+                    teams.add(str(tm).strip())
+        except sqlite3.OperationalError:
+            pass
+    for tm in teams:
+        if _norm_cmp(tm) == want:
+            return tm
+    return raw
+
+
+def _team_matches(db_team: str, resolved_from: str) -> bool:
+    return _norm_cmp(db_team) == _norm_cmp(resolved_from)
+
+
+def _mark_left_in_db(
+    db_path: str,
+    from_team: str,
+    player: str,
+    position: str,
+    *,
+    dry_run: bool,
+) -> list[str]:
     want_n = _norm_cmp(player)
+    want_pos = _norm_cmp(position) if position else ""
     touched: list[str] = []
-    for Cls in _ALL:
-        for r in sess.query(Cls).filter(_filter_team(Cls, resolved, include_left=True)).all():
-            if _norm_cmp(getattr(r, "name", "") or "") != want_n:
+    conn = sqlite3.connect(db_path)
+    try:
+        resolved_team = _resolve_team_in_db(conn, from_team)
+        for table in _TABLES:
+            cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+            if "left_team" not in cols or "name" not in cols:
                 continue
-            if bool(getattr(r, "left_team", False)):
-                continue
-            pos = (getattr(r, "position", "") or "").strip().upper()
-            line = (
-                f"  {Cls.__tablename__} id={r.id} {r.name} {pos} @ {getattr(r, 'team', '')} "
-                f"m={int(getattr(r, 'matches', 0) or 0)}"
-            )
-            touched.append(line)
-            if not dry_run:
-                mark_player_left_team(r)
+            has_m = "matches" in cols
+            sel = "id, name, team, position, left_team"
+            if has_m:
+                sel += ", matches"
+            for row in conn.execute(f"SELECT {sel} FROM {table}"):
+                rid, name, team, pos = row[0], row[1], row[2], row[3]
+                left = bool(row[4])
+                matches = int(row[5] or 0) if has_m and len(row) > 5 else 0
+                if left:
+                    continue
+                if not _team_matches(team or "", resolved_team):
+                    continue
+                if _norm_cmp(name or "") != want_n:
+                    continue
+                pos_u = (pos or "").strip().upper()
+                if want_pos and _norm_cmp(pos_u) != want_pos:
+                    continue
+                line = (
+                    f"  {table} id={rid} {name} {pos_u} @ {team} m={matches}"
+                )
+                touched.append(line)
+                if not dry_run:
+                    upd = f"UPDATE {table} SET left_team = 1"
+                    if "status" in cols:
+                        upd += ", status = NULL"
+                    upd += " WHERE id = ?"
+                    conn.execute(upd, (rid,))
+        if not dry_run and touched:
+            conn.commit()
+    finally:
+        conn.close()
     return touched
 
 
-def main() -> None:
+def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--apply", action="store_true")
@@ -80,20 +135,13 @@ def main() -> None:
 
     transfers = _load_transfers()
     skipped_fa = 0
-    seen: set[tuple[str, str, str]] = set()
+    seen: set[tuple[str, str, str, str]] = set()
     total_lines = 0
 
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    from utils.utils import Base
-
-    paths = [
-        ("league", season_paths.get_league_db_path()),
-        ("cl", season_paths.get_cl_db_path()),
-    ]
+    db_paths = season_paths.iter_player_roster_db_paths(include_synced=True)
 
     print(f"Журнал: {_TRANSFERS_PATH} ({len(transfers)} записей)")
+    print(f"БД: {', '.join(l for l, _ in db_paths)}")
     print(f"Режим: {'dry-run' if args.dry_run else 'APPLY'}\n")
 
     for tr in transfers:
@@ -106,32 +154,23 @@ def main() -> None:
         if _is_free_agent_team(from_team):
             skipped_fa += 1
             continue
-        key = (_norm_cmp(player), _norm_cmp(from_team), _norm_cmp(to_team))
+        key = (_norm_cmp(player), _norm_cmp(from_team), _norm_cmp(to_team), _norm_cmp(pos))
         if key in seen:
             continue
         seen.add(key)
 
         any_row = False
         print(f"— {player}: {from_team} ({pos}) → {to_team}")
-        for label, path in paths:
-            if not os.path.isfile(path):
-                continue
-            e = create_engine(f"sqlite:///{path}")
-            Base.metadata.create_all(e)
-            S = sessionmaker(bind=e)()
-            try:
-                lines = _mark_left_in_session(S, from_team, player, dry_run=args.dry_run)
-                if lines:
-                    print(f"  [{label}]")
-                    for ln in lines:
-                        print(ln)
-                    any_row = True
-                    total_lines += len(lines)
-                if not args.dry_run and lines:
-                    S.commit()
-            finally:
-                S.close()
-                e.dispose()
+        for label, path in db_paths:
+            lines = _mark_left_in_db(
+                path, from_team, player, pos, dry_run=args.dry_run
+            )
+            if lines:
+                print(f"  [{label}]")
+                for ln in lines:
+                    print(ln)
+                any_row = True
+                total_lines += len(lines)
         if not any_row:
             print("  (строк в from_team не найдено)")
 
@@ -139,11 +178,15 @@ def main() -> None:
     if args.dry_run:
         print("Применить: python3 scripts/apply_left_team_from_transfers.py --apply")
     else:
-        from utils.common_db import rebuild_common_database
+        try:
+            from utils.common_db import rebuild_common_database
 
-        rebuild_common_database()
-        print("common.db пересобран.")
+            rebuild_common_database()
+            print("common.db пересобран.")
+        except Exception as e:
+            print(f"common.db не пересобран ({e!s}); league/cl/synced уже обновлены.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

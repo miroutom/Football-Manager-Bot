@@ -134,6 +134,49 @@ def get_common_db_path_for_season(season_num: int) -> str:
     return os.path.join(season_archive_directory(season_num), SEASON_COMMON_NAME)
 
 
+def iter_player_roster_db_paths(
+    *,
+    include_synced: bool = True,
+    include_archives: bool = False,
+) -> list[tuple[str, str]]:
+    """
+    (метка, абсолютный путь) ко всем SQLite с таблицами игроков,
+    где имеет смысл ``left_team`` (активный сезон, опционально synced и архивы).
+    """
+    out: list[tuple[str, str]] = []
+    for label, path in (
+        ("league", get_league_db_path()),
+        ("cl", get_cl_db_path()),
+        ("common", get_common_db_path()),
+    ):
+        if os.path.isfile(path):
+            out.append((label, path))
+    if include_synced:
+        for label, path in (
+            ("sync_league", get_cumulative_league_db_path()),
+            ("sync_cl", get_cumulative_cl_db_path()),
+            ("sync_common", get_cumulative_common_db_path()),
+        ):
+            if os.path.isfile(path):
+                out.append((label, path))
+    if include_archives:
+        n = 1
+        while True:
+            d = season_archive_directory(n)
+            if not os.path.isdir(d):
+                break
+            for short, fname in (
+                ("league", SEASON_LEAGUE_NAME),
+                ("cl", SEASON_CL_NAME),
+                ("common", SEASON_COMMON_NAME),
+            ):
+                p = os.path.join(d, fname)
+                if os.path.isfile(p):
+                    out.append((f"s{n}:{short}", p))
+            n += 1
+    return out
+
+
 def repair_per_season_database_files() -> list[str]:
     """
     Если в папке активного сезона нет league.db / cl / common:

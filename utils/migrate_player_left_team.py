@@ -50,8 +50,19 @@ def _legacy_add_left_team_via_sql() -> list[str]:
 
 
 def migrate_all_player_left_team_columns() -> list[str]:
-    """Идемпотентно добавить ``left_team`` во все рабочие SQLite."""
-    return _legacy_add_left_team_via_sql()
+    """Идемпотентно добавить ``left_team`` во все рабочие SQLite (сезон + synced)."""
+    from utils import season_paths
+
+    out = _legacy_add_left_team_via_sql()
+    seen = set(out)
+    for label, path in season_paths.iter_player_roster_db_paths(
+        include_synced=True, include_archives=False
+    ):
+        for item in migrate_left_team_for_sqlite(path, label=label):
+            if item not in seen:
+                seen.add(item)
+                out.append(item)
+    return out
 
 
 def migrate_left_team_for_sqlite(db_path: str, *, label: str = "") -> list[str]:

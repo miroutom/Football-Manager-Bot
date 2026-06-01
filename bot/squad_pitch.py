@@ -441,11 +441,13 @@ def _assign_roster_ranks_from_db(players: list[_Pl]) -> None:
 
 
 def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
+    from utils.player_transfer import _filter_team
+
     team_db = _team_name_as_in_db(team)
     session = get_session(tournament)
     out: list[_Pl] = []
     for cls in (Forward, Midfielder, Defender, Goalkeeper):
-        for p in session.query(cls).filter_by(team=team_db).all():
+        for p in session.query(cls).filter(_filter_team(cls, team_db)).all():
             pos = getattr(p, "position", "") or ""
             ov = int(getattr(p, "overall", 0) or 0)
             tags = _position_tags(pos)
