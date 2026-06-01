@@ -35,5 +35,17 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 6
+  },
+  {
+    "home": "Боруссия М",
+    "away": "Байер",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Лейпциг",
+    "tournament": "league",
+    "day": 6
   }
 ]
