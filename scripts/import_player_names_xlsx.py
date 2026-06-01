@@ -2,8 +2,8 @@
 """
 Импорт имён из ``db/names.xlsx`` (блоки по командам).
 
-Сезон 2: сопоставление по клубу + позиция + рейтинг + нация (+ подпись в БД).
-Сезон 1: фамилия + нация (позиция/рейтинг/клуб из xlsx — только для уточнения).
+Сезон 2: клуб + позиция + рейтинг + подпись (нация и полное имя в БД — гибко).
+Сезон 1: клуб + подпись; иначе фамилия + нация.
 
   python3 scripts/import_player_names_xlsx.py --season 2
   python3 scripts/import_player_names_xlsx.py --season 2 --apply
@@ -247,18 +247,6 @@ def _iter_rows(session, team: str | None, *, include_left: bool):
             yield tbl, r
 
 
-def _match_row(entry: XlsxPlayer, row, *, require_team: bool) -> bool:
-    if require_team and _norm_cmp(row.team or "") != _norm_cmp(entry.team):
-        return False
-    if (getattr(row, "position", None) or "").strip().upper() != entry.position:
-        return False
-    if int(getattr(row, "overall", 0) or 0) != entry.rating:
-        return False
-    if _norm_nat(getattr(row, "nation", None) or "") != _norm_nat(entry.nation):
-        return False
-    return True
-
-
 def _candidates_surname_nation(session, entry: XlsxPlayer) -> list[tuple[str, object]]:
     out: list[tuple[str, object]] = []
     for tbl, r in _iter_rows(session, None, include_left=False):
@@ -275,6 +263,26 @@ def _candidates_team_label(
 ) -> list[tuple[str, object]]:
     out: list[tuple[str, object]] = []
     for tbl, r in _iter_rows(session, entry.team, include_left=False):
+        if require_nation and _norm_nat(
+            getattr(r, "nation", None) or ""
+        ) != _norm_nat(entry.nation):
+            continue
+        if not _label_matches_db(entry.surname_label, r, entry=entry):
+            continue
+        out.append((tbl, r))
+    return _filter_by_first_name(out, entry)
+
+
+def _candidates_team_pos_rating_label(
+    session, entry: XlsxPlayer, *, require_nation: bool
+) -> list[tuple[str, object]]:
+    """Клуб + позиция + рейтинг + подпись (нация опционально)."""
+    out: list[tuple[str, object]] = []
+    for tbl, r in _iter_rows(session, entry.team, include_left=False):
+        if (getattr(r, "position", None) or "").strip().upper() != entry.position:
+            continue
+        if int(getattr(r, "overall", 0) or 0) != entry.rating:
+            continue
         if require_nation and _norm_nat(
             getattr(r, "nation", None) or ""
         ) != _norm_nat(entry.nation):
@@ -339,32 +347,37 @@ def find_db_row_season1(session, entry: XlsxPlayer):
     return _pick_one(cands, entry, prefer_team=True)
 
 
+def find_db_row_season2(session, entry: XlsxPlayer):
+    """Сезон 2: клуб + позиция + рейтинг + подпись; нация и полное имя — гибко."""
+    err: str | None = None
+    for require_nat in (True, False):
+        cands = _candidates_team_pos_rating_label(
+            session, entry, require_nation=require_nat
+        )
+        if len(cands) == 1:
+            return cands[0], None
+        if len(cands) > 1:
+            hit, err = _pick_one(cands, entry, prefer_team=False)
+            if hit:
+                return hit, err
+            if err and "неоднознач" in err:
+                return None, err
+
+    for require_nat in (True, False):
+        cands = _candidates_team_label(session, entry, require_nation=require_nat)
+        hit, err = _pick_one(cands, entry, prefer_team=False)
+        if hit:
+            return hit, err
+        if err and "неоднознач" in err:
+            return None, err
+
+    return None, err or "не найден"
+
+
 def find_db_row(session, entry: XlsxPlayer, *, require_team: bool):
     if not require_team:
         return find_db_row_season1(session, entry)
-
-    strict: list[tuple[str, object]] = []
-    for tbl, r in _iter_rows(session, entry.team, include_left=False):
-        if not _match_row(entry, r, require_team=True):
-            continue
-        if _label_matches_db(entry.surname_label, r, entry=entry):
-            strict.append((tbl, r))
-    if len(strict) == 1:
-        return strict[0], None
-    if len(strict) > 1:
-        hit, err = _pick_one(strict, entry, prefer_team=False)
-        if hit:
-            return hit, err
-    # Клуб + фамилия (нация/позиция/рейтинг в БД могли быть с опечаткой)
-    by_name = _candidates_team_surname(session, entry)
-    if len(by_name) == 1:
-        return by_name[0], None
-    if len(by_name) > 1:
-        hit, err = _pick_one(by_name, entry, prefer_team=False)
-        if hit:
-            return hit, err
-        return None, err or f"неоднозначно: {len(by_name)}"
-    return None, "не найден"
+    return find_db_row_season2(session, entry)
 
 
 def apply_names(
