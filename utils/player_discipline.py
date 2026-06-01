@@ -821,16 +821,18 @@ def _apply_yellow(
     *,
     unavailable_from_round: int | None = None,
 ) -> tuple[str | None, bool]:
-    from player_stats import find_player_by_name, get_session
+    from utils.player_names import resolve_player_query_in_team
+    from utils.utils import get_session
     from utils.common_db import rebuild_common_database
 
     t = "cl" if tournament == "cl" or (league_code or "") == "cl" else "league"
     sess = get_session(t)
     team = current_team.strip().title()
-    nmt = name.title()
-    player, _ = find_player_by_name(sess, nmt, team)
+    player, err = resolve_player_query_in_team(sess, team, name)
+    if err:
+        return (f"✗ {err}", True)
     if not player:
-        return (f"✗ Не найден в БД: {nmt} ({team})", True)
+        return (f"✗ Не найден в БД: {name.strip()} ({team})", True)
     scope = "cl" if t == "cl" else "league"
     lc = "cl" if scope == "cl" else league_code
     with _lock:
@@ -866,16 +868,18 @@ def _apply_red_card(
     kind_label: str,
     unavailable_from_round: int | None = None,
 ) -> tuple[str | None, bool]:
-    from player_stats import find_player_by_name, get_session
+    from utils.player_names import resolve_player_query_in_team
+    from utils.utils import get_session
     from utils.common_db import rebuild_common_database
 
     t = "cl" if tournament == "cl" or league_code == "cl" else "league"
     sess = get_session(t)
     team = current_team.strip().title()
-    nmt = name.title()
-    player, _ = find_player_by_name(sess, nmt, team)
+    player, err = resolve_player_query_in_team(sess, team, name)
+    if err:
+        return (f"✗ {err}", True)
     if not player:
-        return (f"✗ Не найден в БД: {nmt} ({team})", True)
+        return (f"✗ Не найден в БД: {name.strip()} ({team})", True)
     scope = "cl" if t == "cl" else "league"
     lc = "cl" if scope == "cl" else league_code
     with _lock:

@@ -254,9 +254,19 @@ def find_player_by_name(
         (Defender, 'defender'),
         (Goalkeeper, 'goalkeeper')
     ]
-    want_name = _norm_cmp(name)
     want_team = _norm_cmp(team) if team else None
     want_nat = _norm_cmp(nation) if nation else None
+
+    if want_team is not None and want_nat is None:
+        from utils.player_names import resolve_player_query_in_team
+
+        row, _err = resolve_player_query_in_team(session, team, name)
+        if row is None:
+            return None, None
+        for PlayerClass, pos_type in classes:
+            if isinstance(row, PlayerClass):
+                return row, pos_type
+        return row, get_position_type(getattr(row, "position", "") or "")
 
     cands: list[tuple] = []
     for PlayerClass, pos_type in classes:
@@ -280,7 +290,6 @@ def find_player_by_name(
         return None, None
     if len(cands) == 1:
         return cands[0]
-    # Две строки «Уиллок ЦП» и «Уиллок ЦОП» — один человек, смена позиции в заявке
     if want_team is not None and want_nat is None:
         return max(
             cands,
@@ -524,13 +533,22 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
     player = None
 
     if not create_if_missing:
+        from utils.player_names import resolve_player_query_in_team
+
         if position is None or auto_find:
-            player, _ = find_player_by_name(session, name, team)
+            player, err = resolve_player_query_in_team(
+                session, team, name, position=None
+            )
+            if err:
+                print(f"  ✗ {err}")
+                return False
         else:
-            cls = get_player_class(position.upper())
-            player = session.query(cls).filter_by(name=name, team=team).first()
-            if not player:
-                player, _ = find_player_by_name(session, name, team)
+            player, err = resolve_player_query_in_team(
+                session, team, name, position=position.upper()
+            )
+            if err:
+                print(f"  ✗ {err}")
+                return False
         if not player:
             print(f"  ✗ Нет в БД: «{name}» ({team}) — проверь написание по шпаргалке выше.")
             return False
@@ -1177,11 +1195,13 @@ def apply_stats_bot_line(
         if played_phase and not confirm_unlisted_apply:
             pname_chk = extract_discipline_player_name(raw)
             if pname_chk:
+                from utils.player_names import resolve_player_query_in_team
+
                 sess_chk = get_session(st_tourn)
-                pl_chk, _ = find_player_by_name(
+                pl_chk, _ = resolve_player_query_in_team(
                     sess_chk,
-                    pname_chk.strip().title(),
                     current_team.strip().title(),
+                    pname_chk.strip(),
                 )
                 if pl_chk:
                     key_chk = _stats_session_key(pl_chk.name, pl_chk.team)
@@ -1209,11 +1229,13 @@ def apply_stats_bot_line(
             if use_session:
                 pname_raw = extract_discipline_player_name(raw)
                 if pname_raw:
+                    from utils.player_names import resolve_player_query_in_team
+
                     sess = get_session(st_tourn)
-                    pl, _ = find_player_by_name(
+                    pl, _ = resolve_player_query_in_team(
                         sess,
-                        pname_raw.strip().title(),
                         current_team.strip().title(),
+                        pname_raw.strip(),
                     )
                     if pl:
                         key_d = _stats_session_key(pl.name, pl.team)

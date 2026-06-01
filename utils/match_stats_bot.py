@@ -562,60 +562,10 @@ def parse_roster_name_lines(text: str) -> list[str]:
 
 
 def resolve_player_in_team(session, raw_name: str, team: str) -> tuple[Any | None, str]:
-    """
-    Найти игрока в клубе: точное имя, иначе единственное совпадение по фрагменту/фамилии.
-    Возвращает (row SQLAlchemy, ошибка).
-    """
-    from player_stats import Forward, Goalkeeper, Defender, Midfielder, find_player_by_name
+    """Найти игрока в клубе (см. ``resolve_player_query_in_team``)."""
+    from utils.player_names import resolve_player_query_in_team
 
-    team_t = (team or "").strip().title()
-    name_try = (raw_name or "").strip().title()
-    if not name_try:
-        return None, "Пустая строка."
-
-    pl, _ = find_player_by_name(session, name_try, team_t)
-    if pl:
-        return pl, ""
-
-    q = _norm_cmp(raw_name)
-    team_n = _norm_cmp(team_t)
-    found: list[Any] = []
-    seen: set[str] = set()
-    for Cls in (Forward, Midfielder, Defender, Goalkeeper):
-        for p in session.query(Cls).all():
-            if _norm_cmp(p.team) != team_n:
-                continue
-            pn = _norm_cmp(player_surname(p))
-            if pn in seen:
-                continue
-            parts = pn.split()
-            hit = (
-                pn == q
-                or q in pn
-                or any(p.startswith(q) or q == p for p in parts)
-            )
-            if hit:
-                seen.add(pn)
-                found.append(p)
-    if len(found) == 1:
-        return found[0], ""
-    if len(found) > 1:
-        if len({_norm_cmp(player_surname(p)) for p in found}) == 1:
-            pick = max(
-                found,
-                key=lambda p: (
-                    int(getattr(p, "matches", 0) or 0),
-                    int(getattr(p, "overall", 0) or 0),
-                    int(getattr(p, "id", 0) or 0),
-                ),
-            )
-            return pick, ""
-        names = ", ".join(
-            sorted({f"{player_display_name(p)} {p.position}" for p in found})[:6]
-        )
-        extra = "…" if len(found) > 6 else ""
-        return None, f"Неоднозначно «{raw_name}»: {names}{extra}"
-    return None, f"Не найден в БД «{raw_name}» ({team_t})"
+    return resolve_player_query_in_team(session, team, raw_name)
 
 
 def apply_roster_names_for_team(
