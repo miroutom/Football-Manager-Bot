@@ -92,10 +92,12 @@ def main() -> None:
         action="store_true",
         help="Не суммировать статы donor → keeper (удалить дубль как ошибочную строку)",
     )
-    ap.add_argument("--dry-run", action="store_true", default=True)
+    ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
-    if not args.apply:
+    if args.apply:
+        args.dry_run = False
+    elif not args.dry_run:
         args.dry_run = True
 
     from utils.migrate_player_left_team import migrate_all_player_left_team_columns
@@ -185,9 +187,9 @@ def main() -> None:
         register_name_change(args.team, also_name, args.name.strip().title())
 
     if args.apply:
-        from utils.cumulative_db import rebuild_active_season_common_db
+        from utils.common_db import rebuild_common_database
 
-        rebuild_active_season_common_db()
+        rebuild_common_database()
         print("common.db пересобран.")
 
 

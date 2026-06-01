@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Пакетный --dry-run слияний «один клуб, две позиции» (без суммы статов при --apply).
+Пакетное слияние «один клуб, две позиции» (--no-sum).
 
   python3 scripts/merge_position_duplicates_dry_run.py
+  python3 scripts/merge_position_duplicates_dry_run.py --apply
 """
 from __future__ import annotations
 
+import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -29,35 +31,39 @@ MERGES: list[tuple[str, str, str]] = [
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--apply", action="store_true", help="Применить слияния в БД")
+    args = ap.parse_args()
+    mode = "APPLY" if args.apply else "DRY-RUN"
     print("=" * 72)
-    print("DRY-RUN: слияние дублей позиций (--no-sum при будущем --apply)")
+    print(f"{mode}: слияние дублей позиций (--no-sum)")
     print("=" * 72)
     for name, team, keep_pos in MERGES:
         print(f"\n>>> {name} · {team} · оставить {keep_pos}")
         print("-" * 72)
-        rc = subprocess.call(
-            [
-                sys.executable,
-                str(MERGE),
-                "--dry-run",
-                "--no-sum",
-                "--name",
-                name,
-                "--team",
-                team,
-                "--keep-position",
-                keep_pos,
-            ],
-            cwd=str(ROOT),
-        )
+        cmd = [
+            sys.executable,
+            str(MERGE),
+            "--no-sum",
+            "--name",
+            name,
+            "--team",
+            team,
+            "--keep-position",
+            keep_pos,
+        ]
+        if args.apply:
+            cmd.append("--apply")
+        else:
+            cmd.append("--dry-run")
+        rc = subprocess.call(cmd, cwd=str(ROOT))
         if rc != 0:
             sys.exit(rc)
     print("\n" + "=" * 72)
-    print("Готово. Для применения по одному:")
-    print(
-        "  python3 scripts/merge_duplicate_player_rows.py --apply --no-sum "
-        "--name … --team … --keep-position …"
-    )
+    if args.apply:
+        print("Слияния применены. Далее: python3 scripts/apply_left_team_from_transfers.py")
+    else:
+        print("Dry-run готов. Применить: … merge_position_duplicates_dry_run.py --apply")
 
 
 if __name__ == "__main__":
