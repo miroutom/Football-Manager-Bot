@@ -23,6 +23,16 @@ def tournament_db_for_league(league_code: str) -> str:
     return "cl" if league_code == "cl" else "league"
 
 
+def tournament_for_goalscorers_scope(scope: str) -> str:
+    """``league`` | ``cl`` | ``common`` (лига+ЛЧ) для отчёта по клубу."""
+    s = (scope or "league").strip().lower()
+    if s in ("cl", "champ_league"):
+        return "cl"
+    if s in ("common", "merged", "all", "liga_cl", "lgcl"):
+        return "common"
+    return "league"
+
+
 # Имя файла pickle в db/season_n/pickle/ (как в teams.save_result)
 ARCHIVE_PICKLE_BY_LEAGUE: dict[str, str] = {
     "rpl": "rpl_teams.pkl",
@@ -300,13 +310,15 @@ def render_team_squad_pitch_png_bytes(league_code: str, team_index: int) -> byte
     return render_squad_pitch_png_bytes(team, tournament)
 
 
-def render_team_goalscorers_single(league_code: str, team_index: int) -> str:
-    """Голеадоры одного клуба."""
+def render_team_goalscorers_single(
+    league_code: str, team_index: int, scope: str = "league"
+) -> str:
+    """Голеадоры одного клуба (лига / ЛЧ / лига+ЛЧ)."""
     teams = teams_ordered_for_goalscorers(league_code)
     if not (0 <= team_index < len(teams)):
         raise IndexError("Некорректный выбор команды")
     team = teams[team_index]
-    tournament = "cl" if league_code == "cl" else "league"
+    tournament = tournament_for_goalscorers_scope(scope)
     import teams as teams_mod
     from player_stats import format_team_goalscorers_table_str
 
@@ -322,15 +334,20 @@ def render_team_goalscorers_single(league_code: str, team_index: int) -> str:
     return format_team_goalscorers_table_str(team, tournament, standings)
 
 
-def _archived_season_db_path_for_goalscorers(season_num: int, league_code: str) -> str | None:
-    """Путь к league.db или champions_league.db в архиве сезона."""
+def _archived_season_db_path_for_goalscorers(
+    season_num: int, league_code: str, *, scope: str | None = None
+) -> str | None:
+    """Путь к league.db, champions_league.db или common.db в архиве сезона."""
     import os
 
     from utils import season_paths
 
     base = season_paths.season_archive_directory(int(season_num))
-    if league_code == "cl":
+    sc = tournament_for_goalscorers_scope(scope or league_code)
+    if sc == "cl":
         p = os.path.join(base, season_paths.SEASON_CL_NAME)
+    elif sc == "common":
+        p = os.path.join(base, season_paths.SEASON_COMMON_NAME)
     else:
         p = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
     return p if os.path.isfile(p) else None
@@ -372,26 +389,31 @@ def render_archived_season_team_goalscorers_league(
 
 
 def render_archived_season_team_goalscorers_single(
-    season_num: int, league_code: str, team_index: int
+    season_num: int, league_code: str, team_index: int, scope: str = "league"
 ) -> str:
-    """Голеадоры одного клуба из архива ``db/season_n``."""
+    """Голеадоры одного клуба из архива ``db/season_n`` (лига / ЛЧ / лига+ЛЧ)."""
     import teams as teams_mod
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
     from player_stats import format_team_goalscorers_table_str
 
-    p = _archived_season_db_path_for_goalscorers(season_num, league_code)
+    tournament = tournament_for_goalscorers_scope(scope)
+    p = _archived_season_db_path_for_goalscorers(
+        season_num, league_code, scope=tournament
+    )
     if not p:
+        scope_lab = {"league": "лига", "cl": "ЛЧ", "common": "лига+ЛЧ"}.get(
+            tournament, tournament
+        )
         return (
-            f"Нет файла БД для сезона {int(season_num)}: "
+            f"Нет файла БД ({scope_lab}) для сезона {int(season_num)}: "
             f"проверьте db/season_{int(season_num)}/."
         )
     teams = teams_ordered_for_goalscorers_season_archive(season_num, league_code)
     if not (0 <= team_index < len(teams)):
         raise IndexError("Некорректный выбор команды")
     team = teams[team_index]
-    tournament = tournament_db_for_league(league_code)
     standings_by_code = {
         "rpl": teams_mod.teams_rpl,
         "eng": teams_mod.teams_eng,

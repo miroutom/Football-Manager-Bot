@@ -1082,17 +1082,25 @@ def apply_stats_bot_line(
     increment_matches: bool = True,
     session_match_players: set[str] | None = None,
     session_acc: dict[str, dict] | None = None,
-) -> tuple[str, str, bool]:
+    stats_played_keys: set[str] | None = None,
+    confirm_unlisted_apply: bool = False,
+) -> tuple[str, str, bool, dict | None]:
     """
     Одна строка ввода статистики для бота (без input()).
-    Возвращает (текст ответа, текущая сторона для следующей строки, режим «новый игрок»).
+    Возвращает (ответ, сторона, режим «новый игрок», confirm|None).
+
+    ``stats_played_keys``: после фазы «кто сыграл» — матчи уже +1; при строке для игрока
+    вне списка — ``confirm`` с полями name, team, position, line (без записи).
 
     Если переданы оба ``session_match_players`` и ``session_acc``, у каждого игрока поле matches
-    в БД растёт только при первой строке этого игрока в сессии; в ответ добавляется строка
-    саммари «📋 имя позиция G+A жк …».
+    в БД растёт только при первой строке этого игрока в сессии (кроме режима ``stats_played_keys``).
 
     Иначе ``increment_matches`` задаёт поведение по строке как раньше (консоль / без сессии).
     """
+    _confirm_none: dict | None = None
+
+    def _ret(msg: str, team: str = current_team, mode: bool = mode_new, confirm=None):
+        return (msg, team, mode, confirm if confirm is not None else _confirm_none)
     import contextlib
     import io
 
@@ -1104,22 +1112,22 @@ def apply_stats_bot_line(
     )
 
     raw = (line or "").strip()
+    played_phase = stats_played_keys is not None
+
     if not raw:
-        return (
-            "Пустую строку пропускаем. Закончить — /done или кнопка «Готово».",
-            current_team,
-            mode_new,
+        return _ret(
+            "Пустую строку пропускаем. Закончить — /done или кнопка «Готово»."
         )
 
     low = raw.lower()
     if low in ("1",):
-        return ("Режим: только игроки из БД.", current_team, False)
+        return _ret("Режим: только игроки из БД.", mode=False)
     if low in ("2",):
-        return ("Режим: новый игрок (позиция в строке обязательна).", current_team, True)
+        return _ret("Режим: новый игрок (позиция в строке обязательна).", mode=True)
     if low in ("h", "home", "х", "хозяева"):
-        return (f"Сторона ввода: {home_team}", home_team, mode_new)
+        return _ret(f"Сторона ввода: {home_team}", home_team)
     if low in ("a", "away", "г", "гости"):
-        return (f"Сторона ввода: {away_team}", away_team, mode_new)
+        return _ret(f"Сторона ввода: {away_team}", away_team)
 
     st_tourn = "cl" if (tournament or "") == "cl" else "league"
     lc = league_code or infer_league_code_for_stats(home_team, away_team, st_tourn)
@@ -1127,6 +1135,27 @@ def apply_stats_bot_line(
     use_session = session_match_players is not None and session_acc is not None
 
     if line_looks_discipline(raw):
+        if played_phase and not confirm_unlisted_apply:
+            pname_chk = extract_discipline_player_name(raw)
+            if pname_chk:
+                sess_chk = get_session(st_tourn)
+                pl_chk, _ = find_player_by_name(
+                    sess_chk,
+                    pname_chk.strip().title(),
+                    current_team.strip().title(),
+                )
+                if pl_chk:
+                    key_chk = _stats_session_key(pl_chk.name, pl_chk.team)
+                    if key_chk not in stats_played_keys:
+                        return _ret(
+                            "",
+                            confirm={
+                                "name": pl_chk.name.strip().title(),
+                                "team": (pl_chk.team or current_team).strip().title(),
+                                "position": (pl_chk.position or "").strip(),
+                                "line": raw,
+                            },
+                        )
         dmsg, handled = try_apply_discipline_line(
             raw,
             current_team=current_team,
@@ -1155,7 +1184,15 @@ def apply_stats_bot_line(
                             session_acc[key_d]["position"] = (pl.position or "").strip()
                             session_acc[key_d]["team"] = (pl.team or "").strip().title()
                         _merge_session_acc_discipline(session_acc[key_d], raw)
-                        if key_d not in session_match_players and increment_matches:
+                        incr_d = (
+                            increment_matches
+                            and not played_phase
+                            and key_d not in session_match_players
+                        )
+                        if confirm_unlisted_apply and played_phase:
+                            stats_played_keys.add(key_d)
+                            incr_d = key_d not in session_match_players
+                        if incr_d:
                             match_for_cs_d = (home_team, away_team, home_score, away_score)
                             bufm = io.StringIO()
                             with contextlib.redirect_stdout(bufm):
@@ -1180,11 +1217,9 @@ def apply_stats_bot_line(
                         tail = "\n📋 " + format_stats_session_summary_line(
                             session_acc[key_d]
                         )
-            return ((dmsg or "—") + tail, current_team, mode_new)
-        return (
-            "Не удалось разобрать дисциплину. Формат: «фамилия жк» / «… 2жк» / «… кк» / «… 4м» или «… 4m»",
-            current_team,
-            mode_new,
+            return _ret((dmsg or "—") + tail)
+        return _ret(
+            "Не удалось разобрать дисциплину. Формат: «фамилия жк» / «… 2жк» / «… кк» / «… 4м» или «… 4m»"
         )
 
     match_for_cs = (home_team, away_team, home_score, away_score)
@@ -1195,7 +1230,7 @@ def apply_stats_bot_line(
     head = buf.getvalue().strip()
 
     if pdata is None:
-        return (head or "Не удалось разобрать строку.", current_team, mode_new)
+        return _ret(head or "Не удалось разобрать строку.")
 
     if (
         pdata.get("auto_find")
@@ -1206,13 +1241,23 @@ def apply_stats_bot_line(
         ts = _team_score_in_match(pdata["team"], match_for_cs)
         if ts is not None and ts > 0:
             hint = pdata["name"].split()[0]
-            return (
+            return _ret(
                 f"⚠ У «{pdata['team']}» в этом матче {ts} гол(а). "
                 f"Если у игрока есть гол или передача — укажи цифры "
-                f"(например: {hint} 1 0).",
-                current_team,
-                mode_new,
+                f"(например: {hint} 1 0)."
             )
+
+    key_g = _stats_session_key(pdata["name"], pdata["team"]) if use_session else None
+    if played_phase and key_g and key_g not in stats_played_keys and not confirm_unlisted_apply:
+        return _ret(
+            "",
+            confirm={
+                "name": pdata["name"].strip().title(),
+                "team": (pdata.get("team") or current_team).strip().title(),
+                "position": (pdata.get("position") or "").strip(),
+                "line": raw,
+            },
+        )
 
     pos = pdata.get("position")
     home_cs = away_score == 0
@@ -1223,10 +1268,14 @@ def apply_stats_bot_line(
         elif pdata["team"].lower() == away_team.lower() and away_cs:
             pdata["clean_sheet"] = True
 
-    key_g = _stats_session_key(pdata["name"], pdata["team"]) if use_session else None
     do_incr = increment_matches
-    if use_session and key_g is not None:
+    if played_phase:
+        do_incr = False
+    elif use_session and key_g is not None:
         do_incr = increment_matches and (key_g not in session_match_players)
+    if confirm_unlisted_apply and played_phase and key_g:
+        stats_played_keys.add(key_g)
+        do_incr = key_g not in session_match_players if use_session else True
 
     team_g0, team_a0 = (0, 0)
     if use_session and session_acc is not None:
@@ -1256,11 +1305,7 @@ def apply_stats_bot_line(
         )
     out = buf2.getvalue().strip()
     if not ok_add:
-        return (
-            out or "Запись не выполнена. Проверь строку по шпаргалке.",
-            current_team,
-            mode_new,
-        )
+        return _ret(out or "Запись не выполнена. Проверь строку по шпаргалке.")
     if use_session and key_g is not None:
         session_match_players.add(key_g)
         if key_g not in session_acc:
@@ -1277,8 +1322,8 @@ def apply_stats_bot_line(
         if pdata.get("clean_sheet"):
             session_acc[key_g]["clean_sheet"] = True
         tail = "\n📋 " + format_stats_session_summary_line(session_acc[key_g])
-        return ((out or "✓") + tail, current_team, mode_new)
-    return (out or "✓", current_team, mode_new)
+        return _ret((out or "✓") + tail)
+    return _ret(out or "✓")
 
 
 def add_stats_to_match_interactive():

@@ -546,3 +546,116 @@ def deserialize_roster(raw: list) -> list[MatchRosterPlayer]:
 
 def roster_pk(player: MatchRosterPlayer) -> str:
     return player_row_key(player.name, player.position)
+
+
+def _played_side_filter(side: str) -> str:
+    return (side or "all").strip().lower()
+
+
+def filter_roster_by_side(
+    players: list[MatchRosterPlayer], side: str
+) -> list[MatchRosterPlayer]:
+    s = _played_side_filter(side)
+    if s in ("home", "h", "хоз"):
+        return [p for p in players if p.side_label == "хоз"]
+    if s in ("away", "a", "гост"):
+        return [p for p in players if p.side_label == "гост"]
+    return list(players)
+
+
+def build_stats_played_keyboard(
+    players: list[MatchRosterPlayer],
+    played_idxs: set[int],
+    *,
+    page: int = 0,
+    side: str = "all",
+) -> tuple[InlineKeyboardMarkup, int, int]:
+    """Клавиатура отметки сыгравших; возвращает (kb, page, total_pages)."""
+    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+    visible = filter_roster_by_side(players, side)
+    ps = _PAGE
+    n = len(visible)
+    total_pages = max(1, (n + ps - 1) // ps)
+    page = max(0, min(int(page), total_pages - 1))
+    chunk = visible[page * ps : page * ps + ps]
+    rows: list[list[InlineKeyboardButton]] = []
+    for p in chunk:
+        mark = "✅ " if p.idx in played_idxs else ""
+        sec = ""
+        if p.squad_status == "bench":
+            sec = "·б "
+        elif p.squad_status == "reserve":
+            sec = "·р "
+        label = f"{mark}{p.name} {sec}{p.position}"
+        if len(label) > 58:
+            label = label[:55] + "…"
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=label,
+                    callback_data=f"stats:pl:t:{p.idx}",
+                )
+            ]
+        )
+    if total_pages > 1:
+        nav: list[InlineKeyboardButton] = []
+        if page > 0:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"« {page}/{total_pages}",
+                    callback_data=f"stats:pl:pg:{page - 1}",
+                )
+            )
+        if page < total_pages - 1:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"{page + 2}/{total_pages} »",
+                    callback_data=f"stats:pl:pg:{page + 1}",
+                )
+            )
+        if nav:
+            rows.append(nav)
+    side_tag = _played_side_filter(side)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="Все" + (" ✓" if side_tag == "all" else ""),
+                callback_data="stats:pl:side:all",
+            ),
+            InlineKeyboardButton(
+                text="Хозяева" + (" ✓" if side_tag in ("home", "h", "хоз") else ""),
+                callback_data="stats:pl:side:home",
+            ),
+            InlineKeyboardButton(
+                text="Гости" + (" ✓" if side_tag in ("away", "a", "гост") else ""),
+                callback_data="stats:pl:side:away",
+            ),
+        ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="✓ Далее — ввод статы",
+                callback_data="stats:pl:done",
+            ),
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows), page, total_pages
+
+
+def stats_played_pick_intro(
+    *,
+    home: str,
+    away: str,
+    hs: int,
+    aws: int,
+    played_count: int,
+    page: int,
+    total_pages: int,
+) -> str:
+    return (
+        f"<b>Кто сыграл?</b> {home} ({hs}:{aws}) {away}\n"
+        f"Отмечено: <b>{played_count}</b>. Нажми на игрока — переключить ✅.\n"
+        f"Стр. {page + 1}/{total_pages}. Затем «Далее» — каждому +1 матч, потом строки статы."
+    )

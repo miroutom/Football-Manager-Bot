@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from html import escape as html_escape
 from functools import partial
 from typing import Any, Awaitable, Callable
 
@@ -147,11 +148,16 @@ def _league_keyboard(prefix: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _national_league_labels() -> tuple[tuple[str, str], ...]:
+    """Пять нац. лиг (без ЛЧ) — для «Голеадоры по клубам»."""
+    return tuple((code, label) for code, label in LEAGUE_LABELS if code != "cl")
+
+
 def _goalscorers_league_pick_keyboard(season_key: str) -> InlineKeyboardMarkup:
-    """Лиги + ЛЧ: каждая кнопка — свой турнир (``league.db`` или ``champions_league.db``). ``season_key``: ``cur`` или архив."""
+    """Пять нац. лиг; внутри клуба — лига / ЛЧ / лига+ЛЧ. ``season_key``: ``cur`` или номер архива."""
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
-    for code, label in LEAGUE_LABELS:
+    for code, label in _national_league_labels():
         cb = f"tgs:{code}" if season_key == "cur" else f"tgssn:{season_key}:{code}"
         row.append(InlineKeyboardButton(text=label, callback_data=cb))
         if len(row) == 3:
@@ -291,7 +297,7 @@ def _tgclub_keyboard(league_code: str) -> InlineKeyboardMarkup:
         row.append(
             InlineKeyboardButton(
                 text=_club_btn_label(team),
-                callback_data=f"tgclub:{league_code}:{idx}",
+                callback_data=f"tgst:cur:{league_code}:{idx}",
             )
         )
         if len(row) == 2:
@@ -308,6 +314,48 @@ def _tgclub_keyboard(league_code: str) -> InlineKeyboardMarkup:
         ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _tgscope_keyboard(
+    *,
+    season_tag: str,
+    league_code: str,
+    team_idx: int,
+) -> InlineKeyboardMarkup:
+    """После выбора клуба: лига / ЛЧ / лига+ЛЧ. ``season_tag``: ``cur`` или ``sn:<n>``."""
+    run_prefix = f"tgst:run:{season_tag}:{league_code}:{team_idx}"
+    back_cb = f"tgs:{league_code}" if season_tag == "cur" else f"tgssn:{season_tag.split(':', 1)[1]}:{league_code}"
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🏟 Лига",
+                    callback_data=f"{run_prefix}:league",
+                ),
+                InlineKeyboardButton(
+                    text="⭐ ЛЧ",
+                    callback_data=f"{run_prefix}:cl",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📊 Лига + ЛЧ",
+                    callback_data=f"{run_prefix}:common",
+                ),
+            ],
+            [
+                InlineKeyboardButton(text="◀️ Клубы", callback_data=back_cb),
+            ],
+        ]
+    )
+
+
+def _tgscope_title(scope: str) -> str:
+    return {
+        "league": "лига",
+        "cl": "ЛЧ",
+        "common": "лига + ЛЧ",
+    }.get(scope, scope)
 
 
 def _tgs_season_root_keyboard() -> InlineKeyboardMarkup:
@@ -345,7 +393,7 @@ def _tgclub_keyboard_season(season_num: int, league_code: str) -> InlineKeyboard
         row.append(
             InlineKeyboardButton(
                 text=_club_btn_label(team),
-                callback_data=f"tgclubsn:{season_num}:{league_code}:{idx}",
+                callback_data=f"tgst:sn:{season_num}:{league_code}:{idx}",
             )
         )
         if len(row) == 2:
@@ -1623,10 +1671,8 @@ async def cb_tcp_tops(callback: CallbackQuery) -> None:
 async def cb_menu_tgs_league(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Голеадоры по клубу: выберите <b>сезон</b> "
-        "(текущие БД или архив <code>db/season_N</code>), затем чемпионат и клуб. "
-        "Нац. лига — только матчи чемпионата страны (<code>league.db</code>); "
-        "<b>ЛЧ</b> — только Лига чемпионов (<code>champions_league.db</code>).",
+        "Голеадоры по клубу: <b>сезон</b> → одна из <b>5 лиг</b> → клуб → "
+        "<b>лига</b> / <b>ЛЧ</b> / <b>лига + ЛЧ</b> (summary в <code>common.db</code>).",
         parse_mode=ParseMode.HTML,
         reply_markup=_tgs_season_root_keyboard(),
     )
@@ -1643,8 +1689,8 @@ async def cb_tgsroot_season(callback: CallbackQuery) -> None:
     await callback.answer()
     if key == "cur":
         await callback.message.answer(
-            "Текущий сезон — выберите чемпионат, затем клуб (или «Все клубы подряд»). "
-            "Каждая лига — только своя БД (нац. чемпионат или ЛЧ):",
+            "Текущий сезон — выберите чемпионат (5 лиг), затем клуб. "
+            "Внутри клуба — отдельно лига, ЛЧ или суммарно:",
             parse_mode=ParseMode.HTML,
             reply_markup=_goalscorers_league_pick_keyboard("cur"),
         )
@@ -1964,28 +2010,125 @@ async def cb_formation_set(callback: CallbackQuery) -> None:
         await callback.message.answer(f"Не удалось сменить схему: {e}")
 
 
-@router.callback_query(F.data.startswith("tgclub:"))
-async def cb_tgclub_team(callback: CallbackQuery) -> None:
+@router.callback_query(F.data.startswith("tgst:cur:"))
+async def cb_tgst_cur_pick_scope(callback: CallbackQuery) -> None:
+    """Текущий сезон: клуб выбран — клавиатура лига / ЛЧ / лига+ЛЧ."""
     parts = callback.data.split(":")
-    if len(parts) != 3:
+    if len(parts) != 4 or parts[1] != "cur":
         await callback.answer()
         return
-    _, code, idx_s = parts
+    code, idx_s = parts[2], parts[3]
     try:
         idx = int(idx_s)
     except ValueError:
         await callback.answer()
         return
-    await callback.answer("Считаю…")
+    await callback.answer()
     try:
-        text = await asyncio.to_thread(render_team_goalscorers_single, code, idx)
         teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
         team_name = teams[idx]
-        title = f"Голеадоры · {_league_title(code)} · {team_name}"
+    except Exception as e:
+        logger.exception("tgst_cur")
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+    await callback.message.answer(
+        f"<b>{html_escape(team_name)}</b> · {_league_title(code)} — что показать?",
+        parse_mode=ParseMode.HTML,
+        reply_markup=_tgscope_keyboard(
+            season_tag="cur", league_code=code, team_idx=idx
+        ),
+    )
+
+
+@router.callback_query(F.data.startswith("tgst:sn:"))
+async def cb_tgst_sn_pick_scope(callback: CallbackQuery) -> None:
+    """Архив: клуб выбран — клавиатура лига / ЛЧ / лига+ЛЧ."""
+    parts = callback.data.split(":")
+    if len(parts) != 5:
+        await callback.answer()
+        return
+    try:
+        sn = int(parts[2])
+        idx = int(parts[4])
+    except ValueError:
+        await callback.answer()
+        return
+    code = parts[3]
+    await callback.answer()
+    try:
+        teams = await asyncio.to_thread(
+            teams_ordered_for_goalscorers_season_archive, sn, code
+        )
+        team_name = teams[idx]
+    except Exception as e:
+        logger.exception("tgst_sn")
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+    await callback.message.answer(
+        f"Сезон {sn} · <b>{html_escape(team_name)}</b> · {_league_title(code)} — что показать?",
+        parse_mode=ParseMode.HTML,
+        reply_markup=_tgscope_keyboard(
+            season_tag=f"sn:{sn}", league_code=code, team_idx=idx
+        ),
+    )
+
+
+@router.callback_query(F.data.startswith("tgst:run:"))
+async def cb_tgst_run_report(callback: CallbackQuery) -> None:
+    """Рендер голеадоров клуба по выбранному scope."""
+    parts = callback.data.split(":")
+    # tgst:run:cur:rpl:3:league  OR  tgst:run:sn:2:rpl:3:common
+    if len(parts) < 6 or parts[1] != "run":
+        await callback.answer()
+        return
+    scope = parts[-1]
+    if scope not in ("league", "cl", "common"):
+        await callback.answer("Неверный турнир.", show_alert=True)
+        return
+    await callback.answer("Считаю…")
+    try:
+        if parts[2] == "cur":
+            code = parts[3]
+            idx = int(parts[4])
+            text = await asyncio.to_thread(
+                render_team_goalscorers_single, code, idx, scope
+            )
+            teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
+            team_name = teams[idx]
+            title = (
+                f"Голеадоры · {_league_title(code)} · {team_name} · "
+                f"{_tgscope_title(scope)}"
+            )
+        elif parts[2] == "sn":
+            sn = int(parts[3])
+            code = parts[4]
+            idx = int(parts[5])
+            text = await asyncio.to_thread(
+                render_archived_season_team_goalscorers_single, sn, code, idx, scope
+            )
+            teams = await asyncio.to_thread(
+                teams_ordered_for_goalscorers_season_archive, sn, code
+            )
+            team_name = teams[idx]
+            title = (
+                f"Голеадоры · сезон {sn} · {_league_title(code)} · {team_name} · "
+                f"{_tgscope_title(scope)}"
+            )
+        else:
+            await callback.message.answer("Неверный выбор сезона.")
+            return
         await answer_report_photos(callback.message, text, title)
     except Exception as e:
-        logger.exception("tgclub")
+        logger.exception("tgst_run")
         await callback.message.answer(f"Ошибка: {e}")
+
+
+@router.callback_query(F.data.startswith("tgclub:"))
+async def cb_tgclub_team_legacy(callback: CallbackQuery) -> None:
+    await callback.answer(
+        "Обнови меню: «Голеадоры по клубам» → сезон → лига → клуб → лига/ЛЧ/сумма.",
+        show_alert=True,
+    )
 
 
 @router.callback_query(F.data.startswith("tgsall:"))
@@ -2005,32 +2148,11 @@ async def cb_tgs_all_clubs(callback: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data.startswith("tgclubsn:"))
-async def cb_tgclubsn_archived_team(callback: CallbackQuery) -> None:
-    parts = callback.data.split(":")
-    if len(parts) != 4:
-        await callback.answer()
-        return
-    try:
-        sn = int(parts[1])
-        idx = int(parts[3])
-    except ValueError:
-        await callback.answer()
-        return
-    code = parts[2]
-    await callback.answer("Считаю…")
-    try:
-        text = await asyncio.to_thread(
-            render_archived_season_team_goalscorers_single, sn, code, idx
-        )
-        teams = await asyncio.to_thread(
-            teams_ordered_for_goalscorers_season_archive, sn, code
-        )
-        team_name = teams[idx]
-        title = f"Голеадоры · сезон {sn} · {_league_title(code)} · {team_name}"
-        await answer_report_photos(callback.message, text, title)
-    except Exception as e:
-        logger.exception("tgclubsn")
-        await callback.message.answer(f"Ошибка: {e}")
+async def cb_tgclubsn_archived_team_legacy(callback: CallbackQuery) -> None:
+    await callback.answer(
+        "Обнови меню: «Голеадоры по клубам» → сезон → лига → клуб → лига/ЛЧ/сумма.",
+        show_alert=True,
+    )
 
 
 @router.callback_query(F.data.startswith("tgsallsn:"))
