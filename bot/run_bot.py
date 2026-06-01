@@ -28,6 +28,7 @@ from bot.settings import get_bot_token
 from utils.migrate_player_discipline import migrate_all_player_discipline_columns
 from utils.migrate_player_awards import migrate_player_awards_columns
 from utils.migrate_player_status import migrate_all_player_status_columns
+from utils.migrate_player_left_team import migrate_all_player_left_team_columns
 from utils.migrate_free_agents import migrate_free_agents_db
 
 logging.basicConfig(
@@ -42,6 +43,13 @@ async def main() -> None:
     except Exception:
         logging.getLogger(__name__).exception(
             "Не удалось применить миграции SQLite (колонка status и др.)"
+        )
+        raise
+    try:
+        await asyncio.to_thread(migrate_all_player_left_team_columns)
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Не удалось применить миграции SQLite (колонка left_team)"
         )
         raise
     try:

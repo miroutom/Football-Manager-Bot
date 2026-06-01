@@ -2,12 +2,12 @@
 """
 Слить дубли одного игрока в клубе (разные позиции в БД, одно имя).
 
-Пример: Уиллок ЦП + Уиллок ЦОП в Ньюкасле → одна строка ЦОП с суммой статов.
+Пример: Уиллок ЦП + Уиллок ЦОП в Ньюкасле → одна строка ЦОП.
 
   python3 scripts/merge_duplicate_player_rows.py --dry-run \\
       --name Уиллок --team Ньюкасл --keep-position ЦОП
-  python3 scripts/merge_duplicate_player_rows.py --apply \\
-      --name Уиллок --team Ньюкасл --keep-position ЦОП
+  python3 scripts/merge_duplicate_player_rows.py --apply --no-sum \\
+      --name Ольмо --team Лейпциг --keep-position ЦАП
 """
 from __future__ import annotations
 
@@ -38,6 +38,14 @@ def _rows(session, name: str, team: str) -> list[tuple[type, object]]:
             if _norm_cmp(r.name) == want_n and _norm_cmp(r.team) == want_t:
                 out.append((Cls, r))
     return out
+
+
+def _row_stats_line(r: object) -> str:
+    return (
+        f"m={int(getattr(r, 'matches', 0) or 0)} "
+        f"g={int(getattr(r, 'goals', 0) or 0)} "
+        f"a={int(getattr(r, 'assists', 0) or 0)}"
+    )
 
 
 def _merge_into(keeper, donor) -> None:
@@ -79,11 +87,20 @@ def main() -> None:
         default="",
         help="Второе имя того же игрока (напр. Силва при --name Рафа)",
     )
+    ap.add_argument(
+        "--no-sum",
+        action="store_true",
+        help="Не суммировать статы donor → keeper (удалить дубль как ошибочную строку)",
+    )
     ap.add_argument("--dry-run", action="store_true", default=True)
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
     if not args.apply:
         args.dry_run = True
+
+    from utils.migrate_player_left_team import migrate_all_player_left_team_columns
+
+    migrate_all_player_left_team_columns()
 
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
@@ -109,14 +126,15 @@ def main() -> None:
             if len(rows) < 2:
                 print(f"{path}: дублей нет ({len(rows)} строк)")
                 continue
-            print(f"\n{path}:")
-            for Cls, r in rows:
-                print(
-                    f"  {Cls.__tablename__} id={r.id} {r.name} {r.position} "
-                    f"m={r.matches} g={getattr(r,'goals',0)} a={getattr(r,'assists',0)}"
-                )
+            print(f"\n{os.path.basename(path)}:")
             keeper = None
             donors: list[tuple[type, object]] = []
+            for Cls, r in rows:
+                tag = "KEEP" if (r.position or "").strip().upper() == keep_pos else "DROP"
+                print(
+                    f"  [{tag}] {Cls.__tablename__} id={r.id} {r.name} {r.position} "
+                    f"{_row_stats_line(r)}"
+                )
             for Cls, r in rows:
                 if (r.position or "").strip().upper() == keep_pos:
                     if keeper is None:
@@ -134,17 +152,29 @@ def main() -> None:
                 extra, _ = fbn(S, args.name.strip().title(), also_name)
                 if extra is not None and int(extra.id) != int(keeper[1].id):
                     donors.append((type(extra), extra))
+                    print(
+                        f"  [DROP] {type(extra).__tablename__} id={extra.id} "
+                        f"{extra.name} {extra.position} {_row_stats_line(extra)} (also-name)"
+                    )
             if not donors:
                 print("  Нечего сливать")
                 continue
+            mode = "без суммы статов" if args.no_sum else "с суммой статов"
             if args.dry_run:
-                print(f"  (dry-run) Слить {len(donors)} → {keeper[1].name} {keeper[1].position}")
+                print(
+                    f"  (dry-run) Оставить id={keeper[1].id} {keeper[1].position} "
+                    f"({_row_stats_line(keeper[1])}), удалить {len(donors)} строк, {mode}"
+                )
                 continue
             for _Cls, d in donors:
-                _merge_into(keeper[1], d)
+                if not args.no_sum:
+                    _merge_into(keeper[1], d)
                 S.delete(d)
             S.commit()
-            print(f"  ✓ Оставлен id={keeper[1].id} {keeper[1].position}, удалено {len(donors)}")
+            print(
+                f"  ✓ Оставлен id={keeper[1].id} {keeper[1].position}, "
+                f"удалено {len(donors)} ({mode})"
+            )
         finally:
             S.close()
             e.dispose()

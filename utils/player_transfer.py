@@ -3,8 +3,8 @@
 Трансфер игрока: новая строка в клубе «куда», строка в клубе «откуда» **остаётся** со статой.
 
 В ``league.db`` / ``champions_league.db`` после трансфера:
-  - у **прежнего** клуба — та же строка (имя+позиция+клуб), матчи/голы/передачи не трогаем
-    (в «Голеадоры клуба» и отчётах по команде видна стата за время в этом клубе);
+  - у **прежнего** клуба — та же строка (имя+позиция+клуб), стата не трогаем,
+    выставляется ``left_team=True`` (в заявке/ростере не показывается, в голеадорах клуба — да);
   - у **нового** клуба — новая строка с нулевой полевой статой, overall/нация/заявка как в боте.
 
 Раньше менялось только поле ``team`` — стата «уезжала» с игроком; это исправлено.
@@ -28,7 +28,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 
 from data.defender import Defender
 from data.forward import Forward
@@ -104,10 +104,25 @@ def normalize_player_name_for_db(name: str) -> str:
     return " ".join(parts)
 
 
-def _filter_team(Cls, team: str):
+def _player_left_team(row: Any) -> bool:
+    return bool(getattr(row, "left_team", False))
+
+
+def _filter_team(Cls, team: str, *, include_left: bool = False):
+    """Строки клуба; по умолчанию без ушедших (``left_team``)."""
     t = (team or "").strip()
     tl = t.lower()
-    return or_(Cls.team == t, func.lower(Cls.team) == tl)
+    cond = or_(Cls.team == t, func.lower(Cls.team) == tl)
+    if not include_left and hasattr(Cls, "left_team"):
+        cond = and_(cond, Cls.left_team.is_(False))
+    return cond
+
+
+def mark_player_left_team(row: Any) -> None:
+    """Игрок больше не в заявке клуба; ``team`` и стата не меняются."""
+    row.left_team = True
+    if hasattr(row, "status"):
+        row.status = None
 
 
 def _all_for_team(sess, Cls, team: str) -> list[Any]:
@@ -270,6 +285,7 @@ def _apply_transfer_with_status_to_sessions(
                     nation_update=nation_update,
                     new_nation=new_nation,
                 )
+                mark_player_left_team(r)
                 counts[key] += 1
 
     _run_session(sess_league, "league")
@@ -393,6 +409,7 @@ def _new_player_kwargs(
         golden_balls=0,
         nation=nat,
         status=None,
+        left_team=False,
     )
     if Cls is Forward:
         kw.update(

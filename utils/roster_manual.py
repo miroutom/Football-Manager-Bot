@@ -147,11 +147,13 @@ def _release_player_from_team_sessions(
         return ""
     ovr = int(row_l.overall or 0)
     nat = (getattr(row_l, "nation", None) or "").strip() or None
-    upsert_free_agent_catalog(nm, pos, ovr, nat)
     if _has_meaningful_stats(row_l):
-        row_l.team = FREE_AGENT_TEAM
-        label = FREE_AGENT_TEAM
+        from utils.player_transfer import mark_player_left_team
+
+        mark_player_left_team(row_l)
+        label = "left_team"
     else:
+        upsert_free_agent_catalog(nm, pos, ovr, nat)
         sleague.delete(row_l)
         label = "deleted"
     from utils.common_db import resolve_team_name_for_cl_pool
@@ -161,7 +163,9 @@ def _release_player_from_team_sessions(
         Cls_c, row_c = fpr(scl, cl_team, nm, pos)
         if row_c is not None:
             if _has_meaningful_stats(row_c):
-                row_c.team = FREE_AGENT_TEAM
+                from utils.player_transfer import mark_player_left_team
+
+                mark_player_left_team(row_c)
             else:
                 scl.delete(row_c)
     return label
