@@ -972,7 +972,12 @@ def _post_match_continue_kb(
             ]
         )
     rows.append(
-        [InlineKeyboardButton(text="📋 Меню", callback_data="play:post:menu")]
+        [
+            InlineKeyboardButton(
+                text="📋 Из календаря",
+                callback_data="play:schedule",
+            ),
+        ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -1031,8 +1036,8 @@ async def _send_ason_continue_after_stats(
             ],
             [
                 InlineKeyboardButton(
-                    text="📋 Меню",
-                    callback_data="play:post:menu",
+                    text="📊 Стата без матча",
+                    callback_data="menu:stats_match",
                 ),
             ],
         ]
