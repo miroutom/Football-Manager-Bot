@@ -12,10 +12,10 @@ from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from utils.player_identity import (
-    merge_row_stats_into,
     merge_same_name_duplicates_in_session,
     register_name_change,
     resolve_canonical_name,
+    row_stats_snapshot,
 )
 from utils.player_names import player_display_name, player_surname
 from utils.player_transfer import _filter_team, _norm_cmp
@@ -169,6 +169,118 @@ def _sync_field_to_cl(
     return 1
 
 
+def _row_snapshot(row: Any, Cls: type, *, pending_name: str | None = None) -> dict[str, Any]:
+    disp = (pending_name or getattr(row, "name", None) or "").strip()
+    if pending_name:
+        from utils.player_names import player_display_name as _pd
+
+        class _Wrap:
+            name = disp
+
+        disp = _pd(_Wrap())
+    else:
+        disp = player_display_name(row)
+    return {
+        "table": Cls.__tablename__,
+        "id": int(getattr(row, "id", 0) or 0),
+        "name": disp,
+        "position": (getattr(row, "position", None) or "").strip().upper(),
+        "stats": row_stats_snapshot(row),
+    }
+
+
+def preview_field_update_merge(
+    team: str,
+    name: str,
+    position: str,
+    field: str,
+    raw: str,
+    *,
+    row_id: int | None = None,
+    table: str | None = None,
+) -> dict[str, Any] | None:
+    """
+    Если правка вызовет слияние дублей — вернуть снимки строк и причину.
+    Без записи в БД.
+    """
+    from utils.squad_roster_sync import (
+        _all_rows_same_player,
+        find_player_row as find_by_name_only,
+    )
+    from utils.utils import session_league
+
+    field = (field or "").strip()
+    if field in _SKIP_FIELDS:
+        return None
+
+    team_t = (team or "").strip().title()
+    Cls_l, row_l = resolve_player_row(
+        session_league,
+        team_t,
+        name,
+        position,
+        table=table,
+        row_id=row_id,
+    )
+    if row_l is None:
+        return None
+
+    old_name = (getattr(row_l, "name", None) or "").strip()
+    try:
+        val = parse_field_value(Cls_l, field, raw)
+    except ValueError:
+        return None
+
+    pending_name = val if field == "name" else None
+    effective_name = (
+        (val if field == "name" else (getattr(row_l, "name", None) or "")).strip()
+        or name
+    )
+
+    seen: set[tuple[str, int]] = set()
+    rows: list[dict[str, Any]] = []
+
+    def _add(row: Any, Cls: type, *, pname: str | None = None) -> None:
+        key = (Cls.__tablename__, int(getattr(row, "id", 0) or 0))
+        if key in seen:
+            return
+        seen.add(key)
+        rows.append(_row_snapshot(row, Cls, pending_name=pname))
+
+    _add(row_l, Cls_l, pname=pending_name)
+
+    reason = ""
+    if field == "name" and _norm_cmp(str(val)) != _norm_cmp(old_name):
+        other, ocls = find_by_name_only(session_league, str(val), team_t)
+        if other is not None and int(other.id) != int(row_l.id):
+            _add(other, ocls)
+            reason = "rename_collision"
+
+    for row, Cls in _all_rows_same_player(session_league, effective_name, team_t):
+        if int(row.id) == int(row_l.id):
+            continue
+        _add(row, Cls)
+
+    if len(rows) < 2:
+        return None
+    if not reason:
+        reason = "same_name_in_club"
+
+    return {
+        "team": team_t,
+        "field": field,
+        "raw": raw,
+        "name": name,
+        "position": position,
+        "row_id": row_id,
+        "table": table,
+        "reason": reason,
+        "rows": rows,
+        "primary_id": int(row_l.id),
+        "primary_table": Cls_l.__tablename__,
+    }
+
+
 def apply_player_field_update(
     team: str,
     name: str,
@@ -179,6 +291,7 @@ def apply_player_field_update(
     rebuild_common: bool = True,
     row_id: int | None = None,
     table: str | None = None,
+    merge_mode: str = "sum",
 ) -> dict[str, Any]:
     """
     Обновляет поле в той же строке (по id, если передан).
@@ -213,6 +326,7 @@ def apply_player_field_update(
     setattr(row_l, field, val)
     _sync_ga_if_needed(row_l, field)
 
+    mode = (merge_mode or "sum").strip().lower()
     merged = 0
     if field == "name":
         new_name = (getattr(row_l, "name", None) or "").strip()
@@ -220,12 +334,18 @@ def apply_player_field_update(
             register_name_change(team_t, old_name, new_name)
             other, ocls = find_by_name_only(session_league, new_name, team_t)
             if other is not None and int(other.id) != int(row_l.id):
-                merge_row_stats_into(row_l, other)
-                session_league.delete(other)
-                merged += 1
+                from utils.player_identity import _apply_merge_donors
+
+                merged += _apply_merge_donors(
+                    session_league, row_l, [(other, ocls)], mode
+                )
                 _sync_ga_if_needed(row_l, field)
     merged += merge_same_name_duplicates_in_session(
-        session_league, team_t, (getattr(row_l, "name", None) or "").strip() or name
+        session_league,
+        team_t,
+        (getattr(row_l, "name", None) or "").strip() or name,
+        keeper_row=row_l,
+        merge_mode=mode,
     )
 
     session_league.commit()
@@ -250,9 +370,55 @@ def apply_player_field_update(
         "league_table": Cls_l.__tablename__,
         "cl_updated": cl_updated,
         "merged_rows": merged,
+        "merge_mode": mode,
         "display_name": player_display_name(row_l),
         "display_pos": (row_l.position or "").strip().upper(),
     }
+
+
+def format_merge_preview_message(preview: dict[str, Any]) -> str:
+    """Текст сравнения статистики перед слиянием."""
+    lines = [
+        "<b>Найдены дубли в клубе</b> — выбери, чья стата останется в редактируемой строке.",
+        f"Клуб: <b>{preview.get('team', '')}</b>",
+        "",
+    ]
+    reason = str(preview.get("reason") or "")
+    if reason == "rename_collision":
+        lines.append(
+            "Причина: новое имя уже есть у другой строки (переименование)."
+        )
+    else:
+        lines.append("Причина: несколько строк с одним именем в клубе.")
+    lines.append("")
+    for i, row in enumerate(preview.get("rows") or [], 1):
+        st = row.get("stats") or {}
+        g = int(st.get("goals", 0) or 0)
+        a = int(st.get("assists", 0) or 0)
+        m = int(st.get("matches", 0) or 0)
+        mark = " ← редактируешь" if int(row.get("id", 0)) == int(
+            preview.get("primary_id", -1)
+        ) else ""
+        lines.append(
+            f"<b>{i}. {row.get('name')}</b> ({row.get('position')}) "
+            f"<code>{row.get('table')}</code> id={row.get('id')}{mark}"
+        )
+        lines.append(
+            f"   матчи {m}, голы {g}, передачи {a}, Г+А {g + a}, "
+            f"жк {int(st.get('yellow_cards', 0) or 0)}, "
+            f"кк {int(st.get('red_cards', 0) or 0)}"
+        )
+    lines.append("")
+    lines.append(
+        "<b>Сумма</b> — сложить статы всех строк в редактируемую (как раньше по умолчанию)."
+    )
+    lines.append(
+        "<b>Только редактируемая</b> — стата строки, которую правишь; дубли удалить без сложения."
+    )
+    lines.append(
+        "Кнопки с именами — взять стату выбранной строки в редактируемую."
+    )
+    return "\n".join(lines)
 
 
 def list_editable_fields_for_player(

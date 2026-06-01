@@ -69,6 +69,42 @@ def register_name_change(team: str, old_name: str, new_name: str) -> None:
     _save(data)
 
 
+_STAT_COPY_FIELDS = (
+    "matches",
+    "goals",
+    "assists",
+    "ga",
+    "clean_sheets",
+    "missed_goals",
+    "trophies",
+    "golden_balls",
+    "golden_boots",
+    "golden_gloves",
+    "golden_boys",
+    "yellow_cards",
+    "red_cards",
+)
+
+
+def row_stats_snapshot(row: Any) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for fld in _STAT_COPY_FIELDS:
+        if hasattr(row, fld):
+            out[fld] = int(getattr(row, fld, 0) or 0)
+    return out
+
+
+def copy_stats_replace(dst: Any, src: Any) -> None:
+    """Заменить полевую стату dst значениями src (не суммировать)."""
+    for fld in _STAT_COPY_FIELDS:
+        if hasattr(dst, fld) and hasattr(src, fld):
+            setattr(dst, fld, int(getattr(src, fld, 0) or 0))
+    if hasattr(dst, "ga"):
+        dst.ga = int(getattr(dst, "goals", 0) or 0) + int(
+            getattr(dst, "assists", 0) or 0
+        )
+
+
 def merge_row_stats_into(keeper: Any, donor: Any) -> None:
     """Суммировать статистику donor → keeper, затем donor удаляют снаружи."""
     for fld in (
@@ -105,25 +141,79 @@ def merge_row_stats_into(keeper: Any, donor: Any) -> None:
         )
 
 
-def merge_same_name_duplicates_in_session(sess, team: str, name: str) -> int:
+def merge_same_name_duplicates_in_session(
+    sess,
+    team: str,
+    name: str,
+    *,
+    keeper_row: Any | None = None,
+    merge_mode: str = "sum",
+) -> int:
     """Оставить одну строку на имя в клубе (разные позиции). Возвращает число удалённых."""
     from utils.squad_roster_sync import _all_rows_same_player
 
     found = _all_rows_same_player(sess, name, team)
     if len(found) <= 1:
         return 0
-    found.sort(
-        key=lambda rc: (
-            int(getattr(rc[0], "matches", 0) or 0),
-            int(getattr(rc[0], "overall", 0) or 0),
-            int(getattr(rc[0], "id", 0) or 0),
-        ),
-        reverse=True,
-    )
-    keeper, _ = found[0]
+    if keeper_row is not None:
+        kid = int(getattr(keeper_row, "id", 0) or 0)
+        ordered = [x for x in found if int(getattr(x[0], "id", 0) or 0) == kid]
+        ordered += [
+            x
+            for x in found
+            if int(getattr(x[0], "id", 0) or 0) != kid
+        ]
+        if ordered:
+            found = ordered
+    keeper, _keeper_cls = found[0]
+    donors = found[1:]
+    return _apply_merge_donors(sess, keeper, donors, merge_mode)
+
+
+def _apply_merge_donors(
+    sess,
+    keeper: Any,
+    donors: list[tuple[Any, type]],
+    merge_mode: str,
+) -> int:
+    """Удалить donors; merge_mode: sum | keep_primary | keep:TABLE:ID."""
+    if not donors:
+        return 0
+    mode = (merge_mode or "sum").strip().lower()
+    if mode.startswith("keep:"):
+        parts = mode.split(":", 2)
+        if len(parts) == 3:
+            want_tbl, want_id = parts[1].lower(), int(parts[2])
+            winner: Any | None = None
+            for row, Cls in [(keeper, type(keeper)), *donors]:
+                if (
+                    Cls.__tablename__.lower() == want_tbl
+                    and int(getattr(row, "id", 0) or 0) == want_id
+                ):
+                    winner = row
+                    break
+            if winner is not None:
+                if int(getattr(winner, "id", 0) or 0) != int(
+                    getattr(keeper, "id", 0) or 0
+                ):
+                    copy_stats_replace(keeper, winner)
+                for row, _Cls in donors:
+                    sess.delete(row)
+                if winner is not keeper:
+                    sess.delete(winner)
+                if hasattr(keeper, "ga"):
+                    keeper.ga = int(getattr(keeper, "goals", 0) or 0) + int(
+                        getattr(keeper, "assists", 0) or 0
+                    )
+                return len(donors)
+    if mode == "keep_primary":
+        for donor, _Cls in donors:
+            sess.delete(donor)
+        return len(donors)
     removed = 0
-    for donor, _Cls in found[1:]:
-        merge_row_stats_into(keeper, donor)
+    for donor, _Cls in donors:
+        if mode == "sum":
+            merge_row_stats_into(keeper, donor)
         sess.delete(donor)
         removed += 1
     if hasattr(keeper, "ga"):

@@ -76,6 +76,7 @@ class PlayerFieldEnter(StatesGroup):
     pick_player = State()
     pick_field = State()
     wait_value = State()
+    confirm_merge = State()
 
 
 class LoanEnter(StatesGroup):

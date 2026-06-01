@@ -20,7 +20,9 @@ from bot.states import PlayerFieldEnter
 from bot.transfer_handlers import _ROSTER_PAGE_SIZE
 from utils.player_field_edit import (
     apply_player_field_update,
+    format_merge_preview_message,
     list_editable_fields_for_player,
+    preview_field_update_merge,
 )
 from utils.player_names import player_display_name, player_surname
 from utils.player_transfer import _filter_team, _norm_cmp
@@ -395,8 +397,41 @@ async def cb_pfp_pick_field(callback: CallbackQuery, state: FSMContext) -> None:
     )
 
 
-@player_edit_router.message(PlayerFieldEnter.wait_value, _TEXT_NOT_CMD)
-async def on_pfp_value(message: Message, state: FSMContext) -> None:
+def _pfp_merge_keyboard(preview: dict) -> InlineKeyboardMarkup:
+    rows = list(preview.get("rows") or [])
+    buttons: list[list[InlineKeyboardButton]] = []
+    for i, row in enumerate(rows):
+        st = row.get("stats") or {}
+        g = int(st.get("goals", 0) or 0)
+        a = int(st.get("assists", 0) or 0)
+        m = int(st.get("matches", 0) or 0)
+        label = f"{row.get('name')} ({row.get('position')}) {m}м {g}+{a}"
+        if len(label) > 60:
+            label = label[:57] + "…"
+        buttons.append(
+            [InlineKeyboardButton(text=label, callback_data=f"pfp:mrg:i:{i}")]
+        )
+    buttons.append(
+        [InlineKeyboardButton(text="Сумма всех строк", callback_data="pfp:mrg:sum")]
+    )
+    buttons.append(
+        [
+            InlineKeyboardButton(
+                text="Только редактируемая строка",
+                callback_data="pfp:mrg:pri",
+            )
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def _pfp_apply_and_reply(
+    message: Message,
+    state: FSMContext,
+    *,
+    raw: str,
+    merge_mode: str = "sum",
+) -> None:
     data = await state.get_data()
     team = (data.get("pfp_team") or "").strip()
     name = (data.get("pfp_name") or "").strip()
@@ -408,7 +443,6 @@ async def on_pfp_value(message: Message, state: FSMContext) -> None:
         await state.clear()
         await message.answer("Сессия сброшена. Открой снова из меню.")
         return
-    raw = message.text or ""
     try:
         r = await asyncio.to_thread(
             apply_player_field_update,
@@ -419,6 +453,7 @@ async def on_pfp_value(message: Message, state: FSMContext) -> None:
             raw,
             row_id=int(row_id) if row_id is not None else None,
             table=str(table) if table else None,
+            merge_mode=merge_mode,
         )
     except ValueError as e:
         await message.answer(str(e))
@@ -434,12 +469,17 @@ async def on_pfp_value(message: Message, state: FSMContext) -> None:
     )
     merged_note = ""
     if int(r.get("merged_rows") or 0) > 0:
-        merged_note = f"\nСлито дублей: <b>{r['merged_rows']}</b>."
+        mode_lbl = str(r.get("merge_mode") or merge_mode)
+        merged_note = (
+            f"\nСлито дублей: <b>{r['merged_rows']}</b> (режим: <code>{html_escape(mode_lbl)}</code>)."
+        )
     await state.update_data(
         pfp_name=disp_name,
         pfp_pos=disp_pos,
         pfp_fields=fields,
         pfp_field=None,
+        pfp_pending_raw=None,
+        pfp_merge_preview=None,
     )
     await state.set_state(PlayerFieldEnter.pick_field)
     cl_note = f", ЛЧ строк: <b>{r['cl_updated']}</b>" if r.get("cl_updated") else ""
@@ -452,6 +492,94 @@ async def on_pfp_value(message: Message, state: FSMContext) -> None:
         "выбери ещё поле или завершить:",
         parse_mode="HTML",
         reply_markup=_pfp_fields_keyboard(fields),
+    )
+
+
+@player_edit_router.message(PlayerFieldEnter.wait_value, _TEXT_NOT_CMD)
+async def on_pfp_value(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    team = (data.get("pfp_team") or "").strip()
+    name = (data.get("pfp_name") or "").strip()
+    pos = (data.get("pfp_pos") or "").strip()
+    field = (data.get("pfp_field") or "").strip()
+    row_id = data.get("pfp_row_id")
+    table = data.get("pfp_table")
+    if not (team and name and pos and field):
+        await state.clear()
+        await message.answer("Сессия сброшена. Открой снова из меню.")
+        return
+    raw = message.text or ""
+    try:
+        preview = await asyncio.to_thread(
+            preview_field_update_merge,
+            team,
+            name,
+            pos,
+            field,
+            raw,
+            row_id=int(row_id) if row_id is not None else None,
+            table=str(table) if table else None,
+        )
+    except Exception as e:
+        logger.exception("preview_field_update_merge")
+        await message.answer(f"Ошибка проверки слияния: {e}")
+        return
+    if preview:
+        await state.update_data(pfp_pending_raw=raw, pfp_merge_preview=preview)
+        await state.set_state(PlayerFieldEnter.confirm_merge)
+        await message.answer(
+            format_merge_preview_message(preview),
+            parse_mode="HTML",
+            reply_markup=_pfp_merge_keyboard(preview),
+        )
+        return
+    await _pfp_apply_and_reply(message, state, raw=raw)
+
+
+@player_edit_router.callback_query(
+    PlayerFieldEnter.confirm_merge,
+    F.data.startswith("pfp:mrg:"),
+)
+async def cb_pfp_confirm_merge(callback: CallbackQuery, state: FSMContext) -> None:
+    if not await _ensure_player_field_fsm(callback, state):
+        return
+    if callback.message is None or not callback.data:
+        await callback.answer()
+        return
+    data = await state.get_data()
+    preview = data.get("pfp_merge_preview")
+    raw = data.get("pfp_pending_raw")
+    if not preview or raw is None:
+        await callback.answer("Сессия устарела.", show_alert=True)
+        await state.set_state(PlayerFieldEnter.pick_field)
+        return
+    cd = callback.data or ""
+    merge_mode = "sum"
+    if cd == "pfp:mrg:sum":
+        merge_mode = "sum"
+    elif cd == "pfp:mrg:pri":
+        merge_mode = "keep_primary"
+    elif cd.startswith("pfp:mrg:i:"):
+        try:
+            idx = int(cd.rsplit(":", 1)[-1])
+        except ValueError:
+            await callback.answer("Неверный выбор.", show_alert=True)
+            return
+        rows = list(preview.get("rows") or [])
+        if idx < 0 or idx >= len(rows):
+            await callback.answer("Неверный выбор.", show_alert=True)
+            return
+        row = rows[idx]
+        merge_mode = f"keep:{row.get('table')}:{row.get('id')}"
+    else:
+        await callback.answer()
+        return
+    await callback.answer()
+    await _pfp_apply_and_reply(
+        callback.message,
+        state,
+        raw=str(raw),
+        merge_mode=merge_mode,
     )
 
 
