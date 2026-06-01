@@ -1,5 +1,12 @@
 [
   {
+      "home": "Ньюкасл",
+      "away": "Вольфсбург",
+      "tournament": "cl",
+      "cl_phase": "knockout",
+      "day": 6
+    },
+  {
     "home": "Боруссия М",
     "away": "Байер",
     "tournament": "league",
