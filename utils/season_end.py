@@ -49,7 +49,8 @@ def _zero_match_stats_for_new_season(row: Any, Cls: type) -> None:
     Старт нового сезона: обнуляем матчи, голы/передачи/Г+А, трофеи и награды сезона.
 
     ``yellow_cards`` / ``red_cards`` **не** обнуляем — это накопительная история в SQLite;
-    цикл жк к 4-й и дисквалы сбрасываются в ``data/player_discipline.json`` (``clear_discipline_state``).
+    цикл жк к 4-й сбрасывается в JSON (``clear_discipline_for_new_season``); дисквалы с
+    ``matches_left > 0`` переносятся; жк/кк в SQLite не обнуляются.
 
     Сохраняем: имя, команда, позиция, overall, нация, status, жк/кк.
     """
@@ -233,7 +234,7 @@ def finalize_season() -> dict[str, Any]:
         build_cl_top30_from_current_pickles,
         write_cl_participants_file,
     )
-    from utils.player_discipline import clear_discipline_state
+    from utils.player_discipline import clear_discipline_for_new_season
 
     try:
         top30 = build_cl_top30_from_current_pickles()
@@ -242,10 +243,9 @@ def finalize_season() -> dict[str, Any]:
         log["cl_participants_file"] = f"error: {e!s}"
 
     try:
-        clear_discipline_state()
-        log["discipline_json_cleared"] = True
+        log["discipline_json_new_season"] = clear_discipline_for_new_season()
     except OSError as e:
-        log["discipline_json_cleared"] = f"error: {e!s}"
+        log["discipline_json_new_season"] = f"error: {e!s}"
     _mixed = os.path.join(season_paths.PROJECT_ROOT, "mixed_schedule.json")
     if os.path.isfile(_mixed):
         try:

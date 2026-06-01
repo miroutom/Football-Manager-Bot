@@ -323,8 +323,12 @@ def apply_transfer_with_status(
         reset_yellow_accumulation_for_player(
             player,
             league_codes=[from_lc, to_lc],
-            include_cl=True,
+            include_cl=False,
         )
+
+    from utils.player_discipline import migrate_cl_discipline_team
+
+    migrate_cl_discipline_team(player, to_team)
 
     from utils import cumulative_mirror
 

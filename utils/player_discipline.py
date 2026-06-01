@@ -308,6 +308,35 @@ def _susp_key(name: str, team: str, league_code: str, scope: str) -> str:
     return f"{_norm(name)}|{_norm(team)}|{league_code}|{scope}"
 
 
+def _is_cl_scope(scope: str, league_code: str) -> bool:
+    return (scope or "").strip().lower() == "cl" or (league_code or "").strip().lower() == "cl"
+
+
+def _consolidate_cl_yellow_rows(st: dict, name_norm: str, *, keep_team: str) -> dict | None:
+    """Одна запись цикла жк в ЛЧ на игрока; лишние строки (старый клуб) сливаются."""
+    ylist = st.setdefault("yellow_cycle", [])
+    matches: list[dict] = []
+    for row in ylist:
+        if row.get("name_norm") != name_norm:
+            continue
+        if not _is_cl_scope(str(row.get("scope") or ""), str(row.get("league_code") or "")):
+            continue
+        matches.append(row)
+    if not matches:
+        return None
+    total = sum(int(r.get("count") or 0) for r in matches)
+    primary = matches[0]
+    for extra in matches[1:]:
+        ylist.remove(extra)
+    primary["count"] = total
+    primary["team"] = keep_team.strip().title()
+    primary["team_norm"] = _norm(keep_team)
+    primary["league_code"] = "cl"
+    primary["scope"] = "cl"
+    primary["key"] = _susp_key(primary["name"], primary["team"], "cl", "cl")
+    return primary
+
+
 def _injury_period_key(name: str, team: str, out_from_month: int, return_month: int) -> str:
     return f"{_norm(name)}|{_norm(team)}|{int(out_from_month)}|{int(return_month)}"
 
@@ -405,6 +434,23 @@ def get_active_injuries_for_team(
 
 
 def _find_susp(st: dict, name: str, team: str, league_code: str, scope: str) -> dict | None:
+    if _is_cl_scope(scope, league_code):
+        nn = _norm(name)
+        found: dict | None = None
+        for row in st.get("suspensions", []):
+            if row.get("name_norm") != nn:
+                continue
+            if not _is_cl_scope(str(row.get("scope") or ""), str(row.get("league_code") or "")):
+                continue
+            if int(row.get("matches_left") or 0) <= 0:
+                continue
+            found = row
+            break
+        if found is not None:
+            found["team"] = team.strip().title()
+            found["team_norm"] = _norm(team)
+            found["key"] = _susp_key(name, team, "cl", "cl")
+        return found
     k = _susp_key(name, team, league_code, scope)
     for row in st.get("suspensions", []):
         if row.get("key") == k:
@@ -413,6 +459,11 @@ def _find_susp(st: dict, name: str, team: str, league_code: str, scope: str) -> 
 
 
 def _find_yellow_cycle(st: dict, name: str, team: str, league_code: str, scope: str) -> dict | None:
+    if _is_cl_scope(scope, league_code):
+        row = _consolidate_cl_yellow_rows(st, _norm(name), keep_team=team)
+        if row is not None:
+            return row
+        return None
     k = _susp_key(name, team, league_code, scope)
     for row in st.get("yellow_cycle", []):
         if row.get("key") == k:
@@ -1150,6 +1201,35 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
     return "\n".join(chunks)
 
 
+def migrate_cl_discipline_team(player: str, new_team: str) -> None:
+    """После трансфера: записи ЛЧ в JSON привязать к новому клубу (цикл жк / дисквал ЛЧ)."""
+    nn = _norm(player)
+    nt = new_team.strip().title()
+    if not nn or not nt:
+        return
+    with _lock:
+        st = _load()
+        for bucket in ("suspensions", "yellow_cycle"):
+            for row in st.get(bucket, []):
+                if row.get("name_norm") != nn:
+                    continue
+                if not _is_cl_scope(
+                    str(row.get("scope") or ""),
+                    str(row.get("league_code") or ""),
+                ):
+                    continue
+                row["team"] = nt
+                row["team_norm"] = _norm(nt)
+                row["key"] = _susp_key(
+                    row.get("name") or player,
+                    nt,
+                    "cl",
+                    "cl",
+                )
+        _consolidate_cl_yellow_rows(st, nn, keep_team=nt)
+        _save(st)
+
+
 def reset_yellow_accumulation_for_player(
     name: str,
     *,
@@ -1195,8 +1275,30 @@ def reset_yellow_accumulation_for_player(
     return n
 
 
+def clear_discipline_for_new_season() -> dict[str, int]:
+    """
+    Начало нового сезона: обнулить циклы жк к 4-й; активные дисквалы и травмы оставить.
+
+    ``yellow_cards`` / ``red_cards`` в SQLite не трогаются (см. ``finalize_season``).
+    """
+    with _lock:
+        st = _load()
+        ycleared = len(st.get("yellow_cycle", []))
+        st["yellow_cycle"] = []
+        susp = [
+            r
+            for r in st.get("suspensions", [])
+            if int(r.get("matches_left") or 0) > 0
+        ]
+        kept_s = len(susp)
+        st["suspensions"] = susp
+        inj = len(st.get("injuries", []))
+        _save(st)
+    return {"yellow_cycle_cleared": ycleared, "suspensions_kept": kept_s, "injuries_kept": inj}
+
+
 def clear_discipline_state() -> None:
-    """Сброс JSON (например при новом сезоне)."""
+    """Полный сброс JSON (ручной сброс; не использовать при ``finalize_season``)."""
     with _lock:
         if _STATE_PATH.is_file():
             _STATE_PATH.unlink()
