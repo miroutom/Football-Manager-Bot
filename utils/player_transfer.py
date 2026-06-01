@@ -452,7 +452,7 @@ def _new_player_kwargs(
     return kw
 
 
-def _add_free_agent_to_sessions(
+def add_player_to_club_sessions(
     session_league,
     session_cl,
     player: str,
@@ -516,7 +516,7 @@ def _add_free_agent_to_sessions(
     return counts
 
 
-def add_free_agent(
+def add_player_to_club(
     player: str,
     position: str,
     to_team: str,
@@ -526,12 +526,10 @@ def add_free_agent(
     nation: str | None = None,
     rebuild_common: bool = True,
 ) -> dict[str, int]:
-    """
-    Новый игрок (свободный агент): вставка строки в нац. БД и в БД ЛЧ, если клуб в пуле ЛЧ.
-    """
+    """Новый игрок в клуб: вставка в нац. БД и в БД ЛЧ, если клуб в пуле ЛЧ."""
     from utils.utils import session_cl, session_league
 
-    counts = _add_free_agent_to_sessions(
+    counts = add_player_to_club_sessions(
         session_league,
         session_cl,
         player,
@@ -549,23 +547,15 @@ def add_free_agent(
         rebuild_common_database()
     from utils import cumulative_mirror
 
-    cumulative_mirror.mirror_add_free_agent(
+    cumulative_mirror.mirror_add_player_to_club(
         player, position, to_team, new_status, overall, nation=nation
     )
-    try:
-        from utils.free_agents_catalog import delete_signed_free_agent
-
-        if not delete_signed_free_agent(player, position):
-            logging.getLogger(__name__).warning(
-                "Свободный агент %s (%s) не найден в free_agents.db для удаления.",
-                player,
-                position,
-            )
-    except Exception:
-        logging.getLogger(__name__).exception(
-            "Не удалось удалить свободного агента из free_agents.db"
-        )
     return counts
+
+
+# Устаревшие имена (скрипты/импорты)
+_add_free_agent_to_sessions = add_player_to_club_sessions
+add_free_agent = add_player_to_club
 
 
 _OUTFIELD_TABLES: dict[str, type] = {

@@ -104,7 +104,7 @@ def mirror_transfer_with_status(
         _dispose_pair(sl, scl, el, ec)
 
 
-def mirror_add_free_agent(
+def mirror_add_player_to_club(
     player: str,
     position: str,
     to_team: str,
@@ -117,12 +117,12 @@ def mirror_add_free_agent(
     if not paths:
         return
     lp, cp, cop = paths
-    from utils.player_transfer import _add_free_agent_to_sessions
+    from utils.player_transfer import add_player_to_club_sessions
     from utils.common_db import rebuild_common_database_for_disk_paths
 
     sl, scl, el, ec = _open_pair(lp, cp)
     try:
-        _add_free_agent_to_sessions(
+        add_player_to_club_sessions(
             sl,
             scl,
             player,

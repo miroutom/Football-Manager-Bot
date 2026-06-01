@@ -21,7 +21,7 @@ from sqlalchemy.orm import sessionmaker
 from utils import season_paths
 from utils.common_db import rebuild_common_database_for_disk_paths
 from utils.player_transfer import (
-    _add_free_agent_to_sessions,
+    add_player_to_club_sessions,
     _apply_transfer_with_status_to_sessions,
 )
 
@@ -58,7 +58,7 @@ def _process_paths(p_l: str, p_c: str, p_o: str) -> None:
                 new_nation=nat,
             )
             if counts["league"] == 0:
-                _add_free_agent_to_sessions(
+                add_player_to_club_sessions(
                     sl,
                     scl,
                     name,

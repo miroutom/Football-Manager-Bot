@@ -24,7 +24,7 @@ from sqlalchemy.orm import sessionmaker
 from data.russia_rpl_squads import RUSSIA_RPL_SQUADS
 from utils import season_paths
 from utils.common_db import rebuild_common_database_for_disk_paths
-from utils.player_transfer import _add_free_agent_to_sessions
+from utils.player_transfer import add_player_to_club_sessions
 
 _SEASON = 2
 _TEAM = "Рубин"
@@ -49,7 +49,7 @@ def run() -> None:
     sl, scl = Sl(), Scl()
     try:
         for name, pos, ovr, nation, status in rows:
-            c = _add_free_agent_to_sessions(
+            c = add_player_to_club_sessions(
                 sl,
                 scl,
                 name,

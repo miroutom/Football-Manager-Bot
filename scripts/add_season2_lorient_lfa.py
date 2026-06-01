@@ -23,7 +23,7 @@ from sqlalchemy.orm import sessionmaker
 from data.forward import Forward
 from utils import season_paths
 from utils.common_db import rebuild_common_database_for_disk_paths
-from utils.player_transfer import _add_free_agent_to_sessions
+from utils.player_transfer import add_player_to_club_sessions
 
 SEASON_NUM = 2
 PLAYER = "Лориент"
@@ -81,7 +81,7 @@ def _run_for_paths(league_path: str, cl_path: str, common_path: str, label: str)
         return {"league": 0, "cl": 0}
     sl, scl, el, ec = _open_pair(league_path, cl_path)
     try:
-        counts = _add_free_agent_to_sessions(
+        counts = add_player_to_club_sessions(
             sl,
             scl,
             PLAYER,

@@ -5,12 +5,12 @@
 - Добавление: если игрок есть в ``common_synced.db`` (той же позиции) — подтягиваем carry
   из накопительной common; иначе нужны ``overall`` и ``нация``. Запись только в текущие
   рабочие БД и зеркало ``*_synced`` (архивные ``db/season_*`` не трогаем).
-- Удаление: игрок попадает в ``free_agents``; при ненулевой статистике в нац./ЛЧ
-  ``team = Free Agent``, иначе строка удаляется.
+- Удаление: при ненулевой статистике в нац./ЛЧ ``team = Free Agent`` и ``left_team``;
+  иначе строка удаляется из БД.
 - Пакетная заявка: ``apply_team_squad_declaration`` + ``parse_squad_declaration_text``
   (через ``|``; «имя … позиция … start»; либо блоки ``==== start ===`` / ``=== bench ===`` /
   ``=== reserve ===`` и строки ``имя позиция [overall] [нация]`` без суффикса статуса).
-  Кто в клубе не в списке, уходит в СА тем же правилом, что и при удалении.
+  Кто в клубе не в списке, снимается тем же правилом, что и при удалении.
 """
 from __future__ import annotations
 
@@ -139,7 +139,6 @@ def _release_player_from_team_sessions(
     sleague: Any, scl: Any, team: str, nm: str, pos: str
 ) -> str:
     """Снять игрока с команды (как ``remove_player_from_team_roster`` без commit)."""
-    from utils.free_agents_catalog import upsert_free_agent_catalog
     from utils.player_field_edit import find_player_row as fpr
 
     Cls_l, row_l = fpr(sleague, team, nm, pos)
@@ -153,7 +152,6 @@ def _release_player_from_team_sessions(
         mark_player_left_team(row_l)
         label = "left_team"
     else:
-        upsert_free_agent_catalog(nm, pos, ovr, nat)
         sleague.delete(row_l)
         label = "deleted"
     from utils.common_db import resolve_team_name_for_cl_pool
@@ -818,7 +816,7 @@ def apply_team_squad_declaration(
 ) -> dict[str, Any]:
     """
     Полная заявка клуба: все (имя, позиция) из списка остаются / добавляются с указанным
-    статусом; остальные в нац. БД (и ЛЧ при пуле) снимаются в СА по правилам
+    статусом; остальные в нац. БД (и ЛЧ при пуле) снимаются по правилам
     ``remove_player_from_team_roster``.
 
     Статусы в БД совпадают с текстом заявки: при upsert не вызывается ``_cascade_status``.

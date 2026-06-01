@@ -37,13 +37,6 @@ LEGACY_CL = "champions_league_synced.db"
 LEGACY_COMMON = "common_synced.db"
 
 # Справочник свободных агентов (один файл на весь проект, не привязан к сезону)
-FREE_AGENTS_DB = "free_agents.db"
-
-
-def get_free_agents_db_path() -> str:
-    return os.path.join(_DB, FREE_AGENTS_DB)
-
-
 def _read_state() -> dict[str, Any]:
     if not os.path.isfile(_STATE_FILE):
         return {"data_mode": "legacy", "active_season": 1}

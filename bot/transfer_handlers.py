@@ -142,82 +142,12 @@ def _roster_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def _fa_catalog_keyboard(
-    candidates: list[tuple[str, str, int, str | None]], page: int
-) -> InlineKeyboardMarkup:
-    """Свободные агенты из free_agents.db: имя, позиция, overall, нация (для подписи)."""
-    n = len(candidates)
-    ps = _ROSTER_PAGE_SIZE
-    total_pages = max(1, (n + ps - 1) // ps)
-    page = max(0, min(int(page), total_pages - 1))
-    chunk = candidates[page * ps : page * ps + ps]
-    base = page * ps
-    rows: list[list[InlineKeyboardButton]] = []
-    for i, (nm, pos, ov, nat) in enumerate(chunk):
-        gidx = base + i
-        nat_s = (nat or "").strip()
-        label = f"{nm} · {pos} · {ov}"
-        if nat_s:
-            label = f"{label} · {nat_s}"
-        if len(label) > 60:
-            label = label[:57] + "…"
-        rows.append(
-            [InlineKeyboardButton(text=label, callback_data=f"xfer:fk:{gidx}")]
-        )
-    if total_pages > 1:
-        nav: list[InlineKeyboardButton] = []
-        if page > 0:
-            nav.append(
-                InlineKeyboardButton(
-                    text=f"« {page + 1}/{total_pages}",
-                    callback_data=f"xfer:fkg:{page - 1}",
-                )
-            )
-        if page < total_pages - 1:
-            nav.append(
-                InlineKeyboardButton(
-                    text=f"{page + 2}/{total_pages} »",
-                    callback_data=f"xfer:fkg:{page + 1}",
-                )
-            )
-        if nav:
-            rows.append(nav)
-    return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
-async def _prompt_free_agent_catalog(
+async def _begin_new_player_signing(
     message: Message, state: FSMContext, intro_html: str
 ) -> None:
-    from utils.free_agents_catalog import list_free_agents_tuples
-
-    try:
-        rows = list_free_agents_tuples()
-    except Exception as e:
-        logger.exception("list_free_agents_tuples")
-        await message.answer(
-            f"Не удалось открыть базу свободных агентов: {e}", parse_mode="HTML"
-        )
-        await state.clear()
-        return
-    if not rows:
-        await message.answer(
-            "База свободных агентов пуста. Добавь данные в <code>data/free_agents.tsv</code> "
-            "и перезапусти бота.",
-            parse_mode="HTML",
-        )
-        await state.clear()
-        return
-    serial = [list(x) for x in rows]
-    await state.update_data(
-        tr_fa_candidates=serial, tr_fa_page=0, tr_fa_intro_html=intro_html
-    )
-    await state.set_state(TransferEnter.fa_pick)
-    cands = [tuple(x) for x in serial]
-    await message.answer(
-        intro_html,
-        parse_mode="HTML",
-        reply_markup=_fa_catalog_keyboard(cands, 0),
-    )
+    await state.update_data(tr_player="", tr_pos="", tr_overall=0, tr_fa_nation=None)
+    await state.set_state(TransferEnter.player_name)
+    await message.answer(intro_html, parse_mode="HTML")
 
 
 def _shortcut_markup(user_id: int | None) -> InlineKeyboardMarkup | None:
@@ -320,14 +250,13 @@ async def _begin_next_batch_op(message: Message, state: FSMContext) -> None:
             reply_markup=kb,
         )
         return
-    await state.update_data(tr_player="", tr_pos="", tr_kind="fa")
-    await _prompt_free_agent_catalog(
+    await state.update_data(tr_kind="fa", tr_to=to_t)
+    await _begin_new_player_signing(
         message,
         state,
-        f"Трансфер <b>{n_slot}/{total_slots}</b> — <b>свободный агент</b>.\n"
+        f"Трансфер <b>{n_slot}/{total_slots}</b> — <b>новый игрок</b>.\n"
         f"Куда: <b>{to_t}</b>.\n\n"
-        "Выбери игрока из базы <b>free_agents</b> (рейтинг и нация подставятся сами).\n"
-        f"/cancel — отменить только этот трансфер.",
+        "Шаг 1/5 — <b>имя</b> (как в БД).\n/cancel — отменить только этот трансфер.",
     )
 
 
@@ -513,13 +442,12 @@ async def cb_transfer_kind(callback: CallbackQuery, state: FSMContext) -> None:
         return
 
     await state.update_data(tr_kind=kind, tr_roster_ui=False, tr_meta_patch={})
-    await _prompt_free_agent_catalog(
+    await _begin_new_player_signing(
         callback.message,
         state,
-        "Тип: <b>свободный агент</b> (данные из базы <code>free_agents.db</code>).\n\n"
-        "Шаг 1 — <b>выбери игрока</b> кнопками (рейтинг и нация не вводятся).\n"
-        "/cancel — отмена.",
-        )
+        "Тип: <b>новый игрок</b> (без клуба-источника).\n\n"
+        "Шаг 1/5 — <b>имя</b>.\n/cancel — отмена.",
+    )
 
 
 @transfer_router.message(Command("transfer"))
@@ -848,11 +776,12 @@ async def on_transfer_player(message: Message, state: FSMContext) -> None:
         kind = "club"
         await state.update_data(tr_kind="club", tr_roster_ui=False)
     if kind == "fa":
-        await _prompt_free_agent_catalog(
-            message,
-            state,
-            "Свободные агенты выбираются только из базы — текстовый ввод имени не нужен.\n"
-            "Выбери игрока кнопками ниже.\n/cancel — отмена.",
+        await state.update_data(tr_player=name)
+        await state.set_state(TransferEnter.position)
+        await message.answer(
+            f"Имя: <b>{name}</b>\n\n"
+            "Шаг 2/5 — <b>позиция</b> (ЦП, ЦЗ, ВР…).\n/cancel — отмена.",
+            parse_mode="HTML",
         )
         return
     await state.update_data(tr_player=name)
@@ -891,13 +820,64 @@ async def on_transfer_position(message: Message, state: FSMContext) -> None:
     await state.update_data(tr_pos=pos)
     data = await state.get_data()
     kind = data.get("tr_kind")
-    await state.set_state(TransferEnter.to_team)
     if kind == "fa":
-        step = "3/6"
-    else:
-        step = "4/7"
+        await state.set_state(TransferEnter.sign_overall)
+        await message.answer(
+            f"Позиция: <b>{pos}</b>\n\n"
+            "Шаг 3/5 — <b>рейтинг</b> (число, например 78).\n/cancel — отмена.",
+            parse_mode="HTML",
+        )
+        return
+    await state.set_state(TransferEnter.to_team)
     await message.answer(
-        f"Шаг {step} — команда, <b>куда</b> переходит игрок.\n/cancel — отмена.",
+        "Шаг 4/7 — команда, <b>куда</b> переходит игрок.\n/cancel — отмена.",
+        parse_mode="HTML",
+    )
+
+
+@transfer_router.message(TransferEnter.sign_overall, _TEXT_NOT_CMD)
+async def on_transfer_sign_overall(message: Message, state: FSMContext) -> None:
+    raw = (message.text or "").strip()
+    if not raw.isdigit():
+        await message.answer("Введи рейтинг числом (например 82).")
+        return
+    ovr = int(raw)
+    if ovr < 1 or ovr > 99:
+        await message.answer("Рейтинг от 1 до 99.")
+        return
+    await state.update_data(tr_overall=ovr)
+    await state.set_state(TransferEnter.sign_nation)
+    await message.answer(
+        f"Рейтинг: <b>{ovr}</b>\n\n"
+        "Шаг 4/5 — <b>нация</b> (или «-» без нации).\n/cancel — отмена.",
+        parse_mode="HTML",
+    )
+
+
+@transfer_router.message(TransferEnter.sign_nation, _TEXT_NOT_CMD)
+async def on_transfer_sign_nation(message: Message, state: FSMContext) -> None:
+    raw = (message.text or "").strip()
+    nat = None if raw in _SKIP_VALUE else normalize_nation(raw)
+    await state.update_data(tr_fa_nation=nat)
+    data = await state.get_data()
+    to_t = (data.get("tr_to") or "").strip()
+    if to_t:
+        await state.set_state(TransferEnter.new_status)
+        player = (data.get("tr_player") or "").strip()
+        pos = (data.get("tr_pos") or "").strip()
+        ovr = int(data.get("tr_overall") or 0)
+        nat_h = nat if nat else "—"
+        await message.answer(
+            f"<b>{player}</b> ({pos}), рейтинг <b>{ovr}</b>, нация: <b>{nat_h}</b>\n"
+            f"Клуб: <b>{to_t}</b>\n\n"
+            "Шаг 5/5 — выбери <b>заявку</b>.\n/cancel — отмена.",
+            parse_mode="HTML",
+            reply_markup=_status_keyboard(),
+        )
+        return
+    await state.set_state(TransferEnter.to_team)
+    await message.answer(
+        "Шаг 5/5 — клуб <b>куда</b> оформляется игрок.\n/cancel — отмена.",
         parse_mode="HTML",
     )
 
@@ -922,10 +902,9 @@ async def on_transfer_to(message: Message, state: FSMContext) -> None:
         nat_h = nat if nat else "—"
         await state.set_state(TransferEnter.new_status)
         await message.answer(
-            f"Игрок из базы СА: <b>{player}</b> ({pos}), <b>{ovr}</b>, нация: <b>{nat_h}</b>.\n"
+            f"<b>{player}</b> ({pos}), рейтинг <b>{ovr}</b>, нация: <b>{nat_h}</b>.\n"
             f"Клуб: <b>{to_t}</b>.\n\n"
-            "Выбери <b>заявку</b> (старт / скамейка / резерв). Рейтинг и нация из справочника не меняются.\n"
-            "/cancel — отмена.",
+            "Выбери <b>заявку</b> (старт / скамейка / резерв).\n/cancel — отмена.",
             parse_mode="HTML",
             reply_markup=_status_keyboard(),
         )
@@ -945,104 +924,6 @@ async def on_transfer_to(message: Message, state: FSMContext) -> None:
         parse_mode="HTML",
         reply_markup=_status_keyboard(),
     )
-
-
-@transfer_router.callback_query(TransferEnter.fa_pick, F.data.startswith("xfer:fkg:"))
-async def cb_fa_catalog_page(callback: CallbackQuery, state: FSMContext) -> None:
-    if not callback.message or not callback.data:
-        return
-    try:
-        page = int((callback.data or "").rsplit(":", 1)[-1])
-    except ValueError:
-        await callback.answer()
-        return
-    data = await state.get_data()
-    raw = data.get("tr_fa_candidates") or []
-    cands = [tuple(x) for x in raw]
-    if not cands:
-        await callback.answer("Сессия устарела. Начни с /transfer.", show_alert=True)
-        return
-    await state.update_data(tr_fa_page=page)
-    ps = _ROSTER_PAGE_SIZE
-    total_pages = max(1, (len(cands) + ps - 1) // ps)
-    page = max(0, min(page, total_pages - 1))
-    kb = _fa_catalog_keyboard(cands, page)
-    intro = (data.get("tr_fa_intro_html") or "").strip() or (
-        "Выбери игрока из базы <b>free_agents</b>."
-    )
-    text = f"{intro}\n\nСтр. <b>{page + 1}</b>/<b>{total_pages}</b> — выбери игрока:"
-    try:
-        await callback.message.edit_text(
-            text,
-            parse_mode="HTML",
-            reply_markup=kb,
-        )
-    except Exception:
-        try:
-            await callback.message.edit_reply_markup(reply_markup=kb)
-        except Exception:
-            await callback.message.answer(
-                f"Стр. {page + 1}/{total_pages}:",
-                reply_markup=kb,
-            )
-    await callback.answer()
-
-
-@transfer_router.callback_query(TransferEnter.fa_pick, F.data.startswith("xfer:fk:"))
-async def cb_fa_catalog_pick(callback: CallbackQuery, state: FSMContext) -> None:
-    if not callback.message or not callback.data:
-        return
-    try:
-        idx = int((callback.data or "").rsplit(":", 1)[-1])
-    except ValueError:
-        await callback.answer()
-        return
-    data = await state.get_data()
-    raw = data.get("tr_fa_candidates") or []
-    cands = [tuple(x) for x in raw]
-    if not cands or idx < 0 or idx >= len(cands):
-        await callback.answer("Неверный выбор.", show_alert=True)
-        return
-    name, pos, ovr, nation = cands[idx]
-    ovr_i = int(ovr)
-    await state.update_data(
-        tr_player=name,
-        tr_pos=pos,
-        tr_overall=ovr_i,
-        tr_fa_nation=nation,
-    )
-    await callback.answer()
-    to_t = (data.get("tr_to") or "").strip()
-    nat_h = nation if nation else "—"
-    if to_t:
-    await state.set_state(TransferEnter.new_status)
-        text = (
-            f"Выбрано: <b>{name}</b> ({pos}), <b>{ovr_i}</b>, нация: <b>{nat_h}</b>\n"
-            f"Куда: <b>{to_t}</b>\n\n"
-            "Выбери <b>заявку</b> (старт / скамейка / резерв).\n/cancel — отмена."
-        )
-        try:
-            await callback.message.edit_text(
-                text,
-                parse_mode="HTML",
-                reply_markup=_status_keyboard(),
-            )
-        except Exception:
-            await callback.message.answer(
-                text,
-        parse_mode="HTML",
-        reply_markup=_status_keyboard(),
-    )
-        return
-    await state.set_state(TransferEnter.to_team)
-    text = (
-        f"Выбрано: <b>{name}</b> ({pos}), <b>{ovr_i}</b>, нация: <b>{nat_h}</b>\n\n"
-        "Шаг — введи клуб <b>куда</b> оформляется переход.\n/cancel — отмена."
-    )
-    try:
-        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=None)
-    except Exception:
-        await callback.message.answer(text, parse_mode="HTML")
 
 
 @transfer_router.callback_query(TransferEnter.new_status, F.data.startswith("xfer:st:"))
@@ -1065,19 +946,10 @@ async def on_transfer_status(
     if kind == "fa":
         ovr = int(data.get("tr_overall") or 72)
         nation_fa = data.get("tr_fa_nation")
-        from utils.free_agents_catalog import verify_free_agent_for_transfer
-
-        if not verify_free_agent_for_transfer(player, pos, ovr, nation_fa):
-            await callback.message.answer(
-                "Данные свободного агента не совпадают со справочником. "
-                "Начни трансфер заново через /transfer."
-            )
-            await state.clear()
-            return
         try:
-            from utils.player_transfer import add_free_agent
+            from utils.player_transfer import add_player_to_club
 
-            counts = add_free_agent(
+            counts = add_player_to_club(
                 player=player,
                 position=pos,
                 to_team=to_t,
@@ -1086,7 +958,7 @@ async def on_transfer_status(
                 nation=nation_fa,
             )
         except Exception as e:
-            logger.exception("add_free_agent")
+            logger.exception("add_player_to_club")
             await callback.message.answer(f"Не удалось обновить базы: {e}")
             return
         try:
@@ -1107,11 +979,11 @@ async def on_transfer_status(
                 f"Базы обновлены, но журнал не записан: {e}",
             )
             if not data.get("tr_batch_active"):
-            await state.clear()
+                await state.clear()
             return
         batch_active = bool(data.get("tr_batch_active"))
         lines = [
-            "✓ <b>Свободный агент</b> добавлен.",
+            "✓ <b>Игрок</b> добавлен в клуб.",
             f"БД: нац. — <b>{counts['league']}</b>, ЛЧ — <b>{counts['cl']}</b>.",
             f"Overall: <b>{ovr}</b>, заявка: <b>{st}</b>.",
         ]

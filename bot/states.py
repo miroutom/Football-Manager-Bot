@@ -49,7 +49,8 @@ class TransferEnter(StatesGroup):
     from_team = State()  # только «из клуба» (ввод имени вручную: шаг «откуда»)
     position = State()
     to_team = State()
-    fa_pick = State()  # выбор СА из базы free_agents (кнопки)
+    sign_overall = State()  # новый игрок: рейтинг
+    sign_nation = State()  # новый игрок: нация
     new_status = State()
 
 
