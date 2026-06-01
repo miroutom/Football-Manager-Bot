@@ -2,9 +2,8 @@
 """
 Статистика для бота «Стата сезонов» и топов (см. ``docs/stats_display_rules.md``).
 
-**За всё время** — накопительные ``*_synced.db``, одна строка на игрока (имя + позиция),
-сумма матчей/голов/передач/карточек за все сезоны; **клуб** — из **активного** сезона
-(``db/season_N`` / live БД), строка с наибольшим ``id``).
+**За всё время** — накопительные ``*_synced.db``, одна строка на игрока (фамилия),
+сумма за все сезоны и позиции; **клуб и позиция** — активная заявка (max ``id``, без ``left_team``).
 
 **Один сезон** — ``db/season_N/league.db``, ``champions_league.db`` или ``common.db``:
 - нац. лига: строки как в БД (две строки при переходе между лигами); в одной лиге за сезон
@@ -73,6 +72,10 @@ def _identity_key(identity: str, position: str) -> tuple[str, str]:
     )
 
 
+def _identity_only_key(identity: str) -> tuple[str]:
+    return ((identity or "").strip().casefold(),)
+
+
 def _player_key(identity: str, team: str, position: str) -> tuple[str, str, str]:
     return (
         (identity or "").strip().casefold(),
@@ -81,11 +84,18 @@ def _player_key(identity: str, team: str, position: str) -> tuple[str, str, str]
     )
 
 
-def _bucket_key_for_row(p: Any, *, merge_by_player: bool) -> tuple:
+def _bucket_key_for_row(
+    p: Any,
+    *,
+    merge_by_player: bool,
+    merge_across_positions: bool = False,
+) -> tuple:
     from utils.player_names import player_stats_identity_token
 
     ident = player_stats_identity_token(p)
     if merge_by_player:
+        if merge_across_positions:
+            return _identity_only_key(ident)
         return _identity_key(ident, p.position)
     return _player_key(ident, p.team, p.position)
 
@@ -147,10 +157,12 @@ def _apply_club_label(
         _apply_last_club(b, p, season_num, merge_by_player=True)
 
 
-def _build_active_season_club_map() -> dict[tuple[str, str], tuple[str, str]]:
-    """(имя, позиция) → (display name, team) по активному сезону; max id побеждает."""
+def _build_active_season_club_map() -> dict[str, tuple[str, str, str]]:
+    """identity → (name, team, position): активная заявка, max id; без left_team."""
+    from utils.player_names import player_stats_identity_token
+
     active = season_paths.get_active_season()
-    best: dict[tuple[str, str], tuple[int, str, str]] = {}
+    best: dict[str, tuple[int, str, str, str]] = {}
     for kind in ("league", "cl", "common"):
         path = _season_path_by_kind(active, kind)
         if not path:
@@ -159,19 +171,22 @@ def _build_active_season_club_map() -> dict[tuple[str, str], tuple[str, str]]:
         try:
             for Cls in _ALL:
                 for p in session.query(Cls).all():
-                    from utils.player_names import player_stats_identity_token
-
-                    k = _identity_key(
-                        player_stats_identity_token(p), p.position
-                    )
+                    if bool(getattr(p, "left_team", False)):
+                        continue
+                    ident = player_stats_identity_token(p).casefold()
                     rid = int(getattr(p, "id", 0) or 0)
-                    prev = best.get(k)
+                    prev = best.get(ident)
                     if prev is None or rid > prev[0]:
-                        best[k] = (rid, str(p.name), str(p.team))
+                        best[ident] = (
+                            rid,
+                            str(p.name),
+                            str(p.team),
+                            str(p.position or ""),
+                        )
         finally:
             session.close()
             eng.dispose()
-    return {k: (v[1], v[2]) for k, v in best.items()}
+    return {k: (v[1], v[2], v[3]) for k, v in best.items()}
 
 
 def _apply_active_season_club_labels(rows: list[dict]) -> None:
@@ -179,11 +194,10 @@ def _apply_active_season_club_labels(rows: list[dict]) -> None:
     if not club_map:
         return
     for b in rows:
-        ident = str(b.get("identity") or b.get("name", ""))
-        k = _identity_key(ident, str(b.get("position", "")))
-        hit = club_map.get(k)
+        ident = str(b.get("identity") or b.get("name", "")).strip().casefold()
+        hit = club_map.get(ident)
         if hit:
-            b["name"], b["team"] = hit
+            b["name"], b["team"], b["position"] = hit
 
 
 def _finalize_life_rows(rows: list[dict]) -> list[dict]:
@@ -258,6 +272,11 @@ def _open_session(path: str) -> tuple[Session, Any]:
     return sessionmaker(bind=eng)(), eng
 
 
+def _merge_across_positions(merge_by_player: bool, pick_club: str | None) -> bool:
+    """Топ-100 / за всё время: одна карьера на игрока, клуб из активного сезона."""
+    return bool(merge_by_player and pick_club == "active_season")
+
+
 def _fold_outfield_bucket(
     buckets: dict,
     p: Any,
@@ -268,7 +287,13 @@ def _fold_outfield_bucket(
 ) -> None:
     from utils.player_names import player_stats_identity_token
 
-    k = _bucket_key_for_row(p, merge_by_player=merge_by_player)
+    k = _bucket_key_for_row(
+        p,
+        merge_by_player=merge_by_player,
+        merge_across_positions=_merge_across_positions(
+            merge_by_player, pick_club
+        ),
+    )
     if k not in buckets:
         buckets[k] = {
             "name": p.name,
@@ -303,7 +328,13 @@ def _fold_cards_bucket(
 ) -> None:
     from utils.player_names import player_stats_identity_token
 
-    k = _bucket_key_for_row(p, merge_by_player=merge_by_player)
+    k = _bucket_key_for_row(
+        p,
+        merge_by_player=merge_by_player,
+        merge_across_positions=_merge_across_positions(
+            merge_by_player, pick_club
+        ),
+    )
     if k not in buckets:
         buckets[k] = {
             "name": p.name,
@@ -334,7 +365,13 @@ def _fold_cs_bucket(
 ) -> None:
     from utils.player_names import player_stats_identity_token
 
-    k = _bucket_key_for_row(p, merge_by_player=merge_by_player)
+    k = _bucket_key_for_row(
+        p,
+        merge_by_player=merge_by_player,
+        merge_across_positions=_merge_across_positions(
+            merge_by_player, pick_club
+        ),
+    )
     if k not in buckets:
         buckets[k] = {
             "name": p.name,
