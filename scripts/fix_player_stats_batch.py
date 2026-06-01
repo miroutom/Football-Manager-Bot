@@ -15,13 +15,18 @@
     ...
 
 Каждая «не-игроковая» строка трактуется как **название клуба**. Каждая игровая
-строка: имя (может быть из нескольких слов), позиция, далее **6 чисел** через
-пробел:
+строка: имя (может быть из нескольких слов), позиция, опционально **нация** (для
+однофамильцев), далее **6 чисел**:
 ``матчи_лиги голы_лиги ассисты_лиги матчи_ЛЧ голы_ЛЧ ассисты_ЛЧ``.
+
+Пример: ``Санчес ЦП Мексика 0 0 0 0 0 0`` — только строка ``Мю``, не путается с
+Санчес (Чили) в Роме.
 
 Правила:
 - Пишем строго в `db/season_2/league.db` (лиговая часть) и в
   `db/season_2/champions_league.db` (ЛЧ-часть). Только сезон 2.
+- Игрок мог уйти трансфером: строка со статой остаётся в **прошлом** клубе
+  (см. ``utils/player_transfer.py``). Батч ищет по заголовку клуба в файле.
 - Перезаписываем только ``matches``, ``goals``, ``assists`` и ``ga = g + a``.
   Никаких других полей не трогаем (жк/кк, сухие, status, overall, nation,
   награды, трофеи).
@@ -68,6 +73,29 @@ from utils.utils import (  # noqa: E402
 ALL_POSITIONS: set[str] = set(forwards + midfielders + defenders + goalkeepers)
 
 
+def _parse_name_position_nation(rest: list[str]) -> tuple[str, str, str | None] | None:
+    """
+    Имя (1+ слов), позиция, опционально нация в конце: «Санчес ЦП Мексика».
+    «Коло Муани ЛФА» — имя из двух слов, без нации.
+    """
+    if len(rest) < 2:
+        return None
+    if rest[-1].upper() in ALL_POSITIONS:
+        position = rest[-1].upper()
+        name = " ".join(rest[:-1]).strip()
+        return name, position, None
+    if (
+        len(rest) >= 3
+        and rest[-2].upper() in ALL_POSITIONS
+        and rest[-1].upper() not in ALL_POSITIONS
+    ):
+        position = rest[-2].upper()
+        nation = rest[-1].strip()
+        name = " ".join(rest[:-2]).strip()
+        return name, position, nation
+    return None
+
+
 def _is_int(token: str) -> bool:
     t = token.strip()
     if not t:
@@ -87,6 +115,7 @@ class PlayerRow:
     cl_g: int
     cl_a: int
     src_line: str
+    nation: str | None = None
 
 
 def _resolve_team_in_any_league(team: str) -> tuple[str | None, str | None]:
@@ -120,16 +149,20 @@ def parse_input(path: str) -> tuple[list[PlayerRow], list[str]]:
             errs.append(f"L{ln_no}: «{line}» — не указан клуб (нет заголовка выше).")
             continue
         nums = [int(x) for x in toks[-6:]]
-        position = toks[-7]
-        name = " ".join(toks[:-7]).strip()
-        if not name:
-            errs.append(f"L{ln_no}: «{line}» — не разобрать имя.")
+        rest = toks[:-6]
+        if len(rest) < 2:
+            errs.append(f"L{ln_no}: «{line}» — мало полей (имя, позиция, 6 чисел).")
             continue
-        if position.upper() not in ALL_POSITIONS:
+        parsed = _parse_name_position_nation(rest)
+        if parsed is None:
             errs.append(
-                f"L{ln_no}: «{line}» — неизвестная позиция «{position}». "
-                f"Доступные: {sorted(ALL_POSITIONS)}"
+                f"L{ln_no}: «{line}» — не разобрать имя/позицию "
+                f"(ожидается: имя, позиция[, нация], 6 чисел)."
             )
+            continue
+        name, position, nation = parsed
+        if not name:
+            errs.append(f"L{ln_no}: «{line}» — пустое имя.")
             continue
         if any(n < 0 for n in nums):
             errs.append(f"L{ln_no}: «{line}» — отрицательные числа недопустимы.")
@@ -137,8 +170,9 @@ def parse_input(path: str) -> tuple[list[PlayerRow], list[str]]:
         rows.append(
             PlayerRow(
                 name=name,
-                position=position.upper(),
+                position=position,
                 team=current_team,
+                nation=nation,
                 league_m=nums[0],
                 league_g=nums[1],
                 league_a=nums[2],
@@ -162,9 +196,12 @@ class PlannedChange:
     src_line: str
 
 
-def _resolve_row(session, team: str, name: str, position: str):
-    """Найти строку в БД по (team, name, position)."""
+def _resolve_row(
+    session, team: str, name: str, position: str, nation: str | None = None
+):
+    """Найти строку в БД по (team, name, position[, nation])."""
     cls = get_player_class(position)
+    want_nat = _norm_cmp(nation) if nation else None
     cand = []
     for r in session.query(cls).all():
         if _norm_cmp(r.team) != _norm_cmp(team):
@@ -173,12 +210,14 @@ def _resolve_row(session, team: str, name: str, position: str):
             continue
         if _norm_cmp(r.position) != _norm_cmp(position):
             continue
+        if want_nat is not None:
+            if _norm_cmp(getattr(r, "nation", None) or "") != want_nat:
+                continue
         cand.append(r)
     if len(cand) > 1:
         return None, "несколько строк с тем же (имя+позиция+клуб) — это баг данных"
     if not cand:
-        # fallback: попробуем по имени+клубу без позиции
-        p, _ = find_player_by_name(session, name, team)
+        p, _ = find_player_by_name(session, name, team, nation=nation)
         if p and _norm_cmp(p.position) == _norm_cmp(position):
             return p, None
         return None, "не найден"
@@ -210,7 +249,9 @@ def plan_changes(rows: list[PlayerRow]) -> tuple[list[PlannedChange], list[str]]
             continue
 
         # Лига: всегда. m может быть 0 — это норм.
-        p_l, err_l = _resolve_row(s_league, canon_team, r.name, r.position)
+        p_l, err_l = _resolve_row(
+            s_league, canon_team, r.name, r.position, r.nation
+        )
         if err_l:
             errs.append(
                 f"league.db: «{canon_team}» {r.name} ({r.position}) — {err_l}. "
@@ -241,7 +282,9 @@ def plan_changes(rows: list[PlayerRow]) -> tuple[list[PlannedChange], list[str]]
         cl_team = resolve_team_name_for_cl_pool(canon_team)
         cl_has_values = r.cl_m or r.cl_g or r.cl_a
         if cl_team:
-            p_c, err_c = _resolve_row(s_cl, cl_team, r.name, r.position)
+            p_c, err_c = _resolve_row(
+                s_cl, cl_team, r.name, r.position, r.nation
+            )
             if err_c:
                 if cl_has_values:
                     errs.append(
@@ -343,6 +386,11 @@ def main() -> int:
         action="store_true",
         help="Записать изменения. По умолчанию — dry-run.",
     )
+    parser.add_argument(
+        "--no-cumulative-rebuild",
+        action="store_true",
+        help="Не пересобирать *_synced.db (только league/cl + common).",
+    )
     args = parser.parse_args()
 
     rows, parse_errs = parse_input(args.input)
@@ -388,13 +436,16 @@ def main() -> int:
     rebuild_common_database()
     print("  common.db пересобран")
 
-    print("\n--- Пересборка *_synced.db ---")
-    from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
+    if not args.no_cumulative_rebuild:
+        print("\n--- Пересборка *_synced.db ---")
+        from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
 
-    log = rebuild_all_time_databases_from_season_archives()
-    for line in log.get("cumulative", []) or []:
-        print(f"  {line}")
-    print(f"  сезоны: {log.get('seasons')}")
+        log = rebuild_all_time_databases_from_season_archives()
+        for line in log.get("cumulative", []) or []:
+            print(f"  {line}")
+        print(f"  сезоны: {log.get('seasons')}")
+    else:
+        print("\n--- *_synced.db не пересобирали (--no-cumulative-rebuild) ---")
 
     print("\nГотово.")
     return 0

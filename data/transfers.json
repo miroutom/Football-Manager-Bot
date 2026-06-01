@@ -2195,7 +2195,8 @@
       "from_team": "Арсенал",
       "position": "ЦЗ",
       "to_team": "Сити",
-      "new_status": "start"
+      "new_status": "start",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:00:22+00:00",
@@ -2204,7 +2205,8 @@
       "from_team": "Ньюкасл",
       "position": "ФРВ",
       "to_team": "Сити",
-      "new_status": "bench"
+      "new_status": "bench",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:00:57+00:00",
@@ -2213,7 +2215,8 @@
       "from_team": "Бавария",
       "position": "ЦАП",
       "to_team": "Ливерпуль",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:01:02+00:00",
@@ -2222,7 +2225,8 @@
       "from_team": "Реал",
       "position": "ЦОП",
       "to_team": "Ливерпуль",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:01:24+00:00",
@@ -2231,7 +2235,8 @@
       "from_team": "Сити",
       "position": "ЦЗ",
       "to_team": "Арсенал",
-      "new_status": "start"
+      "new_status": "start",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:01:30+00:00",
@@ -2240,7 +2245,8 @@
       "from_team": "Ньюкасл",
       "position": "ПФА",
       "to_team": "Арсенал",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:01:51+00:00",
@@ -2249,7 +2255,8 @@
       "from_team": "Ливерпуль",
       "position": "ЦП",
       "to_team": "Астон Вилла",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:01:55+00:00",
@@ -2258,7 +2265,8 @@
       "from_team": "Челси",
       "position": "ПЗ",
       "to_team": "Астон Вилла",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:02:11+00:00",
@@ -2267,7 +2275,8 @@
       "from_team": "Ливерпуль",
       "position": "ФРВ",
       "to_team": "Мю",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:02:17+00:00",
@@ -2276,7 +2285,8 @@
       "from_team": "Бавария",
       "position": "ЦЗ",
       "to_team": "Мю",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:02:31+00:00",
@@ -2285,7 +2295,8 @@
       "from_team": "Боруссия М",
       "position": "ЦАП",
       "to_team": "Ньюкасл",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:02:35+00:00",
@@ -2294,7 +2305,8 @@
       "from_team": "Интер",
       "position": "ЦЗ",
       "to_team": "Ньюкасл",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:02:51+00:00",
@@ -2303,7 +2315,8 @@
       "from_team": "Зенит",
       "position": "ЛЗ",
       "to_team": "Тоттенхэм",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:02:55+00:00",
@@ -2312,7 +2325,8 @@
       "from_team": "Аталанта",
       "position": "ЦЗ",
       "to_team": "Тоттенхэм",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:03:09+00:00",
@@ -2321,7 +2335,8 @@
       "from_team": "Бетис",
       "position": "ПЗ",
       "to_team": "Челси",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:03:14+00:00",
@@ -2330,7 +2345,8 @@
       "from_team": "Атлетико",
       "position": "ЛП",
       "to_team": "Челси",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:03:26+00:00",
@@ -2339,7 +2355,8 @@
       "from_team": "Спартак",
       "position": "ЦЗ",
       "to_team": "Атлетико",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:03:30+00:00",
@@ -2348,7 +2365,8 @@
       "from_team": "Реал",
       "position": "ФРВ",
       "to_team": "Атлетико",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:03:54+00:00",
@@ -2357,7 +2375,8 @@
       "from_team": "Астон Вилла",
       "position": "ПЗ",
       "to_team": "Реал",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:03:57+00:00",
@@ -2366,7 +2385,8 @@
       "from_team": "Мю",
       "position": "ЦП",
       "to_team": "Реал",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:04:10+00:00",
@@ -2375,7 +2395,8 @@
       "from_team": "Ювентус",
       "position": "ЦЗ",
       "to_team": "Барселона",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:04:14+00:00",
@@ -2384,7 +2405,8 @@
       "from_team": "Интер",
       "position": "ФРВ",
       "to_team": "Барселона",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:04:27+00:00",
@@ -2393,7 +2415,8 @@
       "from_team": "Реал Сосьедад",
       "position": "ПЗ",
       "to_team": "Атлетик",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:04:31+00:00",
@@ -2402,7 +2425,8 @@
       "from_team": "Тоттенхэм",
       "position": "ПФА",
       "to_team": "Атлетик",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:04:43+00:00",
@@ -2411,7 +2435,8 @@
       "from_team": "Зенит",
       "position": "ПЗ",
       "to_team": "Реал Сосьедад",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:04:48+00:00",
@@ -2420,7 +2445,8 @@
       "from_team": "Дортмунд",
       "position": "ЦП",
       "to_team": "Реал Сосьедад",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:05:03+00:00",
@@ -2429,7 +2455,8 @@
       "from_team": "Франкфурт",
       "position": "ПФА",
       "to_team": "Бетис",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:05:07+00:00",
@@ -2438,7 +2465,8 @@
       "from_team": "Атлетико",
       "position": "ЛЗ",
       "to_team": "Бетис",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:05:23+00:00",
@@ -2447,7 +2475,8 @@
       "from_team": "Спартак",
       "position": "ФРВ",
       "to_team": "Жирона",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:05:29+00:00",
@@ -2456,7 +2485,8 @@
       "from_team": "Байер",
       "position": "ФРВ",
       "to_team": "Жирона",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:05:44+00:00",
@@ -2465,7 +2495,8 @@
       "from_team": "Боруссия М",
       "position": "ЦЗ",
       "to_team": "Севилья",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:05:47+00:00",
@@ -2474,7 +2505,8 @@
       "from_team": "Хоффенхайм",
       "position": "ЛЗ",
       "to_team": "Севилья",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:05:59+00:00",
@@ -2483,7 +2515,8 @@
       "from_team": "Сити",
       "position": "ЛФА",
       "to_team": "Интер",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:06:03+00:00",
@@ -2492,7 +2525,8 @@
       "from_team": "Арсенал",
       "position": "ЦП",
       "to_team": "Интер",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:06:16+00:00",
@@ -2501,7 +2535,8 @@
       "from_team": "Челси",
       "position": "ФРВ",
       "to_team": "Наполи",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:06:20+00:00",
@@ -2510,7 +2545,8 @@
       "from_team": "Мю",
       "position": "ЛФА",
       "to_team": "Наполи",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:06:59+00:00",
@@ -2519,7 +2555,8 @@
       "from_team": "Ювентус",
       "position": "ВРТ",
       "to_team": "Аталанта",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:07:05+00:00",
@@ -2528,7 +2565,8 @@
       "from_team": "Реал Сосьедад",
       "position": "ФРВ",
       "to_team": "Аталанта",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:07:30+00:00",
@@ -2537,7 +2575,8 @@
       "from_team": "Наполи",
       "position": "ЦОП",
       "to_team": "Милан",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:08:00+00:00",
@@ -2546,7 +2585,8 @@
       "from_team": "Франкфурт",
       "position": "ЦЗ",
       "to_team": "Милан",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:08:17+00:00",
@@ -2555,7 +2595,8 @@
       "from_team": "Севилья",
       "position": "ФРВ",
       "to_team": "Ювентус",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:08:21+00:00",
@@ -2564,7 +2605,8 @@
       "from_team": "Лацио",
       "position": "ВРТ",
       "to_team": "Ювентус",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:09:12+00:00",
@@ -2573,7 +2615,8 @@
       "from_team": "Крылья Советов",
       "position": "ЦЗ",
       "to_team": "Лацио",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:09:16+00:00",
@@ -2582,7 +2625,8 @@
       "from_team": "Динамо",
       "position": "ВРТ",
       "to_team": "Лацио",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:09:32+00:00",
@@ -2591,7 +2635,8 @@
       "from_team": "Астон Вилла",
       "position": "ЦЗ",
       "to_team": "Фиорентина",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:09:35+00:00",
@@ -2600,7 +2645,8 @@
       "from_team": "Краснодар",
       "position": "ВРТ",
       "to_team": "Фиорентина",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:09:52+00:00",
@@ -2609,7 +2655,8 @@
       "from_team": "Рома",
       "position": "ПФА",
       "to_team": "Бавария",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:09:55+00:00",
@@ -2618,7 +2665,8 @@
       "from_team": "Байер",
       "position": "ЦП",
       "to_team": "Бавария",
-      "new_status": "reserve"
+      "new_status": "reserve",
+      "effective_month": 6
     },
     {
       "ts": "2026-05-27T21:10:07+00:00",
