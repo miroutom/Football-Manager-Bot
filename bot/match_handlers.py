@@ -1017,17 +1017,31 @@ async def _send_ason_continue_after_stats(
         )
         return
 
-    await message.answer(
-        "<b>Что дальше?</b> Следующие матчи из очереди «Стата без матча»:",
-        parse_mode="HTML",
+    slot = ordered[0]
+    label = _played_slot_btn_label(slot, index=1)
+    if len(label) > 60:
+        label = label[:57] + "…"
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=label,
+                    callback_data=f"asonpick:0:{lf}:{sk}",
+                ),
+            ],
+        ]
     )
-    await _show_ason_pick_list(
-        message,
-        state,
-        league_key=lf,
-        session_kind=sk,
-        page=0,
-        edit=False,
+    hn = html_escape(str(slot["home"]))
+    an = html_escape(str(slot["away"]))
+    hs = int(slot["home_score"])
+    aws = int(slot["away_score"])
+    rest = len(ordered) - 1
+    tail = f" Ещё в очереди по фильтру: <b>{rest}</b>." if rest > 0 else ""
+    await message.answer(
+        f"<b>Что дальше?</b> Следующий матч «Стата без матча»:\n"
+        f"{hn} <code>{hs}:{aws}</code> {an}{tail}",
+        reply_markup=kb,
+        parse_mode="HTML",
     )
 
 
