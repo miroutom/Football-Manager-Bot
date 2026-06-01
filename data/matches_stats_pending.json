@@ -6,13 +6,6 @@
     "day": 6
   },
   {
-    "home": "Ньюкасл",
-    "away": "Вольфсбург",
-    "tournament": "cl",
-    "cl_phase": "knockout",
-    "day": 6
-  },
-  {
     "home": "Боруссия М",
     "away": "Байер",
     "tournament": "league",
@@ -114,5 +107,30 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 6
+  },
+  {
+    "home": "Тоттенхэм",
+    "away": "Мю",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Сити",
+    "away": "Мю",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Астон Вилла",
+    "away": "Арсенал",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Ньюкасл",
+    "tournament": "cl",
+    "day": 6,
+    "cl_phase": "knockout"
   }
 ]
