@@ -10,6 +10,7 @@
 
   python3 scripts/fix_placeholder_names_from_transfers.py --season 2
   python3 scripts/fix_placeholder_names_from_transfers.py --season 2 --apply
+  python3 scripts/fix_placeholder_names_from_transfers.py --season 2 --manual-only --apply
 """
 from __future__ import annotations
 
@@ -22,6 +23,8 @@ from dataclasses import dataclass
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+
+from scripts.merge_duplicate_player_rows import _merge_into
 
 from data.defender import Defender
 from data.forward import Forward
@@ -56,6 +59,98 @@ _DB_MAP = {
     "cl": "champions_league.db",
     "common": "common.db",
 }
+
+
+@dataclass(frozen=True)
+class ManualNameFix:
+    team: str
+    position: str
+    surname: str
+    first_name: str
+
+
+# Ручные правки (нет в xlsx / составное имя в одном поле)
+MANUAL_NAME_FIXES_S2: tuple[ManualNameFix, ...] = (
+    ManualNameFix("Ньюкасл", "ЦАП", "Тонали", "Сандро"),
+    ManualNameFix("Реал", "ЦОП", "Фофана", "Юсуф"),
+    ManualNameFix("Зенит", "ЦП", "Барриос", "Вильмар"),
+    ManualNameFix("Вольфсбург", "ЦП", "Гарсия", "Саму"),
+    ManualNameFix("Наполи", "ЛЗ", "Эрнандез", "Люка"),
+)
+
+
+def _team_matches(row_team: str, want: str) -> bool:
+    return _norm_cmp(want) in _norm_cmp(row_team) or _norm_cmp(row_team) in _norm_cmp(
+        want
+    )
+
+
+def _row_matches_manual(row: object, fix: ManualNameFix) -> bool:
+    if not _team_matches(getattr(row, "team", None) or "", fix.team):
+        return False
+    pos = (getattr(row, "position", None) or "").strip().upper()
+    if pos != (fix.position or "").strip().upper():
+        return False
+    sn = _norm_cmp(getattr(row, "surname", None) or "")
+    nm = _norm_cmp(getattr(row, "name", None) or "")
+    want = _norm_cmp(fix.surname)
+    if sn == want or nm == want:
+        return True
+    full = _norm_cmp(f"{getattr(row, 'name', '')} {getattr(row, 'surname', '')}".strip())
+    return want in full.split() and len(full.split()) >= 2
+
+
+def _apply_manual_names(season: int, fixes: tuple[ManualNameFix, ...]) -> list[str]:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from utils.utils import Base
+
+    log: list[str] = []
+    if not fixes:
+        return log
+    for db_kind, fname in _DB_MAP.items():
+        path = os.path.join(ROOT, "db", f"season_{season}", fname)
+        if not os.path.isfile(path):
+            continue
+        eng = create_engine(f"sqlite:///{path}")
+        Base.metadata.create_all(eng)
+        Sess = sessionmaker(bind=eng)
+        sess = Sess()
+        try:
+            for fix in fixes:
+                hits: list[tuple[type, object]] = []
+                for Cls in _ALL:
+                    for row in sess.query(Cls).all():
+                        if _row_matches_manual(row, fix):
+                            hits.append((Cls, row))
+                if not hits:
+                    log.append(
+                        f"manual-miss s{season}:{db_kind} {fix.team} {fix.surname} {fix.position}"
+                    )
+                    continue
+                fn = normalize_player_name_for_db(fix.first_name) or fix.first_name
+                sn = normalize_player_name_for_db(fix.surname) or fix.surname
+                hits.sort(key=lambda x: int(getattr(x[1], "id", 0) or 0))
+                keeper_cls, keeper = hits[0]
+                keeper.name = fn
+                if hasattr(keeper, "surname"):
+                    keeper.surname = sn
+                log.append(
+                    f"manual s{season}:{db_kind} id={keeper.id} → {fn}/{sn} "
+                    f"({fix.team} {fix.position})"
+                )
+                for Cls, other in hits[1:]:
+                    _merge_into(keeper, other)
+                    sess.delete(other)
+                    log.append(
+                        f"manual-merge-del s{season}:{db_kind} id={other.id} → keeper {keeper.id}"
+                    )
+            sess.commit()
+        finally:
+            sess.close()
+            eng.dispose()
+    return log
 
 
 @dataclass
@@ -370,13 +465,30 @@ def main() -> int:
         "--transfers",
         default=os.path.join(ROOT, "data", "transfers.json"),
     )
+    ap.add_argument(
+        "--manual-only",
+        action="store_true",
+        help="Только ручные правки (MANUAL_NAME_FIXES_S2), без xlsx/трансферов",
+    )
     args = ap.parse_args()
+
+    manual_fixes = MANUAL_NAME_FIXES_S2 if args.season == 2 else ()
+    if manual_fixes:
+        for line in _apply_manual_names(args.season, manual_fixes) if args.apply else [
+            f"manual(dry) {f.team} {f.first_name}/{f.surname} {f.position}"
+            for f in manual_fixes
+        ]:
+            print(line)
+    if args.manual_only:
+        if not args.apply:
+            print("Повторите с --apply.")
+        return 0
 
     xlsx_entries = load_names_xlsx(args.xlsx)
     transfers = _load_transfers(args.transfers)
     print(f"Сезон {args.season}: xlsx={len(xlsx_entries)} строк, трансферов={len(transfers)}")
 
-    if args.apply and args.season == 2:
+    if args.apply and args.season == 2 and not args.manual_only:
         d = _apply_orphan_deletes(args.season, SEASON2_ORPHAN_DELETES)
         print(f"Удалено orphan-строк: {d}")
 
