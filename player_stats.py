@@ -132,17 +132,72 @@ def _team_score_in_match(team: str, match_for_cs: tuple) -> Optional[int]:
     return None
 
 
+def team_match_contrib_from_session_acc(
+    session_acc: dict | None, team: str
+) -> tuple[int, int]:
+    """Сумма голов и передач по команде за матч из накопленной сессии бота."""
+    if not session_acc:
+        return 0, 0
+    tg = ta = 0
+    want = _norm_cmp(team)
+    for acc in session_acc.values():
+        if _norm_cmp(acc.get("team") or "") != want:
+            continue
+        tg += int(acc.get("goals") or 0)
+        ta += int(acc.get("assists") or 0)
+    return tg, ta
+
+
+class MatchTeamStatBudget:
+    """Накопленные голы и передачи команд за один матч (ввод по строкам / батч)."""
+
+    __slots__ = ("_goals", "_assists")
+
+    def __init__(self) -> None:
+        self._goals: dict[str, int] = {}
+        self._assists: dict[str, int] = {}
+
+    @staticmethod
+    def _k(team: str) -> str:
+        return _norm_cmp(team)
+
+    def goals_used(self, team: str) -> int:
+        return int(self._goals.get(self._k(team), 0))
+
+    def assists_used(self, team: str) -> int:
+        return int(self._assists.get(self._k(team), 0))
+
+    def add(self, team: str, goals: int, assists: int) -> None:
+        k = self._k(team)
+        if goals:
+            self._goals[k] = self.goals_used(team) + int(goals)
+        if assists:
+            self._assists[k] = self.assists_used(team) + int(assists)
+
+    @classmethod
+    def from_session_acc(cls, session_acc: dict) -> MatchTeamStatBudget:
+        b = cls()
+        for acc in session_acc.values():
+            b.add(acc.get("team") or "", int(acc.get("goals") or 0), int(acc.get("assists") or 0))
+        return b
+
+
 def _validate_goals_vs_team_score(
-    team: str, goals: int, assists: int, match_for_cs: tuple
+    team: str,
+    goals: int,
+    assists: int,
+    match_for_cs: tuple,
+    *,
+    team_goals_already: int = 0,
+    team_assists_already: int = 0,
 ) -> Tuple[bool, Optional[str]]:
     """
-    Один игрок за матч не может набрать больше голов, чем забила его команда,
-    и больше «гол+пас» суммарно, чем голов у команды (нельзя обойти лимит двумя цифрами).
+    Проверка голов/передач за матч относительно счёта команды.
+
+    - Один игрок: не больше голов команды; не больше передач; г+п игрока ≤ голам команды.
+    - Команда целиком: сумма голов всех игроков и сумма передач не превышают голы команды
+      (``team_goals_already`` / ``team_assists_already`` — уже учтённые в этом матче).
     """
-    if goals == 0 and assists == 0:
-        return True, None
-    goals = max(0, goals)
-    assists = max(0, assists)
     if goals == 0 and assists == 0:
         return True, None
     ts = _team_score_in_match(team, match_for_cs)
@@ -152,6 +207,8 @@ def _validate_goals_vs_team_score(
             f"команда «{team}» не совпадает с хозяевами/гостями в match_for_cs "
             f"({match_for_cs[0]} — {match_for_cs[1]})",
         )
+    tg0 = max(0, int(team_goals_already))
+    ta0 = max(0, int(team_assists_already))
     if goals > ts:
         return False, f"голов {goals} при счёте команды {ts} в матче (макс. {ts})"
     if assists > ts:
@@ -162,13 +219,34 @@ def _validate_goals_vs_team_score(
             f"Г+П {goals}+{assists}={goals + assists} при {ts} голах команды "
             f"(сумма не может превышать число голов команды в матче)",
         )
+    team_g_after = tg0 + goals
+    team_a_after = ta0 + assists
+    if team_g_after > ts:
+        left = max(0, ts - tg0)
+        return (
+            False,
+            f"по команде уже {tg0} гол(ов) в матче, +{goals} при счёте {ts} "
+            f"(осталось не больше {left})",
+        )
+    if team_a_after > ts:
+        left = max(0, ts - ta0)
+        return (
+            False,
+            f"по команде уже {ta0} передач в матче, +{assists} при {ts} голах команды "
+            f"(осталось не больше {left})",
+        )
     return True, None
 
 
-def find_player_by_name(session, name: str, team: str = None):
+def find_player_by_name(
+    session, name: str, team: str = None, nation: str | None = None
+):
     """
-    Найти игрока по имени во всех таблицах (без учёта регистра и отличий вроде «Ван Де Вен» vs «Ван де Вен»).
-    Возвращает (player, position_type) или (None, None)
+    Найти игрока по имени во всех таблицах (без учёта регистра).
+
+    При нескольких однофамильцах в одном клубе (Санчес Мю / Санчес Рома) передай ``team``.
+    Если в клубе всё ещё неоднозначно — ``nation`` (как в БД: Мексика, Чили, …).
+    Возвращает (player, position_type) или (None, None).
     """
     classes = [
         (Forward, 'forward'),
@@ -178,14 +256,20 @@ def find_player_by_name(session, name: str, team: str = None):
     ]
     want_name = _norm_cmp(name)
     want_team = _norm_cmp(team) if team else None
+    want_nat = _norm_cmp(nation) if nation else None
 
     for PlayerClass, pos_type in classes:
         try:
             for player in session.query(PlayerClass).all():
                 if want_team is not None and _norm_cmp(player.team) != want_team:
                     continue
-                if _norm_cmp(player.name) == want_name:
-                    return player, pos_type
+                if _norm_cmp(player.name) != want_name:
+                    continue
+                if want_nat is not None:
+                    pn = _norm_cmp(getattr(player, "nation", None) or "")
+                    if pn != want_nat:
+                        continue
+                return player, pos_type
         except Exception:
             pass
 
@@ -392,7 +476,9 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
                      discipline_league_code: str | None = None,
                      schedule_day: int | None = None,
                      skip_discipline_check: bool = False,
-                     increment_matches: bool = True):
+                     increment_matches: bool = True,
+                     team_goals_already: int = 0,
+                     team_assists_already: int = 0):
     """
     Добавить статистику игрока после матча.
 
@@ -405,7 +491,11 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
     без БД-записи передай ``create_if_missing=True`` явно.
 
     match_for_cs: (home_team, away_team, home_score, away_score) — автосухой для защитников/вратарей
-        и проверка: у полевых при ненулевых голах/передачах они не превышают голы команды в этом матче.
+        и проверка: у полевых при ненулевых голах/передачах они не превышают голы команды в этом матче
+        (в т.ч. суммарно по всем уже внесённым игрокам команды — см. team_goals_already).
+
+    team_goals_already / team_assists_already: уже учтённые в этом матче голы и передачи команды
+        (сессия бота или MatchTeamStatBudget при батче).
     """
     session = get_session(tournament)
     name = name.title()
@@ -488,8 +578,15 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
             if (tn == ht.lower() and home_cs) or (tn == at.lower() and away_cs):
                 clean_sheet = True
 
-    if match_for_cs and (goals > 0 or assists > 0):
-        ok_g, err_g = _validate_goals_vs_team_score(team, goals, assists, match_for_cs)
+    if match_for_cs and (goals != 0 or assists != 0):
+        ok_g, err_g = _validate_goals_vs_team_score(
+            team,
+            goals,
+            assists,
+            match_for_cs,
+            team_goals_already=team_goals_already,
+            team_assists_already=team_assists_already,
+        )
         if not ok_g:
             print(f"  ✗ {name} ({team}): {err_g}")
             return False
@@ -540,6 +637,7 @@ def apply_match_lineup(
     """
     ok = 0
     fail = 0
+    budget = MatchTeamStatBudget()
     for row in rows:
         if len(row) != 5:
             raise ValueError(f"Ожидается (имя, позиция, команда, голы, передачи), получено: {row!r}")
@@ -549,7 +647,10 @@ def apply_match_lineup(
             tournament=tournament,
             match_for_cs=match_for_cs,
             create_if_missing=create_if_missing,
+            team_goals_already=budget.goals_used(team),
+            team_assists_already=budget.assists_used(team),
         ):
+            budget.add(team, goals, assists)
             ok += 1
         else:
             fail += 1
@@ -1127,6 +1228,12 @@ def apply_stats_bot_line(
     if use_session and key_g is not None:
         do_incr = increment_matches and (key_g not in session_match_players)
 
+    team_g0, team_a0 = (0, 0)
+    if use_session and session_acc is not None:
+        team_g0, team_a0 = team_match_contrib_from_session_acc(
+            session_acc, pdata["team"]
+        )
+
     buf2 = io.StringIO()
     with contextlib.redirect_stdout(buf2):
         ok_add = add_player_stats(
@@ -1144,6 +1251,8 @@ def apply_stats_bot_line(
             schedule_day=schedule_day,
             increment_matches=do_incr,
             skip_discipline_check=True,
+            team_goals_already=team_g0,
+            team_assists_already=team_a0,
         )
     out = buf2.getvalue().strip()
     if not ok_add:

@@ -388,6 +388,7 @@ def apply_player_stat_line(
     tournament: str,
     league_code: str | None,
     schedule_day: int | None,
+    match_team_budget=None,
 ) -> list[str]:
     """Голы/пасы/сухой матч + дисциплина для уже выбранного игрока."""
     from player_stats import add_player_stats, get_position_type
@@ -410,6 +411,11 @@ def apply_player_stat_line(
         elif player.team.lower() == away_team.lower() and home_score == 0:
             clean_sheet = True
 
+    team_g0 = team_a0 = 0
+    if match_team_budget is not None:
+        team_g0 = match_team_budget.goals_used(player.team)
+        team_a0 = match_team_budget.assists_used(player.team)
+
     if parsed.goals != 0 or parsed.assists != 0 or clean_sheet:
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
@@ -425,9 +431,13 @@ def apply_player_stat_line(
                 match_for_cs=match_for_cs,
                 skip_discipline_check=True,
                 increment_matches=False,
+                team_goals_already=team_g0,
+                team_assists_already=team_a0,
             )
         line = buf.getvalue().strip()
         logs.append(line or ("✓" if ok else "✗ запись голов/пасов"))
+        if ok and match_team_budget is not None:
+            match_team_budget.add(player.team, parsed.goals, parsed.assists)
 
     st_tourn = "cl" if (tournament or "") == "cl" else "league"
     lc = league_code or ""
