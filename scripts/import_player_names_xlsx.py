@@ -56,12 +56,14 @@ def _first_name_from_cell(raw: str) -> str:
 # Синонимы национальности (xlsx ↔ БД)
 _NATION_CANON: dict[str, str] = {
     "босния и герцеговина": "босния",
+    "босния и герцеговна": "босния",
     "босния и герц": "босния",
     "юж. корея": "южная корея",
     "южная корея": "южная корея",
     "кот-д'ивуар": "кот д ивуар",
     "кот-д ивуар": "кот д ивуар",
     "др конго": "др конго",
+    "д р конго": "др конго",
     "конго": "др конго",
     "оаэ": "оаэ",
     "сауд. аравия": "саудовская аравия",
@@ -73,6 +75,8 @@ _NATION_CANON: dict[str, str] = {
 
 def _norm_nat(s: str) -> str:
     n = (s or "").strip().casefold()
+    n = n.replace(".", " ")
+    n = " ".join(n.split())
     return _NATION_CANON.get(n, n)
 
 
@@ -217,27 +221,42 @@ def _pick_one(
     return None, f"неоднозначно: {len(pool)}{extra}"
 
 
+def _candidates_team_surname(
+    session, entry: XlsxPlayer
+) -> list[tuple[str, object]]:
+    out: list[tuple[str, object]] = []
+    for tbl, r in _iter_rows(session, entry.team, include_left=False):
+        if _label_matches_db(entry.surname_label, r):
+            out.append((tbl, r))
+    return out
+
+
 def find_db_row(session, entry: XlsxPlayer, *, require_team: bool):
     if not require_team:
         cands = _candidates_surname_nation(session, entry)
         return _pick_one(cands, entry, prefer_team=True)
 
     strict: list[tuple[str, object]] = []
-    loose: list[tuple[str, object]] = []
     for tbl, r in _iter_rows(session, entry.team, include_left=False):
         if not _match_row(entry, r, require_team=True):
             continue
-        loose.append((tbl, r))
         if _label_matches_db(entry.surname_label, r):
             strict.append((tbl, r))
     if len(strict) == 1:
         return strict[0], None
     if len(strict) > 1:
-        return _pick_one(strict, entry, prefer_team=False)
-    if len(loose) == 1:
-        return loose[0], None
-    if len(loose) > 1:
-        return _pick_one(loose, entry, prefer_team=False)
+        hit, err = _pick_one(strict, entry, prefer_team=False)
+        if hit:
+            return hit, err
+    # Клуб + фамилия (нация/позиция/рейтинг в БД могли быть с опечаткой)
+    by_name = _candidates_team_surname(session, entry)
+    if len(by_name) == 1:
+        return by_name[0], None
+    if len(by_name) > 1:
+        hit, err = _pick_one(by_name, entry, prefer_team=False)
+        if hit:
+            return hit, err
+        return None, err or f"неоднозначно: {len(by_name)}"
     return None, "не найден"
 
 
