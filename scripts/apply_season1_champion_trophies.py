@@ -15,6 +15,9 @@
 
 Повторный запуск **удвоит** счётчики — по умолчанию нужен флаг ``--i-know``.
 
+Если счётчики уже «раздулись», сначала:
+``python3 scripts/fix_season1_trophies_and_awards.py --apply``.
+
   python3 scripts/apply_season1_champion_trophies.py --i-know
 """
 from __future__ import annotations
