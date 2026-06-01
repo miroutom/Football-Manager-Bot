@@ -67,11 +67,14 @@ def _fold_stats_into_row(dst_row: Any, src_row: Any) -> None:
     dst_row.trophies = int(getattr(dst_row, "trophies", 0) or 0) + int(
         getattr(src_row, "trophies", 0) or 0
     )
-    dst_row.yellow_cards = int(getattr(dst_row, "yellow_cards", 0) or 0) + int(
-        getattr(src_row, "yellow_cards", 0) or 0
+    # В рабочих БД жк/кк накапливаются карьерно; снимок сезона — монотонный итог → max, не sum.
+    dst_row.yellow_cards = max(
+        int(getattr(dst_row, "yellow_cards", 0) or 0),
+        int(getattr(src_row, "yellow_cards", 0) or 0),
     )
-    dst_row.red_cards = int(getattr(dst_row, "red_cards", 0) or 0) + int(
-        getattr(src_row, "red_cards", 0) or 0
+    dst_row.red_cards = max(
+        int(getattr(dst_row, "red_cards", 0) or 0),
+        int(getattr(src_row, "red_cards", 0) or 0),
     )
     for attr in ("golden_balls", "golden_boots", "golden_boys", "golden_gloves"):
         if hasattr(dst_row, attr):
@@ -165,11 +168,13 @@ def _merge_player_tables(src: Any, dst: Any, Cls: type) -> None:
         row.trophies = int(getattr(row, "trophies", 0) or 0) + int(
             getattr(p, "trophies", 0) or 0
         )
-        row.yellow_cards = int(getattr(row, "yellow_cards", 0) or 0) + int(
-            getattr(p, "yellow_cards", 0) or 0
+        row.yellow_cards = max(
+            int(getattr(row, "yellow_cards", 0) or 0),
+            int(getattr(p, "yellow_cards", 0) or 0),
         )
-        row.red_cards = int(getattr(row, "red_cards", 0) or 0) + int(
-            getattr(p, "red_cards", 0) or 0
+        row.red_cards = max(
+            int(getattr(row, "red_cards", 0) or 0),
+            int(getattr(p, "red_cards", 0) or 0),
         )
         for attr in (
             "golden_balls",

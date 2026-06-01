@@ -46,9 +46,12 @@ def _zero_player_row(row: Any, Cls: type) -> None:
 
 def _zero_match_stats_for_new_season(row: Any, Cls: type) -> None:
     """
-    Старт нового сезона: обнуляем матчи, голы/передачи/Г+А, карточки, трофеи и награды сезона.
+    Старт нового сезона: обнуляем матчи, голы/передачи/Г+А, трофеи и награды сезона.
 
-    Сохраняем: имя, команда, позиция, overall, нация, status (как в архивном снимке сезона).
+    ``yellow_cards`` / ``red_cards`` **не** обнуляем — это накопительная история в SQLite;
+    цикл жк к 4-й и дисквалы сбрасываются в ``data/player_discipline.json`` (``clear_discipline_state``).
+
+    Сохраняем: имя, команда, позиция, overall, нация, status, жк/кк.
     """
     row.matches = 0
     if hasattr(row, "goals"):
@@ -59,10 +62,6 @@ def _zero_match_stats_for_new_season(row: Any, Cls: type) -> None:
         row.clean_sheets = 0
     if hasattr(row, "missed_goals"):
         row.missed_goals = 0
-    if hasattr(row, "yellow_cards"):
-        row.yellow_cards = 0
-    if hasattr(row, "red_cards"):
-        row.red_cards = 0
     row.trophies = 0
     row.golden_balls = 0
     row.golden_boots = 0
@@ -147,8 +146,8 @@ def _clone_db_zero_stats(src: str, dst: str) -> None:
     Копия SQLite + обнуление сезонной статистики для нового сезона.
 
     Сохраняются: имя, команда, позиция, overall, нация, status.
-    Обнуляются: матчи, голы/передачи/Г+А, сухие/пропущенные (ВР), карточки, трофеи и
-    награды сезона (golden_*).
+    Обнуляются: матчи, голы/передачи/Г+А, сухие/пропущенные (ВР), трофеи и
+    награды сезона (golden_*). Жк/кк переносятся в новый сезон (история в БД).
     """
     shutil.copy2(src, dst)
     eng = create_engine(f"sqlite:///{dst}")
