@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import ssl
 import time
 import urllib.parse
 import urllib.request
@@ -306,10 +307,82 @@ def extract_first_from_label(label: str, surname: str) -> str:
     return ""
 
 
-class WikidataNameLookup:
-    """Поиск футболиста по фамилии + стране (без клуба)."""
+def _normalize_surname_token(s: str) -> str:
+    """Сравнение фамилий: пробел / ``_`` / ``-`` — одно и то же."""
+    return _norm_cmp((s or "").replace("_", " ").replace("-", " "))
 
-    def __init__(self, cache_path: str, *, delay_s: float = 0.35) -> None:
+
+def wikipedia_ru_title_variants(surname: str) -> list[str]:
+    """
+    Варианты заголовка ru.wikipedia: как в БД, с ``_`` и с ``-``.
+
+    «Коло Муани» → Коло Муани, Коло_Муани; «Смит Роу» → …, Смит-Роу.
+    """
+    s = (surname or "").strip()
+    if not s:
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+
+    def add(raw: str) -> None:
+        t = raw.strip()
+        if not t:
+            return
+        key = t.casefold()
+        if key in seen:
+            return
+        seen.add(key)
+        out.append(t)
+
+    add(s)
+    core = s.replace("_", " ").replace("-", " ")
+    if " " in core:
+        add(core.replace(" ", "_"))
+        add(core.replace(" ", "-"))
+    if "_" in s:
+        add(s.replace("_", " "))
+        add(s.replace("_", "-"))
+    if "-" in s:
+        add(s.replace("-", " "))
+        add(s.replace("-", "_"))
+    return out
+
+
+def _surname_matches_wiki_left(wiki_left: str, db_surname: str) -> bool:
+    return _normalize_surname_token(wiki_left) == _normalize_surname_token(db_surname)
+
+
+def parse_ru_wikipedia_person_title(
+    title: str, expected_surname: str
+) -> tuple[str, str] | None:
+    """
+    «Плеа, Алассан» / «Коло Муани, Рандал» → (имя, фамилия из БД).
+    """
+    t = (title or "").strip()
+    if not t or "значения" in t.casefold():
+        return None
+    if ", " not in t:
+        return None
+    left, right = t.split(", ", 1)
+    first = right.split("(")[0].strip()
+    if not first or not _surname_matches_wiki_left(left, expected_surname):
+        return None
+    sn = expected_surname.strip().title()
+    return first.title(), sn
+
+
+def _wiki_page_is_footballer(categories: list[dict] | None) -> bool:
+    for c in categories or []:
+        title = (c.get("title") or "").casefold()
+        if "футболист" in title or "footballer" in title:
+            return True
+    return False
+
+
+class PlayerFirstNameLookup:
+    """Имя по фамилии: ru.wikipedia (заголовок «Фамилия, Имя»), затем Wikidata."""
+
+    def __init__(self, cache_path: str, *, delay_s: float = 0.55) -> None:
         self.cache_path = cache_path
         self.delay_s = delay_s
         self._cache: dict[str, dict] = {}
@@ -331,12 +404,24 @@ class WikidataNameLookup:
     def _cache_key(self, surname: str, nation: str) -> str:
         return f"{_norm_cmp(surname)}|{_norm_cmp(nation)}"
 
+    def _https_context(self) -> ssl.SSLContext | None:
+        try:
+            import certifi
+
+            return ssl.create_default_context(cafile=certifi.where())
+        except (ImportError, OSError, ssl.SSLError):
+            return None
+
     def _http_json(self, url: str) -> dict:
         req = urllib.request.Request(
             url,
             headers={"User-Agent": "FootballManagerBot/1.0 (player name suggest)"},
         )
-        with urllib.request.urlopen(req, timeout=25) as resp:
+        ctx = self._https_context() if url.lower().startswith("https://") else None
+        kw: dict = {"timeout": 25}
+        if ctx is not None:
+            kw["context"] = ctx
+        with urllib.request.urlopen(req, **kw) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
     def _search_queries(self, surname: str) -> list[str]:
@@ -389,6 +474,148 @@ class WikidataNameLookup:
         except Exception:
             return None
 
+    def _lookup_ru_wikipedia(
+        self, surname: str
+    ) -> tuple[str, str] | None | list[tuple[str, str]]:
+        variants = wikipedia_ru_title_variants(surname)
+        if not variants:
+            return None
+        titles = "|".join(variants)
+        url = (
+            "https://ru.wikipedia.org/w/api.php?"
+            + urllib.parse.urlencode(
+                {
+                    "action": "query",
+                    "redirects": 1,
+                    "titles": titles,
+                    "prop": "categories",
+                    "cllimit": "50",
+                }
+            )
+            + "&format=json"
+        )
+        try:
+            data = self._http_json(url)
+        except Exception:
+            return None
+        time.sleep(self.delay_s)
+
+        found: dict[str, tuple[str, str]] = {}
+        for _pid, page in (data.get("query") or {}).get("pages", {}).items():
+            if int(_pid) < 0 or page.get("missing"):
+                continue
+            title = (page.get("title") or "").strip()
+            if ", " not in title:
+                continue
+            left = title.split(", ", 1)[0].strip()
+            if not _surname_matches_wiki_left(left, surname):
+                continue
+            parsed = parse_ru_wikipedia_person_title(title, surname)
+            if not parsed:
+                continue
+            if not _wiki_page_is_footballer(page.get("categories")):
+                if not _surname_matches_wiki_left(left, surname):
+                    continue
+            first, sn = parsed
+            found[_norm_cmp(first) + "|" + _norm_cmp(sn)] = (first, sn)
+
+        if len(found) == 1:
+            return next(iter(found.values()))
+        if len(found) > 1:
+            return None
+        return self._lookup_ru_wikipedia_search(surname)
+
+    def _lookup_ru_wikipedia_search(
+        self, surname: str,
+    ) -> tuple[str, str] | None | list[tuple[str, str]]:
+        """Если прямой заголовок не найден — поиск по фамилии."""
+        queries: list[str] = []
+        for v in wikipedia_ru_title_variants(surname)[:3]:
+            queries.append(v)
+            queries.append(f"{v} футболист")
+        seen_q: set[str] = set()
+        for q in queries:
+            if q in seen_q:
+                continue
+            seen_q.add(q)
+            url = (
+                "https://ru.wikipedia.org/w/api.php?"
+                + urllib.parse.urlencode(
+                    {
+                        "action": "query",
+                        "list": "search",
+                        "srsearch": q,
+                        "srlimit": "8",
+                    }
+                )
+                + "&format=json"
+            )
+            try:
+                data = self._http_json(url)
+            except Exception:
+                continue
+            time.sleep(self.delay_s)
+            titles = [
+                (hit.get("title") or "").strip()
+                for hit in (data.get("query") or {}).get("search") or []
+                if ", " in (hit.get("title") or "")
+            ]
+            if not titles:
+                continue
+            hit = self._resolve_wiki_titles_batch(titles, surname)
+            if isinstance(hit, tuple):
+                return hit
+            if isinstance(hit, list) and hit:
+                return hit
+        return None
+
+    def _resolve_wiki_titles_batch(
+        self, titles: list[str], surname: str
+    ) -> tuple[str, str] | None | list[tuple[str, str]]:
+        if not titles:
+            return None
+        url = (
+            "https://ru.wikipedia.org/w/api.php?"
+            + urllib.parse.urlencode(
+                {
+                    "action": "query",
+                    "redirects": 1,
+                    "titles": "|".join(titles[:20]),
+                    "prop": "categories",
+                    "cllimit": "50",
+                }
+            )
+            + "&format=json"
+        )
+        try:
+            data = self._http_json(url)
+        except Exception:
+            return None
+        time.sleep(self.delay_s)
+        found: dict[str, tuple[str, str]] = {}
+        for _pid, page in (data.get("query") or {}).get("pages", {}).items():
+            if int(_pid) < 0 or page.get("missing"):
+                continue
+            title = (page.get("title") or "").strip()
+            if ", " not in title:
+                continue
+            left = title.split(", ", 1)[0].strip()
+            if not _surname_matches_wiki_left(left, surname):
+                continue
+            parsed = parse_ru_wikipedia_person_title(title, surname)
+            if not parsed:
+                continue
+            if not _wiki_page_is_footballer(page.get("categories")):
+                if not _surname_matches_wiki_left(left, surname):
+                    continue
+            first, sn = parsed
+            found[_norm_cmp(first) + "|" + _norm_cmp(sn)] = (first, sn)
+        if len(found) == 1:
+            return next(iter(found.values()))
+        if len(found) > 1:
+            return None
+        return None
+
     def lookup(
         self, surname: str, nation: str
     ) -> tuple[str, str] | None | list[tuple[str, str]]:
@@ -403,6 +630,19 @@ class WikidataNameLookup:
             if hit.get("status") == "multi":
                 return [(c["first"], c["surname"]) for c in hit.get("candidates", [])]
             return None
+
+        wiki_hit = self._lookup_ru_wikipedia(surname)
+        if isinstance(wiki_hit, tuple):
+            first, sn = wiki_hit
+            self._cache[key] = {"status": "ok", "first": first, "surname": sn, "via": "wiki"}
+            return first, sn
+        if isinstance(wiki_hit, list) and wiki_hit:
+            self._cache[key] = {
+                "status": "multi",
+                "candidates": [{"first": a, "surname": b} for a, b in wiki_hit],
+                "via": "wiki",
+            }
+            return wiki_hit
 
         nat_q = nation_wikidata_qid(nation)
         if not nat_q:
@@ -430,13 +670,14 @@ class WikidataNameLookup:
 
         if len(uniq) == 1:
             first, sn = next(iter(uniq.values()))
-            self._cache[key] = {"status": "ok", "first": first, "surname": sn}
+            self._cache[key] = {"status": "ok", "first": first, "surname": sn, "via": "wikidata"}
             return first, sn
         if len(uniq) > 1:
             cands = list(uniq.values())
             self._cache[key] = {
                 "status": "multi",
                 "candidates": [{"first": a, "surname": b} for a, b in cands],
+                "via": "wikidata",
             }
             return cands
         self._cache[key] = {"status": "miss"}
@@ -480,6 +721,10 @@ class WikidataNameLookup:
             if first and _norm_cmp(first) != _norm_cmp(sn_out):
                 candidates.append((first.title(), sn_out, qid))
         time.sleep(self.delay_s)
+
+
+# обратная совместимость
+WikidataNameLookup = PlayerFirstNameLookup
 
 
 def load_manual_hints(path: str) -> dict[str, str]:

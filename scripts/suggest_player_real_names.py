@@ -2,7 +2,8 @@
 """
 Предложить разбиение имени/фамилии для игроков сезона (или всех архивов).
 
-Не использует реальные составы клубов. Wikidata — только фамилия + страна.
+Не использует реальные составы клубов. Имя: ru.wikipedia (``/wiki/Фамилия`` → «Фамилия, Имя»),
+затем Wikidata по фамилии + стране. Составные фамилии: пробел, ``_``, ``-``.
 
 После ``--apply`` для всех сезонов пересобери накопительные БД::
 
@@ -38,7 +39,7 @@ from utils.migrate_player_surname import (
     prepare_season_archive_schema,
 )
 from utils.player_name_propose import (
-    WikidataNameLookup,
+    PlayerFirstNameLookup,
     format_player_line,
     format_proposed_full,
     is_already_split,
@@ -75,7 +76,7 @@ def _collect_rows(session, *, team_filter: str, skip_free: bool, limit: int | No
 
 
 def _propose_for_row(
-    r, table: str, hints: dict, lookup: WikidataNameLookup | None, *, no_lookup: bool
+    r, table: str, hints: dict, lookup: PlayerFirstNameLookup | None, *, no_lookup: bool
 ):
     sn = player_surname(r)
     nation = (getattr(r, "nation", None) or "").strip()
@@ -98,11 +99,11 @@ def _propose_for_row(
         return first, surname, "manual", ""
 
     if no_lookup or lookup is None:
-        return "", "", "miss", "нет подсказки (добавь в hints или включи Wikidata)"
+        return "", "", "miss", "нет подсказки (добавь в hints или убери --no-lookup)"
 
     result = lookup.lookup(sn, nation)
     if result is None:
-        return "", "", "miss", "не найдено в Wikidata"
+        return "", "", "miss", "не найдено (Wikipedia / Wikidata)"
     if isinstance(result, list):
         return "", sn, "multi", result
 
@@ -120,7 +121,7 @@ def _run_season(
     team_filter: str,
     limit: int | None,
     hints: dict,
-    lookup: WikidataNameLookup | None,
+    lookup: PlayerFirstNameLookup | None,
     show_unchanged: bool,
 ) -> dict[str, int]:
     from sqlalchemy import create_engine
@@ -232,7 +233,7 @@ def main() -> None:
     ap.add_argument(
         "--no-lookup",
         action="store_true",
-        help="Только разбор полных имён + hints, без Wikidata",
+        help="Только разбор полных имён + hints, без Wikipedia/Wikidata",
     )
     ap.add_argument("--team", default="", help="Фильтр по одной команде")
     ap.add_argument("--limit", type=int, default=0, help="Макс. строк на сезон (0 = все)")
@@ -268,7 +269,7 @@ def main() -> None:
     migrate_all_player_surname_columns()
 
     hints = load_manual_hints(args.hints)
-    lookup = None if args.no_lookup else WikidataNameLookup(args.cache)
+    lookup = None if args.no_lookup else PlayerFirstNameLookup(args.cache)
     lim = args.limit if args.limit > 0 else None
     team = args.team.strip()
 
@@ -295,7 +296,7 @@ def main() -> None:
             "print(rebuild_all_time_databases_from_season_archives())\""
         )
     if args.no_lookup:
-        print("(Wikidata отключён: --no-lookup)")
+        print("(Поиск имён отключён: --no-lookup)")
 
 
 if __name__ == "__main__":
