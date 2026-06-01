@@ -67,6 +67,9 @@ def _same_slot(a: dict, b: dict) -> bool:
         bp = (b.get("cl_phase") or "knockout").strip().lower()
         if ap != bp:
             return False
+    da, db = a.get("day"), b.get("day")
+    if da is not None and db is not None and int(da) != int(db):
+        return False
     return True
 
 
