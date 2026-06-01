@@ -17,8 +17,12 @@ from aiogram.types import (
 
 from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
 from bot.states import PlayerFieldEnter
-from bot.transfer_handlers import _ROSTER_PAGE_SIZE, _league_roster_tuples
-from utils.player_field_edit import apply_player_field_update, list_editable_fields_for_player
+from bot.transfer_handlers import _ROSTER_PAGE_SIZE
+from utils.player_field_edit import (
+    apply_player_field_update,
+    list_editable_fields_for_player,
+)
+from utils.player_transfer import _filter_team, _norm_cmp, resolve_team_name
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +105,37 @@ def _pfp_teams_kb(league_code: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _pfp_roster_entries(team: str) -> list[tuple[str, str, int, str, str, int]]:
+    """Ростер с id строки: имя, поз, ovr, клуб, таблица, id (одна строка на имя)."""
+    from data.defender import Defender
+    from data.forward import Forward
+    from data.goalkeeper import Goalkeeper
+    from data.midfielder import Midfielder
+    from utils.utils import session_league
+
+    resolved = resolve_team_name(team, session_league)
+    t = resolved if resolved else team.strip().title()
+    best: dict[str, tuple[str, str, int, str, str, int]] = {}
+    for Cls in (Forward, Midfielder, Defender, Goalkeeper):
+        tbl = Cls.__tablename__
+        for r in session_league.query(Cls).filter(_filter_team(Cls, t)).all():
+            nm = (r.name or "").strip()
+            pos = (r.position or "").strip()
+            if not nm:
+                continue
+            db_team = (r.team or "").strip()
+            ovr = int(r.overall or 0)
+            rid = int(r.id or 0)
+            nk = _norm_cmp(nm)
+            row = (nm, pos, ovr, db_team, tbl, rid)
+            prev = best.get(nk)
+            if prev is None or (ovr, rid) > (prev[2], prev[5]):
+                best[nk] = row
+    return sorted(best.values(), key=lambda x: (-x[2], x[0].lower()))
+
+
 def _pfp_roster_keyboard(
-    candidates: list[tuple[str, str, int, str]], page: int
+    candidates: list[tuple[str, str, int, str, str, int]], page: int
 ) -> InlineKeyboardMarkup:
     n = len(candidates)
     ps = _ROSTER_PAGE_SIZE
@@ -111,7 +144,7 @@ def _pfp_roster_keyboard(
     chunk = candidates[page * ps : page * ps + ps]
     base = page * ps
     rows: list[list[InlineKeyboardButton]] = []
-    for i, (nm, pos, ov, _dbt) in enumerate(chunk):
+    for i, (nm, pos, ov, _dbt, _tbl, _rid) in enumerate(chunk):
         gidx = base + i
         label = f"{nm} · {pos} · {ov}"
         if len(label) > 60:
@@ -220,7 +253,7 @@ async def cb_pfp_team(callback: CallbackQuery, state: FSMContext) -> None:
     except (IndexError, Exception) as e:
         await callback.message.answer(f"Клуб: ошибка: {e}")
         return
-    rows = _league_roster_tuples(team)
+    rows = _pfp_roster_entries(team)
     if not rows:
         await callback.message.answer(
             f"В <b>текущей нац. БД</b> нет состава для «{team}». "
@@ -228,7 +261,7 @@ async def cb_pfp_team(callback: CallbackQuery, state: FSMContext) -> None:
             parse_mode="HTML",
         )
         return
-    canonical = rows[0][3] or team
+    canonical = rows[0][3] if rows else team
     serial = [list(x) for x in rows]
     await state.update_data(
         pfp_lg=code,
@@ -302,13 +335,21 @@ async def cb_pfp_pick_player(callback: CallbackQuery, state: FSMContext) -> None
     if not cands or idx < 0 or idx >= len(cands) or not team:
         await callback.answer("Неверный выбор.", show_alert=True)
         return
-    name, pos, _ov, _dbt = cands[idx]
-    fields = list_editable_fields_for_player(team, name, pos)
+    name, pos, _ov, _dbt, tbl, rid = cands[idx]
+    fields = list_editable_fields_for_player(
+        team, name, pos, row_id=rid, table=tbl
+    )
     if not fields:
         await callback.answer("Нет полей.", show_alert=True)
         return
     await callback.answer()
-    await state.update_data(pfp_name=name, pfp_pos=pos, pfp_fields=fields)
+    await state.update_data(
+        pfp_name=name,
+        pfp_pos=pos,
+        pfp_fields=fields,
+        pfp_row_id=rid,
+        pfp_table=tbl,
+    )
     await state.set_state(PlayerFieldEnter.pick_field)
     try:
         await callback.message.edit_text(
@@ -359,6 +400,8 @@ async def on_pfp_value(message: Message, state: FSMContext) -> None:
     name = (data.get("pfp_name") or "").strip()
     pos = (data.get("pfp_pos") or "").strip()
     field = (data.get("pfp_field") or "").strip()
+    row_id = data.get("pfp_row_id")
+    table = data.get("pfp_table")
     if not (team and name and pos and field):
         await state.clear()
         await message.answer("Сессия сброшена. Открой снова из меню.")
@@ -372,6 +415,8 @@ async def on_pfp_value(message: Message, state: FSMContext) -> None:
             pos,
             field,
             raw,
+            row_id=int(row_id) if row_id is not None else None,
+            table=str(table) if table else None,
         )
     except ValueError as e:
         await message.answer(str(e))
@@ -380,20 +425,29 @@ async def on_pfp_value(message: Message, state: FSMContext) -> None:
         logger.exception("apply_player_field_update")
         await message.answer(f"Ошибка: {e}")
         return
-    fields: list[str] = list(data.get("pfp_fields") or [])
-    if not fields:
-        fields = list_editable_fields_for_player(team, name, pos)
-        await state.update_data(pfp_fields=fields)
-    await state.update_data(pfp_field=None)
+    disp_name = str(r.get("display_name") or name)
+    disp_pos = str(r.get("display_pos") or pos)
+    fields: list[str] = list_editable_fields_for_player(
+        team, disp_name, disp_pos, row_id=row_id, table=table
+    )
+    merged_note = ""
+    if int(r.get("merged_rows") or 0) > 0:
+        merged_note = f"\nСлито дублей: <b>{r['merged_rows']}</b>."
+    await state.update_data(
+        pfp_name=disp_name,
+        pfp_pos=disp_pos,
+        pfp_fields=fields,
+        pfp_field=None,
+    )
     await state.set_state(PlayerFieldEnter.pick_field)
     cl_note = f", ЛЧ строк: <b>{r['cl_updated']}</b>" if r.get("cl_updated") else ""
     await message.answer(
-        "✅ Обновлено.\n"
+        "✅ Обновлено (та же строка в БД).\n"
         f"Таблица: <code>{r['league_table']}</code>, поле <code>{r['field']}</code>.\n"
-        f"Было: <code>{r['before']!r}</code> → стало: <code>{r['after']!r}</code>{cl_note}.\n"
+        f"Было: <code>{r['before']!r}</code> → стало: <code>{r['after']!r}</code>{cl_note}{merged_note}\n"
         "<code>common.db</code> пересобран.\n\n"
-        f"<b>{html_escape(name)}</b> ({html_escape(pos)}) · {html_escape(team)} — выбери ещё поле "
-        "или завершить:",
+        f"<b>{html_escape(disp_name)}</b> ({html_escape(disp_pos)}) · {html_escape(team)} — "
+        "выбери ещё поле или завершить:",
         parse_mode="HTML",
         reply_markup=_pfp_fields_keyboard(fields),
     )

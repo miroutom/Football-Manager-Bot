@@ -29,7 +29,7 @@ from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from utils.common_db import _team_in_cl_pool
-from utils.player_transfer import normalize_player_name_for_db
+from utils.player_transfer import _norm_cmp, normalize_player_name_for_db
 from utils.utils import defenders, forwards, get_session, goalkeepers, midfielders
 
 _ALL_PLAYER = (Forward, Midfielder, Defender, Goalkeeper)
@@ -240,8 +240,13 @@ def upsert_roster_player(
     if st not in ("start", "bench", "reserve"):
         raise ValueError(f"status must be start|bench|reserve, got {status!r}")
 
+    from utils.player_identity import resolve_canonical_name
+
+    lookup_name = resolve_canonical_name(team, name)
     tgt_cls = _cls_for_position(position)
-    row, cur_cls, dedupe_carry = _dedupe_player_rows_for_team(session, name, team)
+    row, cur_cls, dedupe_carry = _dedupe_player_rows_for_team(session, lookup_name, team)
+    if row is None and _norm_cmp(lookup_name) != _norm_cmp(name):
+        row, cur_cls, dedupe_carry = _dedupe_player_rows_for_team(session, name, team)
     pos_u = position.strip().upper()
     insert_carry = carry_in
     if dedupe_carry is not None:

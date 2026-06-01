@@ -74,6 +74,11 @@ def main() -> None:
     ap.add_argument("--name", required=True)
     ap.add_argument("--team", required=True)
     ap.add_argument("--keep-position", required=True, help="Позиция строки, которую оставить")
+    ap.add_argument(
+        "--also-name",
+        default="",
+        help="Второе имя того же игрока (напр. Силва при --name Рафа)",
+    )
     ap.add_argument("--dry-run", action="store_true", default=True)
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
@@ -91,6 +96,7 @@ def main() -> None:
         season_paths.get_common_db_path(),
     ]
     keep_pos = (args.keep_position or "").strip().upper()
+    also_name = (args.also_name or "").strip().title()
 
     for path in paths:
         if not os.path.isfile(path):
@@ -122,6 +128,12 @@ def main() -> None:
             if keeper is None:
                 print(f"  Нет строки с позицией {keep_pos}")
                 continue
+            if also_name:
+                from utils.squad_roster_sync import find_player_row as fbn
+
+                extra, _ = fbn(S, args.name.strip().title(), also_name)
+                if extra is not None and int(extra.id) != int(keeper[1].id):
+                    donors.append((type(extra), extra))
             if not donors:
                 print("  Нечего сливать")
                 continue
@@ -136,6 +148,11 @@ def main() -> None:
         finally:
             S.close()
             e.dispose()
+
+    if args.apply and also_name:
+        from utils.player_identity import register_name_change
+
+        register_name_change(args.team, also_name, args.name.strip().title())
 
     if args.apply:
         from utils.cumulative_db import rebuild_active_season_common_db
