@@ -1029,6 +1029,12 @@ async def _send_ason_continue_after_stats(
                     callback_data=f"asonpick:0:{lf}:{sk}",
                 ),
             ],
+            [
+                InlineKeyboardButton(
+                    text="📋 Меню",
+                    callback_data="play:post:menu",
+                ),
+            ],
         ]
     )
     hn = html_escape(str(slot["home"]))
