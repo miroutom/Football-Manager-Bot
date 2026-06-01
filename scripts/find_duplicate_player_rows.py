@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Найти игроков с одним именем и несколькими строками в БД (разные позиции и/или клубы).
+Найти потенциальные дубли одного игрока в БД (только отчёт).
 
-Пример: Тонали ЦАП Ньюкасл + Тонали ФРВ Сити — один человек, две строки.
-
-Только отчёт, БД не меняет.
+- Одно имя, разные позиции и/или клубы (Тонали ЦАП Ньюкасл + Тонали ФРВ Сити).
+- Разные имена в одном клубе: алиасы ``data/player_name_aliases.json`` (Силва → Рафа)
+  и эвристика «тот же профиль»: клуб + позиция + нация + м/г/п.
 
   python3 scripts/find_duplicate_player_rows.py
   python3 scripts/find_duplicate_player_rows.py --db cl
@@ -29,6 +29,7 @@ from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from player_stats import _norm_cmp
 from utils import season_paths
+from utils.player_identity import resolve_canonical_name
 from utils.roster_manual import FREE_AGENT_TEAM
 
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
@@ -113,41 +114,136 @@ def _classify(rows: list[PlayerRow]) -> str:
 
 
 _KIND_RU = {
-    "multiple_positions": "один клуб, несколько позиций",
-    "multiple_clubs": "несколько клубов, одна позиция (или совпали)",
-    "clubs_and_positions": "несколько клубов и позиций (как после трансфера)",
+    "multiple_positions": "одно имя · один клуб, несколько позиций",
+    "multiple_clubs": "одно имя · несколько клубов",
+    "clubs_and_positions": "одно имя · несколько клубов и позиций",
+    "different_names": "разные имена · алиас или совпадение клуб/поз/нация/стата",
     "other": "прочее (дубли строк)",
 }
+
+
+@dataclass(frozen=True)
+class DuplicateGroup:
+    kind: str
+    match: str  # same_name | alias | profile
+    title: str
+    rows: tuple[PlayerRow, ...]
+
+
+def _row_key(r: PlayerRow) -> tuple[str, str, int]:
+    return (r.db_label, r.table, r.row_id)
+
+
+def _filter_free_agent(
+    grp: list[PlayerRow], *, include_free_agent: bool
+) -> list[PlayerRow] | None:
+    if include_free_agent:
+        return grp
+    real = [r for r in grp if _norm_cmp(r.team) != _norm_cmp(FREE_AGENT_TEAM)]
+    if len(real) < 2:
+        return None
+    return real
+
+
+def _display_title(rows: list[PlayerRow]) -> str:
+    names = sorted({r.name for r in rows}, key=str.lower)
+    if len(names) == 1:
+        return names[0]
+    return " / ".join(names)
+
+
+def _is_duplicate_candidate(grp: list[PlayerRow]) -> bool:
+    if len(grp) < 2:
+        return False
+    names = {_norm_cmp(r.name) for r in grp}
+    teams = {r.team for r in grp if r.team and r.team != "—"}
+    teams.discard(FREE_AGENT_TEAM.title())
+    pos = {r.position for r in grp if r.position}
+    if len(names) >= 2:
+        return True
+    return len(teams) >= 2 or len(pos) >= 2
 
 
 def find_duplicate_groups(
     rows: list[PlayerRow],
     *,
     include_free_agent: bool,
-) -> list[tuple[str, str, list[PlayerRow]]]:
+) -> list[DuplicateGroup]:
+    seen: set[frozenset[tuple[str, str, int]]] = set()
+    out: list[DuplicateGroup] = []
+
+    def _add(kind: str, match: str, grp: list[PlayerRow]) -> None:
+        filtered = _filter_free_agent(grp, include_free_agent=include_free_agent)
+        if not filtered or not _is_duplicate_candidate(filtered):
+            return
+        key = frozenset(_row_key(r) for r in filtered)
+        if key in seen:
+            return
+        seen.add(key)
+        sorted_rows = sorted(
+            filtered, key=lambda x: (-x.matches, x.team, x.position, x.name.lower())
+        )
+        out.append(
+            DuplicateGroup(
+                kind=kind,
+                match=match,
+                title=_display_title(sorted_rows),
+                rows=tuple(sorted_rows),
+            )
+        )
+
+    # 1) Одно имя — несколько строк
     by_name: dict[str, list[PlayerRow]] = defaultdict(list)
     for r in rows:
         by_name[_norm_cmp(r.name)].append(r)
-
-    groups: list[tuple[str, str, list[PlayerRow]]] = []
-    for norm, grp in sorted(by_name.items(), key=lambda x: (x[1][0].name.lower(), x[0])):
+    for grp in by_name.values():
         if len(grp) < 2:
             continue
         teams = {r.team for r in grp}
         pos = {r.position for r in grp}
         if len(pos) < 2 and len(teams) < 2:
             continue
-        if not include_free_agent:
-            real = [r for r in grp if _norm_cmp(r.team) != _norm_cmp(FREE_AGENT_TEAM)]
-            if len(real) < 2:
-                continue
-            grp = real
-        kind = _classify(grp)
-        display_name = grp[0].name
-        groups.append(
-            (kind, display_name, sorted(grp, key=lambda x: (-x.matches, x.team, x.position)))
-        )
-    return groups
+        _add(_classify(grp), "same_name", grp)
+
+    # 2) Алиас в клубе: resolve_canonical_name сводит к одному имени
+    by_team_canon: dict[tuple[str, str], list[PlayerRow]] = defaultdict(list)
+    for r in rows:
+        if not r.team or r.team == "—":
+            continue
+        canon = resolve_canonical_name(r.team, r.name)
+        by_team_canon[(r.team, _norm_cmp(canon))].append(r)
+    for grp in by_team_canon.values():
+        if len({_norm_cmp(r.name) for r in grp}) < 2:
+            continue
+        _add("different_names", "alias", grp)
+
+    # 3) Разные имена, полное совпадение профиля: клуб + поз + нация + рейтинг + м/г/п
+    by_profile: dict[tuple[str, str, str, int, int, int, int], list[PlayerRow]] = defaultdict(
+        list
+    )
+    for r in rows:
+        if not r.team or r.team == "—":
+            continue
+        if _norm_cmp(r.team) == _norm_cmp(FREE_AGENT_TEAM):
+            continue
+        by_profile[
+            (
+                r.team,
+                r.position,
+                _norm_cmp(r.nation),
+                r.overall,
+                r.matches,
+                r.goals,
+                r.assists,
+            )
+        ].append(r)
+    for grp in by_profile.values():
+        if len({_norm_cmp(r.name) for r in grp}) < 2:
+            continue
+        _add("different_names", "profile", grp)
+
+    out.sort(key=lambda g: (g.kind, g.title.lower()))
+    return out
 
 
 def main() -> None:
@@ -180,15 +276,23 @@ def main() -> None:
         all_rows, include_free_agent=args.include_free_agent
     )
 
+    _MATCH_RU = {
+        "same_name": "одно имя",
+        "alias": "алиас в player_name_aliases.json",
+        "profile": "совпали клуб, позиция, нация, м/г/п",
+    }
+
     if args.json:
         payload = []
-        for kind, name, grp in groups:
+        for g in groups:
             payload.append(
                 {
-                    "kind": kind,
-                    "kind_ru": _KIND_RU.get(kind, kind),
-                    "name": name,
-                    "rows": [asdict(r) for r in grp],
+                    "kind": g.kind,
+                    "kind_ru": _KIND_RU.get(g.kind, g.kind),
+                    "match": g.match,
+                    "match_ru": _MATCH_RU.get(g.match, g.match),
+                    "title": g.title,
+                    "rows": [asdict(r) for r in g.rows],
                 }
             )
         print(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -196,13 +300,14 @@ def main() -> None:
 
     db_paths = ", ".join(p for _, p in paths)
     print(f"Скан: {db_paths}")
-    print(f"Групп (одно имя, 2+ строк, разные позиции и/или клубы): {len(groups)}\n")
+    print(f"Групп дублей: {len(groups)}\n")
 
-    by_kind: dict[str, list[tuple[str, list[PlayerRow]]]] = defaultdict(list)
-    for kind, name, grp in groups:
-        by_kind[kind].append((name, grp))
+    by_kind: dict[str, list[DuplicateGroup]] = defaultdict(list)
+    for g in groups:
+        by_kind[g.kind].append(g)
 
     for kind in (
+        "different_names",
         "clubs_and_positions",
         "multiple_clubs",
         "multiple_positions",
@@ -212,14 +317,25 @@ def main() -> None:
         if not items:
             continue
         print(f"{'=' * 72}")
-        print(f"{_KIND_RU[kind]} — {len(items)} игрок(ов)")
+        print(f"{_KIND_RU[kind]} — {len(items)}")
         print(f"{'=' * 72}\n")
-        for name, grp in sorted(items, key=lambda x: (-max(r.matches for r in x[1]), x[0].lower())):
+        for g in sorted(
+            items,
+            key=lambda x: (-max(r.matches for r in x.rows), x.title.lower()),
+        ):
+            grp = g.rows
             teams = sorted({r.team for r in grp})
             pos = sorted({r.position for r in grp})
-            print(f"{name}  ({len(grp)} строк · клубы: {', '.join(teams)} · поз: {', '.join(pos)})")
+            print(
+                f"{g.title}  ({len(grp)} строк · {_MATCH_RU.get(g.match, g.match)} · "
+                f"клубы: {', '.join(teams)} · поз: {', '.join(pos)})"
+            )
             for r in grp:
-                print(r.line())
+                canon = resolve_canonical_name(r.team, r.name)
+                extra = ""
+                if _norm_cmp(canon) != _norm_cmp(r.name):
+                    extra = f" → канон. «{canon}»"
+                print(r.line() + extra)
             print()
 
 
