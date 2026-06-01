@@ -678,88 +678,91 @@ def render_journal_report(limit: int = 120) -> str:
     return format_played_matches_report(limit=limit)
 
 
-def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> str:
-    """Топ бомбардиров за все сезоны (сумма снимков db/season_N)."""
+def _normalize_cumulative_league_code(league_code: str | None) -> str | None:
+    from utils.stats_history_agg import normalize_stats_league_code
+
+    if league_code in ("a",):
+        return "allcl"
+    return normalize_stats_league_code(league_code) or league_code
+
+
+def _cumulative_archive_error(league_code: str | None) -> str | None:
+    """Сообщение об ошибке, если нет synced-БД; иначе None."""
     from utils.stats_history_agg import (
-        format_life_top_scorers,
-        is_all_championships,
+        is_all_leagues_plus_cl,
         life_has_archive_data,
         life_has_combined_archive_data,
     )
 
-    code = league_code if league_code not in ("a",) else "all"
-    if is_all_championships(code) or code == "cl":
+    code = _normalize_cumulative_league_code(league_code)
+    if is_all_leagues_plus_cl(code):
         if not life_has_combined_archive_data():
             return (
                 "Пока нет архивов сезонов. "
                 "После «Завершить сезон» появятся снимки в db/season_N/."
             )
-    elif not life_has_archive_data():
+        return None
+    if code == "cl":
+        if not life_has_archive_data(cl=True):
+            return (
+                "Пока нет архивов сезонов с champions_league.db. "
+                "После «Завершить сезон» появятся снимки в db/season_N/."
+            )
+        return None
+    if not life_has_archive_data():
         return (
             "Пока нет архивов сезонов с league.db. "
             "После «Завершить сезон» появятся снимки в db/season_N/."
         )
+    return None
+
+
+def render_cumulative_top_scorers(league_code: str | None, limit: int = 30) -> str:
+    """Топ бомбардиров за все сезоны (сумма снимков db/season_N)."""
+    from utils.stats_history_agg import format_life_top_scorers
+
+    code = _normalize_cumulative_league_code(league_code)
+    err = _cumulative_archive_error(league_code)
+    if err:
+        return err
     return format_life_top_scorers(code, limit=limit)
 
 
 def render_cumulative_top_assists(league_code: str | None, limit: int = 30) -> str:
     """Топ ассистов за все сезоны (сумма снимков db/season_N)."""
-    from utils.stats_history_agg import (
-        format_life_top_assists,
-        is_all_championships,
-        life_has_archive_data,
-        life_has_combined_archive_data,
-    )
+    from utils.stats_history_agg import format_life_top_assists
 
-    code = league_code if league_code not in ("a",) else "all"
-    if is_all_championships(code) or code == "cl":
-        if not life_has_combined_archive_data():
-            return (
-                "Пока нет архивов сезонов. "
-                "После «Завершить сезон» появятся снимки в db/season_N/."
-            )
-    elif not life_has_archive_data():
-        return (
-            "Пока нет архивов сезонов с league.db. "
-            "После «Завершить сезон» появятся снимки в db/season_N/."
-        )
+    code = _normalize_cumulative_league_code(league_code)
+    err = _cumulative_archive_error(league_code)
+    if err:
+        return err
     return format_life_top_assists(code, limit=limit)
 
 
 def render_cumulative_top_ga(league_code: str | None, limit: int = 30) -> str:
     """Топ Г+А за все сезоны (сумма снимков db/season_N)."""
-    from utils.stats_history_agg import (
-        format_life_top_ga,
-        is_all_championships,
-        life_has_archive_data,
-        life_has_combined_archive_data,
-    )
+    from utils.stats_history_agg import format_life_top_ga
 
-    code = league_code if league_code not in ("a",) else "all"
-    if is_all_championships(code) or code == "cl":
-        if not life_has_combined_archive_data():
-            return (
-                "Пока нет архивов сезонов. "
-                "После «Завершить сезон» появятся снимки в db/season_N/."
-            )
-    elif not life_has_archive_data():
-        return (
-            "Пока нет архивов сезонов с league.db. "
-            "После «Завершить сезон» появятся снимки в db/season_N/."
-        )
+    code = _normalize_cumulative_league_code(league_code)
+    err = _cumulative_archive_error(league_code)
+    if err:
+        return err
     return format_life_top_ga(code, limit=limit)
 
 
 def _league_team_set_for_filter(league_code: str | None) -> set[str] | None:
-    if not league_code or league_code in ("a", "all"):
+    from utils.stats_history_agg import is_all_championships, normalize_stats_league_code
+
+    code = normalize_stats_league_code(league_code) or league_code
+    if not code or is_all_championships(code):
         return None
-    if league_code == "cl":
+    if code == "cl":
         import teams as teams_mod
 
         return {str(t).strip().casefold() for t in teams_mod.teams_champ_league.keys()}
     from player_stats import LEAGUE_TEAMS
 
-    teams = LEAGUE_TEAMS.get(league_code)
+    teams = LEAGUE_TEAMS.get(code)
     if not teams:
         return None
     return {str(t).strip().casefold() for t in teams if str(t).strip()}
@@ -848,50 +851,22 @@ def _render_clean_sheets_from_session(session, *, league_code: str | None, limit
 
 
 def render_cumulative_top_cards(league_code: str | None, metric: str, limit: int = 30) -> str:
-    from utils.stats_history_agg import (
-        format_life_top_cards,
-        is_all_championships,
-        life_has_archive_data,
-        life_has_combined_archive_data,
-    )
+    from utils.stats_history_agg import format_life_top_cards
 
-    code = league_code if league_code not in ("a",) else "all"
-    if is_all_championships(code) or code == "cl":
-        if not life_has_combined_archive_data():
-            return (
-                "Пока нет архивов сезонов. "
-                "После «Завершить сезон» появятся снимки в db/season_N/."
-            )
-    elif not life_has_archive_data():
-        return (
-            "Пока нет архивов сезонов с league.db. "
-            "После «Завершить сезон» появятся снимки в db/season_N/."
-        )
+    code = _normalize_cumulative_league_code(league_code)
+    err = _cumulative_archive_error(league_code)
+    if err:
+        return err
     return format_life_top_cards(code, metric, limit=limit)
 
 
 def render_cumulative_top_clean_sheets(league_code: str | None, limit: int = 30) -> tuple[str, str]:
-    from utils.stats_history_agg import (
-        format_life_clean_sheets,
-        is_all_championships,
-        life_has_archive_data,
-        life_has_combined_archive_data,
-    )
+    from utils.stats_history_agg import format_life_clean_sheets
 
-    code = league_code if league_code not in ("a",) else "all"
-    if is_all_championships(code) or code == "cl":
-        if not life_has_combined_archive_data():
-            msg = (
-                "Пока нет архивов сезонов. "
-                "После «Завершить сезон» появятся снимки в db/season_N/."
-            )
-            return msg, msg
-    elif not life_has_archive_data():
-        msg = (
-            "Пока нет архивов сезонов с league.db. "
-            "После «Завершить сезон» появятся снимки в db/season_N/."
-        )
-        return msg, msg
+    code = _normalize_cumulative_league_code(league_code)
+    err = _cumulative_archive_error(league_code)
+    if err:
+        return err, err
     return format_life_clean_sheets(code, limit=limit)
 
 
@@ -904,7 +879,7 @@ def render_archived_season_stat(
     """Топ из архива ``db/season_n``: ``g`` | ``as`` | ``ga`` | ``yc`` | ``rc``."""
     from utils.stats_history_agg import format_season_stat, season_has_db
 
-    code = league_code if league_code not in ("a",) else "all"
+    code = _normalize_cumulative_league_code(league_code)
     if not season_has_db(season_num, code):
         return f"В архиве сезона {season_num} нет данных для выбранного чемпионата."
     return format_season_stat(season_num, code, metric, limit).rstrip()
@@ -927,7 +902,7 @@ def render_archived_season_clean_sheets(
     """Сухие из архива сезона (нац. лиги + ЛЧ для «все чемпионаты»)."""
     from utils.stats_history_agg import format_season_clean_sheets, season_has_db
 
-    code = league_code if league_code not in ("a",) else "all"
+    code = _normalize_cumulative_league_code(league_code)
     if not season_has_db(season_num, code):
         msg = f"В архиве сезона {season_num} нет данных для выбранного чемпионата."
         return msg, msg

@@ -75,9 +75,18 @@ router = Router()
 
 
 def _league_title(code: str) -> str:
-    if code in ("a", "all"):
+    from utils.stats_history_agg import (
+        is_all_leagues_only,
+        is_all_leagues_plus_cl,
+        normalize_stats_league_code,
+    )
+
+    c = normalize_stats_league_code(code) or (code or "").strip().lower()
+    if is_all_leagues_plus_cl(c):
         return "Все чемпионаты (лиги + ЛЧ)"
-    return dict(LEAGUE_LABELS).get(code, code)
+    if is_all_leagues_only(c):
+        return "Все чемпионаты (нац. лиги)"
+    return dict(LEAGUE_LABELS).get(c or code, code)
 
 
 async def answer_report_photos(message: Message, body: str, caption: str) -> None:
@@ -421,6 +430,10 @@ def _stats_history_root_kb() -> InlineKeyboardMarkup:
                 text="Все чемпионаты",
                 callback_data="stats:hist:lg:all",
             ),
+            InlineKeyboardButton(
+                text="Все чемпионаты + ЛЧ",
+                callback_data="stats:hist:lg:allcl",
+            ),
         ],
     ]
     row: list[InlineKeyboardButton] = []
@@ -694,7 +707,36 @@ def _schedule_mixed_slice_kb(league_key: str) -> InlineKeyboardMarkup:
 
 
 def _tops_plus_kb() -> InlineKeyboardMarkup:
-    rows: list[list[InlineKeyboardButton]] = []
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="Все чемп. ⚽",
+                callback_data="tcp:g:all",
+            ),
+            InlineKeyboardButton(
+                text="Все+ЛЧ ⚽",
+                callback_data="tcp:g:allcl",
+            ),
+            InlineKeyboardButton(
+                text="Все чемп. 🎯",
+                callback_data="tcp:a:all",
+            ),
+            InlineKeyboardButton(
+                text="Все+ЛЧ 🎯",
+                callback_data="tcp:a:allcl",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="Все чемп. 📈",
+                callback_data="tcp:ga:all",
+            ),
+            InlineKeyboardButton(
+                text="Все+ЛЧ 📈",
+                callback_data="tcp:ga:allcl",
+            ),
+        ],
+    ]
     for code, label in LEAGUE_LABELS:
         rows.append(
             [
@@ -970,7 +1012,8 @@ async def cb_menu_stats_history(callback: CallbackQuery) -> None:
         "<b>Стата сезонов</b>\n"
         "Выбери чемпионат (или <b>все</b>), затем период (<b>за всё время</b> или <b>сезон</b>), "
         "потом метрику: бомбардиры, ассисты, Г+А, сухие, ЖК, КК.\n"
-        "• <b>Все чемпионаты</b> — национальные лиги + ЛЧ\n"
+        "• <b>Все чемпионаты</b> — только нац. лиги (РПЛ, АПЛ, …)\n"
+        "• <b>Все чемпионаты + ЛЧ</b> — нац. лиги и Лига чемпионов вместе\n"
         "• <b>За всё время</b> — одна строка на игрока (сумма по сезонам), "
         "клуб — последний в архиве\n"
         "• <b>Сезон</b> — один снимок из архива\n",
@@ -1484,8 +1527,8 @@ async def cb_top100_sort(callback: CallbackQuery) -> None:
 async def cb_menu_tops_plus(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Топы за всё время: нац. лига — <code>league_synced.db</code>, "
-        "ЛЧ — <code>champions_league_synced.db</code>. "
+        "Топы за всё время: <code>league_synced.db</code> (все нац. лиги), "
+        "<code>common_synced.db</code> (лиги+ЛЧ), отдельно ЛЧ. "
         "⚽ бомбардиры · 🎯 ассисты · 📈 гол+пас:",
         reply_markup=_tops_plus_kb(),
     )

@@ -10,7 +10,8 @@
 - нац. лига: строки как в БД (две строки при переходе между лигами); в одной лиге за сезон
   — слияние по игроку, клуб с max ``id`` (финальный клуб), стата суммируется;
 - ЛЧ: одна строка на игрока, сумма по ЛЧ, клуб последней записи в ``champions_league.db``;
-- все чемпионаты: одна строка, полная сумма лиги+ЛЧ за сезон, клуб с max ``id`` в ``common.db``.
+- ``all``: все нац. лиги (``league.db`` / ``league_synced.db``), одна строка на игрока;
+- ``allcl``: лига+ЛЧ (``common.db``), полная сумма за сезон, клуб с max ``id`` в common.
 """
 from __future__ import annotations
 
@@ -32,9 +33,33 @@ _OUTFIELD = (Forward, Midfielder, Defender)
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
 
+def normalize_stats_league_code(league_code: str | None) -> str | None:
+    """Нормализация кода из callback: ``a`` → ``allcl`` (раньше «все» = лига+ЛЧ)."""
+    if league_code is None:
+        return None
+    c = str(league_code).strip().lower()
+    if not c:
+        return None
+    if c == "a":
+        return "allcl"
+    return c
+
+
+def is_all_leagues_only(league_code: str | None) -> bool:
+    """Все национальные лиги, без ЛЧ."""
+    c = normalize_stats_league_code(league_code)
+    return c == "all"
+
+
+def is_all_leagues_plus_cl(league_code: str | None) -> bool:
+    """Все национальные лиги + ЛЧ (бывший единый «все чемпионаты»)."""
+    c = normalize_stats_league_code(league_code)
+    return c == "allcl"
+
+
 def is_all_championships(league_code: str | None) -> bool:
-    """Все чемпионаты = национальные лиги + ЛЧ."""
-    return not league_code or league_code in ("a", "all")
+    """Любой режим «все чемпионаты» (лиги или лига+ЛЧ)."""
+    return is_all_leagues_only(league_code) or is_all_leagues_plus_cl(league_code)
 
 
 def _norm_team(s: str) -> str:
@@ -165,10 +190,15 @@ def _finalize_life_rows(rows: list[dict]) -> list[dict]:
 
 
 def _life_cumulative_db(league_code: str | None) -> tuple[str, str]:
-    if is_all_championships(league_code):
+    if is_all_leagues_plus_cl(league_code):
         return (
             season_paths.get_cumulative_common_db_path(),
             "common_synced.db",
+        )
+    if is_all_leagues_only(league_code):
+        return (
+            season_paths.get_cumulative_league_db_path(),
+            "league_synced.db",
         )
     if league_code == "cl":
         return (
@@ -194,7 +224,7 @@ def _season_common_path(season_num: int) -> str | None:
 
 
 def _team_filter_set(league_code: str | None) -> set[str] | None:
-    if not league_code or league_code in ("a", "all"):
+    if is_all_championships(league_code):
         return None
     if league_code == "cl":
         import teams as teams_mod
@@ -365,8 +395,10 @@ def _all_season_numbers(*, include_cl: bool) -> list[int]:
 
 def _db_passes_for_season(league_code: str | None) -> list[tuple[str, str | None]]:
     """kind: league | cl | common → filter_code для клубов."""
-    if is_all_championships(league_code):
+    if is_all_leagues_plus_cl(league_code):
         return [("common", None)]
+    if is_all_leagues_only(league_code):
+        return [("league", None)]
     if league_code == "cl":
         return [("cl", "cl")]
     return [("league", league_code)]
@@ -387,6 +419,7 @@ def aggregate_outfield(
     merge_by_player: bool = True,
 ) -> list[dict]:
     """Снимок одного сезона (не накопительные synced)."""
+    league_code = normalize_stats_league_code(league_code) or league_code
     if season_num is None:
         return aggregate_life_outfield(league_code, merge_by_player=merge_by_player)
     buckets: dict[tuple, dict] = {}
@@ -429,6 +462,7 @@ def aggregate_life_outfield(
     cl: bool = False,
     merge_by_player: bool = True,
 ) -> list[dict]:
+    league_code = normalize_stats_league_code(league_code) or league_code
     code = "cl" if cl else league_code
     db_path, _ = _life_cumulative_db(code)
     return _aggregate_outfield_from_db(
@@ -441,7 +475,7 @@ def aggregate_life_outfield(
 
 
 def aggregate_life_combined_outfield(*, merge_by_player: bool = True) -> list[dict]:
-    return aggregate_life_outfield("all", merge_by_player=merge_by_player)
+    return aggregate_life_outfield("allcl", merge_by_player=merge_by_player)
 
 
 def _aggregate_cards_from_db(
@@ -481,6 +515,7 @@ def aggregate_cards(
     season_num: int | None = None,
     merge_by_player: bool = True,
 ) -> list[dict]:
+    league_code = normalize_stats_league_code(league_code) or league_code
     if season_num is None:
         return aggregate_life_cards(league_code, merge_by_player=merge_by_player)
     buckets: dict[tuple, dict] = {}
@@ -518,6 +553,7 @@ def aggregate_life_cards(
     cl: bool = False,
     merge_by_player: bool = True,
 ) -> list[dict]:
+    league_code = normalize_stats_league_code(league_code) or league_code
     code = "cl" if cl else league_code
     db_path, _ = _life_cumulative_db(code)
     rows = _aggregate_cards_from_db(
@@ -644,8 +680,10 @@ def _list_season_archives_with_cl() -> list[int]:
 def _display_league_name(league_code: str | None, *, cl: bool = False) -> str:
     if cl:
         return LEAGUE_NAMES["cl"]
-    if is_all_championships(league_code):
+    if is_all_leagues_plus_cl(league_code):
         return "Все чемпионаты (лиги + ЛЧ)"
+    if is_all_leagues_only(league_code):
+        return "Все чемпионаты (нац. лиги)"
     return LEAGUE_NAMES.get(league_code or "", league_code or "?")
 
 
@@ -656,8 +694,10 @@ def _life_title_suffix(league_code: str | None, *, cl: bool) -> str:
 
 
 def _season_title_suffix(season_num: int, league_code: str | None, *, cl: bool) -> str:
-    if is_all_championships(league_code):
+    if is_all_leagues_plus_cl(league_code):
         return f" — сезон {season_num} (лига+ЛЧ · сумма · текущий клуб)"
+    if is_all_leagues_only(league_code):
+        return f" — сезон {season_num} (все нац. лиги · сумма · текущий клуб)"
     if cl or league_code == "cl":
         return f" — сезон {season_num} (ЛЧ · одна строка · последний клуб)"
     return f" — сезон {season_num} (сумма в лиге · финальный клуб)"
@@ -1006,7 +1046,7 @@ def format_top100_combined_str(limit: int = 100, sort_key: int = 1) -> str:
             "После игры и «Завершить сезон» появятся снимки в db/season_N/."
         )
 
-    rows = aggregate_life_outfield("all", merge_by_player=True)
+    rows = aggregate_life_outfield("allcl", merge_by_player=True)
     rows = [
         r
         for r in rows
