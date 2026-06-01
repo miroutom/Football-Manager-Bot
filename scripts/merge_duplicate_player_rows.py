@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""
+Слить дубли одного игрока в клубе (разные позиции в БД, одно имя).
+
+Пример: Уиллок ЦП + Уиллок ЦОП в Ньюкасле → одна строка ЦОП с суммой статов.
+
+  python3 scripts/merge_duplicate_player_rows.py --dry-run \\
+      --name Уиллок --team Ньюкасл --keep-position ЦОП
+  python3 scripts/merge_duplicate_player_rows.py --apply \\
+      --name Уиллок --team Ньюкасл --keep-position ЦОП
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
+from data.defender import Defender
+from data.forward import Forward
+from data.goalkeeper import Goalkeeper
+from data.midfielder import Midfielder
+from player_stats import _norm_cmp
+from utils import season_paths
+
+_ALL = (Forward, Midfielder, Defender, Goalkeeper)
+
+
+def _rows(session, name: str, team: str) -> list[tuple[type, object]]:
+    want_n = _norm_cmp(name)
+    want_t = _norm_cmp(team)
+    out: list[tuple[type, object]] = []
+    for Cls in _ALL:
+        for r in session.query(Cls).all():
+            if _norm_cmp(r.name) == want_n and _norm_cmp(r.team) == want_t:
+                out.append((Cls, r))
+    return out
+
+
+def _merge_into(keeper, donor) -> None:
+    for fld in (
+        "matches",
+        "goals",
+        "assists",
+        "ga",
+        "clean_sheets",
+        "missed_goals",
+        "trophies",
+        "golden_balls",
+        "golden_boots",
+        "golden_gloves",
+        "golden_boys",
+        "yellow_cards",
+        "red_cards",
+    ):
+        if not hasattr(keeper, fld) or not hasattr(donor, fld):
+            continue
+        kv = int(getattr(keeper, fld, 0) or 0)
+        dv = int(getattr(donor, fld, 0) or 0)
+        setattr(keeper, fld, kv + dv)
+    ko = int(getattr(keeper, "overall", 0) or 0)
+    do = int(getattr(donor, "overall", 0) or 0)
+    if do > ko:
+        keeper.overall = do
+    if not (getattr(keeper, "status", None) or "").strip():
+        keeper.status = getattr(donor, "status", None)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--name", required=True)
+    ap.add_argument("--team", required=True)
+    ap.add_argument("--keep-position", required=True, help="Позиция строки, которую оставить")
+    ap.add_argument("--dry-run", action="store_true", default=True)
+    ap.add_argument("--apply", action="store_true")
+    args = ap.parse_args()
+    if not args.apply:
+        args.dry_run = True
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from utils.utils import Base
+
+    paths = [
+        season_paths.get_league_db_path(),
+        season_paths.get_cl_db_path(),
+        season_paths.get_common_db_path(),
+    ]
+    keep_pos = (args.keep_position or "").strip().upper()
+
+    for path in paths:
+        if not os.path.isfile(path):
+            continue
+        e = create_engine(f"sqlite:///{path}")
+        Base.metadata.create_all(e)
+        S = sessionmaker(bind=e)()
+        try:
+            rows = _rows(S, args.name, args.team)
+            if len(rows) < 2:
+                print(f"{path}: дублей нет ({len(rows)} строк)")
+                continue
+            print(f"\n{path}:")
+            for Cls, r in rows:
+                print(
+                    f"  {Cls.__tablename__} id={r.id} {r.name} {r.position} "
+                    f"m={r.matches} g={getattr(r,'goals',0)} a={getattr(r,'assists',0)}"
+                )
+            keeper = None
+            donors: list[tuple[type, object]] = []
+            for Cls, r in rows:
+                if (r.position or "").strip().upper() == keep_pos:
+                    if keeper is None:
+                        keeper = (Cls, r)
+                    else:
+                        donors.append((Cls, r))
+                else:
+                    donors.append((Cls, r))
+            if keeper is None:
+                print(f"  Нет строки с позицией {keep_pos}")
+                continue
+            if not donors:
+                print("  Нечего сливать")
+                continue
+            if args.dry_run:
+                print(f"  (dry-run) Слить {len(donors)} → {keeper[1].name} {keeper[1].position}")
+                continue
+            for _Cls, d in donors:
+                _merge_into(keeper[1], d)
+                S.delete(d)
+            S.commit()
+            print(f"  ✓ Оставлен id={keeper[1].id} {keeper[1].position}, удалено {len(donors)}")
+        finally:
+            S.close()
+            e.dispose()
+
+    if args.apply:
+        from utils.cumulative_db import rebuild_active_season_common_db
+
+        rebuild_active_season_common_db()
+        print("common.db пересобран.")
+
+
+if __name__ == "__main__":
+    main()

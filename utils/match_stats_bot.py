@@ -599,7 +599,19 @@ def resolve_player_in_team(session, raw_name: str, team: str) -> tuple[Any | Non
     if len(found) == 1:
         return found[0], ""
     if len(found) > 1:
-        names = ", ".join(sorted({p.name for p in found})[:6])
+        if len({_norm_cmp(p.name) for p in found}) == 1:
+            pick = max(
+                found,
+                key=lambda p: (
+                    int(getattr(p, "matches", 0) or 0),
+                    int(getattr(p, "overall", 0) or 0),
+                    int(getattr(p, "id", 0) or 0),
+                ),
+            )
+            return pick, ""
+        names = ", ".join(
+            sorted({f"{p.name} {p.position}" for p in found})[:6]
+        )
         extra = "…" if len(found) > 6 else ""
         return None, f"Неоднозначно «{raw_name}»: {names}{extra}"
     return None, f"Не найден в БД «{raw_name}» ({team_t})"

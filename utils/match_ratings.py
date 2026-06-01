@@ -174,6 +174,7 @@ def _roster_buckets_for_canonical(
         "bench": [],
         "reserve": [],
     }
+    best: dict[str, tuple[str, str, int, str, int, int]] = {}
     for Cls in (Forward, Midfielder, Defender, Goalkeeper):
         for r in sess.query(Cls).filter(_filter_team(Cls, t)).all():
             nm = (r.name or "").strip()
@@ -184,7 +185,15 @@ def _roster_buckets_for_canonical(
             st = (getattr(r, "status", None) or "bench").strip().lower()
             if st not in buckets:
                 st = "bench"
-            buckets[st].append((nm, pos, ovr))
+            nk = _norm_cmp(nm)
+            mcnt = int(getattr(r, "matches", 0) or 0)
+            rid = int(getattr(r, "id", 0) or 0)
+            row = (nm, pos, ovr, st, mcnt, rid)
+            prev = best.get(nk)
+            if prev is None or (mcnt, ovr, rid) > (prev[4], prev[2], prev[5]):
+                best[nk] = row
+    for nm, pos, ovr, st, _mcnt, _rid in best.values():
+        buckets[st].append((nm, pos, ovr))
     for k in buckets:
         buckets[k].sort(key=lambda x: (-x[2], x[0].lower()))
     return buckets

@@ -258,6 +258,7 @@ def find_player_by_name(
     want_team = _norm_cmp(team) if team else None
     want_nat = _norm_cmp(nation) if nation else None
 
+    cands: list[tuple] = []
     for PlayerClass, pos_type in classes:
         try:
             for player in session.query(PlayerClass).all():
@@ -269,11 +270,25 @@ def find_player_by_name(
                     pn = _norm_cmp(getattr(player, "nation", None) or "")
                     if pn != want_nat:
                         continue
-                return player, pos_type
+                cands.append((player, pos_type))
         except Exception:
             pass
 
-    return None, None
+    if not cands:
+        return None, None
+    if len(cands) == 1:
+        return cands[0]
+    # Две строки «Уиллок ЦП» и «Уиллок ЦОП» — один человек, смена позиции в заявке
+    if want_team is not None and want_nat is None:
+        return max(
+            cands,
+            key=lambda c: (
+                int(getattr(c[0], "matches", 0) or 0),
+                int(getattr(c[0], "overall", 0) or 0),
+                int(getattr(c[0], "id", 0) or 0),
+            ),
+        )
+    return cands[0]
 
 
 def pick_starting_goalkeeper_row(session, team: str) -> tuple[str | None, str | None]:
