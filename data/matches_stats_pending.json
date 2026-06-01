@@ -114,5 +114,11 @@
     "tournament": "cl",
     "day": 6,
     "cl_phase": "knockout"
-  }
+  },
+  {
+      "home": "Ньюкасл",
+      "away": "Ливерпуль",
+      "tournament": "league",
+      "day": 6
+    }
 ]
