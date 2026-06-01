@@ -48,21 +48,12 @@ def _key(p: Any) -> tuple:
 
 
 def _apply_roster_fields(b: dict, p: Any, *, is_cl: bool) -> None:
-    """Имя/фамилия в common — из лиги; из ЛЧ только если в бакете ещё пусто."""
+    """``name`` в common — из лиги; из ЛЧ только если в бакете ещё пусто."""
     nm = (getattr(p, "name", None) or "").strip()
-    sn = (getattr(p, "surname", None) or "").strip()
-    if not is_cl:
-        if nm:
-            b["name"] = nm
-        if sn:
-            b["surname"] = sn
-        elif nm and not (b.get("surname") or "").strip():
-            b["surname"] = nm
-    else:
-        if sn and not (b.get("surname") or "").strip():
-            b["surname"] = sn
-        if nm and not (b.get("name") or "").strip():
-            b["name"] = nm
+    if not nm:
+        return
+    if not is_cl or not (b.get("name") or "").strip():
+        b["name"] = nm
 
 
 def resolve_team_name_for_cl_pool(team_name: str) -> str | None:
@@ -108,7 +99,6 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
             if k not in buckets:
                 buckets[k] = {
                     "name": p.name,
-                    "surname": (getattr(p, "surname", None) or "").strip() or None,
                     "team": p.team,
                     "position": p.position,
                     "matches": 0,
@@ -177,12 +167,10 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
         )
         g, a = b["goals"], b["assists"]
         ga = g + a
-        sn = (b.get("surname") or "").strip() or b["name"]
         if PlayerCls is Forward:
             common.add(
                 Forward(
                     name=b["name"],
-                    surname=sn,
                     team=b["team"],
                     position=b["position"],
                     overall=ov,
@@ -204,7 +192,6 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
             common.add(
                 Midfielder(
                     name=b["name"],
-                    surname=sn,
                     team=b["team"],
                     position=b["position"],
                     overall=ov,
@@ -226,7 +213,6 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
             common.add(
                 Defender(
                     name=b["name"],
-                    surname=sn,
                     team=b["team"],
                     position=b["position"],
                     overall=ov,
@@ -281,7 +267,6 @@ def rebuild_common_database(
             if k not in gk_buckets:
                 gk_buckets[k] = {
                     "name": p.name,
-                    "surname": (getattr(p, "surname", None) or "").strip() or None,
                     "team": p.team,
                     "position": p.position,
                     "matches": 0,
@@ -347,11 +332,9 @@ def rebuild_common_database(
             if b["overall_den"]
             else int(b.get("overall_ref", 0) or 0)
         )
-        gk_sn = (b.get("surname") or "").strip() or b["name"]
         common.add(
             Goalkeeper(
                 name=b["name"],
-                surname=gk_sn,
                 team=b["team"],
                 position=b["position"],
                 overall=ov,
@@ -399,9 +382,7 @@ def rebuild_common_database_for_disk_paths(
     if parent:
         os.makedirs(parent, exist_ok=True)
     from utils.migrate_player_left_team import migrate_left_team_for_sqlite
-    from utils.migrate_player_surname import migrate_surname_columns_for_sqlite
 
-    migrate_surname_columns_for_sqlite(common_path, label=common_path)
     migrate_left_team_for_sqlite(common_path, label=common_path)
     el = create_engine(f"sqlite:///{league_path}")
     ec = create_engine(f"sqlite:///{cl_path}")

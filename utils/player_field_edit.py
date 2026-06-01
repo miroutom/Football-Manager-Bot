@@ -129,10 +129,6 @@ def parse_field_value(Cls: type, field: str, raw: str) -> Any:
             from utils.player_transfer import normalize_player_name_for_db
 
             return normalize_player_name_for_db(s) or ""
-        if field == "surname":
-            from utils.player_transfer import normalize_player_name_for_db
-
-            return normalize_player_name_for_db(s) or None
         return s or None
     raise ValueError(f"Тип поля «{field}» не поддерживается через бота.")
 
@@ -210,7 +206,7 @@ def apply_player_field_update(
             f"Не найден игрок «{name}» ({position}) в клубе «{team_t}» в нац. лиге."
         )
 
-    old_name = player_surname(row_l)
+    old_name = (getattr(row_l, "name", None) or "").strip()
     old_pos = (row_l.position or "").strip().upper()
     val = parse_field_value(Cls_l, field, raw)
     old = getattr(row_l, field, None)
@@ -219,7 +215,7 @@ def apply_player_field_update(
 
     merged = 0
     if field == "name":
-        new_name = (getattr(row_l, "name", None) or "").strip().title()
+        new_name = (getattr(row_l, "name", None) or "").strip()
         if new_name and _norm_cmp(new_name) != _norm_cmp(old_name):
             register_name_change(team_t, old_name, new_name)
             other, ocls = find_by_name_only(session_league, new_name, team_t)
@@ -228,18 +224,8 @@ def apply_player_field_update(
                 session_league.delete(other)
                 merged += 1
                 _sync_ga_if_needed(row_l, field)
-    if field == "surname":
-        new_sn = player_surname(row_l)
-        if new_sn and _norm_cmp(new_sn) != _norm_cmp(old_name):
-            register_name_change(team_t, old_name, new_sn)
-            other, ocls = find_by_name_only(session_league, new_sn, team_t)
-            if other is not None and int(other.id) != int(row_l.id):
-                merge_row_stats_into(row_l, other)
-                session_league.delete(other)
-                merged += 1
-                _sync_ga_if_needed(row_l, field)
     merge_same_name_duplicates_in_session(
-        session_league, team_t, player_surname(row_l) or name
+        session_league, team_t, (getattr(row_l, "name", None) or "").strip() or name
     )
 
     session_league.commit()

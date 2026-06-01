@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Имя и фамилия в БД: ``name`` — имя, ``surname`` — фамилия.
+Имя игрока — одно поле ``name`` (полное или фамилия).
 
-Отображение: «Л. Мартинез». Поиск: полное имя, имя, фамилия, «И. Фамилия».
+Отображение в боте: «Л. Альварез» из «Хулиан Альварез»; одно слово — как есть.
 """
 from __future__ import annotations
 
@@ -12,15 +12,6 @@ from typing import Any, Iterator
 from utils.player_transfer import _filter_team, _norm_cmp, normalize_player_name_for_db
 
 _ALL_PLAYER_CLASSES: tuple[type, ...] | None = None
-
-# В CSV/БД: нет отдельного имени, в боте показывается только surname (прозвище).
-_EMPTY_FIRST_NAME_MARKERS = frozenset(
-    {"", "-", "—", "–", "нет", "n/a", "na", "прочерк", "без имени"}
-)
-
-
-def is_empty_first_name_value(value: str | None) -> bool:
-    return (value or "").strip().casefold() in _EMPTY_FIRST_NAME_MARKERS
 
 
 def _all_classes() -> tuple[type, ...]:
@@ -35,29 +26,37 @@ def _all_classes() -> tuple[type, ...]:
     return _ALL_PLAYER_CLASSES
 
 
+def _name_parts(name: str) -> tuple[str, str]:
+    """(всё кроме последнего слова, последнее слово) или ('', единственное слово)."""
+    s = (name or "").strip()
+    if not s:
+        return "", ""
+    parts = s.split()
+    if len(parts) == 1:
+        return "", parts[0]
+    return " ".join(parts[:-1]), parts[-1]
+
+
 def player_first_name(row: Any) -> str:
-    fn = (getattr(row, "name", None) or "").strip()
-    if is_empty_first_name_value(fn):
-        return ""
-    return fn.title()
+    fn, _ = _name_parts((getattr(row, "name", None) or "").strip())
+    return fn.title() if fn else ""
 
 
 def player_surname(row: Any) -> str:
-    s = (getattr(row, "surname", None) or "").strip()
-    if s:
-        return s.title()
-    return (getattr(row, "name", None) or "").strip().title()
+    """Последнее слово ``name`` (для поиска/алиасов; отдельной колонки нет)."""
+    _, sn = _name_parts((getattr(row, "name", None) or "").strip())
+    return sn.title() if sn else (getattr(row, "name", None) or "").strip().title()
 
 
 def player_short_display(row: Any) -> str:
-    """Краткая подпись: «Л. Мартинез»."""
-    fn = player_first_name(row)
-    sn = player_surname(row)
-    if not sn:
+    """Краткая подпись: «Л. Мартинез» или фамилия."""
+    raw = (getattr(row, "name", None) or "").strip()
+    if not raw:
         return ""
-    if fn:
-        return f"{fn[0].upper()}. {sn}"
-    return sn
+    fn, sn = _name_parts(raw)
+    if fn and sn:
+        return f"{fn[0].upper()}. {sn.title()}"
+    return raw.title()
 
 
 def player_display_name(row: Any) -> str:
@@ -65,24 +64,13 @@ def player_display_name(row: Any) -> str:
 
 
 def player_full_name(row: Any) -> str:
-    fn = player_first_name(row)
-    sn = player_surname(row)
-    if fn and _norm_cmp(fn) != _norm_cmp(sn):
-        return f"{fn} {sn}"
-    return sn
+    return (getattr(row, "name", None) or "").strip().title()
 
 
 def player_stats_identity_token(row: Any) -> str:
-    """
-    Стабильный идентификатор для слияния сезонов и топ-100.
-
-    Фамилия (``surname``), если есть; иначе ``name`` — чтобы в season_1 было
-    «Хаверц», а в season_2 «Кай» + «Хаверц» попали в одну строку.
-    """
-    sn = (getattr(row, "surname", None) or "").strip()
-    if sn:
-        return sn
-    return (getattr(row, "name", None) or "").strip()
+    """Токен для слияния сезонов: последнее слово ``name`` или всё имя."""
+    _, sn = _name_parts((getattr(row, "name", None) or "").strip())
+    return sn or (getattr(row, "name", None) or "").strip()
 
 
 def _parse_initial_surname_query(query: str) -> tuple[str | None, str | None]:
@@ -104,21 +92,23 @@ def player_matches_query(row: Any, query: str) -> bool:
     if not q_raw:
         return False
     qn = _norm_cmp(q_raw)
-    fn = _norm_cmp(player_first_name(row))
-    sn = _norm_cmp(player_surname(row))
-    full = _norm_cmp(player_full_name(row))
+    raw = (getattr(row, "name", None) or "").strip()
+    fn, sn = _name_parts(raw)
+    fn_n = _norm_cmp(fn)
+    sn_n = _norm_cmp(sn)
+    full = _norm_cmp(raw)
     short = _norm_cmp(player_short_display(row))
     short_nd = _norm_cmp(player_short_display(row).replace(".", ""))
 
-    if qn in (full, fn, sn, short, short_nd):
+    if qn in (full, fn_n, sn_n, short, short_nd):
         return True
 
     init, sn_q = _parse_initial_surname_query(q_raw)
     if init is not None and sn_q:
-        return bool(fn) and fn[0:1].casefold() == init and sn == sn_q
+        return bool(fn) and fn[0:1].casefold() == init and sn_n == sn_q
 
     if " " not in q_raw and "." not in q_raw:
-        return qn == fn or qn == sn
+        return qn == fn_n or qn == sn_n
 
     return qn == full
 
@@ -156,10 +146,9 @@ def find_players_matching_query(
 
 
 def _collapse_same_person_position_duplicates(players: list[Any]) -> list[Any]:
-    """Две строки одного человека (разные позиции в заявке) → одна с max matches."""
     if len(players) <= 1:
         return players
-    full_keys = {_norm_cmp(player_full_name(p)) for p in players}
+    full_keys = {_norm_cmp((getattr(p, "name", None) or "").strip()) for p in players}
     if len(full_keys) != 1:
         return players
     pick = max(
@@ -180,7 +169,7 @@ def format_ambiguity_message(team: str, query: str, players: list[Any]) -> str:
     team_t = (team or "").strip().title()
     if " " not in q and "." not in q:
         return (
-            f"В команде {team_t} {n} игрока с фамилией «{q.title()}». "
+            f"В команде {team_t} {n} игрока с именем «{q.title()}». "
             f"Уточните: {', '.join(labels)}"
         )
     return (
@@ -197,9 +186,6 @@ def resolve_player_query_in_team(
     include_left: bool = False,
     position: str | None = None,
 ) -> tuple[Any | None, str]:
-    """
-    Однозначный игрок в клубе по вводу или текст ошибки / уточнения.
-    """
     team_t = (team or "").strip().title()
     q = (query or "").strip()
     if not q:
@@ -222,21 +208,20 @@ def resolve_player_query_in_team(
 
 
 def player_row_matches_query(row: Any, query: str) -> bool:
-    """Совместимость: тот же критерий, что и ``find_players_matching_query``."""
     return player_matches_query(row, query)
 
 
 def parse_name_surname_input(raw: str) -> tuple[str, str]:
-    """Ввод «Имя Фамилия» или одно слово (только фамилия) → (first_name, surname)."""
+    """Совместимость: ввод → (не используется, полное имя); полное имя для ``name``."""
     s = normalize_player_name_for_db(raw)
-    if not s:
-        return "", ""
-    parts = s.split()
-    if len(parts) == 1:
-        return "", parts[0]
-    return " ".join(parts[:-1]), parts[-1]
+    return "", s
 
 
 def apply_parsed_names_to_row(row: Any, first_name: str, surname: str) -> None:
-    row.name = (first_name or "").strip().title() or ""
-    row.surname = (surname or "").strip().title() or player_surname(row)
+    """Записать полное имя в одно поле ``name``."""
+    if first_name and surname:
+        row.name = f"{first_name.strip().title()} {surname.strip().title()}"
+    elif surname:
+        row.name = surname.strip().title()
+    elif first_name:
+        row.name = first_name.strip().title()

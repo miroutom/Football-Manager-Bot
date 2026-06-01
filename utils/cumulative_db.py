@@ -93,9 +93,6 @@ def _apply_roster_from_source(dst: Any, src: Any, *, season_num: int, tbl: str) 
         return
 
     dst.name = getattr(src, "name", dst.name)
-    if hasattr(dst, "surname") and hasattr(src, "surname"):
-        sn = (getattr(src, "surname", None) or "").strip()
-        dst.surname = sn or getattr(dst, "surname", None)
     dst.overall = int(getattr(src, "overall", 0) or 0)
     dst.team = getattr(src, "team", dst.team)
     dst.position = getattr(src, "position", dst.position)
