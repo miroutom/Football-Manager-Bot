@@ -23,7 +23,8 @@ from utils.player_field_edit import (
     list_editable_fields_for_player,
 )
 from utils.player_names import player_display_name, player_surname
-from utils.player_transfer import _filter_team, _norm_cmp, resolve_team_name
+from utils.player_transfer import _filter_team, _norm_cmp
+from utils.transfer_input import resolve_team_name
 
 logger = logging.getLogger(__name__)
 
