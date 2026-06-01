@@ -3,7 +3,7 @@
 Импорт имён из ``db/names.xlsx`` (блоки по командам).
 
 Сезон 2: клуб + позиция + рейтинг + подпись (нация и полное имя в БД — гибко).
-Сезон 1: клуб + подпись; иначе фамилия + нация.
+Сезон 1: фамилия + нация по всей БД (клуб/позиция/рейтинг — для уточнения).
 
   python3 scripts/import_player_names_xlsx.py --season 2
   python3 scripts/import_player_names_xlsx.py --season 2 --apply
@@ -329,22 +329,24 @@ def _candidates_team_surname(
 
 
 def find_db_row_season1(session, entry: XlsxPlayer):
-    """Сезон 1: при указанном клубе — только его состав; иначе фамилия+нация."""
-    err: str | None = None
-    if entry.team:
-        for require_nat in (True, False):
-            cands = _candidates_team_label(
-                session, entry, require_nation=require_nat
-            )
-            hit, err = _pick_one(cands, entry, prefer_team=False)
-            if hit:
-                return hit, err
-            if err and "неоднознач" in err:
-                return None, err
-        return None, "не найден"
-
+    """Сезон 1: сначала фамилия+нация по всей БД; клуб — только уточнение."""
     cands = _candidates_surname_nation(session, entry)
-    return _pick_one(cands, entry, prefer_team=True)
+    hit, err = _pick_one(cands, entry, prefer_team=True)
+    if hit:
+        return hit, err
+    if err and "неоднознач" in err:
+        return None, err
+
+    # Запасной путь: нация в xlsx не совпала, но клуб+подпись однозначны
+    if entry.team:
+        cands = _candidates_team_label(session, entry, require_nation=False)
+        hit, err = _pick_one(cands, entry, prefer_team=False)
+        if hit:
+            return hit, err
+        if err and "неоднознач" in err:
+            return None, err
+
+    return None, err or "не найден"
 
 
 def find_db_row_season2(session, entry: XlsxPlayer):
