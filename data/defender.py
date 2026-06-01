@@ -17,7 +17,6 @@ def update_defender_stats(
         assists: int = 0,
         matches: int = 0,
         trophies: int = 0,
-        clean_sheet: int = 0,
         golden_ball: bool = False,
 ):
     query = session.query(Defender)
@@ -40,7 +39,6 @@ def update_defender_stats(
     player.assists += assists
     player.ga = player.goals + player.assists
     player.matches += matches
-    player.clean_sheets += clean_sheet if matches != 0 else 0
     player.trophies += trophies
     player.golden_balls += int(golden_ball)
 
@@ -59,7 +57,6 @@ class Defender(Base):
     goals = Column(Integer, default=0)
     assists = Column(Integer, default=0)
     ga = Column(Integer, default=0)
-    clean_sheets = Column(Integer, default=0)
     # БД лиги: трофеи лиги; БД ЛЧ: трофеи ЛЧ; common — сумма.
     trophies = Column(Integer, default=0)
     golden_balls = Column(Integer, default=0)

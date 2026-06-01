@@ -90,7 +90,7 @@ def process_player_row(row, session):
             update_defender_stats(
                 session=session, name=name, overall=overall, position=position,
                 team=team, matches=matches, goals=goals, assists=assists,
-                trophies=trophies, clean_sheet=clean_sheets,
+                trophies=trophies,
                 golden_ball=golden_ball
             )
         else:

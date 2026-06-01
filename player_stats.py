@@ -403,7 +403,7 @@ def find_or_create_player(session, name: str, position: str, team: str):
             player = PlayerClass(
                 name=name, overall=0, team=team, position=position,
                 matches=0, goals=0, assists=0, ga=0,
-                clean_sheets=0, trophies=0, golden_balls=0, golden_boots=0,
+                trophies=0, golden_balls=0, golden_boots=0,
                 golden_boys=0, nation=None, status=None, yellow_cards=0, red_cards=0,
             )
         else:
@@ -609,7 +609,7 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
         home_cs = away_s == 0
         away_cs = hs == 0
         tn = team.lower()
-        if get_position_type(position) in ['defender', 'goalkeeper']:
+        if get_position_type(position) == 'goalkeeper':
             if (tn == ht.lower() and home_cs) or (tn == at.lower() and away_cs):
                 clean_sheet = True
 
@@ -640,7 +640,7 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
         player.assists += assists
         player.ga = player.goals + player.assists
 
-    if pos_type in ['defender', 'goalkeeper'] and clean_sheet:
+    if pos_type == 'goalkeeper' and clean_sheet:
         player.clean_sheets += 1
 
     session.commit()
@@ -747,7 +747,7 @@ def revert_player_stats(
             player.assists = 0
         player.ga = player.goals + player.assists
 
-    if pos_type in ["defender", "goalkeeper"] and clean_sheet:
+    if pos_type == "goalkeeper" and clean_sheet:
         player.clean_sheets -= 1
         if player.clean_sheets < 0:
             player.clean_sheets = 0

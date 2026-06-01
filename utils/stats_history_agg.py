@@ -589,7 +589,6 @@ def aggregate_clean_sheets(
     if season_num is None:
         return aggregate_life_clean_sheets(league_code, merge_by_player=merge_by_player)
     gk_buckets: dict[tuple, dict] = {}
-    df_buckets: dict[tuple, dict] = {}
     for kind, filter_code in _db_passes_for_season(league_code):
         path = _season_path_by_kind(season_num, kind)
         if not path:
@@ -607,25 +606,14 @@ def aggregate_clean_sheets(
                     merge_by_player=merge_by_player,
                     pick_club="latest_row",
                 )
-            for p in session.query(Defender).all():
-                if team_set is not None and _norm_team(p.team) not in team_set:
-                    continue
-                _fold_cs_bucket(
-                    df_buckets,
-                    p,
-                    season_num,
-                    merge_by_player=merge_by_player,
-                    pick_club="latest_row",
-                )
         finally:
             session.close()
             eng.dispose()
     gk = list(gk_buckets.values())
-    df = list(df_buckets.values())
-    for b in gk + df:
+    for b in gk:
         b.pop("_pick_id", None)
         b.pop("last_season", None)
-    return gk, df
+    return gk, []
 
 
 def aggregate_life_clean_sheets(
@@ -640,7 +628,6 @@ def aggregate_life_clean_sheets(
         return [], []
     team_set = _team_filter_set(_filter_code_for_life(code))
     gk_buckets: dict[tuple, dict] = {}
-    df_buckets: dict[tuple, dict] = {}
     session, eng = _open_session(db_path)
     try:
         for p in session.query(Goalkeeper).all():
@@ -653,22 +640,11 @@ def aggregate_life_clean_sheets(
                 merge_by_player=merge_by_player,
                 pick_club="active_season",
             )
-        for p in session.query(Defender).all():
-            if team_set is not None and _norm_team(p.team) not in team_set:
-                continue
-            _fold_cs_bucket(
-                df_buckets,
-                p,
-                0,
-                merge_by_player=merge_by_player,
-                pick_club="active_season",
-            )
     finally:
         session.close()
         eng.dispose()
     gk = list(gk_buckets.values())
-    df = list(df_buckets.values())
-    return _finalize_life_rows(gk), _finalize_life_rows(df)
+    return _finalize_life_rows(gk), []
 
 
 def _list_season_archives_with_cl() -> list[int]:
@@ -893,7 +869,7 @@ def format_life_clean_sheets(
             )
         return "\n".join(out)
 
-    return _fmt(gk_rows, "вратари"), _fmt(df_rows, "защитники")
+    return _fmt(gk_rows, "вратари"), _fmt([], "защитники")
 
 
 def season_has_db(season_num: int, league_code: str | None) -> bool:

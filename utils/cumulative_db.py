@@ -42,8 +42,13 @@ def _player_identity_key(row: Any) -> tuple[str, str]:
     )
 
 
-def _row_key(row: Any) -> tuple[str, str]:
-    return _player_identity_key(row)
+def _row_key(row: Any) -> tuple[str, str, str]:
+    """Дубли в одной накопительной БД: identity + клуб + позиция."""
+    return (
+        player_stats_identity_token(row).casefold(),
+        (row.team or "").strip().casefold(),
+        (row.position or "").strip().upper(),
+    )
 
 
 def _find_row_by_identity(dst: Any, Cls: type, src_row: Any) -> Any | None:
@@ -115,7 +120,7 @@ def _fold_stats_into_row(dst_row: Any, src_row: Any) -> None:
         dst_row.ga = int(getattr(dst_row, "ga", 0) or 0) + int(
             getattr(src_row, "ga", 0) or 0
         )
-    if hasattr(dst_row, "clean_sheets"):
+    if hasattr(dst_row, "clean_sheets") and not hasattr(dst_row, "goals"):
         dst_row.clean_sheets = int(getattr(dst_row, "clean_sheets", 0) or 0) + int(
             getattr(src_row, "clean_sheets", 0) or 0
         )
@@ -146,7 +151,7 @@ def _fold_stats_into_row(dst_row: Any, src_row: Any) -> None:
 
 
 def _consolidate_identity_duplicates(dst: Any, Cls: type) -> None:
-    """Слить дубли одной строки (имя+клуб+позиция) в накопительной БД."""
+    """Слить дубли (identity + клуб + позиция) в накопительной БД."""
     groups: dict[tuple[str, str, str], list[Any]] = {}
     for row in list(dst.query(Cls).all()):
         groups.setdefault(_row_key(row), []).append(row)

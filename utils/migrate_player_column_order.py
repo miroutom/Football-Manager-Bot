@@ -55,7 +55,6 @@ _TABLE_TAIL: dict[str, tuple[str, ...]] = {
         "goals",
         "assists",
         "ga",
-        "clean_sheets",
         "trophies",
         "golden_balls",
         "golden_boots",

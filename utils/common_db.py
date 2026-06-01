@@ -25,6 +25,7 @@ from data.defender import Defender
 from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
+from utils.player_names import player_stats_identity_token
 from utils.utils import (
     Base,
     CHAMPIONS_LEAGUE_DB_PATH,
@@ -37,8 +38,13 @@ from utils.utils import (
 )
 
 
-def _key(name: str, team: str, position: str) -> tuple:
-    return (name.strip().lower(), team.strip().lower(), position.strip())
+def _key(p: Any) -> tuple:
+    """Слияние common: фамилия (identity) + клуб + позиция — не ломается при смене имени."""
+    return (
+        player_stats_identity_token(p).casefold(),
+        (p.team or "").strip().lower(),
+        (p.position or "").strip().upper(),
+    )
 
 
 def _apply_roster_fields(b: dict, p: Any, *, is_cl: bool) -> None:
@@ -98,7 +104,7 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
         for p in src.query(PlayerCls).all():
             if is_cl and not _team_in_cl_pool(p.team):
                 continue
-            k = _key(p.name, p.team, p.position)
+            k = _key(p)
             if k not in buckets:
                 buckets[k] = {
                     "name": p.name,
@@ -114,7 +120,6 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
                     "golden_balls": 0,
                     "golden_boots": 0,
                     "golden_boys": 0,
-                    "clean_sheets": 0,
                     "overall_num": 0,
                     "overall_den": 0,
                     "nation": None,
@@ -150,8 +155,6 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
             b["golden_boys"] = max(
                 b["golden_boys"], int(getattr(p, "golden_boys", 0) or 0)
             )
-            if hasattr(p, "clean_sheets"):
-                b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)
             if m > 0:
                 b["overall_num"] += int(p.overall or 0) * m
                 b["overall_den"] += m
@@ -231,7 +234,6 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     goals=g,
                     assists=a,
                     ga=ga,
-                    clean_sheets=b["clean_sheets"],
                     trophies=b["trophies"],
                     golden_balls=b["golden_balls"],
                     golden_boots=b["golden_boots"],
@@ -275,7 +277,7 @@ def rebuild_common_database(
         for p in src.query(Goalkeeper).all():
             if is_cl and not _team_in_cl_pool(p.team):
                 continue
-            k = _key(p.name, p.team, p.position)
+            k = _key(p)
             if k not in gk_buckets:
                 gk_buckets[k] = {
                     "name": p.name,
