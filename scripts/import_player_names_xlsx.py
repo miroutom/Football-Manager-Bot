@@ -187,15 +187,18 @@ def apply_names(
     season: int,
     require_team: bool,
     do_apply: bool,
+    problems_only: bool = False,
 ) -> dict[str, int]:
     stats = {"ok": 0, "skip": 0, "miss": 0, "ambig": 0, "team_miss": 0}
     by_team: dict[str, list[str]] = {}
+    problems: list[tuple[str, str]] = []
 
     for e in entries:
         hit, err = find_db_row(session, e, require_team=require_team)
         if hit is None:
             stats["ambig" if err and "неоднознач" in err else "miss"] += 1
             line = f"  ? {e.surname_label} {e.position} {e.rating} {e.nation} — {err}"
+            problems.append((e.team, line.strip()))
             by_team.setdefault(e.team, []).append(line)
             continue
 
@@ -209,6 +212,8 @@ def apply_names(
             continue
 
         stats["ok"] += 1
+        if problems_only:
+            continue
         club = (r.team or e.team).strip()
         line = (
             f"  {tbl} id={r.id} {club}: "
@@ -219,11 +224,23 @@ def apply_names(
             r.name = fn
             r.surname = sn
 
-    for team in sorted(by_team.keys()):
-        print(team)
-        for line in by_team[team]:
-            print(line)
-        print()
+    if not problems_only:
+        for team in sorted(by_team.keys()):
+            print(team)
+            for line in by_team[team]:
+                print(line)
+            print()
+
+    if problems:
+        print("=" * 60)
+        print("НЕ СОПОСТАВЛЕНО (из xlsx → нет строки в БД сезона)")
+        print("=" * 60)
+        cur = ""
+        for team, line in sorted(problems, key=lambda x: (x[0].casefold(), x[1])):
+            if team != cur:
+                print(f"\n{team}")
+                cur = team
+            print(f"  {line}")
 
     return stats
 
@@ -237,6 +254,11 @@ def main() -> None:
     )
     ap.add_argument("--season", type=int, default=2)
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument(
+        "--problems-only",
+        action="store_true",
+        help="Только пропуски (?): не найден / неоднозначно",
+    )
     args = ap.parse_args()
 
     if not os.path.isfile(args.xlsx):
@@ -275,6 +297,7 @@ def main() -> None:
             season=args.season,
             require_team=require_team,
             do_apply=args.apply,
+            problems_only=args.problems_only,
         )
         if args.apply:
             session.commit()
