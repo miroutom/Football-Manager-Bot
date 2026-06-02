@@ -102,7 +102,7 @@ def main() -> None:
         w.writerows(rows_out)
 
     print(f"Записано {len(rows_out)} строк → {out_path}")
-    print("Заполни first_name и surname; surname — то, что видно в боте.")
+    print("Заполни first_name и surname; в БД сохранится одно поле name.")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 """
 Импорт имён из CSV (export_player_name_roster.py).
 
-Обновляет только ``name`` и ``surname`` по (table, id), стата не трогается.
+Обновляет только ``name`` по (table, id), стата не трогается.
 
   python3 scripts/import_player_names.py --season 2 data/season2_player_names.csv
   python3 scripts/import_player_names.py --season 2 data/season2_player_names.csv --apply
@@ -35,7 +35,7 @@ _TABLE_TO_CLS = {
 
 
 def _first_name_from_csv(raw: str) -> str:
-    """Пустая ячейка или «-» → нет отдельного имени (прозвище в surname)."""
+    """Пустая ячейка или «-» → только фамилия/прозвище в ``name``."""
     s = normalize_player_name_for_db(raw)
     if is_empty_first_name_value(s):
         return ""
@@ -81,24 +81,24 @@ def main() -> None:
                     missing += 1
                     continue
                 fn = _first_name_from_csv(row.get("first_name") or "")
-                sn = (
-                    normalize_player_name_for_db(row.get("surname") or "")
-                    or fn
-                    or (getattr(r, "surname", None) or "")
-                )
-                if not sn:
+                sn = normalize_player_name_for_db(row.get("surname") or "")
+                if fn and sn:
+                    new_name = f"{fn} {sn}"
+                elif sn:
+                    new_name = sn
+                elif fn:
+                    new_name = fn
+                else:
                     continue
-                old_fn = (getattr(r, "name", None) or "").strip()
-                old_sn = (getattr(r, "surname", None) or "").strip()
-                if old_fn == fn and old_sn == sn:
+                old_name = (getattr(r, "name", None) or "").strip()
+                if old_name == new_name:
                     continue
                 print(
                     f"  {tbl} id={rid} {(r.team or '').strip()}: "
-                    f"«{old_fn or '—'} {old_sn}» → «{fn or '—'} {sn}»"
+                    f"«{old_name}» → «{new_name}»"
                 )
                 if args.apply:
-                    r.name = fn
-                    r.surname = sn
+                    r.name = new_name
                 updated += 1
         if args.apply:
             session.commit()

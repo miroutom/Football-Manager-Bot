@@ -184,8 +184,9 @@ def _run_season(
             by_team.setdefault(team, []).append((line_left, right, kind))
 
             if apply and first and kind in ("split", "lookup", "manual"):
-                r.name = first
-                r.surname = surname
+                from utils.player_names import apply_parsed_names_to_row
+
+                apply_parsed_names_to_row(r, first, surname)
 
         if apply:
             session.commit()

@@ -122,28 +122,22 @@ def _norm_nat(s: str) -> str:
 
 
 def _db_listing_label(row) -> str:
-    """Как в list_team_roster — для поиска строки до импорта."""
-    fn = (getattr(row, "name", None) or "").strip()
-    sn = (getattr(row, "surname", None) or "").strip()
-    if fn and sn and _norm_cmp(fn) != _norm_cmp(sn):
-        if _norm_cmp(sn) in _norm_cmp(fn) and len(fn.split()) > len(sn.split()):
-            return fn
-        return sn or fn
-    return sn or fn
+    """Подпись игрока в БД (поле ``name``)."""
+    return (getattr(row, "name", None) or "").strip()
 
 
 def _db_labels(row) -> set[str]:
     """Все варианты подписи игрока в БД (включая последнее слово составного имени)."""
     fn = (getattr(row, "name", None) or "").strip()
-    sn = (getattr(row, "surname", None) or "").strip()
+    from utils.player_names import player_surname
+
+    sn = player_surname(row)
     labels = {
         _norm_cmp(_db_listing_label(row)),
         _norm_cmp(fn),
         _norm_cmp(sn),
     }
-    if fn and sn:
-        labels.add(_norm_cmp(f"{fn} {sn}"))
-    for raw in (fn, sn, f"{fn} {sn}".strip()):
+    for raw in (fn, sn):
         if not raw:
             continue
         parts = raw.split()
@@ -445,9 +439,15 @@ def apply_names(
         tbl, r = hit
         fn = e.first_name
         sn = e.surname_label
-        old_fn = (getattr(r, "name", None) or "").strip()
-        old_sn = (getattr(r, "surname", None) or "").strip()
-        if old_fn == fn and old_sn == sn:
+        from utils.player_names import apply_parsed_names_to_row
+
+        old_name = (getattr(r, "name", None) or "").strip()
+        new_name = (
+            f"{fn.strip().title()} {sn.strip().title()}".strip()
+            if fn and sn
+            else (sn or fn or "").strip().title()
+        )
+        if _norm_cmp(old_name) == _norm_cmp(new_name):
             stats["skip"] += 1
             continue
 
@@ -455,14 +455,10 @@ def apply_names(
         if problems_only:
             continue
         club = (r.team or e.team).strip()
-        line = (
-            f"  {tbl} id={r.id} {club}: "
-            f"«{old_fn or '—'} / {old_sn or '—'}» → «{fn or '—'} / {sn}»"
-        )
+        line = f"  {tbl} id={r.id} {club}: «{old_name}» → «{new_name}»"
         by_team.setdefault(e.team if require_team else club, []).append(line)
         if do_apply:
-            r.name = fn
-            r.surname = sn
+            apply_parsed_names_to_row(r, fn, sn)
 
     if not problems_only:
         for team in sorted(by_team.keys()):

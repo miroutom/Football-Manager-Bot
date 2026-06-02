@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Порядок колонок в SQLite: ``name``, ``surname`` сразу после ``id``.
-
-Колонка ``surname`` раньше добавлялась через ALTER в конец таблицы.
+Порядок колонок в SQLite: ``name`` сразу после ``id`` (без ``surname``).
 
 CLI::
 
@@ -24,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 _TABLES = ("forwards", "midfielders", "defenders", "goalkeepers")
 
-# После id, name, surname — как в data/*.py
+# После id, name — как в data/*.py
 _OUTFIELD_TAIL = (
     "overall",
     "team",
@@ -104,7 +102,7 @@ def _table_info(conn, table: str) -> list[dict]:
 
 
 def _desired_order(table: str, cols: list[str]) -> list[str]:
-    head = ["id", "name", "surname"]
+    head = ["id", "name"]
     tail_tpl = _TABLE_TAIL.get(table, ())
     order: list[str] = []
     for c in head + list(tail_tpl):
@@ -130,7 +128,7 @@ def _col_ddl(info: dict) -> str:
 
 
 def reorder_table_columns(conn, table: str) -> str | None:
-    """Пересоздать таблицу с ``name`` / ``surname`` рядом. None — уже ок."""
+    """Пересоздать таблицу с ``name`` сразу после ``id``. None — уже ок."""
     from sqlalchemy import text
 
     info = _table_info(conn, table)
@@ -139,9 +137,13 @@ def reorder_table_columns(conn, table: str) -> str | None:
     names = [x["name"] for x in info]
     if "name" not in names:
         return None
-    if "surname" not in names:
-        return None
-    if names.index("surname") == names.index("name") + 1:
+    if "surname" in names:
+        from utils.migrate_player_surname import _drop_surname_column
+
+        _drop_surname_column(conn, table)
+        info = _table_info(conn, table)
+        names = [x["name"] for x in info]
+    if len(names) > 1 and names[1] == "name":
         return None
 
     by_name = {x["name"]: x for x in info}
@@ -223,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
     if log:
         print("Переставлены колонки:", ", ".join(log))
     else:
-        print("Уже в порядке id, name, surname, …")
+        print("Уже в порядке id, name, …")
     return 0
 
 

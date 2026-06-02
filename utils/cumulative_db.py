@@ -69,20 +69,18 @@ def _find_row_by_identity(dst: Any, Cls: type, src_row: Any) -> Any | None:
 
 
 def _roster_score(row: Any) -> int:
-    """Выше — осмысленнее раздельные имя и фамилия (не «Фати / Фати»)."""
-    fn = (getattr(row, "name", None) or "").strip()
-    sn = (getattr(row, "surname", None) or "").strip()
-    if fn and sn and fn.casefold() != sn.casefold():
+    """Выше — полнее подпись в ``name`` (два+ слова лучше одного)."""
+    nm = (getattr(row, "name", None) or "").strip()
+    parts = nm.split()
+    if len(parts) >= 2:
         return 3
-    if sn and fn and fn.casefold() in sn.casefold() and len(sn.split()) > len(fn.split()):
-        return 2
-    if sn:
+    if nm:
         return 1
     return 0
 
 
 def _apply_roster_from_source(dst: Any, src: Any, *, season_num: int, tbl: str) -> None:
-    """Имя, фамилия, клуб, рейтинг — из более позднего сезона; при равенстве — лучшая подпись."""
+    """Имя, клуб, рейтинг — из более позднего сезона; при равенстве — лучшая подпись."""
     meta_key = (tbl, int(getattr(dst, "id", 0) or 0))
     prev_season = _roster_season_meta.get(meta_key, 0)
     src_score = _roster_score(src)

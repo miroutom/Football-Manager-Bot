@@ -200,31 +200,17 @@ def nation_wikidata_qid(nation: str) -> str | None:
 
 
 def is_already_split(row: Any) -> bool:
-    fn = (getattr(row, "name", None) or "").strip()
-    sn = (getattr(row, "surname", None) or "").strip()
-    if not fn or not sn:
-        return False
-    if _norm_cmp(fn) == _norm_cmp(sn):
-        return False
-    if len(fn.split()) >= 2:
-        return False
-    if sn.lower().endswith(fn.lower()) and len(sn.split()) > 1:
-        return False
-    return True
+    """Отдельной колонки ``surname`` нет — всегда False."""
+    return False
 
 
 def propose_split_from_fields(row: Any) -> tuple[str, str] | None:
     """
-    Разобрать уже записанное полное имя: «Алейш Гарсия» + surname «Гарсия» → Алейш / Гарсия.
+    Разобрать полное ``name``: «Алейш Гарсия» → Алейш / Гарсия.
 
-    Не режет «Смит Роу» / «Коло Муани», если имя и фамилия в БД совпадают целиком.
+    Не режет «Смит Роу» / «Коло Муани» (два+ слова без отдельной фамилии в БД).
     """
     raw_name = normalize_player_name_for_db(getattr(row, "name", None) or "")
-    raw_sn = normalize_player_name_for_db(getattr(row, "surname", None) or "")
-
-    if raw_name and raw_sn and _norm_cmp(raw_name) == _norm_cmp(raw_sn):
-        return None
-
     if len(raw_name.split()) < 2:
         return None
 
@@ -233,12 +219,7 @@ def propose_split_from_fields(row: Any) -> tuple[str, str] | None:
     first = " ".join(parts[:-1])
     if not first:
         return None
-
-    if raw_sn and _norm_cmp(raw_sn) == _norm_cmp(sn_last):
-        return first.title(), sn_last.title()
-    if not raw_sn:
-        return first.title(), sn_last.title()
-    return None
+    return first.title(), sn_last.title()
 
 
 def current_listing_label(row: Any) -> str:
@@ -266,9 +247,9 @@ def format_proposed_full(first: str, surname: str) -> str:
 
 
 def names_need_update(row: Any, first: str, surname: str) -> bool:
-    cur_fn = (getattr(row, "name", None) or "").strip().title()
-    cur_sn = (getattr(row, "surname", None) or "").strip().title()
-    return _norm_cmp(cur_fn) != _norm_cmp(first) or _norm_cmp(cur_sn) != _norm_cmp(surname)
+    cur = (getattr(row, "name", None) or "").strip().title()
+    want = format_proposed_full(first, surname)
+    return _norm_cmp(cur) != _norm_cmp(want)
 
 
 def extract_first_from_label(label: str, surname: str) -> str:

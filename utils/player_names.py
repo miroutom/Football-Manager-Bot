@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Имя игрока — одно поле ``name`` (полное или фамилия).
+Имя игрока — одно поле ``name`` (полное имя или прозвище одним словом).
 
-Отображение в боте: «Л. Альварез» из «Хулиан Альварез»; одно слово — как есть.
+В боте и стате показывается ``name`` как есть, без сокращения до инициала.
 """
 from __future__ import annotations
 
@@ -49,18 +49,12 @@ def player_surname(row: Any) -> str:
 
 
 def player_short_display(row: Any) -> str:
-    """Краткая подпись: «Л. Мартинез» или фамилия."""
-    raw = (getattr(row, "name", None) or "").strip()
-    if not raw:
-        return ""
-    fn, sn = _name_parts(raw)
-    if fn and sn:
-        return f"{fn[0].upper()}. {sn.title()}"
-    return raw.title()
+    """Полное имя из ``name`` (без «К. Муани»)."""
+    return player_full_name(row)
 
 
 def player_display_name(row: Any) -> str:
-    return player_short_display(row)
+    return player_full_name(row)
 
 
 def player_full_name(row: Any) -> str:
