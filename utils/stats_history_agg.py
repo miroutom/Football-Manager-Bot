@@ -12,6 +12,7 @@
 - ЛЧ: одна строка на игрока, сумма по ЛЧ, клуб последней записи в ``champions_league.db``;
 - ``all``: все нац. лиги (``league.db`` / ``league_synced.db``), одна строка на игрока;
 - ``allcl``: лига+ЛЧ (``common.db``), полная сумма за сезон, клуб с max ``id`` в common.
+- Слияние внутри сезона — по **полному** ``name`` + позиция (не по одной фамилии).
 """
 from __future__ import annotations
 
@@ -94,11 +95,15 @@ def _bucket_key_for_row(
     from utils.player_names import player_stats_identity_token
 
     ident = player_stats_identity_token(p)
+    pos = (getattr(p, "position", None) or "").strip().upper()
     if merge_by_player:
         if merge_across_positions:
             return _identity_only_key(ident)
-        return _identity_key(ident, p.position)
-    return _player_key(ident, p.team, p.position)
+        # Один сезон / common: не склеивать омонимов по фамилии
+        # («Мартинез» Интер ≠ «Альварес Мартинез» Сассуоло).
+        full = (getattr(p, "name", None) or "").strip().casefold()
+        return (full, pos)
+    return _player_key(ident, p.team, pos)
 
 
 def _apply_last_club(
