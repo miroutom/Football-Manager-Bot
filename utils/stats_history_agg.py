@@ -3,8 +3,9 @@
 Статистика для бота «Стата сезонов» и топов (``docs/stats_display_rules.md``,
 полные правила — ``docs/stats_menu_rules_full.md``).
 
-**За всё время** — накопительные ``*_synced.db``, одна строка на игрока (фамилия),
-сумма за все сезоны и позиции; **клуб и позиция** — активная заявка (max ``id``, без ``left_team``).
+**За всё время** — накопительные ``*_synced.db``, одна строка на игрока (**полное** ``name``,
+не фамилия — «Мартинез» ≠ «Иниго Мартинез»); сумма за все сезоны и позиции с тем же именем;
+**клуб и позиция** — активная заявка (``name`` + позиция, max ``id``, без ``left_team``).
 
 **Один сезон** — ``db/season_N/league.db``, ``champions_league.db`` или ``common.db``:
 - нац. лига: строки как в БД (две строки при переходе между лигами); в одной лиге за сезон
@@ -78,6 +79,19 @@ def _identity_only_key(identity: str) -> tuple[str]:
     return ((identity or "").strip().casefold(),)
 
 
+def _full_name_key_from_row(p: Any) -> tuple[str]:
+    full = (getattr(p, "name", None) or "").strip().casefold()
+    return (full,)
+
+
+def _roster_display_key(name: str, position: str) -> tuple[str, str]:
+    """Ключ подписи в активном сезоне (два «Мартинез» разных ролей — разные ключи)."""
+    return (
+        (name or "").strip().casefold(),
+        (position or "").strip().upper(),
+    )
+
+
 def _player_key(identity: str, team: str, position: str) -> tuple[str, str, str]:
     return (
         (identity or "").strip().casefold(),
@@ -98,7 +112,8 @@ def _bucket_key_for_row(
     pos = (getattr(p, "position", None) or "").strip().upper()
     if merge_by_player:
         if merge_across_positions:
-            return _identity_only_key(ident)
+            # Карьера в synced: одно полное имя, все позиции; не склеивать однофамильцев.
+            return _full_name_key_from_row(p)
         # Один сезон / common: не склеивать омонимов по фамилии
         # («Мартинез» Интер ≠ «Альварес Мартинез» Сассуоло).
         full = (getattr(p, "name", None) or "").strip().casefold()
@@ -163,12 +178,10 @@ def _apply_club_label(
         _apply_last_club(b, p, season_num, merge_by_player=True)
 
 
-def _build_active_season_club_map() -> dict[str, tuple[str, str, str]]:
-    """identity → (name, team, position): активная заявка, max id; без left_team."""
-    from utils.player_names import player_stats_identity_token
-
+def _build_active_season_club_map() -> dict[tuple[str, str], tuple[str, str, str]]:
+    """(name, position) → (name, team, position): активная заявка, max id; без left_team."""
     active = season_paths.get_active_season()
-    best: dict[str, tuple[int, str, str, str]] = {}
+    best: dict[tuple[str, str], tuple[int, str, str, str]] = {}
     for kind in ("league", "cl", "common"):
         path = _season_path_by_kind(active, kind)
         if not path:
@@ -179,11 +192,11 @@ def _build_active_season_club_map() -> dict[str, tuple[str, str, str]]:
                 for p in session.query(Cls).all():
                     if bool(getattr(p, "left_team", False)):
                         continue
-                    ident = player_stats_identity_token(p).casefold()
+                    key = _roster_display_key(str(p.name), str(p.position or ""))
                     rid = int(getattr(p, "id", 0) or 0)
-                    prev = best.get(ident)
+                    prev = best.get(key)
                     if prev is None or rid > prev[0]:
-                        best[ident] = (
+                        best[key] = (
                             rid,
                             str(p.name),
                             str(p.team),
@@ -200,8 +213,11 @@ def _apply_active_season_club_labels(rows: list[dict]) -> None:
     if not club_map:
         return
     for b in rows:
-        ident = str(b.get("identity") or b.get("name", "")).strip().casefold()
-        hit = club_map.get(ident)
+        key = _roster_display_key(
+            str(b.get("name") or ""),
+            str(b.get("position") or ""),
+        )
+        hit = club_map.get(key)
         if hit:
             b["name"], b["team"], b["position"] = hit
 
