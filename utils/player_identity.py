@@ -210,6 +210,14 @@ def _apply_merge_donors(
         for donor, _Cls in donors:
             sess.delete(donor)
         return len(donors)
+    from utils.person_registry import row_person_id
+
+    if row_person_id(keeper) is None:
+        for donor, _Cls in donors:
+            dpid = row_person_id(donor)
+            if dpid is not None:
+                keeper.person_id = dpid
+                break
     removed = 0
     for donor, _Cls in donors:
         if mode == "sum":

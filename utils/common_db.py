@@ -39,7 +39,17 @@ from utils.utils import (
 
 
 def _key(p: Any) -> tuple:
-    """Слияние common: фамилия (identity) + клуб + позиция — не ломается при смене имени."""
+    """Слияние common: ``person_id`` + клуб + позиция; иначе фамилия + клуб + позиция."""
+    from utils.person_registry import row_person_id
+
+    pid = row_person_id(p)
+    if pid is not None:
+        return (
+            "pid",
+            pid,
+            (p.team or "").strip().lower(),
+            (p.position or "").strip().upper(),
+        )
     return (
         player_stats_identity_token(p).casefold(),
         (p.team or "").strip().lower(),

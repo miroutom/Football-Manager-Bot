@@ -106,10 +106,14 @@ def _bucket_key_for_row(
     merge_by_player: bool,
     merge_across_positions: bool = False,
 ) -> tuple:
+    from utils.person_registry import row_person_id
     from utils.player_names import player_stats_identity_token
 
     ident = player_stats_identity_token(p)
     pos = (getattr(p, "position", None) or "").strip().upper()
+    pid = row_person_id(p)
+    if merge_by_player and pid is not None:
+        return ("pid", pid)
     if merge_by_player:
         if merge_across_positions:
             # Карьера в synced: одно полное имя, все позиции; не склеивать однофамильцев.
@@ -178,10 +182,16 @@ def _apply_club_label(
         _apply_last_club(b, p, season_num, merge_by_player=True)
 
 
-def _build_active_season_club_map() -> dict[tuple[str, str], tuple[str, str, str]]:
-    """(name, position) → (name, team, position): активная заявка, max id; без left_team."""
+def _build_active_season_club_map() -> tuple[
+    dict[tuple[str, str], tuple[str, str, str]],
+    dict[int, tuple[str, str, str]],
+]:
+    """(name, pos) и person_id → (name, team, position) из активной заявки."""
+    from utils.person_registry import row_person_id
+
     active = season_paths.get_active_season()
     best: dict[tuple[str, str], tuple[int, str, str, str]] = {}
+    by_pid: dict[int, tuple[int, str, str, str]] = {}
     for kind in ("league", "cl", "common"):
         path = _season_path_by_kind(active, kind)
         if not path:
@@ -202,17 +212,38 @@ def _build_active_season_club_map() -> dict[tuple[str, str], tuple[str, str, str
                             str(p.team),
                             str(p.position or ""),
                         )
+                    pid = row_person_id(p)
+                    if pid is not None:
+                        pprev = by_pid.get(pid)
+                        if pprev is None or rid > pprev[0]:
+                            by_pid[pid] = (
+                                rid,
+                                str(p.name),
+                                str(p.team),
+                                str(p.position or ""),
+                            )
         finally:
             session.close()
             eng.dispose()
-    return {k: (v[1], v[2], v[3]) for k, v in best.items()}
+    name_map = {k: (v[1], v[2], v[3]) for k, v in best.items()}
+    pid_map = {k: (v[1], v[2], v[3]) for k, v in by_pid.items()}
+    return name_map, pid_map
 
 
 def _apply_active_season_club_labels(rows: list[dict]) -> None:
-    club_map = _build_active_season_club_map()
-    if not club_map:
+    club_map, pid_map = _build_active_season_club_map()
+    if not club_map and not pid_map:
         return
     for b in rows:
+        pid = b.get("person_id")
+        if pid is not None:
+            try:
+                hit = pid_map.get(int(pid))
+            except (TypeError, ValueError):
+                hit = None
+            if hit:
+                b["name"], b["team"], b["position"] = hit
+                continue
         key = _roster_display_key(
             str(b.get("name") or ""),
             str(b.get("position") or ""),
@@ -335,6 +366,11 @@ def _fold_outfield_bucket(
     b["assists"] += a
     b["ga"] += int(getattr(p, "ga", 0) or 0) or (g + a)
     b["matches"] += int(getattr(p, "matches", 0) or 0)
+    from utils.person_registry import row_person_id
+
+    pid = row_person_id(p)
+    if pid is not None:
+        b["person_id"] = pid
     _apply_club_label(
         b, p, season_num, merge_by_player=merge_by_player, pick_club=pick_club
     )

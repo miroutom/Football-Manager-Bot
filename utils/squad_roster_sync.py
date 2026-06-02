@@ -152,6 +152,7 @@ def _new_player_kwargs(
     nation: str | None,
     status: str,
     carry: dict[str, Any] | None = None,
+    person_id: int | None = None,
 ) -> dict[str, Any]:
     pos = position.strip().upper()
     st = status.strip().lower()
@@ -167,6 +168,7 @@ def _new_player_kwargs(
         matches=int(c.get("matches", 0) or 0),
         trophies=int(c.get("trophies", 0) or 0),
         golden_balls=int(c.get("golden_balls", 0) or 0),
+        person_id=int(person_id) if person_id is not None else None,
     )
     kw["golden_boys"] = int(c.get("golden_boys", 0) or 0)
     if tgt_cls is Forward:
@@ -252,6 +254,9 @@ def upsert_roster_player(
         insert_carry = dedupe_carry
 
     if row is None:
+        from utils.person_registry import allocate_person_id
+
+        new_pid = allocate_person_id(notes=f"{name} · {team}")
         session.add(
             tgt_cls(
                 **_new_player_kwargs(
@@ -263,13 +268,19 @@ def upsert_roster_player(
                     nation=nation,
                     status=st,
                     carry=insert_carry,
+                    person_id=new_pid,
                 )
             )
         )
         return "inserted"
 
     if cur_cls is not tgt_cls:
+        from utils.person_registry import ensure_row_person_id, row_person_id
+
         carry = _carry_from_row(row)
+        keep_pid = row_person_id(row) or ensure_row_person_id(
+            row, notes=f"{name} · {team}", persist=True
+        )
         session.delete(row)
         session.flush()
         session.add(
@@ -283,6 +294,7 @@ def upsert_roster_player(
                     nation=nation,
                     status=st,
                     carry=carry,
+                    person_id=keep_pid,
                 )
             )
         )

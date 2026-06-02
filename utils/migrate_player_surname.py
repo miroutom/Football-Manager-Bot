@@ -21,6 +21,7 @@ def migrate_season_archive_surnames(season_num: int) -> list[str]:
 
 def ensure_season_player_columns(season_num: int) -> list[str]:
     from utils.migrate_player_left_team import migrate_left_team_for_sqlite
+    from utils.migrate_player_person_id import migrate_person_id_for_sqlite
     from utils import season_paths
 
     log: list[str] = []
@@ -32,6 +33,7 @@ def ensure_season_player_columns(season_num: int) -> list[str]:
     ):
         p = f"{d}/{fname}"
         log.extend(migrate_left_team_for_sqlite(p, label=f"s{season_num}/{fname}"))
+        log.extend(migrate_person_id_for_sqlite(p, label=f"s{season_num}/{fname}"))
     return log
 
 

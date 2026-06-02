@@ -221,11 +221,15 @@ def _insert_fresh_row_at_team(
     new_nation: str | None = None,
 ) -> None:
     """Новая строка в ``to_team``; полевая стата с нуля, overall/нация из трансфера."""
+    from utils.person_registry import ensure_row_person_id
+
     pos_u = position.strip().upper()
     ovr = int(new_overall) if new_overall is not None else int(getattr(src, "overall", 0) or 72)
     nat = (new_nation or "").strip() or None if nation_update else getattr(src, "nation", None)
     if nat is not None and isinstance(nat, str):
         nat = nat.strip() or None
+    person_id = ensure_row_person_id(src, persist=True)
+    sess.flush()
     kw = _new_player_kwargs(
         Cls,
         name=str(getattr(src, "name", "") or ""),
@@ -233,6 +237,7 @@ def _insert_fresh_row_at_team(
         position=pos_u,
         overall=ovr,
         nation=nat if nation_update else getattr(src, "nation", None),
+        person_id=person_id,
     )
     row = Cls(**kw)
     sess.add(row)
@@ -287,6 +292,10 @@ def _apply_transfer_with_status_to_sessions(
             )
 
         donor_cls, donor = max(sources, key=_donor_score)
+        from utils.person_registry import ensure_row_person_id
+
+        for _Cls, r in sources:
+            ensure_row_person_id(r, persist=True)
         if _row_exists_at_team(sess, donor_cls, player, to_team, position):
             raise ValueError(
                 f"Уже есть строка: {player} ({position}) в «{to_team}»."
@@ -412,6 +421,7 @@ def _new_player_kwargs(
     position: str,
     overall: int,
     nation: str | None = None,
+    person_id: int | None = None,
 ) -> dict[str, Any]:
     u = max(1, min(99, int(overall)))
     pos_u = position.strip().upper()
@@ -428,6 +438,7 @@ def _new_player_kwargs(
         nation=nat,
         status=None,
         left_team=False,
+        person_id=int(person_id) if person_id is not None else None,
     )
     if Cls is Forward:
         kw.update(
@@ -497,6 +508,9 @@ def add_player_to_club_sessions(
                 return True
         return False
 
+    from utils.person_registry import allocate_person_id
+
+    new_pid = allocate_person_id(notes=f"{player} · {to_team}")
     kw = _new_player_kwargs(
         Cls,
         name=player,
@@ -504,6 +518,7 @@ def add_player_to_club_sessions(
         position=position,
         overall=overall,
         nation=nation,
+        person_id=new_pid,
     )
     counts = {"league": 0, "cl": 0}
     if _dup(session_league):

@@ -47,6 +47,7 @@ def update_goalkeeper_stats(
 class Goalkeeper(Base):
     __tablename__ = 'goalkeepers'
     id = Column(Integer, primary_key=True)
+    person_id = Column(Integer, nullable=True, index=True)
     name = Column(String, nullable=False)
     overall = Column(Integer, nullable=False)
     team = Column(String, nullable=False)

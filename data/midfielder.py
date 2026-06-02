@@ -50,6 +50,7 @@ def update_midfielder_stats(
 class Midfielder(Base):
     __tablename__ = 'midfielders'
     id = Column(Integer, primary_key=True)
+    person_id = Column(Integer, nullable=True, index=True)
     name = Column(String, nullable=False)
     overall = Column(Integer, nullable=False)
     team = Column(String, nullable=False)

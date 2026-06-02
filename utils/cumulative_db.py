@@ -42,19 +42,28 @@ def _player_identity_key(row: Any) -> tuple[str, str]:
     )
 
 
-def _row_key(row: Any) -> tuple[str, str, str]:
-    """Дубли в одной накопительной БД: identity + клуб + позиция."""
-    return (
-        player_stats_identity_token(row).casefold(),
-        (row.team or "").strip().casefold(),
-        (row.position or "").strip().upper(),
-    )
+def _merge_key_career(row: Any) -> tuple:
+    """Ключ слияния в synced: ``person_id`` + позиция или фамилия + позиция."""
+    from utils.person_registry import row_person_id
+
+    pid = row_person_id(row)
+    pos = (row.position or "").strip().upper()
+    if pid is not None:
+        return ("pid", pid, pos)
+    ident = _player_identity_key(row)
+    return ("legacy", ident[0], ident[1])
+
+
+def _row_key(row: Any) -> tuple:
+    """Дубли в одной накопительной БД: career key + клуб."""
+    base = _merge_key_career(row)
+    return (*base, (row.team or "").strip().casefold())
 
 
 def _find_row_by_identity(dst: Any, Cls: type, src_row: Any) -> Any | None:
-    want = _player_identity_key(src_row)
+    want = _merge_key_career(src_row)
     for row in dst.query(Cls).all():
-        if _player_identity_key(row) == want:
+        if _merge_key_career(row) == want:
             return row
     return None
 

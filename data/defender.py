@@ -48,6 +48,7 @@ def update_defender_stats(
 class Defender(Base):
     __tablename__ = 'defenders'
     id = Column(Integer, primary_key=True)
+    person_id = Column(Integer, nullable=True, index=True)
     name = Column(String, nullable=False)
     overall = Column(Integer, nullable=False)
     team = Column(String, nullable=False)
