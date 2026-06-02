@@ -256,6 +256,7 @@ def add_player_to_team_roster(
         else:
             nat_res = normalize_nation(nat_l) if nat_l else None
     elif cum:
+        # Только overall/нация из накопительной common; полевая стата в клубе — с нулей.
         r0 = cum[0][0]
         ovr_res = max(
             1,
@@ -272,7 +273,7 @@ def add_player_to_team_roster(
             nat_res = normalize_nation(str(r0.nation))
         else:
             nat_res = None
-        carry = _carry_from_row(r0)
+        carry = None
     else:
         if overall is None:
             raise ValueError(
