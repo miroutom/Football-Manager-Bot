@@ -241,6 +241,14 @@ python3 scripts/assign_person_ids_season_archive.py --season 1 --link-season 2 -
 
 **Критерий:** `aggregate_life_outfield` и `format_season_stat` используют только `person_id` там, где поле заполнено.
 
+**Скрипт (реализовано):**
+
+```bash
+python3 scripts/rebuild_league_synced_from_archives.py --verify
+```
+
+Бэкапы: ``*.bak_person_id_rebuild``. Слияние в ``cumulative_db`` по ``person_id`` + позиция.
+
 ---
 
 ### Фаза 6 — бот и отключение fallback

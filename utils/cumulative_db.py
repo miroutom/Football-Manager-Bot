@@ -109,6 +109,11 @@ def _apply_roster_from_source(dst: Any, src: Any, *, season_num: int, tbl: str) 
         dst.status = getattr(src, "status", None)
     if hasattr(dst, "nation"):
         dst.nation = getattr(src, "nation", None)
+    from utils.person_registry import row_person_id
+
+    sp = row_person_id(src)
+    if sp is not None:
+        dst.person_id = sp
     _roster_season_meta[meta_key] = season_num
 
 
@@ -231,6 +236,11 @@ def _merge_player_tables(
             dst.flush()
             _apply_roster_from_source(new_row, p, season_num=season_num, tbl=tbl)
             continue
+        from utils.person_registry import row_person_id
+
+        sp = row_person_id(p)
+        if sp is not None and row_person_id(row) is None:
+            row.person_id = sp
         _fold_stats_into_row(row, p)
         _apply_roster_from_source(row, p, season_num=season_num, tbl=tbl)
 
