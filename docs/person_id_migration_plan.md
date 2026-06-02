@@ -146,6 +146,20 @@ person_id = Column(Integer, nullable=True, index=True)
 
 **Критерий:** 0 конфликтов «два разных человека → один person_id» в review-отчёте.
 
+**Скрипт (реализовано):**
+
+```bash
+# 1) Отчёт без записи в БД
+python3 scripts/assign_person_ids_active_season.py
+
+# 2) Проверить data/person_id_active_season_review.csv и needs_review в JSON
+# 3) При необходимости: data/person_id_active_overrides.json (см. example)
+python3 scripts/assign_person_ids_active_season.py --apply
+```
+
+Трансфер (Тонали Ньюкасл left + Сити active, разные позиции) → ``transfer_same_name``.  
+Несколько активных клубов с одним именем → ``needs_review``, не склеивать без overrides.
+
 ---
 
 ### Фаза 3 — архив season_1 (историческая правда)

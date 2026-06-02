@@ -1,0 +1,12 @@
+{
+  "merge_row_keys": [
+    [
+      "league:midfielders:1061",
+      "league:midfielders:1077",
+      "cl:midfielders:806",
+      "cl:midfielders:814"
+    ]
+  ],
+  "split_row_keys": [],
+  "_comment": "Скопируйте в person_id_active_overrides.json. Тонали уже склеивается автоматически (transfer_same_name). merge_row_keys — для спорных случаев из needs_review (Родри, Миранчук, два Мартинеза и т.д.)."
+}

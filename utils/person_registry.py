@@ -37,6 +37,40 @@ def init_registry_db() -> None:
     _engine().dispose()
 
 
+def register_existing_person_id(person_id: int, *, notes: str = "") -> None:
+    """Записать id из backfill, чтобы ``allocate_person_id`` не выдал его снова."""
+    pid = int(person_id)
+    if pid <= 0:
+        raise ValueError("person_id must be positive")
+    eng = _engine()
+    Session = sessionmaker(bind=eng)
+    sess = Session()
+    try:
+        exists = sess.get(Person, pid)
+        if exists is not None:
+            return
+        sess.add(
+            Person(
+                person_id=pid,
+                created_at=datetime.now(timezone.utc),
+                notes=(notes or "").strip() or None,
+            )
+        )
+        sess.commit()
+    finally:
+        sess.close()
+        eng.dispose()
+
+
+def sync_registry_after_backfill(assigned_ids: list[int]) -> int:
+    """Зарегистрировать все выданные id; вернуть max person_id."""
+    for pid in sorted(set(int(x) for x in assigned_ids if int(x) > 0)):
+        register_existing_person_id(pid)
+    if not assigned_ids:
+        return 0
+    return max(int(x) for x in assigned_ids)
+
+
 def allocate_person_id(*, notes: str = "") -> int:
     """Новый ``person_id`` (монотонный, без переиспользования)."""
     eng = _engine()
