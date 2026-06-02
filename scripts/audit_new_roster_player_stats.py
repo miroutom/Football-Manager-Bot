@@ -292,8 +292,12 @@ def _audit_db(db_path: str, label: str, *, apply: bool) -> tuple[int, int, int]:
     Base.metadata.create_all(eng)
     Session = sessionmaker(bind=eng)
     session = Session()
+    from utils.common_db import _team_in_cl_pool
+
+    is_cl_db = "champions_league" in db_path
     found = 0
     missing = 0
+    skipped_cl = 0
     nonzero = 0
     try:
         print(f"=== {label} ({os.path.basename(db_path)}) ===\n")
@@ -304,6 +308,11 @@ def _audit_db(db_path: str, label: str, *, apply: bool) -> tuple[int, int, int]:
                 print(f"── {team} ──")
             hits = _find_rows(session, team, name, pos)
             if not hits:
+                rteam = _resolve_team_in_session(session, team)
+                if is_cl_db and not _team_in_cl_pool(rteam):
+                    print(f"  — {name} ({pos}) — клуб не в ЛЧ")
+                    skipped_cl += 1
+                    continue
                 print(f"  ? {name} ({pos}) — не найден")
                 missing += 1
                 continue
@@ -328,6 +337,8 @@ def _audit_db(db_path: str, label: str, *, apply: bool) -> tuple[int, int, int]:
         session.close()
         eng.dispose()
     print()
+    if is_cl_db and skipped_cl:
+        print(f"(пропущено «не в ЛЧ»: {skipped_cl})\n")
     return found, missing, nonzero
 
 
@@ -358,9 +369,11 @@ def main() -> None:
 
     mode = "записано" if args.apply else "dry-run"
     print(
-        f"Итого ({mode}): найдено строк {tf}, не найдено {tm}, "
+        f"Итого ({mode}): найдено строк {tf}, не найдено (лига/ЛЧ-клубы) {tm}, "
         f"с ненулевой статой {tn}."
     )
+    if args.cl:
+        print("В ЛЧ «не найден» только у клубов из пула ЛЧ; остальные — «клуб не в ЛЧ».")
     if not args.apply and tn:
         print("Чтобы обнулить все найденные ненулевые: добавь --apply")
     if args.apply and tn:
