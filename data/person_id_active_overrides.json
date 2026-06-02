@@ -1,0 +1,77 @@
+{
+  "merge_groups": [
+    {
+      "label": "Миранчук Локомотив",
+      "row_keys": [
+        "league:midfielders:819",
+        "league:midfielders:1069",
+        "cl:midfielders:625"
+      ],
+      "canonical_position": "ЦАП",
+      "consolidate": true
+    },
+    {
+      "label": "Кокорин Урал",
+      "row_keys": ["cl:midfielders:233", "league:forwards:688"],
+      "canonical_position": "ПФА",
+      "consolidate": true
+    },
+    {
+      "label": "Мален Дортмунд",
+      "row_keys": [
+        "cl:forwards:589",
+        "cl:forwards:658",
+        "league:forwards:800"
+      ],
+      "canonical_position": "ЛФА",
+      "consolidate": true
+    },
+    {
+      "label": "Бентанкур",
+      "row_keys": [
+        "cl:midfielders:688",
+        "cl:midfielders:812",
+        "league:midfielders:898"
+      ],
+      "canonical_position": "ЦП",
+      "consolidate": true
+    },
+    {
+      "label": "Ундав",
+      "row_keys": [
+        "cl:midfielders:698",
+        "cl:midfielders:813",
+        "league:midfielders:913"
+      ],
+      "canonical_position": "ЦП",
+      "consolidate": true
+    },
+    {
+      "label": "Арнольд",
+      "row_keys": [
+        "cl:midfielders:771",
+        "cl:midfielders:810",
+        "league:midfielders:1020"
+      ],
+      "canonical_position": "ЦОП",
+      "consolidate": true
+    },
+    {
+      "label": "Уиллок",
+      "row_keys": ["cl:midfielders:679", "league:midfielders:1074"],
+      "canonical_position": "ЦП",
+      "consolidate": true
+    },
+    {
+      "label": "Зджелар",
+      "row_keys": [
+        "cl:defenders:706",
+        "cl:midfielders:811",
+        "league:defenders:933"
+      ],
+      "canonical_position": "ЦЗ",
+      "consolidate": true
+    }
+  ],
+  "_comment": "«Разные» из needs_review не перечислены — остаются в разных группах. Энрике Бетис не в merge. Трансферы (Тонали и т.д.) — авто transfer_same_name, без consolidate."
+}

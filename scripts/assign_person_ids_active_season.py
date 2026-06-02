@@ -15,11 +15,18 @@
 Ручные правки перед --apply: ``data/person_id_active_overrides.json``::
 
   {
-    "merge_row_keys": [
-      ["league:midfielders:1061", "league:midfielders:1077", "cl:midfielders:806", "cl:midfielders:814"]
-    ],
-    "split_row_keys": []
+    "merge_groups": [
+      {
+        "label": "Мален",
+        "row_keys": ["league:forwards:800", "cl:forwards:589"],
+        "canonical_position": "ЛФА",
+        "consolidate": true
+      }
+    ]
   }
+
+Слияние дублей: одна строка на БД (все таблицы), стата с записи max(matches), позиция из canonical_position.
+``keeper_row_key`` (опц.) — какую строку оставить при разных таблицах (forwards vs midfielders).
 
 Примеры::
 
@@ -65,6 +72,7 @@ _TABLE = {
     Defender: "defenders",
     Goalkeeper: "goalkeepers",
 }
+_CLS_FROM_TABLE = {v: k for k, v in _TABLE.items()}
 _REVIEW_CSV = ROOT / "data" / "person_id_active_season_review.csv"
 _PREVIEW_JSON = ROOT / "data" / "person_id_active_season_groups.json"
 _DEFAULT_OVERRIDES = ROOT / "data" / "person_id_active_overrides.json"
@@ -222,14 +230,22 @@ def _build_groups(
                 rules[j] = "existing_person_id"
 
     if overrides:
+        key_to_idx = {rows[i].row_key: i for i in range(len(rows))}
         for group_keys in overrides.get("merge_row_keys") or []:
-            key_to_idx = {rows[i].row_key: i for i in range(len(rows))}
             ids = [key_to_idx[k] for k in group_keys if k in key_to_idx]
             if len(ids) >= 2:
                 root = ids[0]
                 for j in ids[1:]:
                     uf.union(root, j)
                     rules[j] = "override_merge"
+        for mg in overrides.get("merge_groups") or []:
+            keys = mg.get("row_keys") or []
+            ids = [key_to_idx[k] for k in keys if k in key_to_idx]
+            if len(ids) >= 2:
+                root = ids[0]
+                for j in ids[1:]:
+                    uf.union(root, j)
+                    rules[j] = "override_merge_group"
 
         split_keys = set(overrides.get("split_row_keys") or [])
         if split_keys:
@@ -370,6 +386,117 @@ def _write_preview_json(
         )
 
 
+def _parse_row_key(row_key: str) -> tuple[str, str, int]:
+    parts = row_key.split(":")
+    if len(parts) != 3:
+        raise ValueError(f"Неверный row_key: {row_key!r}")
+    return parts[0], parts[1], int(parts[2])
+
+
+def _stat_tuple(row: Any) -> tuple[int, int, int]:
+    g = int(getattr(row, "goals", 0) or 0)
+    a = int(getattr(row, "assists", 0) or 0)
+    return (int(getattr(row, "matches", 0) or 0), g + a, g)
+
+
+def _copy_stat_line(dst: Any, src: Any) -> None:
+    dst.matches = int(getattr(src, "matches", 0) or 0)
+    if hasattr(dst, "goals"):
+        dst.goals = int(getattr(src, "goals", 0) or 0)
+        dst.assists = int(getattr(src, "assists", 0) or 0)
+        dst.ga = int(getattr(dst, "goals", 0) or 0) + int(getattr(dst, "assists", 0) or 0)
+    if hasattr(dst, "clean_sheets") and not hasattr(dst, "goals"):
+        dst.clean_sheets = int(getattr(src, "clean_sheets", 0) or 0)
+    if hasattr(dst, "missed_goals"):
+        dst.missed_goals = int(getattr(src, "missed_goals", 0) or 0)
+
+
+def _consolidate_keys_in_session(
+    sess,
+    row_keys: list[str],
+    *,
+    canonical_position: str,
+) -> tuple[int, int]:
+    """Одна строка на БД (все таблицы); стата с max(matches); позиция canonical."""
+    pos_u = canonical_position.strip().upper()
+    objs: list[Any] = []
+    for key in row_keys:
+        _db, table, rid = _parse_row_key(key)
+        Cls = _CLS_FROM_TABLE.get(table)
+        if Cls is None:
+            continue
+        row = sess.query(Cls).filter(Cls.id == rid).first()
+        if row is not None:
+            objs.append(row)
+
+    if not objs:
+        return 0, 0
+    if len(objs) == 1:
+        objs[0].position = pos_u
+        return 1, 0
+
+    stat_src = max(objs, key=_stat_tuple)
+    pos_rows = [
+        r for r in objs if (getattr(r, "position", "") or "").strip().upper() == pos_u
+    ]
+    keeper = pos_rows[0] if pos_rows else stat_src
+    _copy_stat_line(keeper, stat_src)
+    keeper.position = pos_u
+    deleted = 0
+    for r in objs:
+        if int(getattr(r, "id", 0) or 0) != int(getattr(keeper, "id", 0) or 0):
+            sess.delete(r)
+            deleted += 1
+    return 1, deleted
+
+
+def _consolidate_merge_groups(
+    league_path: str,
+    cl_path: str,
+    overrides: dict[str, Any] | None,
+) -> None:
+    if not overrides:
+        return
+    groups = [
+        mg
+        for mg in (overrides.get("merge_groups") or [])
+        if mg.get("consolidate") and (mg.get("row_keys") or [])
+    ]
+    if not groups:
+        return
+    for db_path, label in ((league_path, "league"), (cl_path, "cl")):
+        if not os.path.isfile(db_path):
+            continue
+        eng = create_engine(f"sqlite:///{db_path}")
+        Session = sessionmaker(bind=eng)
+        sess = Session()
+        try:
+            for mg in groups:
+                keys = [
+                    k
+                    for k in mg["row_keys"]
+                    if _parse_row_key(k)[0] == label
+                ]
+                if len(keys) < 2:
+                    continue
+                u, d = _consolidate_keys_in_session(
+                    sess,
+                    keys,
+                    canonical_position=str(mg.get("canonical_position") or ""),
+                )
+                print(
+                    f"  consolidate [{mg.get('label', '?')}] {label}: "
+                    f"оставлено/обновлено {u}, удалено {d}"
+                )
+            sess.commit()
+        except Exception:
+            sess.rollback()
+            raise
+        finally:
+            sess.close()
+            eng.dispose()
+
+
 def _apply_to_db(
     db_path: str,
     assignments: dict[tuple[str, int], int],
@@ -498,6 +625,9 @@ def main() -> None:
     n_l = _apply_to_db(league_path, league_assign)
     n_c = _apply_to_db(cl_path, cl_assign)
     sync_registry_after_backfill(all_pids)
+
+    print("\nСлияние дублей (одна позиция, стата с max matches):")
+    _consolidate_merge_groups(league_path, cl_path, overrides)
 
     from utils.common_db import rebuild_common_database
 
