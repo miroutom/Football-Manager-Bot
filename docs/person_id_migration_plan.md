@@ -175,6 +175,15 @@ python3 scripts/assign_person_ids_active_season.py --apply
 
 **Критерий:** ключевые игроки из скриншотов/топов совпадают; спорные строки только в `overrides_*.csv`.
 
+**Скрипт (реализовано):**
+
+```bash
+python3 scripts/assign_person_ids_season_archive.py --season 1 --link-season 2
+python3 scripts/assign_person_ids_season_archive.py --season 1 --link-season 2 --apply
+```
+
+Отчёт: `data/person_id_season1_review.xlsx`. Overrides: `data/person_id_season1_overrides.json`.
+
 ---
 
 ### Фаза 4 — стыковка season_1 ↔ season_2 (главное для вас)

@@ -1,0 +1,6 @@
+{
+  "force_person_id": {},
+  "merge_groups": [],
+  "merge_row_keys": [],
+  "_comment": "force_person_id: {\"league:forwards:118\": 62}. merge_groups — как в person_id_active_overrides.json."
+}

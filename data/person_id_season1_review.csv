@@ -1,0 +1,1839 @@
+﻿group_id,person_id_proposed,needs_review,rule,row_key,db,table,row_id,name,team,position,left_team,matches,goals,assists,person_id_current
+g0214,1208,,existing,cl:midfielders:61,cl,midfielders,61,Ааронсон,Франкфурт,ЦАП,0,0,0,0,1208
+g0214,1208,,existing,league:midfielders:87,league,midfielders,87,Ааронсон,Франкфурт,ЦАП,0,0,0,0,1208
+g1058,1503,,existing,league:defenders:292,league,defenders,292,Абнер,Бетис,ЛЗ,0,3,0,0,1503
+g0088,1087,,existing,cl:forwards:89,cl,forwards,89,Абрахам,Рома,ФРВ,0,0,0,0,1087
+g0088,1087,,existing,league:forwards:147,league,forwards,147,Абрахам,Рома,ФРВ,0,7,2,2,1087
+g0577,725,,link_season_slot,cl:defenders:210,cl,defenders,210,Агапов,Цска,ЦЗ,0,0,0,0,725
+g0577,725,,link_season_slot,league:defenders:337,league,defenders,337,Агапов,Цска,ЦЗ,0,5,0,0,725
+g0662,1607,,existing,cl:goalkeepers:39,cl,goalkeepers,39,Агиррезабала,Атлетик,ВРТ,0,0,0,0,1607
+g0662,1607,,existing,league:goalkeepers:68,league,goalkeepers,68,Агиррезабала,Атлетик,ВРТ,0,0,0,0,1607
+g0679,950,,link_season_slot,cl:goalkeepers:56,cl,goalkeepers,56,Агкацев,Краснодар,ВРТ,0,0,0,0,950
+g0679,950,,link_season_slot,league:goalkeepers:91,league,goalkeepers,91,Агкацев,Краснодар,ВРТ,0,0,0,0,950
+g0995,1422,,existing,league:defenders:151,league,defenders,151,Адамс,Хоффенхайм,ЦЗ,0,0,0,0,1422
+g0716,1065,,existing,league:forwards:93,league,forwards,93,Адаму,Фрайбург,ФРВ,0,0,0,0,1065
+g0966,1374,,existing,league:defenders:40,league,defenders,40,Адарабьо,Фулхэм,ЦЗ,0,4,0,0,1374
+g0039,1049,,existing,cl:forwards:38,cl,forwards,38,Адейеми,Дортмунд,ФРВ,0,8,9,5,1049
+g0039,1049,,existing,league:forwards:60,league,forwards,60,Адейеми,Дортмунд,ФРВ,0,12,16,1,1049
+g0691,1027,,existing,league:forwards:11,league,forwards,11,Адингра,Брайтон,ЛФА,0,11,2,2,1027
+g0001,191,,link_season_slot,cl:forwards:55,cl,forwards,55,Адли,Байер,ФРВ,1,1,0,1,191
+g0001,191,,link_season_slot,cl:midfielders:115,cl,midfielders,115,Адли,Милан,ЦАП,0,0,0,0,191
+g0001,191,,link_season_slot,league:forwards:77,league,forwards,77,Адли,Байер,ФРВ,1,10,4,0,191
+g0001,191,,link_season_slot,league:midfielders:183,league,midfielders,183,Адли,Милан,ЦАП,0,0,0,0,191
+g0630,1576,,existing,cl:goalkeepers:7,cl,goalkeepers,7,Адриан,Ливерпуль,ВРТ,0,0,0,0,1576
+g0630,1576,,existing,league:goalkeepers:14,league,goalkeepers,14,Адриан,Ливерпуль,ВРТ,0,0,0,0,1576
+g0089,1088,,existing,cl:forwards:90,cl,forwards,90,Азмун,Рома,ФРВ,0,4,4,0,1088
+g0089,1088,,existing,league:forwards:148,league,forwards,148,Азмун,Рома,ФРВ,0,5,8,0,1088
+g0825,1185,,existing,league:midfielders:30,league,midfielders,30,Айвоби,Фулхэм,ПП,0,8,1,0,1185
+g0770,25,,link_season_slot,league:forwards:186,league,forwards,186,Айозе,Бетис,ЛФА,0,4,1,2,25
+g0408,583,,link_season_slot,cl:defenders:41,cl,defenders,41,Аканжи,Сити,ЦЗ,0,1,0,0,583
+g0408,583,,link_season_slot,league:defenders:75,league,defenders,75,Аканжи,Сити,ЦЗ,0,1,0,0,583
+g0928,1336,,existing,league:midfielders:324,league,midfielders,324,Акбашев,Ростов,ЦП,0,1,0,1,1336
+g0409,584,,link_season_slot,cl:defenders:42,cl,defenders,42,Аке,Сити,ЦЗ,0,1,0,0,584
+g0409,584,,link_season_slot,league:defenders:76,league,defenders,76,Аке,Сити,ЦЗ,0,1,0,0,584
+g0674,1615,,existing,cl:goalkeepers:51,cl,goalkeepers,51,Акинфеев,Цска,ВРТ,0,0,0,0,1615
+g0674,1615,,existing,league:goalkeepers:86,league,goalkeepers,86,Акинфеев,Цска,ВРТ,0,5,0,0,1615
+g0988,848,,link_season_slot,league:defenders:144,league,defenders,144,Акпогума,Хоффенхайм,ЦЗ,0,2,1,1,848
+g0371,727,,link_season_slot,cl:defenders:4,cl,defenders,4,Акунья,Арсенал,ЛЗ,0,0,0,0,727
+g0371,727,,link_season_slot,league:defenders:4,league,defenders,4,Акунья,Арсенал,ЛЗ,0,9,4,3,727
+g0548,618,,link_season_slot,cl:defenders:181,cl,defenders,181,Алаба,Реал,ЦЗ,0,1,0,0,618
+g0548,618,,link_season_slot,league:defenders:301,league,defenders,301,Алаба,Реал,ЦЗ,0,11,2,0,618
+g0053,1054,,existing,cl:forwards:52,cl,forwards,52,Аларио,Франкфурт,ФРВ,0,0,0,0,1054
+g0053,1054,,existing,league:forwards:74,league,forwards,74,Аларио,Франкфурт,ФРВ,0,0,0,0,1054
+g0102,1107,,existing,cl:forwards:103,cl,forwards,103,Аларкон,Барселона,ФРВ,0,0,0,0,1107
+g0102,1107,,existing,league:forwards:174,league,forwards,174,Аларкон,Барселона,ФРВ,0,0,0,0,1107
+g0887,304,,link_season_slot,league:midfielders:238,league,midfielders,238,Алейш Гарсия,Жирона,ЦП,0,7,3,4,304
+g0390,744,,link_season_slot,cl:defenders:23,cl,defenders,23,Александер-Арнольд,Ливерпуль,ПЗ,0,3,0,2,744
+g0390,744,,link_season_slot,league:defenders:48,league,defenders,48,Александер-Арнольд,Ливерпуль,ПЗ,0,5,0,1,744
+g0616,711,,link_season_slot,cl:defenders:249,cl,defenders,249,Алип,Зенит,ЦЗ,0,0,0,0,711
+g0616,711,,link_season_slot,league:defenders:410,league,defenders,410,Алип,Зенит,ЦЗ,0,7,0,1,711
+g0628,961,,link_season_slot,cl:goalkeepers:5,cl,goalkeepers,5,Алиссон,Ливерпуль,ВРТ,0,4,0,0,961
+g0628,961,,link_season_slot,league:goalkeepers:12,league,goalkeepers,12,Алиссон,Ливерпуль,ВРТ,0,5,0,0,961
+g0042,179,,link_season_slot,cl:forwards:41,cl,forwards,41,Аллер,Дортмунд,ФРВ,0,0,0,0,179
+g0042,179,,link_season_slot,league:forwards:63,league,forwards,63,Аллер,Дортмунд,ФРВ,0,0,0,0,179
+g0544,1487,yes,existing,cl:defenders:177,cl,defenders,177,Алонсо,Барселона,ЛЗ,0,0,0,0,1487
+g0544,1487,yes,existing,league:defenders:272,league,defenders,272,Алонсо,Барселона,ЛЗ,0,0,0,0,1487
+g0590,679,yes,link_season_slot,cl:defenders:223,cl,defenders,223,Алонсо,Краснодар,ЦЗ,0,3,0,0,679
+g0590,679,yes,link_season_slot,league:defenders:350,league,defenders,350,Алонсо,Краснодар,ЦЗ,0,6,0,1,679
+g0909,1296,,existing,league:midfielders:260,league,midfielders,260,Алтимира,Бетис,ЦОП,0,0,0,0,1296
+g0870,452,,link_season_slot,league:midfielders:170,league,midfielders,170,Альберто,Лацио,ЦП,0,8,1,2,452
+g0569,1520,,existing,cl:defenders:202,cl,defenders,202,Альберто Морено,Вильярреал,ЛЗ,0,2,1,1,1520
+g0569,1520,,existing,league:defenders:329,league,defenders,329,Альберто Морено,Вильярреал,ЛЗ,0,5,0,0,1520
+g0568,1519,,existing,cl:defenders:201,cl,defenders,201,Альбиоль,Вильярреал,ЦЗ,0,0,0,0,1519
+g0568,1519,,existing,league:defenders:328,league,defenders,328,Альбиоль,Вильярреал,ЦЗ,0,0,0,0,1519
+g0751,1095,,existing,league:forwards:155,league,forwards,155,Альварес Мартинез,Сассуоло,ФРВ,0,0,0,0,1095
+g0707,1043,,existing,league:forwards:44,league,forwards,44,Альмирон,Ньюкасл,ПФА,0,8,4,2,1043
+g0220,489,,link_season_slot,cl:midfielders:67,cl,midfielders,67,Амири,Байер,ЦАП,0,0,0,0,489
+g0220,489,,link_season_slot,league:midfielders:93,league,midfielders,93,Амири,Байер,ЦАП,0,3,0,0,489
+g0178,425,,link_season_slot,cl:midfielders:24,cl,midfielders,24,Амрабат,Мю,ЦП,0,0,0,0,425
+g0178,425,,link_season_slot,league:midfielders:45,league,midfielders,45,Амрабат,Мю,ЦП,0,1,0,0,425
+g0269,343,,link_season_slot,cl:midfielders:117,cl,midfielders,117,Ангисса,Наполи,ЦОП,1,0,0,0,343
+g0269,343,,link_season_slot,league:midfielders:185,league,midfielders,185,Ангисса,Наполи,ЦОП,1,8,0,2,343
+g0286,288,,link_season_slot,cl:midfielders:135,cl,midfielders,135,Андер Эррера,Атлетик,ЦП,0,4,0,2,288
+g0286,288,,link_season_slot,league:midfielders:214,league,midfielders,214,Андер Эррера,Атлетик,ЦП,0,2,0,2,288
+g0739,154,,link_season_slot,league:forwards:129,league,forwards,129,Андерсон,Лацио,ПФА,0,6,1,2,154
+g0745,1082,,existing,league:forwards:135,league,forwards,135,Андре Андерсон,Лацио,ФРВ,0,0,0,0,1082
+g0217,486,,link_season_slot,cl:midfielders:64,cl,midfielders,64,Андрих,Байер,ЦП,0,2,1,0,486
+g0217,486,,link_season_slot,league:midfielders:90,league,midfielders,90,Андрих,Байер,ЦП,0,10,2,1,486
+g0999,1426,,existing,league:defenders:155,league,defenders,155,Антон,Штутгарт,ЦЗ,0,10,1,0,1426
+g0022,126,,link_season_slot,cl:forwards:21,cl,forwards,21,Антони,Мю,ПФА,0,1,1,0,126
+g0022,126,,link_season_slot,league:forwards:37,league,forwards,37,Антони,Мю,ПФА,0,8,0,0,126
+g1095,1557,,existing,league:defenders:390,league,defenders,390,Апшацев,Рубин,ПЗ,0,0,0,0,1557
+g0539,603,,link_season_slot,cl:defenders:172,cl,defenders,172,Араухо,Барселона,ЦЗ,0,2,0,0,603
+g0539,603,,link_season_slot,league:defenders:267,league,defenders,267,Араухо,Барселона,ЦЗ,0,3,0,0,603
+g1056,1501,,existing,league:defenders:290,league,defenders,290,Аридане,Райо Вальекано,ЦЗ,0,0,0,0,1501
+g0070,61,,link_season_slot,cl:forwards:70,cl,forwards,70,Арнаутович,Интер,ФРВ,0,8,4,10,61
+g0070,61,,link_season_slot,league:forwards:119,league,forwards,119,Арнаутович,Интер,ФРВ,0,13,7,12,61
+g0858,515,,link_season_slot,league:midfielders:137,league,midfielders,137,Арнольд,Вольфсбург,ЦОП,0,12,2,7,515
+g0452,1408,yes,existing,cl:defenders:85,cl,defenders,85,Артур,Байер,ПЗ,0,0,0,0,1408
+g0452,1408,yes,existing,league:defenders:119,league,defenders,119,Артур,Байер,ПЗ,0,0,0,0,1408
+g0866,1240,yes,existing,league:midfielders:152,league,midfielders,152,Артур,Фиорентина,ЦОП,0,4,0,2,1240
+g0346,1320,,existing,cl:midfielders:195,cl,midfielders,195,Арутюнян,Краснодар,ЦП,0,0,0,0,1320
+g0346,1320,,existing,league:midfielders:304,league,midfielders,304,Арутюнян,Краснодар,ЦП,0,0,0,0,1320
+g0255,1245,,existing,cl:midfielders:102,cl,midfielders,102,Аслани,Интер,ЦП,0,0,0,0,1245
+g0255,1245,,existing,league:midfielders:164,league,midfielders,164,Аслани,Интер,ЦП,0,0,0,0,1245
+g0535,1485,,existing,cl:defenders:168,cl,defenders,168,Аспиликуэта,Атлетико,ПЗ,0,0,0,0,1485
+g0535,1485,,existing,league:defenders:263,league,defenders,263,Аспиликуэта,Атлетико,ПЗ,0,0,0,0,1485
+g1115,1584,,existing,league:goalkeepers:36,league,goalkeepers,36,Атуболу,Фрайбург,ВРТ,0,5,0,0,1584
+g0281,1258,,existing,cl:midfielders:130,cl,midfielders,130,Ауар,Рома,ЦАП,0,0,0,0,1258
+g0281,1258,,existing,league:midfielders:198,league,midfielders,198,Ауар,Рома,ЦАП,0,0,0,0,1258
+g0252,1244,,existing,cl:midfielders:99,cl,midfielders,99,Аугусто,Интер,ЛП,0,1,0,0,1244
+g0252,1244,,existing,league:midfielders:161,league,midfielders,161,Аугусто,Интер,ЛП,0,1,1,0,1244
+g0651,1594,,existing,cl:goalkeepers:28,cl,goalkeepers,28,Аудеро,Интер,ВРТ,0,0,0,0,1594
+g0651,1594,,existing,league:goalkeepers:49,league,goalkeepers,49,Аудеро,Интер,ВРТ,0,0,0,0,1594
+g0347,1321,yes,existing,cl:midfielders:196,cl,midfielders,196,Ахметов,Краснодар,ЦП,0,0,0,0,1321
+g0347,1321,yes,existing,league:midfielders:305,league,midfielders,305,Ахметов,Краснодар,ЦП,0,0,0,0,1321
+g0916,1305,yes,existing,league:midfielders:281,league,midfielders,281,Ахметов,Севилья,ЦП,0,0,0,0,1305
+g0484,1448,,existing,cl:defenders:117,cl,defenders,117,Ачерби,Интер,ЦЗ,0,1,0,0,1448
+g0484,1448,,existing,league:defenders:190,league,defenders,190,Ачерби,Интер,ЦЗ,0,3,0,1,1448
+g1094,1556,,existing,league:defenders:389,league,defenders,389,Ашурматов,Рубин,ЦЗ,0,0,0,0,1556
+g0941,1350,,existing,league:midfielders:343,league,midfielders,343,Аюпов,Урал,ЦП,0,1,0,0,1350
+g0610,698,,link_season_slot,cl:defenders:243,cl,defenders,243,Бабич,Спартак,ЦЗ,0,1,0,0,698
+g0610,698,,link_season_slot,league:defenders:395,league,defenders,395,Бабич,Спартак,ЦЗ,0,1,0,0,698
+g0917,1322,,existing,league:midfielders:306,league,midfielders,306,Бабкин,Крылья Советов,ЦП,0,9,4,6,1322
+g1070,1512,,existing,league:defenders:320,league,defenders,320,Баде,Севилья,ЦЗ,0,2,0,0,1512
+g0384,775,,link_season_slot,cl:defenders:17,cl,defenders,17,Бадиашиле,Челси,ЦЗ,0,1,0,0,775
+g0384,775,,link_season_slot,league:defenders:33,league,defenders,33,Бадиашиле,Челси,ЦЗ,0,2,0,0,775
+g0173,1188,,existing,cl:midfielders:19,cl,midfielders,19,Бажетич,Ливерпуль,ЦОП,0,0,0,0,1188
+g0173,1188,,existing,league:midfielders:40,league,midfielders,40,Бажетич,Ливерпуль,ЦОП,0,0,0,0,1188
+g0746,1090,,existing,league:forwards:150,league,forwards,150,Байер,Сассуоло,ЛФА,0,7,4,0,1090
+g0877,1260,,existing,league:midfielders:201,league,midfielders,201,Байрами,Сассуоло,ЦАП,0,10,4,9,1260
+g0794,1150,,existing,league:forwards:251,league,forwards,251,Байрамян,Ростов,ЛФА,0,0,0,0,1150
+g0477,660,,link_season_slot,cl:defenders:110,cl,defenders,110,Баккер,Аталанта,ЛЗ,0,1,0,0,660
+g0477,660,,link_season_slot,league:defenders:176,league,defenders,176,Баккер,Аталанта,ЛЗ,0,4,1,0,660
+g0440,816,,link_season_slot,cl:defenders:73,cl,defenders,73,Баку,Франкфурт,ПЗ,0,0,0,0,816
+g0440,816,,link_season_slot,league:defenders:107,league,defenders,107,Баку,Франкфурт,ПЗ,0,13,0,1,816
+g1052,1497,,existing,league:defenders:286,league,defenders,286,Баллиу,Райо Вальекано,ПЗ,0,0,0,0,1497
+g0970,1378,,existing,league:defenders:44,league,defenders,44,Балло,Фулхэм,ЛЗ,0,2,0,0,1378
+g0583,672,,link_season_slot,cl:defenders:216,cl,defenders,216,Бальбуэна,Динамо,ЦЗ,0,3,1,0,672
+g0583,672,,link_season_slot,league:defenders:343,league,defenders,343,Бальбуэна,Динамо,ЦЗ,0,5,0,0,672
+g0538,602,,link_season_slot,cl:defenders:171,cl,defenders,171,Бальде,Барселона,ЛЗ,0,2,0,1,602
+g0538,602,,link_season_slot,league:defenders:266,league,defenders,266,Бальде,Барселона,ЛЗ,0,6,0,3,602
+g0344,1318,,existing,cl:midfielders:193,cl,midfielders,193,Баньяк,Краснодар,ЦП,0,0,0,0,1318
+g0344,1318,,existing,league:midfielders:302,league,midfielders,302,Баньяк,Краснодар,ЦП,0,0,0,0,1318
+g0921,1324,yes,existing,league:midfielders:310,league,midfielders,310,Барак,Крылья Советов,ЦАП,0,0,0,0,1324
+g0864,332,yes,link_season_slot,league:midfielders:150,league,midfielders,150,Барак,Фиорентина,ЦП,0,4,1,2,332
+g0249,352,,link_season_slot,cl:midfielders:96,cl,midfielders,96,Барелла,Интер,ЦП,0,4,2,3,352
+g0249,352,,link_season_slot,league:midfielders:158,league,midfielders,158,Барелла,Интер,ЦП,0,10,5,9,352
+g0349,1328,,existing,cl:midfielders:198,cl,midfielders,198,Баринов,Локомотив,ЦОП,0,0,0,0,1328
+g0349,1328,,existing,league:midfielders:314,league,midfielders,314,Баринов,Локомотив,ЦОП,0,6,0,1,1328
+g0077,162,,link_season_slot,cl:forwards:78,cl,forwards,78,Барнс,Милан,ЛФА,0,0,0,0,162
+g0077,162,,link_season_slot,league:forwards:136,league,forwards,136,Барнс,Милан,ЛФА,0,3,1,2,162
+g0321,1300,,existing,cl:midfielders:170,cl,midfielders,170,Барренечеа,Реал Сосьедад,ЛП,0,0,0,0,1300
+g0321,1300,,existing,league:midfielders:272,league,midfielders,272,Барренечеа,Реал Сосьедад,ЛП,0,0,0,0,1300
+g0341,368,,link_season_slot,cl:midfielders:190,cl,midfielders,190,Барриос,Краснодар,ЦОП,0,0,0,0,368
+g0341,368,,link_season_slot,league:midfielders:299,league,midfielders,299,Барриос,Краснодар,ЦОП,0,1,1,1,368
+g1060,613,,link_season_slot,league:defenders:294,league,defenders,294,Бартра,Бетис,ЦЗ,0,4,1,0,613
+g0481,664,,link_season_slot,cl:defenders:114,cl,defenders,114,Бастони,Интер,ЦЗ,0,6,0,1,664
+g0481,664,,link_season_slot,league:defenders:187,league,defenders,187,Бастони,Интер,ЦЗ,0,8,0,0,664
+g0136,72,,link_season_slot,cl:forwards:137,cl,forwards,137,Батши,Краснодар,ПФА,1,4,2,1,72
+g0136,72,,link_season_slot,league:forwards:232,league,forwards,232,Батши,Краснодар,ПФА,1,10,3,4,72
+g1118,988,,link_season_slot,league:goalkeepers:39,league,goalkeepers,39,Бауманн,Хоффенхайм,ВРТ,0,6,0,0,988
+g0230,499,,link_season_slot,cl:midfielders:77,cl,midfielders,77,Баумгартнер,Лейпциг,ЦП,0,5,3,0,499
+g0230,499,,link_season_slot,league:midfielders:103,league,midfielders,103,Баумгартнер,Лейпциг,ЦП,0,6,3,3,499
+g0875,1249,,existing,league:midfielders:175,league,midfielders,175,Башич,Лацио,ЦП,0,0,0,0,1249
+g0324,1306,,existing,cl:midfielders:173,cl,midfielders,173,Баэна,Вильярреал,ЦП,0,0,0,0,1306
+g0324,1306,,existing,league:midfielders:282,league,midfielders,282,Баэна,Вильярреал,ЦП,0,0,0,0,1306
+g0897,1289,,existing,league:midfielders:248,league,midfielders,248,Бебе,Райо Вальекано,ЦАП,0,4,3,2,1289
+g0717,200,,link_season_slot,league:forwards:94,league,forwards,94,Бебу,Хоффенхайм,ЛФА,0,10,7,3,200
+g1099,705,,link_season_slot,league:defenders:403,league,defenders,403,Бевеев,Урал,ПЗ,0,4,0,0,705
+g1097,706,,link_season_slot,league:defenders:401,league,defenders,401,Бегич,Урал,ЦЗ,0,7,0,0,706
+g0963,1371,,existing,league:defenders:37,league,defenders,37,Бейси,Фулхэм,ЦЗ,0,7,0,1,1371
+g1035,1475,,existing,league:defenders:245,league,defenders,245,Белланова,Торино,ПЗ,0,8,1,1,1475
+g0262,456,,link_season_slot,cl:midfielders:109,cl,midfielders,109,Беллингем,Милан,ЦАП,0,1,0,1,456
+g0262,456,,link_season_slot,league:midfielders:177,league,midfielders,177,Беллингем,Милан,ЦАП,0,9,6,3,456
+g0090,1089,,existing,cl:forwards:91,cl,forwards,91,Белотти,Рома,ФРВ,0,0,0,0,1089
+g0090,1089,,existing,league:forwards:149,league,forwards,149,Белотти,Рома,ФРВ,0,0,0,0,1089
+g1061,1505,,existing,league:defenders:295,league,defenders,295,Бельерин,Бетис,ПЗ,0,0,0,0,1505
+g0145,1159,,existing,cl:forwards:146,cl,forwards,146,Бельтран,Спартак,ФРВ,0,0,0,0,1159
+g0145,1159,,existing,league:forwards:260,league,forwards,260,Бельтран,Спартак,ФРВ,0,0,0,0,1159
+g0263,1251,,existing,cl:midfielders:110,cl,midfielders,110,Беннасер,Милан,ЦОП,0,2,0,0,1251
+g0263,1251,,existing,league:midfielders:178,league,midfielders,178,Беннасер,Милан,ЦОП,0,7,0,0,1251
+g0419,1392,,existing,cl:defenders:52,cl,defenders,52,Бенсебаини,Дортмунд,ЛЗ,0,1,0,0,1392
+g0419,1392,,existing,league:defenders:86,league,defenders,86,Бенсебаини,Дортмунд,ЛЗ,0,8,2,0,1392
+g0186,1194,,existing,cl:midfielders:33,cl,midfielders,33,Бентанкур,Тоттенхэм,ЦОП,0,3,0,2,1194
+g0186,1194,,existing,league:midfielders:59,league,midfielders,59,Бентанкур,Тоттенхэм,ЦОП,0,12,1,5,1194
+g0250,353,,link_season_slot,cl:midfielders:97,cl,midfielders,97,Берарди,Интер,ПП,0,2,2,1,353
+g0250,353,,link_season_slot,league:midfielders:159,league,midfielders,159,Берарди,Интер,ПП,0,16,16,7,353
+g0224,1211,,existing,cl:midfielders:71,cl,midfielders,71,Беренгер,Боруссия М,ЛП,0,4,2,0,1211
+g0224,1211,,existing,league:midfielders:97,league,midfielders,97,Беренгер,Боруссия М,ЛП,0,12,6,4,1211
+g0720,1066,,existing,league:forwards:97,league,forwards,97,Бериша,Хоффенхайм,ФРВ,0,2,3,0,1066
+g0523,1481,,existing,cl:defenders:156,cl,defenders,156,Берчиче,Атлетик,ЛЗ,0,3,0,0,1481
+g0523,1481,,existing,league:defenders:251,league,defenders,251,Берчиче,Атлетик,ЛЗ,0,9,1,0,1481
+g0940,1349,,existing,league:midfielders:342,league,midfielders,342,Бикфалви,Урал,ЦАП,0,3,1,0,1349
+g1012,643,,link_season_slot,league:defenders:179,league,defenders,179,Бираги,Фиорентина,ЛЗ,0,6,3,0,643
+g0487,1449,,existing,cl:defenders:120,cl,defenders,120,Биссек,Интер,ЦЗ,0,0,0,0,1449
+g0487,1449,,existing,league:defenders:193,league,defenders,193,Биссек,Интер,ЦЗ,0,0,0,0,1449
+g0190,1195,,existing,cl:midfielders:37,cl,midfielders,37,Биссума,Тоттенхэм,ЦОП,0,0,0,0,1195
+g0190,1195,,existing,league:midfielders:63,league,midfielders,63,Биссума,Тоттенхэм,ЦОП,0,0,0,0,1195
+g0338,362,,link_season_slot,cl:midfielders:187,cl,midfielders,187,Бителло,Динамо,ЦАП,0,2,0,2,362
+g0338,362,,link_season_slot,league:midfielders:296,league,midfielders,296,Бителло,Динамо,ЦАП,0,1,0,1,362
+g0648,987,,link_season_slot,cl:goalkeepers:25,cl,goalkeepers,25,Блашвич,Лейпциг,ВРТ,0,0,0,0,987
+g0648,987,,link_season_slot,league:goalkeepers:35,league,goalkeepers,35,Блашвич,Лейпциг,ВРТ,0,0,0,0,987
+g1042,604,,link_season_slot,league:defenders:276,league,defenders,276,Блинд,Жирона,ЦЗ,0,2,0,0,604
+g0282,1015,,link_season_slot,cl:midfielders:131,cl,midfielders,131,Бове,Рома,ЦП,0,0,0,0,1015
+g0282,1015,,link_season_slot,league:midfielders:199,league,midfielders,199,Бове,Рома,ЦП,0,0,0,0,1015
+g0880,1263,,existing,league:midfielders:204,league,midfielders,204,Болокка,Сассуоло,ЦП,0,0,0,0,1263
+g0863,335,,link_season_slot,league:midfielders:149,league,midfielders,149,Бонавентура,Фиорентина,ЦАП,0,7,2,6,335
+g0149,1161,,existing,cl:forwards:150,cl,forwards,150,Бонгонда,Спартак,ЛФА,0,0,0,0,1161
+g0149,1161,,existing,league:forwards:264,league,forwards,264,Бонгонда,Спартак,ЛФА,0,0,0,0,1161
+g1033,1473,,existing,league:defenders:243,league,defenders,243,Бонджорно,Торино,ЦЗ,0,8,0,0,1473
+g0056,1056,,existing,cl:forwards:56,cl,forwards,56,Бонифасе,Байер,ФРВ,0,0,0,0,1056
+g0056,1056,,existing,league:forwards:78,league,forwards,78,Бонифасе,Байер,ФРВ,0,1,0,0,1056
+g0945,371,,link_season_slot,league:midfielders:354,league,midfielders,354,Боргес,Крылья Советов,ЛП,0,5,2,2,371
+g0594,1530,,existing,cl:defenders:227,cl,defenders,227,Боржес,Краснодар,ПЗ,0,0,0,0,1530
+g0594,1530,,existing,league:defenders:354,league,defenders,354,Боржес,Краснодар,ПЗ,0,0,0,0,1530
+g1005,853,,link_season_slot,league:defenders:161,league,defenders,161,Борнау,Вольфсбург,ЦЗ,0,12,0,1,853
+g0972,758,,link_season_slot,league:defenders:63,league,defenders,63,Ботман,Ньюкасл,ЦЗ,0,4,0,0,758
+g1107,1570,,existing,league:goalkeepers:5,league,goalkeepers,5,Браво,Брайтон,ВРТ,0,1,0,0,1570
+g0311,316,,link_season_slot,cl:midfielders:160,cl,midfielders,160,Браим,Реал,ЦАП,0,4,4,4,316
+g0311,316,,link_season_slot,league:midfielders:262,league,midfielders,262,Браим,Реал,ЦАП,0,12,8,5,316
+g0196,476,,link_season_slot,cl:midfielders:43,cl,midfielders,43,Брандт,Дортмунд,ЦАП,0,4,1,2,476
+g0196,476,,link_season_slot,league:midfielders:69,league,midfielders,69,Брандт,Дортмунд,ЦАП,0,10,3,4,476
+g0736,1076,,existing,league:forwards:117,league,forwards,117,Брекало,Фиорентина,ФРВ,0,0,0,0,1076
+g1120,1588,,existing,league:goalkeepers:41,league,goalkeepers,41,Брелоу,Штутгарт,ВРТ,0,0,0,0,1588
+g0490,633,,link_season_slot,cl:defenders:123,cl,defenders,123,Бремер,Ювентус,ЦЗ,0,3,0,0,633
+g0490,633,,link_season_slot,league:defenders:196,league,defenders,196,Бремер,Ювентус,ЦЗ,0,6,0,0,633
+g0014,1010,,link_season_slot,cl:forwards:12,cl,forwards,12,Броя,Челси,ФРВ,0,0,0,0,1010
+g0014,1010,,link_season_slot,league:forwards:22,league,forwards,22,Броя,Челси,ФРВ,0,0,0,0,1010
+g0992,1421,,existing,league:defenders:148,league,defenders,148,Брукс,Хоффенхайм,ЦЗ,0,0,0,0,1421
+g0810,1171,,existing,league:midfielders:11,league,midfielders,11,Бубакар Камара,Астон Вилла,ЦП,0,8,0,3,1171
+g0688,112,,link_season_slot,league:forwards:8,league,forwards,8,Буендиа,Астон Вилла,ФРВ,0,12,6,2,112
+g0719,202,,link_season_slot,league:forwards:96,league,forwards,96,Бултер,Хоффенхайм,ПФА,0,8,2,3,202
+g0208,480,,link_season_slot,cl:midfielders:55,cl,midfielders,55,Бута,Франкфурт,ПП,0,3,0,0,480
+g0208,480,,link_season_slot,league:midfielders:81,league,midfielders,81,Бута,Франкфурт,ПП,0,8,0,0,480
+g0689,1026,,existing,league:forwards:9,league,forwards,9,Бэйли,Астон Вилла,ПФА,0,9,3,2,1026
+g0973,761,,link_season_slot,league:defenders:64,league,defenders,64,Бёрн,Ньюкасл,ЦЗ,0,4,0,0,761
+g1000,1427,,existing,league:defenders:156,league,defenders,156,Вагноман,Штутгарт,ПЗ,0,9,0,1,1427
+g0933,1341,,existing,league:midfielders:329,league,midfielders,329,Вада,Рубин,ЦП,0,6,0,5,1341
+g0221,493,,link_season_slot,cl:midfielders:68,cl,midfielders,68,Вайгль,Боруссия М,ЦП,0,1,0,1,493
+g0221,493,,link_season_slot,league:midfielders:94,league,midfielders,94,Вайгль,Боруссия М,ЦП,0,6,0,1,493
+g0840,1223,,existing,league:midfielders:119,league,midfielders,119,Вайсхаупт,Фрайбург,ЛП,0,0,0,0,1223
+g0896,1288,,existing,league:midfielders:247,league,midfielders,247,Валентин,Райо Вальекано,ЦОП,0,2,0,0,1288
+g1047,607,,link_season_slot,league:defenders:281,league,defenders,281,Валери,Жирона,ПЗ,0,1,0,0,607
+g0314,1297,,existing,cl:midfielders:163,cl,midfielders,163,Вальверде,Реал,ЦП,0,3,2,1,1297
+g0314,1297,,existing,league:midfielders:265,league,midfielders,265,Вальверде,Реал,ЦП,0,10,3,3,1297
+g0413,764,,link_season_slot,cl:defenders:46,cl,defenders,46,Ван де Вен,Тоттенхэм,ЦЗ,0,1,0,0,764
+g0413,764,,link_season_slot,league:defenders:80,league,defenders,80,Ван де Вен,Тоттенхэм,ЦЗ,0,9,1,0,764
+g0388,1379,,existing,cl:defenders:21,cl,defenders,21,Ван Дейк,Ливерпуль,ЦЗ,0,4,0,0,1379
+g0388,1379,,existing,league:defenders:46,league,defenders,46,Ван Дейк,Ливерпуль,ЦЗ,0,7,1,1,1379
+g0961,1367,,existing,league:defenders:24,league,defenders,24,ван Хек,Брайтон,ЦЗ,0,0,0,0,1367
+g0397,751,,link_season_slot,cl:defenders:30,cl,defenders,30,Ван-Биссака,Мю,ПЗ,0,0,0,0,751
+g0397,751,,link_season_slot,league:defenders:55,league,defenders,55,Ван-Биссака,Мю,ПЗ,0,9,0,0,751
+g0396,755,,link_season_slot,cl:defenders:29,cl,defenders,29,Варан,Мю,ЦЗ,0,1,1,0,755
+g0396,755,,link_season_slot,league:defenders:54,league,defenders,54,Варан,Мю,ЦЗ,0,7,0,0,755
+g0553,1507,,existing,cl:defenders:186,cl,defenders,186,Васкез,Реал,ПЗ,0,0,0,0,1507
+g0553,1507,,existing,league:defenders:306,league,defenders,306,Васкез,Реал,ПЗ,0,0,0,0,1507
+g0686,1628,,existing,cl:goalkeepers:63,cl,goalkeepers,63,Васютин,Зенит,ВРТ,0,0,0,0,1628
+g0686,1628,,existing,league:goalkeepers:105,league,goalkeepers,105,Васютин,Зенит,ВРТ,0,0,0,0,1628
+g1079,1541,,existing,league:defenders:374,league,defenders,374,Вахания,Ростов,ЛЗ,0,7,0,0,1541
+g0495,636,,link_season_slot,cl:defenders:128,cl,defenders,128,Веа,Ювентус,ПЗ,0,0,0,0,636
+g0495,636,,link_season_slot,league:defenders:201,league,defenders,201,Веа,Ювентус,ПЗ,0,1,0,0,636
+g0957,1363,,existing,league:defenders:20,league,defenders,20,Вебстер,Брайтон,ЦЗ,0,6,0,0,1363
+g0721,1067,,existing,league:forwards:98,league,forwards,98,Вегхорст,Хоффенхайм,ФРВ,0,0,0,0,1067
+g0960,1366,,existing,league:defenders:23,league,defenders,23,Вельтман,Брайтон,ПЗ,0,0,0,0,1366
+g0363,1355,,existing,cl:midfielders:212,cl,midfielders,212,Вендел,Зенит,ЦП,0,4,2,2,1355
+g0363,1355,,existing,league:midfielders:349,league,midfielders,349,Вендел,Зенит,ЦП,0,8,3,8,1355
+g1108,1571,,existing,league:goalkeepers:6,league,goalkeepers,6,Вербругген,Брайтон,ВРТ,0,0,0,0,1571
+g0062,197,,link_season_slot,cl:forwards:62,cl,forwards,62,Вернер,Лейпциг,ФРВ,0,8,12,1,197
+g0062,197,,link_season_slot,league:forwards:84,league,forwards,84,Вернер,Лейпциг,ФРВ,0,10,15,4,197
+g0287,1270,,existing,cl:midfielders:136,cl,midfielders,136,Весга,Атлетик,ЦП,0,1,0,1,1270
+g0287,1270,,existing,league:midfielders:215,league,midfielders,215,Весга,Атлетик,ЦП,0,8,1,0,1270
+g0873,453,,link_season_slot,league:midfielders:173,league,midfielders,173,Вечино,Лацио,ЦОП,0,4,1,0,453
+g0525,586,,link_season_slot,cl:defenders:158,cl,defenders,158,Вивиан,Атлетик,ЦЗ,0,4,1,0,586
+g0525,586,,link_season_slot,league:defenders:253,league,defenders,253,Вивиан,Атлетик,ЦЗ,0,2,0,0,586
+g0160,1169,,existing,cl:midfielders:6,cl,midfielders,6,Виейра,Арсенал,ЦАП,0,0,0,0,1169
+g0160,1169,,existing,league:midfielders:6,league,midfielders,6,Виейра,Арсенал,ЦАП,0,1,1,0,1169
+g0635,967,,link_season_slot,cl:goalkeepers:12,cl,goalkeepers,12,Викарио,Тоттенхэм,ВРТ,0,1,0,0,967
+g0635,967,,link_season_slot,league:goalkeepers:22,league,goalkeepers,22,Викарио,Тоттенхэм,ВРТ,0,9,0,0,967
+g0822,1182,,existing,league:midfielders:27,league,midfielders,27,Виллиан,Фулхэм,ЛП,0,14,6,6,1182
+g0774,26,,link_season_slot,league:forwards:190,league,forwards,190,Виллиан Жозе,Бетис,ФРВ,0,0,0,0,26
+g0361,1354,,existing,cl:midfielders:210,cl,midfielders,210,Вильмар Барриос,Зенит,ЦОП,0,3,0,2,1354
+g0361,1354,,existing,league:midfielders:347,league,midfielders,347,Вильмар Барриос,Зенит,ЦОП,0,5,1,3,1354
+g0893,1285,,existing,league:midfielders:244,league,midfielders,244,Вилья,Жирона,ЛП,0,1,1,1,1285
+g0096,1104,,existing,cl:forwards:97,cl,forwards,97,Вильялибре,Атлетик,ФРВ,0,0,0,0,1104
+g0096,1104,,existing,league:forwards:168,league,forwards,168,Вильялибре,Атлетик,ФРВ,0,0,0,0,1104
+g0727,205,,link_season_slot,league:forwards:104,league,forwards,104,Виммер,Вольфсбург,ПФА,0,14,3,3,205
+g0728,1071,,existing,league:forwards:105,league,forwards,105,Винд,Вольфсбург,ФРВ,0,0,0,0,1071
+g0106,1118,,existing,cl:forwards:107,cl,forwards,107,Вини,Реал,ЛФА,0,4,2,3,1118
+g0106,1118,,existing,league:forwards:194,league,forwards,194,Вини,Реал,ЛФА,0,11,9,3,1118
+g0700,1037,,existing,league:forwards:26,league,forwards,26,Винисиус,Фулхэм,ФРВ,0,0,0,0,1037
+g1025,1465,,existing,league:defenders:235,league,defenders,235,Винья,Сассуоло,ЛЗ,0,3,0,1,1465
+g0808,409,,link_season_slot,league:midfielders:9,league,midfielders,9,Виртц,Астон Вилла,ЦАП,0,9,2,4,409
+g1026,1466,,existing,league:defenders:236,league,defenders,236,Вити,Сассуоло,ЦЗ,0,7,0,0,1466
+g0301,1276,,existing,cl:midfielders:150,cl,midfielders,150,Витоло,Атлетико,ЛП,0,0,0,0,1276
+g0301,1276,,existing,league:midfielders:229,league,midfielders,229,Витоло,Атлетико,ЛП,0,0,0,0,1276
+g0536,1486,,existing,cl:defenders:169,cl,defenders,169,Витсель,Атлетико,ЦЗ,0,0,0,0,1486
+g0536,1486,,existing,league:defenders:264,league,defenders,264,Витсель,Атлетико,ЦЗ,0,0,0,0,1486
+g0923,1326,,existing,league:midfielders:312,league,midfielders,312,Витюгов,Крылья Советов,ЦП,0,3,0,2,1326
+g0075,1077,,existing,cl:forwards:76,cl,forwards,76,Влахович,Ювентус,ФРВ,0,4,3,1,1077
+g0075,1077,,existing,league:forwards:125,league,forwards,125,Влахович,Ювентус,ФРВ,0,9,8,4,1077
+g0256,328,,link_season_slot,cl:midfielders:103,cl,midfielders,103,Влашич,Ювентус,ЦП,0,0,0,0,328
+g0256,328,,link_season_slot,league:midfielders:165,league,midfielders,165,Влашич,Ювентус,ЦП,0,13,9,5,328
+g1101,1563,,existing,league:defenders:405,league,defenders,405,Влут,Урал,ПЗ,0,0,0,0,1563
+g0886,1269,,existing,league:midfielders:210,league,midfielders,210,Войвода,Торино,ЛП,0,0,0,0,1269
+g0592,680,,link_season_slot,cl:defenders:225,cl,defenders,225,Волков,Краснодар,ПЗ,0,3,0,0,680
+g0592,680,,link_season_slot,league:defenders:352,league,defenders,352,Волков,Краснодар,ПЗ,0,4,0,0,680
+g0228,1013,,link_season_slot,cl:midfielders:75,cl,midfielders,75,Вольф,Боруссия М,ЛП,0,0,0,0,1013
+g0228,1013,,link_season_slot,league:midfielders:101,league,midfielders,101,Вольф,Боруссия М,ЛП,0,0,0,0,1013
+g0861,1236,,existing,league:midfielders:140,league,midfielders,140,Вранкс,Вольфсбург,ЦП,0,0,0,0,1236
+g0422,1393,,existing,cl:defenders:55,cl,defenders,55,Вульф,Дортмунд,ПЗ,0,2,0,1,1393
+g0422,1393,,existing,league:defenders:89,league,defenders,89,Вульф,Дортмунд,ПЗ,0,7,2,0,1393
+g1090,1552,,existing,league:defenders:385,league,defenders,385,Вуячич,Рубин,ЦЗ,0,0,0,0,1552
+g0457,831,,link_season_slot,cl:defenders:90,cl,defenders,90,Вёбер,Боруссия М,ЦЗ,0,0,0,0,831
+g0457,831,,link_season_slot,league:defenders:124,league,defenders,124,Вёбер,Боруссия М,ЦЗ,0,1,0,0,831
+g0368,1357,,existing,cl:defenders:1,cl,defenders,1,Габриэль,Арсенал,ЦЗ,0,6,0,0,1357
+g0368,1357,,existing,league:defenders:1,league,defenders,1,Габриэль,Арсенал,ЦЗ,0,10,0,0,1357
+g0003,1022,,existing,cl:forwards:1,cl,forwards,1,Габриэль Жезус,Арсенал,ФРВ,0,7,6,3,1022
+g0003,1022,,existing,league:forwards:1,league,forwards,1,Габриэль Жезус,Арсенал,ФРВ,0,12,12,5,1022
+g0304,299,,link_season_slot,cl:midfielders:153,cl,midfielders,153,Гави,Барселона,ЦП,0,4,5,0,299
+g0304,299,,link_season_slot,league:midfielders:232,league,midfielders,232,Гави,Барселона,ЦП,0,9,6,4,299
+g0339,363,,link_season_slot,cl:midfielders:188,cl,midfielders,188,Гагнидзе,Динамо,ЦП,0,0,0,0,363
+g0339,363,,link_season_slot,league:midfielders:297,league,midfielders,297,Гагнидзе,Динамо,ЦП,0,0,0,0,363
+g1134,934,,link_season_slot,league:goalkeepers:73,league,goalkeepers,73,Газзанига,Жирона,ВРТ,0,2,0,0,934
+g0937,1347,,existing,league:midfielders:339,league,midfielders,339,Газинский,Урал,ЦОП,0,7,1,1,1347
+g0576,723,,link_season_slot,cl:defenders:209,cl,defenders,209,Гайич,Цска,ПЗ,0,0,0,0,723
+g0576,723,,link_season_slot,league:defenders:336,league,defenders,336,Гайич,Цска,ПЗ,0,0,0,0,723
+g0018,1040,,existing,cl:forwards:17,cl,forwards,17,Гакпо,Ливерпуль,ФРВ,0,3,2,0,1040
+g0018,1040,,existing,league:forwards:33,league,forwards,33,Гакпо,Ливерпуль,ФРВ,0,2,1,1,1040
+g0534,1484,,existing,cl:defenders:167,cl,defenders,167,Галан,Атлетико,ЛЗ,0,0,0,0,1484
+g0534,1484,,existing,league:defenders:262,league,defenders,262,Галан,Атлетико,ЛЗ,0,1,0,0,1484
+g0288,286,,link_season_slot,cl:midfielders:137,cl,midfielders,137,Галаррета,Атлетик,ЦП,0,0,0,0,286
+g0288,286,,link_season_slot,league:midfielders:216,league,midfielders,216,Галаррета,Атлетик,ЦП,0,0,0,0,286
+g0164,1181,,existing,cl:midfielders:10,cl,midfielders,10,Галлагер,Челси,ЦОП,0,5,3,3,1181
+g0164,1181,,existing,league:midfielders:25,league,midfielders,25,Галлагер,Челси,ЦОП,0,11,3,4,1181
+g0024,122,,link_season_slot,cl:forwards:23,cl,forwards,23,Гарначо,Мю,ЛФА,0,0,0,0,122
+g0024,122,,link_season_slot,league:forwards:39,league,forwards,39,Гарначо,Мю,ЛФА,0,0,0,0,122
+g0785,75,,link_season_slot,league:forwards:237,league,forwards,237,Гарре,Крылья Советов,ПФА,0,10,4,4,75
+g0308,1279,,existing,cl:midfielders:157,cl,midfielders,157,Гарридо,Барселона,ЦП,0,0,0,0,1279
+g0308,1279,,existing,league:midfielders:236,league,midfielders,236,Гарридо,Барселона,ЦП,0,0,0,0,1279
+g0765,1113,yes,existing,league:forwards:181,league,forwards,181,Гарсия,Райо Вальекано,ПФА,0,0,0,0,1113
+g0547,619,yes,link_season_slot,cl:defenders:180,cl,defenders,180,Гарсия,Реал,ЛЗ,0,0,0,0,619
+g0547,619,yes,link_season_slot,league:defenders:300,league,defenders,300,Гарсия,Реал,ЛЗ,0,0,0,0,619
+g0493,1451,,existing,cl:defenders:126,cl,defenders,126,Гатти,Ювентус,ЦЗ,0,4,1,0,1451
+g0493,1451,,existing,league:defenders:199,league,defenders,199,Гатти,Ювентус,ЦЗ,0,6,0,0,1451
+g1072,1513,,existing,league:defenders:322,league,defenders,322,Гаттони,Севилья,ЦЗ,0,0,0,0,1513
+g0274,339,,link_season_slot,cl:midfielders:122,cl,midfielders,122,Гаэтано,Наполи,ЦП,0,0,0,0,339
+g0274,339,,link_season_slot,league:midfielders:190,league,midfielders,190,Гаэтано,Наполи,ЦП,0,0,0,0,339
+g0404,579,,link_season_slot,cl:defenders:37,cl,defenders,37,Гвардиоль,Сити,ЛЗ,0,4,0,0,579
+g0404,579,,link_season_slot,league:defenders:71,league,defenders,71,Гвардиоль,Сити,ЛЗ,0,8,2,0,579
+g0845,1224,,existing,league:midfielders:124,league,midfielders,124,Гейгер,Хоффенхайм,ЦОП,0,0,0,0,1224
+g0872,449,,link_season_slot,league:midfielders:172,league,midfielders,172,Гендузи,Лацио,ЦП,0,7,1,2,449
+g0432,807,,link_season_slot,cl:defenders:65,cl,defenders,65,Геррейро,Бавария,ЛЗ,0,0,0,0,807
+g0432,807,,link_season_slot,league:defenders:99,league,defenders,99,Геррейро,Бавария,ЛЗ,0,3,0,0,807
+g0860,513,,link_season_slot,league:midfielders:139,league,midfielders,139,Герхардт,Вольфсбург,ЦП,0,2,0,0,513
+g1059,1504,,existing,league:defenders:293,league,defenders,293,Гидо Родригез,Бетис,ЦЗ,0,0,0,0,1504
+g0682,1622,,existing,cl:goalkeepers:59,cl,goalkeepers,59,Гилерме,Локомотив,ВРТ,0,0,0,0,1622
+g0682,1622,,existing,league:goalkeepers:96,league,goalkeepers,96,Гилерме,Локомотив,ВРТ,0,0,0,0,1622
+g0820,1178,,existing,league:midfielders:21,league,midfielders,21,Гилмор,Брайтон,ЦП,0,3,0,0,1178
+g0038,1048,,existing,cl:forwards:37,cl,forwards,37,Гиль,Тоттенхэм,ЛФА,0,0,0,0,1048
+g0038,1048,,existing,league:forwards:59,league,forwards,59,Гиль,Тоттенхэм,ЛФА,0,0,0,0,1048
+g0195,473,,link_season_slot,cl:midfielders:42,cl,midfielders,42,Гимараеш,Дортмунд,ЦОП,0,1,0,1,473
+g0195,473,,link_season_slot,league:midfielders:68,league,midfielders,68,Гимараеш,Дортмунд,ЦОП,0,8,0,5,473
+g0982,1416,,existing,league:defenders:138,league,defenders,138,Гинтер,Фрайбург,ЦЗ,0,7,0,0,1416
+g0724,1070,,existing,league:forwards:101,league,forwards,101,Гирасси,Штутгарт,ФРВ,0,9,3,0,1070
+g0127,65,,link_season_slot,cl:forwards:128,cl,forwards,128,Гиттенс,Динамо,ЛФА,0,3,2,1,65
+g0127,65,,link_season_slot,league:forwards:223,league,forwards,223,Гиттенс,Динамо,ЛФА,0,7,3,1,65
+g0133,1137,,existing,cl:forwards:134,cl,forwards,134,Гладышев,Динамо,ЛФА,0,0,0,0,1137
+g0133,1137,,existing,league:forwards:229,league,forwards,229,Гладышев,Динамо,ЛФА,0,0,0,0,1137
+g0926,1334,yes,existing,league:midfielders:322,league,midfielders,322,Глебов,Ростов,ЦОП,0,7,1,2,1334
+g0334,1313,yes,existing,cl:midfielders:183,cl,midfielders,183,Глебов,Цска,ЦП,0,0,0,0,1313
+g0334,1313,yes,existing,league:midfielders:292,league,midfielders,292,Глебов,Цска,ЦП,0,0,0,0,1313
+g0141,83,,link_season_slot,cl:forwards:142,cl,forwards,142,Глушенков,Локомотив,ПФА,0,2,3,0,83
+g0141,83,,link_season_slot,league:forwards:243,league,forwards,243,Глушенков,Локомотив,ПФА,0,13,9,5,83
+g0048,1053,,existing,cl:forwards:47,cl,forwards,47,Гнабри,Бавария,ПФА,0,3,2,2,1053
+g0048,1053,,existing,league:forwards:69,league,forwards,69,Гнабри,Бавария,ПФА,0,3,1,2,1053
+g0793,1149,,existing,league:forwards:250,league,forwards,250,Голенков,Ростов,ФРВ,0,1,2,0,1149
+g0658,1600,,existing,cl:goalkeepers:35,cl,goalkeepers,35,Голлини,Наполи,ВРТ,0,0,0,0,1600
+g0658,1600,,existing,league:goalkeepers:58,league,goalkeepers,58,Голлини,Наполи,ВРТ,0,0,0,0,1600
+g0326,1308,,existing,cl:midfielders:175,cl,midfielders,175,Головин,Вильярреал,ЦП,0,2,2,0,1308
+g0326,1308,,existing,league:midfielders:284,league,midfielders,284,Головин,Вильярреал,ЦП,0,6,4,0,1308
+g0291,1273,yes,existing,cl:midfielders:140,cl,midfielders,140,Гомез,Атлетик,ЦАП,0,0,0,0,1273
+g0291,1273,yes,existing,league:midfielders:219,league,midfielders,219,Гомез,Атлетик,ЦАП,0,0,0,0,1273
+g0411,1390,yes,existing,cl:defenders:44,cl,defenders,44,Гомез,Сити,ЛЗ,0,0,0,0,1390
+g0411,1390,yes,existing,league:defenders:78,league,defenders,78,Гомез,Сити,ЛЗ,0,0,0,0,1390
+g0392,749,,link_season_slot,cl:defenders:25,cl,defenders,25,Гомес,Ливерпуль,ЦЗ,0,1,0,0,749
+g0392,749,,link_season_slot,league:defenders:50,league,defenders,50,Гомес,Ливерпуль,ЦЗ,0,0,0,0,749
+g0744,1081,yes,existing,league:forwards:134,league,forwards,134,Гонзалез,Лацио,ЛФА,0,0,0,0,1081
+g0734,48,yes,link_season_slot,league:forwards:115,league,forwards,115,Гонзалез,Фиорентина,ПФА,0,10,11,2,48
+g0709,131,,link_season_slot,league:forwards:46,league,forwards,46,Гордон,Ньюкасл,ЛФА,0,4,1,1,131
+g0202,1200,,existing,cl:midfielders:49,cl,midfielders,49,Горетцка,Бавария,ЦОП,0,7,3,5,1200
+g0202,1200,,existing,league:midfielders:75,league,midfielders,75,Горетцка,Бавария,ЦОП,0,6,0,2,1200
+g1073,689,,link_season_slot,league:defenders:358,league,defenders,358,Горшков,Крылья Советов,ЛЗ,0,8,0,1,689
+g0170,413,,link_season_slot,cl:midfielders:16,cl,midfielders,16,Гравенберх,Ливерпуль,ЦП,0,4,2,1,413
+g0170,413,,link_season_slot,league:midfielders:37,league,midfielders,37,Гравенберх,Ливерпуль,ЦП,0,2,0,2,413
+g0642,983,,link_season_slot,cl:goalkeepers:19,cl,goalkeepers,19,Градецки,Байер,ВРТ,0,1,0,0,983
+g0642,983,,link_season_slot,league:goalkeepers:29,league,goalkeepers,29,Градецки,Байер,ВРТ,0,7,0,0,983
+g0664,1608,,existing,cl:goalkeepers:41,cl,goalkeepers,41,Грбич,Атлетико,ВРТ,0,0,0,0,1608
+g0664,1608,,existing,league:goalkeepers:70,league,goalkeepers,70,Грбич,Атлетико,ВРТ,0,0,0,0,1608
+g0715,1064,,existing,league:forwards:92,league,forwards,92,Грегориш,Фрайбург,ФРВ,0,0,0,0,1064
+g0116,1127,,existing,cl:forwards:117,cl,forwards,117,Гризманн,Вильярреал,ФРВ,0,2,2,4,1127
+g0116,1127,,existing,league:forwards:212,league,forwards,212,Гризманн,Вильярреал,ФРВ,0,6,5,1,1127
+g0029,1044,,existing,cl:forwards:28,cl,forwards,28,Грилиш,Сити,ЛФА,0,1,0,1,1044
+g0029,1044,,existing,league:forwards:50,league,forwards,50,Грилиш,Сити,ЛФА,0,3,0,1,1044
+g0844,509,,link_season_slot,league:midfielders:123,league,midfielders,123,Гриллич,Хоффенхайм,ЦОП,0,1,0,0,509
+g0444,821,,link_season_slot,cl:defenders:77,cl,defenders,77,Гримальдо,Байер,ЛЗ,0,1,0,0,821
+g0444,821,,link_season_slot,league:defenders:111,league,defenders,111,Гримальдо,Байер,ЛЗ,0,11,3,1,821
+g0710,1059,,existing,league:forwards:87,league,forwards,87,Грифо,Фрайбург,ЛФА,0,1,1,0,1059
+g1087,1549,,existing,league:defenders:382,league,defenders,382,Грицаенко,Рубин,ЦЗ,0,8,0,1,1549
+g0816,1174,,existing,league:midfielders:17,league,midfielders,17,Гроб,Брайтон,ЦОП,0,11,1,2,1174
+g0130,68,,link_season_slot,cl:forwards:131,cl,forwards,131,Грулёв,Динамо,ЛФА,0,0,0,0,68
+g0130,68,,link_season_slot,league:forwards:226,league,forwards,226,Грулёв,Динамо,ЛФА,0,3,1,0,68
+g0905,310,,link_season_slot,league:midfielders:256,league,midfielders,256,Гуардадо,Бетис,ЦОП,0,0,0,0,310
+g1068,1511,,existing,league:defenders:318,league,defenders,318,Гудель,Севилья,ЦЗ,0,6,0,0,1511
+g0647,986,,link_season_slot,cl:goalkeepers:24,cl,goalkeepers,24,Гулашчи,Лейпциг,ВРТ,0,2,0,0,986
+g0647,986,,link_season_slot,league:goalkeepers:34,league,goalkeepers,34,Гулашчи,Лейпциг,ВРТ,0,4,0,0,986
+g0984,1418,,existing,league:defenders:140,league,defenders,140,Гульде,Фрайбург,ЦЗ,0,1,0,0,1418
+g0094,12,,link_season_slot,cl:forwards:95,cl,forwards,95,Гурузета,Атлетик,ФРВ,0,1,1,0,12
+g0094,12,,link_season_slot,league:forwards:166,league,forwards,166,Гурузета,Атлетик,ФРВ,0,1,0,0,12
+g1041,608,,link_season_slot,league:defenders:275,league,defenders,275,Гутиеррез,Жирона,ЛЗ,0,2,0,0,608
+g0216,487,,link_season_slot,cl:midfielders:63,cl,midfielders,63,Гюлер,Байер,ЦАП,0,0,0,0,487
+g0216,487,,link_season_slot,league:midfielders:89,league,midfielders,89,Гюлер,Байер,ЦАП,0,10,1,3,487
+g0306,300,,link_season_slot,cl:midfielders:155,cl,midfielders,155,Гюндоган,Барселона,ЦП,0,0,0,0,300
+g0306,300,,link_season_slot,league:midfielders:234,league,midfielders,234,Гюндоган,Барселона,ЦП,0,4,0,2,300
+g0980,1414,,existing,league:defenders:136,league,defenders,136,Гюнтер,Фрайбург,ЛЗ,0,10,2,0,1414
+g0379,771,,link_season_slot,cl:defenders:12,cl,defenders,12,Гюсто,Челси,ПЗ,0,2,0,0,771
+g0379,771,,link_season_slot,league:defenders:28,league,defenders,28,Гюсто,Челси,ПЗ,0,7,0,0,771
+g0206,1203,,existing,cl:midfielders:53,cl,midfielders,53,Гётце,Франкфурт,ЦОП,0,7,3,4,1203
+g0206,1203,,existing,league:midfielders:79,league,midfielders,79,Гётце,Франкфурт,ЦОП,0,11,4,7,1203
+g1045,1491,,existing,league:defenders:279,league,defenders,279,Давид Лопес,Жирона,ЦЗ,0,5,3,0,1491
+g0126,1135,,existing,cl:forwards:127,cl,forwards,127,Давила,Цска,ФРВ,0,0,0,0,1135
+g0126,1135,,existing,league:forwards:222,league,forwards,222,Давила,Цска,ФРВ,0,3,2,1,1135
+g0418,1391,,existing,cl:defenders:51,cl,defenders,51,Дайер,Тоттенхэм,ЦЗ,0,0,0,0,1391
+g0418,1391,,existing,league:defenders:85,league,defenders,85,Дайер,Тоттенхэм,ЦЗ,0,0,0,0,1391
+g0797,1153,,existing,league:forwards:254,league,forwards,254,Даку,Рубин,ЦФД,0,6,3,1,1153
+g0398,1380,,existing,cl:defenders:31,cl,defenders,31,Далот,Мю,ПЗ,0,0,0,0,1380
+g0398,1380,,existing,league:defenders:56,league,defenders,56,Далот,Мю,ПЗ,0,2,0,2,1380
+g0979,1387,,existing,league:defenders:70,league,defenders,70,Дамметт,Ньюкасл,ЦЗ,0,0,0,0,1387
+g0492,1450,,existing,cl:defenders:125,cl,defenders,125,Данило,Ювентус,ЦЗ,0,3,0,0,1450
+g0492,1450,,existing,league:defenders:198,league,defenders,198,Данило,Ювентус,ЦЗ,0,6,0,0,1450
+g0289,1271,,existing,cl:midfielders:138,cl,midfielders,138,Даниэль Гарсия,Атлетик,ЦП,0,0,0,0,1271
+g0289,1271,,existing,league:midfielders:217,league,midfielders,217,Даниэль Гарсия,Атлетик,ЦП,0,0,0,0,1271
+g0959,1365,,existing,league:defenders:22,league,defenders,22,Данк,Брайтон,ЦЗ,0,3,0,0,1365
+g0486,668,,link_season_slot,cl:defenders:119,cl,defenders,119,Дармиан,Интер,ЦЗ,0,0,0,0,668
+g0486,668,,link_season_slot,league:defenders:192,league,defenders,192,Дармиан,Интер,ЦЗ,0,0,0,0,668
+g0586,673,,link_season_slot,cl:defenders:219,cl,defenders,219,Даса,Динамо,ПЗ,0,0,0,0,673
+g0586,673,,link_season_slot,league:defenders:346,league,defenders,346,Даса,Динамо,ПЗ,0,1,0,0,673
+g0817,1175,,existing,league:midfielders:18,league,midfielders,18,Дауд,Брайтон,ЦП,0,6,0,1,1175
+g0179,276,,link_season_slot,cl:midfielders:25,cl,midfielders,25,Де Брюйне,Сити,ЦАП,0,9,6,8,276
+g0179,276,,link_season_slot,league:midfielders:51,league,midfielders,51,Де Брюйне,Сити,ЦАП,0,11,11,7,276
+g0485,669,,link_season_slot,cl:defenders:118,cl,defenders,118,де Врей,Интер,ЦЗ,0,1,0,0,669
+g0485,669,,link_season_slot,league:defenders:191,league,defenders,191,де Врей,Интер,ЦЗ,0,2,0,0,669
+g0305,301,,link_season_slot,cl:midfielders:154,cl,midfielders,154,де Йонг,Барселона,ЦОП,0,3,3,2,301
+g0305,301,,link_season_slot,league:midfielders:233,league,midfielders,233,де Йонг,Барселона,ЦОП,0,7,0,7,301
+g0246,348,,link_season_slot,cl:midfielders:93,cl,midfielders,93,Де Кетеларе,Аталанта,ЦАП,0,0,0,0,348
+g0246,348,,link_season_slot,league:midfielders:147,league,midfielders,147,Де Кетеларе,Аталанта,ЦАП,0,2,0,0,348
+g0431,1398,,existing,cl:defenders:64,cl,defenders,64,Де Лигт,Бавария,ЦЗ,0,1,0,0,1398
+g0431,1398,,existing,league:defenders:98,league,defenders,98,Де Лигт,Бавария,ЦЗ,0,4,0,0,1398
+g0526,587,,link_season_slot,cl:defenders:159,cl,defenders,159,Де Маркос,Атлетик,ПЗ,0,4,0,1,587
+g0526,587,,link_season_slot,league:defenders:254,league,defenders,254,Де Маркос,Атлетик,ПЗ,0,9,1,0,587
+g0296,296,,link_season_slot,cl:midfielders:145,cl,midfielders,145,Де Поль,Атлетико,ЦП,0,2,0,0,296
+g0296,296,,link_season_slot,league:midfielders:224,league,midfielders,224,Де Поль,Атлетико,ЦП,0,1,0,1,296
+g0243,350,,link_season_slot,cl:midfielders:90,cl,midfielders,90,де Рун,Аталанта,ЦОП,0,0,0,0,350
+g0243,350,,link_season_slot,league:midfielders:144,league,midfielders,144,де Рун,Аталанта,ЦОП,0,1,0,0,350
+g0766,1114,,existing,league:forwards:182,league,forwards,182,де Томас,Райо Вальекано,ФРВ,0,0,0,0,1114
+g0763,1111,,existing,league:forwards:179,league,forwards,179,Де Фрутос,Райо Вальекано,ЛФА,0,10,4,4,1111
+g0496,1453,,existing,cl:defenders:129,cl,defenders,129,Де Шильо,Ювентус,ПЗ,0,0,0,0,1453
+g0496,1453,,existing,league:defenders:202,league,defenders,202,Де Шильо,Ювентус,ПЗ,0,0,0,0,1453
+g0273,1254,,existing,cl:midfielders:121,cl,midfielders,121,Демме,Наполи,ЦОП,0,0,0,0,1254
+g0273,1254,,existing,league:midfielders:189,league,midfielders,189,Демме,Наполи,ЦОП,0,0,0,0,1254
+g0814,1172,,existing,league:midfielders:15,league,midfielders,15,Дендонкер,Астон Вилла,ЦП,0,0,0,0,1172
+g0611,1558,,existing,cl:defenders:244,cl,defenders,244,Денисов,Спартак,ПЗ,0,5,0,0,1558
+g0611,1558,,existing,league:defenders:396,league,defenders,396,Денисов,Спартак,ПЗ,0,7,0,0,1558
+g0436,1401,,existing,cl:defenders:69,cl,defenders,69,Денк,Бавария,ЦЗ,0,0,0,0,1401
+g0436,1401,,existing,league:defenders:103,league,defenders,103,Денк,Бавария,ЦЗ,0,0,0,0,1401
+g0293,289,,link_season_slot,cl:midfielders:142,cl,midfielders,142,Депай,Атлетико,ЦАП,0,5,4,2,289
+g0293,289,,link_season_slot,league:midfielders:221,league,midfielders,221,Депай,Атлетико,ЦАП,0,16,9,10,289
+g0750,1094,,existing,league:forwards:154,league,forwards,154,Дефрель,Сассуоло,ФРВ,0,5,4,1,1094
+g0219,490,,link_season_slot,cl:midfielders:66,cl,midfielders,66,Джака,Байер,ЦП,1,3,0,3,490
+g0219,490,,link_season_slot,league:midfielders:92,league,midfielders,92,Джака,Байер,ЦП,1,4,0,1,490
+g0194,470,,link_season_slot,cl:midfielders:41,cl,midfielders,41,Джан,Дортмунд,ЦП,0,2,1,0,470
+g0194,470,,link_season_slot,league:midfielders:67,league,midfielders,67,Джан,Дортмунд,ЦП,0,7,3,2,470
+g0380,1368,,existing,cl:defenders:13,cl,defenders,13,Джеймс,Челси,ПЗ,0,0,0,0,1368
+g0380,1368,,existing,league:defenders:29,league,defenders,29,Джеймс,Челси,ПЗ,0,4,0,0,1368
+g0012,146,,link_season_slot,cl:forwards:10,cl,forwards,10,Джексон,Челси,ФРВ,0,0,0,0,146
+g0012,146,,link_season_slot,league:forwards:20,league,forwards,20,Джексон,Челси,ФРВ,0,2,0,0,146
+g1133,1606,,existing,league:goalkeepers:66,league,goalkeepers,66,Джемелло,Торино,ВРТ,0,0,0,0,1606
+g1040,1480,,existing,league:defenders:250,league,defenders,250,Джиджи,Торино,ЦЗ,0,0,0,0,1480
+g0607,700,,link_season_slot,cl:defenders:240,cl,defenders,240,Джикия,Спартак,ЦЗ,1,6,0,1,700
+g0607,700,,link_season_slot,league:defenders:392,league,defenders,392,Джикия,Спартак,ЦЗ,1,7,0,0,700
+g0474,1438,,existing,cl:defenders:107,cl,defenders,107,Джимсити,Аталанта,ЦЗ,0,0,0,0,1438
+g0474,1438,,existing,league:defenders:173,league,defenders,173,Джимсити,Аталанта,ЦЗ,0,0,0,0,1438
+g0994,850,,link_season_slot,league:defenders:150,league,defenders,150,Джон,Хоффенхайм,ЛЗ,0,0,0,0,850
+g0172,416,,link_season_slot,cl:midfielders:18,cl,midfielders,18,Джонс,Ливерпуль,ЦП,0,2,0,0,416
+g0172,416,,link_season_slot,league:midfielders:39,league,midfielders,39,Джонс,Ливерпуль,ЦП,0,1,0,0,416
+g0037,139,,link_season_slot,cl:forwards:36,cl,forwards,36,Джонсон,Тоттенхэм,ПФА,1,1,0,0,139
+g0037,139,,link_season_slot,league:forwards:58,league,forwards,58,Джонсон,Тоттенхэм,ПФА,1,9,2,3,139
+g0915,446,,link_season_slot,league:midfielders:280,league,midfielders,280,Джордан,Севилья,ЦП,0,0,0,0,446
+g0737,1079,,existing,league:forwards:127,league,forwards,127,Дзаканьи,Лацио,ЛФА,0,10,5,3,1079
+g0513,648,,link_season_slot,cl:defenders:146,cl,defenders,146,Дзаноли,Наполи,ПЗ,0,0,0,0,648
+g0513,648,,link_season_slot,league:defenders:225,league,defenders,225,Дзаноли,Наполи,ПЗ,0,0,0,0,648
+g0472,1436,,existing,cl:defenders:105,cl,defenders,105,Дзаппакоста,Аталанта,ПЗ,0,0,0,0,1436
+g0472,1436,,existing,league:defenders:171,league,defenders,171,Дзаппакоста,Аталанта,ПЗ,0,0,0,0,1436
+g0479,1442,,existing,cl:defenders:112,cl,defenders,112,Дзортеа,Аталанта,ПЗ,0,0,0,0,1442
+g0479,1442,,existing,league:defenders:178,league,defenders,178,Дзортеа,Аталанта,ПЗ,0,0,0,0,1442
+g0125,1134,,existing,cl:forwards:126,cl,forwards,126,Дзюба,Цска,ФРВ,0,3,3,0,1134
+g0125,1134,,existing,league:forwards:221,league,forwards,221,Дзюба,Цска,ФРВ,0,8,3,4,1134
+g0508,651,,link_season_slot,cl:defenders:141,cl,defenders,141,Ди Лоренцо,Наполи,ПЗ,0,2,0,2,651
+g0508,651,,link_season_slot,league:defenders:220,league,defenders,220,Ди Лоренцо,Наполи,ПЗ,0,9,0,0,651
+g0016,119,,link_season_slot,cl:forwards:15,cl,forwards,15,Диаби,Ливерпуль,ПФА,0,0,0,0,119
+g0016,119,,link_season_slot,league:forwards:31,league,forwards,31,Диаби,Ливерпуль,ПФА,0,9,2,1,119
+g0025,123,,link_season_slot,cl:forwards:24,cl,forwards,24,Диалло,Мю,ПФА,0,2,1,2,123
+g0025,123,,link_season_slot,league:forwards:40,league,forwards,40,Диалло,Мю,ПФА,0,7,2,1,123
+g0115,1126,yes,existing,cl:forwards:116,cl,forwards,116,Диас,Вильярреал,ЛФА,0,1,0,2,1126
+g0115,1126,yes,existing,league:forwards:211,league,forwards,211,Диас,Вильярреал,ЛФА,0,5,1,2,1126
+g0015,117,yes,link_season_slot,cl:forwards:13,cl,forwards,13,Диас,Ливерпуль,ЛФА,0,6,3,2,117
+g0015,117,yes,link_season_slot,league:forwards:29,league,forwards,29,Диас,Ливерпуль,ЛФА,0,10,10,1,117
+g0405,1388,,existing,cl:defenders:38,cl,defenders,38,Диаш,Сити,ЦЗ,0,6,2,0,1388
+g0405,1388,,existing,league:defenders:72,league,defenders,72,Диаш,Сити,ЦЗ,0,8,0,1,1388
+g0193,471,,link_season_slot,cl:midfielders:40,cl,midfielders,40,Дибала,Дортмунд,ЦАП,0,4,1,6,471
+g0193,471,,link_season_slot,league:midfielders:66,league,midfielders,66,Дибала,Дортмунд,ЦАП,0,10,4,3,471
+g0574,719,,link_season_slot,cl:defenders:207,cl,defenders,207,Дивеев,Цска,ЦЗ,0,0,0,0,719
+g0574,719,,link_season_slot,league:defenders:334,league,defenders,334,Дивеев,Цска,ЦЗ,0,6,0,0,719
+g0480,665,,link_season_slot,cl:defenders:113,cl,defenders,113,Димарко,Интер,ЛЗ,0,7,2,1,665
+g0480,665,,link_season_slot,league:defenders:186,league,defenders,186,Димарко,Интер,ЛЗ,0,8,0,1,665
+g1136,1611,,existing,league:goalkeepers:75,league,goalkeepers,75,Димитриевски,Райо Вальекано,ВРТ,0,3,0,0,1611
+g0050,183,,link_season_slot,cl:forwards:49,cl,forwards,49,Дина Эбимбе,Франкфурт,ЛФА,0,6,4,3,183
+g0050,183,,link_season_slot,league:forwards:71,league,forwards,71,Дина Эбимбе,Франкфурт,ЛФА,0,9,3,5,183
+g0952,742,,link_season_slot,league:defenders:15,league,defenders,15,Динь,Астон Вилла,ЛЗ,0,0,0,0,742
+g0964,1372,,existing,league:defenders:38,league,defenders,38,Диоп,Фулхэм,ЦЗ,0,6,0,0,1372
+g0383,777,,link_season_slot,cl:defenders:16,cl,defenders,16,Дисаси,Челси,ЦЗ,0,0,0,0,777
+g0383,777,,link_season_slot,league:defenders:32,league,defenders,32,Дисаси,Челси,ЦЗ,0,0,0,0,777
+g0802,1162,,existing,league:forwards:265,league,forwards,265,Дмитриев,Урал,ЛФА,0,13,7,5,1162
+g1139,972,,link_season_slot,league:goalkeepers:82,league,goalkeepers,82,Дмитрович,Севилья,ВРТ,0,7,0,0,972
+g0712,1061,,existing,league:forwards:89,league,forwards,89,Доан,Фрайбург,ПФА,0,7,0,1,1061
+g0718,201,,link_season_slot,league:forwards:95,league,forwards,95,Довбык,Хоффенхайм,ФРВ,0,4,2,2,201
+g1015,644,,link_season_slot,league:defenders:182,league,defenders,182,Додо,Фиорентина,ПЗ,0,4,0,0,644
+g0030,1045,,existing,cl:forwards:29,cl,forwards,29,Доку,Сити,ЛФА,0,3,3,0,1045
+g0030,1045,,existing,league:forwards:51,league,forwards,51,Доку,Сити,ЛФА,0,6,3,0,1045
+g1092,1554,,existing,league:defenders:387,league,defenders,387,Дремгич,Рубин,ЦЗ,0,0,0,0,1554
+g0365,390,,link_season_slot,cl:midfielders:214,cl,midfielders,214,Ду Кейрош,Зенит,ЦП,0,0,0,0,390
+g0365,390,,link_season_slot,league:midfielders:351,league,midfielders,351,Ду Кейрош,Зенит,ЦП,0,0,0,0,390
+g0608,1018,,link_season_slot,cl:defenders:241,cl,defenders,241,Дуарте,Спартак,ЦЗ,0,6,0,0,1018
+g0608,1018,,link_season_slot,league:defenders:393,league,defenders,393,Дуарте,Спартак,ЦЗ,0,9,2,0,1018
+g1113,966,,link_season_slot,league:goalkeepers:17,league,goalkeepers,17,Дубравка,Ньюкасл,ВРТ,0,0,0,0,966
+g0811,410,,link_season_slot,league:midfielders:12,league,midfielders,12,Дуглас Луис,Астон Вилла,ЦП,0,0,0,0,410
+g0483,666,,link_season_slot,cl:defenders:116,cl,defenders,116,Думфрис,Интер,ПЗ,0,3,0,0,666
+g0483,666,,link_season_slot,league:defenders:189,league,defenders,189,Думфрис,Интер,ПЗ,0,2,0,0,666
+g0869,1242,,existing,league:midfielders:155,league,midfielders,155,Дункан,Фиорентина,ЦП,0,0,0,0,1242
+g0427,804,,link_season_slot,cl:defenders:60,cl,defenders,60,Дэвис,Бавария,ЛЗ,0,3,0,0,804
+g0427,804,,link_season_slot,league:defenders:94,league,defenders,94,Дэвис,Бавария,ЛЗ,0,6,0,0,804
+g1144,1625,,existing,league:goalkeepers:99,league,goalkeepers,99,Дюпин,Рубин,ВРТ,0,8,0,0,1625
+g1075,690,,link_season_slot,league:defenders:360,league,defenders,360,Евгеньев,Крылья Советов,ЦЗ,0,7,2,0,690
+g0931,1339,,existing,league:midfielders:327,league,midfielders,327,Евтич,Рубин,ЦП,0,9,4,1,1339
+g0938,384,,link_season_slot,league:midfielders:340,league,midfielders,340,Егорычев,Урал,ЦАП,0,11,4,8,384
+g0786,79,,link_season_slot,league:forwards:238,league,forwards,238,Ежов,Крылья Советов,ПФА,0,0,0,0,79
+g0619,718,,link_season_slot,cl:defenders:252,cl,defenders,252,Еракович,Зенит,ЦЗ,0,0,0,0,718
+g0619,718,,link_season_slot,league:defenders:413,league,defenders,413,Еракович,Зенит,ЦЗ,0,1,1,0,718
+g0333,398,,link_season_slot,cl:midfielders:182,cl,midfielders,182,Ермаков,Цска,ЦП,0,0,0,0,398
+g0333,398,,link_season_slot,league:midfielders:291,league,midfielders,291,Ермаков,Цска,ЦП,0,0,0,0,398
+g0364,392,,link_season_slot,cl:midfielders:213,cl,midfielders,213,Ерохин,Зенит,ЦП,0,1,0,0,392
+g0364,392,,link_season_slot,league:midfielders:350,league,midfielders,350,Ерохин,Зенит,ЦП,0,0,0,0,392
+g0510,1459,,existing,cl:defenders:143,cl,defenders,143,Жезус,Наполи,ЦЗ,0,0,0,0,1459
+g0510,1459,,existing,league:defenders:222,league,defenders,222,Жезус,Наполи,ЦЗ,0,7,0,0,1459
+g0351,376,,link_season_slot,cl:midfielders:200,cl,midfielders,200,Жемалетдинов,Локомотив,ПП,0,1,0,1,376
+g0351,376,,link_season_slot,league:midfielders:316,league,midfielders,316,Жемалетдинов,Локомотив,ПП,0,2,0,0,376
+g0118,1129,,existing,cl:forwards:119,cl,forwards,119,Жерар Морено,Вильярреал,ФРВ,0,5,4,2,1129
+g0118,1129,,existing,league:forwards:214,league,forwards,214,Жерар Морено,Вильярреал,ФРВ,0,7,3,4,1129
+g0080,1083,,existing,cl:forwards:81,cl,forwards,81,Жиру,Милан,ФРВ,0,4,2,0,1083
+g0080,1083,,existing,league:forwards:139,league,forwards,139,Жиру,Милан,ФРВ,0,7,5,1,1083
+g0828,1191,,existing,league:midfielders:46,league,midfielders,46,Жоелинтон,Ньюкасл,ЦП,0,9,2,5,1191
+g0159,1168,,existing,cl:midfielders:5,cl,midfielders,5,Жоржиньо,Арсенал,ЦП,0,1,0,1,1168
+g0159,1168,,existing,league:midfielders:5,league,midfielders,5,Жоржиньо,Арсенал,ЦП,0,3,0,0,1168
+g0017,114,,link_season_slot,cl:forwards:16,cl,forwards,16,Жота,Ливерпуль,ФРВ,0,5,6,0,114
+g0017,114,,link_season_slot,league:forwards:32,league,forwards,32,Жота,Ливерпуль,ФРВ,0,4,4,0,114
+g0842,511,,link_season_slot,league:midfielders:121,league,midfielders,121,Жустван,Хоффенхайм,ЦАП,0,0,0,0,511
+g0197,474,,link_season_slot,cl:midfielders:44,cl,midfielders,44,Забитцер,Дортмунд,ЦП,0,1,0,0,474
+g0197,474,,link_season_slot,league:midfielders:70,league,midfielders,70,Забитцер,Дортмунд,ЦП,0,1,0,1,474
+g0123,101,,link_season_slot,cl:forwards:124,cl,forwards,124,Заболотный,Цска,ФРВ,0,0,0,0,101
+g0123,101,,link_season_slot,league:forwards:219,league,forwards,219,Заболотный,Цска,ФРВ,0,8,8,1,101
+g1002,1429,,existing,league:defenders:158,league,defenders,158,Загаду,Штутгарт,ЦЗ,0,1,0,0,1429
+g0278,1257,,existing,cl:midfielders:126,cl,midfielders,126,Залевски,Рома,ПП,0,1,0,1,1257
+g0278,1257,,existing,league:midfielders:194,league,midfielders,194,Залевски,Рома,ПП,0,5,0,3,1257
+g0687,111,,link_season_slot,league:forwards:7,league,forwards,7,Заниоло,Астон Вилла,ФРВ,0,10,6,0,111
+g0754,1098,,existing,league:forwards:158,league,forwards,158,Запата,Торино,ФРВ,0,14,10,6,1098
+g0320,1299,,existing,cl:midfielders:169,cl,midfielders,169,Захарян,Реал Сосьедад,ЦП,0,2,0,3,1299
+g0320,1299,,existing,league:midfielders:271,league,midfielders,271,Захарян,Реал Сосьедад,ЦП,0,9,2,3,1299
+g0329,1311,,existing,cl:midfielders:178,cl,midfielders,178,Зджелар,Цска,ЦП,0,1,1,0,1311
+g0329,1311,,existing,league:midfielders:287,league,midfielders,287,Зджелар,Цска,ЦП,0,6,2,1,1311
+g0268,344,,link_season_slot,cl:midfielders:116,cl,midfielders,116,Зелински,Наполи,ЦП,0,5,2,4,344
+g0268,344,,link_season_slot,league:midfielders:184,league,midfielders,184,Зелински,Наполи,ЦП,0,11,4,4,344
+g1010,1432,,existing,league:defenders:166,league,defenders,166,Зесигер,Вольфсбург,ЦЗ,0,1,0,0,1432
+g1036,1476,,existing,league:defenders:246,league,defenders,246,Зима,Торино,ЦЗ,0,1,0,0,1476
+g0373,733,,link_season_slot,cl:defenders:6,cl,defenders,6,Зинченко,Арсенал,ЛЗ,0,2,0,0,733
+g0373,733,,link_season_slot,league:defenders:6,league,defenders,6,Зинченко,Арсенал,ЛЗ,0,4,0,1,733
+g0148,86,,link_season_slot,cl:forwards:149,cl,forwards,149,Зиньковский,Спартак,ЛФА,0,1,0,0,86
+g0148,86,,link_season_slot,league:forwards:263,league,forwards,263,Зиньковский,Спартак,ЛФА,0,8,4,1,86
+g0357,382,,link_season_slot,cl:midfielders:206,cl,midfielders,206,Зобнин,Спартак,ЦП,0,7,2,3,382
+g0357,382,,link_season_slot,league:midfielders:335,league,midfielders,335,Зобнин,Спартак,ЦП,0,8,2,2,382
+g0650,945,,link_season_slot,cl:goalkeepers:27,cl,goalkeepers,27,Зоммер,Интер,ВРТ,0,5,0,0,945
+g0650,945,,link_season_slot,league:goalkeepers:48,league,goalkeepers,48,Зоммер,Интер,ВРТ,0,7,0,0,945
+g0935,1343,,existing,league:midfielders:331,league,midfielders,331,Зотов,Рубин,ЦП,0,4,0,1,1343
+g0557,626,,link_season_slot,cl:defenders:190,cl,defenders,190,Зубельдиа,Реал Сосьедад,ЦЗ,0,1,0,1,626
+g0557,626,,link_season_slot,league:defenders:310,league,defenders,310,Зубельдиа,Реал Сосьедад,ЦЗ,0,0,0,0,626
+g0319,327,,link_season_slot,cl:midfielders:168,cl,midfielders,168,Зубименди,Реал Сосьедад,ЦП,0,2,0,1,327
+g0319,327,,link_season_slot,league:midfielders:270,league,midfielders,270,Зубименди,Реал Сосьедад,ЦП,0,3,1,0,327
+g0421,814,,link_season_slot,cl:defenders:54,cl,defenders,54,Зюле,Дортмунд,ЦЗ,0,1,0,0,814
+g0421,814,,link_season_slot,league:defenders:88,league,defenders,88,Зюле,Дортмунд,ЦЗ,0,6,0,1,814
+g0892,1284,,existing,league:midfielders:243,league,midfielders,243,Иван Мартин,Жирона,ЦП,0,1,0,0,1284
+g0918,372,,link_season_slot,league:midfielders:307,league,midfielders,307,Иванисеня,Крылья Советов,ЦП,0,3,0,1,372
+g0936,1344,,existing,league:midfielders:332,league,midfielders,332,Иванов,Рубин,ЦП,0,0,0,0,1344
+g0934,1342,,existing,league:midfielders:330,league,midfielders,330,Иву,Рубин,ЦП,0,3,0,0,1342
+g0773,27,,link_season_slot,league:forwards:189,league,forwards,189,Иглесиас,Бетис,ФРВ,0,8,2,0,27
+g0359,383,,link_season_slot,cl:midfielders:208,cl,midfielders,208,Игнатов,Спартак,ЦАП,0,7,2,1,383
+g0359,383,,link_season_slot,league:midfielders:337,league,midfielders,337,Игнатов,Спартак,ЦАП,0,11,3,7,383
+g0956,578,,link_season_slot,league:defenders:19,league,defenders,19,Игорь,Брайтон,ЦЗ,0,7,1,0,578
+g0054,1055,,existing,cl:forwards:53,cl,forwards,53,Иконе,Байер,ФРВ,0,0,0,0,1055
+g0054,1055,,existing,league:forwards:75,league,forwards,75,Иконе,Байер,ФРВ,0,1,2,0,1055
+g0260,1247,,existing,cl:midfielders:107,cl,midfielders,107,Илинг,Ювентус,ЛП,0,0,0,0,1247
+g0260,1247,,existing,league:midfielders:169,league,midfielders,169,Илинг,Ювентус,ЛП,0,1,1,0,1247
+g0240,345,,link_season_slot,cl:midfielders:87,cl,midfielders,87,Илич,Аталанта,ЦП,0,0,0,0,345
+g0240,345,,link_season_slot,league:midfielders:141,league,midfielders,141,Илич,Аталанта,ЦП,0,9,4,2,345
+g0527,590,,link_season_slot,cl:defenders:160,cl,defenders,160,Иманол,Атлетик,ЛЗ,0,0,0,0,590
+g0527,590,,link_season_slot,league:defenders:255,league,defenders,255,Иманол,Атлетик,ЛЗ,0,0,0,0,590
+g0743,156,,link_season_slot,league:forwards:133,league,forwards,133,Иммобиле,Лацио,ФРВ,0,11,10,2,156
+g0462,839,,link_season_slot,cl:defenders:95,cl,defenders,95,Иниго Мартинез,Лейпциг,ЦЗ,0,1,0,1,839
+g0462,839,,link_season_slot,league:defenders:129,league,defenders,129,Иниго Мартинез,Лейпциг,ЦЗ,0,3,0,0,839
+g0093,8,,link_season_slot,cl:forwards:94,cl,forwards,94,Иньяки,Атлетик,ПФА,0,8,8,2,8
+g0093,8,,link_season_slot,league:forwards:165,league,forwards,165,Иньяки,Атлетик,ПФА,0,14,11,4,8
+g0791,1147,,existing,league:forwards:248,league,forwards,248,Ионов,Ростов,ПФА,0,8,2,3,1147
+g0704,127,,link_season_slot,league:forwards:41,league,forwards,41,Исак,Ньюкасл,ФРВ,0,13,14,6,127
+g0742,159,,link_season_slot,league:forwards:132,league,forwards,132,Исаксен,Лацио,ПФА,0,2,0,0,159
+g0790,1146,,existing,league:forwards:247,league,forwards,247,Исидор,Ростов,ФРВ,0,2,1,1,1146
+g0902,309,,link_season_slot,league:midfielders:253,league,midfielders,253,Иско,Бетис,ЦАП,0,10,5,3,309
+g0455,1409,,existing,cl:defenders:88,cl,defenders,88,Итакура,Боруссия М,ЦЗ,0,3,0,1,1409
+g0455,1409,,existing,league:defenders:122,league,defenders,122,Итакура,Боруссия М,ЦЗ,0,6,0,0,1409
+g1104,1565,,existing,league:defenders:408,league,defenders,408,Итало,Урал,ПЗ,0,0,0,0,1565
+g0996,1423,,existing,league:defenders:152,league,defenders,152,Ито,Штутгарт,ЛЗ,0,9,0,0,1423
+g1008,857,,link_season_slot,league:defenders:164,league,defenders,164,Йенц,Вольфсбург,ЦЗ,0,10,0,0,857
+g0524,588,,link_season_slot,cl:defenders:157,cl,defenders,157,Йерай,Атлетик,ЦЗ,0,3,0,0,588
+g0524,588,,link_season_slot,league:defenders:252,league,defenders,252,Йерай,Атлетик,ЦЗ,0,2,0,1,588
+g0806,78,,link_season_slot,league:forwards:275,league,forwards,275,Йилдыз,Крылья Советов,ФРВ,0,1,1,0,78
+g0082,1085,,existing,cl:forwards:83,cl,forwards,83,Йович,Милан,ФРВ,0,0,0,0,1085
+g0082,1085,,existing,league:forwards:141,league,forwards,141,Йович,Милан,ФРВ,0,0,0,0,1085
+g0993,851,,link_season_slot,league:defenders:149,league,defenders,149,Кабак,Хоффенхайм,ЦЗ,0,6,0,0,851
+g1089,1551,,existing,league:defenders:384,league,defenders,384,Кабутов,Рубин,ПЗ,0,5,0,1,1551
+g0989,1420,,existing,league:defenders:145,league,defenders,145,Кадерабек,Хоффенхайм,ПЗ,0,6,0,0,1420
+g0272,1253,,existing,cl:midfielders:120,cl,midfielders,120,Кажусте,Наполи,ЦОП,0,0,0,0,1253
+g0272,1253,,existing,league:midfielders:188,league,midfielders,188,Кажусте,Наполи,ЦОП,0,0,0,0,1253
+g0177,1190,,existing,cl:midfielders:23,cl,midfielders,23,Каземиро,Мю,ЦОП,0,1,2,0,1190
+g0177,1190,,existing,league:midfielders:44,league,midfielders,44,Каземиро,Мю,ЦОП,0,9,1,1,1190
+g0591,682,,link_season_slot,cl:defenders:224,cl,defenders,224,Кайо,Краснодар,ЦЗ,0,3,0,0,682
+g0591,682,,link_season_slot,league:defenders:351,league,defenders,351,Кайо,Краснодар,ЦЗ,0,5,0,0,682
+g0165,440,,link_season_slot,cl:midfielders:11,cl,midfielders,11,Кайседо,Челси,ЦОП,0,2,0,0,440
+g0165,440,,link_season_slot,league:midfielders:26,league,midfielders,26,Кайседо,Челси,ЦОП,0,7,1,0,440
+g0501,796,,link_season_slot,cl:defenders:134,cl,defenders,134,Калабрия,Милан,ПЗ,0,2,0,0,796
+g0501,796,,link_season_slot,league:defenders:213,league,defenders,213,Калабрия,Милан,ПЗ,0,9,1,0,796
+g0502,797,,link_season_slot,cl:defenders:135,cl,defenders,135,Калулу,Милан,ЦЗ,0,1,0,0,797
+g0502,797,,link_season_slot,league:defenders:214,league,defenders,214,Калулу,Милан,ЦЗ,0,3,0,0,797
+g0315,321,,link_season_slot,cl:midfielders:164,cl,midfielders,164,Камавинга,Реал,ЦОП,0,0,0,0,321
+g0315,321,,link_season_slot,league:midfielders:266,league,midfielders,266,Камавинга,Реал,ЦОП,0,0,0,0,321
+g0871,450,,link_season_slot,league:midfielders:171,league,midfielders,171,Камада,Лацио,ЦАП,0,12,6,8,450
+g0497,640,,link_season_slot,cl:defenders:130,cl,defenders,130,Камбиасо,Ювентус,ЛЗ,0,0,0,0,640
+g0497,640,,link_season_slot,league:defenders:203,league,defenders,203,Камбиасо,Ювентус,ЛЗ,0,0,0,0,640
+g0767,1115,,existing,league:forwards:183,league,forwards,183,Камелло,Райо Вальекано,ФРВ,0,0,0,0,1115
+g0729,1011,,link_season_slot,league:forwards:106,league,forwards,106,Каминский,Вольфсбург,ЛФА,0,1,0,0,1011
+g0236,1214,,existing,cl:midfielders:83,cl,midfielders,83,Кампль,Лейпциг,ЦП,0,0,0,0,1214
+g0236,1214,,existing,league:midfielders:109,league,midfielders,109,Кампль,Лейпциг,ЦП,0,0,0,0,1214
+g0541,597,,link_season_slot,cl:defenders:174,cl,defenders,174,Канселу,Барселона,ПЗ,0,2,0,0,597
+g0541,597,,link_season_slot,league:defenders:269,league,defenders,269,Канселу,Барселона,ПЗ,0,6,1,1,597
+g0564,1515,,existing,cl:defenders:197,cl,defenders,197,Капу,Вильярреал,ЦЗ,0,2,2,0,1515
+g0564,1515,,existing,league:defenders:324,league,defenders,324,Капу,Вильярреал,ЦЗ,0,6,1,2,1515
+g0620,715,,link_season_slot,cl:defenders:253,cl,defenders,253,Караваев,Зенит,ПЗ,0,2,1,0,715
+g0620,715,,link_season_slot,league:defenders:414,league,defenders,414,Караваев,Зенит,ПЗ,0,4,0,1,715
+g0849,1227,,existing,league:midfielders:128,league,midfielders,128,Каразор,Штутгарт,ЦП,0,3,1,1,1227
+g0756,1100,,existing,league:forwards:160,league,forwards,160,Карамо,Торино,ФРВ,0,0,0,0,1100
+g0901,311,yes,link_season_slot,league:midfielders:252,league,midfielders,252,Карвальо,Бетис,ЦОП,0,12,0,4,311
+g0238,1215,yes,existing,cl:midfielders:85,cl,midfielders,85,Карвальо,Лейпциг,ЦАП,0,0,0,0,1215
+g0238,1215,yes,existing,league:midfielders:111,league,midfielders,111,Карвальо,Лейпциг,ЦАП,0,0,0,0,1215
+g0550,620,,link_season_slot,cl:defenders:183,cl,defenders,183,Карвахаль,Реал,ПЗ,0,1,0,0,620
+g0550,620,,link_season_slot,league:defenders:303,league,defenders,303,Карвахаль,Реал,ПЗ,0,7,0,0,620
+g1137,1612,,existing,league:goalkeepers:76,league,goalkeepers,76,Карденас,Райо Вальекано,ВРТ,0,0,0,0,1612
+g1114,1577,,existing,league:goalkeepers:18,league,goalkeepers,18,Кариус,Ньюкасл,ВРТ,0,0,0,0,1577
+g0951,1360,,existing,league:defenders:14,league,defenders,14,Карлос,Астон Вилла,ЦЗ,0,1,0,0,1360
+g0649,1590,,existing,cl:goalkeepers:26,cl,goalkeepers,26,Карнесекки,Аталанта,ВРТ,0,2,0,0,1590
+g0649,1590,,existing,league:goalkeepers:44,league,goalkeepers,44,Карнесекки,Аталанта,ВРТ,0,6,0,0,1590
+g1078,1535,,existing,league:defenders:365,league,defenders,365,Карпицкий,Крылья Советов,ЦЗ,0,0,0,0,1535
+g0350,377,,link_season_slot,cl:midfielders:199,cl,midfielders,199,Карпукас,Локомотив,ЦП,0,0,0,0,377
+g0350,377,,link_season_slot,league:midfielders:315,league,midfielders,315,Карпукас,Локомотив,ЦП,0,7,0,2,377
+g0335,1314,,existing,cl:midfielders:184,cl,midfielders,184,Карраскаль,Динамо,ЦП,0,5,6,2,1314
+g0335,1314,,existing,league:midfielders:293,league,midfielders,293,Карраскаль,Динамо,ЦП,0,10,3,3,1314
+g0517,802,,link_season_slot,cl:defenders:150,cl,defenders,150,Карсдорп,Рома,ПЗ,0,1,0,0,802
+g0517,802,,link_season_slot,league:defenders:229,league,defenders,229,Карсдорп,Рома,ПЗ,0,8,0,0,802
+g1021,788,,link_season_slot,league:defenders:206,league,defenders,206,Касале,Лацио,ЦЗ,0,6,0,1,788
+g0968,1376,,existing,league:defenders:42,league,defenders,42,Кастанье,Фулхэм,ПЗ,0,0,0,0,1376
+g0740,160,,link_season_slot,league:forwards:130,league,forwards,130,Кастелланос,Лацио,ФРВ,0,1,0,0,160
+g1121,989,,link_season_slot,league:goalkeepers:42,league,goalkeepers,42,Кастилс,Вольфсбург,ВРТ,0,11,0,0,989
+g0748,1092,,existing,league:forwards:152,league,forwards,152,Кастильехо,Сассуоло,ПФА,0,5,3,2,1092
+g0865,1239,,existing,league:midfielders:151,league,midfielders,151,Кастровилль,Фиорентина,ЦП,0,2,0,0,1239
+g0151,1165,,existing,cl:forwards:152,cl,forwards,152,Касьерра,Зенит,ФРВ,0,7,9,3,1165
+g0151,1165,,existing,league:forwards:270,league,forwards,270,Касьерра,Зенит,ФРВ,0,11,19,3,1165
+g0874,1248,,existing,league:midfielders:174,league,midfielders,174,Катальди,Лацио,ЦОП,0,3,0,0,1248
+g0803,90,,link_season_slot,league:forwards:266,league,forwards,266,Каштанов,Урал,ФРВ,0,10,11,2,90
+g0059,192,,link_season_slot,cl:forwards:59,cl,forwards,59,Кванкара,Боруссия М,ФРВ,0,10,14,3,192
+g0059,192,,link_season_slot,league:forwards:81,league,forwards,81,Кванкара,Боруссия М,ФРВ,0,14,9,3,192
+g0083,55,,link_season_slot,cl:forwards:84,cl,forwards,84,Квара,Наполи,ЛФА,0,8,8,4,55
+g0083,55,,link_season_slot,league:forwards:142,league,forwards,142,Квара,Наполи,ЛФА,0,13,9,4,55
+g0895,1287,,existing,league:midfielders:246,league,midfielders,246,Кебе,Жирона,ЦП,0,0,0,0,1287
+g0045,172,,link_season_slot,cl:forwards:44,cl,forwards,44,Кейн,Бавария,ФРВ,0,12,13,6,172
+g0045,172,,link_season_slot,league:forwards:66,league,forwards,66,Кейн,Бавария,ФРВ,0,16,20,5,172
+g0839,1222,,existing,league:midfielders:118,league,midfielders,118,Кейтель,Фрайбург,ЦОП,0,0,0,0,1222
+g0629,1575,,existing,cl:goalkeepers:6,cl,goalkeepers,6,Келлехер,Ливерпуль,ВРТ,0,0,0,0,1575
+g0629,1575,,existing,league:goalkeepers:13,league,goalkeepers,13,Келлехер,Ливерпуль,ВРТ,0,0,0,0,1575
+g0667,936,,link_season_slot,cl:goalkeepers:44,cl,goalkeepers,44,Кепа,Реал,ВРТ,0,0,0,0,936
+g0667,936,,link_season_slot,league:goalkeepers:78,league,goalkeepers,78,Кепа,Реал,ВРТ,0,1,0,0,936
+g0685,956,,link_season_slot,cl:goalkeepers:62,cl,goalkeepers,62,Кержаков,Зенит,ВРТ,0,1,0,0,956
+g0685,956,,link_season_slot,league:goalkeepers:104,league,goalkeepers,104,Кержаков,Зенит,ВРТ,0,6,0,0,956
+g0827,1187,,existing,league:midfielders:32,league,midfielders,32,Керни,Фулхэм,ЦП,0,0,0,0,1187
+g0375,1358,,existing,cl:defenders:8,cl,defenders,8,Кивиор,Арсенал,ЦЗ,0,0,0,0,1358
+g0375,1358,,existing,league:defenders:8,league,defenders,8,Кивиор,Арсенал,ЦЗ,0,0,0,0,1358
+g1096,707,,link_season_slot,league:defenders:400,league,defenders,400,Кики,Урал,ЛЗ,0,7,0,1,707
+g0430,1397,,existing,cl:defenders:63,cl,defenders,63,Киммих,Бавария,ПЗ,0,3,0,0,1397
+g0430,1397,,existing,league:defenders:97,league,defenders,97,Киммих,Бавария,ПЗ,0,6,0,0,1397
+g0073,47,,link_season_slot,cl:forwards:74,cl,forwards,74,Кин,Ювентус,ФРВ,0,1,0,2,47
+g0073,47,,link_season_slot,league:forwards:123,league,forwards,123,Кин,Ювентус,ФРВ,0,2,1,0,47
+g0838,1221,,existing,league:midfielders:117,league,midfielders,117,Кирех,Фрайбург,ЦАП,0,11,4,0,1221
+g0254,357,,link_season_slot,cl:midfielders:101,cl,midfielders,101,Клаассен,Интер,ЦП,0,0,0,0,357
+g0254,357,,link_season_slot,league:midfielders:163,league,midfielders,163,Клаассен,Интер,ЦП,0,0,0,0,357
+g0231,497,,link_season_slot,cl:midfielders:78,cl,midfielders,78,Клаудиньо,Лейпциг,ЦАП,0,8,10,9,497
+g0231,497,,link_season_slot,league:midfielders:104,league,midfielders,104,Клаудиньо,Лейпциг,ЦАП,0,12,11,10,497
+g0464,838,,link_season_slot,cl:defenders:97,cl,defenders,97,Клостерманн,Лейпциг,ПЗ,0,2,0,0,838
+g0464,838,,link_season_slot,league:defenders:131,league,defenders,131,Клостерманн,Лейпциг,ПЗ,0,4,0,0,838
+g0636,979,,link_season_slot,cl:goalkeepers:13,cl,goalkeepers,13,Кобель,Дортмунд,ВРТ,0,1,0,0,979
+g0636,979,,link_season_slot,league:goalkeepers:23,league,goalkeepers,23,Кобель,Дортмунд,ВРТ,0,6,0,0,979
+g0138,1141,,existing,cl:forwards:139,cl,forwards,139,Кобнан,Краснодар,ПФА,0,1,0,0,1141
+g0138,1141,,existing,league:forwards:234,league,forwards,234,Кобнан,Краснодар,ПФА,0,2,0,0,1141
+g0366,391,,link_season_slot,cl:midfielders:215,cl,midfielders,215,Коваленко,Зенит,ЦАП,0,1,0,0,391
+g0366,391,,link_season_slot,league:midfielders:352,league,midfielders,352,Коваленко,Зенит,ЦАП,0,0,0,0,391
+g0643,1581,,existing,cl:goalkeepers:20,cl,goalkeepers,20,Коварь,Байер,ВРТ,0,0,0,0,1581
+g0643,1581,,existing,league:goalkeepers:30,league,goalkeepers,30,Коварь,Байер,ВРТ,0,0,0,0,1581
+g0182,279,,link_season_slot,cl:midfielders:28,cl,midfielders,28,Ковачич,Сити,ЦП,0,1,0,1,279
+g0182,279,,link_season_slot,league:midfielders:54,league,midfielders,54,Ковачич,Сити,ЦП,0,7,3,3,279
+g1011,1433,,existing,league:defenders:167,league,defenders,167,Козза,Вольфсбург,ЛЗ,0,0,0,0,1433
+g0297,1274,,existing,cl:midfielders:146,cl,midfielders,146,Коке,Атлетико,ЦОП,0,0,0,0,1274
+g0297,1274,,existing,league:midfielders:225,league,midfielders,225,Коке,Атлетико,ЦОП,0,6,3,2,1274
+g0325,1307,,existing,cl:midfielders:174,cl,midfielders,174,Коклен,Вильярреал,ЦП,0,0,0,0,1307
+g0325,1307,,existing,league:midfielders:283,league,midfielders,283,Коклен,Вильярреал,ЦП,0,3,1,1,1307
+g0868,1241,,existing,league:midfielders:154,league,midfielders,154,Кокорин,Фиорентина,ПП,0,0,0,0,1241
+g0342,1317,,existing,cl:midfielders:191,cl,midfielders,191,Кокшаров,Краснодар,ЦАП,0,0,0,0,1317
+g0342,1317,,existing,league:midfielders:300,league,midfielders,300,Кокшаров,Краснодар,ЦАП,0,3,6,0,1317
+g0473,1437,,existing,cl:defenders:106,cl,defenders,106,Колашинац,Аталанта,ЦЗ,0,1,1,0,1437
+g0473,1437,,existing,league:defenders:172,league,defenders,172,Колашинац,Аталанта,ЦЗ,0,2,0,0,1437
+g0044,175,,link_season_slot,cl:forwards:43,cl,forwards,43,Коман,Бавария,ЛФА,0,7,4,3,175
+g0044,175,,link_season_slot,league:forwards:65,league,forwards,65,Коман,Бавария,ЛФА,0,9,1,6,175
+g0929,1337,,existing,league:midfielders:325,league,midfielders,325,Комаров,Ростов,ЦП,0,0,0,0,1337
+g0565,1516,,existing,cl:defenders:198,cl,defenders,198,Комесанья,Вильярреал,ЦЗ,0,0,0,0,1516
+g0565,1516,,existing,league:defenders:325,league,defenders,325,Комесанья,Вильярреал,ЦЗ,0,0,0,0,1516
+g0792,1148,,existing,league:forwards:249,league,forwards,249,Комличенко,Ростов,ФРВ,0,7,5,0,1148
+g0389,745,,link_season_slot,cl:defenders:22,cl,defenders,22,Конате,Ливерпуль,ЦЗ,0,3,0,0,745
+g0389,745,,link_season_slot,league:defenders:47,league,defenders,47,Конате,Ливерпуль,ЦЗ,0,6,1,0,745
+g0223,496,,link_season_slot,cl:midfielders:70,cl,midfielders,70,Коне,Боруссия М,ЦП,0,2,4,0,496
+g0223,496,,link_season_slot,league:midfielders:96,league,midfielders,96,Коне,Боруссия М,ЦП,0,6,1,2,496
+g0932,1340,,existing,league:midfielders:328,league,midfielders,328,Коновалов,Рубин,ЦОП,0,6,0,0,1340
+g0949,735,,link_season_slot,league:defenders:12,league,defenders,12,Конса,Астон Вилла,ЦЗ,0,10,2,1,735
+g1128,1601,,existing,league:goalkeepers:61,league,goalkeepers,61,Консильи,Сассуоло,ВРТ,0,7,0,0,1601
+g0244,1237,,existing,cl:midfielders:91,cl,midfielders,91,Копмейнерс,Аталанта,ЦП,0,0,0,0,1237
+g0244,1237,,existing,league:midfielders:145,league,midfielders,145,Копмейнерс,Аталанта,ЦП,0,0,0,0,1237
+g0711,1060,,existing,league:forwards:88,league,forwards,88,Кордоба,Фрайбург,ЦФД,0,6,5,1,1060
+g0826,1186,,existing,league:midfielders:31,league,midfielders,31,Кордова,Фулхэм,ПП,0,4,0,1,1186
+g0097,13,,link_season_slot,cl:forwards:98,cl,forwards,98,Корреа,Атлетико,ФРВ,0,7,9,3,13
+g0097,13,,link_season_slot,league:forwards:169,league,forwards,169,Корреа,Атлетико,ФРВ,0,13,12,9,13
+g0672,1614,,existing,cl:goalkeepers:49,cl,goalkeepers,49,Коста,Вильярреал,ВРТ,0,0,0,0,1614
+g0672,1614,,existing,league:goalkeepers:84,league,goalkeepers,84,Коста,Вильярреал,ВРТ,0,0,0,0,1614
+g1076,687,,link_season_slot,league:defenders:361,league,defenders,361,Костанца,Крылья Советов,ПЗ,0,1,0,0,687
+g0074,44,,link_season_slot,cl:forwards:75,cl,forwards,75,Костич,Ювентус,ПФА,0,5,5,1,44
+g0074,44,,link_season_slot,league:forwards:124,league,forwards,124,Костич,Ювентус,ПФА,0,15,11,4,44
+g0448,825,,link_season_slot,cl:defenders:81,cl,defenders,81,Косуну,Байер,ЦЗ,0,0,0,0,825
+g0448,825,,link_season_slot,league:defenders:115,league,defenders,115,Косуну,Байер,ЦЗ,0,0,0,0,825
+g0491,635,,link_season_slot,cl:defenders:124,cl,defenders,124,Коуто,Ювентус,ПЗ,0,0,0,0,635
+g0491,635,,link_season_slot,league:defenders:197,league,defenders,197,Коуто,Ювентус,ПЗ,0,0,0,0,635
+g0204,1202,,existing,cl:midfielders:51,cl,midfielders,51,Кох,Франкфурт,ЦОП,0,5,2,4,1202
+g0204,1202,,existing,league:midfielders:77,league,midfielders,77,Кох,Франкфурт,ЦОП,0,8,2,1,1202
+g0843,507,,link_season_slot,league:midfielders:122,league,midfielders,122,Крамарич,Хоффенхайм,ЦП,0,10,4,4,507
+g0226,1212,,existing,cl:midfielders:73,cl,midfielders,73,Крамер,Боруссия М,ЦОП,0,0,0,0,1212
+g0226,1212,,existing,league:midfielders:99,league,midfielders,99,Крамер,Боруссия М,ЦОП,0,0,0,0,1212
+g1129,1602,,existing,league:goalkeepers:62,league,goalkeepers,62,Краньо,Сассуоло,ВРТ,0,0,0,0,1602
+g0978,1386,,existing,league:defenders:69,league,defenders,69,Крафт,Ньюкасл,ПЗ,0,0,0,0,1386
+g0435,1400,,existing,cl:defenders:68,cl,defenders,68,Крациг,Бавария,ЛЗ,0,0,0,0,1400
+g0435,1400,,existing,league:defenders:102,league,defenders,102,Крациг,Бавария,ЛЗ,0,0,0,0,1400
+g0595,1531,,existing,cl:defenders:228,cl,defenders,228,Кривцов,Краснодар,ЦЗ,0,2,0,1,1531
+g0595,1531,,existing,league:defenders:355,league,defenders,355,Кривцов,Краснодар,ЦЗ,0,4,0,1,1531
+g0277,460,,link_season_slot,cl:midfielders:125,cl,midfielders,125,Кристанте,Рома,ЦП,0,0,0,0,460
+g0277,460,,link_season_slot,league:midfielders:193,league,midfielders,193,Кристанте,Рома,ЦП,0,5,2,1,460
+g0542,599,yes,link_season_slot,cl:defenders:175,cl,defenders,175,Кристенсен,Барселона,ЦЗ,0,0,0,0,599
+g0542,599,yes,link_season_slot,league:defenders:270,league,defenders,270,Кристенсен,Барселона,ЦЗ,0,1,0,1,599
+g0521,1017,yes,link_season_slot,cl:defenders:154,cl,defenders,154,Кристенсен,Рома,ПЗ,0,0,0,0,1017
+g0521,1017,yes,link_season_slot,league:defenders:233,league,defenders,233,Кристенсен,Рома,ПЗ,0,5,0,0,1017
+g1124,1592,yes,existing,league:goalkeepers:46,league,goalkeepers,46,Кристенсен,Фиорентина,ВРТ,0,0,0,0,1592
+g0310,317,,link_season_slot,cl:midfielders:159,cl,midfielders,159,Кроос,Реал,ЦОП,0,4,2,3,317
+g0310,317,,link_season_slot,league:midfielders:261,league,midfielders,261,Кроос,Реал,ЦОП,0,7,1,4,317
+g0622,1567,,existing,cl:defenders:255,cl,defenders,255,Круговой,Зенит,ПЗ,0,0,0,0,1567
+g0622,1567,,existing,league:defenders:416,league,defenders,416,Круговой,Зенит,ПЗ,0,0,0,0,1567
+g0908,1295,,existing,league:midfielders:259,league,midfielders,259,Круз,Бетис,ЛП,0,0,0,0,1295
+g0266,1252,,existing,cl:midfielders:113,cl,midfielders,113,Крунич,Милан,ЦП,0,2,0,2,1252
+g0266,1252,,existing,league:midfielders:181,league,midfielders,181,Крунич,Милан,ЦП,0,2,0,0,1252
+g0034,135,,link_season_slot,cl:forwards:33,cl,forwards,33,Куадрадо,Тоттенхэм,ПФА,0,5,2,4,135
+g0034,135,,link_season_slot,league:forwards:55,league,forwards,55,Куадрадо,Тоттенхэм,ПФА,0,9,7,3,135
+g0735,1075,,existing,league:forwards:116,league,forwards,116,Куаме,Фиорентина,ФРВ,0,2,1,0,1075
+g1013,1443,,existing,league:defenders:180,league,defenders,180,Куарта,Фиорентина,ЦЗ,0,4,0,0,1443
+g0985,1419,,existing,league:defenders:141,league,defenders,141,Кублер,Фрайбург,ПЗ,0,0,0,0,1419
+g0110,37,,link_season_slot,cl:forwards:111,cl,forwards,111,Кубо,Реал Сосьедад,ПФА,0,6,4,2,37
+g0110,37,,link_season_slot,league:forwards:198,league,forwards,198,Кубо,Реал Сосьедад,ПФА,0,13,3,6,37
+g0309,1280,,existing,cl:midfielders:158,cl,midfielders,158,Куеллар,Барселона,ПП,0,0,0,0,1280
+g0309,1280,,existing,league:midfielders:237,league,midfielders,237,Куеллар,Барселона,ПП,0,0,0,0,1280
+g0382,778,,link_season_slot,cl:defenders:15,cl,defenders,15,Кукурелья,Челси,ЛЗ,0,0,0,0,778
+g0382,778,,link_season_slot,league:defenders:31,league,defenders,31,Кукурелья,Челси,ЛЗ,0,0,0,0,778
+g1100,1562,,existing,league:defenders:404,league,defenders,404,Кулаков,Урал,ПЗ,0,6,0,0,1562
+g0283,283,,link_season_slot,cl:midfielders:132,cl,midfielders,132,Кулушевски,Атлетик,ЦП,0,4,3,2,283
+g0283,283,,link_season_slot,league:midfielders:211,league,midfielders,211,Кулушевски,Атлетик,ЦП,0,15,6,6,283
+g0522,1464,,existing,cl:defenders:155,cl,defenders,155,Кумбулла,Рома,ЦЗ,0,0,0,0,1464
+g0522,1464,,existing,league:defenders:234,league,defenders,234,Кумбулла,Рома,ЦЗ,0,0,0,0,1464
+g0540,598,,link_season_slot,cl:defenders:173,cl,defenders,173,Кунде,Барселона,ЦЗ,0,2,0,0,598
+g0540,598,,link_season_slot,league:defenders:268,league,defenders,268,Кунде,Барселона,ЦЗ,0,4,0,0,598
+g0668,937,,link_season_slot,cl:goalkeepers:45,cl,goalkeepers,45,Куртуа,Реал,ВРТ,0,1,0,0,937
+g0668,937,,link_season_slot,league:goalkeepers:79,league,goalkeepers,79,Куртуа,Реал,ВРТ,0,6,0,0,937
+g0340,1316,,existing,cl:midfielders:189,cl,midfielders,189,Кутицкий,Динамо,ЦП,0,0,0,0,1316
+g0340,1316,,existing,league:midfielders:298,league,midfielders,298,Кутицкий,Динамо,ЦП,0,1,0,0,1316
+g0122,1133,,existing,cl:forwards:123,cl,forwards,123,Кучаев,Цска,ЛФА,0,3,2,1,1133
+g0122,1133,,existing,league:forwards:218,league,forwards,218,Кучаев,Цска,ЛФА,0,9,2,4,1133
+g0570,1521,,existing,cl:defenders:203,cl,defenders,203,Куэнка,Вильярреал,ЦЗ,0,0,0,0,1521
+g0570,1521,,existing,league:defenders:330,league,defenders,330,Куэнка,Вильярреал,ЦЗ,0,0,0,0,1521
+g0072,45,,link_season_slot,cl:forwards:73,cl,forwards,73,Кьеза,Ювентус,ЛФА,0,5,2,4,45
+g0072,45,,link_season_slot,league:forwards:122,league,forwards,122,Кьеза,Ювентус,ЛФА,0,12,6,9,45
+g0499,790,,link_season_slot,cl:defenders:132,cl,defenders,132,Кьяер,Милан,ЦЗ,0,1,0,0,790
+g0499,790,,link_season_slot,league:defenders:211,league,defenders,211,Кьяер,Милан,ЦЗ,0,4,0,0,790
+g0950,740,,link_season_slot,league:defenders:13,league,defenders,13,Кэш,Астон Вилла,ПЗ,0,9,1,0,740
+g1037,1477,,existing,league:defenders:247,league,defenders,247,Лазаро,Торино,ПЗ,0,7,1,0,1477
+g1022,786,,link_season_slot,league:defenders:207,league,defenders,207,Лаззари,Лацио,ПЗ,0,8,0,1,786
+g0200,465,,link_season_slot,cl:midfielders:47,cl,midfielders,47,Лаймер,Бавария,ЦОП,0,4,0,1,465
+g0200,465,,link_season_slot,league:midfielders:73,league,midfielders,73,Лаймер,Бавария,ЦОП,0,8,3,2,465
+g0458,835,,link_season_slot,cl:defenders:91,cl,defenders,91,Лайнер,Боруссия М,ПЗ,0,1,0,0,835
+g0458,835,,link_season_slot,league:defenders:125,league,defenders,125,Лайнер,Боруссия М,ПЗ,0,0,0,0,835
+g0981,1415,,existing,league:defenders:137,league,defenders,137,Лайнхарт,Фрайбург,ЦЗ,0,7,0,0,1415
+g1006,854,,link_season_slot,league:defenders:162,league,defenders,162,Лакруа,Вольфсбург,ЦЗ,0,11,0,0,854
+g0584,1526,,existing,cl:defenders:217,cl,defenders,217,Лаксальт,Динамо,ПЗ,0,2,0,0,1526
+g0584,1526,,existing,league:defenders:344,league,defenders,344,Лаксальт,Динамо,ПЗ,0,5,0,0,1526
+g0819,1177,,existing,league:midfielders:20,league,midfielders,20,Лаллана,Брайтон,ЦП,0,0,0,0,1177
+g0778,153,,link_season_slot,league:forwards:206,league,forwards,206,Ламела,Севилья,ПФА,0,1,0,1,153
+g0958,1364,,existing,league:defenders:21,league,defenders,21,Лампти,Брайтон,ПЗ,0,7,1,1,1364
+g1082,1544,,existing,league:defenders:377,league,defenders,377,Лангович,Ростов,ПЗ,0,8,1,0,1544
+g0681,1621,,existing,cl:goalkeepers:58,cl,goalkeepers,58,Лантратов,Локомотив,ВРТ,0,0,0,0,1621
+g0681,1621,,existing,league:goalkeepers:95,league,goalkeepers,95,Лантратов,Локомотив,ВРТ,0,5,0,0,1621
+g0210,483,,link_season_slot,cl:midfielders:57,cl,midfielders,57,Ларссон,Франкфурт,ЦП,0,1,0,0,483
+g0210,483,,link_season_slot,league:midfielders:83,league,midfielders,83,Ларссон,Франкфурт,ЦП,0,3,0,0,483
+g0977,1385,,existing,league:defenders:68,league,defenders,68,Ласель,Ньюкасл,ЦЗ,0,0,0,0,1385
+g0556,629,,link_season_slot,cl:defenders:189,cl,defenders,189,Ле Норманд,Реал Сосьедад,ЦЗ,0,1,0,0,629
+g0556,629,,link_season_slot,league:defenders:309,league,defenders,309,Ле Норманд,Реал Сосьедад,ЦЗ,0,5,0,0,629
+g0092,9,,link_season_slot,cl:forwards:93,cl,forwards,93,Леау,Атлетик,ФРВ,0,5,7,1,9
+g0092,9,,link_season_slot,league:forwards:164,league,forwards,164,Леау,Атлетик,ФРВ,0,18,11,8,9
+g0099,16,,link_season_slot,cl:forwards:100,cl,forwards,100,Лева,Барселона,ФРВ,0,9,17,3,16
+g0099,16,,link_season_slot,league:forwards:171,league,forwards,171,Лева,Барселона,ФРВ,0,13,24,3,16
+g0723,1069,,existing,league:forwards:100,league,forwards,100,Левелинг,Штутгарт,ФРВ,0,3,2,0,1069
+g1050,1495,,existing,league:defenders:284,league,defenders,284,Лежене,Райо Вальекано,ЦЗ,0,0,0,0,1495
+g0965,1373,,existing,league:defenders:39,league,defenders,39,Лекуе,Фулхэм,ПЗ,0,1,0,0,1373
+g0294,290,,link_season_slot,cl:midfielders:143,cl,midfielders,143,Лемар,Атлетико,ЦП,0,4,2,4,290
+g0294,290,,link_season_slot,league:midfielders:222,league,midfielders,222,Лемар,Атлетико,ЦП,0,6,1,6,290
+g0953,743,,link_season_slot,league:defenders:16,league,defenders,16,Ленглет,Астон Вилла,ЦЗ,0,0,0,0,743
+g0345,1319,,existing,cl:midfielders:194,cl,midfielders,194,Ленини,Краснодар,ЦП,0,1,0,0,1319
+g0345,1319,,existing,league:midfielders:303,league,midfielders,303,Ленини,Краснодар,ЦП,0,0,0,0,1319
+g1110,1573,,existing,league:goalkeepers:10,league,goalkeepers,10,Лено,Фулхэм,ВРТ,0,6,0,0,1573
+g0468,1413,,existing,cl:defenders:101,cl,defenders,101,Ленц,Лейпциг,ЛЗ,0,0,0,0,1413
+g0468,1413,,existing,league:defenders:135,league,defenders,135,Ленц,Лейпциг,ЛЗ,0,0,0,0,1413
+g0132,69,,link_season_slot,cl:forwards:133,cl,forwards,133,Лесовой,Динамо,ЛФА,0,0,0,0,69
+g0132,69,,link_season_slot,league:forwards:228,league,forwards,228,Лесовой,Динамо,ЛФА,0,0,0,0,69
+g0677,1618,,existing,cl:goalkeepers:54,cl,goalkeepers,54,Лещук,Динамо,ВРТ,0,0,0,0,1618
+g0677,1618,,existing,league:goalkeepers:89,league,goalkeepers,89,Лещук,Динамо,ВРТ,0,0,0,0,1618
+g0971,762,,link_season_slot,league:defenders:62,league,defenders,62,Ливраменто,Ньюкасл,ЛЗ,0,3,0,0,762
+g0401,1382,,existing,cl:defenders:34,cl,defenders,34,Линделёф,Мю,ЦЗ,0,0,0,0,1382
+g0401,1382,,existing,league:defenders:59,league,defenders,59,Линделёф,Мю,ЦЗ,0,1,0,0,1382
+g0725,206,,link_season_slot,league:forwards:102,league,forwards,102,Линдстром,Вольфсбург,ЛФА,0,4,2,0,206
+g0885,1268,,existing,league:midfielders:209,league,midfielders,209,Линетти,Торино,ЦП,0,3,0,2,1268
+g0299,1275,,existing,cl:midfielders:148,cl,midfielders,148,Лино,Атлетико,ЛП,0,0,0,0,1275
+g0299,1275,,existing,league:midfielders:227,league,midfielders,227,Лино,Атлетико,ЛП,0,0,0,0,1275
+g0801,1157,,existing,league:forwards:258,league,forwards,258,Лисакович,Рубин,ФРВ,0,9,4,2,1157
+g0395,753,,link_season_slot,cl:defenders:28,cl,defenders,28,Лисандро Мартинез,Мю,ЦЗ,0,2,2,1,753
+g0395,753,,link_season_slot,league:defenders:53,league,defenders,53,Лисандро Мартинез,Мю,ЦЗ,0,9,0,0,753
+g0612,1559,,existing,cl:defenders:245,cl,defenders,245,Литвинов,Спартак,ПЗ,0,0,0,0,1559
+g0612,1559,,existing,league:defenders:397,league,defenders,397,Литвинов,Спартак,ПЗ,0,0,0,0,1559
+g0519,1462,,existing,cl:defenders:152,cl,defenders,152,Лльоренте,Рома,ЦЗ,0,0,0,0,1462
+g0519,1462,,existing,league:defenders:231,league,defenders,231,Лльоренте,Рома,ЦЗ,0,2,0,0,1462
+g0187,432,,link_season_slot,cl:midfielders:34,cl,midfielders,34,Ло Чельсо,Тоттенхэм,ЦАП,0,1,0,1,432
+g0187,432,,link_season_slot,league:midfielders:60,league,midfielders,60,Ло Чельсо,Тоттенхэм,ЦАП,0,11,3,3,432
+g0270,341,,link_season_slot,cl:midfielders:118,cl,midfielders,118,Лоботка,Наполи,ЦП,0,8,1,8,341
+g0270,341,,link_season_slot,league:midfielders:186,league,midfielders,186,Лоботка,Наполи,ЦП,0,10,5,3,341
+g0489,637,,link_season_slot,cl:defenders:122,cl,defenders,122,Локателли,Ювентус,ЦЗ,0,2,0,0,637
+g0489,637,,link_season_slot,league:defenders:195,league,defenders,195,Локателли,Ювентус,ЦЗ,0,7,2,2,637
+g1140,951,,link_season_slot,league:goalkeepers:92,league,goalkeepers,92,Ломаев,Крылья Советов,ВРТ,0,8,0,0,951
+g0644,1582,,existing,cl:goalkeepers:21,cl,goalkeepers,21,Ломб,Байер,ВРТ,0,0,0,0,1582
+g0644,1582,,existing,league:goalkeepers:31,league,goalkeepers,31,Ломб,Байер,ВРТ,0,0,0,0,1582
+g0831,428,,link_season_slot,league:midfielders:49,league,midfielders,49,Лонгстаф,Ньюкасл,ЦП,0,4,1,1,428
+g0899,1291,,existing,league:midfielders:250,league,midfielders,250,Лопез,Райо Вальекано,ЦОП,0,0,0,0,1291
+g0108,35,,link_season_slot,cl:forwards:109,cl,forwards,109,Лориент,Реал Сосьедад,ЛФА,0,0,0,0,35
+g0108,35,,link_season_slot,league:forwards:196,league,forwards,196,Лориент,Реал Сосьедад,ЛФА,0,11,5,6,35
+g0264,457,,link_season_slot,cl:midfielders:111,cl,midfielders,111,Лофтус-Чик,Милан,ЦП,0,2,0,0,457
+g0264,457,,link_season_slot,league:midfielders:179,league,midfielders,179,Лофтус-Чик,Милан,ЦП,0,9,2,4,457
+g0104,30,,link_season_slot,cl:forwards:105,cl,forwards,105,Лукаку,Реал,ФРВ,0,5,7,1,30
+g0104,30,,link_season_slot,league:forwards:192,league,forwards,192,Лукаку,Реал,ФРВ,0,13,11,1,30
+g0466,843,,link_season_slot,cl:defenders:99,cl,defenders,99,Лукеба,Лейпциг,ЦЗ,0,2,0,0,843
+g0466,843,,link_season_slot,league:defenders:133,league,defenders,133,Лукеба,Лейпциг,ЦЗ,0,2,0,0,843
+g0777,150,,link_season_slot,league:forwards:205,league,forwards,205,Лукебакио,Севилья,ПФА,0,15,11,3,150
+g0579,1524,,existing,cl:defenders:212,cl,defenders,212,Лукин,Цска,ЦЗ,0,0,0,0,1524
+g0579,1524,,existing,league:defenders:339,league,defenders,339,Лукин,Цска,ЦЗ,0,0,0,0,1524
+g0823,1183,,existing,league:midfielders:28,league,midfielders,28,Лукич,Фулхэм,ЦП,0,5,1,0,1183
+g0067,58,,link_season_slot,cl:forwards:67,cl,forwards,67,Лукман,Аталанта,ПФА,0,6,7,0,58
+g0067,58,,link_season_slot,league:forwards:111,league,forwards,111,Лукман,Аталанта,ПФА,0,12,10,6,58
+g0669,1613,,existing,cl:goalkeepers:46,cl,goalkeepers,46,Лунин,Реал,ВРТ,0,0,0,0,1613
+g0669,1613,,existing,league:goalkeepers:80,league,goalkeepers,80,Лунин,Реал,ВРТ,0,0,0,0,1613
+g0292,291,,link_season_slot,cl:midfielders:141,cl,midfielders,141,Льоренте,Атлетико,ЦП,0,5,1,4,291
+g0292,291,,link_season_slot,league:midfielders:220,league,midfielders,220,Льоренте,Атлетико,ЦП,0,12,4,8,291
+g0671,971,,link_season_slot,cl:goalkeepers:48,cl,goalkeepers,48,Льорис,Севилья,ВРТ,0,0,0,0,971
+g0671,971,,link_season_slot,league:goalkeepers:83,league,goalkeepers,83,Льорис,Севилья,ВРТ,0,0,0,0,971
+g0410,1389,,existing,cl:defenders:43,cl,defenders,43,Льюис,Сити,ПЗ,0,1,0,0,1389
+g0410,1389,,existing,league:defenders:77,league,defenders,77,Льюис,Сити,ПЗ,0,4,1,0,1389
+g0376,772,,link_season_slot,cl:defenders:9,cl,defenders,9,Маатсен,Челси,ЛЗ,0,1,0,0,772
+g0376,772,,link_season_slot,league:defenders:25,league,defenders,25,Маатсен,Челси,ЛЗ,0,7,1,0,772
+g0354,1331,,existing,cl:midfielders:203,cl,midfielders,203,Магкеев,Локомотив,ЦП,0,0,0,0,1331
+g0354,1331,,existing,league:midfielders:319,league,midfielders,319,Магкеев,Локомотив,ЦП,0,0,0,0,1331
+g0011,141,,link_season_slot,cl:forwards:9,cl,forwards,9,Мадуэке,Челси,ПФА,0,4,3,1,141
+g0011,141,,link_season_slot,league:forwards:19,league,forwards,19,Мадуэке,Челси,ПФА,0,12,6,3,141
+g0433,809,,link_season_slot,cl:defenders:66,cl,defenders,66,Мазрауи,Бавария,ПЗ,0,1,0,0,809
+g0433,809,,link_season_slot,league:defenders:100,league,defenders,100,Мазрауи,Бавария,ПЗ,0,2,0,0,809
+g0857,1235,,existing,league:midfielders:136,league,midfielders,136,Майер,Вольфсбург,ЦП,0,13,5,6,1235
+g0588,1528,,existing,cl:defenders:221,cl,defenders,221,Майсторович,Динамо,ЦЗ,0,0,0,0,1528
+g0588,1528,,existing,league:defenders:348,league,defenders,348,Майсторович,Динамо,ЦЗ,0,0,0,0,1528
+g0166,419,,link_season_slot,cl:midfielders:12,cl,midfielders,12,Мак Аллистер,Ливерпуль,ЦП,0,3,0,1,419
+g0166,419,,link_season_slot,league:midfielders:33,league,midfielders,33,Мак Аллистер,Ливерпуль,ЦП,0,9,4,5,419
+g0131,70,,link_season_slot,cl:forwards:132,cl,forwards,132,Макаров,Динамо,ПФА,0,0,0,0,70
+g0131,70,,link_season_slot,league:forwards:227,league,forwards,227,Макаров,Динамо,ПФА,0,1,1,0,70
+g0812,412,,link_season_slot,league:midfielders:13,league,midfielders,13,Макгинн,Астон Вилла,ЦП,0,8,1,1,412
+g0403,1384,,existing,cl:defenders:36,cl,defenders,36,Макгуайр,Мю,ЦЗ,0,0,0,0,1384
+g0403,1384,,existing,league:defenders:61,league,defenders,61,Макгуайр,Мю,ЦЗ,0,1,0,0,1384
+g0259,1246,,existing,cl:midfielders:106,cl,midfielders,106,Маккенни,Ювентус,ЦП,0,1,0,0,1246
+g0259,1246,,existing,league:midfielders:168,league,midfielders,168,Маккенни,Ювентус,ЦП,0,3,1,0,1246
+g0441,1402,,existing,cl:defenders:74,cl,defenders,74,Макс,Франкфурт,ЛЗ,0,2,0,0,1402
+g0441,1402,,existing,league:defenders:108,league,defenders,108,Макс,Франкфурт,ЛЗ,0,3,0,0,1402
+g0862,334,,link_season_slot,league:midfielders:148,league,midfielders,148,Макс Лопес,Фиорентина,ЦП,0,5,0,2,334
+g0683,953,,link_season_slot,cl:goalkeepers:60,cl,goalkeepers,60,Максименко,Спартак,ВРТ,0,5,0,0,953
+g0683,953,,link_season_slot,league:goalkeepers:100,league,goalkeepers,100,Максименко,Спартак,ВРТ,0,7,0,0,953
+g0203,1201,,existing,cl:midfielders:50,cl,midfielders,50,Мактоминей,Бавария,ЦОП,0,0,0,0,1201
+g0203,1201,,existing,league:midfielders:76,league,midfielders,76,Мактоминей,Бавария,ЦОП,0,2,0,0,1201
+g0394,752,,link_season_slot,cl:defenders:27,cl,defenders,27,Маласия,Мю,ЛЗ,0,1,0,1,752
+g0394,752,,link_season_slot,league:defenders:52,league,defenders,52,Маласия,Мю,ЛЗ,0,8,1,0,752
+g0040,1050,,existing,cl:forwards:39,cl,forwards,39,Мален,Дортмунд,ФРВ,0,5,7,4,1050
+g0040,1050,,existing,league:forwards:61,league,forwards,61,Мален,Дортмунд,ФРВ,0,10,6,4,1050
+g1098,710,,link_season_slot,league:defenders:402,league,defenders,402,Мамин,Урал,ЦЗ,0,2,1,0,710
+g0571,1522,,existing,cl:defenders:204,cl,defenders,204,Манди,Вильярреал,ЦЗ,0,2,0,0,1522
+g0571,1522,,existing,league:defenders:331,league,defenders,331,Манди,Вильярреал,ЦЗ,0,5,0,0,1522
+g0867,336,,link_season_slot,league:midfielders:153,league,midfielders,153,Мандрагора,Фиорентина,ЦП,0,0,0,0,336
+g0154,98,,link_season_slot,cl:forwards:155,cl,forwards,155,Мантуан,Зенит,ЛФА,0,2,0,2,98
+g0154,98,,link_season_slot,league:forwards:273,league,forwards,273,Мантуан,Зенит,ЛФА,0,8,1,4,98
+g0518,798,,link_season_slot,cl:defenders:151,cl,defenders,151,Манчини,Рома,ЦЗ,0,1,0,0,798
+g0518,798,,link_season_slot,league:defenders:230,league,defenders,230,Манчини,Рома,ЦЗ,0,6,0,0,798
+g0655,975,,link_season_slot,cl:goalkeepers:32,cl,goalkeepers,32,Маньян,Милан,ВРТ,0,2,0,0,975
+g0655,975,,link_season_slot,league:goalkeepers:55,league,goalkeepers,55,Маньян,Милан,ВРТ,0,9,0,0,975
+g0352,1329,,existing,cl:midfielders:201,cl,midfielders,201,Марадишвили,Локомотив,ЦП,0,0,0,0,1329
+g0352,1329,,existing,league:midfielders:317,league,midfielders,317,Марадишвили,Локомотив,ЦП,0,2,0,0,1329
+g0782,1125,,existing,league:forwards:210,league,forwards,210,Мариано,Севилья,ФРВ,0,0,0,0,1125
+g0585,677,,link_season_slot,cl:defenders:218,cl,defenders,218,Маричаль,Динамо,ЦЗ,0,0,0,0,677
+g0585,677,,link_season_slot,league:defenders:345,league,defenders,345,Маричаль,Динамо,ЦЗ,0,1,0,0,677
+g0399,1381,,existing,cl:defenders:32,cl,defenders,32,Маркао,Мю,ЦЗ,0,0,0,0,1381
+g0399,1381,,existing,league:defenders:57,league,defenders,57,Маркао,Мю,ЦЗ,0,3,0,0,1381
+g0051,185,,link_season_slot,cl:forwards:50,cl,forwards,50,Мармуш,Франкфурт,ФРВ,0,4,7,0,185
+g0051,185,,link_season_slot,league:forwards:72,league,forwards,72,Мармуш,Франкфурт,ФРВ,0,15,17,3,185
+g0019,120,,link_season_slot,cl:forwards:18,cl,forwards,18,Марсиаль,Мю,ФРВ,0,4,3,4,120
+g0019,120,,link_season_slot,league:forwards:34,league,forwards,34,Марсиаль,Мю,ФРВ,0,7,6,2,120
+g1054,1499,,existing,league:defenders:288,league,defenders,288,Мартин,Райо Вальекано,ЦЗ,0,0,0,0,1499
+g1105,960,yes,link_season_slot,league:goalkeepers:3,league,goalkeepers,3,Мартинез,Астон Вилла,ВРТ,0,9,0,0,960
+g0069,62,yes,link_season_slot,cl:forwards:69,cl,forwards,69,Мартинез,Интер,ФРВ,0,14,23,3,62
+g0069,62,yes,link_season_slot,league:forwards:118,league,forwards,118,Мартинез,Интер,ФРВ,0,16,33,5,62
+g0020,121,,link_season_slot,cl:forwards:19,cl,forwards,19,Мартинелли,Мю,ФРВ,0,4,2,0,121
+g0020,121,,link_season_slot,league:forwards:35,league,forwards,35,Мартинелли,Мю,ФРВ,0,9,7,4,121
+g1044,605,,link_season_slot,league:defenders:278,league,defenders,278,Мартинес,Жирона,ПЗ,0,2,1,1,605
+g0358,381,,link_season_slot,cl:midfielders:207,cl,midfielders,207,Мартинс,Спартак,ЦП,0,0,0,0,381
+g0358,381,,link_season_slot,league:midfielders:336,league,midfielders,336,Мартинс,Спартак,ЦП,0,0,0,0,381
+g1093,1555,,existing,league:defenders:388,league,defenders,388,Мартынович,Рубин,ЦЗ,0,3,0,0,1555
+g1019,1454,,existing,league:defenders:204,league,defenders,204,Марушич,Лацио,ЛЗ,0,7,0,0,1454
+g0815,1173,,existing,league:midfielders:16,league,midfielders,16,Марч,Брайтон,ЦП,0,7,0,3,1173
+g0854,1232,,existing,league:midfielders:133,league,midfielders,133,Массимо,Штутгарт,ПП,0,1,0,0,1232
+g0391,748,,link_season_slot,cl:defenders:24,cl,defenders,24,Матип,Ливерпуль,ЦЗ,0,0,0,0,748
+g0391,748,,link_season_slot,league:defenders:49,league,defenders,49,Матип,Ливерпуль,ЦЗ,0,2,0,0,748
+g0174,1189,,existing,cl:midfielders:20,cl,midfielders,20,Маунт,Мю,ЦП,0,0,0,0,1189
+g0174,1189,,existing,league:midfielders:41,league,midfielders,41,Маунт,Мю,ЦП,0,3,0,1,1189
+g1004,855,,link_season_slot,league:defenders:160,league,defenders,160,Маэле,Вольфсбург,ЛЗ,0,12,2,0,855
+g1143,1624,,existing,league:goalkeepers:98,league,goalkeepers,98,Медведев,Ростов,ВРТ,0,0,0,0,1624
+g0146,1160,,existing,cl:forwards:147,cl,forwards,147,Медина,Спартак,ПФА,0,6,1,0,1160
+g0146,1160,,existing,league:forwards:261,league,forwards,261,Медина,Спартак,ПФА,0,10,2,5,1160
+g0637,980,,link_season_slot,cl:goalkeepers:14,cl,goalkeepers,14,Мейер,Дортмунд,ВРТ,0,0,0,0,980
+g0637,980,,link_season_slot,league:goalkeepers:24,league,goalkeepers,24,Мейер,Дортмунд,ВРТ,0,0,0,0,980
+g1083,1545,,existing,league:defenders:378,league,defenders,378,Мелехин,Ростов,ЦЗ,0,0,0,0,1545
+g0317,325,,link_season_slot,cl:midfielders:166,cl,midfielders,166,Мендез,Реал Сосьедад,ЦП,0,4,1,2,325
+g0317,325,,link_season_slot,league:midfielders:268,league,midfielders,268,Мендез,Реал Сосьедад,ЦП,0,11,1,4,325
+g0331,396,,link_season_slot,cl:midfielders:180,cl,midfielders,180,Мендес,Цска,ЦП,0,3,0,3,396
+g0331,396,,link_season_slot,league:midfielders:289,league,midfielders,289,Мендес,Цска,ЦП,0,7,0,2,396
+g0552,623,,link_season_slot,cl:defenders:185,cl,defenders,185,Менди,Реал,ЛЗ,0,1,0,0,623
+g0552,623,,link_season_slot,league:defenders:305,league,defenders,305,Менди,Реал,ЛЗ,0,6,0,1,623
+g0425,1395,,existing,cl:defenders:58,cl,defenders,58,Менье,Дортмунд,ПЗ,0,0,0,0,1395
+g0425,1395,,existing,league:defenders:92,league,defenders,92,Менье,Дортмунд,ПЗ,0,0,0,0,1395
+g0657,943,,link_season_slot,cl:goalkeepers:34,cl,goalkeepers,34,Мерет,Наполи,ВРТ,0,0,0,0,943
+g0657,943,,link_season_slot,league:goalkeepers:57,league,goalkeepers,57,Мерет,Наполи,ВРТ,0,9,0,0,943
+g0155,399,,link_season_slot,cl:midfielders:1,cl,midfielders,1,Мерино,Арсенал,ЦП,0,3,3,0,399
+g0155,399,,link_season_slot,league:midfielders:1,league,midfielders,1,Мерино,Арсенал,ЦП,0,12,6,3,399
+g0114,1120,,existing,cl:forwards:115,cl,forwards,115,Меркеланц,Реал Сосьедад,ЛФА,0,0,0,0,1120
+g0114,1120,,existing,league:forwards:202,league,forwards,202,Меркеланц,Реал Сосьедад,ЛФА,0,0,0,0,1120
+g1014,646,,link_season_slot,league:defenders:181,league,defenders,181,Миленкович,Фиорентина,ЦЗ,0,5,0,1,646
+g0076,1078,,existing,cl:forwards:77,cl,forwards,77,Милик,Ювентус,ФРВ,0,0,0,0,1078
+g0076,1078,,existing,league:forwards:126,league,forwards,126,Милик,Ювентус,ФРВ,0,0,0,0,1078
+g1131,1604,,existing,league:goalkeepers:64,league,goalkeepers,64,Милинкович-Савич,Торино,ВРТ,0,0,0,0,1604
+g0554,624,,link_season_slot,cl:defenders:187,cl,defenders,187,Милитао,Реал,ЦЗ,0,1,0,0,624
+g0554,624,,link_season_slot,league:defenders:307,league,defenders,307,Милитао,Реал,ЦЗ,0,3,0,0,624
+g0853,1231,,existing,league:midfielders:132,league,midfielders,132,Милло,Штутгарт,ЦАП,0,0,0,0,1231
+g0818,1176,,existing,league:midfielders:19,league,midfielders,19,Милнер,Брайтон,ЦП,0,3,0,0,1176
+g0428,805,,link_season_slot,cl:defenders:61,cl,defenders,61,Мин Дже,Бавария,ЦЗ,0,3,0,0,805
+g0428,805,,link_season_slot,league:defenders:95,league,defenders,95,Мин Дже,Бавария,ЦЗ,0,6,0,0,805
+g1017,1445,,existing,league:defenders:184,league,defenders,184,Мина,Фиорентина,ЦЗ,0,0,0,0,1445
+g0947,1359,,existing,league:defenders:10,league,defenders,10,Мингз,Астон Вилла,ЦЗ,0,8,0,0,1359
+g0780,1123,,existing,league:forwards:208,league,forwards,208,Мир,Севилья,ФРВ,0,0,0,0,1123
+g1065,611,,link_season_slot,league:defenders:299,league,defenders,299,Миранда,Бетис,ЛЗ,0,0,0,0,611
+g0656,1599,,existing,cl:goalkeepers:33,cl,goalkeepers,33,Миранте,Милан,ВРТ,0,0,0,0,1599
+g0656,1599,,existing,league:goalkeepers:56,league,goalkeepers,56,Миранте,Милан,ВРТ,0,0,0,0,1599
+g0066,59,yes,link_season_slot,cl:forwards:66,cl,forwards,66,Миранчук,Аталанта,ФРВ,0,6,2,7,59
+g0066,59,yes,link_season_slot,league:forwards:110,league,forwards,110,Миранчук,Аталанта,ФРВ,0,9,10,7,59
+g0348,1327,yes,existing,cl:midfielders:197,cl,midfielders,197,Миранчук,Локомотив,ЦП,0,0,0,0,1327
+g0348,1327,yes,existing,league:midfielders:313,league,midfielders,313,Миранчук,Локомотив,ЦП,0,9,5,4,1327
+g0258,331,,link_season_slot,cl:midfielders:105,cl,midfielders,105,Миретти,Ювентус,ЦП,0,3,1,1,331
+g0258,331,,link_season_slot,league:midfielders:167,league,midfielders,167,Миретти,Ювентус,ЦП,0,3,0,2,331
+g0924,1332,,existing,league:midfielders:320,league,midfielders,320,Миронов,Ростов,ЦОП,0,10,3,4,1332
+g0605,1540,,existing,cl:defenders:238,cl,defenders,238,Митай,Локомотив,ЛЗ,0,0,0,0,1540
+g0605,1540,,existing,league:defenders:373,league,defenders,373,Митай,Локомотив,ЛЗ,0,0,0,0,1540
+g0693,1029,,existing,league:forwards:13,league,forwards,13,Митома,Брайтон,ПФА,0,14,6,1,1029
+g1001,1428,,existing,league:defenders:157,league,defenders,157,Миттельштадт,Штутгарт,ЛЗ,0,1,0,0,1428
+g0939,1348,,existing,league:midfielders:341,league,midfielders,341,Мишкич,Урал,ЦОП,0,9,0,3,1348
+g0821,1179,,existing,league:midfielders:22,league,midfielders,22,Модер,Брайтон,ЦП,0,0,0,0,1179
+g0312,322,,link_season_slot,cl:midfielders:161,cl,midfielders,161,Модрич,Реал,ЦОП,1,1,0,1,322
+g0312,322,,link_season_slot,league:midfielders:263,league,midfielders,263,Модрич,Реал,ЦОП,1,6,0,1,322
+g1086,1548,,existing,league:defenders:381,league,defenders,381,Мозес,Рубин,ЛЗ,0,3,1,0,1548
+g0572,720,,link_season_slot,cl:defenders:205,cl,defenders,205,Мойзес,Цска,ЛЗ,0,0,0,0,720
+g0572,720,,link_season_slot,league:defenders:332,league,defenders,332,Мойзес,Цска,ЛЗ,0,0,0,0,720
+g0532,591,,link_season_slot,cl:defenders:165,cl,defenders,165,Молина,Атлетико,ПЗ,0,3,0,0,591
+g0532,591,,link_season_slot,league:defenders:260,league,defenders,260,Молина,Атлетико,ПЗ,0,3,0,1,591
+g0119,1130,,existing,cl:forwards:120,cl,forwards,120,Моралес,Вильярреал,ФРВ,0,2,1,1,1130
+g0119,1130,,existing,league:forwards:215,league,forwards,215,Моралес,Вильярреал,ФРВ,0,5,1,2,1130
+g0098,14,,link_season_slot,cl:forwards:99,cl,forwards,99,Мората,Атлетико,ФРВ,0,7,7,1,14
+g0098,14,,link_season_slot,league:forwards:170,league,forwards,170,Мората,Атлетико,ФРВ,0,14,17,7,14
+g0946,737,,link_season_slot,league:defenders:9,league,defenders,9,Морено,Астон Вилла,ЛЗ,0,11,1,2,737
+g0426,1396,,existing,cl:defenders:59,cl,defenders,59,Мори,Дортмунд,ПЗ,0,0,0,0,1396
+g0426,1396,,existing,league:defenders:93,league,defenders,93,Мори,Дортмунд,ПЗ,0,0,0,0,1396
+g0239,1216,,existing,cl:midfielders:86,cl,midfielders,86,Мориба,Лейпциг,ЦП,0,0,0,0,1216
+g0239,1216,,existing,league:midfielders:112,league,midfielders,112,Мориба,Лейпциг,ЦП,0,0,0,0,1216
+g0600,1537,,existing,cl:defenders:233,cl,defenders,233,Морозов,Локомотив,ЦЗ,0,0,0,0,1537
+g0600,1537,,existing,league:defenders:368,league,defenders,368,Морозов,Локомотив,ЦЗ,0,7,0,0,1537
+g0152,1166,,existing,cl:forwards:153,cl,forwards,153,Мостовой,Зенит,ПФА,0,0,0,0,1166
+g0152,1166,,existing,league:forwards:271,league,forwards,271,Мостовой,Зенит,ПФА,0,11,9,2,1166
+g0049,174,,link_season_slot,cl:forwards:48,cl,forwards,48,Мотинг,Бавария,ФРВ,0,0,0,0,174
+g0049,174,,link_season_slot,league:forwards:70,league,forwards,70,Мотинг,Бавария,ФРВ,0,0,0,0,174
+g0789,1145,,existing,league:forwards:246,league,forwards,246,Мохеби,Ростов,ЛФА,0,7,7,0,1145
+g0013,1033,,existing,cl:forwards:11,cl,forwards,11,Мудрык,Челси,ЛФА,0,0,0,0,1033
+g0013,1033,,existing,league:forwards:21,league,forwards,21,Мудрык,Челси,ЛФА,0,2,0,0,1033
+g0041,180,,link_season_slot,cl:forwards:40,cl,forwards,40,Мукоко,Дортмунд,ФРВ,0,1,0,0,180
+g0041,180,,link_season_slot,league:forwards:62,league,forwards,62,Мукоко,Дортмунд,ФРВ,0,2,1,0,180
+g0752,1096,,existing,league:forwards:156,league,forwards,156,Мулаттьери,Сассуоло,ФРВ,0,0,0,0,1096
+g1051,1496,,existing,league:defenders:285,league,defenders,285,Мумин,Райо Вальекано,ЦЗ,0,4,1,0,1496
+g0284,284,,link_season_slot,cl:midfielders:133,cl,midfielders,133,Муниаин,Атлетик,ЦАП,0,8,3,7,284
+g0284,284,,link_season_slot,league:midfielders:212,league,midfielders,212,Муниаин,Атлетик,ЦАП,0,13,8,11,284
+g0702,1039,,existing,league:forwards:28,league,forwards,28,Муниз,Фулхэм,ФРВ,0,0,0,0,1039
+g0561,631,,link_season_slot,cl:defenders:194,cl,defenders,194,Муньоз,Реал Сосьедад,ЛЗ,0,0,0,0,631
+g0561,631,,link_season_slot,league:defenders:314,league,defenders,314,Муньоз,Реал Сосьедад,ЛЗ,0,0,0,0,631
+g0065,60,,link_season_slot,cl:forwards:65,cl,forwards,65,Муриэль,Аталанта,ЛФА,0,5,4,2,60
+g0065,60,,link_season_slot,league:forwards:109,league,forwards,109,Муриэль,Аталанта,ЛФА,0,11,8,4,60
+g0265,455,,link_season_slot,cl:midfielders:112,cl,midfielders,112,Муса,Милан,ЦП,0,2,0,0,455
+g0265,455,,link_season_slot,league:midfielders:180,league,midfielders,180,Муса,Милан,ЦП,0,7,0,0,455
+g0205,479,,link_season_slot,cl:midfielders:52,cl,midfielders,52,Мусиаля,Франкфурт,ЦАП,0,7,4,2,479
+g0205,479,,link_season_slot,league:midfielders:78,league,midfielders,78,Мусиаля,Франкфурт,ЦАП,0,7,2,3,479
+g0680,952,,link_season_slot,cl:goalkeepers:57,cl,goalkeepers,57,Муссо,Локомотив,ВРТ,0,0,0,0,952
+g0680,952,,link_season_slot,league:goalkeepers:94,league,goalkeepers,94,Муссо,Локомотив,ВРТ,0,2,0,0,952
+g0332,397,,link_season_slot,cl:midfielders:181,cl,midfielders,181,Мухин,Цска,ЦП,0,0,0,0,397
+g0332,397,,link_season_slot,league:midfielders:290,league,midfielders,290,Мухин,Цска,ЦП,0,1,0,0,397
+g0247,354,,link_season_slot,cl:midfielders:94,cl,midfielders,94,Мхитарян,Интер,ЛП,0,11,7,4,354
+g0247,354,,link_season_slot,league:midfielders:156,league,midfielders,156,Мхитарян,Интер,ЛП,0,9,5,8,354
+g0185,431,,link_season_slot,cl:midfielders:32,cl,midfielders,32,Мэддисон,Тоттенхэм,ЦАП,0,5,5,3,431
+g0185,431,,link_season_slot,league:midfielders:58,league,midfielders,58,Мэддисон,Тоттенхэм,ЦАП,0,13,5,5,431
+g0201,1199,yes,existing,cl:midfielders:48,cl,midfielders,48,Мюллер,Бавария,ЦАП,0,8,3,4,1199
+g0201,1199,yes,existing,league:midfielders:74,league,midfielders,74,Мюллер,Бавария,ЦАП,0,11,6,5,1199
+g1116,1585,yes,existing,league:goalkeepers:37,league,goalkeepers,37,Мюллер,Фрайбург,ВРТ,0,0,0,0,1585
+g0708,132,,link_season_slot,league:forwards:45,league,forwards,45,Мёрфи,Ньюкасл,ПФА,0,1,0,0,132
+g0578,1523,,existing,cl:defenders:211,cl,defenders,211,Набабкин,Цска,ПЗ,0,0,0,0,1523
+g0578,1523,,existing,league:defenders:338,league,defenders,338,Набабкин,Цска,ПЗ,0,1,0,0,1523
+g1069,780,,link_season_slot,league:defenders:319,league,defenders,319,Навас,Севилья,ПЗ,0,7,0,1,780
+g0855,1233,,existing,league:midfielders:134,league,midfielders,134,Нартей,Штутгарт,ЦП,0,0,0,0,1233
+g0512,1460,,existing,cl:defenders:145,cl,defenders,145,Натан,Наполи,ЦЗ,0,0,0,0,1460
+g0512,1460,,existing,league:defenders:224,league,defenders,224,Натан,Наполи,ЦЗ,0,0,0,0,1460
+g0052,187,,link_season_slot,cl:forwards:51,cl,forwards,51,Науфф,Франкфурт,ПФА,1,6,1,6,187
+g0052,187,,link_season_slot,league:forwards:73,league,forwards,73,Науфф,Франкфурт,ПФА,1,9,4,3,187
+g0549,622,,link_season_slot,cl:defenders:182,cl,defenders,182,Начо,Реал,ЦЗ,0,0,0,0,622
+g0549,622,,link_season_slot,league:defenders:302,league,defenders,302,Начо,Реал,ЦЗ,0,1,0,0,622
+g0150,1164,,existing,cl:forwards:151,cl,forwards,151,Нгамалу,Зенит,ЛФА,0,4,3,0,1164
+g0150,1164,,existing,league:forwards:269,league,forwards,269,Нгамалу,Зенит,ЛФА,0,13,5,4,1164
+g0755,1099,,existing,league:forwards:159,league,forwards,159,Нганкам,Торино,ПФА,0,5,2,0,1099
+g0227,1012,,link_season_slot,cl:midfielders:74,cl,midfielders,74,Нгуму,Боруссия М,ПП,0,4,3,2,1012
+g0227,1012,,link_season_slot,league:midfielders:100,league,midfielders,100,Нгуму,Боруссия М,ПП,0,9,2,0,1012
+g0515,803,,link_season_slot,cl:defenders:148,cl,defenders,148,Ндика,Рома,ЦЗ,0,1,0,0,803
+g0515,803,,link_season_slot,league:defenders:227,league,defenders,227,Ндика,Рома,ЦЗ,0,9,0,0,803
+g0008,1025,,existing,cl:forwards:6,cl,forwards,6,Нельсон,Арсенал,ПФА,0,0,0,0,1025
+g0008,1025,,existing,league:forwards:6,league,forwards,6,Нельсон,Арсенал,ПФА,0,0,0,0,1025
+g0603,1538,,existing,cl:defenders:236,cl,defenders,236,Ненахов,Локомотив,ПЗ,0,0,0,0,1538
+g0603,1538,,existing,league:defenders:371,league,defenders,371,Ненахов,Локомотив,ПЗ,0,2,0,0,1538
+g0453,830,,link_season_slot,cl:defenders:86,cl,defenders,86,Нетц,Боруссия М,ЛЗ,0,3,1,0,830
+g0453,830,,link_season_slot,league:defenders:120,league,defenders,120,Нетц,Боруссия М,ЛЗ,0,6,0,0,830
+g0733,50,,link_season_slot,league:forwards:114,league,forwards,114,Нзола,Фиорентина,ФРВ,0,7,10,1,50
+g1071,783,,link_season_slot,league:defenders:321,league,defenders,321,Нианзу,Севилья,ЦЗ,0,0,0,0,783
+g0091,10,,link_season_slot,cl:forwards:92,cl,forwards,92,Нико,Атлетик,ЛФА,0,3,1,1,10
+g0091,10,,link_season_slot,league:forwards:163,league,forwards,163,Нико,Атлетик,ЛФА,0,14,13,4,10
+g0006,1024,,existing,cl:forwards:4,cl,forwards,4,Нкетиа,Арсенал,ФРВ,0,1,1,0,1024
+g0006,1024,,existing,league:forwards:4,league,forwards,4,Нкетиа,Арсенал,ФРВ,0,0,0,0,1024
+g0105,31,yes,link_season_slot,cl:forwards:106,cl,forwards,106,Нкунку,Реал,ПФА,0,5,3,2,31
+g0105,31,yes,link_season_slot,league:forwards:193,league,forwards,193,Нкунку,Реал,ПФА,0,15,11,4,31
+g0437,817,yes,link_season_slot,cl:defenders:70,cl,defenders,70,Нкунку,Франкфурт,ЛЗ,0,5,0,0,817
+g0437,817,yes,link_season_slot,league:defenders:104,league,defenders,104,Нкунку,Франкфурт,ЛЗ,0,8,1,0,817
+g0726,208,yes,link_season_slot,league:forwards:103,league,forwards,103,Нмеча,Вольфсбург,ФРВ,0,11,9,1,208
+g0199,475,yes,link_season_slot,cl:midfielders:46,cl,midfielders,46,Нмеча,Дортмунд,ЦП,0,2,1,1,475
+g0199,475,yes,link_season_slot,league:midfielders:72,league,midfielders,72,Нмеча,Дортмунд,ЦП,0,2,0,2,475
+g0638,977,,link_season_slot,cl:goalkeepers:15,cl,goalkeepers,15,Нойер,Бавария,ВРТ,0,3,0,0,977
+g0638,977,,link_season_slot,league:goalkeepers:25,league,goalkeepers,25,Нойер,Бавария,ВРТ,0,6,0,0,977
+g0225,494,,link_season_slot,cl:midfielders:72,cl,midfielders,72,Нойхаус,Боруссия М,ЦП,0,1,0,1,494
+g0225,494,,link_season_slot,league:midfielders:98,league,midfielders,98,Нойхаус,Боруссия М,ЦП,0,1,0,1,494
+g0290,1272,,existing,cl:midfielders:139,cl,midfielders,139,Ноласкоаин,Атлетик,ЦОП,0,0,0,0,1272
+g0290,1272,,existing,league:midfielders:218,league,midfielders,218,Ноласкоаин,Атлетик,ЦОП,0,0,0,0,1272
+g0991,852,,link_season_slot,league:defenders:147,league,defenders,147,Нсоки,Хоффенхайм,ЦЗ,0,0,0,0,852
+g0769,1117,,existing,league:forwards:185,league,forwards,185,Нтека,Райо Вальекано,ФРВ,0,0,0,0,1117
+g1119,1587,,existing,league:goalkeepers:40,league,goalkeepers,40,Нубель,Штутгарт,ВРТ,0,9,0,0,1587
+g0703,248,,link_season_slot,league:forwards:30,league,forwards,30,Нуньес,Ливерпуль,ФРВ,1,11,9,2,
+g1147,248,,link_season_slot,cl:forwards:14,cl,forwards,14,Нуньес,Ливерпуль,ФРВ,1,5,4,2,
+g0833,280,,link_season_slot,league:midfielders:55,league,midfielders,55,Нуньес,Сити,ЦП,0,1,0,0,
+g1148,280,,link_season_slot,cl:midfielders:29,cl,midfielders,29,Нуньес,Сити,ЦП,0,1,0,2,
+g0881,1264,,existing,league:midfielders:205,league,midfielders,205,Обианг,Сассуоло,ЦОП,0,0,0,0,1264
+g0663,930,,link_season_slot,cl:goalkeepers:40,cl,goalkeepers,40,Облак,Атлетико,ВРТ,0,3,0,0,930
+g0663,930,,link_season_slot,league:goalkeepers:69,league,goalkeepers,69,Облак,Атлетико,ВРТ,0,2,0,0,930
+g0330,1312,,existing,cl:midfielders:179,cl,midfielders,179,Обляков,Цска,ЦАП,0,4,2,2,1312
+g0330,1312,,existing,league:midfielders:288,league,midfielders,288,Обляков,Цска,ЦАП,0,11,6,4,1312
+g1141,1620,,existing,league:goalkeepers:93,league,goalkeepers,93,Овсянников,Крылья Советов,ВРТ,0,0,0,0,1620
+g0157,400,,link_season_slot,cl:midfielders:3,cl,midfielders,3,Одегаард,Арсенал,ЦАП,0,9,3,9,400
+g0157,400,,link_season_slot,league:midfielders:3,league,midfielders,3,Одегаард,Арсенал,ЦАП,0,13,4,9,400
+g0560,1509,,existing,cl:defenders:193,cl,defenders,193,Одриозола,Реал Сосьедад,ПЗ,0,0,0,0,1509
+g0560,1509,,existing,league:defenders:313,league,defenders,313,Одриозола,Реал Сосьедад,ПЗ,0,1,0,0,1509
+g0198,1198,,existing,cl:midfielders:45,cl,midfielders,45,Озкан,Дортмунд,ЦОП,0,0,0,0,1198
+g0198,1198,,existing,league:midfielders:71,league,midfielders,71,Озкан,Дортмунд,ЦОП,0,0,0,0,1198
+g0775,151,,link_season_slot,league:forwards:203,league,forwards,203,Окампос,Севилья,ЛФА,0,13,9,4,151
+g0078,166,,link_season_slot,cl:forwards:79,cl,forwards,79,Окафор,Милан,ФРВ,0,3,2,0,166
+g0078,166,,link_season_slot,league:forwards:137,league,forwards,137,Окафор,Милан,ФРВ,0,5,6,1,166
+g0589,684,,link_season_slot,cl:defenders:222,cl,defenders,222,Олаза,Краснодар,ЛЗ,0,3,0,0,684
+g0589,684,,link_season_slot,league:defenders:349,league,defenders,349,Олаза,Краснодар,ЛЗ,0,5,0,1,684
+g0323,1302,,existing,cl:midfielders:172,cl,midfielders,172,Оласагасти,Реал Сосьедад,ЦП,0,0,0,0,1302
+g0323,1302,,existing,league:midfielders:274,league,midfielders,274,Оласагасти,Реал Сосьедад,ЦП,0,0,0,0,1302
+g0509,650,,link_season_slot,cl:defenders:142,cl,defenders,142,Оливера,Наполи,ЛЗ,0,0,0,0,650
+g0509,650,,link_season_slot,league:defenders:221,league,defenders,221,Оливера,Наполи,ЛЗ,0,10,0,2,650
+g0137,1140,,existing,cl:forwards:138,cl,forwards,138,Олусегун,Краснодар,ФРВ,0,0,0,0,1140
+g0137,1140,,existing,league:forwards:233,league,forwards,233,Олусегун,Краснодар,ФРВ,0,3,0,2,1140
+g0232,1213,,existing,cl:midfielders:79,cl,midfielders,79,Ольмо,Лейпциг,ЦП,0,4,3,8,1213
+g0232,1213,,existing,league:midfielders:105,league,midfielders,105,Ольмо,Лейпциг,ЦП,0,6,0,6,1213
+g1106,1569,,existing,league:goalkeepers:4,league,goalkeepers,4,Ольсен,Астон Вилла,ВРТ,0,0,0,0,1569
+g0645,1583,,existing,cl:goalkeepers:22,cl,goalkeepers,22,Омлин,Боруссия М,ВРТ,0,2,0,0,1583
+g0645,1583,,existing,league:goalkeepers:32,league,goalkeepers,32,Омлин,Боруссия М,ВРТ,0,6,0,0,1583
+g0631,963,,link_season_slot,cl:goalkeepers:8,cl,goalkeepers,8,Онана,Мю,ВРТ,0,0,0,0,963
+g0631,963,,link_season_slot,league:goalkeepers:15,league,goalkeepers,15,Онана,Мю,ВРТ,0,9,0,0,963
+g0063,198,,link_season_slot,cl:forwards:63,cl,forwards,63,Опенда,Лейпциг,ФРВ,0,6,8,1,198
+g0063,198,,link_season_slot,league:forwards:85,league,forwards,85,Опенда,Лейпциг,ФРВ,0,14,17,4,198
+g0467,1412,,existing,cl:defenders:100,cl,defenders,100,Орбан,Лейпциг,ЦЗ,0,0,0,0,1412
+g0467,1412,,existing,league:defenders:134,league,defenders,134,Орбан,Лейпциг,ЦЗ,0,0,0,0,1412
+g0633,927,,link_season_slot,cl:goalkeepers:10,cl,goalkeepers,10,Ортега,Сити,ВРТ,0,0,0,0,927
+g0633,927,,link_season_slot,league:goalkeepers:20,league,goalkeepers,20,Ортега,Сити,ВРТ,0,0,0,0,927
+g0084,54,,link_season_slot,cl:forwards:85,cl,forwards,85,Осимен,Наполи,ФРВ,0,11,17,6,54
+g0084,54,,link_season_slot,league:forwards:143,league,forwards,143,Осимен,Наполи,ФРВ,0,16,18,5,54
+g1081,1543,,existing,league:defenders:376,league,defenders,376,Осипенко,Ростов,ЦЗ,0,9,3,0,1543
+g0511,647,,link_season_slot,cl:defenders:144,cl,defenders,144,Остигард,Наполи,ЦЗ,0,0,0,0,647
+g0511,647,,link_season_slot,league:defenders:223,league,defenders,223,Остигард,Наполи,ЦЗ,0,4,0,0,647
+g0318,326,,link_season_slot,cl:midfielders:167,cl,midfielders,167,Оярзабаль,Реал Сосьедад,ЦАП,0,5,3,1,326
+g0318,326,,link_season_slot,league:midfielders:269,league,midfielders,269,Оярзабаль,Реал Сосьедад,ЦАП,0,13,8,8,326
+g0482,1447,,existing,cl:defenders:115,cl,defenders,115,Павар,Интер,ЦЗ,0,5,0,0,1447
+g0482,1447,,existing,league:defenders:188,league,defenders,188,Павар,Интер,ЦЗ,0,8,0,0,1447
+g0303,1277,,existing,cl:midfielders:152,cl,midfielders,152,Палазон,Барселона,ЦАП,0,3,0,6,1277
+g0303,1277,,existing,league:midfielders:231,league,midfielders,231,Палазон,Барселона,ЦАП,0,13,15,2,1277
+g0218,491,,link_season_slot,cl:midfielders:65,cl,midfielders,65,Паласиос,Байер,ЦОП,0,2,0,2,491
+g0218,491,,link_season_slot,league:midfielders:91,league,midfielders,91,Паласиос,Байер,ЦОП,0,7,0,0,491
+g0181,277,,link_season_slot,cl:midfielders:27,cl,midfielders,27,Палинья,Сити,ЦП,0,1,1,0,277
+g0181,277,,link_season_slot,league:midfielders:53,league,midfielders,53,Палинья,Сити,ЦП,0,10,5,3,277
+g0800,1156,,existing,league:forwards:257,league,forwards,257,Палмер,Рубин,ПФА,0,3,2,0,1156
+g0476,1440,,existing,cl:defenders:109,cl,defenders,109,Паломино,Аталанта,ЦЗ,0,0,0,0,1440
+g0476,1440,,existing,league:defenders:175,league,defenders,175,Паломино,Аталанта,ЦЗ,0,0,0,0,1440
+g0528,1482,yes,existing,cl:defenders:161,cl,defenders,161,Паредес,Атлетик,ЦЗ,0,1,0,0,1482
+g0528,1482,yes,existing,league:defenders:256,league,defenders,256,Паредес,Атлетик,ЦЗ,0,0,0,0,1482
+g0279,461,yes,link_season_slot,cl:midfielders:128,cl,midfielders,128,Паредес,Рома,ЦОП,0,0,0,0,461
+g0279,461,yes,link_season_slot,league:midfielders:196,league,midfielders,196,Паредес,Рома,ЦОП,0,3,0,0,461
+g1016,1444,,existing,league:defenders:183,league,defenders,183,Паризи,Фиорентина,ЛЗ,0,0,0,0,1444
+g0158,405,,link_season_slot,cl:midfielders:4,cl,midfielders,4,Парти,Арсенал,ЦП,0,3,0,0,405
+g0158,405,,link_season_slot,league:midfielders:4,league,midfielders,4,Парти,Арсенал,ЦП,0,9,0,0,405
+g0587,1527,,existing,cl:defenders:220,cl,defenders,220,Паршивлюк,Динамо,ПЗ,0,0,0,0,1527
+g0587,1527,,existing,league:defenders:347,league,defenders,347,Паршивлюк,Динамо,ПЗ,0,0,0,0,1527
+g1020,1455,,existing,league:defenders:205,league,defenders,205,Патрик,Лацио,ЦЗ,0,4,1,0,1455
+g0659,976,,link_season_slot,cl:goalkeepers:36,cl,goalkeepers,36,Патрисио,Рома,ВРТ,0,1,0,0,976
+g0659,976,,link_season_slot,league:goalkeepers:59,league,goalkeepers,59,Патрисио,Рома,ВРТ,0,9,0,0,976
+g0064,1058,,existing,cl:forwards:64,cl,forwards,64,Паульсен,Лейпциг,ФРВ,0,1,1,0,1058
+g0064,1058,,existing,league:forwards:86,league,forwards,86,Паульсен,Лейпциг,ФРВ,0,1,1,0,1058
+g0562,1510,,existing,cl:defenders:195,cl,defenders,195,Пачеко,Реал Сосьедад,ЦЗ,0,0,0,0,1510
+g0562,1510,,existing,league:defenders:315,league,defenders,315,Пачеко,Реал Сосьедад,ЦЗ,0,0,0,0,1510
+g0438,818,,link_season_slot,cl:defenders:71,cl,defenders,71,Пачо,Франкфурт,ЦЗ,0,4,0,0,818
+g0438,818,,link_season_slot,league:defenders:105,league,defenders,105,Пачо,Франкфурт,ЦЗ,0,10,1,0,818
+g0242,346,,link_season_slot,cl:midfielders:89,cl,midfielders,89,Пашалич,Аталанта,ЦП,0,6,6,4,346
+g0242,346,,link_season_slot,league:midfielders:143,league,midfielders,143,Пашалич,Аталанта,ЦП,0,11,4,7,346
+g1130,1603,,existing,league:goalkeepers:63,league,goalkeepers,63,Пеголо,Сассуоло,ВРТ,0,0,0,0,1603
+g1028,1468,,existing,league:defenders:238,league,defenders,238,Педерсен,Сассуоло,ПЗ,0,8,0,1,1468
+g0563,1514,,existing,cl:defenders:196,cl,defenders,196,Педраза,Вильярреал,ЛЗ,0,0,0,0,1514
+g0563,1514,,existing,league:defenders:323,league,defenders,323,Педраза,Вильярреал,ЛЗ,0,0,0,0,1514
+g0302,302,,link_season_slot,cl:midfielders:151,cl,midfielders,151,Педри,Барселона,ЦП,0,8,4,13,302
+g0302,302,,link_season_slot,league:midfielders:230,league,midfielders,230,Педри,Барселона,ЦП,0,7,1,7,302
+g0695,1031,yes,existing,league:forwards:15,league,forwards,15,Педро,Брайтон,ФРВ,0,0,0,0,1031
+g0741,1080,yes,existing,league:forwards:131,league,forwards,131,Педро,Лацио,ПФА,0,0,0,0,1080
+g1066,781,,link_season_slot,league:defenders:316,league,defenders,316,Педроса,Севилья,ЛЗ,0,8,2,0,781
+g0758,1102,,existing,league:forwards:162,league,forwards,162,Пеллегри,Торино,ФРВ,0,0,0,0,1102
+g1023,789,yes,link_season_slot,league:defenders:208,league,defenders,208,Пеллегрини,Лацио,ЛЗ,0,0,0,0,789
+g0276,1256,yes,existing,cl:midfielders:124,cl,midfielders,124,Пеллегрини,Рома,ЦП,0,3,0,3,1256
+g0276,1256,yes,existing,league:midfielders:192,league,midfielders,192,Пеллегрини,Рома,ЦП,0,12,8,4,1256
+g0666,1609,,existing,cl:goalkeepers:43,cl,goalkeepers,43,Пенья,Барселона,ВРТ,0,0,0,0,1609
+g0666,1609,,existing,league:goalkeepers:72,league,goalkeepers,72,Пенья,Барселона,ВРТ,0,0,0,0,1609
+g1122,1589,,existing,league:goalkeepers:43,league,goalkeepers,43,Перван,Вольфсбург,ВРТ,0,0,0,0,1589
+g0900,1292,,existing,league:midfielders:251,league,midfielders,251,Перез,Райо Вальекано,ЦП,0,0,0,0,1292
+g0697,1034,,existing,league:forwards:23,league,forwards,23,Перейра,Фулхэм,ФРВ,0,12,11,1,1034
+g0640,1580,,existing,cl:goalkeepers:17,cl,goalkeepers,17,Перец,Бавария,ВРТ,0,0,0,0,1580
+g0640,1580,,existing,league:goalkeepers:27,league,goalkeepers,27,Перец,Бавария,ВРТ,0,0,0,0,1580
+g0653,941,,link_season_slot,cl:goalkeepers:30,cl,goalkeepers,30,Перин,Ювентус,ВРТ,0,0,0,0,941
+g0653,941,,link_season_slot,league:goalkeepers:51,league,goalkeepers,51,Перин,Ювентус,ВРТ,0,0,0,0,941
+g0188,433,,link_season_slot,cl:midfielders:35,cl,midfielders,35,Перишич,Тоттенхэм,ЦП,0,4,2,6,433
+g0188,433,,link_season_slot,league:midfielders:61,league,midfielders,61,Перишич,Тоттенхэм,ЦП,0,9,2,0,433
+g1142,1623,,existing,league:goalkeepers:97,league,goalkeepers,97,Песьяков,Ростов,ВРТ,0,7,0,0,1623
+g0596,1532,,existing,cl:defenders:229,cl,defenders,229,Петров,Краснодар,ПЗ,0,1,0,0,1532
+g0596,1532,,existing,league:defenders:356,league,defenders,356,Петров,Краснодар,ПЗ,0,1,0,0,1532
+g0627,1019,,link_season_slot,cl:goalkeepers:4,cl,goalkeepers,4,Петрович,Челси,ВРТ,0,0,0,0,1019
+g0627,1019,,link_season_slot,league:goalkeepers:9,league,goalkeepers,9,Петрович,Челси,ВРТ,0,0,0,0,1019
+g1063,616,,link_season_slot,league:defenders:297,league,defenders,297,Пеццелла,Бетис,ЦЗ,0,0,0,0,616
+g0749,1093,,existing,league:forwards:153,league,forwards,153,Пинамонти,Сассуоло,ФРВ,0,1,0,0,1093
+g0117,1128,,existing,cl:forwards:118,cl,forwards,118,Пино,Вильярреал,ПФА,0,5,3,1,1128
+g0117,1128,,existing,league:forwards:213,league,forwards,213,Пино,Вильярреал,ПФА,0,9,7,4,1128
+g0654,1596,,existing,cl:goalkeepers:31,cl,goalkeepers,31,Пинсольо,Ювентус,ВРТ,0,0,0,0,1596
+g0654,1596,,existing,league:goalkeepers:52,league,goalkeepers,52,Пинсольо,Ювентус,ВРТ,0,0,0,0,1596
+g0139,81,,link_season_slot,cl:forwards:140,cl,forwards,140,Пиняев,Локомотив,ЛФА,0,3,0,3,81
+g0139,81,,link_season_slot,league:forwards:241,league,forwards,241,Пиняев,Локомотив,ЛФА,0,12,7,4,81
+g0784,76,,link_season_slot,league:forwards:236,league,forwards,236,Писарский,Крылья Советов,ФРВ,0,11,11,1,76
+g0222,1210,,existing,cl:midfielders:69,cl,midfielders,69,Плеа,Боруссия М,ЦАП,0,4,2,6,1210
+g0222,1210,,existing,league:midfielders:95,league,midfielders,95,Плеа,Боруссия М,ЦАП,0,13,7,4,1210
+g0267,458,,link_season_slot,cl:midfielders:114,cl,midfielders,114,Побега,Милан,ЦП,0,0,0,0,458
+g0267,458,,link_season_slot,league:midfielders:182,league,midfielders,182,Побега,Милан,ЦП,0,0,0,0,458
+g1053,1498,,existing,league:defenders:287,league,defenders,287,Позо,Райо Вальекано,ПЗ,0,2,2,0,1498
+g0086,1086,,existing,cl:forwards:87,cl,forwards,87,Политано,Наполи,ПФА,0,4,3,1,1086
+g0086,1086,,existing,league:forwards:145,league,forwards,145,Политано,Наполи,ПФА,0,8,3,1,1086
+g1146,1627,,existing,league:goalkeepers:103,league,goalkeepers,103,Помазун,Урал,ВРТ,0,6,0,0,1627
+g1132,1605,,existing,league:goalkeepers:65,league,goalkeepers,65,Попа,Торино,ВРТ,0,0,0,0,1605
+g0415,765,,link_season_slot,cl:defenders:48,cl,defenders,48,Порро,Тоттенхэм,ПЗ,0,1,0,0,765
+g0415,765,,link_season_slot,league:defenders:82,league,defenders,82,Порро,Тоттенхэм,ПЗ,0,10,1,0,765
+g0891,306,,link_season_slot,league:midfielders:242,league,midfielders,242,Порту,Жирона,ПП,0,3,0,2,306
+g1112,965,,link_season_slot,league:goalkeepers:16,league,goalkeepers,16,Поуп,Ньюкасл,ВРТ,0,4,0,0,965
+g1126,1597,,existing,league:goalkeepers:53,league,goalkeepers,53,Проведель,Лацио,ВРТ,0,7,0,0,1597
+g0144,1158,,existing,cl:forwards:145,cl,forwards,145,Промес,Спартак,ЛФА,0,7,8,2,1158
+g0144,1158,,existing,league:forwards:259,league,forwards,259,Промес,Спартак,ЛФА,0,10,10,3,1158
+g1080,1542,,existing,league:defenders:375,league,defenders,375,Прохин,Ростов,ЦЗ,0,7,0,0,1542
+g0355,380,,link_season_slot,cl:midfielders:204,cl,midfielders,204,Пруцев,Спартак,ЦП,0,3,1,1,380
+g0355,380,,link_season_slot,league:midfielders:333,league,midfielders,333,Пруцев,Спартак,ЦП,0,6,0,2,380
+g0832,1192,,existing,league:midfielders:50,league,midfielders,50,Прёмель,Ньюкасл,ЦП,0,1,0,0,1192
+g0081,1084,,existing,cl:forwards:82,cl,forwards,82,Пулишич,Милан,ЛФА,0,2,1,0,1084
+g0081,1084,,existing,league:forwards:140,league,forwards,140,Пулишич,Милан,ЛФА,0,4,1,0,1084
+g0169,417,,link_season_slot,cl:midfielders:15,cl,midfielders,15,Рабьо,Ливерпуль,ЦП,0,3,1,1,417
+g0169,417,,link_season_slot,league:midfielders:36,league,midfielders,36,Рабьо,Ливерпуль,ЦП,0,7,2,1,417
+g0753,1097,,existing,league:forwards:157,league,forwards,157,Радонич,Торино,ЛФА,0,9,2,1,1097
+g0625,959,,link_season_slot,cl:goalkeepers:2,cl,goalkeepers,2,Райа,Арсенал,ВРТ,0,0,0,0,959
+g0625,959,,link_season_slot,league:goalkeepers:2,league,goalkeepers,2,Райа,Арсенал,ВРТ,0,0,0,0,959
+g0424,1394,,existing,cl:defenders:57,cl,defenders,57,Райерсон,Дортмунд,ЛЗ,0,0,0,0,1394
+g0424,1394,,existing,league:defenders:91,league,defenders,91,Райерсон,Дортмунд,ЛЗ,0,0,0,0,1394
+g0156,401,,link_season_slot,cl:midfielders:2,cl,midfielders,2,Райс,Арсенал,ЦП,0,4,1,1,401
+g0156,401,,link_season_slot,league:midfielders:2,league,midfielders,2,Райс,Арсенал,ЦП,0,10,0,3,401
+g0911,445,,link_season_slot,league:midfielders:276,league,midfielders,276,Ракитич,Севилья,ЦОП,0,9,1,3,445
+g1067,782,,link_season_slot,league:defenders:317,league,defenders,317,Рамос,Севилья,ЦЗ,0,7,2,0,782
+g0624,958,,link_season_slot,cl:goalkeepers:1,cl,goalkeepers,1,Рамсдейл,Арсенал,ВРТ,0,6,0,0,958
+g0624,958,,link_season_slot,league:goalkeepers:1,league,goalkeepers,1,Рамсдейл,Арсенал,ВРТ,0,10,0,0,958
+g0798,1154,,existing,league:forwards:255,league,forwards,255,Ранделович,Рубин,ПФА,0,12,10,1,1154
+g1018,1446,,existing,league:defenders:185,league,defenders,185,Раньери,Фиорентина,ЦЗ,0,2,0,0,1446
+g0087,53,,link_season_slot,cl:forwards:88,cl,forwards,88,Распадори,Наполи,ФРВ,0,0,0,0,53
+g0087,53,,link_season_slot,league:forwards:146,league,forwards,146,Распадори,Наполи,ФРВ,0,3,0,1,53
+g1077,691,,link_season_slot,league:defenders:362,league,defenders,362,Рассказов,Крылья Советов,ПЗ,0,0,0,0,691
+g1057,1502,,existing,league:defenders:291,league,defenders,291,Ратиу,Райо Вальекано,ПЗ,0,0,0,0,1502
+g0095,1103,,existing,cl:forwards:96,cl,forwards,96,Рауль Гарсия,Атлетик,ФРВ,0,0,0,0,1103
+g0095,1103,,existing,league:forwards:167,league,forwards,167,Рауль Гарсия,Атлетик,ФРВ,0,0,0,0,1103
+g0461,840,,link_season_slot,cl:defenders:94,cl,defenders,94,Раум,Лейпциг,ЛЗ,0,4,2,0,840
+g0461,840,,link_season_slot,league:defenders:128,league,defenders,128,Раум,Лейпциг,ЛЗ,0,4,0,0,840
+g0100,1105,,existing,cl:forwards:101,cl,forwards,101,Рафинья,Барселона,ФРВ,0,6,12,5,1105
+g0100,1105,,existing,league:forwards:172,league,forwards,172,Рафинья,Барселона,ФРВ,0,12,13,10,1105
+g0507,654,,link_season_slot,cl:defenders:140,cl,defenders,140,Рахмани,Наполи,ЦЗ,0,1,0,1,654
+g0507,654,,link_season_slot,league:defenders:219,league,defenders,219,Рахмани,Наполи,ЦЗ,0,9,0,0,654
+g0919,370,,link_season_slot,league:midfielders:308,league,midfielders,308,Рахманович,Крылья Советов,ЦП,0,11,3,11,370
+g0879,1262,,existing,league:midfielders:203,league,midfielders,203,Рачич,Сассуоло,ЦП,0,1,0,0,1262
+g0402,1383,,existing,cl:defenders:35,cl,defenders,35,Регилон,Мю,ЛЗ,0,0,0,0,1383
+g0402,1383,,existing,league:defenders:60,league,defenders,60,Регилон,Мю,ЛЗ,0,1,0,0,1383
+g0043,1051,yes,existing,cl:forwards:42,cl,forwards,42,Рейна,Дортмунд,ПФА,0,0,0,0,1051
+g0043,1051,yes,existing,league:forwards:64,league,forwards,64,Рейна,Дортмунд,ПФА,0,0,0,0,1051
+g1145,1626,yes,existing,league:goalkeepers:102,league,goalkeepers,102,Рейна,Урал,ВРТ,0,0,0,0,1626
+g0261,1250,,existing,cl:midfielders:108,cl,midfielders,108,Рейндерс,Милан,ЦП,0,4,4,0,1250
+g0261,1250,,existing,league:midfielders:176,league,midfielders,176,Рейндерс,Милан,ЦП,0,11,9,6,1250
+g0529,592,,link_season_slot,cl:defenders:162,cl,defenders,162,Рейнилдо,Атлетико,ЛЗ,0,4,1,0,592
+g0529,592,,link_season_slot,league:defenders:257,league,defenders,257,Рейнилдо,Атлетико,ЛЗ,0,4,2,0,592
+g0670,938,,link_season_slot,cl:goalkeepers:47,cl,goalkeepers,47,Ремиро,Реал Сосьедад,ВРТ,0,1,0,0,938
+g0670,938,,link_season_slot,league:goalkeepers:81,league,goalkeepers,81,Ремиро,Реал Сосьедад,ВРТ,0,5,0,0,938
+g0623,1568,,existing,cl:defenders:256,cl,defenders,256,Ренан,Зенит,ЦЗ,0,0,0,0,1568
+g0623,1568,,existing,league:defenders:417,league,defenders,417,Ренан,Зенит,ЦЗ,0,0,0,0,1568
+g0824,1184,,existing,league:midfielders:29,league,midfielders,29,Рид,Фулхэм,ЦП,0,6,0,0,1184
+g0300,298,,link_season_slot,cl:midfielders:149,cl,midfielders,149,Рикельме,Атлетико,ЛП,0,0,0,0,298
+g0300,298,,link_season_slot,league:midfielders:228,league,midfielders,228,Рикельме,Атлетико,ЛП,0,0,0,0,298
+g0969,1377,,existing,league:defenders:43,league,defenders,43,Рим,Фулхэм,ЦЗ,0,0,0,0,1377
+g0884,1267,,existing,league:midfielders:208,league,midfielders,208,Риччи,Торино,ЦП,0,7,0,1,1267
+g0035,1047,,existing,cl:forwards:34,cl,forwards,34,Ришарлисон,Тоттенхэм,ФРВ,0,0,0,0,1047
+g0035,1047,,existing,league:forwards:56,league,forwards,56,Ришарлисон,Тоттенхэм,ФРВ,0,0,0,0,1047
+g0543,600,,link_season_slot,cl:defenders:176,cl,defenders,176,Роберто,Барселона,ПЗ,0,0,0,0,600
+g0543,600,,link_season_slot,league:defenders:271,league,defenders,271,Роберто,Барселона,ПЗ,0,0,0,0,600
+g0387,746,,link_season_slot,cl:defenders:20,cl,defenders,20,Робертсон,Ливерпуль,ЛЗ,0,4,0,0,746
+g0387,746,,link_season_slot,league:defenders:45,league,defenders,45,Робертсон,Ливерпуль,ЛЗ,0,5,0,0,746
+g0962,1370,,existing,league:defenders:36,league,defenders,36,Робинсон,Фулхэм,ЛЗ,0,8,2,0,1370
+g0809,407,,link_season_slot,league:midfielders:10,league,midfielders,10,Ровелла,Астон Вилла,ЦП,0,3,0,1,407
+g1111,1574,,existing,league:goalkeepers:11,league,goalkeepers,11,Родак,Фулхэм,ВРТ,0,0,0,0,1574
+g0211,1205,,existing,cl:midfielders:58,cl,midfielders,58,Роде,Франкфурт,ЦОП,0,0,0,0,1205
+g0211,1205,,existing,league:midfielders:84,league,midfielders,84,Роде,Франкфурт,ЦОП,0,0,0,0,1205
+g0295,292,yes,link_season_slot,cl:midfielders:144,cl,midfielders,144,Родри,Атлетико,ЦОП,0,2,1,1,292
+g0295,292,yes,link_season_slot,league:midfielders:223,league,midfielders,223,Родри,Атлетико,ЦОП,0,10,0,5,292
+g0907,312,yes,link_season_slot,league:midfielders:258,league,midfielders,258,Родри,Бетис,ЛП,0,1,0,1,312
+g0621,1566,,existing,cl:defenders:254,cl,defenders,254,Родригао,Зенит,ПЗ,0,0,0,0,1566
+g0621,1566,,existing,league:defenders:415,league,defenders,415,Родригао,Зенит,ПЗ,0,0,0,0,1566
+g1032,1472,,existing,league:defenders:242,league,defenders,242,Родригез,Торино,ЛЗ,0,9,0,0,1472
+g0103,34,,link_season_slot,cl:forwards:104,cl,forwards,104,Родриго,Реал,ЛФА,0,6,6,3,34
+g0103,34,,link_season_slot,league:forwards:191,league,forwards,191,Родриго,Реал,ЛФА,0,9,4,3,34
+g1009,1431,,existing,league:defenders:165,league,defenders,165,Рожерио,Вольфсбург,ЛЗ,0,1,0,0,1431
+g0192,1197,,existing,cl:midfielders:39,cl,midfielders,39,Ройс,Дортмунд,ЦП,0,6,4,6,1197
+g0192,1197,,existing,league:midfielders:65,league,midfielders,65,Ройс,Дортмунд,ЦП,0,8,3,5,1197
+g0903,313,,link_season_slot,league:midfielders:254,league,midfielders,254,Рока,Бетис,ЦОП,0,3,0,1,313
+g0506,653,,link_season_slot,cl:defenders:139,cl,defenders,139,Романьоли,Наполи,ЦЗ,0,0,0,0,653
+g0506,653,,link_season_slot,league:defenders:218,league,defenders,218,Романьоли,Наполи,ЦЗ,0,8,0,0,653
+g0414,766,,link_season_slot,cl:defenders:47,cl,defenders,47,Ромеро,Тоттенхэм,ЦЗ,0,2,0,1,766
+g0414,766,,link_season_slot,league:defenders:81,league,defenders,81,Ромеро,Тоттенхэм,ЦЗ,0,9,0,1,766
+g0307,1278,,existing,cl:midfielders:156,cl,midfielders,156,Ромеу,Барселона,ЦОП,0,0,0,0,1278
+g0307,1278,,existing,league:midfielders:235,league,midfielders,235,Ромеу,Барселона,ЦОП,0,2,0,0,1278
+g0573,721,,link_season_slot,cl:defenders:206,cl,defenders,206,Роша,Цска,ЦЗ,0,0,0,0,721
+g0573,721,,link_season_slot,league:defenders:333,league,defenders,333,Роша,Цска,ЦЗ,0,2,0,0,721
+g0417,769,,link_season_slot,cl:defenders:50,cl,defenders,50,Роял,Тоттенхэм,ПЗ,0,0,0,0,769
+g0417,769,,link_season_slot,league:defenders:84,league,defenders,84,Роял,Тоттенхэм,ПЗ,0,4,0,0,769
+g0998,1425,,existing,league:defenders:154,league,defenders,154,Руальт,Штутгарт,ЦЗ,0,0,0,0,1425
+g1031,1471,,existing,league:defenders:241,league,defenders,241,Руан,Сассуоло,ЦЗ,0,0,0,0,1471
+g0494,1452,,existing,cl:defenders:127,cl,defenders,127,Ругани,Ювентус,ЦЗ,0,1,0,0,1452
+g0494,1452,,existing,league:defenders:200,league,defenders,200,Ругани,Ювентус,ЦЗ,0,0,0,0,1452
+g0478,1441,,existing,cl:defenders:111,cl,defenders,111,Руджери,Аталанта,ЛЗ,0,0,0,0,1441
+g0478,1441,,existing,league:defenders:177,league,defenders,177,Руджери,Аталанта,ЛЗ,0,0,0,0,1441
+g0505,1458,,existing,cl:defenders:138,cl,defenders,138,Руи,Наполи,ЛЗ,0,0,0,0,1458
+g0505,1458,,existing,league:defenders:217,league,defenders,217,Руи,Наполи,ЛЗ,0,6,0,1,1458
+g1064,1506,,existing,league:defenders:298,league,defenders,298,Руйбаль,Бетис,ПЗ,0,0,0,0,1506
+g1091,1553,,existing,league:defenders:386,league,defenders,386,Рыбус,Рубин,ЛЗ,0,5,0,1,1553
+g0353,1330,,existing,cl:midfielders:202,cl,midfielders,202,Рыбчинский,Локомотив,ПП,0,0,0,0,1330
+g0353,1330,,existing,league:midfielders:318,league,midfielders,318,Рыбчинский,Локомотив,ПП,0,0,0,0,1330
+g0813,411,,link_season_slot,league:midfielders:14,league,midfielders,14,Рэмзи,Астон Вилла,ЦАП,0,11,3,1,411
+g0026,3,,link_season_slot,cl:forwards:25,cl,forwards,25,Рэшфорд,Сити,ЛФА,0,7,6,2,3
+g0026,3,,link_season_slot,league:forwards:47,league,forwards,47,Рэшфорд,Сити,ЛФА,0,12,6,3,3
+g0551,625,,link_season_slot,cl:defenders:184,cl,defenders,184,Рюдигер,Реал,ЦЗ,0,1,1,0,625
+g0551,625,,link_season_slot,league:defenders:304,league,defenders,304,Рюдигер,Реал,ЦЗ,0,7,0,0,625
+g0606,704,,link_season_slot,cl:defenders:239,cl,defenders,239,Рябчук,Спартак,ЛЗ,0,0,0,0,704
+g0606,704,,link_season_slot,league:defenders:391,league,defenders,391,Рябчук,Спартак,ЛЗ,0,0,0,0,704
+g0580,1525,,existing,cl:defenders:213,cl,defenders,213,Рядно,Цска,ЛЗ,0,0,0,0,1525
+g0580,1525,,existing,league:defenders:340,league,defenders,340,Рядно,Цска,ЛЗ,0,0,0,0,1525
+g0836,1219,,existing,league:midfielders:115,league,midfielders,115,Рёль,Фрайбург,ЦП,0,12,8,0,1219
+g1062,615,,link_season_slot,league:defenders:296,league,defenders,296,Сабали,Бетис,ПЗ,0,1,1,0,615
+g0759,21,,link_season_slot,league:forwards:175,league,forwards,175,Савио,Жирона,ЛФА,0,10,7,3,21
+g0531,593,,link_season_slot,cl:defenders:164,cl,defenders,164,Савич,Атлетико,ЦЗ,0,3,2,0,593
+g0531,593,,link_season_slot,league:defenders:259,league,defenders,259,Савич,Атлетико,ЦЗ,0,3,1,0,593
+g0747,1091,,existing,league:forwards:151,league,forwards,151,Садик,Сассуоло,ФРВ,0,12,10,4,1091
+g1039,1479,,existing,league:defenders:249,league,defenders,249,Сазонов,Торино,ЦЗ,0,0,0,0,1479
+g0085,56,,link_season_slot,cl:forwards:86,cl,forwards,86,Сака,Наполи,ПФА,0,6,3,4,56
+g0085,56,,link_season_slot,league:forwards:144,league,forwards,144,Сака,Наполи,ПФА,0,11,4,4,56
+g0987,846,,link_season_slot,league:defenders:143,league,defenders,143,Салай,Хоффенхайм,ЦЗ,0,0,0,0,846
+g0047,1052,,existing,cl:forwards:46,cl,forwards,46,Салах,Бавария,ПФА,0,4,4,2,1052
+g0047,1052,,existing,league:forwards:68,league,forwards,68,Салах,Бавария,ПФА,0,8,5,1,1052
+g0369,729,,link_season_slot,cl:defenders:2,cl,defenders,2,Салиба,Арсенал,ЦЗ,0,6,0,0,729
+g0369,729,,link_season_slot,league:defenders:2,league,defenders,2,Салиба,Арсенал,ЦЗ,0,10,0,0,729
+g0837,1220,,existing,league:midfielders:116,league,midfielders,116,Саллаи,Фрайбург,ПП,0,6,0,0,1220
+g0783,77,,link_season_slot,league:forwards:235,league,forwards,235,Салтыков,Крылья Советов,ЛФА,0,9,3,2,77
+g0846,510,,link_season_slot,league:midfielders:125,league,midfielders,125,Самассеку,Хоффенхайм,ЦОП,0,0,0,0,510
+g0598,695,,link_season_slot,cl:defenders:231,cl,defenders,231,Самошников,Локомотив,ЛЗ,0,0,0,0,695
+g0598,695,,link_season_slot,league:defenders:366,league,defenders,366,Самошников,Локомотив,ЛЗ,0,6,0,0,695
+g0889,1282,,existing,league:midfielders:240,league,midfielders,240,Саму Гарсия,Жирона,ЦП,0,6,2,4,1282
+g0883,1266,,existing,league:midfielders:207,league,midfielders,207,Санабрия,Торино,ЦАП,0,2,1,0,1266
+g0488,638,,link_season_slot,cl:defenders:121,cl,defenders,121,Сандро,Ювентус,ЛЗ,0,3,0,0,638
+g0488,638,,link_season_slot,league:defenders:194,league,defenders,194,Сандро,Ювентус,ЛЗ,0,6,0,0,638
+g0046,173,,link_season_slot,cl:forwards:45,cl,forwards,45,Сане,Бавария,ПФА,0,7,2,3,173
+g0046,173,,link_season_slot,league:forwards:67,league,forwards,67,Сане,Бавария,ПФА,0,14,11,3,173
+g0285,285,,link_season_slot,cl:midfielders:134,cl,midfielders,134,Сансет,Атлетик,ЦП,0,3,0,2,285
+g0285,285,,link_season_slot,league:midfielders:213,league,midfielders,213,Сансет,Атлетик,ЦП,0,12,6,9,285
+g0615,712,,link_season_slot,cl:defenders:248,cl,defenders,248,Сантос,Зенит,ЛЗ,0,1,0,0,712
+g0615,712,,link_season_slot,league:defenders:409,league,defenders,409,Сантос,Зенит,ЛЗ,0,6,0,0,712
+g0626,969,,link_season_slot,cl:goalkeepers:3,cl,goalkeepers,3,Санчез,Челси,ВРТ,0,2,0,0,969
+g0626,969,,link_season_slot,league:goalkeepers:8,league,goalkeepers,8,Санчез,Челси,ВРТ,0,7,0,0,969
+g0002,249,,link_season_slot,cl:forwards:72,cl,forwards,72,Санчес,Интер,ФРВ,1,0,0,0,249
+g0002,249,,link_season_slot,cl:midfielders:127,cl,midfielders,127,Санчес,Рома,ЦП,0,0,0,0,249
+g0002,249,,link_season_slot,league:forwards:121,league,forwards,121,Санчес,Интер,ФРВ,1,0,0,0,249
+g0002,249,,link_season_slot,league:midfielders:195,league,midfielders,195,Санчес,Рома,ЦП,0,6,0,1,249
+g0021,1041,,existing,cl:forwards:20,cl,forwards,20,Санчо,Мю,ЛФА,0,2,1,1,1041
+g0021,1041,,existing,league:forwards:36,league,forwards,36,Санчо,Мю,ЛФА,0,0,0,0,1041
+g0143,1144,,existing,cl:forwards:144,cl,forwards,144,Сарвели,Локомотив,ФРВ,0,0,0,0,1144
+g0143,1144,,existing,league:forwards:245,league,forwards,245,Сарвели,Локомотив,ФРВ,0,0,0,0,1144
+g0031,1046,,existing,cl:forwards:30,cl,forwards,30,Сармиенто,Сити,ПФА,0,0,0,0,1046
+g0031,1046,,existing,league:forwards:52,league,forwards,52,Сармиенто,Сити,ПФА,0,0,0,0,1046
+g0434,1399,yes,existing,cl:defenders:67,cl,defenders,67,Сарр,Бавария,ПЗ,0,0,0,0,1399
+g0434,1399,yes,existing,league:defenders:101,league,defenders,101,Сарр,Бавария,ПЗ,0,0,0,0,1399
+g0731,1073,yes,existing,league:forwards:108,league,forwards,108,Сарр,Вольфсбург,ФРВ,0,0,0,0,1073
+g0189,435,yes,link_season_slot,cl:midfielders:36,cl,midfielders,36,Сарр,Тоттенхэм,ЦП,0,0,0,0,435
+g0189,435,yes,link_season_slot,league:midfielders:62,league,midfielders,62,Сарр,Тоттенхэм,ЦП,0,2,0,0,435
+g0386,1016,yes,link_season_slot,cl:defenders:19,cl,defenders,19,Сарр,Челси,ЦЗ,0,0,0,0,1016
+g0386,1016,yes,link_season_slot,league:defenders:35,league,defenders,35,Сарр,Челси,ЦЗ,0,0,0,0,1016
+g0298,294,,link_season_slot,cl:midfielders:147,cl,midfielders,147,Сауль,Атлетико,ЦП,0,3,0,1,294
+g0298,294,,link_season_slot,league:midfielders:226,league,midfielders,226,Сауль,Атлетико,ЦП,0,1,0,0,294
+g0678,1619,,existing,cl:goalkeepers:55,cl,goalkeepers,55,Сафонов,Краснодар,ВРТ,0,3,0,0,1619
+g0678,1619,,existing,league:goalkeepers:90,league,goalkeepers,90,Сафонов,Краснодар,ВРТ,0,5,0,0,1619
+g0859,512,,link_season_slot,league:midfielders:138,league,midfielders,138,Сванберг,Вольфсбург,ЦП,0,11,1,3,512
+g0660,1021,,link_season_slot,cl:goalkeepers:37,cl,goalkeepers,37,Свилар,Рома,ВРТ,0,0,0,0,1021
+g0660,1021,,link_season_slot,league:goalkeepers:60,league,goalkeepers,60,Свилар,Рома,ВРТ,0,0,0,0,1021
+g0316,1298,,existing,cl:midfielders:165,cl,midfielders,165,Себаллос,Реал,ЦП,0,0,0,0,1298
+g0316,1298,,existing,league:midfielders:267,league,midfielders,267,Себаллос,Реал,ЦП,0,0,0,0,1298
+g0061,195,,link_season_slot,cl:forwards:61,cl,forwards,61,Себашё,Боруссия М,ФРВ,0,0,0,0,195
+g0061,195,,link_season_slot,league:forwards:83,league,forwards,83,Себашё,Боруссия М,ФРВ,0,0,0,0,195
+g0233,498,,link_season_slot,cl:midfielders:80,cl,midfielders,80,Сейвальд,Лейпциг,ЦОП,0,2,0,3,498
+g0233,498,,link_season_slot,league:midfielders:106,league,midfielders,106,Сейвальд,Лейпциг,ЦОП,0,8,1,3,498
+g0757,1101,,existing,league:forwards:161,league,forwards,161,Сек,Торино,ФРВ,0,1,0,0,1101
+g0684,954,,link_season_slot,cl:goalkeepers:61,cl,goalkeepers,61,Селихов,Спартак,ВРТ,0,0,0,0,954
+g0684,954,,link_season_slot,league:goalkeepers:101,league,goalkeepers,101,Селихов,Спартак,ВРТ,0,0,0,0,954
+g0253,358,,link_season_slot,cl:midfielders:100,cl,midfielders,100,Сенси,Интер,ЦП,0,0,0,0,358
+g0253,358,,link_season_slot,league:midfielders:162,league,midfielders,162,Сенси,Интер,ЦП,0,0,0,0,358
+g1127,1598,,existing,league:goalkeepers:54,league,goalkeepers,54,Сепе,Лацио,ВРТ,0,0,0,0,1598
+g0153,1167,,existing,cl:forwards:154,cl,forwards,154,Сергеев,Зенит,ФРВ,0,0,0,0,1167
+g0153,1167,,existing,league:forwards:272,league,forwards,272,Сергеев,Зенит,ФРВ,0,0,0,0,1167
+g0416,770,,link_season_slot,cl:defenders:49,cl,defenders,49,Сессеньон,Тоттенхэм,ЛЗ,0,0,0,0,770
+g0416,770,,link_season_slot,league:defenders:83,league,defenders,83,Сессеньон,Тоттенхэм,ЛЗ,0,2,0,0,770
+g0129,66,,link_season_slot,cl:forwards:130,cl,forwards,130,Силас,Динамо,ПФА,0,0,0,0,66
+g0129,66,,link_season_slot,league:forwards:225,league,forwards,225,Силас,Динамо,ПФА,0,13,8,5,66
+g1138,935,,link_season_slot,league:goalkeepers:77,league,goalkeepers,77,Силва,Бетис,ВРТ,0,0,0,0,935
+g0983,1417,,existing,league:defenders:139,league,defenders,139,Силдилла,Фрайбург,ПЗ,0,5,0,0,1417
+g0111,1119,yes,existing,cl:forwards:112,cl,forwards,112,Сильва,Реал Сосьедад,ФРВ,0,1,1,0,1119
+g0111,1119,yes,existing,league:forwards:199,league,forwards,199,Сильва,Реал Сосьедад,ФРВ,0,0,0,0,1119
+g0180,278,yes,link_season_slot,cl:midfielders:26,cl,midfielders,26,Сильва,Сити,ЦП,0,4,1,4,278
+g0180,278,yes,link_season_slot,league:midfielders:52,league,midfielders,52,Сильва,Сити,ЦП,0,10,3,7,278
+g0378,773,yes,link_season_slot,cl:defenders:11,cl,defenders,11,Сильва,Челси,ЦЗ,0,2,0,0,773
+g0378,773,yes,link_season_slot,league:defenders:27,league,defenders,27,Сильва,Челси,ЦЗ,0,7,1,0,773
+g0601,697,,link_season_slot,cl:defenders:234,cl,defenders,234,Сильянов,Локомотив,ПЗ,0,0,0,0,697
+g0601,697,,link_season_slot,league:defenders:369,league,defenders,369,Сильянов,Локомотив,ПЗ,0,1,0,0,697
+g0463,841,,link_season_slot,cl:defenders:96,cl,defenders,96,Симакан,Лейпциг,ЦЗ,0,2,0,0,841
+g0463,841,,link_season_slot,league:defenders:130,league,defenders,130,Симакан,Лейпциг,ЦЗ,0,5,0,1,841
+g0692,1028,,existing,league:forwards:12,league,forwards,12,Симеоне,Брайтон,ФРВ,0,4,3,0,1028
+g0661,928,,link_season_slot,cl:goalkeepers:38,cl,goalkeepers,38,Симон,Атлетик,ВРТ,0,3,0,0,928
+g0661,928,,link_season_slot,league:goalkeepers:67,league,goalkeepers,67,Симон,Атлетик,ВРТ,0,2,0,0,928
+g0241,347,,link_season_slot,cl:midfielders:88,cl,midfielders,88,Симонс,Аталанта,ЦАП,0,1,2,0,347
+g0241,347,,link_season_slot,league:midfielders:142,league,midfielders,142,Симонс,Аталанта,ЦАП,0,7,6,6,347
+g0646,1020,,link_season_slot,cl:goalkeepers:23,cl,goalkeepers,23,Сиппель,Боруссия М,ВРТ,0,0,0,0,1020
+g0646,1020,,link_season_slot,league:goalkeepers:33,league,goalkeepers,33,Сиппель,Боруссия М,ВРТ,0,0,0,0,1020
+g0898,1290,,existing,league:midfielders:249,league,midfielders,249,Сисс,Райо Вальекано,ЦОП,0,5,0,3,1290
+g0942,1351,,existing,league:midfielders:344,league,midfielders,344,Сиссе,Урал,ЦП,0,0,0,0,1351
+g0456,833,,link_season_slot,cl:defenders:89,cl,defenders,89,Скалли,Боруссия М,ПЗ,0,2,1,0,833
+g0456,833,,link_season_slot,league:defenders:123,league,defenders,123,Скалли,Боруссия М,ПЗ,0,6,0,0,833
+g0470,1434,,existing,cl:defenders:103,cl,defenders,103,Скальвини,Аталанта,ЦЗ,0,3,1,0,1434
+g0470,1434,,existing,league:defenders:169,league,defenders,169,Скальвини,Аталанта,ЦЗ,0,6,0,0,1434
+g0722,1068,,existing,league:forwards:99,league,forwards,99,Скамакка,Штутгарт,ФРВ,0,6,4,0,1068
+g0191,1196,,existing,cl:midfielders:38,cl,midfielders,38,Скипп,Тоттенхэм,ЦОП,0,0,0,0,1196
+g0191,1196,,existing,league:midfielders:64,league,midfielders,64,Скипп,Тоттенхэм,ЦОП,0,0,0,0,1196
+g0986,847,,link_season_slot,league:defenders:142,league,defenders,142,Сков,Хоффенхайм,ЛЗ,1,9,3,2,847
+g0581,675,,link_season_slot,cl:defenders:214,cl,defenders,214,Скопинцев,Динамо,ЛЗ,0,3,0,1,675
+g0581,675,,link_season_slot,league:defenders:341,league,defenders,341,Скопинцев,Динамо,ЛЗ,0,6,0,0,675
+g0007,106,,link_season_slot,cl:forwards:5,cl,forwards,5,Смит Роу,Арсенал,ЛФА,0,0,0,0,106
+g0007,106,,link_season_slot,league:forwards:5,league,forwards,5,Смит Роу,Арсенал,ЛФА,0,0,0,0,106
+g0516,1461,,existing,cl:defenders:149,cl,defenders,149,Смоллинг,Рома,ЦЗ,0,1,0,0,1461
+g0516,1461,,existing,league:defenders:228,league,defenders,228,Смоллинг,Рома,ЦЗ,0,10,0,2,1461
+g0128,1136,,existing,cl:forwards:129,cl,forwards,129,Смолов,Динамо,ФРВ,0,8,7,5,1136
+g0128,1136,,existing,league:forwards:224,league,forwards,224,Смолов,Динамо,ФРВ,0,15,11,6,1136
+g0443,1404,,existing,cl:defenders:76,cl,defenders,76,Смолчич,Франкфурт,ЦЗ,0,0,0,0,1404
+g0443,1404,,existing,league:defenders:110,league,defenders,110,Смолчич,Франкфурт,ЦЗ,0,0,0,0,1404
+g0147,87,,link_season_slot,cl:forwards:148,cl,forwards,148,Соболев,Спартак,ФРВ,0,3,0,0,87
+g0147,87,,link_season_slot,league:forwards:262,league,forwards,262,Соболев,Спартак,ФРВ,0,3,5,0,87
+g0167,415,,link_season_slot,cl:midfielders:13,cl,midfielders,13,Собослай,Ливерпуль,ЦАП,0,7,3,3,415
+g0167,415,,link_season_slot,league:midfielders:34,league,midfielders,34,Собослай,Ливерпуль,ЦАП,0,14,4,7,415
+g0920,1323,,existing,league:midfielders:309,league,midfielders,309,Соколов,Крылья Советов,ЦАП,0,0,0,0,1323
+g1074,1534,,existing,league:defenders:359,league,defenders,359,Солдатенков,Крылья Советов,ЦЗ,0,8,0,0,1534
+g0894,1286,,existing,league:midfielders:245,league,midfielders,245,Солис,Жирона,ЦП,0,0,0,0,1286
+g0036,140,,link_season_slot,cl:forwards:35,cl,forwards,35,Соломон,Тоттенхэм,ЛФА,0,0,0,0,140
+g0036,140,,link_season_slot,league:forwards:57,league,forwards,57,Соломон,Тоттенхэм,ЛФА,0,0,0,0,140
+g0032,136,,link_season_slot,cl:forwards:31,cl,forwards,31,Сон,Тоттенхэм,ЛФА,0,9,17,3,136
+g0032,136,,link_season_slot,league:forwards:53,league,forwards,53,Сон,Тоттенхэм,ЛФА,0,16,18,3,136
+g1038,1478,,existing,league:defenders:248,league,defenders,248,Соппи,Торино,ПЗ,0,2,0,0,1478
+g0120,1131,,existing,cl:forwards:121,cl,forwards,121,Сорлот,Вильярреал,ФРВ,0,3,1,1,1131
+g0120,1131,,existing,league:forwards:216,league,forwards,216,Сорлот,Вильярреал,ФРВ,0,5,0,2,1131
+g1088,1550,,existing,league:defenders:383,league,defenders,383,Сорокин,Рубин,ЦЗ,0,7,0,0,1550
+g0732,49,,link_season_slot,league:forwards:113,league,forwards,113,Соттиль,Фиорентина,ЛФА,0,9,3,3,49
+g0914,444,,link_season_slot,league:midfielders:279,league,midfielders,279,Соу,Севилья,ЦП,0,4,0,0,444
+g0135,1139,,existing,cl:forwards:136,cl,forwards,136,Сперцян,Краснодар,ФРВ,0,6,5,2,1139
+g0135,1139,,existing,league:forwards:231,league,forwards,231,Сперцян,Краснодар,ФРВ,0,14,13,6,1139
+g0514,799,,link_season_slot,cl:defenders:147,cl,defenders,147,Спиназолла,Рома,ЛЗ,0,1,0,0,799
+g0514,799,,link_season_slot,league:defenders:226,league,defenders,226,Спиназолла,Рома,ЛЗ,0,9,1,0,799
+g0673,957,,link_season_slot,cl:goalkeepers:50,cl,goalkeepers,50,Спортиелло,Цска,ВРТ,0,0,0,0,957
+g0673,957,,link_season_slot,league:goalkeepers:85,league,goalkeepers,85,Спортиелло,Цска,ВРТ,0,1,0,0,957
+g0449,827,,link_season_slot,cl:defenders:82,cl,defenders,82,Станишич,Байер,ПЗ,0,0,0,0,827
+g0449,827,,link_season_slot,league:defenders:116,league,defenders,116,Станишич,Байер,ПЗ,0,1,0,0,827
+g0841,508,,link_season_slot,league:midfielders:120,league,midfielders,120,Стах,Хоффенхайм,ЦП,0,5,0,2,508
+g1003,1430,,existing,league:defenders:159,league,defenders,159,Стензель,Штутгарт,ПЗ,0,0,0,0,1430
+g0997,1424,,existing,league:defenders:153,league,defenders,153,Стержиу,Штутгарт,ЦЗ,0,9,0,0,1424
+g0009,142,,link_season_slot,cl:forwards:7,cl,forwards,7,Стерлинг,Челси,ЛФА,0,5,3,1,142
+g0009,142,,link_season_slot,league:forwards:17,league,forwards,17,Стерлинг,Челси,ЛФА,0,13,11,7,142
+g0634,1578,,existing,cl:goalkeepers:11,cl,goalkeepers,11,Стеффен,Сити,ВРТ,0,0,0,0,1578
+g0634,1578,,existing,league:goalkeepers:21,league,goalkeepers,21,Стеффен,Сити,ВРТ,0,0,0,0,1578
+g0847,1225,,existing,league:midfielders:126,league,midfielders,126,Стиллер,Штутгарт,ЦП,0,11,0,2,1225
+g1109,1572,,existing,league:goalkeepers:7,league,goalkeepers,7,Стиль,Брайтон,ВРТ,0,6,0,0,1572
+g0406,581,,link_season_slot,cl:defenders:39,cl,defenders,39,Стоунз,Сити,ЦЗ,0,5,0,1,581
+g0406,581,,link_season_slot,league:defenders:73,league,defenders,73,Стоунз,Сити,ЦЗ,0,8,0,0,581
+g0762,1110,,existing,league:forwards:178,league,forwards,178,Стуани,Жирона,ФРВ,0,2,1,0,1110
+g0121,1132,,existing,cl:forwards:122,cl,forwards,122,Суарез,Вильярреал,ПФА,0,0,0,0,1132
+g0121,1132,,existing,league:forwards:217,league,forwards,217,Суарез,Вильярреал,ПФА,0,0,0,0,1132
+g0142,84,,link_season_slot,cl:forwards:143,cl,forwards,143,Сулейманов,Локомотив,ФРВ,0,1,1,0,84
+g0142,84,,link_season_slot,league:forwards:244,league,forwards,244,Сулейманов,Локомотив,ФРВ,0,6,3,2,84
+g0944,1353,,existing,league:midfielders:346,league,midfielders,346,Сунгатулин,Урал,ЦП,0,0,0,0,1353
+g0779,1122,,existing,league:forwards:207,league,forwards,207,Сусо,Севилья,ПФА,0,0,0,0,1122
+g0367,1356,,existing,cl:midfielders:216,cl,midfielders,216,Сутормин,Зенит,ЦП,0,0,0,0,1356
+g0367,1356,,existing,league:midfielders:353,league,midfielders,353,Сутормин,Зенит,ЦП,0,0,0,0,1356
+g0537,596,,link_season_slot,cl:defenders:170,cl,defenders,170,Сёюнджю,Атлетико,ЦЗ,0,0,0,0,596
+g0537,596,,link_season_slot,league:defenders:265,league,defenders,265,Сёюнджю,Атлетико,ЦЗ,0,0,0,0,596
+g0450,824,,link_season_slot,cl:defenders:83,cl,defenders,83,Та,Байер,ЦЗ,0,0,0,0,824
+g0450,824,,link_season_slot,league:defenders:117,league,defenders,117,Та,Байер,ЦЗ,0,1,0,0,824
+g0613,1560,,existing,cl:defenders:246,cl,defenders,246,Тавареш,Спартак,ЦЗ,0,0,0,0,1560
+g0613,1560,,existing,league:defenders:398,league,defenders,398,Тавареш,Спартак,ЦЗ,0,0,0,0,1560
+g0882,1265,,existing,league:midfielders:206,league,midfielders,206,Тамезе,Торино,ЦП,0,1,0,1,1265
+g0446,1405,,existing,cl:defenders:79,cl,defenders,79,Тапсоба,Байер,ЦЗ,0,1,0,0,1405
+g0446,1405,,existing,league:defenders:113,league,defenders,113,Тапсоба,Байер,ЦЗ,0,9,2,1,1405
+g0976,763,,link_season_slot,league:defenders:67,league,defenders,67,Таргетт,Ньюкасл,ЛЗ,0,0,0,0,763
+g0134,1138,,existing,cl:forwards:135,cl,forwards,135,Телла,Краснодар,ЛФА,0,2,1,0,1138
+g0134,1138,,existing,league:forwards:230,league,forwards,230,Телла,Краснодар,ЛФА,0,11,4,1,1138
+g0738,158,,link_season_slot,league:forwards:128,league,forwards,128,Тель,Лацио,ФРВ,0,4,5,0,158
+g0665,932,,link_season_slot,cl:goalkeepers:42,cl,goalkeepers,42,тер Штеген,Барселона,ВРТ,0,2,0,0,932
+g0665,932,,link_season_slot,league:goalkeepers:71,league,goalkeepers,71,тер Штеген,Барселона,ВРТ,0,4,0,0,932
+g1084,1546,,existing,league:defenders:379,league,defenders,379,Терентьев,Ростов,ПЗ,0,2,0,0,1546
+g0327,1309,,existing,cl:midfielders:176,cl,midfielders,176,Терратс,Вильярреал,ЦП,0,0,0,0,1309
+g0327,1309,,existing,league:midfielders:285,league,midfielders,285,Терратс,Вильярреал,ЦП,0,0,0,0,1309
+g1123,1591,,existing,league:goalkeepers:45,league,goalkeepers,45,Терраччано,Фиорентина,ВРТ,0,0,0,0,1591
+g0967,1375,,existing,league:defenders:41,league,defenders,41,Тете,Фулхэм,ПЗ,0,6,0,0,1375
+g0503,795,,link_season_slot,cl:defenders:136,cl,defenders,136,Тиау,Милан,ЦЗ,0,0,0,0,795
+g0503,795,,link_season_slot,league:defenders:215,league,defenders,215,Тиау,Милан,ЦЗ,0,0,0,0,795
+g0602,696,,link_season_slot,cl:defenders:235,cl,defenders,235,Тикнизян,Локомотив,ПЗ,0,0,0,0,696
+g0602,696,,link_season_slot,league:defenders:370,league,defenders,370,Тикнизян,Локомотив,ПЗ,0,6,1,0,696
+g0807,408,,link_season_slot,league:midfielders:8,league,midfielders,8,Тилеманс,Астон Вилла,ЦП,0,13,5,6,408
+g0372,730,,link_season_slot,cl:defenders:5,cl,defenders,5,Тимбер,Арсенал,ПЗ,0,6,0,0,730
+g0372,730,,link_season_slot,league:defenders:5,league,defenders,5,Тимбер,Арсенал,ПЗ,0,10,0,0,730
+g0555,627,,link_season_slot,cl:defenders:188,cl,defenders,188,Тирни,Реал Сосьедад,ЛЗ,0,1,0,0,627
+g0555,627,,link_season_slot,league:defenders:308,league,defenders,308,Тирни,Реал Сосьедад,ЛЗ,0,5,0,0,627
+g0471,1435,,existing,cl:defenders:104,cl,defenders,104,Толои,Аталанта,ЦЗ,0,3,1,0,1435
+g0471,1435,,existing,league:defenders:170,league,defenders,170,Толои,Аталанта,ЦЗ,0,6,0,0,1435
+g1030,1470,,existing,league:defenders:240,league,defenders,240,Толян,Сассуоло,ПЗ,0,5,0,0,1470
+g0730,1072,,existing,league:forwards:107,league,forwards,107,Томаш,Вольфсбург,ФРВ,0,1,1,0,1072
+g0370,732,,link_season_slot,cl:defenders:3,cl,defenders,3,Томиясу,Арсенал,ЦЗ,0,4,0,0,732
+g0370,732,,link_season_slot,league:defenders:3,league,defenders,3,Томиясу,Арсенал,ЦЗ,0,6,0,1,732
+g0500,791,,link_season_slot,cl:defenders:133,cl,defenders,133,Томори,Милан,ЦЗ,0,2,0,0,791
+g0500,791,,link_season_slot,league:defenders:212,league,defenders,212,Томори,Милан,ЦЗ,0,9,0,0,791
+g0829,554,,link_season_slot,league:midfielders:47,league,midfielders,47,Тонали,Ньюкасл,ЦАП,1,10,7,7,554
+g0890,1283,,existing,league:midfielders:241,league,midfielders,241,Топпе,Жирона,ЦАП,0,0,0,0,1283
+g0593,1529,,existing,cl:defenders:226,cl,defenders,226,Тормена,Краснодар,ЦЗ,0,2,0,0,1529
+g0593,1529,,existing,league:defenders:353,league,defenders,353,Тормена,Краснодар,ЦЗ,0,2,0,0,1529
+g0675,1616,,existing,cl:goalkeepers:52,cl,goalkeepers,52,Тороп,Цска,ВРТ,0,0,0,0,1616
+g0675,1616,,existing,league:goalkeepers:87,league,goalkeepers,87,Тороп,Цска,ВРТ,0,0,0,0,1616
+g0948,739,yes,link_season_slot,league:defenders:11,league,defenders,11,Торрес,Астон Вилла,ЦЗ,0,10,1,0,739
+g0101,1106,yes,existing,cl:forwards:102,cl,forwards,102,Торрес,Барселона,ЛФА,0,1,1,0,1106
+g0101,1106,yes,existing,league:forwards:173,league,forwards,173,Торрес,Барселона,ЛФА,0,2,0,0,1106
+g0913,1304,yes,existing,league:midfielders:278,league,midfielders,278,Торрес,Севилья,ЦП,0,0,0,0,1304
+g0876,1259,,existing,league:midfielders:200,league,midfielders,200,Торстведт,Сассуоло,ЦОП,0,8,3,2,1259
+g0690,113,yes,link_season_slot,league:forwards:10,league,forwards,10,Траоре,Астон Вилла,ПФА,0,0,0,0,113
+g0060,193,yes,link_season_slot,cl:forwards:60,cl,forwards,60,Траоре,Боруссия М,ПФА,0,1,0,1,193
+g0060,193,yes,link_season_slot,league:forwards:82,league,forwards,82,Траоре,Боруссия М,ПФА,0,11,3,7,193
+g0558,1508,yes,existing,cl:defenders:191,cl,defenders,191,Траоре,Реал Сосьедад,ПЗ,0,1,0,0,1508
+g0558,1508,yes,existing,league:defenders:311,league,defenders,311,Траоре,Реал Сосьедад,ПЗ,0,5,0,0,1508
+g0641,981,,link_season_slot,cl:goalkeepers:18,cl,goalkeepers,18,Трапп,Франкфурт,ВРТ,0,4,0,0,981
+g0641,981,,link_season_slot,league:goalkeepers:28,league,goalkeepers,28,Трапп,Франкфурт,ВРТ,0,9,0,0,981
+g0362,388,,link_season_slot,cl:midfielders:211,cl,midfielders,211,Трехо,Зенит,ЦАП,0,1,0,1,388
+g0362,388,,link_season_slot,league:midfielders:348,league,midfielders,348,Трехо,Зенит,ЦАП,0,11,5,9,388
+g0328,1310,,existing,cl:midfielders:177,cl,midfielders,177,Тригерос,Вильярреал,ЦП,0,0,0,0,1310
+g0328,1310,,existing,league:midfielders:286,league,midfielders,286,Тригерос,Вильярреал,ЦП,0,0,0,0,1310
+g0546,1489,,existing,cl:defenders:179,cl,defenders,179,Трилли,Барселона,ПЗ,0,0,0,0,1489
+g0546,1489,,existing,league:defenders:274,league,defenders,274,Трилли,Барселона,ПЗ,0,0,0,0,1489
+g0975,759,,link_season_slot,league:defenders:66,league,defenders,66,Трипье,Ньюкасл,ПЗ,0,5,0,1,759
+g0005,1023,,existing,cl:forwards:3,cl,forwards,3,Трусар,Арсенал,ФРВ,0,1,1,0,1023
+g0005,1023,,existing,league:forwards:3,league,forwards,3,Трусар,Арсенал,ФРВ,0,1,0,0,1023
+g0795,1151,,existing,league:forwards:252,league,forwards,252,Тугарев,Ростов,ЛФА,0,1,1,0,1151
+g0068,1074,,existing,cl:forwards:68,cl,forwards,68,Туре,Аталанта,ФРВ,0,0,0,0,1074
+g0068,1074,,existing,league:forwards:112,league,forwards,112,Туре,Аталанта,ФРВ,0,0,0,0,1074
+g0322,1301,,existing,cl:midfielders:171,cl,midfielders,171,Турриентес,Реал Сосьедад,ЦП,0,0,0,0,1301
+g0322,1301,,existing,league:midfielders:273,league,midfielders,273,Турриентес,Реал Сосьедад,ЦП,0,0,0,0,1301
+g0439,819,,link_season_slot,cl:defenders:72,cl,defenders,72,Тута,Франкфурт,ЦЗ,0,3,0,0,819
+g0439,819,,link_season_slot,league:defenders:106,league,defenders,106,Тута,Франкфурт,ЦЗ,0,11,1,1,819
+g0313,319,,link_season_slot,cl:midfielders:162,cl,midfielders,162,Тчуамени,Реал,ЦОП,0,0,0,0,319
+g0313,319,,link_season_slot,league:midfielders:264,league,midfielders,264,Тчуамени,Реал,ЦОП,0,0,0,0,319
+g0168,418,,link_season_slot,cl:midfielders:14,cl,midfielders,14,Тьяго,Ливерпуль,ЦП,0,3,0,3,418
+g0168,418,,link_season_slot,league:midfielders:35,league,midfielders,35,Тьяго,Ливерпуль,ЦП,0,8,7,3,418
+g0109,36,,link_season_slot,cl:forwards:110,cl,forwards,110,Тюкавин,Реал Сосьедад,ФРВ,0,8,5,3,36
+g0109,36,,link_season_slot,league:forwards:197,league,forwards,197,Тюкавин,Реал Сосьедад,ФРВ,0,10,3,0,36
+g0705,130,,link_season_slot,league:forwards:42,league,forwards,42,Тюрам,Ньюкасл,ФРВ,0,5,3,2,130
+g0374,734,,link_season_slot,cl:defenders:7,cl,defenders,7,Уайт,Арсенал,ПЗ,0,6,0,0,734
+g0374,734,,link_season_slot,league:defenders:7,league,defenders,7,Уайт,Арсенал,ПЗ,0,10,0,0,734
+g0412,767,,link_season_slot,cl:defenders:45,cl,defenders,45,Удоджи,Тоттенхэм,ЛЗ,0,1,0,0,767
+g0412,767,,link_season_slot,league:defenders:79,league,defenders,79,Удоджи,Тоттенхэм,ЛЗ,0,11,0,3,767
+g0830,555,,link_season_slot,league:midfielders:48,league,midfielders,48,Уиллок,Ньюкасл,ЦП,0,7,7,2,555
+g0706,133,yes,link_season_slot,league:forwards:43,league,forwards,43,Уилсон,Ньюкасл,ФРВ,0,0,0,0,133
+g0701,1038,yes,existing,league:forwards:27,league,forwards,27,Уилсон,Фулхэм,ПФА,0,1,0,0,1038
+g0639,1579,,existing,cl:goalkeepers:16,cl,goalkeepers,16,Ульрих,Бавария,ВРТ,0,0,0,0,1579
+g0639,1579,,existing,league:goalkeepers:26,league,goalkeepers,26,Ульрих,Бавария,ВРТ,0,0,0,0,1579
+g0360,1346,,existing,cl:midfielders:209,cl,midfielders,209,Умяров,Спартак,ЦП,0,0,0,0,1346
+g0360,1346,,existing,league:midfielders:338,league,midfielders,338,Умяров,Спартак,ЦП,0,0,0,0,1346
+g0910,448,,link_season_slot,league:midfielders:275,league,midfielders,275,Ундав,Севилья,ЦП,0,11,5,3,448
+g0407,582,,link_season_slot,cl:defenders:40,cl,defenders,40,Уокер,Сити,ПЗ,0,3,0,0,582
+g0407,582,,link_season_slot,league:defenders:74,league,defenders,74,Уокер,Сити,ПЗ,0,8,0,0,582
+g0071,63,,link_season_slot,cl:forwards:71,cl,forwards,71,Уоткинс,Интер,ФРВ,0,0,0,0,63
+g0071,63,,link_season_slot,league:forwards:120,league,forwards,120,Уоткинс,Интер,ФРВ,0,10,2,3,63
+g0429,806,,link_season_slot,cl:defenders:62,cl,defenders,62,Упамекано,Бавария,ЦЗ,0,3,0,0,806
+g0429,806,,link_season_slot,league:defenders:96,league,defenders,96,Упамекано,Бавария,ЦЗ,0,5,0,0,806
+g1117,1586,,existing,league:goalkeepers:38,league,goalkeepers,38,Упхофф,Фрайбург,ВРТ,0,0,0,0,1586
+g0925,1333,,existing,league:midfielders:321,league,midfielders,321,Уткин,Ростов,ЦАП,0,10,1,9,1333
+g0694,1030,,existing,league:forwards:14,league,forwards,14,Уэлбек,Брайтон,ФРВ,0,0,0,0,1030
+g0257,329,,link_season_slot,cl:midfielders:104,cl,midfielders,104,Фаджиоли,Ювентус,ЦП,0,3,1,2,329
+g0257,329,,link_season_slot,league:midfielders:166,league,midfielders,166,Фаджиоли,Ювентус,ЦП,0,8,1,6,329
+g0124,102,,link_season_slot,cl:forwards:125,cl,forwards,125,Файзуллаев,Цска,ПФА,0,0,0,0,102
+g0124,102,,link_season_slot,league:forwards:220,league,forwards,220,Файзуллаев,Цска,ПФА,0,8,2,1,102
+g0545,1488,,existing,cl:defenders:178,cl,defenders,178,Фалл,Барселона,ЦЗ,0,0,0,0,1488
+g0545,1488,,existing,league:defenders:273,league,defenders,273,Фалл,Барселона,ЦЗ,0,0,0,0,1488
+g0768,1116,,existing,league:forwards:184,league,forwards,184,Фалькао,Райо Вальекано,ФРВ,0,0,0,0,1116
+g0799,1155,,existing,league:forwards:256,league,forwards,256,Фамье,Рубин,ФРВ,0,2,1,0,1155
+g0599,1536,,existing,cl:defenders:232,cl,defenders,232,Фассон,Локомотив,ЦЗ,0,0,0,0,1536
+g0599,1536,,existing,league:defenders:367,league,defenders,367,Фассон,Локомотив,ЦЗ,0,7,1,0,1536
+g0010,144,,link_season_slot,cl:forwards:8,cl,forwards,8,Фати,Челси,ФРВ,1,0,0,0,144
+g0010,144,,link_season_slot,league:forwards:18,league,forwards,18,Фати,Челси,ФРВ,1,13,10,5,144
+g0163,442,,link_season_slot,cl:midfielders:9,cl,midfielders,9,Фекир,Челси,ЦАП,0,0,0,0,442
+g0163,442,,link_season_slot,league:midfielders:24,league,midfielders,24,Фекир,Челси,ЦАП,0,12,10,3,442
+g0771,23,,link_season_slot,league:forwards:187,league,forwards,187,Феликс,Бетис,ФРВ,0,7,5,0,23
+g0567,1518,,existing,cl:defenders:200,cl,defenders,200,Фемения,Вильярреал,ПЗ,0,1,0,0,1518
+g0567,1518,,existing,league:defenders:327,league,defenders,327,Фемения,Вильярреал,ПЗ,0,1,0,0,1518
+g0760,1108,,existing,league:forwards:176,league,forwards,176,Фергюсон,Жирона,ФРВ,0,3,3,0,1108
+g0582,678,yes,link_season_slot,cl:defenders:215,cl,defenders,215,Фернандез,Динамо,ЦЗ,0,2,0,0,678
+g0582,678,yes,link_season_slot,league:defenders:342,league,defenders,342,Фернандез,Динамо,ЦЗ,0,6,0,1,678
+g0113,39,yes,link_season_slot,cl:forwards:114,cl,forwards,114,Фернандез,Реал Сосьедад,ФРВ,0,0,0,0,39
+g0113,39,yes,link_season_slot,league:forwards:201,league,forwards,201,Фернандез,Реал Сосьедад,ФРВ,0,0,0,0,39
+g0618,713,,link_season_slot,cl:defenders:251,cl,defenders,251,Фернандес,Зенит,ПЗ,1,0,0,0,713
+g0618,713,,link_season_slot,league:defenders:412,league,defenders,412,Фернандес,Зенит,ПЗ,1,4,1,1,713
+g0175,422,,link_season_slot,cl:midfielders:21,cl,midfielders,21,Фернандеш,Мю,ЦАП,0,6,7,2,422
+g0175,422,,link_season_slot,league:midfielders:42,league,midfielders,42,Фернандеш,Мю,ЦАП,0,14,11,6,422
+g0912,1303,,existing,league:midfielders:277,league,midfielders,277,Фернандо,Севилья,ЦП,0,6,0,4,1303
+g1029,1469,,existing,league:defenders:239,league,defenders,239,Феррари,Сассуоло,ЦЗ,0,0,0,0,1469
+g1103,1564,,existing,league:defenders:407,league,defenders,407,Филипенко,Урал,ЦЗ,0,0,0,0,1564
+g0714,1063,,existing,league:forwards:91,league,forwards,91,Филипп,Фрайбург,ФРВ,0,6,0,3,1063
+g0183,282,,link_season_slot,cl:midfielders:30,cl,midfielders,30,Филлипс,Сити,ЦОП,0,0,0,0,282
+g0183,282,,link_season_slot,league:midfielders:56,league,midfielders,56,Филлипс,Сити,ЦОП,0,0,0,0,282
+g1007,856,,link_season_slot,league:defenders:163,league,defenders,163,Фишер,Вольфсбург,ПЗ,0,1,0,0,856
+g0504,1457,,existing,cl:defenders:137,cl,defenders,137,Флоренци,Милан,ПЗ,0,0,0,0,1457
+g0504,1457,,existing,league:defenders:216,league,defenders,216,Флоренци,Милан,ПЗ,0,0,0,0,1457
+g0990,849,,link_season_slot,league:defenders:146,league,defenders,146,Фогт,Хоффенхайм,ЦЗ,0,2,0,0,849
+g0028,6,,link_season_slot,cl:forwards:27,cl,forwards,27,Фоден,Сити,ПФА,0,7,6,1,6
+g0028,6,,link_season_slot,league:forwards:49,league,forwards,49,Фоден,Сити,ПФА,0,11,4,6,6
+g0566,1517,,existing,cl:defenders:199,cl,defenders,199,Фойт,Вильярреал,ПЗ,0,0,0,0,1517
+g0566,1517,,existing,league:defenders:326,league,defenders,326,Фойт,Вильярреал,ПЗ,0,0,0,0,1517
+g0336,1315,,existing,cl:midfielders:185,cl,midfielders,185,Фомин,Динамо,ЦП,0,8,3,9,1315
+g0336,1315,,existing,league:midfielders:294,league,midfielders,294,Фомин,Динамо,ЦП,0,11,5,4,1315
+g1125,1593,,existing,league:goalkeepers:47,league,goalkeepers,47,Форк,Фиорентина,ВРТ,0,0,0,0,1593
+g0235,502,,link_season_slot,cl:midfielders:82,cl,midfielders,82,Форсберг,Лейпциг,ЦАП,0,2,0,2,502
+g0235,502,,link_season_slot,league:midfielders:108,league,midfielders,108,Форсберг,Лейпциг,ЦАП,0,1,0,1,502
+g0451,1407,,existing,cl:defenders:84,cl,defenders,84,Фосу-Менса,Байер,ПЗ,0,0,0,0,1407
+g0451,1407,,existing,league:defenders:118,league,defenders,118,Фосу-Менса,Байер,ПЗ,0,0,0,0,1407
+g0377,774,,link_season_slot,cl:defenders:10,cl,defenders,10,Фофана,Челси,ЦЗ,0,1,0,0,774
+g0377,774,,link_season_slot,league:defenders:26,league,defenders,26,Фофана,Челси,ЦЗ,0,7,1,0,774
+g0251,1243,,existing,cl:midfielders:98,cl,midfielders,98,Фраттези,Интер,ЦП,0,0,0,0,1243
+g0251,1243,,existing,league:midfielders:160,league,midfielders,160,Фраттези,Интер,ЦП,0,0,0,0,1243
+g0459,836,,link_season_slot,cl:defenders:92,cl,defenders,92,Фридрих,Боруссия М,ЦЗ,0,0,0,0,836
+g0459,836,,link_season_slot,league:defenders:126,league,defenders,126,Фридрих,Боруссия М,ЦЗ,0,1,0,0,836
+g0447,1406,,existing,cl:defenders:80,cl,defenders,80,Фримпонг,Байер,ПЗ,0,1,0,0,1406
+g0447,1406,,existing,league:defenders:114,league,defenders,114,Фримпонг,Байер,ПЗ,0,7,0,0,1406
+g0698,1035,,existing,league:forwards:24,league,forwards,24,Фуллкруг,Фулхэм,ФРВ,0,10,6,2,1035
+g0848,1226,,existing,league:midfielders:127,league,midfielders,127,Фюнрих,Штутгарт,ЦАП,0,11,2,4,1226
+g0004,105,,link_season_slot,cl:forwards:2,cl,forwards,2,Хаверц,Арсенал,ФРВ,0,8,5,4,105
+g0004,105,,link_season_slot,league:forwards:2,league,forwards,2,Хаверц,Арсенал,ФРВ,0,16,11,8,105
+g0237,503,,link_season_slot,cl:midfielders:84,cl,midfielders,84,Хайдара,Лейпциг,ЦП,0,0,0,0,503
+g0237,503,,link_season_slot,league:midfielders:110,league,midfielders,110,Хайдара,Лейпциг,ЦП,0,0,0,0,503
+g0851,1229,,existing,league:midfielders:130,league,midfielders,130,Хак,Штутгарт,ЛП,0,0,0,0,1229
+g0850,1228,,existing,league:midfielders:129,league,midfielders,129,Харагучи,Штутгарт,ЦАП,0,9,0,4,1228
+g0442,1403,,existing,cl:defenders:75,cl,defenders,75,Хасебе,Франкфурт,ЦЗ,0,2,0,0,1403
+g0442,1403,,existing,league:defenders:109,league,defenders,109,Хасебе,Франкфурт,ЦЗ,0,1,0,0,1403
+g0469,658,,link_season_slot,cl:defenders:102,cl,defenders,102,Хатебур,Аталанта,ЛЗ,0,2,0,0,658
+g0469,658,,link_season_slot,league:defenders:168,league,defenders,168,Хатебур,Аталанта,ЛЗ,0,10,3,2,658
+g0212,1206,,existing,cl:midfielders:59,cl,midfielders,59,Хауге,Франкфурт,ЛП,0,0,0,0,1206
+g0212,1206,,existing,league:midfielders:85,league,midfielders,85,Хауге,Франкфурт,ЛП,0,0,0,0,1206
+g0575,724,,link_season_slot,cl:defenders:208,cl,defenders,208,Хелльвен,Цска,ПЗ,0,0,0,0,724
+g0575,724,,link_season_slot,league:defenders:335,league,defenders,335,Хелльвен,Цска,ПЗ,0,0,0,0,724
+g0465,1411,,existing,cl:defenders:98,cl,defenders,98,Хенрихс,Лейпциг,ПЗ,0,0,0,0,1411
+g0465,1411,,existing,league:defenders:132,league,defenders,132,Хенрихс,Лейпциг,ПЗ,0,0,0,0,1411
+g0699,1036,,existing,league:forwards:25,league,forwards,25,Хименез,Фулхэм,ФРВ,0,0,0,0,1036
+g0533,1483,,existing,cl:defenders:166,cl,defenders,166,Хименес,Атлетико,ЦЗ,0,0,0,0,1483
+g0533,1483,,existing,league:defenders:261,league,defenders,261,Хименес,Атлетико,ЦЗ,0,0,0,0,1483
+g0445,826,,link_season_slot,cl:defenders:78,cl,defenders,78,Хинкапи,Байер,ЦЗ,0,1,0,0,826
+g0445,826,,link_season_slot,league:defenders:112,league,defenders,112,Хинкапи,Байер,ЦЗ,0,7,0,0,826
+g0057,1057,,existing,cl:forwards:57,cl,forwards,57,Хложек,Байер,ФРВ,0,0,0,0,1057
+g0057,1057,,existing,league:forwards:79,league,forwards,79,Хложек,Байер,ФРВ,0,0,0,0,1057
+g0609,703,,link_season_slot,cl:defenders:242,cl,defenders,242,Хлусевич,Спартак,ПЗ,0,1,0,0,703
+g0609,703,,link_season_slot,league:defenders:394,league,defenders,394,Хлусевич,Спартак,ПЗ,0,2,1,0,703
+g0027,4,,link_season_slot,cl:forwards:26,cl,forwards,26,Холанд,Сити,ФРВ,0,9,15,1,4
+g0027,4,,link_season_slot,league:forwards:48,league,forwards,48,Холанд,Сити,ФРВ,0,16,20,6,4
+g0475,1439,,existing,cl:defenders:108,cl,defenders,108,Хольм,Аталанта,ПЗ,0,0,0,0,1439
+g0475,1439,,existing,league:defenders:174,league,defenders,174,Хольм,Аталанта,ПЗ,0,0,0,0,1439
+g0058,194,,link_season_slot,cl:forwards:58,cl,forwards,58,Хонорат,Боруссия М,ЛФА,0,6,3,3,194
+g0058,194,,link_season_slot,league:forwards:80,league,forwards,80,Хонорат,Боруссия М,ЛФА,0,11,5,0,194
+g0107,33,,link_season_slot,cl:forwards:108,cl,forwards,108,Хоселу,Реал,ФРВ,1,2,2,0,33
+g0107,33,,link_season_slot,league:forwards:195,league,forwards,195,Хоселу,Реал,ФРВ,1,9,3,1,33
+g0215,1209,,existing,cl:midfielders:62,cl,midfielders,62,Хофманн,Байер,ЦП,0,4,4,0,1209
+g0215,1209,,existing,league:midfielders:88,league,midfielders,88,Хофманн,Байер,ЦП,0,12,7,1,1209
+g0930,1338,,existing,league:midfielders:326,league,midfielders,326,Хромов,Ростов,ЦАП,0,0,0,0,1338
+g1135,1610,,existing,league:goalkeepers:74,league,goalkeepers,74,Хуан Карлос,Жирона,ВРТ,0,0,0,0,1610
+g1048,1493,,existing,league:defenders:282,league,defenders,282,Хуанпе,Жирона,ЦЗ,0,0,0,0,1493
+g0922,1325,,existing,league:midfielders:311,league,midfielders,311,Хубулов,Крылья Советов,ЦП,0,1,1,0,1325
+g0604,1539,,existing,cl:defenders:237,cl,defenders,237,Худяков,Локомотив,ЛЗ,0,0,0,0,1539
+g0604,1539,,existing,league:defenders:372,league,defenders,372,Худяков,Локомотив,ЛЗ,0,0,0,0,1539
+g0033,134,,link_season_slot,cl:forwards:32,cl,forwards,32,Хулиан Альварез,Тоттенхэм,ФРВ,0,1,0,1,134
+g0033,134,,link_season_slot,league:forwards:54,league,forwards,54,Хулиан Альварез,Тоттенхэм,ФРВ,0,7,6,2,134
+g0423,812,,link_season_slot,cl:defenders:56,cl,defenders,56,Хуммельс,Дортмунд,ЦЗ,0,2,0,2,812
+g0423,812,,link_season_slot,league:defenders:90,league,defenders,90,Хуммельс,Дортмунд,ЦЗ,0,0,0,0,812
+g1024,1456,,existing,league:defenders:209,league,defenders,209,Хюсай,Лацио,ПЗ,0,0,0,0,1456
+g0184,1193,,existing,cl:midfielders:31,cl,midfielders,31,Хёйберг,Тоттенхэм,ЦОП,0,1,0,0,1193
+g0184,1193,,existing,league:midfielders:57,league,midfielders,57,Хёйберг,Тоттенхэм,ЦОП,0,12,0,4,1193
+g0023,1042,,existing,cl:forwards:22,cl,forwards,22,Хёйлунд,Мю,ФРВ,0,1,1,0,1042
+g0023,1042,,existing,league:forwards:38,league,forwards,38,Хёйлунд,Мю,ФРВ,0,2,1,0,1042
+g0713,1062,,existing,league:forwards:90,league,forwards,90,Хёлер,Фрайбург,ФРВ,0,1,0,0,1062
+g0834,1217,,existing,league:midfielders:113,league,midfielders,113,Хёфлер,Фрайбург,ЦП,0,4,1,1,1217
+g0393,750,,link_season_slot,cl:defenders:26,cl,defenders,26,Цимикас,Ливерпуль,ЛЗ,0,0,0,0,750
+g0393,750,,link_season_slot,league:defenders:51,league,defenders,51,Цимикас,Ливерпуль,ЛЗ,0,0,0,0,750
+g0761,1109,,existing,league:forwards:177,league,forwards,177,Цыганков,Жирона,ПФА,0,10,6,4,1109
+g0787,1142,,existing,league:forwards:239,league,forwards,239,Цыпченко,Крылья Советов,ФРВ,0,1,0,0,1142
+g1055,1500,,existing,league:defenders:289,league,defenders,289,Чаварриа,Райо Вальекано,ЛЗ,0,0,0,0,1500
+g0337,361,,link_season_slot,cl:midfielders:186,cl,midfielders,186,Чавез,Динамо,ЦП,0,6,1,4,361
+g0337,361,,link_season_slot,league:midfielders:295,league,midfielders,295,Чавез,Динамо,ЦП,0,13,1,5,361
+g0385,779,,link_season_slot,cl:defenders:18,cl,defenders,18,Чалоба,Челси,ЦЗ,0,0,0,0,779
+g0385,779,,link_season_slot,league:defenders:34,league,defenders,34,Чалоба,Челси,ЦЗ,0,0,0,0,779
+g0140,82,,link_season_slot,cl:forwards:141,cl,forwards,141,Чалов,Локомотив,ФРВ,0,2,2,1,82
+g0140,82,,link_season_slot,league:forwards:242,league,forwards,242,Чалов,Локомотив,ФРВ,0,12,10,8,82
+g0248,355,,link_season_slot,cl:midfielders:95,cl,midfielders,95,Чалханоглу,Интер,ЦП,0,6,1,6,355
+g0248,355,,link_season_slot,league:midfielders:157,league,midfielders,157,Чалханоглу,Интер,ЦП,0,6,1,5,355
+g0954,1361,,existing,league:defenders:17,league,defenders,17,Чамберс,Астон Вилла,ЦЗ,0,0,0,0,1361
+g0520,1463,,existing,cl:defenders:153,cl,defenders,153,Челик,Рома,ПЗ,0,0,0,0,1463
+g0520,1463,,existing,league:defenders:232,league,defenders,232,Челик,Рома,ПЗ,0,0,0,0,1463
+g0213,1207,,existing,cl:midfielders:60,cl,midfielders,60,Чендлер,Франкфурт,ПП,0,0,0,0,1207
+g0213,1207,,existing,league:midfielders:86,league,midfielders,86,Чендлер,Франкфурт,ПП,0,0,0,0,1207
+g0343,367,,link_season_slot,cl:midfielders:192,cl,midfielders,192,Черников,Краснодар,ЦП,0,1,0,0,367
+g0343,367,,link_season_slot,league:midfielders:301,league,midfielders,301,Черников,Краснодар,ЦП,0,5,2,4,367
+g1085,1547,yes,existing,league:defenders:380,league,defenders,380,Чернов,Ростов,ЛЗ,0,5,0,1,1547
+g0614,1561,yes,existing,cl:defenders:247,cl,defenders,247,Чернов,Спартак,ЦЗ,0,0,0,0,1561
+g0614,1561,yes,existing,league:defenders:399,league,defenders,399,Чернов,Спартак,ЦЗ,0,0,0,0,1561
+g0772,24,,link_season_slot,league:forwards:188,league,forwards,188,Черны,Бетис,ПФА,0,14,6,2,24
+g0652,1595,,existing,cl:goalkeepers:29,cl,goalkeepers,29,Чесны,Ювентус,ВРТ,0,3,0,0,1595
+g0652,1595,,existing,league:goalkeepers:50,league,goalkeepers,50,Чесны,Ювентус,ВРТ,0,6,0,0,1595
+g0381,1369,,existing,cl:defenders:14,cl,defenders,14,Чилвелл,Челси,ЛЗ,0,0,0,0,1369
+g0381,1369,,existing,league:defenders:30,league,defenders,30,Чилвелл,Челси,ЛЗ,0,0,0,0,1369
+g0617,717,,link_season_slot,cl:defenders:250,cl,defenders,250,Чистяков,Зенит,ЦЗ,0,0,0,0,717
+g0617,717,,link_season_slot,league:defenders:411,league,defenders,411,Чистяков,Зенит,ЦЗ,0,6,0,0,717
+g0112,40,,link_season_slot,cl:forwards:113,cl,forwards,113,Чо,Реал Сосьедад,ФРВ,0,0,0,0,40
+g0112,40,,link_season_slot,league:forwards:200,league,forwards,200,Чо,Реал Сосьедад,ФРВ,0,0,0,0,40
+g0079,164,,link_season_slot,cl:forwards:80,cl,forwards,80,Чуквуезе,Милан,ПФА,0,3,1,0,164
+g0079,164,,link_season_slot,league:forwards:138,league,forwards,138,Чуквуезе,Милан,ПФА,0,9,2,5,164
+g0796,1152,,existing,league:forwards:253,league,forwards,253,Чумич,Рубин,ЛФА,0,3,0,1,1152
+g0280,462,,link_season_slot,cl:midfielders:129,cl,midfielders,129,Шаиби,Рома,ЛП,0,0,0,0,462
+g0280,462,,link_season_slot,league:midfielders:197,league,midfielders,197,Шаиби,Рома,ЛП,0,3,1,2,462
+g0974,760,,link_season_slot,league:defenders:65,league,defenders,65,Шар,Ньюкасл,ЦЗ,0,5,1,0,760
+g0805,1163,,existing,league:forwards:268,league,forwards,268,Шеттине,Урал,ФРВ,0,1,0,0,1163
+g0764,1112,,existing,league:forwards:180,league,forwards,180,Шешко,Райо Вальекано,ФРВ,0,2,2,1,1112
+g0055,190,,link_season_slot,cl:forwards:54,cl,forwards,54,Шик,Байер,ФРВ,0,4,3,1,190
+g0055,190,,link_season_slot,league:forwards:76,league,forwards,76,Шик,Байер,ФРВ,0,14,8,0,190
+g0788,1143,,existing,league:forwards:240,league,forwards,240,Шитов,Крылья Советов,ФРВ,0,0,0,0,1143
+g0207,482,,link_season_slot,cl:midfielders:54,cl,midfielders,54,Шкири,Франкфурт,ЦОП,0,3,1,1,482
+g0207,482,,link_season_slot,league:midfielders:80,league,midfielders,80,Шкири,Франкфурт,ЦОП,0,6,0,0,482
+g0234,501,,link_season_slot,cl:midfielders:81,cl,midfielders,81,Шлагер,Лейпциг,ЦОП,0,2,0,2,501
+g0234,501,,link_season_slot,league:midfielders:107,league,midfielders,107,Шлагер,Лейпциг,ЦОП,0,5,1,2,501
+g0420,813,,link_season_slot,cl:defenders:53,cl,defenders,53,Шлоттербек,Дортмунд,ЦЗ,0,1,0,0,813
+g0420,813,,link_season_slot,league:defenders:87,league,defenders,87,Шлоттербек,Дортмунд,ЦЗ,0,7,0,2,813
+g0943,1352,,existing,league:midfielders:345,league,midfielders,345,Шмаков,Урал,ЦП,0,0,0,0,1352
+g0400,756,,link_season_slot,cl:defenders:33,cl,defenders,33,Шоу,Мю,ЛЗ,0,0,0,0,756
+g0400,756,,link_season_slot,league:defenders:58,league,defenders,58,Шоу,Мю,ЛЗ,0,1,0,0,756
+g0676,1617,,existing,cl:goalkeepers:53,cl,goalkeepers,53,Шунин,Динамо,ВРТ,0,2,0,0,1617
+g0676,1617,,existing,league:goalkeepers:88,league,goalkeepers,88,Шунин,Динамо,ВРТ,0,6,0,0,1617
+g1034,1474,,existing,league:defenders:244,league,defenders,244,Шурс,Торино,ЦЗ,0,10,1,1,1474
+g0927,1335,,existing,league:midfielders:323,league,midfielders,323,Щетинин,Ростов,ЦАП,0,1,0,1,1335
+g0835,1218,,existing,league:midfielders:114,league,midfielders,114,Эггештейн,Фрайбург,ЦОП,0,6,0,1,1218
+g0856,1234,,existing,league:midfielders:135,league,midfielders,135,Эглофф,Штутгарт,ЦАП,0,0,0,0,1234
+g0245,1238,yes,existing,cl:midfielders:92,cl,midfielders,92,Эдерсон,Аталанта,ЦП,0,1,1,0,1238
+g0245,1238,yes,existing,league:midfielders:146,league,midfielders,146,Эдерсон,Аталанта,ЦП,0,2,0,1,1238
+g0632,925,yes,link_season_slot,cl:goalkeepers:9,cl,goalkeepers,9,Эдерсон,Сити,ВРТ,0,4,0,0,925
+g0632,925,yes,link_season_slot,league:goalkeepers:19,league,goalkeepers,19,Эдерсон,Сити,ВРТ,0,9,0,0,925
+g0906,1294,,existing,league:midfielders:257,league,midfielders,257,Эззалзули,Бетис,ЛП,0,0,0,0,1294
+g0597,1533,,existing,cl:defenders:230,cl,defenders,230,Эктов,Краснодар,ПЗ,0,0,0,0,1533
+g0597,1533,,existing,league:defenders:357,league,defenders,357,Эктов,Краснодар,ПЗ,0,0,0,0,1533
+g0356,1345,,existing,cl:midfielders:205,cl,midfielders,205,Эллиотт,Спартак,ЦАП,0,2,1,1,1345
+g0356,1345,,existing,league:midfielders:334,league,midfielders,334,Эллиотт,Спартак,ЦАП,0,4,2,1,1345
+g0271,338,,link_season_slot,cl:midfielders:119,cl,midfielders,119,Элмас,Наполи,ЦАП,0,1,1,0,338
+g0271,338,,link_season_slot,league:midfielders:187,league,midfielders,187,Элмас,Наполи,ЦАП,0,6,0,4,338
+g0161,1170,,existing,cl:midfielders:7,cl,midfielders,7,Элнени,Арсенал,ЦП,0,0,0,0,1170
+g0161,1170,,existing,league:midfielders:7,league,midfielders,7,Элнени,Арсенал,ЦП,0,0,0,0,1170
+g0559,630,,link_season_slot,cl:defenders:192,cl,defenders,192,Элустондо,Реал Сосьедад,ЦЗ,0,0,0,0,630
+g0559,630,,link_season_slot,league:defenders:312,league,defenders,312,Элустондо,Реал Сосьедад,ЦЗ,0,1,0,0,630
+g0275,1255,,existing,cl:midfielders:123,cl,midfielders,123,Эль Шарави,Рома,ЛП,0,5,3,2,1255
+g0275,1255,,existing,league:midfielders:191,league,midfielders,191,Эль Шарави,Рома,ЛП,0,9,2,5,1255
+g0454,834,,link_season_slot,cl:defenders:87,cl,defenders,87,Эльведи,Боруссия М,ЦЗ,0,2,0,0,834
+g0454,834,,link_season_slot,league:defenders:121,league,defenders,121,Эльведи,Боруссия М,ЦЗ,0,6,0,0,834
+g1102,708,,link_season_slot,league:defenders:406,league,defenders,406,Эмерсон,Урал,ЦЗ,0,6,0,0,708
+g0776,1121,,existing,league:forwards:204,league,forwards,204,Эн-Несри,Севилья,ФРВ,0,8,6,4,1121
+g0171,420,,link_season_slot,cl:midfielders:17,cl,midfielders,17,Эндо,Ливерпуль,ЦП,1,0,0,0,420
+g0171,420,,link_season_slot,league:midfielders:38,league,midfielders,38,Эндо,Ливерпуль,ЦП,1,2,0,1,420
+g0904,1293,yes,existing,league:midfielders:255,league,midfielders,255,Энрике,Бетис,ПП,0,7,0,3,1293
+g0878,1261,yes,existing,league:midfielders:202,league,midfielders,202,Энрике,Сассуоло,ЦОП,0,9,1,3,1261
+g0696,1032,,existing,league:forwards:16,league,forwards,16,Энсисо,Брайтон,ЛФА,0,0,0,0,1032
+g0162,1180,,existing,cl:midfielders:8,cl,midfielders,8,Энцо,Челси,ЦОП,0,3,0,1,1180
+g0162,1180,,existing,league:midfielders:23,league,midfielders,23,Энцо,Челси,ЦОП,0,13,3,4,1180
+g1043,1490,,existing,league:defenders:277,league,defenders,277,Эрик Гарсия,Жирона,ЦЗ,0,2,0,0,1490
+g0176,423,,link_season_slot,cl:midfielders:22,cl,midfielders,22,Эриксен,Мю,ЦП,1,5,1,5,423
+g0176,423,,link_season_slot,league:midfielders:43,league,midfielders,43,Эриксен,Мю,ЦП,1,10,3,3,423
+g1027,1467,,existing,league:defenders:237,league,defenders,237,Эрлич,Сассуоло,ЦЗ,0,8,0,1,1467
+g0229,1014,,link_season_slot,cl:midfielders:76,cl,midfielders,76,Эрманн,Боруссия М,ПП,0,0,0,0,1014
+g0229,1014,,link_season_slot,league:midfielders:102,league,midfielders,102,Эрманн,Боруссия М,ПП,0,0,0,0,1014
+g0530,594,,link_season_slot,cl:defenders:163,cl,defenders,163,Эрмосо,Атлетико,ЦЗ,0,3,0,0,594
+g0530,594,,link_season_slot,league:defenders:258,league,defenders,258,Эрмосо,Атлетико,ЦЗ,0,2,0,0,594
+g0498,793,,link_season_slot,cl:defenders:131,cl,defenders,131,Эрнандез,Милан,ЛЗ,0,3,0,1,793
+g0498,793,,link_season_slot,league:defenders:210,league,defenders,210,Эрнандез,Милан,ЛЗ,0,9,0,2,793
+g0888,1281,,existing,league:midfielders:239,league,midfielders,239,Эррера,Жирона,ЦОП,0,6,0,4,1281
+g1049,1494,,existing,league:defenders:283,league,defenders,283,Эспино,Райо Вальекано,ЛЗ,0,3,0,0,1494
+g1046,1492,,existing,league:defenders:280,league,defenders,280,Эспиноза,Жирона,ЦЗ,0,0,0,0,1492
+g0955,1362,,existing,league:defenders:18,league,defenders,18,Эступинан,Брайтон,ЛЗ,0,8,1,1,1362
+g0804,92,,link_season_slot,league:forwards:267,league,forwards,267,Юшин,Урал,ПФА,0,11,4,2,92
+g0209,1204,,existing,cl:midfielders:56,cl,midfielders,56,Якич,Франкфурт,ЦОП,0,0,0,0,1204
+g0209,1204,,existing,league:midfielders:82,league,midfielders,82,Якич,Франкфурт,ЦОП,0,0,0,0,1204
+g0460,1410,,existing,cl:defenders:93,cl,defenders,93,Янтшке,Боруссия М,ЦЗ,0,0,0,0,1410
+g0460,1410,,existing,league:defenders:127,league,defenders,127,Янтшке,Боруссия М,ЦЗ,0,0,0,0,1410
+g0781,1124,,existing,league:forwards:209,league,forwards,209,Янузай,Севилья,ПФА,0,0,0,0,1124
+g0852,1230,,existing,league:midfielders:131,league,midfielders,131,Ён,Штутгарт,ЦАП,0,1,0,1,1230

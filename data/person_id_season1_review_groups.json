@@ -1,0 +1,418 @@
+{
+  "season": 1,
+  "link_season": 2,
+  "needs_review": [
+    {
+      "reason": "multi_active_same_name",
+      "name": "Траоре",
+      "slots": [
+        "Астон Вилла ПФА",
+        "Боруссия М ПФА",
+        "Реал Сосьедад ПЗ"
+      ],
+      "row_keys": [
+        "cl:defenders:191",
+        "cl:forwards:60",
+        "league:defenders:311",
+        "league:forwards:10",
+        "league:forwards:82"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Педро",
+      "slots": [
+        "Брайтон ФРВ",
+        "Лацио ПФА"
+      ],
+      "row_keys": [
+        "league:forwards:131",
+        "league:forwards:15"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Уилсон",
+      "slots": [
+        "Ньюкасл ФРВ",
+        "Фулхэм ПФА"
+      ],
+      "row_keys": [
+        "league:forwards:27",
+        "league:forwards:43"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Диас",
+      "slots": [
+        "Вильярреал ЛФА",
+        "Ливерпуль ЛФА"
+      ],
+      "row_keys": [
+        "cl:forwards:116",
+        "cl:forwards:13",
+        "league:forwards:211",
+        "league:forwards:29"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Рейна",
+      "slots": [
+        "Дортмунд ПФА",
+        "Урал ВРТ"
+      ],
+      "row_keys": [
+        "cl:forwards:42",
+        "league:forwards:64",
+        "league:goalkeepers:102"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Нмеча",
+      "slots": [
+        "Вольфсбург ФРВ",
+        "Дортмунд ЦП"
+      ],
+      "row_keys": [
+        "cl:midfielders:46",
+        "league:forwards:103",
+        "league:midfielders:72"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Сарр",
+      "slots": [
+        "Бавария ПЗ",
+        "Вольфсбург ФРВ",
+        "Тоттенхэм ЦП",
+        "Челси ЦЗ"
+      ],
+      "row_keys": [
+        "cl:defenders:19",
+        "cl:defenders:67",
+        "cl:midfielders:36",
+        "league:defenders:101",
+        "league:defenders:35",
+        "league:forwards:108",
+        "league:midfielders:62"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Миранчук",
+      "slots": [
+        "Аталанта ФРВ",
+        "Локомотив ЦП"
+      ],
+      "row_keys": [
+        "cl:forwards:66",
+        "cl:midfielders:197",
+        "league:forwards:110",
+        "league:midfielders:313"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Гонзалез",
+      "slots": [
+        "Лацио ЛФА",
+        "Фиорентина ПФА"
+      ],
+      "row_keys": [
+        "league:forwards:115",
+        "league:forwards:134"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Мартинез",
+      "slots": [
+        "Астон Вилла ВРТ",
+        "Интер ФРВ"
+      ],
+      "row_keys": [
+        "cl:forwards:69",
+        "league:forwards:118",
+        "league:goalkeepers:3"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Торрес",
+      "slots": [
+        "Астон Вилла ЦЗ",
+        "Барселона ЛФА",
+        "Севилья ЦП"
+      ],
+      "row_keys": [
+        "cl:forwards:102",
+        "league:defenders:11",
+        "league:forwards:173",
+        "league:midfielders:278"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Гарсия",
+      "slots": [
+        "Райо Вальекано ПФА",
+        "Реал ЛЗ"
+      ],
+      "row_keys": [
+        "cl:defenders:180",
+        "league:defenders:300",
+        "league:forwards:181"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Нкунку",
+      "slots": [
+        "Реал ПФА",
+        "Франкфурт ЛЗ"
+      ],
+      "row_keys": [
+        "cl:defenders:70",
+        "cl:forwards:106",
+        "league:defenders:104",
+        "league:forwards:193"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Сильва",
+      "slots": [
+        "Реал Сосьедад ФРВ",
+        "Сити ЦП",
+        "Челси ЦЗ"
+      ],
+      "row_keys": [
+        "cl:defenders:11",
+        "cl:forwards:112",
+        "cl:midfielders:26",
+        "league:defenders:27",
+        "league:forwards:199",
+        "league:midfielders:52"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Фернандез",
+      "slots": [
+        "Динамо ЦЗ",
+        "Реал Сосьедад ФРВ"
+      ],
+      "row_keys": [
+        "cl:defenders:215",
+        "cl:forwards:114",
+        "league:defenders:342",
+        "league:forwards:201"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Мюллер",
+      "slots": [
+        "Бавария ЦАП",
+        "Фрайбург ВРТ"
+      ],
+      "row_keys": [
+        "cl:midfielders:48",
+        "league:goalkeepers:37",
+        "league:midfielders:74"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Карвальо",
+      "slots": [
+        "Бетис ЦОП",
+        "Лейпциг ЦАП"
+      ],
+      "row_keys": [
+        "cl:midfielders:85",
+        "league:midfielders:111",
+        "league:midfielders:252"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Эдерсон",
+      "slots": [
+        "Аталанта ЦП",
+        "Сити ВРТ"
+      ],
+      "row_keys": [
+        "cl:goalkeepers:9",
+        "cl:midfielders:92",
+        "league:goalkeepers:19",
+        "league:midfielders:146"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Барак",
+      "slots": [
+        "Крылья Советов ЦАП",
+        "Фиорентина ЦП"
+      ],
+      "row_keys": [
+        "league:midfielders:150",
+        "league:midfielders:310"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Артур",
+      "slots": [
+        "Байер ПЗ",
+        "Фиорентина ЦОП"
+      ],
+      "row_keys": [
+        "cl:defenders:85",
+        "league:defenders:119",
+        "league:midfielders:152"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Пеллегрини",
+      "slots": [
+        "Лацио ЛЗ",
+        "Рома ЦП"
+      ],
+      "row_keys": [
+        "cl:midfielders:124",
+        "league:defenders:208",
+        "league:midfielders:192"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Паредес",
+      "slots": [
+        "Атлетик ЦЗ",
+        "Рома ЦОП"
+      ],
+      "row_keys": [
+        "cl:defenders:161",
+        "cl:midfielders:128",
+        "league:defenders:256",
+        "league:midfielders:196"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Энрике",
+      "slots": [
+        "Бетис ПП",
+        "Сассуоло ЦОП"
+      ],
+      "row_keys": [
+        "league:midfielders:202",
+        "league:midfielders:255"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Гомез",
+      "slots": [
+        "Атлетик ЦАП",
+        "Сити ЛЗ"
+      ],
+      "row_keys": [
+        "cl:defenders:44",
+        "cl:midfielders:140",
+        "league:defenders:78",
+        "league:midfielders:219"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Родри",
+      "slots": [
+        "Атлетико ЦОП",
+        "Бетис ЛП"
+      ],
+      "row_keys": [
+        "cl:midfielders:144",
+        "league:midfielders:223",
+        "league:midfielders:258"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Ахметов",
+      "slots": [
+        "Краснодар ЦП",
+        "Севилья ЦП"
+      ],
+      "row_keys": [
+        "cl:midfielders:196",
+        "league:midfielders:281",
+        "league:midfielders:305"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Глебов",
+      "slots": [
+        "Ростов ЦОП",
+        "Цска ЦП"
+      ],
+      "row_keys": [
+        "cl:midfielders:183",
+        "league:midfielders:292",
+        "league:midfielders:322"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Кристенсен",
+      "slots": [
+        "Барселона ЦЗ",
+        "Рома ПЗ",
+        "Фиорентина ВРТ"
+      ],
+      "row_keys": [
+        "cl:defenders:154",
+        "cl:defenders:175",
+        "league:defenders:233",
+        "league:defenders:270",
+        "league:goalkeepers:46"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Алонсо",
+      "slots": [
+        "Барселона ЛЗ",
+        "Краснодар ЦЗ"
+      ],
+      "row_keys": [
+        "cl:defenders:177",
+        "cl:defenders:223",
+        "league:defenders:272",
+        "league:defenders:350"
+      ]
+    },
+    {
+      "reason": "multi_active_same_name",
+      "name": "Чернов",
+      "slots": [
+        "Ростов ЛЗ",
+        "Спартак ЦЗ"
+      ],
+      "row_keys": [
+        "cl:defenders:247",
+        "league:defenders:380",
+        "league:defenders:399"
+      ]
+    }
+  ],
+  "conflicts": []
+}
