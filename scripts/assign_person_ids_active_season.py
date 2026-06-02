@@ -74,6 +74,7 @@ _TABLE = {
 }
 _CLS_FROM_TABLE = {v: k for k, v in _TABLE.items()}
 _REVIEW_CSV = ROOT / "data" / "person_id_active_season_review.csv"
+_REVIEW_XLSX = ROOT / "data" / "person_id_active_season_review.xlsx"
 _PREVIEW_JSON = ROOT / "data" / "person_id_active_season_groups.json"
 _DEFAULT_OVERRIDES = ROOT / "data" / "person_id_active_overrides.json"
 
@@ -282,15 +283,33 @@ def _propose_person_ids(
     return out
 
 
-def _write_review_csv(
-    path: Path,
+_REVIEW_HEADER = [
+    "group_id",
+    "person_id_proposed",
+    "needs_review",
+    "rule",
+    "row_key",
+    "db",
+    "table",
+    "row_id",
+    "name",
+    "team",
+    "position",
+    "left_team",
+    "matches",
+    "goals",
+    "assists",
+    "person_id_current",
+]
+
+
+def _build_review_table(
     rows: list[RowRef],
     uf: UnionFind,
     rules: dict[int, str],
     proposed: dict[int, int],
     needs_review: list[dict[str, Any]],
-) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+) -> list[list[Any]]:
     review_keys = set()
     for item in needs_review:
         for k in item.get("row_keys") or []:
@@ -303,58 +322,91 @@ def _write_review_csv(
         gid += 1
         root_to_gid[root] = f"g{gid:04d}"
 
-    with path.open("w", encoding="utf-8", newline="") as f:
+    table: list[list[Any]] = []
+    for root, members in sorted(
+        comp.items(),
+        key=lambda kv: (rows[kv[1][0]].name_norm, rows[kv[1][0]].team),
+    ):
+        gid_s = root_to_gid[root]
+        pid = proposed.get(root, -1)
+        pid_s = "" if pid < 0 else pid
+        flag = "yes" if any(rows[i].row_key in review_keys for i in members) else ""
+        for i in sorted(members, key=lambda x: (rows[x].db_kind, rows[x].row_id)):
+            r = rows[i]
+            table.append(
+                [
+                    gid_s,
+                    pid_s,
+                    flag,
+                    rules.get(i, ""),
+                    r.row_key,
+                    r.db_kind,
+                    r.table,
+                    r.row_id,
+                    r.name,
+                    r.team,
+                    r.position,
+                    "1" if r.left_team else "0",
+                    r.matches,
+                    r.goals,
+                    r.assists,
+                    r.person_id or "",
+                ]
+            )
+    return table
+
+
+def _write_review_csv(path: Path, table: list[list[Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
-        w.writerow(
-            [
-                "group_id",
-                "person_id_proposed",
-                "needs_review",
-                "rule",
-                "row_key",
-                "db",
-                "table",
-                "row_id",
-                "name",
-                "team",
-                "position",
-                "left_team",
-                "matches",
-                "goals",
-                "assists",
-                "person_id_current",
-            ]
-        )
-        for root, members in sorted(
-            comp.items(),
-            key=lambda kv: (rows[kv[1][0]].name_norm, rows[kv[1][0]].team),
-        ):
-            gid_s = root_to_gid[root]
-            pid = proposed.get(root, -1)
-            pid_s = "" if pid < 0 else str(pid)
-            flag = "yes" if any(rows[i].row_key in review_keys for i in members) else ""
-            for i in sorted(members, key=lambda x: (rows[x].db_kind, rows[x].row_id)):
-                r = rows[i]
-                w.writerow(
-                    [
-                        gid_s,
-                        pid_s,
-                        flag,
-                        rules.get(i, ""),
-                        r.row_key,
-                        r.db_kind,
-                        r.table,
-                        r.row_id,
-                        r.name,
-                        r.team,
-                        r.position,
-                        "1" if r.left_team else "0",
-                        r.matches,
-                        r.goals,
-                        r.assists,
-                        r.person_id or "",
-                    ]
-                )
+        w.writerow(_REVIEW_HEADER)
+        w.writerows(table)
+
+
+def _write_review_xlsx(path: Path, table: list[list[Any]]) -> None:
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Alignment, Font
+        from openpyxl.utils import get_column_letter
+    except ImportError as e:
+        raise SystemExit("Нужен openpyxl: pip install openpyxl") from e
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "person_id_review"
+    ws.append(_REVIEW_HEADER)
+    for row in table:
+        ws.append(row)
+    for col in range(1, len(_REVIEW_HEADER) + 1):
+        ws.cell(row=1, column=col).font = Font(bold=True)
+    for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+        for cell in row:
+            cell.alignment = Alignment(horizontal="left", vertical="center")
+    for idx in range(1, len(_REVIEW_HEADER) + 1):
+        letter = get_column_letter(idx)
+        max_len = 8
+        for r in range(1, ws.max_row + 1):
+            val = ws.cell(row=r, column=idx).value
+            max_len = max(max_len, len(str(val or "")))
+        ws.column_dimensions[letter].width = min(max_len + 2, 36)
+    wb.save(path)
+
+
+def _write_review_reports(
+    rows: list[RowRef],
+    uf: UnionFind,
+    rules: dict[int, str],
+    proposed: dict[int, int],
+    needs_review: list[dict[str, Any]],
+    *,
+    csv_path: Path,
+    xlsx_path: Path,
+) -> None:
+    table = _build_review_table(rows, uf, rules, proposed, needs_review)
+    _write_review_csv(csv_path, table)
+    _write_review_xlsx(xlsx_path, table)
 
 
 def _write_preview_json(
@@ -543,7 +595,13 @@ def main() -> None:
         "--csv",
         type=str,
         default=str(_REVIEW_CSV),
-        help="Путь к review CSV",
+        help="Путь к review CSV (utf-8-sig для Excel)",
+    )
+    ap.add_argument(
+        "--xlsx",
+        type=str,
+        default=str(_REVIEW_XLSX),
+        help="Путь к review XLSX (кириллица без иероглифов в Excel)",
     )
     args = ap.parse_args()
 
@@ -585,13 +643,14 @@ def main() -> None:
         for i in members:
             proposed_by_idx[i] = pid
 
-    _write_review_csv(
-        Path(args.csv),
+    _write_review_reports(
         rows,
         uf,
         rules,
         proposed_roots,
         needs_review,
+        csv_path=Path(args.csv),
+        xlsx_path=Path(args.xlsx),
     )
     _write_preview_json(_PREVIEW_JSON, rows, uf, proposed_roots, needs_review)
 
@@ -601,10 +660,11 @@ def main() -> None:
     for item in needs_review:
         print(f"  · {item.get('reason')}: {item.get('name') or item.get('row_keys')}")
     print(f"CSV: {args.csv}")
+    print(f"XLSX: {args.xlsx}")
     print(f"JSON: {_PREVIEW_JSON}")
 
     if not args.apply:
-        print("\nDry-run. Проверьте CSV; при необходимости правьте overrides и запустите с --apply")
+        print("\nDry-run. Проверьте XLSX/CSV; при необходимости правьте overrides и --apply")
         return
 
     if needs_review and not overrides:
