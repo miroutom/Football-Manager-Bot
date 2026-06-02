@@ -113,10 +113,13 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
                 continue
             k = _key(p)
             if k not in buckets:
+                from utils.person_registry import row_person_id
+
                 buckets[k] = {
                     "name": p.name,
                     "team": p.team,
                     "position": p.position,
+                    "person_id": row_person_id(p),
                     "left_team": False,
                     "matches": 0,
                     "goals": 0,
@@ -133,6 +136,11 @@ def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
                     "status": None,
                 }
             b = buckets[k]
+            from utils.person_registry import row_person_id
+
+            pid = row_person_id(p)
+            if pid is not None:
+                b["person_id"] = pid
             _apply_roster_fields(b, p, is_cl=is_cl)
             nat = getattr(p, "nation", None)
             if nat and not b.get("nation"):
@@ -184,12 +192,14 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
         )
         g, a = b["goals"], b["assists"]
         ga = g + a
+        pid = b.get("person_id")
         if PlayerCls is Forward:
             common.add(
                 Forward(
                     name=b["name"],
                     team=b["team"],
                     position=b["position"],
+                    person_id=pid,
                     overall=ov,
                     matches=mtot,
                     goals=g,
@@ -212,6 +222,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     name=b["name"],
                     team=b["team"],
                     position=b["position"],
+                    person_id=pid,
                     overall=ov,
                     matches=mtot,
                     goals=g,
@@ -234,6 +245,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     name=b["name"],
                     team=b["team"],
                     position=b["position"],
+                    person_id=pid,
                     overall=ov,
                     matches=mtot,
                     goals=g,
@@ -285,10 +297,13 @@ def rebuild_common_database(
                 continue
             k = _key(p)
             if k not in gk_buckets:
+                from utils.person_registry import row_person_id
+
                 gk_buckets[k] = {
                     "name": p.name,
                     "team": p.team,
                     "position": p.position,
+                    "person_id": row_person_id(p),
                     "matches": 0,
                     "clean_sheets": 0,
                     "missed_goals": 0,
@@ -305,6 +320,11 @@ def rebuild_common_database(
                     "status": None,
                 }
             b = gk_buckets[k]
+            from utils.person_registry import row_person_id
+
+            pid = row_person_id(p)
+            if pid is not None:
+                b["person_id"] = pid
             _apply_roster_fields(b, p, is_cl=is_cl)
             nat = getattr(p, "nation", None)
             if nat and not b.get("nation"):
@@ -357,6 +377,7 @@ def rebuild_common_database(
                 name=b["name"],
                 team=b["team"],
                 position=b["position"],
+                person_id=b.get("person_id"),
                 overall=ov,
                 matches=mtot,
                 clean_sheets=b["clean_sheets"],
