@@ -319,7 +319,7 @@
       "team_norm": "ньюкасл",
       "league_code": "eng",
       "scope": "league",
-      "matches_left": 3,
+      "matches_left": 2,
       "unavailable_from_round": 11
     },
     {
@@ -340,7 +340,7 @@
       "team_norm": "астон вилла",
       "league_code": "eng",
       "scope": "league",
-      "matches_left": 2,
+      "matches_left": 1,
       "unavailable_from_round": 12
     },
     {
@@ -372,7 +372,7 @@
       "team_norm": "мю",
       "league_code": "eng",
       "scope": "league",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 13
     }
   ],

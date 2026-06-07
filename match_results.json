@@ -3615,6 +3615,24 @@
       "away_score": 5,
       "day": 8,
       "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Астон Вилла",
+      "league": "eng",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Ньюкасл",
+      "league": "eng",
+      "home_score": 0,
+      "away_score": 4,
+      "day": 8,
+      "entry_type": "play"
     }
   ]
 }
