@@ -321,13 +321,15 @@ def _save_mixed_v3(doc: dict[str, Any], path: Path) -> None:
         json.dump(doc, f, ensure_ascii=False, indent=2)
 
 
-def _schedule_line_keys(doc: dict[str, Any]) -> set[tuple[str, str]]:
+def _knockout_schedule_line_keys(doc: dict[str, Any]) -> set[tuple[str, str]]:
+    """Ключи только ``;cl;knockout`` — не путать с лигой ЛЧ или нац. календарём."""
     keys: set[tuple[str, str]] = set()
     for block in doc.get("rounds") or []:
         for ln in block.get("matches") or []:
-            if isinstance(ln, str):
-                keys.add(_line_key(ln))
-                keys.add((_line_key(ln)[1], _line_key(ln)[0]))
+            if isinstance(ln, str) and _is_cl_knockout_line(ln):
+                k = _line_key(ln)
+                keys.add(k)
+                keys.add((k[1], k[0]))
     return keys
 
 
@@ -335,7 +337,7 @@ def _round_lines_in_schedule(doc: dict[str, Any], round_key: str) -> bool:
     lines = knockout_lines_for_round(round_key)
     if not lines:
         return False
-    keys = _schedule_line_keys(doc)
+    keys = _knockout_schedule_line_keys(doc)
     for ln in lines:
         k = _line_key(ln)
         if k not in keys and (k[1], k[0]) not in keys:
@@ -343,28 +345,21 @@ def _round_lines_in_schedule(doc: dict[str, Any], round_key: str) -> bool:
     return True
 
 
-def append_knockout_round_to_mixed_schedule(
+def _append_missing_knockout_lines(
     round_key: str,
+    doc: dict[str, Any],
     *,
-    path: Path | str | None = None,
     seed: int | None = None,
-) -> tuple[bool, str]:
-    """
-    Добавить в календарь все матчи раунда ``round_key`` (месяц по CL_KNOCKOUT_ROUND_MONTH).
-    Возвращает (добавлено, сообщение).
-    """
-    p = Path(path) if path else MIXED_FILE
+) -> tuple[int, str]:
+    """Дописать в ``doc`` недостающие строки раунда; вернуть (число добавленных, label)."""
     lines = knockout_lines_for_round(round_key)
     if not lines:
-        return False, f"Раунд {round_key}: пары ещё не определены."
-    doc = _load_mixed_v3(p)
-    if _round_lines_in_schedule(doc, round_key):
-        return False, f"Раунд {round_key} уже есть в календаре."
+        raise ValueError(f"Раунд {round_key}: пары ещё не определены.")
 
     month = CL_KNOCKOUT_ROUND_MONTH[round_key]
     rounds = doc.get("rounds")
     if not isinstance(rounds, list):
-        return False, "Некорректный mixed_schedule."
+        raise ValueError("Некорректный mixed_schedule.")
 
     block = None
     for b in rounds:
@@ -377,9 +372,10 @@ def append_knockout_round_to_mixed_schedule(
         rounds.sort(key=lambda x: int(x.get("day") or 0))
 
     existing = list(block.get("matches") or [])
-    missing = [ln for ln in lines if _line_key(ln) not in _schedule_line_keys(doc)]
+    keys = _knockout_schedule_line_keys(doc)
+    missing = [ln for ln in lines if _line_key(ln) not in keys]
     if not missing:
-        return False, f"Раунд {round_key}: все матчи уже в месяце {month}."
+        return 0, round_key
 
     block["matches"] = _interleave_knockout_into_month(
         existing,
@@ -387,7 +383,6 @@ def append_knockout_round_to_mixed_schedule(
         final_last=(round_key == "final"),
         seed=seed,
     )
-    _save_mixed_v3(doc, p)
     label = {
         "round_1": "1/16",
         "round_2": "1/8",
@@ -395,7 +390,44 @@ def append_knockout_round_to_mixed_schedule(
         "semi_finals": "1/2",
         "final": "финал",
     }.get(round_key, round_key)
-    return True, f"В календарь (месяц {month}) добавлены матчи <b>{label}</b>: {len(missing)} шт."
+    return len(missing), label
+
+
+def ensure_knockout_round_in_schedule(
+    round_key: str,
+    *,
+    path: Path | str | None = None,
+    seed: int | None = None,
+) -> tuple[bool, str]:
+    """
+    Идемпотентно добавить недостающие матчи раунда (только ``cl;knockout``).
+    """
+    p = Path(path) if path else MIXED_FILE
+    lines = knockout_lines_for_round(round_key)
+    if not lines:
+        return False, f"Раунд {round_key}: пары ещё не определены."
+    doc = _load_mixed_v3(p)
+    try:
+        n, label = _append_missing_knockout_lines(round_key, doc, seed=seed)
+    except ValueError as e:
+        return False, str(e)
+    if n == 0:
+        return False, f"Раунд {round_key}: все матчи уже в месяце {CL_KNOCKOUT_ROUND_MONTH[round_key]}."
+    _save_mixed_v3(doc, p)
+    return True, f"В календарь (месяц {CL_KNOCKOUT_ROUND_MONTH[round_key]}) добавлены матчи <b>{label}</b>: {n} шт."
+
+
+def append_knockout_round_to_mixed_schedule(
+    round_key: str,
+    *,
+    path: Path | str | None = None,
+    seed: int | None = None,
+) -> tuple[bool, str]:
+    """
+    Добавить в календарь все матчи раунда ``round_key`` (месяц по CL_KNOCKOUT_ROUND_MONTH).
+    Возвращает (добавлено, сообщение).
+    """
+    return ensure_knockout_round_in_schedule(round_key, path=path, seed=seed)
 
 
 def try_schedule_next_cl_knockout_rounds(
@@ -413,7 +445,21 @@ def try_schedule_next_cl_knockout_rounds(
             continue
         if not is_knockout_round_complete(round_key):
             continue
-        added, msg = append_knockout_round_to_mixed_schedule(nxt, path=path, seed=seed)
+        added, msg = ensure_knockout_round_in_schedule(nxt, path=path, seed=seed)
+        if added:
+            msgs.append(msg)
+    return msgs
+
+
+def sync_cl_knockout_schedule_gaps(
+    *,
+    path: Path | str | None = None,
+    seed: int | None = None,
+) -> list[str]:
+    """Дописать пропущенные нокаут-матчи для всех раундов, чьи пары уже известны."""
+    msgs: list[str] = []
+    for round_key in CL_KNOCKOUT_ROUND_ORDER:
+        added, msg = ensure_knockout_round_in_schedule(round_key, path=path, seed=seed)
         if added:
             msgs.append(msg)
     return msgs

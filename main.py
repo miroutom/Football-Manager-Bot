@@ -2,8 +2,9 @@
 Football Manager - Сезон 2024/25
 Режим матч-день: в один день матчи из разных лиг (РПЛ, АПЛ, Ла Лига, Серия А, Бундеслига, ЛЧ)
 """
-import os
 import json
+import logging
+import os
 from typing import Dict, Optional
 from teams import (
     get_sorted_teams, save_teams, get_pickle_dir,
@@ -99,6 +100,13 @@ def load_or_generate_mixed_schedule():
     читается как есть, если лежит в проекте.
     """
     from utils.schedule_by_months import load_parsed_mixed
+
+    try:
+        from utils.cl_knockout_schedule import sync_cl_knockout_schedule_gaps
+
+        sync_cl_knockout_schedule_gaps(path=MIXED_SCHEDULE_FILE)
+    except Exception:
+        logging.getLogger(__name__).exception("sync_cl_knockout_schedule_gaps")
 
     data, _ = load_parsed_mixed(MIXED_SCHEDULE_FILE)
     return data
