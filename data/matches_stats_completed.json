@@ -728,5 +728,11 @@
     "away": "Ньюкасл",
     "tournament": "league",
     "day": 8
+  },
+  {
+    "home": "Зенит",
+    "away": "Урал",
+    "tournament": "league",
+    "day": 8
   }
 ]

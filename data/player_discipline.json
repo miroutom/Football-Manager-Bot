@@ -545,7 +545,7 @@
       "team_norm": "урал",
       "league_code": "rpl",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "бремер|ювентус|cl|cl",
@@ -2815,6 +2815,16 @@
       "team_norm": "лейпциг",
       "league_code": "cl",
       "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "бегич|урал|rpl|league",
+      "name": "Бегич",
+      "name_norm": "бегич",
+      "team": "Урал",
+      "team_norm": "урал",
+      "league_code": "rpl",
+      "scope": "league",
       "count": 1
     }
   ],
