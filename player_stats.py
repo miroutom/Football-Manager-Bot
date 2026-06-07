@@ -689,6 +689,10 @@ def apply_match_lineup(
             ok += 1
         else:
             fail += 1
+    if ok:
+        from utils.common_db import ensure_common_db_fresh
+
+        ensure_common_db_fresh()
     return ok, fail
 
 
@@ -1027,6 +1031,9 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
                 break
             line = retry
 
+    from utils.common_db import ensure_common_db_fresh
+
+    ensure_common_db_fresh()
     print("✓ Статистика сохранена")
 
 
@@ -1886,6 +1893,10 @@ def show_team_goalscorers_table(
     """
     team = _team_name_as_in_db(team)
     if session is None:
+        if tournament in ("common", "merged", "all"):
+            from utils.common_db import ensure_common_db_fresh
+
+            ensure_common_db_fresh()
         session = get_session(tournament)
     rows = []
     for PlayerClass in (Forward, Midfielder, Defender):

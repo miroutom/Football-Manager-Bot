@@ -397,6 +397,9 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
             cl_phase=cl_ph,
             day=data.get("stats_schedule_day"),
         )
+        from utils.common_db import ensure_common_db_fresh
+
+        await asyncio.to_thread(ensure_common_db_fresh)
         from utils.player_discipline import register_match_played_for_discipline
 
         snap = data.get("stats_susp_snapshot")

@@ -522,6 +522,17 @@ def _season_path_by_kind(season_num: int, kind: str) -> str | None:
     return _season_db_path(season_num, cl=False)
 
 
+def _maybe_refresh_active_common_db(season_num: int, kind: str) -> None:
+    """Активный сезон: ``common.db`` — сумма league+ЛЧ, её нужно пересобрать после матчей."""
+    if kind != "common":
+        return
+    if season_num != season_paths.get_active_season():
+        return
+    from utils.common_db import ensure_common_db_fresh
+
+    ensure_common_db_fresh()
+
+
 def aggregate_outfield(
     league_code: str | None,
     *,
@@ -534,6 +545,7 @@ def aggregate_outfield(
         return aggregate_life_outfield(league_code, merge_by_player=merge_by_player)
     buckets: dict[tuple, dict] = {}
     for kind, filter_code in _db_passes_for_season(league_code):
+        _maybe_refresh_active_common_db(season_num, kind)
         path = _season_path_by_kind(season_num, kind)
         if not path:
             continue

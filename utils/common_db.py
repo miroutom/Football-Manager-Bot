@@ -264,6 +264,11 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
             )
 
 
+def ensure_common_db_fresh() -> None:
+    """Пересобрать ``common.db`` из актуальных ``league.db`` + ``champions_league.db``."""
+    rebuild_common_database()
+
+
 def rebuild_common_database(
     *,
     session_league_: Any = None,
