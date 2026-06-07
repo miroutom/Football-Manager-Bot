@@ -310,6 +310,17 @@
       "league_code": "ita",
       "scope": "league",
       "matches_left": 3
+    },
+    {
+      "key": "мавропанос|ньюкасл|eng|league",
+      "name": "Мавропанос",
+      "name_norm": "мавропанос",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "league_code": "eng",
+      "scope": "league",
+      "matches_left": 3,
+      "unavailable_from_round": 29
     }
   ],
   "yellow_cycle": [
@@ -2290,6 +2301,16 @@
       "team": "Жирона",
       "team_norm": "жирона",
       "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "рафа|ньюкасл|eng|league",
+      "name": "Рафа",
+      "name_norm": "рафа",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "league_code": "eng",
       "scope": "league",
       "count": 1
     }

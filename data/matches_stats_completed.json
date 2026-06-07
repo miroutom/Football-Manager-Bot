@@ -340,5 +340,11 @@
     "away": "Жирона",
     "tournament": "league",
     "day": 7
+  },
+  {
+    "home": "Челси",
+    "away": "Ньюкасл",
+    "tournament": "league",
+    "day": 7
   }
 ]
