@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "home": "Севилья",
+    "away": "Наполи",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 7
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Тоттенхэм",
+    "tournament": "league",
+    "day": 8
+  }
+]
