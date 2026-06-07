@@ -342,10 +342,11 @@ def credit_goalkeepers_for_manual_fixture(
             teams_with_manual_gk.add((pl.get("team") or "").strip().title())
 
     session = get_session(tournament)
+    touched = False
     if score_away == 0 and home_t not in teams_with_manual_gk:
         nm, pos = pick_starting_goalkeeper_row(session, home_t)
         if nm and pos:
-            add_player_stats(
+            if add_player_stats(
                 nm,
                 pos,
                 home_t,
@@ -357,11 +358,13 @@ def credit_goalkeepers_for_manual_fixture(
                 create_if_missing=False,
                 skip_discipline_check=True,
                 increment_matches=True,
-            )
+                sync_derived=False,
+            ):
+                touched = True
     if score_home == 0 and away_t not in teams_with_manual_gk:
         nm, pos = pick_starting_goalkeeper_row(session, away_t)
         if nm and pos:
-            add_player_stats(
+            if add_player_stats(
                 nm,
                 pos,
                 away_t,
@@ -373,7 +376,13 @@ def credit_goalkeepers_for_manual_fixture(
                 create_if_missing=False,
                 skip_discipline_check=True,
                 increment_matches=True,
-            )
+                sync_derived=False,
+            ):
+                touched = True
+    if touched:
+        from utils.common_db import sync_stats_derived_databases
+
+        sync_stats_derived_databases()
 
 
 def find_or_create_player(session, name: str, position: str, team: str):
@@ -504,7 +513,8 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
                      skip_discipline_check: bool = False,
                      increment_matches: bool = True,
                      team_goals_already: int = 0,
-                     team_assists_already: int = 0):
+                     team_assists_already: int = 0,
+                     sync_derived: bool = True):
     """
     Добавить статистику игрока после матча.
 
@@ -645,6 +655,11 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
 
     session.commit()
 
+    if sync_derived:
+        from utils.common_db import sync_stats_derived_databases
+
+        sync_stats_derived_databases()
+
     ga_str = f" {goals} {assists}" if goals or assists else ""
     cs_str = " (CS)" if clean_sheet else ""
     disp = player.name
@@ -684,15 +699,16 @@ def apply_match_lineup(
             create_if_missing=create_if_missing,
             team_goals_already=budget.goals_used(team),
             team_assists_already=budget.assists_used(team),
+            sync_derived=False,
         ):
             budget.add(team, goals, assists)
             ok += 1
         else:
             fail += 1
     if ok:
-        from utils.common_db import ensure_common_db_fresh
+        from utils.common_db import sync_stats_derived_databases
 
-        ensure_common_db_fresh()
+        sync_stats_derived_databases()
     return ok, fail
 
 
@@ -705,6 +721,7 @@ def revert_player_stats(
     clean_sheet: bool = False,
     tournament: str = "league",
     match_for_cs: tuple = None,
+    sync_derived: bool = True,
 ) -> bool:
     """
     Обратная операция к add_player_stats: вычесть один матч и те же голы/передачи/сухой.
@@ -757,6 +774,10 @@ def revert_player_stats(
             player.clean_sheets = 0
 
     session.commit()
+    if sync_derived:
+        from utils.common_db import sync_stats_derived_databases
+
+        sync_stats_derived_databases()
     cs_str = " (CS−)" if clean_sheet else ""
     ga_str = f" −{goals} −{assists}" if goals or assists else ""
     print(f"  ↩ {player.name} {position} {team}{ga_str}{cs_str}")
@@ -783,10 +804,15 @@ def revert_match_lineup(
             assists,
             tournament=tournament,
             match_for_cs=match_for_cs,
+            sync_derived=False,
         ):
             ok += 1
         else:
             fail += 1
+    if ok:
+        from utils.common_db import sync_stats_derived_databases
+
+        sync_stats_derived_databases()
     return ok, fail
 
 
@@ -1015,6 +1041,7 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
                 create_if_missing=mode_new,
                 discipline_league_code=lc_inf,
                 schedule_day=None,
+                sync_derived=False,
             )
 
             if ok:
@@ -1031,9 +1058,9 @@ def input_match_stats(home_team: str, away_team: str, home_score: int, away_scor
                 break
             line = retry
 
-    from utils.common_db import ensure_common_db_fresh
+    from utils.common_db import sync_stats_derived_databases
 
-    ensure_common_db_fresh()
+    sync_stats_derived_databases()
     print("✓ Статистика сохранена")
 
 
@@ -1279,6 +1306,7 @@ def apply_stats_bot_line(
                                     schedule_day=schedule_day,
                                     increment_matches=True,
                                     skip_discipline_check=True,
+                                    sync_derived=False,
                                 )
                             if ok_m:
                                 session_match_players.add(key_d)
@@ -1370,6 +1398,7 @@ def apply_stats_bot_line(
             skip_discipline_check=True,
             team_goals_already=team_g0,
             team_assists_already=team_a0,
+            sync_derived=False,
         )
     out = buf2.getvalue().strip()
     if not ok_add:

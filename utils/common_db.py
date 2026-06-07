@@ -265,8 +265,25 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
 
 
 def ensure_common_db_fresh() -> None:
-    """Пересобрать ``common.db`` из актуальных ``league.db`` + ``champions_league.db``."""
+    """Пересобрать ``common.db`` (активный сезон / ``common_synced`` в legacy) из league + ЛЧ."""
     rebuild_common_database()
+
+
+def sync_stats_derived_databases() -> None:
+    """
+    После записи статы в league или ЛЧ: ``common.db`` и накопительные ``*_synced.db``.
+
+    В ``per_season`` рабочие БД — ``db/season_N/``; synced пересобираются из всех архивов
+    (включая активный сезон). В ``legacy`` стата пишется сразу в synced — достаточно common.
+    """
+    ensure_common_db_fresh()
+    from utils import season_paths
+
+    if season_paths.is_legacy_mode():
+        return
+    from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
+
+    rebuild_all_time_databases_from_season_archives()
 
 
 def rebuild_common_database(

@@ -430,22 +430,18 @@ def main() -> int:
     _apply_plan(plans)
     print(f"  обновлено строк: {len(plans)}")
 
-    print("\n--- Пересборка common.db ---")
-    from utils.common_db import rebuild_common_database
-
-    rebuild_common_database()
-    print("  common.db пересобран")
-
     if not args.no_cumulative_rebuild:
-        print("\n--- Пересборка *_synced.db ---")
-        from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
+        print("\n--- Пересборка common.db и *_synced.db ---")
+        from utils.common_db import sync_stats_derived_databases
 
-        log = rebuild_all_time_databases_from_season_archives()
-        for line in log.get("cumulative", []) or []:
-            print(f"  {line}")
-        print(f"  сезоны: {log.get('seasons')}")
+        sync_stats_derived_databases()
+        print("  common.db и *_synced.db пересобраны")
     else:
-        print("\n--- *_synced.db не пересобирали (--no-cumulative-rebuild) ---")
+        print("\n--- common/synced не пересобирали (--no-cumulative-rebuild) ---")
+        from utils.common_db import rebuild_common_database
+
+        rebuild_common_database()
+        print("  только common.db пересобран")
 
     print("\nГотово.")
     return 0

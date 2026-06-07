@@ -385,6 +385,7 @@ def sync_match_appearances_for_side(
     to_drop = old_played - new_played
     to_add = new_played - old_played
     log: list[str] = []
+    touched = False
 
     for pk in to_drop:
         if pk not in key_map:
@@ -393,9 +394,12 @@ def sync_match_appearances_for_side(
         nm, pos, _ = key_map[pk]
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            ok = revert_player_stats(nm, pos, team, 0, 0, False, tournament)
+            ok = revert_player_stats(
+                nm, pos, team, 0, 0, False, tournament, sync_derived=False
+            )
         line = buf.getvalue().strip()
         if ok:
+            touched = True
             log.append(line or f"↩ {nm}")
         else:
             log.append(f"✗ откат {nm}")
@@ -419,13 +423,19 @@ def sync_match_appearances_for_side(
                 match_for_cs=None,
                 skip_discipline_check=True,
                 increment_matches=True,
+                sync_derived=False,
             )
         line = buf.getvalue().strip()
         if ok:
+            touched = True
             log.append(line or f"✓ {nm} +матч")
         else:
             log.append(f"✗ зачёт матча {nm}")
 
+    if touched:
+        from utils.common_db import sync_stats_derived_databases
+
+        sync_stats_derived_databases()
     return log
 
 

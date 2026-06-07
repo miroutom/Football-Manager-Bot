@@ -352,6 +352,7 @@ def apply_played_appearances(
     from player_stats import add_player_stats
 
     logs: list[str] = []
+    touched = False
     for p in players:
         if p.idx not in played_idxs:
             continue
@@ -369,12 +370,18 @@ def apply_played_appearances(
                 match_for_cs=None,
                 skip_discipline_check=True,
                 increment_matches=True,
+                sync_derived=False,
             )
         line = buf.getvalue().strip()
         if ok:
+            touched = True
             logs.append(line or f"✓ {player_display_name(p)} · матч")
         else:
             logs.append(line or f"✗ {player_display_name(p)}")
+    if touched:
+        from utils.common_db import sync_stats_derived_databases
+
+        sync_stats_derived_databases()
     return logs
 
 
@@ -435,6 +442,7 @@ def apply_player_stat_line(
                 increment_matches=False,
                 team_goals_already=team_g0,
                 team_assists_already=team_a0,
+                sync_derived=False,
             )
         line = buf.getvalue().strip()
         logs.append(line or ("✓" if ok else "✗ запись голов/пасов"))
@@ -585,6 +593,7 @@ def apply_roster_names_for_team(
     keys: list[str] = []
     ok: list[str] = []
     err: list[str] = []
+    touched = False
     for raw in names:
         pl, emsg = resolve_player_in_team(sess, raw, team)
         if not pl:
@@ -603,15 +612,21 @@ def apply_roster_names_for_team(
                 auto_find=True,
                 increment_matches=True,
                 skip_discipline_check=True,
+                sync_derived=False,
             )
         line = buf.getvalue().strip() or (
             f"✓ {player_display_name(pl)}" if success else f"✗ {player_display_name(pl)}"
         )
         if success:
+            touched = True
             keys.append(_stats_session_key(player_surname(pl), pl.team))
             ok.append(line)
         else:
             err.append(line or player_display_name(pl))
+    if touched:
+        from utils.common_db import sync_stats_derived_databases
+
+        sync_stats_derived_databases()
     return keys, ok, err
 
 

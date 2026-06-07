@@ -375,11 +375,10 @@ def rebuild_all_time_databases_from_season_archives() -> dict[str, Any]:
         part = append_season_snapshot_to_all_time(lp, cp)
         log["cumulative"].extend(part.get("cumulative", []))
 
-    if len(seasons) == 1:
-        from utils.common_db import rebuild_common_database_for_disk_paths
+    from utils.common_db import rebuild_common_database_for_disk_paths
 
-        rebuild_common_database_for_disk_paths(cum_l, cum_c, cum_o)
-        log["cumulative"].append("rebuilt db/common.db (all-time)")
+    rebuild_common_database_for_disk_paths(cum_l, cum_c, cum_o)
+    log["cumulative"].append("rebuilt common_synced.db")
     return log
 
 
