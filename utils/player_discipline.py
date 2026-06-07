@@ -181,13 +181,15 @@ def find_fixture_round(
     cl_phase: str | None = None,
 ) -> int | None:
     """
-    Номер тура в официальном расписании лиги/ЛЧ для пары (дом, гости).
-
-    Если пара встречается в нескольких турах (два матча в ЛЧ), предпочитаем
-    первый ещё не сыгранный тур; иначе — последний найденный.
+    Номер тура для дисциплины: нац. лиги — следующий тур **хозяев** (1–14,
+    по журналу ``match_results``); ЛЧ — тур из полного календаря ``schedule.py``.
     """
     lc = (league_code or "").strip().lower()
-    if lc not in ("rpl", "eng", "esp", "ger", "ita", "cl"):
+    if lc in ("rpl", "eng", "esp", "ger", "ita"):
+        from utils.calendar_slot_labels import home_display_tour
+
+        return home_display_tour(home, lc)
+    if lc != "cl":
         return None
     from table.schedule import get_schedule
 
