@@ -655,10 +655,26 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
 
     session.commit()
 
-    if sync_derived:
-        from utils.common_db import sync_stats_derived_databases
+    from utils.stats_derived_sync import record_stat_write
 
-        sync_stats_derived_databases()
+    d_cs = 1 if (pos_type == "goalkeeper" and clean_sheet) else 0
+    if pos_type in ("forward", "midfielder", "defender"):
+        record_stat_write(
+            player,
+            tournament,
+            d_matches=1 if increment_matches else 0,
+            d_goals=goals,
+            d_assists=assists,
+            flush=sync_derived,
+        )
+    else:
+        record_stat_write(
+            player,
+            tournament,
+            d_matches=1 if increment_matches else 0,
+            d_clean_sheets=d_cs,
+            flush=sync_derived,
+        )
 
     ga_str = f" {goals} {assists}" if goals or assists else ""
     cs_str = " (CS)" if clean_sheet else ""
@@ -774,10 +790,28 @@ def revert_player_stats(
             player.clean_sheets = 0
 
     session.commit()
-    if sync_derived:
-        from utils.common_db import sync_stats_derived_databases
 
-        sync_stats_derived_databases()
+    from utils.stats_derived_sync import record_stat_write
+
+    d_cs = -1 if (pos_type == "goalkeeper" and clean_sheet) else 0
+    if pos_type in ("forward", "midfielder", "defender"):
+        record_stat_write(
+            player,
+            tournament,
+            d_matches=-1,
+            d_goals=-goals,
+            d_assists=-assists,
+            flush=sync_derived,
+        )
+    else:
+        record_stat_write(
+            player,
+            tournament,
+            d_matches=-1,
+            d_clean_sheets=d_cs,
+            flush=sync_derived,
+        )
+
     cs_str = " (CS−)" if clean_sheet else ""
     ga_str = f" −{goals} −{assists}" if goals or assists else ""
     print(f"  ↩ {player.name} {position} {team}{ga_str}{cs_str}")
@@ -1922,10 +1956,6 @@ def show_team_goalscorers_table(
     """
     team = _team_name_as_in_db(team)
     if session is None:
-        if tournament in ("common", "merged", "all"):
-            from utils.common_db import ensure_common_db_fresh
-
-            ensure_common_db_fresh()
         session = get_session(tournament)
     rows = []
     for PlayerClass in (Forward, Midfielder, Defender):

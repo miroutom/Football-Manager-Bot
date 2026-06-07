@@ -269,21 +269,11 @@ def ensure_common_db_fresh() -> None:
     rebuild_common_database()
 
 
-def sync_stats_derived_databases() -> None:
-    """
-    После записи статы в league или ЛЧ: ``common.db`` и накопительные ``*_synced.db``.
+def sync_stats_derived_databases(*, full_rebuild: bool = False) -> None:
+    """После статы: инкремент в common/synced; ``full_rebuild`` — полная пересборка."""
+    from utils.stats_derived_sync import sync_stats_derived_databases as _sync
 
-    В ``per_season`` рабочие БД — ``db/season_N/``; synced пересобираются из всех архивов
-    (включая активный сезон). В ``legacy`` стата пишется сразу в synced — достаточно common.
-    """
-    ensure_common_db_fresh()
-    from utils import season_paths
-
-    if season_paths.is_legacy_mode():
-        return
-    from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
-
-    rebuild_all_time_databases_from_season_archives()
+    _sync(full_rebuild=full_rebuild)
 
 
 def rebuild_common_database(
