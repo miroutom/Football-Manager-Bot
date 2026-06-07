@@ -6,6 +6,8 @@
   - у **прежнего** клуба — та же строка (имя+позиция+клуб), стата не трогаем,
     выставляется ``left_team=True`` (в заявке/ростере не показывается, в голеадорах клуба — да);
   - у **нового** клуба — новая строка с нулевой полевой статой, overall/нация/заявка как в боте.
+  - если клуб «откуда» не в пуле ЛЧ (игрока не было в ``champions_league.db``), строка в ЛЧ
+    для клуба «куда» копируется из свежей строки ``league.db`` (см. ``_ensure_cl_mirror_…``).
 
 Раньше менялось только поле ``team`` — стата «уезжала» с игроком; это исправлено.
 
@@ -318,8 +320,113 @@ def _apply_transfer_with_status_to_sessions(
     _run_session(sess_league, "league")
     sess_league.commit()
     _run_session(sess_cl, "cl")
+    if counts["league"] > 0 and counts["cl"] == 0:
+        counts["cl"] = _ensure_cl_mirror_from_league_destination(
+            sess_league,
+            sess_cl,
+            player,
+            to_team,
+            position,
+            new_status,
+            new_overall=new_overall,
+            nation_update=nation_update,
+            new_nation=new_nation,
+        )
     sess_cl.commit()
     return counts
+
+
+def _find_active_row_at_team(sess, player: str, team: str, position: str) -> tuple[type, Any] | None:
+    want_name = _norm_cmp(player)
+    want_pos = _norm_cmp(position)
+    for Cls in _ALL_PLAYER:
+        for r in sess.query(Cls).filter(_filter_team(Cls, team)).all():
+            if _norm_cmp(getattr(r, "name", "") or "") != want_name:
+                continue
+            if want_pos and _norm_cmp(getattr(r, "position", "") or "") != want_pos:
+                continue
+            return Cls, r
+    return None
+
+
+def _ensure_cl_mirror_from_league_destination(
+    sess_league,
+    sess_cl,
+    player: str,
+    to_team: str,
+    position: str,
+    new_status: str | None,
+    *,
+    new_overall: int | None = None,
+    nation_update: bool = False,
+    new_nation: str | None = None,
+) -> int:
+    """
+    Донор был только в нац. БД (клуб «откуда» не в пуле ЛЧ) — скопировать строку
+    из league в champions_league для клуба из пула ЛЧ.
+    """
+    from utils.common_db import _team_in_cl_pool
+
+    if not _team_in_cl_pool(to_team):
+        return 0
+    hit = _find_active_row_at_team(sess_league, player, to_team, position)
+    if hit is None:
+        return 0
+    donor_cls, donor = hit
+    if _row_exists_at_team(sess_cl, donor_cls, player, to_team, position):
+        return 0
+    _insert_fresh_row_at_team(
+        sess_cl,
+        donor_cls,
+        donor,
+        to_team,
+        position,
+        new_status if new_status is not None else getattr(donor, "status", None),
+        new_overall=new_overall,
+        nation_update=nation_update,
+        new_nation=new_nation,
+    )
+    return 1
+
+
+def backfill_cl_rows_from_league(*, rebuild_common: bool = True) -> list[str]:
+    """
+    Строки в league у клубов пула ЛЧ, которых нет в champions_league.db
+    (типично после трансфера из клуба вне ЛЧ).
+    """
+    from utils.common_db import _team_in_cl_pool
+    from utils.utils import session_cl, session_league
+
+    log: list[str] = []
+    for Cls in _ALL_PLAYER:
+        for r in session_league.query(Cls).filter(Cls.left_team.is_(False)).all():
+            team = (getattr(r, "team", None) or "").strip()
+            if not team or not _team_in_cl_pool(team):
+                continue
+            name = (getattr(r, "name", None) or "").strip()
+            pos = (getattr(r, "position", None) or "").strip()
+            if not name or not pos:
+                continue
+            if _row_exists_at_team(session_cl, Cls, name, team, pos):
+                continue
+            st = (getattr(r, "status", None) or "bench").strip().lower()
+            if st not in ("start", "bench", "reserve"):
+                st = "bench"
+            _insert_fresh_row_at_team(
+                session_cl,
+                Cls,
+                r,
+                team,
+                pos,
+                st,
+            )
+            log.append(f"{Cls.__tablename__}: {name} {pos} · {team}")
+    session_cl.commit()
+    if log and rebuild_common:
+        from utils.common_db import rebuild_common_database
+
+        rebuild_common_database()
+    return log
 
 
 def apply_transfer_with_status(
