@@ -287,7 +287,7 @@
       "team_norm": "атлетико",
       "league_code": "esp",
       "scope": "league",
-      "matches_left": 3,
+      "matches_left": 2,
       "unavailable_from_round": 3
     },
     {
@@ -330,7 +330,18 @@
       "team_norm": "милан",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 3
+      "matches_left": 2
+    },
+    {
+      "key": "ровелла|астон вилла|eng|league",
+      "name": "Ровелла",
+      "name_norm": "ровелла",
+      "team": "Астон Вилла",
+      "team_norm": "астон вилла",
+      "league_code": "eng",
+      "scope": "league",
+      "matches_left": 3,
+      "unavailable_from_round": 12
     }
   ],
   "yellow_cycle": [
@@ -692,7 +703,7 @@
       "team_norm": "сити",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "араухо|барселона|cl|cl",
@@ -1892,7 +1903,7 @@
       "team_norm": "атлетико",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "рейнилдо|атлетико|cl|cl",
@@ -2320,6 +2331,46 @@
       "name_norm": "рафа",
       "team": "Ньюкасл",
       "team_norm": "ньюкасл",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "шлоттербек|дортмунд|cl|cl",
+      "name": "Шлоттербек",
+      "name_norm": "шлоттербек",
+      "team": "Дортмунд",
+      "team_norm": "дортмунд",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "траоре|атлетик|cl|cl",
+      "name": "Траоре",
+      "name_norm": "траоре",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "бремер|барселона|esp|league",
+      "name": "Бремер",
+      "name_norm": "бремер",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "сантос|тоттенхэм|eng|league",
+      "name": "Сантос",
+      "name_norm": "сантос",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
       "league_code": "eng",
       "scope": "league",
       "count": 1
@@ -3629,6 +3680,61 @@
       "team_norm": "дортмунд",
       "out_from_month": 7,
       "return_month": 10,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "савич|атлетико|7|10",
+      "name": "Савич",
+      "name_norm": "савич",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "out_from_month": 7,
+      "return_month": 10,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "палинья|сити|7|14",
+      "name": "Палинья",
+      "name_norm": "палинья",
+      "team": "Сити",
+      "team_norm": "сити",
+      "out_from_month": 7,
+      "return_month": 14,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "уокер|сити|7|8",
+      "name": "Уокер",
+      "name_norm": "уокер",
+      "team": "Сити",
+      "team_norm": "сити",
+      "out_from_month": 7,
+      "return_month": 8,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "месси|сити|7|10",
+      "name": "Месси",
+      "name_norm": "месси",
+      "team": "Сити",
+      "team_norm": "сити",
+      "out_from_month": 7,
+      "return_month": 10,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "хёйберг|тоттенхэм|7|8",
+      "name": "Хёйберг",
+      "name_norm": "хёйберг",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "out_from_month": 7,
+      "return_month": 8,
       "type": "травма",
       "season": 2
     }
