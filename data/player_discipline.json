@@ -321,6 +321,16 @@
       "scope": "league",
       "matches_left": 3,
       "unavailable_from_round": 11
+    },
+    {
+      "key": "тиау|милан|cl|cl",
+      "name": "Тиау",
+      "name_norm": "тиау",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 3
     }
   ],
   "yellow_cycle": [
@@ -3608,6 +3618,17 @@
       "team_norm": "жирона",
       "out_from_month": 6,
       "return_month": 9,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "кобель|дортмунд|7|10",
+      "name": "Кобель",
+      "name_norm": "кобель",
+      "team": "Дортмунд",
+      "team_norm": "дортмунд",
+      "out_from_month": 7,
+      "return_month": 10,
       "type": "травма",
       "season": 2
     }

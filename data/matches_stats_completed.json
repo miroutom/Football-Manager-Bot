@@ -346,5 +346,12 @@
     "away": "Ньюкасл",
     "tournament": "league",
     "day": 7
+  },
+  {
+    "home": "Милан",
+    "away": "Дортмунд",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 7
   }
 ]
