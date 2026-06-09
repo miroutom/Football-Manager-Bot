@@ -734,5 +734,357 @@
     "away": "Урал",
     "tournament": "league",
     "day": 8
+  },
+  {
+    "home": "Реал",
+    "away": "Реал Сосьедад",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Барселона",
+    "away": "Бетис",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Краснодар",
+    "away": "Крылья Советов",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Бавария",
+    "away": "Франкфурт",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Цска",
+    "away": "Спартак",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Байер",
+    "away": "Вольфсбург",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Локомотив",
+    "away": "Динамо",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Наполи",
+    "away": "Фиорентина",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Боруссия М",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Милан",
+    "away": "Рома",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Ювентус",
+    "away": "Лацио",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Интер",
+    "away": "Аталанта",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Атлетико",
+    "away": "Жирона",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Хоффенхайм",
+    "tournament": "league",
+    "day": 8
+  },
+  {
+    "home": "Сити",
+    "away": "Аталанта",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 9
+  },
+  {
+    "home": "Аталанта",
+    "away": "Сити",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 9
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Лейпциг",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 9
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Ливерпуль",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 9
+  },
+  {
+    "home": "Сити",
+    "away": "Арсенал",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Боруссия М",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Мю",
+    "away": "Арсенал",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Астон Вилла",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Тоттенхэм",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Астон Вилла",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Мю",
+    "away": "Челси",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Сити",
+    "away": "Ливерпуль",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Тоттенхэм",
+    "away": "Челси",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Барселона",
+    "away": "Севилья",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Бетис",
+    "away": "Жирона",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Реал",
+    "away": "Атлетико",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Барселона",
+    "away": "Атлетик",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Реал",
+    "away": "Атлетик",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Атлетико",
+    "away": "Реал Сосьедад",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Жирона",
+    "away": "Севилья",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Байер",
+    "away": "Франкфурт",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Бавария",
+    "away": "Байер",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Лейпциг",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Бавария",
+    "away": "Лейпциг",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Хоффенхайм",
+    "away": "Вольфсбург",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Хоффенхайм",
+    "away": "Франкфурт",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Боруссия М",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Милан",
+    "away": "Фиорентина",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Ювентус",
+    "away": "Аталанта",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Интер",
+    "away": "Ювентус",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Милан",
+    "away": "Наполи",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Интер",
+    "away": "Наполи",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Рома",
+    "away": "Лацио",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Рома",
+    "away": "Аталанта",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Лацио",
+    "away": "Фиорентина",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Краснодар",
+    "away": "Спартак",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Зенит",
+    "away": "Динамо",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Зенит",
+    "away": "Локомотив",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Цска",
+    "away": "Краснодар",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Крылья Советов",
+    "away": "Динамо",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Урал",
+    "away": "Спартак",
+    "tournament": "league",
+    "day": 10
+  },
+  {
+    "home": "Цска",
+    "away": "Локомотив",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Урал",
+    "away": "Крылья Советов",
+    "tournament": "league",
+    "day": 9
+  },
+  {
+    "home": "Бетис",
+    "away": "Реал Сосьедад",
+    "tournament": "league",
+    "day": 10
   }
 ]
