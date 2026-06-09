@@ -138,8 +138,10 @@ def _inc_trophies_all_players_of_team(
 def apply_season_trophies_from_standings() -> dict[str, Any]:
     """
     +1 к trophies в БД лиги для чемпиона каждой нац. лиги (1-е место в таблице),
-    +1 к trophies в БД ЛЧ для 1-го в групповой таблице ЛЧ (как show_table / бот).
+    +1 к trophies в БД ЛЧ для победителя плей-офф (финал); если финал не сыгран —
+    1-е место в групповой таблице ЛЧ.
     """
+    from champions_league.bracket_html import get_cl_knockout_champion
     from main import LEAGUES, get_teams_by_league
     from match_results import compute_cl_group_standings_from_journal
     from teams import get_sorted_teams
@@ -168,11 +170,15 @@ def apply_season_trophies_from_standings() -> dict[str, Any]:
 
         cl_map = get_teams_by_league("cl")
         if cl_map:
-            display = compute_cl_group_standings_from_journal(cl_map.keys())
-            sorted_cl = get_sorted_teams(display)
-            wcl = sorted_cl[0][0]
+            wcl = get_cl_knockout_champion()
+            cl_source = "knockout"
+            if not wcl:
+                display = compute_cl_group_standings_from_journal(cl_map.keys())
+                sorted_cl = get_sorted_teams(display)
+                wcl = sorted_cl[0][0]
+                cl_source = "group"
             n = _inc_trophies_all_players_of_team(s_cl, wcl, 1)
-            out["cl_winner"] = {"team": wcl, "rows": n}
+            out["cl_winner"] = {"team": wcl, "rows": n, "source": cl_source}
             out["cl_rows"] = n
 
         s_league.commit()

@@ -40,12 +40,13 @@ def _tie_key(a: str, b: str) -> tuple[str, str]:
     return (x, y) if x <= y else (y, x)
 
 
-def _load_cl_scores_and_penalties() -> tuple[
+def _scores_and_penalties_from_records(
+    records: list[dict[str, Any]],
+) -> tuple[
     dict[tuple[str, str], tuple[int, int]],
     dict[tuple[str, str], dict[str, int]],
 ]:
     """scores: (home,away)->(hs,aws). pen: sorted pair -> {team_name_norm: pens}."""
-    records, _ = load_records_and_keys()
     scores: dict[tuple[str, str], tuple[int, int]] = {}
     pen: dict[tuple[str, str], dict[str, int]] = {}
     for r in records:
@@ -66,6 +67,31 @@ def _load_cl_scores_and_penalties() -> tuple[
                 if isinstance(tv, int):
                     bucket[_norm(str(tk))] = tv
     return scores, pen
+
+
+def _load_cl_scores_and_penalties(
+    *, journal_path: str | None = None
+) -> tuple[
+    dict[tuple[str, str], tuple[int, int]],
+    dict[tuple[str, str], dict[str, int]],
+]:
+    if journal_path:
+        from match_results import load_records_and_keys_from_path
+
+        records, _ = load_records_and_keys_from_path(journal_path)
+    else:
+        records, _ = load_records_and_keys()
+    return _scores_and_penalties_from_records(records)
+
+
+def get_cl_knockout_champion(*, journal_path: str | None = None) -> str | None:
+    """Победитель плей-офф ЛЧ (финал); ``journal_path`` — архив ``match_results.json``."""
+    scores, pen = _load_cl_scores_and_penalties(journal_path=journal_path)
+    st = build_cl_bracket_state(scores, pen)
+    winner = st.get("final", {}).get("winner")
+    if not winner or str(winner).lower().startswith("победитель"):
+        return None
+    return str(winner).strip().title()
 
 
 def _two_leg_team_goals(

@@ -59,7 +59,7 @@ async def cb_season_menu(callback: CallbackQuery) -> None:
         "⏹ <b>Завершение сезона</b>\n\n"
         f"Сейчас учитывается сезон <b>{n}</b> (см. <code>db/season_state.json</code> в режиме per_season).\n"
         "Будет:\n"
-        "• <b>Трофеи</b> по 1-му месту в каждой нац. лиге и в группе ЛЧ: +1 к <code>trophies</code> в соответствующей БД;\n"
+        "• <b>Трофеи</b> по 1-му месту в каждой нац. лиге и победителю плей-офф ЛЧ (финал): +1 к <code>trophies</code>;\n"
         "• Статистика сезона добавится в <code>league_synced.db</code>, "
         "<code>champions_league_synced.db</code>, <code>common_synced.db</code>;\n"
         f"• Снимок завершённого сезона — в <code>db/season_{n}/</code> (три БД + pickle);\n"
