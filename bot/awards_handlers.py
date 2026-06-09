@@ -248,11 +248,14 @@ async def on_award_name(message: Message, state: FSMContext) -> None:
         return
     await state.clear()
     src = "нац. лига" if r.league else "ЛЧ"
+    disp_name = r.player_name or name
+    disp_team = r.team or team
     await message.answer(
         f"✅ {lbl}\n"
-        f"<b>{name}</b> · {team}\n"
+        f"<b>{disp_name}</b> · {disp_team}\n"
         f"+1 в одной БД ({src}) — в сезоне одна награда этого вида; "
         f"класс: {r.player_class}\n"
-        f"<code>common.db</code> пересобран.",
+        f"<code>common.db</code> пересобран; "
+        f"<code>season_history.json</code> обновлён.",
         parse_mode="HTML",
     )

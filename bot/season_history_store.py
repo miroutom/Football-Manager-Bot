@@ -104,6 +104,46 @@ def record_tournament_winners_from_finalize(ended_season: int, trophies_log: dic
     save_history(data)
 
 
+_AWARD_KIND_KEYS = {
+    "ball": "golden_ball",
+    "golden_ball": "golden_ball",
+    "boot": "golden_boot",
+    "golden_boot": "golden_boot",
+    "glove": "golden_glove",
+    "golden_glove": "golden_glove",
+    "boy": "golden_boy",
+    "golden_boy": "golden_boy",
+}
+
+
+def record_award_winner(
+    season: int,
+    kind: str,
+    player: str,
+    team: str,
+    *,
+    photo_slug: str | None = None,
+) -> None:
+    """Записать победителя личной награды в ``season_history.json``."""
+    key = _AWARD_KIND_KEYS.get((kind or "").strip().lower())
+    if not key:
+        raise ValueError(f"Неизвестная награда для истории: {kind!r}")
+    p = (player or "").strip()
+    t = (team or "").strip()
+    if not p or not t:
+        raise ValueError("Игрок и клуб обязательны для season_history")
+    row: list[Any] = [int(season), p, t]
+    if photo_slug and str(photo_slug).strip():
+        row.append(str(photo_slug).strip())
+    data = load_history()
+    rows = data.setdefault(key, [])
+    if not isinstance(rows, list):
+        rows = []
+        data[key] = rows
+    _upsert_season_row(rows, int(season), row)
+    save_history(data)
+
+
 def _rows_by_season(rows: list[Any]) -> dict[int, list[Any]]:
     out: dict[int, list[Any]] = {}
     if not isinstance(rows, list):

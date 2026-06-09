@@ -19,6 +19,8 @@ class AwardApplyResult:
     league: int
     cl: int
     player_class: str
+    player_name: str = ""
+    team: str = ""
 
 
 _KIND_TO_ATTR: dict[str, str] = {
@@ -52,9 +54,11 @@ def apply_trophy(
     n_league = 0
     n_cl = 0
     last_cls: str = ""
+    resolved_name = name
+    resolved_team = team
 
     def _bump(session) -> int:
-        nonlocal last_cls
+        nonlocal last_cls, resolved_name, resolved_team
         row, Cls = find_player_row(session, name, team)
         if not row or not Cls:
             return 0
@@ -63,6 +67,8 @@ def apply_trophy(
         cur = int(getattr(row, attr, 0) or 0)
         setattr(row, attr, cur + 1)
         last_cls = Cls.__name__
+        resolved_name = str(getattr(row, "name", None) or name).strip()
+        resolved_team = str(getattr(row, "team", None) or team).strip()
         return 1
 
     try:
@@ -89,6 +95,26 @@ def apply_trophy(
 
     if rebuild_common:
         rebuild_common_database()
+
+    try:
+        from bot.season_history_store import record_award_winner
+        from utils.season_paths import get_active_season
+
+        record_award_winner(
+            get_active_season(),
+            k,
+            resolved_name,
+            resolved_team,
+        )
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception("record_award_winner")
+
     return AwardApplyResult(
-        league=n_league, cl=n_cl, player_class=last_cls or "—"
+        league=n_league,
+        cl=n_cl,
+        player_class=last_cls or "—",
+        player_name=resolved_name,
+        team=resolved_team,
     )
