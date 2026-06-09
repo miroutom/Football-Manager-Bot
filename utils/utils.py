@@ -38,9 +38,16 @@ def reinit_db_connections() -> None:
     CHAMPIONS_LEAGUE_DB_PATH = season_paths.get_cl_db_path()
     COMMON_DB_PATH = season_paths.get_common_db_path()
 
-    engine_league = create_engine(f"sqlite:///{LEAGUE_DB_PATH}")
-    engine_cl = create_engine(f"sqlite:///{CHAMPIONS_LEAGUE_DB_PATH}")
-    engine_common = create_engine(f"sqlite:///{COMMON_DB_PATH}")
+    _sqlite_args = {"check_same_thread": False, "timeout": 30}
+    engine_league = create_engine(
+        f"sqlite:///{LEAGUE_DB_PATH}", connect_args=_sqlite_args
+    )
+    engine_cl = create_engine(
+        f"sqlite:///{CHAMPIONS_LEAGUE_DB_PATH}", connect_args=_sqlite_args
+    )
+    engine_common = create_engine(
+        f"sqlite:///{COMMON_DB_PATH}", connect_args=_sqlite_args
+    )
 
     SessionLeague = sessionmaker(bind=engine_league)
     SessionCL = sessionmaker(bind=engine_cl)

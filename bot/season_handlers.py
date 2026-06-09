@@ -95,6 +95,16 @@ async def cb_season_yes(callback: CallbackQuery) -> None:
 
     try:
         log = await asyncio.to_thread(finalize_season)
+    except PermissionError as e:
+        logger.exception("finalize_season")
+        await callback.message.answer(
+            f"Ошибка записи в БД: {e}\n\n"
+            "Частая причина: каталог <code>db/season_N/</code> или файлы .db "
+            "только для чтения на сервере бота. Нужны права на запись "
+            "(chmod или постоянный том, не только git checkout).",
+            parse_mode="HTML",
+        )
+        return
     except Exception as e:
         logger.exception("finalize_season")
         await callback.message.answer(f"Ошибка: {e}")

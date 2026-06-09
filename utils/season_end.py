@@ -19,6 +19,48 @@ from utils.common_db import rebuild_common_database
 
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
+_SQLITE_CONNECT_ARGS = {"check_same_thread": False, "timeout": 30}
+
+
+def _assert_sqlite_writable(path: str) -> None:
+    """Проверка, что SQLite может писать (файл и каталог не read-only)."""
+    import sqlite3
+
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"Нет файла БД: {path}")
+    parent = os.path.dirname(path) or "."
+    if not os.access(parent, os.W_OK):
+        raise PermissionError(
+            f"Каталог БД только для чтения: {parent}. "
+            "Проверь права на db/season_N/ (или смонтированный том на сервере бота)."
+        )
+    if not os.access(path, os.W_OK):
+        raise PermissionError(f"Файл БД только для чтения: {path}")
+    try:
+        con = sqlite3.connect(path, timeout=30)
+        try:
+            con.execute("BEGIN IMMEDIATE")
+            con.rollback()
+        finally:
+            con.close()
+    except sqlite3.OperationalError as e:
+        raise PermissionError(f"SQLite не может писать в {path}: {e}") from e
+
+
+def _open_trophy_sessions() -> tuple[Any, Any, Any, Any, Any, Any]:
+    """Свежие сессии league/cl в текущем потоке (бот вызывает finalize в worker thread)."""
+    from utils import season_paths
+
+    lp = season_paths.get_league_db_path()
+    cp = season_paths.get_cl_db_path()
+    _assert_sqlite_writable(lp)
+    _assert_sqlite_writable(cp)
+    el = create_engine(f"sqlite:///{lp}", connect_args=_SQLITE_CONNECT_ARGS)
+    ec = create_engine(f"sqlite:///{cp}", connect_args=_SQLITE_CONNECT_ARGS)
+    Sl = sessionmaker(bind=el)
+    Scl = sessionmaker(bind=ec)
+    return el, ec, Sl(), Scl()
+
 
 def _zero_player_row(row: Any, Cls: type) -> None:
     """Полный сброс строки (редко нужен отдельно от матчевой статистики)."""
@@ -101,7 +143,6 @@ def apply_season_trophies_from_standings() -> dict[str, Any]:
     from main import LEAGUES, get_teams_by_league
     from match_results import compute_cl_group_standings_from_journal
     from teams import get_sorted_teams
-    from utils.utils import session_cl, session_league
 
     out: dict[str, Any] = {
         "national_winners": {},
@@ -110,30 +151,41 @@ def apply_season_trophies_from_standings() -> dict[str, Any]:
         "cl_rows": 0,
     }
 
-    for _k, lg in LEAGUES.items():
-        code = lg["code"]
-        if code == "cl":
-            continue
-        teams_d = get_teams_by_league(code)
-        if not teams_d:
-            continue
-        sorted_t = get_sorted_teams(teams_d)
-        winner = sorted_t[0][0]
-        n = _inc_trophies_all_players_of_team(session_league, winner, 1)
-        out["national_winners"][code] = {"team": winner, "rows": n}
-        out["league_rows"] += n
+    el, ec, s_league, s_cl = _open_trophy_sessions()
+    try:
+        for _k, lg in LEAGUES.items():
+            code = lg["code"]
+            if code == "cl":
+                continue
+            teams_d = get_teams_by_league(code)
+            if not teams_d:
+                continue
+            sorted_t = get_sorted_teams(teams_d)
+            winner = sorted_t[0][0]
+            n = _inc_trophies_all_players_of_team(s_league, winner, 1)
+            out["national_winners"][code] = {"team": winner, "rows": n}
+            out["league_rows"] += n
 
-    cl_map = get_teams_by_league("cl")
-    if cl_map:
-        display = compute_cl_group_standings_from_journal(cl_map.keys())
-        sorted_cl = get_sorted_teams(display)
-        wcl = sorted_cl[0][0]
-        n = _inc_trophies_all_players_of_team(session_cl, wcl, 1)
-        out["cl_winner"] = {"team": wcl, "rows": n}
-        out["cl_rows"] = n
+        cl_map = get_teams_by_league("cl")
+        if cl_map:
+            display = compute_cl_group_standings_from_journal(cl_map.keys())
+            sorted_cl = get_sorted_teams(display)
+            wcl = sorted_cl[0][0]
+            n = _inc_trophies_all_players_of_team(s_cl, wcl, 1)
+            out["cl_winner"] = {"team": wcl, "rows": n}
+            out["cl_rows"] = n
 
-    session_league.commit()
-    session_cl.commit()
+        s_league.commit()
+        s_cl.commit()
+    finally:
+        s_league.close()
+        s_cl.close()
+        el.dispose()
+        ec.dispose()
+
+    from utils.utils import reinit_db_connections
+
+    reinit_db_connections()
     return out
 
 
@@ -218,6 +270,7 @@ def finalize_season() -> dict[str, Any]:
 
     log: dict[str, Any] = {"trophies": None, "archive": None, "new_season": None}
 
+    reinit_db_connections()
     tr = apply_season_trophies_from_standings()
     log["trophies"] = tr
 
