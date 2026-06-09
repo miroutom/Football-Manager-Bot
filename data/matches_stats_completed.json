@@ -1086,5 +1086,12 @@
     "away": "Реал Сосьедад",
     "tournament": "league",
     "day": 10
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Аталанта",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 10
   }
 ]

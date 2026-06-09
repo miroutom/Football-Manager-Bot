@@ -134,7 +134,7 @@ async def _record_match_or_request_penalties(
     round_num: int | None,
     cl_ph: str | None,
 ) -> None:
-    """Запись матча или запрос серии пенальти (ЛЧ нокаут, ничья по сумме двух матчей)."""
+    """Запись матча или запрос серии пенальти (ЛЧ нокаут: финал или ничья по сумме двух матчей)."""
     hn = home.strip().title()
     an = away.strip().title()
 
@@ -149,15 +149,10 @@ async def _record_match_or_request_penalties(
             pen_round=round_num,
             pen_cl_ph=cl_ph,
         )
-        from utils.cl_knockout_schedule import format_first_leg_score_html
+        from utils.cl_knockout_schedule import cl_knockout_penalties_prompt_html
 
-        first_leg = format_first_leg_score_html(hn, an)
         await message.answer(
-            f"{first_leg}"
-            "По сумме двух матчей ничья — нужна серия пенальти после ответного матча.\n"
-            f"Введи два числа через пробел: голы в серии <b>{hn}</b> (хозяева ответного) "
-            f"и <b>{an}</b> (гости), например: <code>5 4</code>\n"
-            "В серии должен быть победитель — числа не должны совпадать.\n/cancel — отмена.",
+            cl_knockout_penalties_prompt_html(hn, an),
             parse_mode="HTML",
         )
         return

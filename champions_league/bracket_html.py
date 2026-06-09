@@ -129,6 +129,33 @@ def _single_leg_score(
     return t[0], t[1]
 
 
+def _winner_single_leg(
+    scores: dict[tuple[str, str], tuple[int, int]],
+    home: str,
+    away: str,
+    pen: dict[tuple[str, str], dict[str, int]] | None = None,
+) -> str | None:
+    """Победитель одноматчевого стыка (финал); при ничьей — по ``penalties_by_team``."""
+    sh, sa = _single_leg_score(scores, home, away)
+    if sh is None or sa is None:
+        return None
+    if sh > sa:
+        return home
+    if sa > sh:
+        return away
+    if pen:
+        k = _tie_key(home, away)
+        bucket = pen.get(k) or {}
+        nh, na = _norm(home), _norm(away)
+        ph, pa = bucket.get(nh), bucket.get(na)
+        if ph is not None and pa is not None:
+            if ph > pa:
+                return home
+            if pa > ph:
+                return away
+    return None
+
+
 def _slot_resolve(w: dict[tuple[str, int], str], x: str | SlotRef) -> str:
     if isinstance(x, str):
         return x
@@ -198,15 +225,17 @@ def build_cl_bracket_state(
     fa = _slot_resolve(w, tree["final"]["away_from"])
     if fh.startswith("победитель") or fa.startswith("победитель"):
         fs = (None, None)
+        final_winner = None
     else:
         fs = _single_leg_score(scores, fh, fa)
+        final_winner = _winner_single_leg(scores, fh, fa, pen)
 
     return {
         "round_1": r1_matches,
         "round_2": r2_matches,
         "round_3": r3_matches,
         "semi_finals": sf_matches,
-        "final": {"home": fh, "away": fa, "score": fs},
+        "final": {"home": fh, "away": fa, "score": fs, "winner": final_winner},
     }
 
 
@@ -295,10 +324,23 @@ def _fmt_tie_card(
     return "".join(rows)
 
 
-def _fmt_final(h: str, a: str, sc: tuple[int | None, int | None]) -> str:
+def _fmt_final(
+    h: str,
+    a: str,
+    sc: tuple[int | None, int | None],
+    pen_by_tie: dict[tuple[str, str], dict[str, int]] | None = None,
+) -> str:
     sh, sa = sc
     if sh is None or sa is None:
         score = '<span class="dash">—</span> : <span class="dash">—</span>'
+    elif sh == sa and pen_by_tie:
+        bucket = pen_by_tie.get(_tie_key(h, a), {})
+        ph = bucket.get(_norm(h))
+        pa = bucket.get(_norm(a))
+        if ph is not None and pa is not None:
+            score = f"{sh} : {sa} <span class=\"pen\">({ph}:{pa} п)</span>"
+        else:
+            score = f"{sh} : {sa}"
     else:
         score = f"{sh} : {sa}"
     return (
@@ -331,7 +373,11 @@ def build_cl_bracket_html_document() -> str:
     col3 = _column("1/4 финала", cards_from_matches(st["round_3"]))
     col4 = _column("1/2 финала", cards_from_matches(st["semi_finals"]))
     f = st["final"]
-    col5 = _column("Финал", [_fmt_final(f["home"], f["away"], f["score"]) + '<div class="card-foot">—</div>'])
+    foot = f["winner"] or "—"
+    col5 = _column(
+        "Финал",
+        [_fmt_final(f["home"], f["away"], f["score"], pen_by_tie) + f'<div class="card-foot">{_esc(foot)}</div>'],
+    )
 
     css = """
     * { box-sizing: border-box; }

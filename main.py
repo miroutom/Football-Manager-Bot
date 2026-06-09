@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Football Manager - Сезон 2024/25
 Режим матч-день: в один день матчи из разных лиг (РПЛ, АПЛ, Ла Лига, Серия А, Бундеслига, ЛЧ)
@@ -384,6 +386,13 @@ def add_stat(first_team, second_team, first_score, second_score, teams):
     teams[second_team].update_stats(second_score, first_score, first_team)
 
 
+def _cl_knockout_is_final_match(home: str, away: str) -> bool:
+    from utils.cl_knockout_schedule import find_knockout_tie_for_match
+
+    tie = find_knockout_tie_for_match(home, away)
+    return tie is not None and tie[0] == "final"
+
+
 def cl_knockout_aggregate_tie_needs_penalties(
     home: str,
     away: str,
@@ -391,9 +400,13 @@ def cl_knockout_aggregate_tie_needs_penalties(
     away_score: int,
     cl_phase: Optional[str],
 ) -> bool:
-    """Ответный матч нокаута ЛЧ и сумма двух матчей — ничья (нужна серия пенальти)."""
+    """Ничья в стыке ЛЧ, где нужна серия пенальти: финал (один матч) или сумма двух матчей."""
     if _normalize_cl_phase(cl_phase) != "knockout":
         return False
+    if home_score != away_score:
+        return False
+    if _cl_knockout_is_final_match(home, away):
+        return True
     first = find_cl_knockout_first_leg_record(home, away)
     if not first:
         return False
@@ -412,25 +425,29 @@ def _prompt_cl_penalties_after_aggregate_tie(
     cl_phase: Optional[str],
 ) -> Optional[Dict[str, int]]:
     """
-    Пенальти только если это ответный матч нокаута ЛЧ и сумма двух матчей — ничья.
-    Не по ничьей в одном матче, а по общему счёту стыка.
+    Серия пенальти: финал ЛЧ при ничьей в основное время или ответный матч стыка
+    при ничьей по сумме двух матчей.
     """
     if _normalize_cl_phase(cl_phase) != "knockout":
         return None
-    first = find_cl_knockout_first_leg_record(home, away)
-    if not first:
+    if not cl_knockout_aggregate_tie_needs_penalties(
+        home, away, home_score, away_score, cl_phase
+    ):
         return None
-    totals = cl_knockout_two_leg_totals(first, home, away, home_score, away_score)
-    if totals is None:
-        return None
-    th, ta = totals
-    if th != ta:
-        return None
-    fh_n, fa_n = first["home"], first["away"]
-    print(
-        f"\n  Сумма двух матчей: {fh_n} {th} — {ta} {fa_n} (ничья). "
-        f"Нужна серия пенальти после ответного матча."
-    )
+    if _cl_knockout_is_final_match(home, away):
+        print(
+            f"\n  Финал ЛЧ: {home} {home_score}:{away_score} {away} (ничья). "
+            f"Нужна серия пенальти."
+        )
+    else:
+        first = find_cl_knockout_first_leg_record(home, away)
+        totals = cl_knockout_two_leg_totals(first, home, away, home_score, away_score)
+        th, ta = totals  # type: ignore[misc]
+        fh_n, fa_n = first["home"], first["away"]  # type: ignore[index]
+        print(
+            f"\n  Сумма двух матчей: {fh_n} {th} — {ta} {fa_n} (ничья). "
+            f"Нужна серия пенальти после ответного матча."
+        )
     while True:
         raw = input(
             f"  Пенальти (забитые в серии): {home} (хозяева ответного), "

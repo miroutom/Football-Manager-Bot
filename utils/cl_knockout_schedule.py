@@ -20,7 +20,13 @@ import random
 from pathlib import Path
 from typing import Any
 
-from champions_league.bracket_html import _load_cl_scores_and_penalties, _winner_two_leg
+from champions_league.bracket_html import (
+    _load_cl_scores_and_penalties,
+    _single_leg_score,
+    _tie_key,
+    _winner_single_leg,
+    _winner_two_leg,
+)
 from champions_league.knockout_bracket import (
     SlotRef,
     default_cl_playoff_24_tree,
@@ -208,10 +214,14 @@ def is_knockout_round_complete(round_key: str) -> bool:
         return False
     if round_key == "final":
         h, a = ties[0]
-        from champions_league.bracket_html import _single_leg_score
-
         s = _single_leg_score(scores, h, a)
-        return s[0] is not None
+        if s[0] is None:
+            return False
+        if s[0] != s[1]:
+            return True
+        bucket = pen.get(_tie_key(h, a), {})
+        ph, pa = bucket.get(_norm(h)), bucket.get(_norm(a))
+        return ph is not None and pa is not None and ph != pa
     for h, a in ties:
         if _winner_two_leg(scores, h, a, pen) is None:
             return False
@@ -248,20 +258,61 @@ def format_first_leg_score_html(home: str, away: str) -> str:
     )
 
 
+def cl_knockout_penalties_prompt_html(home: str, away: str) -> str:
+    """Текст запроса серии пенальти (HTML) для бота."""
+    hn, an = _norm(home), _norm(away)
+    if _cl_knockout_is_final_match(hn, an):
+        return (
+            f"Финал ЛЧ: ничья <b>{hn}</b> — <b>{an}</b>.\n"
+            f"Введи два числа через пробел: голы в серии <b>{hn}</b> (хозяева) "
+            f"и <b>{an}</b> (гости), например: <code>5 3</code>\n"
+            "В серии должен быть победитель — числа не должны совпадать.\n/cancel — отмена."
+        )
+    first_leg = format_first_leg_score_html(hn, an)
+    return (
+        f"{first_leg}"
+        "По сумме двух матчей ничья — нужна серия пенальти после ответного матча.\n"
+        f"Введи два числа через пробел: голы в серии <b>{hn}</b> (хозяева ответного) "
+        f"и <b>{an}</b> (гости), например: <code>5 4</code>\n"
+        "В серии должен быть победитель — числа не должны совпадать.\n/cancel — отмена."
+    )
+
+
+def _cl_knockout_is_final_match(home: str, away: str) -> bool:
+    tie = find_knockout_tie_for_match(home, away)
+    return tie is not None and tie[0] == "final"
+
+
 def cl_knockout_second_leg_advance_message(
     home: str,
     away: str,
     *,
     penalties_by_team: dict[str, int] | None = None,
 ) -> str | None:
-    """Сообщение «команда прошла в …» после ответного матча (оба матча в журнале)."""
-    first = find_cl_knockout_first_leg_record(home, away)
-    if not first:
-        return None
+    """Сообщение о проходе в следующий раунд или победе в финале."""
     tie = find_knockout_tie_for_match(home, away)
     if not tie:
         return None
     round_key, home_first = tie
+    if round_key == "final":
+        scores, pen = _load_cl_scores_and_penalties()
+        if penalties_by_team:
+            x, y = _norm(home), _norm(away)
+            k = (x, y) if x <= y else (y, x)
+            pen = dict(pen)
+            pen[k] = {_norm(t): int(v) for t, v in penalties_by_team.items()}
+        w = _build_winners_map()
+        tree = default_cl_playoff_24_tree()
+        fh = _resolve_slot(w, tree["final"]["home_from"])
+        fa = _resolve_slot(w, tree["final"]["away_from"])
+        winner = _winner_single_leg(scores, fh, fa, pen)
+        if not winner:
+            return None
+        return f"<b>{winner}</b> — победитель Лиги чемпионов."
+
+    first = find_cl_knockout_first_leg_record(home, away)
+    if not first:
+        return None
     scores, pen = _load_cl_scores_and_penalties()
     if penalties_by_team:
         x, y = _norm(home), _norm(away)

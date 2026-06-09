@@ -5018,6 +5018,28 @@
       "return_month": 13,
       "type": "травма",
       "season": 2
+    },
+    {
+      "key": "торрес|аталанта|10|13",
+      "name": "Торрес",
+      "name_norm": "торрес",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "out_from_month": 10,
+      "return_month": 13,
+      "type": "травма",
+      "season": 2
+    },
+    {
+      "key": "миранчук|аталанта|10|13",
+      "name": "Миранчук",
+      "name_norm": "миранчук",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "out_from_month": 10,
+      "return_month": 13,
+      "type": "травма",
+      "season": 2
     }
   ]
 }

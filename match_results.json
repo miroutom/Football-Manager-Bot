@@ -4177,7 +4177,11 @@
       "away_score": 2,
       "day": 10,
       "cl_phase": "knockout",
-      "entry_type": "play"
+      "entry_type": "play",
+      "penalties_by_team": {
+        "Ливерпуль": 5,
+        "Аталанта": 3
+      }
     }
   ]
 }
