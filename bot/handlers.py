@@ -1570,16 +1570,39 @@ async def cb_top100_sort(callback: CallbackQuery) -> None:
         await callback.answer()
         return
     await callback.answer("Считаю…")
+    if not callback.message:
+        return
     try:
-        from bot.services import render_top100
+        from bot.top100_infographic import render_top100_infographic_png_pages
 
-        text = await asyncio.to_thread(render_top100, league_code, sk, 100)
-        sort_label = {1: "голы", 2: "передачи", 3: "Г+А"}.get(sk, str(sk))
-        await answer_report_photos(
-            callback.message,
-            text,
-            f"Топ-100 · {_league_title(league_code)} · {sort_label}",
+        result = await asyncio.to_thread(
+            render_top100_infographic_png_pages, league_code, sk, 100
         )
+        sort_label = {1: "голы", 2: "передачи", 3: "Г+А"}.get(sk, str(sk))
+        cap = f"Топ-100 · {_league_title(league_code)} · {sort_label}"
+        if isinstance(result, str):
+            await callback.message.answer(result)
+            return
+        if not result:
+            await callback.message.answer("Нет данных для топ-100.")
+            return
+        if len(result) == 1:
+            await callback.message.answer_photo(
+                BufferedInputFile(result[0], filename="top100_0.png"),
+                caption=cap,
+            )
+            return
+        chunk_size = 10
+        idx = 0
+        while idx < len(result):
+            chunk = result[idx : idx + chunk_size]
+            media: list[InputMediaPhoto] = []
+            for j, blob in enumerate(chunk):
+                bf = BufferedInputFile(blob, filename=f"top100_{idx + j}.png")
+                cap_j = cap if idx == 0 and j == 0 else None
+                media.append(InputMediaPhoto(media=bf, caption=cap_j))
+            await callback.message.answer_media_group(media)
+            idx += chunk_size
     except Exception as e:
         logger.exception("top100")
         await callback.message.answer(f"Ошибка: {e}")

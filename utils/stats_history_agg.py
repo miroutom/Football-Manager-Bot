@@ -1121,32 +1121,44 @@ def format_season_clean_sheets(
     return _fmt(_sort(gk_rows), "вратари"), _fmt(_sort(df_rows), "защитники")
 
 
-def format_top100_str(
+def collect_top100_rows(
     league_code: str | None,
     limit: int = 100,
     sort_key: int = 1,
-) -> str:
-    """Топ-100 за всё время: ``all`` — нац. лиги; ``allcl`` — лига + ЛЧ."""
-    import contextlib
-    import io
+) -> tuple[str | None, list[dict], int, str | None]:
+    """
+    Топ-N за всё время: ``all`` — нац. лиги; ``allcl`` — лига + ЛЧ.
 
+    Возвращает (scope_line, rows, n_candidates, error_message).
+    При ошибке ``error_message`` не None, ``rows`` пустой.
+    """
     code = normalize_stats_league_code(league_code) or league_code
     if is_all_leagues_plus_cl(code):
         if not life_has_combined_archive_data():
             return (
-                "Пока нет архивов сезонов с league.db / champions_league.db. "
-                "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+                None,
+                [],
+                0,
+                (
+                    "Пока нет архивов сезонов с league.db / champions_league.db. "
+                    "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+                ),
             )
         scope_line = "лига + ЛЧ, все лиги"
     elif is_all_leagues_only(code):
         if not life_has_archive_data():
             return (
-                "Пока нет архивов сезонов с league.db. "
-                "После «Завершить сезон» появятся снимки в db/season_N/."
+                None,
+                [],
+                0,
+                (
+                    "Пока нет архивов сезонов с league.db. "
+                    "После «Завершить сезон» появятся снимки в db/season_N/."
+                ),
             )
         scope_line = "все нац. лиги (без ЛЧ)"
     else:
-        return "Топ-100: укажите all или allcl."
+        return None, [], 0, "Топ-100: укажите all или allcl."
 
     rows = aggregate_life_outfield(code, merge_by_player=True)
     rows = [
@@ -1163,7 +1175,23 @@ def format_top100_str(
     else:
         rows.sort(key=lambda x: (-x["goals"], -x["assists"], x["name"].casefold()))
 
-    rows = rows[:limit]
+    return scope_line, rows[:limit], n_cand, None
+
+
+def format_top100_str(
+    league_code: str | None,
+    limit: int = 100,
+    sort_key: int = 1,
+) -> str:
+    """Топ-100 за всё время: ``all`` — нац. лиги; ``allcl`` — лига + ЛЧ."""
+    import contextlib
+    import io
+
+    scope_line, rows, n_cand, err = collect_top100_rows(
+        league_code, limit=limit, sort_key=sort_key
+    )
+    if err:
+        return err
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
