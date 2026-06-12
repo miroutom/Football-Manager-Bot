@@ -93,20 +93,38 @@ def _manager_label(team: str) -> str:
     return "?"
 
 
+def _aligned_position_table_lines(
+    rows: list[tuple[str, str, int]],
+) -> list[str]:
+    """Колонки фиксированной ширины для моноширинного PNG."""
+    sur_w = max([len("Фамилия"), *[len(s) for s, _, _ in rows]])
+    team_w = max([len("Команда"), *[len(t) for _, t, _ in rows]])
+    rate_w = max([len("Рейтинг"), *[len(str(o)) for _, _, o in rows]])
+    mgr_w = max(len("Менеджер"), 4)
+
+    def _row(sur: str, team: str, ovr: int | str, mgr: str) -> str:
+        return (
+            f"{sur:<{sur_w}}  {team:<{team_w}}  "
+            f"{str(ovr):>{rate_w}}  {mgr:<{mgr_w}}"
+        )
+
+    out = [
+        _row("Фамилия", "Команда", "Рейтинг", "Менеджер"),
+        "",
+    ]
+    out.extend(
+        _row(sur, team, ovr, _manager_label(team)) for sur, team, ovr in rows
+    )
+    return out
+
+
 def format_position_list(position: str) -> str:
     pos = _norm_pos(position)
     rows = collect_players_by_position().get(pos) or []
     if not rows:
         return f"{pos}\n(нет игроков)"
-    lines = [
-        f"{pos} · сезон { _active_season_label() }",
-        "",
-        "Фамилия Команда Рейтинг Менеджер",
-        "",
-    ]
-    lines.extend(
-        f"{sur} {team} {ovr} {_manager_label(team)}" for sur, team, ovr in rows
-    )
+    lines = [f"{pos} · сезон { _active_season_label() }", ""]
+    lines.extend(_aligned_position_table_lines(rows))
     return "\n".join(lines)
 
 
