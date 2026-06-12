@@ -9,6 +9,7 @@ from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
 from player_stats import get_player_class
+from config.leagues_config import manager_side_for_team
 from utils.player_names import player_surname
 from utils.utils import (
     defenders,
@@ -83,13 +84,24 @@ def positions_with_players() -> list[str]:
     return [p for p in POSITION_ORDER if data.get(p)]
 
 
+def _manager_label(team: str) -> str:
+    side = manager_side_for_team(team)
+    if side == "roman":
+        return "roma"
+    if side == "lika":
+        return "lika"
+    return "?"
+
+
 def format_position_list(position: str) -> str:
     pos = _norm_pos(position)
     rows = collect_players_by_position().get(pos) or []
     if not rows:
         return f"{pos}\n(нет игроков)"
     lines = [f"{pos} · сезон { _active_season_label() }", ""]
-    lines.extend(f"{sur} {team} {ovr}" for sur, team, ovr in rows)
+    lines.extend(
+        f"{sur} {team} {ovr} {_manager_label(team)}" for sur, team, ovr in rows
+    )
     return "\n".join(lines)
 
 

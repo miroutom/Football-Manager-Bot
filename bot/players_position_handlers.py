@@ -60,6 +60,7 @@ async def cb_players_pos_menu(callback: CallbackQuery) -> None:
     await callback.message.answer(
         f"👤 <b>Игроки по позициям</b> · сезон <b>{n}</b>\n"
         "Лига и ЛЧ вместе, сортировка по рейтингу.\n"
+        "Формат: Фамилия Команда Рейтинг Менеджер (roma / lika).\n"
         "Выбери позицию:",
         parse_mode="HTML",
         reply_markup=_positions_kb(0),
