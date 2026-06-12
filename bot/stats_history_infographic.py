@@ -28,12 +28,12 @@ from utils.stats_history_agg import collect_stats_history_rows
 _HEADER_H = 96
 _ROW_H = 46
 _CREST_SIZE = 34
-_NAME_LEFT = 52
-_CREST_CX = 28
-_CANVAS_W = 900
+_RANK_COL_W = 32
+_NAME_LEFT = 72
+_CREST_CX = 52
 _STAT_LEFT = 520
 _STAT_COL_W = 72
-_PAD_RIGHT = 16
+_PAD_RIGHT = 12
 
 _BG = (8, 22, 58)
 _ROW_A = (14, 38, 88)
@@ -157,6 +157,10 @@ def _paste_crest(
     )
 
 
+def _canvas_width(n_stat_cols: int) -> int:
+    return _STAT_LEFT + n_stat_cols * _STAT_COL_W + _PAD_RIGHT
+
+
 def _headers_for_metric(metric: str) -> tuple[list[str], int]:
     m = (metric or "g").lower()
     if _is_outfield_metric(m):
@@ -195,6 +199,7 @@ def _draw_table_page(
     metric: str,
     page_idx: int = 0,
     page_total: int = 1,
+    rank_start: int = 1,
 ) -> bytes:
     m = (metric or "g").lower()
     n = len(rows)
@@ -208,12 +213,14 @@ def _draw_table_page(
     crest_font = _pick_font(10, bold=True)
 
     headers, highlight_idx = _headers_for_metric(m)
-    canvas_w = _CANVAS_W
+    canvas_w = _canvas_width(len(headers))
     stat_left = _STAT_LEFT
 
     h = _HEADER_H + n * _ROW_H + 8
     im = Image.new("RGB", (canvas_w, max(h, 120)), _BG)
     draw = ImageDraw.Draw(im)
+
+    rank_font = _pick_font(15, bold=True)
 
     main_title = f"ТОП {_METRIC_TITLES.get(m, 'СТАТИСТИКА')}"
     draw.text((16, 18), main_title, fill=_TEXT, font=title_font)
@@ -245,6 +252,14 @@ def _draw_table_page(
         draw.rectangle([stat_left, y0, canvas_w, y1], fill=_STAT_CELL)
 
         cy = y0 + _ROW_H // 2
+        rank = rank_start + i
+        draw.text(
+            (_RANK_COL_W // 2, cy),
+            str(rank),
+            fill=_TEXT_DIM,
+            font=rank_font,
+            anchor="mm",
+        )
         team = str(row.get("team") or "")
         _paste_crest(im, draw, team=team, cx=_CREST_CX, cy=cy, crest_font=crest_font)
         _draw_player_line(
@@ -333,6 +348,7 @@ def render_stats_history_infographic_pages(
             metric=metric,
             page_idx=idx,
             page_total=page_total,
+            rank_start=idx * rows_per_page + 1,
         )
         for idx, chunk in enumerate(chunks)
     ]
