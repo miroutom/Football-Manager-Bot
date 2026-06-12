@@ -98,7 +98,12 @@ def format_position_list(position: str) -> str:
     rows = collect_players_by_position().get(pos) or []
     if not rows:
         return f"{pos}\n(нет игроков)"
-    lines = [f"{pos} · сезон { _active_season_label() }", ""]
+    lines = [
+        f"{pos} · сезон { _active_season_label() }",
+        "",
+        "Фамилия Команда Рейтинг Менеджер",
+        "",
+    ]
     lines.extend(
         f"{sur} {team} {ovr} {_manager_label(team)}" for sur, team, ovr in rows
     )
