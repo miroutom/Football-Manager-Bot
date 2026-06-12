@@ -102,6 +102,12 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
         ],
         [
             InlineKeyboardButton(
+                text="👤 Игроки по позициям",
+                callback_data="menu:players_pos",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
                 text="⚽ Схема",
                 callback_data="menu:squad_league",
             ),
