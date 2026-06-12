@@ -139,7 +139,35 @@ def _roster_keyboard(
             )
         if nav:
             rows.append(nav)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="📊 Рекомендации по клубу",
+                callback_data="xfer:advice",
+            )
+        ]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def _send_transfer_advice(
+    message: Message, team: str, *, filter_sell: bool = False
+) -> None:
+    from utils.transfer_advice import (
+        VERDICT_NU,
+        VERDICT_SU,
+        collect_transfer_advice,
+        format_advice_telegram,
+    )
+
+    canon, rows, err = collect_transfer_advice(team)
+    if err:
+        await message.answer(err)
+        return
+    filt = frozenset({VERDICT_SU, VERDICT_NU}) if filter_sell else None
+    parts = format_advice_telegram(canon, rows, filter_verdicts=filt)
+    for part in parts:
+        await message.answer(part, parse_mode="HTML")
 
 
 async def _begin_new_player_signing(
@@ -278,6 +306,38 @@ async def _prompt_batch_plan_kind(message: Message, state: FSMContext) -> None:
         parse_mode="HTML",
         reply_markup=_batch_plan_kind_keyboard(),
     )
+
+
+@transfer_router.callback_query(F.data == "xfer:advice")
+async def cb_transfer_advice(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if not callback.message:
+        return
+    data = await state.get_data()
+    team = (data.get("tr_from") or "").strip()
+    if not team:
+        await callback.message.answer(
+            "Сначала укажи клуб «откуда» или введи: /transfer_advice НазваниеКлуба"
+        )
+        return
+    await _send_transfer_advice(callback.message, team)
+
+
+@transfer_router.message(Command("transfer_advice"))
+async def cmd_transfer_advice(message: Message) -> None:
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2 or len(parts[1].strip()) < 2:
+        await message.answer(
+            "📊 <b>Рекомендации по составу</b>\n\n"
+            "Формат: <code>/transfer_advice Клуб</code>\n"
+            "Пример: <code>/transfer_advice Цска</code>\n\n"
+            "Коды: <b>НО</b> надо остаться · <b>СО</b> стоит остаться · "
+            "<b>СУ</b> стоит уходить · <b>НУ</b> надо уходить\n"
+            "Метки: Т− П↓ З+ С×",
+            parse_mode="HTML",
+        )
+        return
+    await _send_transfer_advice(message, parts[1].strip())
 
 
 @transfer_router.callback_query(F.data == "xfer:sc:both")
