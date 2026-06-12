@@ -109,7 +109,9 @@ def main() -> None:
             scl.close()
             el.dispose()
             ec.dispose()
-        rebuild_common_database_for_disk_paths(cum_l, cum_c, cum_o)
+        rebuild_common_database_for_disk_paths(
+            cum_l, cum_c, cum_o, include_all_cl_teams=True
+        )
         print("  common_synced пересобран:", cum_o)
     else:
         print("Пропуск synced: нет файлов", cum_l, cum_c)

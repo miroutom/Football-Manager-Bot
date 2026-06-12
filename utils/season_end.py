@@ -319,7 +319,7 @@ def finalize_season() -> dict[str, Any]:
     db_root = os.path.join(season_paths.PROJECT_ROOT, "db")
     root_pickle = os.path.join(season_paths.PROJECT_ROOT, "pickle")
 
-    from utils.cumulative_db import append_season_snapshot_to_all_time
+    from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
 
     ended: int | None = None
     snap_league: str | None = None
@@ -390,9 +390,9 @@ def finalize_season() -> dict[str, Any]:
         log["cl_playoff_bracket_json_reset"] = f"error: {e!s}"
     except Exception as e:
         log["cl_playoff_bracket_json_reset"] = f"error: {e!s}"
-    log["cumulative_merge"] = append_season_snapshot_to_all_time(
-        snap_league, snap_cl
-    ).get("cumulative", [])
+    log["cumulative_merge"] = rebuild_all_time_databases_from_season_archives().get(
+        "cumulative", []
+    )
 
     if st["data_mode"] == "legacy":
         n = int(ended or 1)

@@ -103,13 +103,19 @@ def _team_in_cl_pool(team_name: str) -> bool:
     return resolve_team_name_for_cl_pool(team_name) is not None
 
 
-def _merge_bucket_outfield(PlayerCls, session_league, session_cl):
+def _merge_bucket_outfield(
+    PlayerCls,
+    session_league,
+    session_cl,
+    *,
+    include_all_cl_teams: bool = False,
+):
     """Слияние сессий. Счётчики наград сезона (golden_*) в двух БД — одна сущность; в common берётся max."""
     buckets: dict = {}
     for src in (session_league, session_cl):
         is_cl = src is session_cl
         for p in src.query(PlayerCls).all():
-            if is_cl and not _team_in_cl_pool(p.team):
+            if is_cl and not include_all_cl_teams and not _team_in_cl_pool(p.team):
                 continue
             k = _key(p)
             if k not in buckets:
@@ -281,6 +287,7 @@ def rebuild_common_database(
     session_league_: Any = None,
     session_cl_: Any = None,
     session_common_: Any = None,
+    include_all_cl_teams: bool = False,
 ) -> None:
     """
     Полная перезапись common слиянием двух источников (имя+команда+позиция).
@@ -298,14 +305,16 @@ def rebuild_common_database(
     common.commit()
 
     for Cls in (Forward, Midfielder, Defender):
-        buckets = _merge_bucket_outfield(Cls, sleague, scl)
+        buckets = _merge_bucket_outfield(
+            Cls, sleague, scl, include_all_cl_teams=include_all_cl_teams
+        )
         _add_outfield_rows(common, Cls, buckets)
 
     gk_buckets: dict = {}
     for src in (sleague, scl):
         is_cl = src is scl
         for p in src.query(Goalkeeper).all():
-            if is_cl and not _team_in_cl_pool(p.team):
+            if is_cl and not include_all_cl_teams and not _team_in_cl_pool(p.team):
                 continue
             k = _key(p)
             if k not in gk_buckets:
@@ -422,10 +431,15 @@ def rebuild_common_database_for_disk_paths(
     league_path: str,
     cl_path: str,
     common_path: str,
+    *,
+    include_all_cl_teams: bool = False,
 ) -> None:
     """
     Пересобрать ``common`` на диске из двух указанных SQLite (лига + ЛЧ).
     Не трогает глобальные сессии ``utils``.
+
+    ``include_all_cl_teams=True`` — для накопительных ``*_synced.db``: не отсекать клубы
+    вне текущего пула ЛЧ (историческая стата ЛЧ).
     """
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
@@ -450,6 +464,7 @@ def rebuild_common_database_for_disk_paths(
             session_league_=sl,
             session_cl_=scl,
             session_common_=so,
+            include_all_cl_teams=include_all_cl_teams,
         )
     finally:
         sl.close()
