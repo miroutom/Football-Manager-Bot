@@ -84,6 +84,56 @@ def positions_with_players() -> list[str]:
     return [p for p in POSITION_ORDER if data.get(p)]
 
 
+def collect_players_flat() -> list[dict[str, Any]]:
+    """
+    Все игроки текущего сезона (лига + ЛЧ) в одной таблице.
+    Колонки: фамилия, полное имя, команда, позиция, рейтинг, менеджер.
+    """
+    best: dict[tuple, dict[str, Any]] = {}
+    for session in (session_league, session_cl):
+        for row in _iter_active_rows(session):
+            pos = _norm_pos(getattr(row, "position", "") or "")
+            if not pos:
+                continue
+            sur = (player_surname(row) or "").strip()
+            team = (getattr(row, "team", None) or "").strip()
+            full = (getattr(row, "name", None) or "").strip()
+            ovr = int(getattr(row, "overall", 0) or 0)
+            if not sur or not team:
+                continue
+            k = _row_key(row)
+            prev = best.get(k)
+            if prev is None or ovr > int(prev.get("overall", 0) or 0):
+                best[k] = {
+                    "surname": sur,
+                    "name": full or sur,
+                    "team": team,
+                    "position": pos,
+                    "overall": ovr,
+                    "manager": _manager_label(team),
+                }
+            elif ovr == int(prev.get("overall", 0) or 0) and pos == prev.get("position"):
+                if full:
+                    prev["name"] = full
+
+    def _pos_order(p: str) -> int:
+        try:
+            return POSITION_ORDER.index(p)
+        except ValueError:
+            return len(POSITION_ORDER)
+
+    rows = list(best.values())
+    rows.sort(
+        key=lambda r: (
+            _pos_order(str(r.get("position") or "")),
+            -int(r.get("overall", 0) or 0),
+            str(r.get("surname") or "").lower(),
+            str(r.get("team") or "").lower(),
+        )
+    )
+    return rows
+
+
 def _manager_label(team: str) -> str:
     side = manager_side_for_team(team)
     if side == "roman":
