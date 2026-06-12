@@ -1221,3 +1221,138 @@ def format_top100_str(
 def format_top100_combined_str(limit: int = 100, sort_key: int = 1) -> str:
     """Топ-100: лига + ЛЧ (``allcl``)."""
     return format_top100_str("allcl", limit=limit, sort_key=sort_key)
+
+
+def _sort_outfield_for_metric(rows: list[dict], metric: str) -> list[dict]:
+    m = (metric or "g").lower()
+    if m in ("as", "a", "assists"):
+        rows = [r for r in rows if int(r.get("assists", 0) or 0) > 0]
+        rows.sort(key=lambda x: (-x["assists"], -x["goals"], str(x.get("name", "")).casefold()))
+    elif m in ("ga", "g+a"):
+        rows = [r for r in rows if int(r.get("ga", 0) or 0) > 0]
+        rows.sort(key=lambda x: (-x["ga"], -x["goals"], str(x.get("name", "")).casefold()))
+    else:
+        rows = [r for r in rows if int(r.get("goals", 0) or 0) > 0]
+        rows.sort(key=lambda x: (-x["goals"], -x["assists"], str(x.get("name", "")).casefold()))
+    return rows
+
+
+def _sort_cards_for_metric(rows: list[dict], metric: str) -> list[dict]:
+    m = (metric or "yc").lower()
+    field = "yellow_cards" if m == "yc" else "red_cards"
+    picked = [r for r in rows if int(r.get(field, 0) or 0) > 0]
+    picked.sort(
+        key=lambda x: (
+            -int(x.get(field, 0) or 0),
+            -int(x.get("matches", 0) or 0),
+            str(x.get("name", "")).casefold(),
+        )
+    )
+    return picked
+
+
+def _sort_clean_sheets(rows: list[dict]) -> list[dict]:
+    rows = [r for r in rows if int(r.get("clean_sheets", 0) or 0) > 0]
+    rows.sort(
+        key=lambda x: (
+            -int(x.get("clean_sheets", 0) or 0),
+            -int(x.get("matches", 0) or 0),
+            str(x.get("name", "")).casefold(),
+        )
+    )
+    return rows
+
+
+def collect_stats_history_rows(
+    scope: str,
+    league_code: str | None,
+    metric: str,
+    limit: int,
+    *,
+    season_num: int | None = None,
+    role: str | None = None,
+) -> tuple[str, list[dict], str | None]:
+    """
+    Строки для инфографики «Стата сезонов».
+
+    ``scope``: ``life`` | ``season``; ``role``: ``gk`` | ``df`` только для ``cs``.
+    Возвращает (заголовок, rows, error).
+    """
+    code = normalize_stats_league_code(league_code) or league_code
+    m = (metric or "g").lower()
+    cl = code == "cl"
+
+    if scope == "life":
+        if is_all_leagues_plus_cl(code):
+            if not life_has_combined_archive_data():
+                return "", [], (
+                    "Пока нет архивов сезонов. "
+                    "После «Завершить сезон» появятся снимки в db/season_N/."
+                )
+        elif code == "cl":
+            if not life_has_archive_data(cl=True):
+                return "", [], (
+                    "Пока нет архивов сезонов с champions_league.db. "
+                    "После «Завершить сезон» появятся снимки в db/season_N/."
+                )
+        elif not life_has_archive_data():
+            return "", [], (
+                "Пока нет архивов сезонов с league.db. "
+                "После «Завершить сезон» появятся снимки в db/season_N/."
+            )
+        lg = _display_league_name(code, cl=cl)
+        suf = _life_title_suffix(code, cl=cl)
+    elif scope == "season":
+        if season_num is None:
+            return "", [], "Ошибка: не указан сезон."
+        if not season_has_db(season_num, code):
+            return "", [], (
+                f"В архиве сезона {season_num} нет данных для выбранного чемпионата."
+            )
+        lg = _display_league_name(code, cl=cl)
+        suf = _season_title_suffix(season_num, code, cl=cl)
+    else:
+        return "", [], f"Неизвестный период: {scope!r}"
+
+    if m == "cs":
+        if scope == "life":
+            gk_rows, df_rows = aggregate_life_clean_sheets(code, cl=cl)
+        else:
+            gk_rows, df_rows = aggregate_clean_sheets(
+                code, season_num=season_num, merge_by_player=True
+            )
+        role_l = (role or "gk").lower()
+        pool = _sort_clean_sheets(gk_rows if role_l == "gk" else df_rows)
+        role_label = "вратари" if role_l == "gk" else "защитники"
+        title = f"Сухие матчи · {role_label}{suf}"
+        return title, pool[:limit], None
+
+    if m in ("yc", "rc"):
+        if scope == "life":
+            rows = aggregate_cards(code, merge_by_player=True)
+        else:
+            rows = aggregate_cards(
+                code, season_num=season_num, merge_by_player=True
+            )
+        field = "yellow_cards" if m == "yc" else "red_cards"
+        label = "жёлтые карточки" if m == "yc" else "красные карточки"
+        title = f"Топ {label}{suf}"
+        return title, _sort_cards_for_metric(rows, m)[:limit], None
+
+    if scope == "life":
+        players = aggregate_life_outfield(code, merge_by_player=True)
+    else:
+        players = aggregate_outfield(
+            code, season_num=season_num, merge_by_player=True
+        )
+
+    if m in ("g", "goals"):
+        title = f"Топ бомбардиров{suf}"
+    elif m in ("as", "a", "assists"):
+        title = f"Топ ассистентов{suf}"
+    elif m in ("ga", "g+a"):
+        title = f"Топ по Г+А{suf}"
+    else:
+        return "", [], f"Неизвестная метрика: {metric!r}"
+
+    return title, _sort_outfield_for_metric(players, m)[:limit], None

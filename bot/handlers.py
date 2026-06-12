@@ -89,6 +89,39 @@ def _league_title(code: str) -> str:
     return dict(LEAGUE_LABELS).get(c or code, code)
 
 
+async def answer_png_pages(
+    message: Message,
+    blobs: list[bytes] | str,
+    caption: str,
+    *,
+    filename_prefix: str = "report",
+) -> None:
+    """Одна или несколько готовых PNG; строка — текст ошибки."""
+    if isinstance(blobs, str):
+        await message.answer(blobs)
+        return
+    if not blobs:
+        await message.answer("Нет данных.")
+        return
+    if len(blobs) == 1:
+        await message.answer_photo(
+            BufferedInputFile(blobs[0], filename=f"{filename_prefix}_0.png"),
+            caption=caption,
+        )
+        return
+    chunk_size = 10
+    idx = 0
+    while idx < len(blobs):
+        chunk = blobs[idx : idx + chunk_size]
+        media: list[InputMediaPhoto] = []
+        for j, blob in enumerate(chunk):
+            bf = BufferedInputFile(blob, filename=f"{filename_prefix}_{idx + j}.png")
+            cap_j = caption if idx == 0 and j == 0 else None
+            media.append(InputMediaPhoto(media=bf, caption=cap_j))
+        await message.answer_media_group(media)
+        idx += chunk_size
+
+
 async def answer_report_photos(message: Message, body: str, caption: str) -> None:
     """Таблица / топ — одна или несколько PNG (заголовок уже внутри картинки)."""
     blobs = await asyncio.to_thread(
@@ -1157,74 +1190,85 @@ async def cb_stats_history_run(callback: CallbackQuery) -> None:
         metric = parts[5]
 
     await callback.answer("Считаю…")
+    if not callback.message:
+        return
     try:
+        from bot.stats_history_infographic import render_stats_history_infographic_pages
+
         m = metric.strip().lower()
         if scope == "life":
-            if m == "g":
-                text = await asyncio.to_thread(render_cumulative_top_scorers, code, 30)
-                await answer_report_photos(
-                    callback.message, text, _stats_hist_caption_life(m, code)
-                )
-            elif m in ("as", "a"):
-                text = await asyncio.to_thread(render_cumulative_top_assists, code, 30)
-                await answer_report_photos(
-                    callback.message, text, _stats_hist_caption_life(m, code)
-                )
-            elif m == "ga":
-                text = await asyncio.to_thread(render_cumulative_top_ga, code, 30)
-                await answer_report_photos(
-                    callback.message, text, _stats_hist_caption_life(m, code)
-                )
-            elif m == "cs":
-                gk_text, df_text = await asyncio.to_thread(
-                    render_cumulative_top_clean_sheets, code, 30
-                )
-                await answer_report_photos(
-                    callback.message,
-                    gk_text,
-                    f"{_stats_hist_caption_life(m, code)} · вратари",
-                )
-                await answer_report_photos(
-                    callback.message,
-                    df_text,
-                    f"{_stats_hist_caption_life(m, code)} · защитники",
-                )
-            elif m in ("yc", "rc"):
-                text = await asyncio.to_thread(render_cumulative_top_cards, code, m, 30)
-                await answer_report_photos(
-                    callback.message, text, _stats_hist_caption_life(m, code)
-                )
+            cap_base = _stats_hist_caption_life(m, code)
+            lim = 30
+            if m == "cs":
+                for role, role_cap in (("gk", "вратари"), ("df", "защитники")):
+                    pages = await asyncio.to_thread(
+                        render_stats_history_infographic_pages,
+                        "life",
+                        code,
+                        m,
+                        lim,
+                        role=role,
+                    )
+                    if isinstance(pages, str) and role == "df":
+                        continue
+                    await answer_png_pages(
+                        callback.message,
+                        pages,
+                        f"{cap_base} · {role_cap}",
+                        filename_prefix="stats_hist",
+                    )
             else:
-                await callback.message.answer(f"Неизвестная метрика: {metric}")
-                return
+                pages = await asyncio.to_thread(
+                    render_stats_history_infographic_pages,
+                    "life",
+                    code,
+                    m,
+                    lim,
+                )
+                await answer_png_pages(
+                    callback.message, pages, cap_base, filename_prefix="stats_hist"
+                )
             return
 
         if season_num is None:
             await callback.message.answer("Ошибка: не указан сезон.")
             return
 
-        if m in ("g", "as", "a", "ga"):
-            text = await asyncio.to_thread(
-                render_archived_season_stat, season_num, code, m, 50
+        cap_base = _stats_hist_caption_season(season_num, m, code)
+        lim = 50
+        if m == "cs":
+            for role, role_cap in (("gk", "вратари"), ("df", "защитники")):
+                pages = await asyncio.to_thread(
+                    render_stats_history_infographic_pages,
+                    "season",
+                    code,
+                    m,
+                    lim,
+                    season_num=season_num,
+                    role=role,
+                )
+                if isinstance(pages, str) and role == "df":
+                    continue
+                await answer_png_pages(
+                    callback.message,
+                    pages,
+                    f"{cap_base} · {role_cap}",
+                    filename_prefix="stats_hist",
+                )
+        elif m in ("g", "as", "a", "ga", "yc", "rc"):
+            pages = await asyncio.to_thread(
+                render_stats_history_infographic_pages,
+                "season",
+                code,
+                m,
+                lim,
+                season_num=season_num,
             )
-            cap = _stats_hist_caption_season(season_num, m, code)
-            await answer_report_photos(callback.message, text, cap)
-        elif m == "cs":
-            gk_text, df_text = await asyncio.to_thread(
-                render_archived_season_clean_sheets, season_num, code, 50
+            await answer_png_pages(
+                callback.message, pages, cap_base, filename_prefix="stats_hist"
             )
-            cap = _stats_hist_caption_season(season_num, m, code)
-            await answer_report_photos(callback.message, gk_text, f"{cap} · вратари")
-            await answer_report_photos(callback.message, df_text, f"{cap} · защитники")
-        elif m in ("yc", "rc"):
-            text = await asyncio.to_thread(
-                render_archived_season_stat, season_num, code, m, 50
-            )
-            cap = _stats_hist_caption_season(season_num, m, code)
-            await answer_report_photos(callback.message, text, cap)
         else:
             await callback.message.answer(f"Неизвестная метрика: {metric}")
-            return
     except Exception as e:
         logger.exception("stats:hist run")
         await callback.message.answer(f"Ошибка: {e}")
@@ -1580,29 +1624,9 @@ async def cb_top100_sort(callback: CallbackQuery) -> None:
         )
         sort_label = {1: "голы", 2: "передачи", 3: "Г+А"}.get(sk, str(sk))
         cap = f"Топ-100 · {_league_title(league_code)} · {sort_label}"
-        if isinstance(result, str):
-            await callback.message.answer(result)
-            return
-        if not result:
-            await callback.message.answer("Нет данных для топ-100.")
-            return
-        if len(result) == 1:
-            await callback.message.answer_photo(
-                BufferedInputFile(result[0], filename="top100_0.png"),
-                caption=cap,
-            )
-            return
-        chunk_size = 10
-        idx = 0
-        while idx < len(result):
-            chunk = result[idx : idx + chunk_size]
-            media: list[InputMediaPhoto] = []
-            for j, blob in enumerate(chunk):
-                bf = BufferedInputFile(blob, filename=f"top100_{idx + j}.png")
-                cap_j = cap if idx == 0 and j == 0 else None
-                media.append(InputMediaPhoto(media=bf, caption=cap_j))
-            await callback.message.answer_media_group(media)
-            idx += chunk_size
+        await answer_png_pages(
+            callback.message, result, cap, filename_prefix="top100"
+        )
     except Exception as e:
         logger.exception("top100")
         await callback.message.answer(f"Ошибка: {e}")
