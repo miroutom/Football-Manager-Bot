@@ -135,9 +135,13 @@ def _apply_last_club(
         b["last_season"] = season_num
         b["team"] = p.team
         b["name"] = p.name
+        b["position"] = getattr(p, "position", None) or b.get("position")
+        b["overall"] = int(getattr(p, "overall", 0) or 0)
     elif season_num == prev:
         b["team"] = p.team
         b["name"] = p.name
+        b["position"] = getattr(p, "position", None) or b.get("position")
+        b["overall"] = int(getattr(p, "overall", 0) or 0)
 
 
 def _apply_last_club_by_matches(b: dict, p: Any, *, merge_by_player: bool) -> None:
@@ -149,6 +153,8 @@ def _apply_last_club_by_matches(b: dict, p: Any, *, merge_by_player: bool) -> No
         b["_pick_m"] = m
         b["team"] = p.team
         b["name"] = p.name
+        b["position"] = getattr(p, "position", None) or b.get("position")
+        b["overall"] = int(getattr(p, "overall", 0) or 0)
 
 
 def _apply_last_club_latest_row(b: dict, p: Any, *, merge_by_player: bool) -> None:
@@ -160,6 +166,8 @@ def _apply_last_club_latest_row(b: dict, p: Any, *, merge_by_player: bool) -> No
         b["_pick_id"] = rid
         b["team"] = p.team
         b["name"] = p.name
+        b["position"] = getattr(p, "position", None) or b.get("position")
+        b["overall"] = int(getattr(p, "overall", 0) or 0)
 
 
 def _apply_club_label(
@@ -183,15 +191,15 @@ def _apply_club_label(
 
 
 def _build_active_season_club_map() -> tuple[
-    dict[tuple[str, str], tuple[str, str, str]],
-    dict[int, tuple[str, str, str]],
+    dict[tuple[str, str], tuple[str, str, str, int]],
+    dict[int, tuple[str, str, str, int]],
 ]:
-    """(name, pos) и person_id → (name, team, position) из активной заявки."""
+    """(name, pos) и person_id → (name, team, position, overall) из активной заявки."""
     from utils.person_registry import row_person_id
 
     active = season_paths.get_active_season()
-    best: dict[tuple[str, str], tuple[int, str, str, str]] = {}
-    by_pid: dict[int, tuple[int, str, str, str]] = {}
+    best: dict[tuple[str, str], tuple[int, str, str, str, int]] = {}
+    by_pid: dict[int, tuple[int, str, str, str, int]] = {}
     for kind in ("league", "cl", "common"):
         path = _season_path_by_kind(active, kind)
         if not path:
@@ -211,6 +219,7 @@ def _build_active_season_club_map() -> tuple[
                             str(p.name),
                             str(p.team),
                             str(p.position or ""),
+                            int(getattr(p, "overall", 0) or 0),
                         )
                     pid = row_person_id(p)
                     if pid is not None:
@@ -221,12 +230,13 @@ def _build_active_season_club_map() -> tuple[
                                 str(p.name),
                                 str(p.team),
                                 str(p.position or ""),
+                                int(getattr(p, "overall", 0) or 0),
                             )
         finally:
             session.close()
             eng.dispose()
-    name_map = {k: (v[1], v[2], v[3]) for k, v in best.items()}
-    pid_map = {k: (v[1], v[2], v[3]) for k, v in by_pid.items()}
+    name_map = {k: (v[1], v[2], v[3], v[4]) for k, v in best.items()}
+    pid_map = {k: (v[1], v[2], v[3], v[4]) for k, v in by_pid.items()}
     return name_map, pid_map
 
 
@@ -242,7 +252,7 @@ def _apply_active_season_club_labels(rows: list[dict]) -> None:
             except (TypeError, ValueError):
                 hit = None
             if hit:
-                b["name"], b["team"], b["position"] = hit
+                b["name"], b["team"], b["position"], b["overall"] = hit
                 continue
         key = _roster_display_key(
             str(b.get("name") or ""),
@@ -250,7 +260,7 @@ def _apply_active_season_club_labels(rows: list[dict]) -> None:
         )
         hit = club_map.get(key)
         if hit:
-            b["name"], b["team"], b["position"] = hit
+            b["name"], b["team"], b["position"], b["overall"] = hit
 
 
 def _finalize_life_rows(rows: list[dict]) -> list[dict]:
@@ -353,6 +363,7 @@ def _fold_outfield_bucket(
             "identity": player_stats_identity_token(p),
             "team": p.team,
             "position": p.position,
+            "overall": int(getattr(p, "overall", 0) or 0),
             "goals": 0,
             "assists": 0,
             "ga": 0,
@@ -399,6 +410,7 @@ def _fold_cards_bucket(
             "identity": player_stats_identity_token(p),
             "team": p.team,
             "position": p.position,
+            "overall": int(getattr(p, "overall", 0) or 0),
             "yellow_cards": 0,
             "red_cards": 0,
             "matches": 0,

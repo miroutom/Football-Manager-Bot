@@ -22,15 +22,19 @@ from bot.squad_pitch import (
     _try_load_crest_rgba,
 )
 from squad_kit_palette import kit_for_team
+from utils.player_names import _name_parts
 from utils.stats_history_agg import collect_top100_rows
 
-_CANVAS_W = 1080
 _PAD = 28
 _HEADER_H = 108
 _ROW_H = 44
 _ROWS_PER_PAGE = 25
-_NAME_COL_W = 200
 _RANK_COL_W = 36
+_NAME_COL_MAX = 165
+_POS_COL_W = 40
+_OVR_COL_W = 40
+_META_GAP = 8
+_BAR_AREA_W = 260
 _VALUE_COL_W = 52
 _CREST_SIZE = 30
 
@@ -69,6 +73,24 @@ def _bar_rgb(team: str) -> tuple[int, int, int]:
     return rgb
 
 
+def _display_name(full_name: str) -> str:
+    fn, sn = _name_parts(full_name or "")
+    sn_up = (sn or full_name or "?").upper()
+    if fn:
+        return f"{fn[0].upper()}. {sn_up}"
+    return sn_up
+
+
+def _row_position(row: dict) -> str:
+    pos = str(row.get("position") or "").strip().upper()
+    return pos or "—"
+
+
+def _row_overall(row: dict) -> str:
+    ovr = int(row.get("overall", 0) or 0)
+    return str(ovr) if ovr > 0 else "—"
+
+
 def _truncate_name(
     draw: ImageDraw.ImageDraw, name: str, font: ImageFont.ImageFont, max_w: int
 ) -> str:
@@ -104,16 +126,35 @@ def _draw_page(
 ) -> bytes:
     title_main, metric_label, _ = _METRIC_META.get(sort_key, ("ТОП-100", "стата", ""))
     n = len(rows)
-    h = _PAD + _HEADER_H + n * _ROW_H + _PAD
-    im = Image.new("RGB", (_CANVAS_W, max(h, 200)), _BG)
-    draw = ImageDraw.Draw(im)
 
     title_font = _pick_font(34, bold=True)
     sub_font = _pick_font(17)
-    name_font = _pick_font(18)
+    hdr_font = _pick_font(12, bold=True)
+    name_font = _pick_font(17, bold=True)
+    meta_font = _pick_font(14, bold=True)
     rank_font = _pick_font(15, bold=True)
     val_font = _pick_font(20, bold=True)
     crest_font = _pick_font(11, bold=True)
+
+    tmp = Image.new("RGB", (20, 20))
+    tdraw = ImageDraw.Draw(tmp)
+    labels = [_display_name(str(r.get("name") or "")) for r in rows]
+    name_w = max(
+        (int(tdraw.textlength(lbl, font=name_font)) for lbl in labels),
+        default=80,
+    )
+    name_w = min(max(name_w + 8, 90), _NAME_COL_MAX)
+    name_x = _PAD + _RANK_COL_W
+    meta_left = name_x + name_w + _META_GAP
+    pos_cx = meta_left + _POS_COL_W // 2
+    ovr_cx = meta_left + _POS_COL_W + _OVR_COL_W // 2
+    bar_left = meta_left + _POS_COL_W + _OVR_COL_W + _META_GAP
+    bar_right = bar_left + _BAR_AREA_W
+    canvas_w = bar_right + _CREST_SIZE + _VALUE_COL_W + _PAD + 20
+
+    h = _PAD + _HEADER_H + n * _ROW_H + _PAD
+    im = Image.new("RGB", (canvas_w, max(h, 200)), _BG)
+    draw = ImageDraw.Draw(im)
 
     y0 = _PAD
     draw.text((_PAD, y0), title_main, fill=_ACCENT, font=title_font)
@@ -122,8 +163,10 @@ def _draw_page(
         sub += f" · стр. {page_idx + 1}/{page_total}"
     draw.text((_PAD, y0 + 42), sub, fill=_TEXT_DIM, font=sub_font)
 
-    bar_left = _PAD + _RANK_COL_W + _NAME_COL_W + 10
-    bar_right = _CANVAS_W - _PAD - _VALUE_COL_W - _CREST_SIZE - 18
+    hdr_y = _PAD + _HEADER_H - 30
+    draw.text((pos_cx, hdr_y), "ПОЗ", fill=_TEXT_DIM, font=hdr_font, anchor="mt")
+    draw.text((ovr_cx, hdr_y), "РТГ", fill=_TEXT_DIM, font=hdr_font, anchor="mt")
+
     bar_max_w = max(80, bar_right - bar_left)
     row_top = _PAD + _HEADER_H
 
@@ -134,9 +177,10 @@ def _draw_page(
 
         draw.text((_PAD, cy), str(rank), fill=_TEXT_DIM, font=rank_font, anchor="lm")
 
-        name_x = _PAD + _RANK_COL_W
-        label = _truncate_name(draw, str(row.get("name") or ""), name_font, _NAME_COL_W - 8)
+        label = _truncate_name(draw, _display_name(str(row.get("name") or "")), name_font, name_w)
         draw.text((name_x, cy), label, fill=_TEXT, font=name_font, anchor="lm")
+        draw.text((pos_cx, cy), _row_position(row), fill=_TEXT_DIM, font=meta_font, anchor="mm")
+        draw.text((ovr_cx, cy), _row_overall(row), fill=_TEXT, font=meta_font, anchor="mm")
 
         val = _metric_value(row, sort_key)
         frac = (val / global_max) if global_max > 0 else 0.0
@@ -179,7 +223,7 @@ def _draw_page(
                 anchor="mm",
             )
 
-        val_x = _CANVAS_W - _PAD
+        val_x = canvas_w - _PAD
         draw.text((val_x, cy), str(val), fill=_TEXT, font=val_font, anchor="rm")
         if sort_key == 1:
             _draw_ball_icon(draw, val_x + 18, cy)

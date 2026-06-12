@@ -31,7 +31,11 @@ _CREST_SIZE = 34
 _NAME_LEFT = 52
 _CREST_CX = 28
 _STAT_COL_W = 56
+_POS_COL_W = 40
+_OVR_COL_W = 40
+_META_GAP = 8
 _PAD_RIGHT = 12
+_META_HEADERS = ("ПОЗ", "РТГ")
 
 _BG = (8, 22, 58)
 _ROW_A = (14, 38, 88)
@@ -93,6 +97,16 @@ def _outfield_values(row: dict) -> tuple[int, int, int, int]:
     return int(row.get("matches", 0) or 0), g, a, ga
 
 
+def _row_position(row: dict) -> str:
+    pos = str(row.get("position") or "").strip().upper()
+    return pos or "—"
+
+
+def _row_overall(row: dict) -> str:
+    ovr = int(row.get("overall", 0) or 0)
+    return str(ovr) if ovr > 0 else "—"
+
+
 def _simple_values(row: dict, metric: str) -> tuple[int, int]:
     m = (metric or "g").lower()
     matches = int(row.get("matches", 0) or 0)
@@ -151,33 +165,30 @@ def _layout_for_page(
     *,
     name_font: ImageFont.ImageFont,
     draw: ImageDraw.ImageDraw,
-) -> tuple[int, int, int, list[str], int]:
-    """canvas_w, stat_left, name_max_w, headers, highlight_idx (-1 = none)."""
+) -> tuple[int, int, int, int, list[str], int, tuple[int, int]]:
+    """canvas_w, stat_left, name_max_w, meta_left, headers, highlight_idx, (pos_cx, ovr_cx)."""
     m = (metric or "g").lower()
-    if _is_outfield_metric(m):
-        headers = list(_OUTFIELD_HEADERS)
-        highlight = _SORT_COL_IDX.get(m, -1)
-        labels = [_display_name(str(r.get("name") or "")) for r in rows]
-        name_w = max(
-            (int(draw.textlength(lbl, font=name_font)) for lbl in labels),
-            default=80,
-        )
-        name_w = min(max(name_w + 10, 100), 210)
-        stat_left = _NAME_LEFT + name_w + 10
-        canvas_w = stat_left + len(headers) * _STAT_COL_W + _PAD_RIGHT
-        return canvas_w, stat_left, name_w, headers, highlight
-
-    h1, h2 = _SIMPLE_HEADERS.get(m, ("МАТЧИ", "ГОЛЫ"))
-    headers = [h1, h2]
     labels = [_display_name(str(r.get("name") or "")) for r in rows]
     name_w = max(
         (int(draw.textlength(lbl, font=name_font)) for lbl in labels),
         default=80,
     )
-    name_w = min(max(name_w + 10, 100), 210)
-    stat_left = _NAME_LEFT + name_w + 10
+    name_w = min(max(name_w + 10, 90), 190)
+    meta_left = _NAME_LEFT + name_w + _META_GAP
+    pos_cx = meta_left + _POS_COL_W // 2
+    ovr_cx = meta_left + _POS_COL_W + _OVR_COL_W // 2
+    stat_left = meta_left + _POS_COL_W + _OVR_COL_W + _META_GAP
+
+    if _is_outfield_metric(m):
+        headers = list(_OUTFIELD_HEADERS)
+        highlight = _SORT_COL_IDX.get(m, -1)
+        canvas_w = stat_left + len(headers) * _STAT_COL_W + _PAD_RIGHT
+        return canvas_w, stat_left, name_w, meta_left, headers, highlight, (pos_cx, ovr_cx)
+
+    h1, h2 = _SIMPLE_HEADERS.get(m, ("МАТЧИ", "ГОЛЫ"))
+    headers = [h1, h2]
     canvas_w = stat_left + 2 * _STAT_COL_W + _PAD_RIGHT
-    return canvas_w, stat_left, name_w, headers, 1
+    return canvas_w, stat_left, name_w, meta_left, headers, 1, (pos_cx, ovr_cx)
 
 
 def _draw_table_page(
@@ -200,9 +211,15 @@ def _draw_table_page(
 
     tmp = Image.new("RGB", (20, 20))
     tdraw = ImageDraw.Draw(tmp)
-    canvas_w, stat_left, name_max_w, headers, highlight_idx = _layout_for_page(
-        rows, m, name_font=name_font, draw=tdraw
-    )
+    (
+        canvas_w,
+        stat_left,
+        name_max_w,
+        meta_left,
+        headers,
+        highlight_idx,
+        (pos_cx, ovr_cx),
+    ) = _layout_for_page(rows, m, name_font=name_font, draw=tdraw)
 
     h = _HEADER_H + n * _ROW_H + 8
     im = Image.new("RGB", (canvas_w, max(h, 120)), _BG)
@@ -220,6 +237,9 @@ def _draw_table_page(
         draw.text((16, 56), sub, fill=_TEXT_DIM, font=sub_font)
 
     hdr_y = _HEADER_H - 34
+    draw.rectangle([meta_left, hdr_y, stat_left, hdr_y + 28], fill=(20, 50, 95))
+    draw.text((pos_cx, hdr_y + 6), _META_HEADERS[0], fill=_TEXT_DIM, font=hdr_font, anchor="mt")
+    draw.text((ovr_cx, hdr_y + 6), _META_HEADERS[1], fill=_TEXT_DIM, font=hdr_font, anchor="mt")
     draw.rectangle([stat_left, hdr_y, canvas_w, hdr_y + 28], fill=_STAT_HDR)
     col_centers = [
         stat_left + _STAT_COL_W // 2 + i * _STAT_COL_W for i in range(len(headers))
@@ -235,6 +255,7 @@ def _draw_table_page(
         y1 = y0 + _ROW_H
         row_bg = _ROW_A if i % 2 == 0 else _ROW_B
         draw.rectangle([0, y0, canvas_w, y1], fill=row_bg)
+        draw.rectangle([meta_left, y0, stat_left, y1], fill=(16, 44, 82))
         draw.rectangle([stat_left, y0, canvas_w, y1], fill=_STAT_CELL)
 
         cy = y0 + _ROW_H // 2
@@ -245,6 +266,9 @@ def _draw_table_page(
             draw, _display_name(str(row.get("name") or "")), name_font, name_max_w
         )
         draw.text((_NAME_LEFT, cy), label, fill=_TEXT, font=name_font, anchor="lm")
+        meta_font = _pick_font(15, bold=True)
+        draw.text((pos_cx, cy), _row_position(row), fill=_TEXT_DIM, font=meta_font, anchor="mm")
+        draw.text((ovr_cx, cy), _row_overall(row), fill=_TEXT, font=meta_font, anchor="mm")
 
         if outfield:
             vals = _outfield_values(row)
