@@ -338,26 +338,39 @@ def test_injury_peak_and_score_penalty():
     assert _injury_stint_score_penalty(2, 9) >= -2.5
 
 
-def test_trophy_contribution_rohl_no_percent():
-    from utils.transfer_advice import collect_transfer_advice, format_player_advice_card_html
-
-    _, rows, err = collect_transfer_advice("Бавария")
-    assert not err
-    rohl = next(r for r in rows if r.name == "Рёль")
-    assert rohl.detail.get("league_trophies") == 0
-    assert rohl.detail.get("trophy_contrib") is None
-    card = format_player_advice_card_html("Бавария", rohl)
-    assert "вклад в трофеи" not in card
-
-
-def test_trophy_contribution_martinez_injured_season():
+def test_result_pm_martinez_top_at_inter():
     from utils.transfer_advice import collect_transfer_advice
 
     _, rows, err = collect_transfer_advice("Интер")
     assert not err
     mart = next(r for r in rows if r.name == "Мартинез")
-    assert mart.detail.get("league_trophies") == 2
-    assert mart.detail.get("cl_trophies") == 1
-    contrib = mart.detail.get("trophy_contrib")
-    assert contrib is not None
-    assert 0.96 <= contrib <= 0.995
+    assert "П+" not in mart.reasons
+    pms = [float(r.detail.get("result_pm") or -999) for r in rows]
+    assert mart.detail.get("result_pm") == max(pms)
+    assert float(mart.detail["result_pm"]) > 20.0
+
+
+def test_result_pm_shown_for_rohl():
+    from utils.transfer_advice import collect_transfer_advice, format_player_advice_card_html
+
+    _, rows, err = collect_transfer_advice("Бавария")
+    assert not err
+    rohl = next(r for r in rows if r.name == "Рёль")
+    assert rohl.detail.get("result_pm") is not None
+    card = format_player_advice_card_html("Бавария", rohl)
+    assert "Вклад в результаты" in card
+    assert "вклад в трофеи" not in card
+
+
+def test_team_is_apex_inter():
+    from utils.transfer_advice import (
+        _cl_strength_rank,
+        _league_strength_rank,
+        _team_is_apex_destination,
+    )
+    from player_stats import national_league_code_for_team
+
+    lc = national_league_code_for_team("Интер")
+    assert _team_is_apex_destination(
+        "Интер", lc, _league_strength_rank("Интер", lc), _cl_strength_rank("Интер")
+    )

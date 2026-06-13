@@ -115,6 +115,11 @@ class ClubStintStats:
     per_season_matches: dict[int, int] = field(default_factory=dict)
     per_season_ga: dict[int, int] = field(default_factory=dict)
     per_season_ovr: dict[int, int] = field(default_factory=dict)
+    per_season_yellow: dict[int, int] = field(default_factory=dict)
+    per_season_red: dict[int, int] = field(default_factory=dict)
+    per_season_clean_sheets: dict[int, int] = field(default_factory=dict)
+    yellow_cards: int = 0
+    red_cards: int = 0
     trophy_events: list[tuple[int, str, float]] = field(default_factory=list)
     last_season_num: int | None = None
     last_season_matches: int = 0
@@ -391,6 +396,8 @@ def _seasons_player_at_team(
 
 def _row_stats_snapshot(row: Any) -> dict[str, int]:
     m = int(getattr(row, "matches", 0) or 0)
+    yc = int(getattr(row, "yellow_cards", 0) or 0)
+    rc = int(getattr(row, "red_cards", 0) or 0)
     if _is_gk(getattr(row, "position", "") or ""):
         return {
             "matches": m,
@@ -399,6 +406,8 @@ def _row_stats_snapshot(row: Any) -> dict[str, int]:
             "ga": 0,
             "goals": 0,
             "assists": 0,
+            "yellow_cards": yc,
+            "red_cards": rc,
         }
     g = int(getattr(row, "goals", 0) or 0)
     a = int(getattr(row, "assists", 0) or 0)
@@ -410,6 +419,8 @@ def _row_stats_snapshot(row: Any) -> dict[str, int]:
         "ga": ga,
         "clean_sheets": 0,
         "missed_goals": 0,
+        "yellow_cards": yc,
+        "red_cards": rc,
     }
 
 
@@ -515,6 +526,8 @@ def _collect_club_stint_stats(
         season_ga = 0
         season_cs = 0
         season_mg = 0
+        season_yellow = 0
+        season_red = 0
         ovr_best = 0
         for cl in (False, True):
             lp = _season_db_path_for_stint(sn, cl=cl)
@@ -530,6 +543,8 @@ def _collect_club_stint_stats(
             season_ga += int(snap["ga"])
             season_cs += int(snap["clean_sheets"])
             season_mg += int(snap["missed_goals"])
+            season_yellow += int(snap["yellow_cards"])
+            season_red += int(snap["red_cards"])
             stint.goals += snap["goals"]
             stint.assists += snap["assists"]
             ovr = int(getattr(row, "overall", 0) or 0)
@@ -541,6 +556,9 @@ def _collect_club_stint_stats(
 
         stint.per_season_matches[sn] = season_m
         stint.per_season_ga[sn] = season_ga
+        stint.per_season_yellow[sn] = season_yellow
+        stint.per_season_red[sn] = season_red
+        stint.per_season_clean_sheets[sn] = season_cs
         if ovr_best > 0:
             stint.per_season_ovr[sn] = ovr_best
 
@@ -548,6 +566,8 @@ def _collect_club_stint_stats(
         stint.ga += season_ga
         stint.clean_sheets += season_cs
         stint.missed_goals += season_mg
+        stint.yellow_cards += season_yellow
+        stint.red_cards += season_red
         if season_m > 0:
             stint.play_seasons += 1
             if stint.ovr_first is None and ovr_best > 0:
@@ -845,95 +865,157 @@ def _trophy_earned_factor(
     return max(0.0, min(1.0, factor))
 
 
-_TROPHY_SHORTFALL_PENALTY = 0.02
+_DEF_POS = frozenset({"ЦЗ", "ЛЗ", "ПЗ", "ЛЦЗ", "ПЦЗ"})
+_MID_POS = frozenset({"ЦП", "ЦОП", "ЛП", "ПП", "ЦАП", "ЛЦП", "ПЦП"})
 
 
-def _expected_season_matches_trophy(*, depth_rank: int, is_gk: bool) -> float:
-    if is_gk:
-        return 32.0
-    if depth_rank <= 1:
-        return 28.0
-    if depth_rank == 2:
-        return 18.0
-    return 10.0
+def _position_pm_weight(position: str) -> float:
+    pos = (position or "").strip().upper()
+    if pos in _CARRY_POSITIONS:
+        return 1.0
+    if pos in _MID_POS:
+        return 0.82
+    if pos in _DEF_POS:
+        return 0.58
+    if pos == "ВРТ":
+        return 0.72
+    return 0.65
 
 
-def _season_trophy_contribution(
-    *,
-    matches: int,
-    injury_months: int,
-    depth_rank: int,
-    prod_ratio: float,
-    is_gk: bool,
+def _team_recent_trophy_count(
+    team: str, league_code: str | None, *, lookback_seasons: int = 2
+) -> int:
+    """Число титулов (лига + ЛЧ) за последние завершённые сезоны."""
+    from bot.season_history_store import load_history
+
+    active = int(season_paths.get_state().get("active_season") or 1)
+    hist = load_history()
+    team_cmp = _norm_cmp(_norm_team(team))
+    count = 0
+    for sn in range(max(1, active - lookback_seasons), active):
+        if league_code:
+            for item in hist.get("league_winners", {}).get(league_code) or []:
+                if item and len(item) >= 2 and int(item[0]) == sn:
+                    if _norm_cmp(str(item[1])) == team_cmp:
+                        count += 1
+                        break
+        for item in hist.get("champions_league") or []:
+            if item and len(item) >= 2 and int(item[0]) == sn:
+                if _norm_cmp(str(item[1])) == team_cmp:
+                    count += 1
+                    break
+    return count
+
+
+def _team_is_apex_destination(
+    team: str,
+    league_code: str | None,
+    league_rank: int,
+    cl_rank: int | None,
+) -> bool:
+    """Практически некуда «перерастать» — элита с трофеями."""
+    from utils.team_registry import get_team
+
+    tm = get_team(team)
+    tier = max(1, min(5, int(tm.trophy_tier))) if tm else 3
+    recent = _team_recent_trophy_count(team, league_code, lookback_seasons=2)
+
+    if tier >= 5 and league_rank <= 1 and recent >= 2:
+        return True
+    if tier >= 4 and league_rank <= 2 and recent >= 2:
+        return True
+    if league_rank <= 1 and (cl_rank or 99) <= 4 and recent >= 3:
+        return True
+    return False
+
+
+def _discipline_pm_impact(
+    position: str, *, yellow: int, red: int, matches: int
 ) -> float:
-    """0..1 — вклад игрока в титул в конкретном сезоне (игры, травмы, стата)."""
-    if matches <= 0:
+    if yellow <= 0 and red <= 0:
         return 0.0
-    exp_m = _expected_season_matches_trophy(depth_rank=depth_rank, is_gk=is_gk)
-    attendance = min(1.0, matches / exp_m)
-    avail = max(0.08, 1.0 - injury_months / 10.0)
-    presence = attendance * avail
-
-    prod = min(1.0, max(0.12, prod_ratio / 1.08))
-    if matches < 6:
-        prod *= matches / 6.0
-
-    role = 1.0 if depth_rank <= 1 else (0.72 if depth_rank == 2 else 0.45)
-    mix = presence * 0.52 + prod * 0.48
-    return max(0.0, min(1.0, mix * role))
+    pos = (position or "").strip().upper()
+    pen = yellow * 0.28 + red * 1.15
+    if pos in _DEF_POS:
+        pen *= 1.4
+        if matches > 0 and yellow / matches > 0.25:
+            pen += (yellow / matches - 0.25) * matches * 0.55
+    elif pos in _CARRY_POSITIONS:
+        pen *= 0.75
+    return -pen
 
 
-def _trophy_contribution_pct(
-    stint: ClubStintStats,
+def _production_surplus_pm(
     *,
-    depth_rank: int,
     position: str,
+    overall: int,
+    ga: int,
+    clean_sheets: int,
+    matches: int,
     expected_rates: dict[tuple[str, int], float],
     is_gk: bool,
-) -> float | None:
-    """
-    Доля вклада в трофеи клуба за стаж (только титулы, пока игрок был в составе).
+) -> float:
+    if matches <= 0:
+        return 0.0
+    w = _position_pm_weight(position)
+    if is_gk:
+        exp = _expected_rate(position, overall, expected_rates, kind="cs") * matches
+        return (clean_sheets - exp) * w * 1.05
+    exp = _expected_rate(position, overall, expected_rates, kind="ga") * matches
+    return (ga - exp) * w
 
-    База 100%; за каждый титул со слабым сезонным вкладом — небольшой штраф
-    (травма / мало матчей / низкая стата в том сезоне).
-    """
-    events = stint.trophy_events
-    if not events:
-        return None
 
-    season_cache: dict[int, float] = {}
-    penalty = 0.0
+def _result_impact_pm(
+    stint: ClubStintStats,
+    *,
+    position: str,
+    depth_rank: int,
+    expected_rates: dict[tuple[str, int], float],
+    is_gk: bool,
+) -> float:
+    """
+    Вклад в результаты клуба за стаж (±, как NBA plus-minus).
+
+    Плюс: стата выше ожиданий для роли; минус: слабая стата, карточки, травмы.
+    """
+    total = 0.0
     pos = (position or "").strip().upper()
 
-    for sn, _kind, weight in events:
-        if sn not in season_cache:
-            m = int(stint.per_season_matches.get(sn, 0) or 0)
-            ga = int(stint.per_season_ga.get(sn, 0) or 0)
-            inj_m = int(stint.injury_months_by_season.get(sn, 0) or 0)
-            ovr_s = int(stint.per_season_ovr.get(sn, 0) or 0) or 80
-            prod_s = (
-                _prod_ratio(
-                    position=pos,
-                    overall=ovr_s,
-                    ga=ga,
-                    matches=m,
-                    expected_rates=expected_rates,
-                    is_gk=is_gk,
-                )
-                if m > 0
-                else 0.0
-            )
-            season_cache[sn] = _season_trophy_contribution(
-                matches=m,
-                injury_months=inj_m,
-                depth_rank=depth_rank,
-                prod_ratio=prod_s,
-                is_gk=is_gk,
-            )
-        shortfall = max(0.0, 1.0 - season_cache[sn])
-        penalty += shortfall * weight * _TROPHY_SHORTFALL_PENALTY
+    for sn in stint.season_nums:
+        m = int(stint.per_season_matches.get(sn, 0) or 0)
+        if m <= 0:
+            continue
+        ovr_s = int(stint.per_season_ovr.get(sn, 0) or 0) or 80
+        ga = int(stint.per_season_ga.get(sn, 0) or 0)
+        cs = int(stint.per_season_clean_sheets.get(sn, 0) or 0)
+        yc = int(stint.per_season_yellow.get(sn, 0) or 0)
+        rc = int(stint.per_season_red.get(sn, 0) or 0)
+        inj_m = int(stint.injury_months_by_season.get(sn, 0) or 0)
 
-    return max(0.0, min(1.0, 1.0 - penalty))
+        prod = _production_surplus_pm(
+            position=pos,
+            overall=ovr_s,
+            ga=ga,
+            clean_sheets=cs,
+            matches=m,
+            expected_rates=expected_rates,
+            is_gk=is_gk,
+        )
+        cards = _discipline_pm_impact(pos, yellow=yc, red=rc, matches=m)
+        inj = 0.0
+        if inj_m > 0:
+            inj = -inj_m * (0.38 if depth_rank <= 1 else 0.2)
+
+        role = 1.0 if depth_rank <= 1 else (0.82 if depth_rank == 2 else 0.55)
+        total += (prod + cards + inj) * role
+
+    return round(total, 1)
+
+
+def _format_result_pm(pm: float) -> str:
+    if pm >= 0:
+        return f"+{pm:.1f}"
+    return f"{pm:.1f}"
 
 
 _EARNED_TROPHY_MIN = 0.32
@@ -956,6 +1038,7 @@ def _build_reasons(
     in_start: bool = False,
     injury_periods: int = 0,
     injury_months: int = 0,
+    team_is_apex: bool = False,
 ) -> list[str]:
     """До 3 причин для отображения (порядок = важность)."""
     raw: list[str] = []
@@ -966,7 +1049,8 @@ def _build_reasons(
         raw.append(_BADGE_TROPHY)
 
     outgrown = (
-        depth_rank <= 2
+        not team_is_apex
+        and depth_rank <= 2
         and (
             skill_norm >= 0.85
             or float(ovr) >= team_median_overall + 4.0
@@ -1035,6 +1119,7 @@ def _compute_advice_for_player(
     slots: tuple[Any, ...],
     expected_rates: dict[tuple[str, int], float],
     stint: ClubStintStats,
+    team_is_apex: bool = False,
 ) -> TransferAdviceRow:
     name = str(player.get("name") or "")
     pos = (player.get("position") or "").strip().upper()
@@ -1141,15 +1226,13 @@ def _compute_advice_for_player(
         ovr=ovr,
         depth_rank=depth_rank,
     )
-    trophy_contrib = _trophy_contribution_pct(
+    result_pm = _result_impact_pm(
         stint,
-        depth_rank=depth_rank,
         position=pos,
+        depth_rank=depth_rank,
         expected_rates=expected_rates,
         is_gk=is_gk,
     )
-    if trophy_contrib is not None:
-        trophy_earned = min(trophy_earned, max(_EARNED_TROPHY_MIN, trophy_contrib))
 
     finish_places = _team_league_places_during_seasons(
         team, league_code, stint.season_nums
@@ -1319,6 +1402,7 @@ def _compute_advice_for_player(
         in_start=in_start,
         injury_periods=stint.injury_periods,
         injury_months=stint.injury_months,
+        team_is_apex=team_is_apex,
     )
 
     expected_place = _expected_league_place(team)
@@ -1334,7 +1418,7 @@ def _compute_advice_for_player(
         "injury_periods": stint.injury_periods,
         "injury_months": stint.injury_months,
         "trophy_earned": round(trophy_earned, 2),
-        "trophy_contrib": round(trophy_contrib, 3) if trophy_contrib is not None else None,
+        "result_pm": result_pm,
         "prod_ratio": round(prod_ratio, 2),
         "prod_ratio_last": round(prod_ratio_last, 2) if prod_ratio_last is not None else None,
         "finish_places": finish_places,
@@ -1426,6 +1510,9 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
 
     depth = _depth_ranks(roster)
     expected_rates = _league_expected_rates(session_league)
+    team_is_apex = _team_is_apex_destination(
+        canon, league_code, league_rank, cl_rank
+    )
 
     rows: list[TransferAdviceRow] = []
     for p in roster:
@@ -1450,6 +1537,7 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
                 slots=slots,
                 expected_rates=expected_rates,
                 stint=stint,
+                team_is_apex=team_is_apex,
             )
         )
 
@@ -1557,16 +1645,15 @@ def format_player_advice_card_html(
     if prod_l is not None:
         prod_line += f", последний сезон ×{prod_l}"
 
-    earned = d.get("trophy_earned")
     trophy_line = (
         f"лига {d.get('league_trophies', 0)}, ЛЧ {d.get('cl_trophies', 0)}"
     )
-    contrib = d.get("trophy_contrib")
-    total_trophies = int(d.get("league_trophies", 0) or 0) + int(
-        d.get("cl_trophies", 0) or 0
-    )
-    if contrib is not None and total_trophies > 0:
-        trophy_line += f" · вклад в трофеи {contrib:.0%}"
+    result_pm = d.get("result_pm")
+    result_line = None
+    if result_pm is not None and int(d.get("matches", 0) or 0) > 0:
+        result_line = (
+            f"Вклад в результаты: <b>{escape(_format_result_pm(float(result_pm)))}</b>"
+        )
 
     lines = [
         f"<b>{sur}</b> · {escape(row.position)} · {row.overall}",
@@ -1588,6 +1675,10 @@ def format_player_advice_card_html(
         )
     lines.extend([
         f"Продуктивность: {escape(prod_line)}",
+    ])
+    if result_line:
+        lines.append(result_line)
+    lines.extend([
         f"Места команды: {escape(places_line)}",
         f"Трофеи: {escape(trophy_line)}",
     ])
