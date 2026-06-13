@@ -250,6 +250,15 @@ def _season_num_from_path(league_path: str) -> int:
     return int(m.group(1)) if m else 0
 
 
+def _migrate_archive_schema_for_orm(league_path: str, cl_path: str) -> None:
+    """Архивы сезонов могут отставать по схеме (``lineup_slot`` и т.п.)."""
+    from utils.migrate_lineup_slot import migrate_lineup_slot_for_sqlite
+
+    for path in (league_path, cl_path):
+        if os.path.isfile(path):
+            migrate_lineup_slot_for_sqlite(path)
+
+
 def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[str, Any]:
     """
     Добавить статистику из снимка сезона (два sqlite-файла) в общие ``db/league.db`` и
@@ -263,6 +272,8 @@ def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[s
     if not os.path.isfile(league_path) or not os.path.isfile(cl_path):
         log["cumulative"].append("skip: snapshot league/cl not found")
         return log
+
+    _migrate_archive_schema_for_orm(league_path, cl_path)
 
     cum_l = season_paths.get_cumulative_league_db_path()
     cum_c = season_paths.get_cumulative_cl_db_path()
@@ -366,6 +377,7 @@ def rebuild_all_time_databases_from_season_archives() -> dict[str, Any]:
     first = seasons[0]
     lp1 = os.path.join(db_dir, f"season_{first}", season_paths.SEASON_LEAGUE_NAME)
     cp1 = os.path.join(db_dir, f"season_{first}", season_paths.SEASON_CL_NAME)
+    _migrate_archive_schema_for_orm(lp1, cp1)
     shutil.copy2(lp1, cum_l)
     shutil.copy2(cp1, cum_c)
     log["cumulative"].append(f"seed season_{first}")
