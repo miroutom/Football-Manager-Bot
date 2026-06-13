@@ -155,6 +155,20 @@ class TransferAdviceRow:
 
 _VERDICT_ORDER = {VERDICT_NU: 0, VERDICT_SU: 1, VERDICT_SO: 2, VERDICT_NO: 3}
 
+# Коды вкладок дашборда → вердикты
+_VIEW_KEY_TO_VERDICT: dict[str, str] = {
+    "nu": VERDICT_NU,
+    "su": VERDICT_SU,
+    "so": VERDICT_SO,
+    "no": VERDICT_NO,
+}
+
+
+def normalize_advice_view(view: str) -> str:
+    """``nu``/``no``/… → ``НУ``/``НО``/…; ``summary``/``all``/``sell`` без изменений."""
+    v = (view or "summary").strip().lower()
+    return _VIEW_KEY_TO_VERDICT.get(v, v)
+
 
 def _norm_team(team: str) -> str:
     t = (team or "").strip()
@@ -1212,8 +1226,9 @@ def _rows_for_view(
 ) -> list[TransferAdviceRow]:
     if view == "sell":
         return [r for r in rows if r.verdict in (VERDICT_SU, VERDICT_NU)]
-    if view in _VERDICT_ORDER:
-        return [r for r in rows if r.verdict == view]
+    verdict = normalize_advice_view(view)
+    if verdict in _VERDICT_ORDER:
+        return [r for r in rows if r.verdict == verdict]
     return list(rows)
 
 
@@ -1383,8 +1398,9 @@ def format_team_advice_html(
     page = max(0, min(page, total_pages - 1))
     chunk = body_rows[page * page_size : page * page_size + page_size]
 
-    if view in _VERDICT_ORDER:
-        title = _VERDICT_SECTION.get(view, view)
+    verdict = normalize_advice_view(view)
+    if verdict in _VERDICT_ORDER:
+        title = _VERDICT_SECTION.get(verdict, verdict)
         header = f"<b>{team_e}</b>{q_part}\n{title} <b>{len(body_rows)}</b>\n"
     elif view == "sell":
         header = (

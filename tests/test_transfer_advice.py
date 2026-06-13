@@ -252,3 +252,26 @@ def test_format_summary_view():
     assert pages == 1
     assert "Хаверц" in text
     assert "СУ" in text
+
+
+def test_paginate_view_no_filters_verdict():
+    from utils.transfer_advice import (
+        TransferAdviceRow,
+        VERDICT_NO,
+        VERDICT_NU,
+        VERDICT_SU,
+        paginate_advice_view,
+    )
+
+    rows = [
+        TransferAdviceRow(name="А", position="ЦП", overall=80, verdict=VERDICT_NU, reasons=[]),
+        TransferAdviceRow(name="Б", position="ЦП", overall=81, verdict=VERDICT_SU, reasons=[]),
+        TransferAdviceRow(name="В", position="ЦП", overall=82, verdict=VERDICT_NO, reasons=[]),
+        TransferAdviceRow(name="Г", position="ЦП", overall=83, verdict=VERDICT_NO, reasons=[]),
+    ]
+    chunk, page, total_pages = paginate_advice_view(rows, "no", 0, 10)
+    assert total_pages == 1
+    assert page == 0
+    assert len(chunk) == 2
+    assert all(r.verdict == VERDICT_NO for r in chunk)
+    assert {r.name for r in chunk} == {"В", "Г"}
