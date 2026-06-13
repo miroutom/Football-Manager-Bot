@@ -211,11 +211,11 @@
     "michel": {
       "name": "Мишель",
       "formation_ids": [
+        1,
         5,
-        2,
         6
       ],
-      "active_formation_id": 2
+      "active_formation_id": 1
     },
     "inzaghi": {
       "name": "Инзаги",
