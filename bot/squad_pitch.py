@@ -648,6 +648,7 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "ЭКВАТОРИАЛЬНАЯ ГВИНЕЯ": "gq",
         "СЛОВЕНИЯ": "si",
         "БОСНИЯ": "ba",
+        "ИЗРАИЛЬ": "il",
         "ИСРАИЛЬ": "il",
         "ГРУЗИЯ": "ge",
         "АРМЕНИЯ": "am",
@@ -663,6 +664,7 @@ def _nation_to_flagcdn_code(raw: str | None) -> str | None:
         "ЛЮКСЕМБУРГ": "lu",
         "ГВИНЕЯ": "gn",
         "ДР КОНГО": "cd",
+        "КОНГО": "cg",
         "МОЛДАВИЯ": "md",
         "МАЛИ": "ml",
     }

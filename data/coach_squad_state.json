@@ -361,6 +361,15 @@
       ],
       "active_formation_id": 2
     },
+    "pioli_spartak": {
+      "name": "Пиоли",
+      "formation_ids": [
+        5,
+        2,
+        1
+      ],
+      "active_formation_id": 5
+    },
     "xavi": {
       "name": "Хави",
       "formation_ids": [
@@ -477,7 +486,7 @@
     "Милан": "terzic",
     "Жирона": "michel",
     "Интер": "inzaghi",
-    "Спартак": "pioli",
+    "Спартак": "pioli_spartak",
     "Урал": "ignashevich",
     "Крылья Советов": "yuran",
     "Боруссия М": "arteta",

@@ -10,6 +10,7 @@ LINEUP_SLOT_IDS: frozenset[str] = frozenset(
         "LCB",
         "RCB",
         "CB",
+        "CCB",
         "CDM",
         "LCM",
         "RCM",
