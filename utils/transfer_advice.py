@@ -26,15 +26,17 @@ from player_stats import LEAGUE_TEAMS, national_league_code_for_team
 from utils import season_paths
 from utils.player_names import player_display_name, player_surname
 from utils.player_transfer import _filter_team, _norm_cmp
-from utils.team_strength import get_team_strength, get_teams_sorted_by_strength
+from utils.team_registry import club_trophy_ambition, get_league, teams_in_league
+from utils.team_strength import get_teams_sorted_by_strength
 
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 _GOALKEEPER_POS = frozenset({"ВРТ"})
 
 W_CL = 1.75
-TOP_PLAYER_OVR = 87
-TOP_CLUB_RANK = 5
 MIN_SEASONS_TROPHY_RULE = 2
+# Относительный дефицит трофеев (t_deficit / t_exp_player) для метки Т−.
+_TROPHY_REL_DEFICIT_BADGE = 0.58
+_TROPHY_SENSITIVITY_BADGE = 0.22
 
 VERDICT_NO = "НО"
 VERDICT_SO = "СО"
@@ -115,7 +117,11 @@ def _player_fits_formation(position: str, slots: tuple[Any, ...]) -> bool:
 def _league_strength_rank(team: str, league_code: str | None) -> int:
     if not league_code:
         return 99
-    names = LEAGUE_TEAMS.get(league_code) or []
+    reg = teams_in_league(league_code, active_only=False)
+    if reg:
+        names = [t.name for t in reg]
+    else:
+        names = LEAGUE_TEAMS.get(league_code) or []
     if not names:
         return 99
     ranked = get_teams_sorted_by_strength(names, "league")
@@ -164,14 +170,63 @@ def _cl_strength_rank(team: str) -> int | None:
     return len(ranked) + 1
 
 
-def _expected_trophies(
-    seasons: int, *, league_rank: int, cl_rank: int | None
+def _league_cl_scale(league_code: str | None) -> float:
+    lg = get_league((league_code or "").strip().lower())
+    if lg is None:
+        return 0.65
+    return float(lg.cl_scale)
+
+
+def _player_ambition(
+    *,
+    ovr: int,
+    depth_rank: int,
+    skill_norm: float,
+    fit: bool,
 ) -> float:
-    if seasons <= 0:
+    """0..1 — насколько этому игроку важны трофеи (роль + скилл + рейтинг)."""
+    ovr_n = max(0.0, min(1.0, (int(ovr) - 68) / 22.0))
+    if depth_rank <= 1:
+        role = 1.0
+    elif depth_rank == 2:
+        role = 0.58
+    elif depth_rank == 3:
+        role = 0.28
+    else:
+        role = 0.08
+    skill = max(0.0, min(1.0, (float(skill_norm) + 2.0) / 4.0))
+    fit_v = 1.0 if fit else 0.50
+    return max(0.05, min(1.0, 0.26 * ovr_n + 0.40 * role + 0.22 * skill + 0.12 * fit_v))
+
+
+def _trophy_sensitivity(
+    *,
+    team: str,
+    ovr: int,
+    depth_rank: int,
+    skill_norm: float,
+    fit: bool,
+) -> tuple[float, float, float]:
+    """(club_amb, player_amb, combined) — лига × тир клуба × профиль игрока."""
+    club = club_trophy_ambition(team)
+    player = _player_ambition(ovr=ovr, depth_rank=depth_rank, skill_norm=skill_norm, fit=fit)
+    return club, player, club * player
+
+
+def _expected_trophies(
+    seasons: int,
+    *,
+    league_rank: int,
+    cl_rank: int | None,
+    league_code: str | None,
+    club_ambition: float,
+) -> float:
+    if seasons <= 0 or club_ambition <= 0:
         return 0.0
+    cl_scale = _league_cl_scale(league_code)
     p_l = _win_prob_league(league_rank)
     p_c = _win_prob_cl(cl_rank) if cl_rank is not None else 0.0
-    return seasons * (p_l * 1.0 + p_c * W_CL)
+    return seasons * club_ambition * (p_l * 1.0 + p_c * W_CL * cl_scale)
 
 
 def _seasons_player_at_team(
@@ -393,6 +448,7 @@ def _compute_advice_for_player(
     team_median_by_pos: dict[str, float],
     league_rank: int,
     cl_rank: int | None,
+    league_code: str | None,
     slots: tuple[Any, ...],
     expected_rates: dict[tuple[str, int], float],
     stint: ClubStintStats,
@@ -414,6 +470,14 @@ def _compute_advice_for_player(
 
     med = team_median_by_pos.get(pos, float(ovr))
     skill_norm = max(-2.0, min(2.0, (ovr - med) / 5.0))
+
+    club_amb, player_amb, trophy_sens = _trophy_sensitivity(
+        team=team,
+        ovr=ovr,
+        depth_rank=depth_rank,
+        skill_norm=skill_norm,
+        fit=fit,
+    )
 
     if depth_rank <= 1:
         role_pts = 2.0
@@ -455,45 +519,102 @@ def _compute_advice_for_player(
         prod_norm = max(-2.0, min(2.0, (prod_ratio - 1.0) * 2.0))
 
     if prod_ratio < 0.6 and stint.matches >= 3:
-        if _BADGE_PROD not in badges:
+        prod_gate = 0.45 + 0.40 * player_amb
+        if prod_ratio < prod_gate and _BADGE_PROD not in badges:
             badges.append(_BADGE_PROD)
 
-    t_exp = _expected_trophies(stint.seasons, league_rank=league_rank, cl_rank=cl_rank)
-    t_deficit = t_exp - stint.trophy_value
-    if t_deficit > 0.45 and stint.seasons >= 1:
+    t_exp_club = _expected_trophies(
+        stint.seasons,
+        league_rank=league_rank,
+        cl_rank=cl_rank,
+        league_code=league_code,
+        club_ambition=club_amb,
+    )
+    t_exp_player = t_exp_club * player_amb
+    t_deficit = t_exp_player - stint.trophy_value
+    rel_deficit = (
+        t_deficit / max(t_exp_player, 0.12) if t_exp_player > 0.08 else 0.0
+    )
+
+    if (
+        stint.seasons >= MIN_SEASONS_TROPHY_RULE
+        and depth_rank <= 3
+        and player_amb >= 0.30
+        and trophy_sens >= _TROPHY_SENSITIVITY_BADGE
+        and rel_deficit > _TROPHY_REL_DEFICIT_BADGE
+    ):
         if _BADGE_TROPHY not in badges:
             badges.append(_BADGE_TROPHY)
+
+    trophy_score = 0.0
+    if (
+        t_exp_player > 0.08
+        and rel_deficit > 0
+        and trophy_sens >= _TROPHY_SENSITIVITY_BADGE
+        and depth_rank <= 3
+        and player_amb >= 0.28
+    ):
+        if depth_rank <= 1:
+            trophy_role = 1.0
+        elif depth_rank == 2:
+            trophy_role = 0.72
+        else:
+            trophy_role = 0.22
+        trophy_role *= max(0.35, min(1.0, player_amb))
+        trophy_score = (
+            11.0
+            * trophy_sens
+            * trophy_role
+            * max(-1.5, min(1.5, -rel_deficit))
+        )
+
+    depth_pen = 0.0
+    if depth_rank >= 4:
+        depth_pen = -13.0
+    elif depth_rank == 3:
+        depth_pen = -5.0
+    elif depth_rank == 2 and not is_gk:
+        depth_pen = -2.5
+
+    usage_pen = 0.0
+    if depth_rank <= 2 and stint.seasons >= 2 and stint.matches >= 1:
+        min_exp = 9.0 * stint.seasons * (1.0 if depth_rank == 1 else 0.5)
+        if stint.matches < min_exp:
+            usage_pen = -9.0 * (1.0 - stint.matches / max(min_exp, 1.0))
 
     score = (
         50.0
         + 12.0 * skill_norm
         + 10.0 * (role_pts / 2.0)
-        + 18.0 * (prod_norm / 2.0)
-        + 15.0 * max(-1.5, min(1.5, -t_deficit / max(t_exp, 0.5)))
-        + (10.0 if fit else -6.0)
+        + 20.0 * (prod_norm / 2.0)
+        * (0.50 + 0.50 * (1.0 - player_amb * 0.35))
+        + trophy_score
+        + depth_pen
+        + usage_pen
+        + (10.0 if fit else -8.0)
     )
+    if depth_surplus and not fit:
+        score -= 5.0
+    if depth_rank >= 4 and not fit:
+        score -= 4.0
+
+    # Глубина 2 без провала по стате — максимум СУ, не НУ только из‑за трофеев.
+    if (
+        depth_rank == 2
+        and _BADGE_DEPTH not in badges
+        and _BADGE_PROD not in badges
+    ):
+        score = max(score, 39.0)
 
     verdict = _score_to_verdict(score)
 
-    hard_nu = (
-        ovr >= TOP_PLAYER_OVR
-        and league_rank <= TOP_CLUB_RANK
-        and stint.seasons >= MIN_SEASONS_TROPHY_RULE
-        and stint.trophy_value < 0.5
-        and t_deficit > 0.8
-    )
-    hard_nu_depth = depth_rank >= 4 and not fit and _BADGE_PROD in badges
     hard_no = depth_rank == 1 and prod_ratio >= 0.95 and fit and ovr >= med
 
-    if hard_nu or hard_nu_depth:
-        verdict = VERDICT_NU
-        score = min(score, 30.0)
-    elif hard_no:
+    if hard_no:
         verdict = VERDICT_NO
         score = max(score, 75.0)
 
-    if stint.seasons <= 1 and verdict == VERDICT_NU and _BADGE_TROPHY in badges:
-        verdict = VERDICT_SU
+    if stint.seasons <= 1 and _BADGE_TROPHY in badges:
         badges = [b for b in badges if b != _BADGE_TROPHY]
 
     badges = badges[:2]
@@ -591,6 +712,7 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
                 team_median_by_pos=team_median_by_pos,
                 league_rank=league_rank,
                 cl_rank=cl_rank,
+                league_code=league_code,
                 slots=slots,
                 expected_rates=expected_rates,
                 stint=stint,
@@ -663,6 +785,10 @@ def format_advice_telegram(
 
 def all_league_teams() -> list[str]:
     out: list[str] = []
-    for _code, names in LEAGUE_TEAMS.items():
-        out.extend(names)
+    for code in ("rpl", "eng", "esp", "ger", "ita"):
+        reg = teams_in_league(code, active_only=False)
+        if reg:
+            out.extend(t.name for t in reg)
+        else:
+            out.extend(LEAGUE_TEAMS.get(code) or [])
     return sorted(set(out), key=lambda x: x.lower())

@@ -58,7 +58,15 @@ LEAGUE_NAMES = {
 
 
 def national_league_code_for_team(team: str) -> str | None:
-    """Код нац. лиги (rpl, eng, …) по имени клуба из LEAGUE_TEAMS; иначе None."""
+    """Код нац. лиги (rpl, eng, …): реестр команд, иначе LEAGUE_TEAMS."""
+    try:
+        from utils.team_registry import league_code_for_team
+
+        code = league_code_for_team(team)
+        if code:
+            return code
+    except Exception:
+        pass
     t = _norm_cmp(team)
     if not t:
         return None

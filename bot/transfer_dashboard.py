@@ -41,6 +41,11 @@ _LEAGUE_TITLE = dict(LEAGUE_LABELS)
 
 
 def _teams_for_league(code: str) -> list[str]:
+    from utils.team_registry import teams_in_league
+
+    reg = teams_in_league(code, active_only=True)
+    if reg:
+        return sorted(t.name for t in reg)
     return sorted(LEAGUE_TEAMS.get(code, []))
 
 
