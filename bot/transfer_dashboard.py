@@ -149,7 +149,7 @@ def _sell_pick_kb(
     page: int,
 ) -> InlineKeyboardMarkup:
     ps = _DASH_PAGE_SIZE
-    sell_rows = [r for r in advice_rows if r.verdict in (VERDICT_SU, VERDICT_NU)]
+    sell_rows = flat_advice_rows(advice_rows, "sell")
     total_pages = max(1, (len(sell_rows) + ps - 1) // ps)
     page = max(0, min(page, total_pages - 1))
     chunk = sell_rows[page * ps : page * ps + ps]
@@ -572,7 +572,7 @@ def register_transfer_dashboard(router: Router) -> None:
         if err:
             await callback.answer(err, show_alert=True)
             return
-        sell_rows = [r for r in rows if r.verdict in (VERDICT_SU, VERDICT_NU)]
+        sell_rows = flat_advice_rows(rows, "sell")
         if not sell_rows:
             await callback.answer("Нет СУ/НУ в составе", show_alert=True)
             return
@@ -606,7 +606,7 @@ def register_transfer_dashboard(router: Router) -> None:
         if err:
             await callback.answer(err, show_alert=True)
             return
-        sell_rows = [r for r in rows if r.verdict in (VERDICT_SU, VERDICT_NU)]
+        sell_rows = flat_advice_rows(rows, "sell")
         if pi < 0 or pi >= len(sell_rows):
             await callback.answer("Игрок не найден", show_alert=True)
             return

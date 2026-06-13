@@ -171,6 +171,13 @@ def normalize_advice_view(view: str) -> str:
     return _VIEW_KEY_TO_VERDICT.get(v, v)
 
 
+def _sort_rows_by_overall(rows: list[TransferAdviceRow]) -> list[TransferAdviceRow]:
+    return sorted(
+        rows,
+        key=lambda r: (-int(r.overall or 0), (r.name or "").lower()),
+    )
+
+
 def _norm_team(team: str) -> str:
     t = (team or "").strip()
     if t.casefold() == "цска":
@@ -1243,10 +1250,10 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
 
     rows.sort(
         key=lambda r: (
+            -int(r.overall or 0),
             _VERDICT_ORDER.get(r.verdict, 9),
-            r.score,
-            -r.overall,
-            r.name.lower(),
+            -float(r.score or 0),
+            (r.name or "").lower(),
         )
     )
     return canon, rows, None
@@ -1256,11 +1263,15 @@ def _rows_for_view(
     rows: list[TransferAdviceRow], view: str
 ) -> list[TransferAdviceRow]:
     if view == "sell":
-        return [r for r in rows if r.verdict in (VERDICT_SU, VERDICT_NU)]
+        return _sort_rows_by_overall(
+            [r for r in rows if r.verdict in (VERDICT_SU, VERDICT_NU)]
+        )
     verdict = normalize_advice_view(view)
     if verdict in _VERDICT_ORDER:
-        return [r for r in rows if r.verdict == verdict]
-    return list(rows)
+        return _sort_rows_by_overall(
+            [r for r in rows if r.verdict == verdict]
+        )
+    return _sort_rows_by_overall(list(rows))
 
 
 def _summary_names(rows: list[TransferAdviceRow], limit: int = 3) -> str:
@@ -1277,7 +1288,9 @@ def flat_advice_rows(rows: list[TransferAdviceRow], view: str) -> list[TransferA
     if view == "all":
         out: list[TransferAdviceRow] = []
         for v in (VERDICT_NU, VERDICT_SU, VERDICT_SO, VERDICT_NO):
-            out.extend(r for r in rows if r.verdict == v)
+            out.extend(
+                _sort_rows_by_overall(r for r in rows if r.verdict == v)
+            )
         return out
     return _rows_for_view(rows, view)
 
@@ -1389,7 +1402,7 @@ def format_team_advice_html(
     if view == "summary":
         lines = [f"<b>{team_e}</b>{q_part}", ""]
         for v in (VERDICT_NU, VERDICT_SU, VERDICT_SO, VERDICT_NO):
-            grp = [r for r in rows if r.verdict == v]
+            grp = _sort_rows_by_overall(r for r in rows if r.verdict == v)
             if not grp:
                 continue
             lines.append(
@@ -1404,9 +1417,8 @@ def format_team_advice_html(
     if view == "all":
         flat: list[tuple[str, TransferAdviceRow]] = []
         for v in (VERDICT_NU, VERDICT_SU, VERDICT_SO, VERDICT_NO):
-            for r in rows:
-                if r.verdict == v:
-                    flat.append((v, r))
+            for r in _sort_rows_by_overall(r for r in rows if r.verdict == v):
+                flat.append((v, r))
         total_pages = max(1, (len(flat) + page_size - 1) // page_size)
         page = max(0, min(page, total_pages - 1))
         chunk_slice = flat[page * page_size : page * page_size + page_size]

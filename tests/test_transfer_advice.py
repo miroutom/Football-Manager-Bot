@@ -302,3 +302,19 @@ def test_collect_club_stint_includes_champions_league():
     assert st.goals >= 56
     assert st.assists >= 8
     assert st.completed_play_seasons >= 2
+
+
+def test_flat_advice_sorted_by_overall():
+    from utils.transfer_advice import (
+        TransferAdviceRow,
+        VERDICT_NO,
+        flat_advice_rows,
+    )
+
+    rows = [
+        TransferAdviceRow(name="А", position="ЦП", overall=80, verdict=VERDICT_NO, reasons=[]),
+        TransferAdviceRow(name="Б", position="ЦП", overall=90, verdict=VERDICT_NO, reasons=[]),
+        TransferAdviceRow(name="В", position="ЦП", overall=85, verdict=VERDICT_NO, reasons=[]),
+    ]
+    flat = flat_advice_rows(rows, "no")
+    assert [r.overall for r in flat] == [90, 85, 80]
