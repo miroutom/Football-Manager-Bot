@@ -275,6 +275,12 @@ def _PATH_exists_open_default() -> bool:
     ).is_file()
 
 
+_ADVICE_LEGEND_HTML = (
+    "<i>НО надо остаться · СО стоит остаться · СУ стоит уходить · НУ надо уходить\n"
+    "Т− трофеи · П↓ продуктивность · З+ избыток · С× не в схему</i>\n"
+)
+
+
 def _format_team_detail(
     team: str,
     rows: list[TransferAdviceRow],
@@ -294,6 +300,7 @@ def _format_team_detail(
     counts = {v: sum(1 for r in rows if r.verdict == v) for v in ("НО", "СО", "СУ", "НУ")}
     header = (
         f"<b>{html_escape(team)}</b>  ·  <code>{html_escape(q)}</code>\n"
+        f"{_ADVICE_LEGEND_HTML}"
         f"НО {counts['НО']} · СО {counts['СО']} · СУ {counts['СУ']} · НУ {counts['НУ']}\n"
     )
     if sell_only:
