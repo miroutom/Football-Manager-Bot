@@ -111,6 +111,11 @@ class ClubStintStats:
     ovr_peak_hist: int | None = None
     injury_periods: int = 0
     injury_months: int = 0
+    injury_months_by_season: dict[int, int] = field(default_factory=dict)
+    per_season_matches: dict[int, int] = field(default_factory=dict)
+    per_season_ga: dict[int, int] = field(default_factory=dict)
+    per_season_ovr: dict[int, int] = field(default_factory=dict)
+    trophy_events: list[tuple[int, str, float]] = field(default_factory=list)
     last_season_num: int | None = None
     last_season_matches: int = 0
     last_season_ga: int = 0
@@ -451,6 +456,7 @@ def _collect_injuries_for_stint(
     periods = 0
     total_months = 0
     pen_by_season: dict[int, int] = {}
+    months_by_season: dict[int, int] = {}
     peak_before_penalty = 0
 
     for inj in _load().get("injuries", []):
@@ -472,6 +478,7 @@ def _collect_injuries_for_stint(
             continue
         periods += 1
         total_months += months
+        months_by_season[sn_i] = months_by_season.get(sn_i, 0) + months
         pen = abs(int(injury_overall_penalty(months)))
         if pen > 0:
             pen_by_season[sn_i] = pen_by_season.get(sn_i, 0) + pen
@@ -482,7 +489,7 @@ def _collect_injuries_for_stint(
             except (TypeError, ValueError):
                 pass
 
-    return periods, total_months, pen_by_season, peak_before_penalty
+    return periods, total_months, pen_by_season, months_by_season, peak_before_penalty
 
 
 def _injury_stint_score_penalty(periods: int, months: int) -> float:
@@ -532,6 +539,11 @@ def _collect_club_stint_stats(
         if ovr_best > 0:
             per_season_ovr[sn] = ovr_best
 
+        stint.per_season_matches[sn] = season_m
+        stint.per_season_ga[sn] = season_ga
+        if ovr_best > 0:
+            stint.per_season_ovr[sn] = ovr_best
+
         stint.matches += season_m
         stint.ga += season_ga
         stint.clean_sheets += season_cs
@@ -552,6 +564,7 @@ def _collect_club_stint_stats(
                     stint.last_season_ovr = ovr_best
 
     hist = load_history()
+    stint.trophy_events = []
     for sn in seasons:
         if league_code:
             rows = hist.get("league_winners", {}).get(league_code) or []
@@ -561,6 +574,7 @@ def _collect_club_stint_stats(
                         continue
                     if int(item[0]) == sn and _norm_cmp(str(item[1])) == _norm_cmp(team_n):
                         stint.league_trophies += 1
+                        stint.trophy_events.append((sn, "league", 1.0))
                         break
         cl_rows = hist.get("champions_league") or []
         if isinstance(cl_rows, list):
@@ -569,13 +583,15 @@ def _collect_club_stint_stats(
                     continue
                 if int(item[0]) == sn and _norm_cmp(str(item[1])) == _norm_cmp(team_n):
                     stint.cl_trophies += 1
+                    stint.trophy_events.append((sn, "cl", W_CL))
                     break
 
-    inj_periods, inj_months, inj_pen_by_season, inj_peak = _collect_injuries_for_stint(
-        team_n, name=name, season_nums=seasons
+    inj_periods, inj_months, inj_pen_by_season, inj_months_by_season, inj_peak = (
+        _collect_injuries_for_stint(team_n, name=name, season_nums=seasons)
     )
     stint.injury_periods = inj_periods
     stint.injury_months = inj_months
+    stint.injury_months_by_season = inj_months_by_season
 
     est_peaks: list[int] = []
     for sn, so in per_season_ovr.items():
@@ -829,6 +845,97 @@ def _trophy_earned_factor(
     return max(0.0, min(1.0, factor))
 
 
+_TROPHY_SHORTFALL_PENALTY = 0.02
+
+
+def _expected_season_matches_trophy(*, depth_rank: int, is_gk: bool) -> float:
+    if is_gk:
+        return 32.0
+    if depth_rank <= 1:
+        return 28.0
+    if depth_rank == 2:
+        return 18.0
+    return 10.0
+
+
+def _season_trophy_contribution(
+    *,
+    matches: int,
+    injury_months: int,
+    depth_rank: int,
+    prod_ratio: float,
+    is_gk: bool,
+) -> float:
+    """0..1 — вклад игрока в титул в конкретном сезоне (игры, травмы, стата)."""
+    if matches <= 0:
+        return 0.0
+    exp_m = _expected_season_matches_trophy(depth_rank=depth_rank, is_gk=is_gk)
+    attendance = min(1.0, matches / exp_m)
+    avail = max(0.08, 1.0 - injury_months / 10.0)
+    presence = attendance * avail
+
+    prod = min(1.0, max(0.12, prod_ratio / 1.08))
+    if matches < 6:
+        prod *= matches / 6.0
+
+    role = 1.0 if depth_rank <= 1 else (0.72 if depth_rank == 2 else 0.45)
+    mix = presence * 0.52 + prod * 0.48
+    return max(0.0, min(1.0, mix * role))
+
+
+def _trophy_contribution_pct(
+    stint: ClubStintStats,
+    *,
+    depth_rank: int,
+    position: str,
+    expected_rates: dict[tuple[str, int], float],
+    is_gk: bool,
+) -> float | None:
+    """
+    Доля вклада в трофеи клуба за стаж (только титулы, пока игрок был в составе).
+
+    База 100%; за каждый титул со слабым сезонным вкладом — небольшой штраф
+    (травма / мало матчей / низкая стата в том сезоне).
+    """
+    events = stint.trophy_events
+    if not events:
+        return None
+
+    season_cache: dict[int, float] = {}
+    penalty = 0.0
+    pos = (position or "").strip().upper()
+
+    for sn, _kind, weight in events:
+        if sn not in season_cache:
+            m = int(stint.per_season_matches.get(sn, 0) or 0)
+            ga = int(stint.per_season_ga.get(sn, 0) or 0)
+            inj_m = int(stint.injury_months_by_season.get(sn, 0) or 0)
+            ovr_s = int(stint.per_season_ovr.get(sn, 0) or 0) or 80
+            prod_s = (
+                _prod_ratio(
+                    position=pos,
+                    overall=ovr_s,
+                    ga=ga,
+                    matches=m,
+                    expected_rates=expected_rates,
+                    is_gk=is_gk,
+                )
+                if m > 0
+                else 0.0
+            )
+            season_cache[sn] = _season_trophy_contribution(
+                matches=m,
+                injury_months=inj_m,
+                depth_rank=depth_rank,
+                prod_ratio=prod_s,
+                is_gk=is_gk,
+            )
+        shortfall = max(0.0, 1.0 - season_cache[sn])
+        penalty += shortfall * weight * _TROPHY_SHORTFALL_PENALTY
+
+    return max(0.0, min(1.0, 1.0 - penalty))
+
+
 _EARNED_TROPHY_MIN = 0.32
 
 
@@ -1034,6 +1141,15 @@ def _compute_advice_for_player(
         ovr=ovr,
         depth_rank=depth_rank,
     )
+    trophy_contrib = _trophy_contribution_pct(
+        stint,
+        depth_rank=depth_rank,
+        position=pos,
+        expected_rates=expected_rates,
+        is_gk=is_gk,
+    )
+    if trophy_contrib is not None:
+        trophy_earned = min(trophy_earned, max(_EARNED_TROPHY_MIN, trophy_contrib))
 
     finish_places = _team_league_places_during_seasons(
         team, league_code, stint.season_nums
@@ -1218,6 +1334,7 @@ def _compute_advice_for_player(
         "injury_periods": stint.injury_periods,
         "injury_months": stint.injury_months,
         "trophy_earned": round(trophy_earned, 2),
+        "trophy_contrib": round(trophy_contrib, 3) if trophy_contrib is not None else None,
         "prod_ratio": round(prod_ratio, 2),
         "prod_ratio_last": round(prod_ratio_last, 2) if prod_ratio_last is not None else None,
         "finish_places": finish_places,
@@ -1444,8 +1561,12 @@ def format_player_advice_card_html(
     trophy_line = (
         f"лига {d.get('league_trophies', 0)}, ЛЧ {d.get('cl_trophies', 0)}"
     )
-    if earned is not None:
-        trophy_line += f" · вклад в трофеи {earned:.0%}"
+    contrib = d.get("trophy_contrib")
+    total_trophies = int(d.get("league_trophies", 0) or 0) + int(
+        d.get("cl_trophies", 0) or 0
+    )
+    if contrib is not None and total_trophies > 0:
+        trophy_line += f" · вклад в трофеи {contrib:.0%}"
 
     lines = [
         f"<b>{sur}</b> · {escape(row.position)} · {row.overall}",

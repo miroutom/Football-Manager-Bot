@@ -336,3 +336,28 @@ def test_injury_peak_and_score_penalty():
     assert st.ovr_peak_hist == 93
     assert _injury_stint_score_penalty(2, 9) < 0
     assert _injury_stint_score_penalty(2, 9) >= -2.5
+
+
+def test_trophy_contribution_rohl_no_percent():
+    from utils.transfer_advice import collect_transfer_advice, format_player_advice_card_html
+
+    _, rows, err = collect_transfer_advice("Бавария")
+    assert not err
+    rohl = next(r for r in rows if r.name == "Рёль")
+    assert rohl.detail.get("league_trophies") == 0
+    assert rohl.detail.get("trophy_contrib") is None
+    card = format_player_advice_card_html("Бавария", rohl)
+    assert "вклад в трофеи" not in card
+
+
+def test_trophy_contribution_martinez_injured_season():
+    from utils.transfer_advice import collect_transfer_advice
+
+    _, rows, err = collect_transfer_advice("Интер")
+    assert not err
+    mart = next(r for r in rows if r.name == "Мартинез")
+    assert mart.detail.get("league_trophies") == 2
+    assert mart.detail.get("cl_trophies") == 1
+    contrib = mart.detail.get("trophy_contrib")
+    assert contrib is not None
+    assert 0.96 <= contrib <= 0.995
