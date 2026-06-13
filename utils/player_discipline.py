@@ -971,21 +971,20 @@ def _apply_injury(
             st, player.name, team, cur, ret, season=season_now
         )
         if inj is None:
-            st.setdefault("injuries", []).append(
-                {
-                    "key": _injury_period_key(
-                        player.name, team, cur, ret, season_now
-                    ),
-                    "name": player.name,
-                    "name_norm": _norm(player.name),
-                    "team": team,
-                    "team_norm": _norm(team),
-                    "out_from_month": cur,
-                    "return_month": ret,
-                    "type": injury_type,
-                    "season": season_now,
-                }
-            )
+            inj = {
+                "key": _injury_period_key(
+                    player.name, team, cur, ret, season_now
+                ),
+                "name": player.name,
+                "name_norm": _norm(player.name),
+                "team": team,
+                "team_norm": _norm(team),
+                "out_from_month": cur,
+                "return_month": ret,
+                "type": injury_type,
+                "season": season_now,
+            }
+            st.setdefault("injuries", []).append(inj)
             added = True
         else:
             inj["type"] = injury_type
@@ -999,11 +998,21 @@ def _apply_injury(
     if added:
         delta = injury_overall_penalty(nmonths)
         if delta:
+            overall_before_penalty = int(getattr(player, "overall", 0) or 0)
             from utils.player_overall_bumps import apply_overall_bumps_for_team
 
             bump_res = apply_overall_bumps_for_team(team, f"{player.name} {delta:+d}")
             if bump_res.ok:
                 rating_note = f" Рейтинг <b>{delta:+d}</b>."
+                if overall_before_penalty > 0:
+                    with _lock:
+                        st2 = _load()
+                        row = _find_injury_period(
+                            st2, player.name, team, cur, ret, season=season_now
+                        )
+                        if row is not None:
+                            row["overall_before_penalty"] = overall_before_penalty
+                            _save(st2)
             elif bump_res.errors:
                 rating_note = f" (рейтинг: {bump_res.errors[0]})"
     tk = injury_type.strip() or "травма"

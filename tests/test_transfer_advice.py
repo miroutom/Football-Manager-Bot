@@ -318,3 +318,21 @@ def test_flat_advice_sorted_by_overall():
     ]
     flat = flat_advice_rows(rows, "no")
     assert [r.overall for r in flat] == [90, 85, 80]
+
+
+def test_injury_peak_and_score_penalty():
+    from utils.transfer_advice import (
+        TransferAdviceRow,
+        VERDICT_SU,
+        _collect_club_stint_stats,
+        _injury_stint_score_penalty,
+    )
+
+    st = _collect_club_stint_stats(
+        "Интер", person_id=62, name="Мартинез", league_code="ita_serie_a"
+    )
+    assert st.injury_periods == 2
+    assert st.injury_months == 9
+    assert st.ovr_peak_hist == 93
+    assert _injury_stint_score_penalty(2, 9) < 0
+    assert _injury_stint_score_penalty(2, 9) >= -2.5

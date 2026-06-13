@@ -60,6 +60,7 @@ REASON_LEVEL = "≈"
 REASON_USAGE = "⏱"
 REASON_GROWTH = "↑"
 REASON_DECLINE = "↓"
+REASON_INJURY = "Тр"
 
 REASON_LEGEND: dict[str, str] = {
     REASON_OUTGREW: "перерос клуб",
@@ -74,11 +75,12 @@ REASON_LEGEND: dict[str, str] = {
     REASON_USAGE: "мало игр для роли",
     REASON_GROWTH: "вырос в клубе",
     REASON_DECLINE: "упал рейтинг",
+    REASON_INJURY: "частые травмы",
 }
 
 ADVICE_REASON_LEGEND_HTML = (
     "<i>П+ перерос · П− не дорос · Т− трофеи · Т× тащит без титулов\n"
-    "З+ запас · С× схема · П↓ стата · Н новичок · ≈ уровень · ⏱ мало игр</i>\n"
+    "З+ запас · С× схема · П↓ стата · Н новичок · ≈ уровень · ⏱ мало игр · Тр травмы</i>\n"
 )
 
 _VERDICT_SECTION = {
@@ -106,6 +108,9 @@ class ClubStintStats:
     ovr_first: int | None = None
     ovr_last_completed: int | None = None
     ovr_peak: int | None = None
+    ovr_peak_hist: int | None = None
+    injury_periods: int = 0
+    injury_months: int = 0
     last_season_num: int | None = None
     last_season_matches: int = 0
     last_season_ga: int = 0
@@ -431,6 +436,62 @@ def _find_row_in_season_db(
         eng.dispose()
 
 
+def _collect_injuries_for_stint(
+    team: str,
+    *,
+    name: str,
+    season_nums: list[int],
+) -> tuple[int, int, dict[int, int], int]:
+    """Травмы в клубе за сезоны стажа: периодов, месяцев, штраф по сезону, пик до штрафа."""
+    from utils.player_discipline import _load, _injury_total_months, injury_overall_penalty
+
+    team_cmp = _norm_cmp(_norm_team(team))
+    want_name = _norm_cmp(name)
+    seasons_set = {int(s) for s in season_nums}
+    periods = 0
+    total_months = 0
+    pen_by_season: dict[int, int] = {}
+    peak_before_penalty = 0
+
+    for inj in _load().get("injuries", []):
+        if _norm_cmp(str(inj.get("team_norm") or inj.get("team") or "")) != team_cmp:
+            continue
+        if _norm_cmp(str(inj.get("name_norm") or inj.get("name") or "")) != want_name:
+            continue
+        sn = inj.get("season")
+        if sn is None:
+            continue
+        try:
+            sn_i = int(sn)
+        except (TypeError, ValueError):
+            continue
+        if sn_i not in seasons_set:
+            continue
+        months = _injury_total_months(inj)
+        if months <= 0:
+            continue
+        periods += 1
+        total_months += months
+        pen = abs(int(injury_overall_penalty(months)))
+        if pen > 0:
+            pen_by_season[sn_i] = pen_by_season.get(sn_i, 0) + pen
+        ob = inj.get("overall_before_penalty")
+        if ob is not None:
+            try:
+                peak_before_penalty = max(peak_before_penalty, int(ob))
+            except (TypeError, ValueError):
+                pass
+
+    return periods, total_months, pen_by_season, peak_before_penalty
+
+
+def _injury_stint_score_penalty(periods: int, months: int) -> float:
+    """Минимальный штраф к score за травмы в клубе."""
+    if periods <= 0:
+        return 0.0
+    return -min(2.5, 0.7 * periods + 0.04 * months)
+
+
 def _collect_club_stint_stats(
     team: str, *, person_id: int | None, name: str, league_code: str | None
 ) -> ClubStintStats:
@@ -440,6 +501,7 @@ def _collect_club_stint_stats(
     stint = ClubStintStats(seasons=len(seasons), season_nums=list(seasons))
     team_n = _norm_team(team)
     active = int(season_paths.get_state().get("active_season") or 1)
+    per_season_ovr: dict[int, int] = {}
 
     for sn in seasons:
         season_m = 0
@@ -467,6 +529,9 @@ def _collect_club_stint_stats(
             if ovr > 0:
                 ovr_best = max(ovr_best, ovr)
 
+        if ovr_best > 0:
+            per_season_ovr[sn] = ovr_best
+
         stint.matches += season_m
         stint.ga += season_ga
         stint.clean_sheets += season_cs
@@ -475,8 +540,6 @@ def _collect_club_stint_stats(
             stint.play_seasons += 1
             if stint.ovr_first is None and ovr_best > 0:
                 stint.ovr_first = ovr_best
-            if ovr_best > 0:
-                stint.ovr_peak = max(int(stint.ovr_peak or 0), ovr_best)
             completed = (sn < active) or (sn == active and season_m >= 3)
             if completed and season_m >= 3:
                 stint.completed_play_seasons += 1
@@ -507,6 +570,21 @@ def _collect_club_stint_stats(
                 if int(item[0]) == sn and _norm_cmp(str(item[1])) == _norm_cmp(team_n):
                     stint.cl_trophies += 1
                     break
+
+    inj_periods, inj_months, inj_pen_by_season, inj_peak = _collect_injuries_for_stint(
+        team_n, name=name, season_nums=seasons
+    )
+    stint.injury_periods = inj_periods
+    stint.injury_months = inj_months
+
+    est_peaks: list[int] = []
+    for sn, so in per_season_ovr.items():
+        est = int(so) + int(inj_pen_by_season.get(int(sn), 0))
+        est_peaks.append(est)
+    if inj_peak > 0:
+        est_peaks.append(inj_peak)
+    stint.ovr_peak = max(est_peaks) if est_peaks else None
+    stint.ovr_peak_hist = stint.ovr_peak
 
     return stint
 
@@ -769,6 +847,8 @@ def _build_reasons(
     usage_pen: float,
     matches: int,
     in_start: bool = False,
+    injury_periods: int = 0,
+    injury_months: int = 0,
 ) -> list[str]:
     """До 3 причин для отображения (порядок = важность)."""
     raw: list[str] = []
@@ -813,6 +893,8 @@ def _build_reasons(
         raw.append(REASON_GROWTH)
     elif ovr_delta_live <= -2:
         raw.append(REASON_DECLINE)
+    if injury_periods >= 2 or injury_months >= 8:
+        raw.append(REASON_INJURY)
 
     seen: set[str] = set()
     out: list[str] = []
@@ -925,12 +1007,13 @@ def _compute_advice_for_player(
         if stint.ovr_first is not None
         else stint.ovr_delta
     )
-    ovr_peak = max(
-        int(ovr),
-        int(stint.ovr_peak or 0),
+    ovr_peak_display = max(
+        int(stint.ovr_peak_hist or 0),
         int(stint.ovr_first or 0),
-        int(stint.ovr_last_completed or 0),
     )
+    if int(ovr) > ovr_peak_display:
+        ovr_peak_display = int(ovr)
+    ovr_peak = max(ovr_peak_display, int(ovr))
     ovr_drop_peak = int(ovr) - int(ovr_peak)
 
     prod_ratio_last: float | None = None
@@ -1055,6 +1138,7 @@ def _compute_advice_for_player(
         + depth_pen
         + usage_pen
         + (10.0 if fit else -8.0)
+        + _injury_stint_score_penalty(stint.injury_periods, stint.injury_months)
     )
     if depth_surplus and not fit and not in_start:
         score -= 5.0
@@ -1117,6 +1201,8 @@ def _compute_advice_for_player(
         usage_pen=usage_pen,
         matches=stint.matches,
         in_start=in_start,
+        injury_periods=stint.injury_periods,
+        injury_months=stint.injury_months,
     )
 
     expected_place = _expected_league_place(team)
@@ -1127,8 +1213,10 @@ def _compute_advice_for_player(
         "assists": stint.assists,
         "ga": stint.ga,
         "ovr_first": stint.ovr_first,
-        "ovr_peak": ovr_peak,
+        "ovr_peak": ovr_peak_display,
         "ovr_drop_peak": ovr_drop_peak,
+        "injury_periods": stint.injury_periods,
+        "injury_months": stint.injury_months,
         "trophy_earned": round(trophy_earned, 2),
         "prod_ratio": round(prod_ratio, 2),
         "prod_ratio_last": round(prod_ratio_last, 2) if prod_ratio_last is not None else None,
@@ -1371,10 +1459,17 @@ def format_player_advice_card_html(
         f"Г {d.get('goals', 0)} А {d.get('assists', 0)}",
         f"Рейтинг: {escape(ovr_line)}",
         f"Статус: <code>{escape(str(status))}</code>, глубина {d.get('depth_rank', '?')}",
+    ]
+    inj_p = int(d.get("injury_periods") or 0)
+    if inj_p > 0:
+        lines.append(
+            f"Травмы в клубе: {inj_p} пер., {int(d.get('injury_months') or 0)} мес."
+        )
+    lines.extend([
         f"Продуктивность: {escape(prod_line)}",
         f"Места команды: {escape(places_line)}",
         f"Трофеи: {escape(trophy_line)}",
-    ]
+    ])
     return "\n".join(lines)
 
 
