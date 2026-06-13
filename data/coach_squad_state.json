@@ -184,11 +184,11 @@
     "terzic": {
       "name": "Терзич",
       "formation_ids": [
-        5,
+        2,
         1,
         9
       ],
-      "active_formation_id": 1
+      "active_formation_id": 2
     },
     "ten_hag": {
       "name": "тен Хаг",
