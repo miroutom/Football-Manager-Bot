@@ -98,3 +98,43 @@ def test_league_meta_seeded():
     rpl = get_league("rpl")
     assert rpl is not None
     assert rpl.trophy_scale < 0.35
+
+
+def test_tenure_trophy_factor_grace():
+    from utils.transfer_advice import _tenure_trophy_factor
+
+    assert _tenure_trophy_factor(1) < _tenure_trophy_factor(2) < _tenure_trophy_factor(3)
+
+
+def test_finish_frustration_ambitious_club_underperform():
+    from utils.transfer_advice import _finish_frustration
+
+    assert _finish_frustration([5, 5], 2.0) > 0.85
+    assert _finish_frustration([2, 1], 2.0) < 0.2
+
+
+def test_frustrated_star_pressure_only_for_carriers():
+    from utils.transfer_advice import _frustrated_star_pressure
+
+    star = _frustrated_star_pressure(
+        position="ФРВ",
+        club_amb=0.95,
+        completed_play_seasons=2,
+        finish_frust=1.0,
+        depth_rank=1,
+        prod_ratio=1.2,
+        ovr_delta=4,
+        player_amb=0.85,
+    )
+    bench = _frustrated_star_pressure(
+        position="ЛЗ",
+        club_amb=0.95,
+        completed_play_seasons=2,
+        finish_frust=1.0,
+        depth_rank=1,
+        prod_ratio=1.2,
+        ovr_delta=-2,
+        player_amb=0.5,
+    )
+    assert star < -15.0
+    assert bench == 0.0

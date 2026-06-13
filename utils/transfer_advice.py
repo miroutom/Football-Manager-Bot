@@ -31,6 +31,8 @@ from utils.team_strength import get_teams_sorted_by_strength
 
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 _GOALKEEPER_POS = frozenset({"ВРТ"})
+# Позиции, где высокая продуктивность = «тащит» команду (не ЦЗ/ЛЗ/ПЗ).
+_CARRY_POSITIONS = frozenset({"ФРВ", "ЛФА", "ПФА", "ЦАП"})
 
 W_CL = 1.75
 MIN_SEASONS_TROPHY_RULE = 2
@@ -62,10 +64,21 @@ class ClubStintStats:
     missed_goals: int = 0
     league_trophies: int = 0
     cl_trophies: int = 0
+    play_seasons: int = 0
+    completed_play_seasons: int = 0
+    season_nums: list[int] = field(default_factory=list)
+    ovr_first: int | None = None
+    ovr_last_completed: int | None = None
 
     @property
     def trophy_value(self) -> float:
         return float(self.league_trophies) + W_CL * float(self.cl_trophies)
+
+    @property
+    def ovr_delta(self) -> int:
+        if self.ovr_first is None or self.ovr_last_completed is None:
+            return 0
+        return int(self.ovr_last_completed) - int(self.ovr_first)
 
 
 @dataclass
@@ -327,9 +340,10 @@ def _collect_club_stint_stats(
     from bot.season_history_store import load_history
 
     seasons = _seasons_player_at_team(team, person_id=person_id, name=name)
-    stint = ClubStintStats(seasons=len(seasons))
+    stint = ClubStintStats(seasons=len(seasons), season_nums=list(seasons))
     db_root = os.path.join(season_paths.PROJECT_ROOT, "db")
     team_n = _norm_team(team)
+    active = int(season_paths.get_state().get("active_season") or 1)
 
     for sn in seasons:
         lp = os.path.join(db_root, f"season_{sn}", season_paths.SEASON_LEAGUE_NAME)
@@ -339,12 +353,23 @@ def _collect_club_stint_stats(
         if row is None:
             continue
         snap = _row_stats_snapshot(row)
-        stint.matches += snap["matches"]
+        m = int(snap["matches"])
+        ovr = int(getattr(row, "overall", 0) or 0)
+        stint.matches += m
         stint.goals += snap["goals"]
         stint.assists += snap["assists"]
         stint.ga += snap["ga"]
         stint.clean_sheets += snap["clean_sheets"]
         stint.missed_goals += snap["missed_goals"]
+        if m > 0:
+            stint.play_seasons += 1
+            if stint.ovr_first is None and ovr > 0:
+                stint.ovr_first = ovr
+            completed = (sn < active) or (sn == active and m >= 3)
+            if completed and m >= 3:
+                stint.completed_play_seasons += 1
+                if ovr > 0:
+                    stint.ovr_last_completed = ovr
 
     hist = load_history()
     for sn in seasons:
@@ -430,6 +455,128 @@ def _depth_ranks(roster: list[dict[str, Any]]) -> dict[tuple[str, str], int]:
     return ranks
 
 
+def _expected_league_place(team: str) -> float:
+    from utils.team_registry import get_team
+
+    tm = get_team(team)
+    if tm is None:
+        return 5.0
+    tier = max(1, min(5, int(tm.trophy_tier)))
+    return {5: 2.0, 4: 4.0, 3: 6.0, 2: 8.0, 1: 10.0}.get(tier, 5.0)
+
+
+def _load_league_teams_dict(league_code: str, season_num: int) -> dict[str, Any] | None:
+    import pickle
+
+    from bot.services import ARCHIVE_PICKLE_BY_LEAGUE
+
+    code = (league_code or "").strip().lower()
+    pkl_name = ARCHIVE_PICKLE_BY_LEAGUE.get(code)
+    if not pkl_name:
+        return None
+    active = int(season_paths.get_state().get("active_season") or 1)
+    if season_num >= active:
+        import teams as teams_mod
+
+        live = {
+            "rpl": teams_mod.teams_rpl,
+            "eng": teams_mod.teams_eng,
+            "esp": teams_mod.teams_spain,
+            "ita": teams_mod.teams_italy,
+            "ger": teams_mod.teams_germany,
+        }
+        return live.get(code)
+    base = season_paths.season_archive_directory(season_num)
+    pkl_path = os.path.join(base, "pickle", pkl_name)
+    if not os.path.isfile(pkl_path):
+        return None
+    with open(pkl_path, "rb") as f:
+        return pickle.load(f)
+
+
+def _team_league_places_during_seasons(
+    team: str, league_code: str | None, season_nums: list[int]
+) -> list[int]:
+    from teams import get_sorted_teams
+
+    if not league_code or not season_nums:
+        return []
+    want = _norm_cmp(_norm_team(team))
+    places: list[int] = []
+    for sn in sorted(set(int(x) for x in season_nums)):
+        teams_dict = _load_league_teams_dict(league_code, sn)
+        if not teams_dict:
+            continue
+        ranked = get_sorted_teams(teams_dict)
+        for i, (name, t) in enumerate(ranked, start=1):
+            if _norm_cmp(name) != want:
+                continue
+            if int(getattr(t, "matches", 0) or 0) <= 0:
+                break
+            places.append(i)
+            break
+    return places
+
+
+def _finish_frustration(places: list[int], expected_place: float) -> float:
+    if not places:
+        return 0.0
+    deficits = [max(0.0, float(p) - float(expected_place)) for p in places]
+    avg_def = sum(deficits) / len(deficits)
+    return max(0.0, min(1.0, avg_def / 3.0))
+
+
+def _frustrated_star_pressure(
+    *,
+    position: str,
+    club_amb: float,
+    completed_play_seasons: int,
+    finish_frust: float,
+    depth_rank: int,
+    prod_ratio: float,
+    ovr_delta: int,
+    player_amb: float,
+) -> float:
+    """
+    Давление «уходить» для основы, которая тащит, но клуб стабильно ниже ожиданий.
+    Возвращает отрицательную поправку к score (0 или < 0).
+    """
+    if (position or "").strip().upper() not in _CARRY_POSITIONS:
+        return 0.0
+    if completed_play_seasons < 2 or depth_rank > 2 or finish_frust < 0.30:
+        return 0.0
+
+    carry = 0.0
+    if prod_ratio >= 0.82:
+        carry += 0.40
+    if prod_ratio >= 1.0:
+        carry += 0.28
+    if ovr_delta >= 3:
+        carry += 0.22
+    elif ovr_delta >= 1:
+        carry += 0.12
+    elif ovr_delta < -1:
+        carry -= 0.20
+    carry = max(0.0, min(1.0, carry))
+    if carry < 0.30:
+        return 0.0
+
+    tenure = min(1.0, completed_play_seasons / 2.0)
+    intensity = club_amb * finish_frust * carry * tenure * max(0.45, player_amb)
+    return -40.0 * intensity
+
+
+def _tenure_trophy_factor(completed_play_seasons: int) -> float:
+    """Смягчение трофейного давления для недавних приходов."""
+    if completed_play_seasons <= 0:
+        return 0.15
+    if completed_play_seasons == 1:
+        return 0.32
+    if completed_play_seasons == 2:
+        return 0.78
+    return 1.0
+
+
 def _score_to_verdict(score: float) -> str:
     if score >= 72:
         return VERDICT_NO
@@ -446,6 +593,7 @@ def _compute_advice_for_player(
     player: dict[str, Any],
     depth_rank: int,
     team_median_by_pos: dict[str, float],
+    team_median_overall: float,
     league_rank: int,
     cl_rank: int | None,
     league_code: str | None,
@@ -523,21 +671,44 @@ def _compute_advice_for_player(
         if prod_ratio < prod_gate and _BADGE_PROD not in badges:
             badges.append(_BADGE_PROD)
 
+    trophy_seasons = max(stint.completed_play_seasons, 0)
+    tenure_tf = _tenure_trophy_factor(stint.completed_play_seasons)
+    ovr_delta_live = (
+        (ovr - int(stint.ovr_first))
+        if stint.ovr_first is not None
+        else stint.ovr_delta
+    )
+    finish_places = _team_league_places_during_seasons(
+        team, league_code, stint.season_nums
+    )
+    finish_frust = _finish_frustration(
+        finish_places, _expected_league_place(team)
+    )
+    frustration_pen = _frustrated_star_pressure(
+        position=pos,
+        club_amb=club_amb,
+        completed_play_seasons=stint.completed_play_seasons,
+        finish_frust=finish_frust,
+        depth_rank=depth_rank,
+        prod_ratio=prod_ratio,
+        ovr_delta=ovr_delta_live,
+        player_amb=player_amb,
+    )
     t_exp_club = _expected_trophies(
-        stint.seasons,
+        trophy_seasons,
         league_rank=league_rank,
         cl_rank=cl_rank,
         league_code=league_code,
         club_ambition=club_amb,
     )
-    t_exp_player = t_exp_club * player_amb
+    t_exp_player = t_exp_club * player_amb * tenure_tf
     t_deficit = t_exp_player - stint.trophy_value
     rel_deficit = (
         t_deficit / max(t_exp_player, 0.12) if t_exp_player > 0.08 else 0.0
     )
 
     if (
-        stint.seasons >= MIN_SEASONS_TROPHY_RULE
+        stint.completed_play_seasons >= MIN_SEASONS_TROPHY_RULE
         and depth_rank <= 3
         and player_amb >= 0.30
         and trophy_sens >= _TROPHY_SENSITIVITY_BADGE
@@ -565,6 +736,7 @@ def _compute_advice_for_player(
             11.0
             * trophy_sens
             * trophy_role
+            * tenure_tf
             * max(-1.5, min(1.5, -rel_deficit))
         )
 
@@ -577,18 +749,30 @@ def _compute_advice_for_player(
         depth_pen = -2.5
 
     usage_pen = 0.0
-    if depth_rank <= 2 and stint.seasons >= 2 and stint.matches >= 1:
-        min_exp = 9.0 * stint.seasons * (1.0 if depth_rank == 1 else 0.5)
+    if depth_rank <= 2 and stint.completed_play_seasons >= 2 and stint.matches >= 1:
+        min_exp = 9.0 * stint.completed_play_seasons * (
+            1.0 if depth_rank == 1 else 0.5
+        )
         if stint.matches < min_exp:
             usage_pen = -9.0 * (1.0 - stint.matches / max(min_exp, 1.0))
+
+    prod_weight = 0.50 + 0.50 * (1.0 - player_amb * 0.35)
+    if (
+        pos in _CARRY_POSITIONS
+        and finish_frust >= 0.30
+        and stint.completed_play_seasons >= 2
+        and prod_ratio >= 0.88
+        and depth_rank <= 2
+    ):
+        prod_weight *= 0.28
 
     score = (
         50.0
         + 12.0 * skill_norm
         + 10.0 * (role_pts / 2.0)
-        + 20.0 * (prod_norm / 2.0)
-        * (0.50 + 0.50 * (1.0 - player_amb * 0.35))
+        + 20.0 * (prod_norm / 2.0) * prod_weight
         + trophy_score
+        + frustration_pen
         + depth_pen
         + usage_pen
         + (10.0 if fit else -8.0)
@@ -598,23 +782,44 @@ def _compute_advice_for_player(
     if depth_rank >= 4 and not fit:
         score -= 4.0
 
+    stable_core = (
+        depth_rank == 1
+        and fit
+        and abs(float(ovr) - team_median_overall) <= 4.5
+        and ovr_delta_live <= 0
+        and stint.completed_play_seasons <= 2
+        and frustration_pen == 0.0
+    )
+    if stable_core:
+        score += 22.0
+        if _BADGE_TROPHY in badges:
+            badges = [b for b in badges if b != _BADGE_TROPHY]
+
     # Глубина 2 без провала по стате — максимум СУ, не НУ только из‑за трофеев.
     if (
         depth_rank == 2
         and _BADGE_DEPTH not in badges
         and _BADGE_PROD not in badges
+        and frustration_pen == 0.0
     ):
         score = max(score, 39.0)
 
     verdict = _score_to_verdict(score)
 
-    hard_no = depth_rank == 1 and prod_ratio >= 0.95 and fit and ovr >= med
+    hard_no = (
+        depth_rank == 1
+        and prod_ratio >= 0.95
+        and fit
+        and ovr >= med
+        and frustration_pen == 0.0
+        and finish_frust < 0.35
+    )
 
     if hard_no:
         verdict = VERDICT_NO
         score = max(score, 75.0)
 
-    if stint.seasons <= 1 and _BADGE_TROPHY in badges:
+    if stint.completed_play_seasons <= 1 and _BADGE_TROPHY in badges:
         badges = [b for b in badges if b != _BADGE_TROPHY]
 
     badges = badges[:2]
@@ -690,6 +895,8 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
     team_median_by_pos = {
         pos: median(vals) for pos, vals in med_by_pos.items() if vals
     }
+    all_ovrs = [int(p["overall"]) for p in roster if int(p.get("overall") or 0) > 0]
+    team_median_overall = float(median(all_ovrs)) if all_ovrs else 80.0
 
     depth = _depth_ranks(roster)
     expected_rates = _league_expected_rates(session_league)
@@ -710,6 +917,7 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
                 player=p,
                 depth_rank=dr,
                 team_median_by_pos=team_median_by_pos,
+                team_median_overall=team_median_overall,
                 league_rank=league_rank,
                 cl_rank=cl_rank,
                 league_code=league_code,
