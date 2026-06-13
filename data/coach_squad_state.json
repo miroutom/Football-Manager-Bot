@@ -284,11 +284,12 @@
     "sahin": {
       "name": "Шахин",
       "formation_ids": [
+        5,
         4,
         8,
         9
       ],
-      "active_formation_id": 4
+      "active_formation_id": 5
     },
     "iraola": {
       "name": "Ираола",
