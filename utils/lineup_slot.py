@@ -32,6 +32,8 @@ LINEUP_SLOT_IDS: frozenset[str] = frozenset(
         "RCDM",
         "LCAM",
         "RCAM",
+        "LAM",
+        "RAM",
         "LWB",
         "RWB",
     }
@@ -44,6 +46,8 @@ _SLOT_FALLBACKS: dict[str, tuple[str, ...]] = {
     "RDM": ("RCDM", "RCM", "RM"),
     "LDM": ("LCDM", "LCM", "LM"),
     "CM": ("CCM", "CDM"),
+    "RAM": ("RCAM", "RM", "RW"),
+    "LAM": ("LCAM", "LM", "LW"),
 }
 
 
