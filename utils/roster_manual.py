@@ -9,7 +9,8 @@
   иначе строка удаляется из БД.
 - Пакетная заявка: ``apply_team_squad_declaration`` + ``parse_squad_declaration_text``
   (через ``|``; «имя … позиция … start»; либо блоки ``==== start ===`` / ``=== bench ===`` /
-  ``=== reserve ===`` и строки ``имя позиция [overall] [нация]`` без суффикса статуса).
+  ``=== reserve ===`` и строки ``имя [слот] позиция [overall] [нация]`` без суффикса статуса;
+  в ``start`` допускается ``имя GK ВРТ 84`` — слот на поле + позиция в БД).
   Кто в клубе не в списке, снимается тем же правилом, что и при удалении.
 """
 from __future__ import annotations
@@ -23,6 +24,8 @@ from data.defender import Defender
 from data.forward import Forward
 from data.goalkeeper import Goalkeeper
 from data.midfielder import Midfielder
+
+from utils.lineup_slot import is_valid_lineup_slot, normalize_lineup_slot
 
 _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 
@@ -180,6 +183,7 @@ def _apply_upsert_and_cascade(
     carry: dict[str, Any] | None,
     *,
     skip_status_cascade: bool = False,
+    lineup_slot: str | None = None,
 ) -> None:
     from utils.player_transfer import _cascade_status
     from utils.squad_roster_sync import find_player_row, upsert_roster_player
@@ -193,6 +197,7 @@ def _apply_upsert_and_cascade(
         nation=nation,
         status=status,
         carry_in=carry,
+        lineup_slot=lineup_slot,
     )
     sess.flush()
     row, Cls = find_player_row(sess, name, team)
@@ -211,6 +216,7 @@ def add_player_to_team_roster(
     overall: int | None = None,
     nation: str | None = None,
     status: str = "bench",
+    lineup_slot: str | None = None,
     session_league: Any | None = None,
     session_cl: Any | None = None,
     rebuild_common: bool = True,
@@ -298,6 +304,7 @@ def add_player_to_team_roster(
         st,
         carry,
         skip_status_cascade=skip_status_cascade,
+        lineup_slot=lineup_slot if st == "start" else None,
     )
     from utils.common_db import resolve_team_name_for_cl_pool
 
@@ -313,6 +320,7 @@ def add_player_to_team_roster(
             st,
             carry,
             skip_status_cascade=skip_status_cascade,
+            lineup_slot=lineup_slot if st == "start" else None,
         )
 
     if commit:
@@ -411,7 +419,7 @@ def parse_roster_add_lines(text: str) -> tuple[list[tuple[str, str, int | None, 
     blob = "==== bench ===\n" + (text or "").strip()
     entries, errs = parse_squad_declaration_text(blob)
     out: list[tuple[str, str, int | None, str | None]] = []
-    for nm, pos, _st, ovr, nat in entries:
+    for nm, pos, _st, ovr, nat, _slot in entries:
         out.append((nm, pos, ovr, nat))
     return out, errs
 
@@ -585,13 +593,23 @@ def _tail_ovr_nation_after_position(
 
 def _parse_squad_line_pipe(
     parts: list[str], line_num: int
-) -> tuple[tuple[str, str, str, int | None, str | None] | None, str | None]:
+) -> tuple[tuple[str, str, str, int | None, str | None, str | None] | None, str | None]:
     from utils.player_transfer import normalize_player_name_for_db
     from utils.transfer_input import normalize_nation, normalize_position
 
     if len(parts) < 3:
         return None, f"строка {line_num}: минимум 3 колонки через |"
-    name_raw, pos_raw, st_raw = parts[0], parts[1], parts[2]
+    slot: str | None = None
+    if (
+        len(parts) >= 4
+        and is_valid_lineup_slot(parts[1])
+        and _is_valid_game_position(parts[2])
+    ):
+        name_raw, slot_raw, pos_raw, st_raw = parts[0], parts[1], parts[2], parts[3]
+        tail_parts = parts[4:]
+    else:
+        name_raw, pos_raw, st_raw = parts[0], parts[1], parts[2]
+        tail_parts = parts[3:]
     if not name_raw or not pos_raw:
         return None, f"строка {line_num}: пустое имя или позиция"
     st = st_raw.strip().lower()
@@ -605,22 +623,28 @@ def _parse_squad_line_pipe(
     pos = normalize_position(pos_raw)
     nm = normalize_player_name_for_db(name_raw)
     ovr: int | None = None
-    if len(parts) >= 4 and parts[3] not in ("", "-", "—"):
-        if not parts[3].isdigit():
+    if len(tail_parts) >= 1 and tail_parts[0] not in ("", "-", "—"):
+        if not tail_parts[0].isdigit():
             return None, f"строка {line_num}: overall — целое 1–99 или пропуск"
-        v = int(parts[3])
+        v = int(tail_parts[0])
         if v < 1 or v > 99:
             return None, f"строка {line_num}: overall в диапазоне 1–99"
         ovr = v
     nat: str | None = None
-    if len(parts) >= 5 and parts[4] not in ("", "-", "—"):
-        nat = normalize_nation(parts[4])
-    return (nm, pos, st, ovr, nat), None
+    if len(tail_parts) >= 2 and tail_parts[1] not in ("", "-", "—"):
+        nat = normalize_nation(tail_parts[1])
+    slot_norm: str | None = None
+    if st == "start" and len(parts) >= 4 and is_valid_lineup_slot(parts[1]):
+        try:
+            slot_norm = normalize_lineup_slot(slot_raw)
+        except ValueError as e:
+            return None, f"строка {line_num}: {e}"
+    return (nm, pos, st, ovr, nat, slot_norm), None
 
 
 def _parse_squad_line_space(
     line: str, line_num: int
-) -> tuple[tuple[str, str, str, int | None, str | None] | None, str | None]:
+) -> tuple[tuple[str, str, str, int | None, str | None, str | None] | None, str | None]:
     """
     ``имя … позиция [overall] [нация …] start|bench|reserve`` — статус всегда последний;
     нация может быть из нескольких слов (например «др конго», «южная корея»).
@@ -655,6 +679,15 @@ def _parse_squad_line_space(
         )
     name_raw = " ".join(rest[:pos_idx]).strip()
     tail = rest[pos_idx + 1 :]
+    if st == "start" and pos_idx > 0 and is_valid_lineup_slot(rest[pos_idx - 1]):
+        try:
+            slot_norm = normalize_lineup_slot(rest[pos_idx - 1])
+        except ValueError as e:
+            return None, f"строка {line_num}: {e}"
+        name_raw = " ".join(rest[: pos_idx - 1]).strip()
+        tail = rest[pos_idx + 1 :]
+    else:
+        slot_norm = None
     if not name_raw:
         return None, f"строка {line_num}: пустое имя"
     pos_raw = rest[pos_idx]
@@ -668,16 +701,15 @@ def _parse_squad_line_space(
     ovr, nat, terr = _tail_ovr_nation_after_position(tail, line_num)
     if terr:
         return None, terr
-    return (nm, pos, st, ovr, nat), None
+    return (nm, pos, st, ovr, nat, slot_norm), None
 
 
 def _parse_squad_line_implicit_status(
     line: str, line_num: int, status: str
-) -> tuple[tuple[str, str, str, int | None, str | None] | None, str | None]:
+) -> tuple[tuple[str, str, str, int | None, str | None, str | None] | None, str | None]:
     """
-    Строка под секцией: ``имя … позиция [overall] [нация …]`` — статус задаётся секцией.
-    Позиция — последний токен слева, совпадающий с известной позицией (поиск справа налево).
-    Нация может состоять из нескольких слов (например «др конго», «южная корея»).
+    Строка под секцией: ``имя [слот] позиция [overall] [нация …]`` — статус задаётся секцией.
+    В ``start`` допускается ``имя GK ВРТ 84`` (слот + позиция в БД).
     """
     from utils.player_transfer import normalize_player_name_for_db
     from utils.transfer_input import normalize_position
@@ -697,16 +729,26 @@ def _parse_squad_line_implicit_status(
     if pos_idx is None:
         return None, f"строка {line_num}: нет позиции (ЦП, ФРВ, ВРТ, …) в строке"
 
-    name_raw = " ".join(tokens[:pos_idx]).strip()
+    slot_norm: str | None = None
+    if st == "start" and pos_idx > 0 and is_valid_lineup_slot(tokens[pos_idx - 1]):
+        try:
+            slot_norm = normalize_lineup_slot(tokens[pos_idx - 1])
+        except ValueError as e:
+            return None, f"строка {line_num}: {e}"
+        name_raw = " ".join(tokens[: pos_idx - 1]).strip()
+        tail = tokens[pos_idx + 1 :]
+    else:
+        name_raw = " ".join(tokens[:pos_idx]).strip()
+        tail = tokens[pos_idx + 1 :]
+
     if not name_raw:
         return None, f"строка {line_num}: пустое имя"
-    tail = tokens[pos_idx + 1 :]
     pos = normalize_position(tokens[pos_idx])
     nm = normalize_player_name_for_db(name_raw)
     ovr, nat, terr = _tail_ovr_nation_after_position(tail, line_num)
     if terr:
         return None, terr
-    return (nm, pos, st, ovr, nat), None
+    return (nm, pos, st, ovr, nat, slot_norm), None
 
 
 def build_squad_declaration_template_from_db(team: str) -> str:
@@ -722,7 +764,7 @@ def build_squad_declaration_template_from_db(team: str) -> str:
     resolved = resolve_team_name(team, sleague)
     t = resolved if resolved else _team_name_as_in_db((team or "").strip())
 
-    buckets: dict[str, list[tuple[str, str, int, str | None]]] = {
+    buckets: dict[str, list[tuple[str, str, int, str | None, str | None]]] = {
         "start": [],
         "bench": [],
         "reserve": [],
@@ -735,16 +777,20 @@ def build_squad_declaration_template_from_db(team: str) -> str:
                 continue
             ovr = int(r.overall or 0)
             nat_raw = (getattr(r, "nation", None) or "").strip() or None
+            slot_raw = (getattr(r, "lineup_slot", None) or "").strip() or None
             st_raw = (getattr(r, "status", None) or "").strip().lower()
             if st_raw not in buckets:
                 st_raw = "bench"
-            buckets[st_raw].append((nm, pos, ovr, nat_raw))
+            buckets[st_raw].append((nm, pos, ovr, nat_raw, slot_raw))
 
     for key in buckets:
         buckets[key].sort(key=lambda x: x[0].lower())
 
-    def _line(nm: str, pos: str, ovr: int, nat: str | None) -> str:
-        parts = [nm.lower(), pos.lower(), str(ovr)]
+    def _line(nm: str, pos: str, ovr: int, nat: str | None, slot: str | None, st_key: str) -> str:
+        parts = [nm.lower()]
+        if st_key == "start" and slot:
+            parts.append(slot)
+        parts.extend([pos.lower(), str(ovr)])
         if nat:
             parts.append(nat.lower())
         return " ".join(parts)
@@ -757,8 +803,8 @@ def build_squad_declaration_template_from_db(team: str) -> str:
     ]
     for st_key, hdr in sec_meta:
         lines.append(hdr)
-        for nm, pos, ovr, nat in buckets[st_key]:
-            lines.append(_line(nm, pos, ovr, nat))
+        for nm, pos, ovr, nat, slot in buckets[st_key]:
+            lines.append(_line(nm, pos, ovr, nat, slot, st_key))
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
@@ -766,16 +812,17 @@ def build_squad_declaration_template_from_db(team: str) -> str:
 
 def parse_squad_declaration_text(
     text: str,
-) -> tuple[list[tuple[str, str, str, int | None, str | None]], list[str]]:
+) -> tuple[list[tuple[str, str, str, int | None, str | None, str | None]], list[str]]:
     """
     Строка заявки — одно из:
 
     - ``имя | позиция | start`` … [, ``| overall`` [, ``| нация``]]
+    - ``имя | слот | позиция | start`` … (только start)
     - ``имя … позиция [overall] [нация] start`` (пробелы; статус — последнее слово)
     - блоки ``==== start ===`` / ``=== bench ===`` / ``=== reserve ===``, затем строки
-      ``имя … позиция [overall] [нация]`` (статус из секции)
+      ``имя [слот] позиция [overall] [нация]`` (статус из секции)
     """
-    entries: list[tuple[str, str, str, int | None, str | None]] = []
+    entries: list[tuple[str, str, str, int | None, str | None, str | None]] = []
     errors: list[str] = []
     ctx_status: str | None = None
     for i, raw in enumerate((text or "").splitlines(), start=1):
@@ -808,7 +855,7 @@ def parse_squad_declaration_text(
 
 def apply_team_squad_declaration(
     team: str,
-    entries: list[tuple[str, str, str, int | None, str | None]],
+    entries: list[tuple[str, str, str, int | None, str | None, str | None]],
     *,
     session_league: Any | None = None,
     session_cl: Any | None = None,
@@ -838,14 +885,14 @@ def apply_team_squad_declaration(
     if not entries:
         raise ValueError("Список заявки пуст")
 
-    od: OrderedDict[tuple[str, str], tuple[str, str, str, int | None, str | None]] = (
+    od: OrderedDict[tuple[str, str], tuple[str, str, str, int | None, str | None, str | None]] = (
         OrderedDict()
     )
-    for name, pos, st, ovr, nat in entries:
+    for name, pos, st, ovr, nat, slot in entries:
         nm = normalize_player_name_for_db(name)
         pp = normalize_position(pos)
         k = _roster_key(nm, pp)
-        od[k] = (nm, pp, st, ovr, nat)
+        od[k] = (nm, pp, st, ovr, nat, slot)
     deduped = list(od.values())
     declared = set(od.keys())
 
@@ -861,7 +908,7 @@ def apply_team_squad_declaration(
             if tag:
                 released_labels.append(f"{nm} ({pp}): {tag}")
 
-        for nm, pp, st, ovr, nat in deduped:
+        for nm, pp, st, ovr, nat, slot in deduped:
             add_player_to_team_roster(
                 team,
                 nm,
@@ -869,6 +916,7 @@ def apply_team_squad_declaration(
                 overall=ovr,
                 nation=nat,
                 status=st,
+                lineup_slot=slot if st == "start" else None,
                 session_league=sleague,
                 session_cl=scl,
                 rebuild_common=False,

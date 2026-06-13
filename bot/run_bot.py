@@ -52,6 +52,15 @@ async def main() -> None:
         )
         raise
     try:
+        from utils.migrate_lineup_slot import migrate_all_lineup_slot_columns
+
+        await asyncio.to_thread(migrate_all_lineup_slot_columns)
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Не удалось применить миграции SQLite (колонка lineup_slot)"
+        )
+        raise
+    try:
         await asyncio.to_thread(migrate_all_player_discipline_columns)
     except Exception:
         logging.getLogger(__name__).exception(

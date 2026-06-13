@@ -301,6 +301,7 @@ class _Pl:
     nation: str | None
     status: str | None = None
     roster_rank: int = 9999
+    lineup_slot: str | None = None
 
 
 def _squad_rows_from_py_files() -> bool:
@@ -459,6 +460,9 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                 st = str(st).strip().lower() or None
                 if st not in ("start", "bench", "reserve"):
                     st = None
+            slot = getattr(p, "lineup_slot", None)
+            if slot is not None:
+                slot = str(slot).strip().upper() or None
             out.append(
                 _Pl(
                     name=p.name,
@@ -469,6 +473,7 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     nation=nat,
                     status=st,
                     roster_rank=9999,
+                    lineup_slot=slot,
                 )
             )
     use_py = _squad_rows_from_py_files()
@@ -1271,8 +1276,16 @@ def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], lis
     starters = [p for p in players if _norm_pl_status(p) == "start"]
     used: set[int] = set()
     slot_player: dict[str, _Pl] = {}
+    valid_slot_ids = {s.slot_id for s in slots}
+    for p in starters:
+        sid = (p.lineup_slot or "").strip().upper()
+        if sid and sid in valid_slot_ids and sid not in slot_player:
+            slot_player[sid] = p
+            used.add(id(p))
     slot_iter = _slots_explicit_order(slots)
     for slot in slot_iter:
+        if slot.slot_id in slot_player:
+            continue
         placed = _place_on_slot_explicit(slot, starters, used)
         if placed:
             slot_player[slot.slot_id] = placed

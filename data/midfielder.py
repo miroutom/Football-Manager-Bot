@@ -66,6 +66,7 @@ class Midfielder(Base):
     golden_boys = Column(Integer, default=0)
     nation = Column(String, nullable=True)
     status = Column(String, nullable=True)
+    lineup_slot = Column(String, nullable=True)
     left_team = Column(Boolean, default=False, nullable=False)
     yellow_cards = Column(Integer, default=0)
     red_cards = Column(Integer, default=0)

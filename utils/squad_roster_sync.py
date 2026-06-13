@@ -153,6 +153,7 @@ def _new_player_kwargs(
     status: str,
     carry: dict[str, Any] | None = None,
     person_id: int | None = None,
+    lineup_slot: str | None = None,
 ) -> dict[str, Any]:
     pos = position.strip().upper()
     st = status.strip().lower()
@@ -165,10 +166,12 @@ def _new_player_kwargs(
         overall=int(overall),
         nation=(nation.strip() if nation else None) or None,
         status=st,
+        lineup_slot=lineup_slot,
         matches=int(c.get("matches", 0) or 0),
         trophies=int(c.get("trophies", 0) or 0),
         golden_balls=int(c.get("golden_balls", 0) or 0),
         person_id=int(person_id) if person_id is not None else None,
+        left_team=False,
     )
     kw["golden_boys"] = int(c.get("golden_boys", 0) or 0)
     if tgt_cls is Forward:
@@ -235,11 +238,18 @@ def upsert_roster_player(
     nation: str | None,
     status: str,
     carry_in: dict[str, Any] | None = None,
+    lineup_slot: str | None = None,
 ) -> str:
     name = normalize_player_name_for_db(name)
     st = status.strip().lower()
     if st not in ("start", "bench", "reserve"):
         raise ValueError(f"status must be start|bench|reserve, got {status!r}")
+
+    from utils.lineup_slot import normalize_lineup_slot
+
+    slot_val: str | None = None
+    if st == "start" and lineup_slot:
+        slot_val = normalize_lineup_slot(lineup_slot)
 
     from utils.player_identity import resolve_canonical_name
 
@@ -269,6 +279,7 @@ def upsert_roster_player(
                     status=st,
                     carry=insert_carry,
                     person_id=new_pid,
+                    lineup_slot=slot_val,
                 )
             )
         )
@@ -295,6 +306,7 @@ def upsert_roster_player(
                     status=st,
                     carry=carry,
                     person_id=keep_pid,
+                    lineup_slot=slot_val,
                 )
             )
         )
@@ -305,6 +317,10 @@ def upsert_roster_player(
     row.overall = int(overall)
     row.nation = (nation.strip() if nation else None) or None
     row.status = st
+    if hasattr(row, "lineup_slot"):
+        row.lineup_slot = slot_val
+    if hasattr(row, "left_team"):
+        row.left_team = False
     return "updated"
 
 
