@@ -275,3 +275,30 @@ def test_paginate_view_no_filters_verdict():
     assert len(chunk) == 2
     assert all(r.verdict == VERDICT_NO for r in chunk)
     assert {r.name for r in chunk} == {"В", "Г"}
+
+
+def test_collect_club_stint_includes_champions_league():
+    """Стаж в клубе суммирует league.db и champions_league.db."""
+    import os
+
+    from utils import season_paths
+    from utils.transfer_advice import _collect_club_stint_stats
+
+    s1_league = os.path.join(
+        season_paths.season_archive_directory(1), season_paths.SEASON_LEAGUE_NAME
+    )
+    s1_cl = os.path.join(
+        season_paths.season_archive_directory(1), season_paths.SEASON_CL_NAME
+    )
+    if not (os.path.isfile(s1_league) and os.path.isfile(s1_cl)):
+        import pytest
+
+        pytest.skip("season 1 archives missing")
+
+    st = _collect_club_stint_stats(
+        "Интер", person_id=62, name="Мартинез", league_code="ita_serie_a"
+    )
+    assert st.matches >= 30
+    assert st.goals >= 56
+    assert st.assists >= 8
+    assert st.completed_play_seasons >= 2

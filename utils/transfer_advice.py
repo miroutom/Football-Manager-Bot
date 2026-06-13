@@ -5,7 +5,8 @@
 Вердикты: НО (надо остаться), СО (стоит остаться), СУ (стоит уходить), НУ (надо уходить).
 Метки: Т− трофеи, П↓ продуктивность, З+ избыток на позиции, С× не в схему.
 
-Стата и трофеи — только за отрезок в текущем клубе (архивы сезонов + активный сезон).
+Стата и трофеи — только за отрезок в текущем клубе (архивы сезонов + активный сезон):
+национальная лига и ЛЧ (``league.db`` + ``champions_league.db``).
 Трофеи: лига (вес 1.0) + ЛЧ (вес W_CL).
 """
 from __future__ import annotations
@@ -314,43 +315,60 @@ def _expected_trophies(
     return seasons * club_ambition * (p_l * 1.0 + p_c * W_CL * cl_scale)
 
 
+def _season_db_path_for_stint(season_num: int, *, cl: bool) -> str | None:
+    """Путь к league.db или champions_league.db сезона (архив или активный)."""
+    active = int(season_paths.get_state().get("active_season") or 1)
+    if season_num == active:
+        path = season_paths.get_cl_db_path() if cl else season_paths.get_league_db_path()
+        return path if os.path.isfile(path) else None
+    fname = season_paths.SEASON_CL_NAME if cl else season_paths.SEASON_LEAGUE_NAME
+    path = os.path.join(season_paths.season_archive_directory(season_num), fname)
+    return path if os.path.isfile(path) else None
+
+
+def _player_in_season_db(
+    league_path: str, team: str, *, person_id: int | None, name: str
+) -> bool:
+    team_n = _norm_team(team)
+    want_name = _norm_cmp(name)
+    eng = create_engine(f"sqlite:///{league_path}")
+    S = sessionmaker(bind=eng)
+    sess = S()
+    try:
+        for Cls in _ALL:
+            for r in sess.query(Cls).filter(_filter_team(Cls, team_n)).all():
+                if person_id is not None and getattr(r, "person_id", None) == person_id:
+                    return True
+                if _norm_cmp(getattr(r, "name", "") or "") == want_name:
+                    return True
+        return False
+    finally:
+        sess.close()
+        eng.dispose()
+
+
 def _seasons_player_at_team(
     team: str, *, person_id: int | None, name: str
 ) -> list[int]:
-    """Номера сезонов, где игрок числился в клубе (league.db)."""
+    """Номера сезонов, где игрок числился в клубе (league.db + champions_league.db)."""
     team_n = _norm_team(team)
-    want_name = _norm_cmp(name)
     out: list[int] = []
     active = int(season_paths.get_state().get("active_season") or 1)
     from utils.cumulative_db import list_season_archives_with_db
 
     season_nums = sorted(set(list_season_archives_with_db()) | {active})
-    db_root = os.path.join(season_paths.PROJECT_ROOT, "db")
 
     for sn in season_nums:
-        lp = os.path.join(db_root, f"season_{sn}", season_paths.SEASON_LEAGUE_NAME)
-        if not os.path.isfile(lp):
-            continue
-        eng = create_engine(f"sqlite:///{lp}")
-        S = sessionmaker(bind=eng)
-        sess = S()
-        try:
-            found = False
-            for Cls in _ALL:
-                for r in sess.query(Cls).filter(_filter_team(Cls, team_n)).all():
-                    if person_id is not None and getattr(r, "person_id", None) == person_id:
-                        found = True
-                        break
-                    if _norm_cmp(getattr(r, "name", "") or "") == want_name:
-                        found = True
-                        break
-                if found:
-                    break
-            if found:
-                out.append(sn)
-        finally:
-            sess.close()
-            eng.dispose()
+        found = False
+        for cl in (False, True):
+            lp = _season_db_path_for_stint(sn, cl=cl)
+            if lp and _player_in_season_db(
+                lp, team_n, person_id=person_id, name=name
+            ):
+                found = True
+                break
+        if found:
+            out.append(sn)
     return out
 
 
@@ -413,42 +431,55 @@ def _collect_club_stint_stats(
 
     seasons = _seasons_player_at_team(team, person_id=person_id, name=name)
     stint = ClubStintStats(seasons=len(seasons), season_nums=list(seasons))
-    db_root = os.path.join(season_paths.PROJECT_ROOT, "db")
     team_n = _norm_team(team)
     active = int(season_paths.get_state().get("active_season") or 1)
 
     for sn in seasons:
-        lp = os.path.join(db_root, f"season_{sn}", season_paths.SEASON_LEAGUE_NAME)
-        row = _find_row_in_season_db(
-            lp, team_n, person_id=person_id, name=name
-        )
-        if row is None:
-            continue
-        snap = _row_stats_snapshot(row)
-        m = int(snap["matches"])
-        ovr = int(getattr(row, "overall", 0) or 0)
-        stint.matches += m
-        stint.goals += snap["goals"]
-        stint.assists += snap["assists"]
-        stint.ga += snap["ga"]
-        stint.clean_sheets += snap["clean_sheets"]
-        stint.missed_goals += snap["missed_goals"]
-        if m > 0:
-            stint.play_seasons += 1
-            if stint.ovr_first is None and ovr > 0:
-                stint.ovr_first = ovr
+        season_m = 0
+        season_ga = 0
+        season_cs = 0
+        season_mg = 0
+        ovr_best = 0
+        for cl in (False, True):
+            lp = _season_db_path_for_stint(sn, cl=cl)
+            if not lp:
+                continue
+            row = _find_row_in_season_db(
+                lp, team_n, person_id=person_id, name=name
+            )
+            if row is None:
+                continue
+            snap = _row_stats_snapshot(row)
+            season_m += int(snap["matches"])
+            season_ga += int(snap["ga"])
+            season_cs += int(snap["clean_sheets"])
+            season_mg += int(snap["missed_goals"])
+            stint.goals += snap["goals"]
+            stint.assists += snap["assists"]
+            ovr = int(getattr(row, "overall", 0) or 0)
             if ovr > 0:
-                stint.ovr_peak = max(int(stint.ovr_peak or 0), ovr)
-            completed = (sn < active) or (sn == active and m >= 3)
-            if completed and m >= 3:
+                ovr_best = max(ovr_best, ovr)
+
+        stint.matches += season_m
+        stint.ga += season_ga
+        stint.clean_sheets += season_cs
+        stint.missed_goals += season_mg
+        if season_m > 0:
+            stint.play_seasons += 1
+            if stint.ovr_first is None and ovr_best > 0:
+                stint.ovr_first = ovr_best
+            if ovr_best > 0:
+                stint.ovr_peak = max(int(stint.ovr_peak or 0), ovr_best)
+            completed = (sn < active) or (sn == active and season_m >= 3)
+            if completed and season_m >= 3:
                 stint.completed_play_seasons += 1
-                if ovr > 0:
-                    stint.ovr_last_completed = ovr
+                if ovr_best > 0:
+                    stint.ovr_last_completed = ovr_best
                 if stint.last_season_num is None or sn >= int(stint.last_season_num):
                     stint.last_season_num = sn
-                    stint.last_season_matches = m
-                    stint.last_season_ga = int(snap["ga"])
-                    stint.last_season_ovr = ovr
+                    stint.last_season_matches = season_m
+                    stint.last_season_ga = season_ga
+                    stint.last_season_ovr = ovr_best
 
     hist = load_history()
     for sn in seasons:
