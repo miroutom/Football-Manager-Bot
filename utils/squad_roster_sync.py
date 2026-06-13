@@ -239,6 +239,7 @@ def upsert_roster_player(
     status: str,
     carry_in: dict[str, Any] | None = None,
     lineup_slot: str | None = None,
+    preferred_person_id: int | None = None,
 ) -> str:
     name = normalize_player_name_for_db(name)
     st = status.strip().lower()
@@ -264,9 +265,18 @@ def upsert_roster_player(
         insert_carry = dedupe_carry
 
     if row is None:
-        from utils.person_registry import allocate_person_id
+        from utils.person_registry import (
+            allocate_person_id,
+            lookup_canonical_person_id,
+            row_person_id,
+        )
 
-        new_pid = allocate_person_id(notes=f"{name} · {team}")
+        new_pid = (
+            int(preferred_person_id)
+            if preferred_person_id is not None and int(preferred_person_id) > 0
+            else lookup_canonical_person_id(name, pos_u, team=team)
+            or allocate_person_id(notes=f"{name} · {team}")
+        )
         session.add(
             tgt_cls(
                 **_new_player_kwargs(
@@ -317,6 +327,11 @@ def upsert_roster_player(
     row.overall = int(overall)
     row.nation = (nation.strip() if nation else None) or None
     row.status = st
+    if preferred_person_id is not None and int(preferred_person_id) > 0:
+        from utils.person_registry import row_person_id
+
+        if row_person_id(row) is None:
+            row.person_id = int(preferred_person_id)
     if hasattr(row, "lineup_slot"):
         row.lineup_slot = slot_val
     if hasattr(row, "left_team"):

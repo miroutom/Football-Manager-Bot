@@ -184,6 +184,7 @@ def _apply_upsert_and_cascade(
     *,
     skip_status_cascade: bool = False,
     lineup_slot: str | None = None,
+    preferred_person_id: int | None = None,
 ) -> None:
     from utils.player_transfer import _cascade_status
     from utils.squad_roster_sync import find_player_row, upsert_roster_player
@@ -198,6 +199,7 @@ def _apply_upsert_and_cascade(
         status=status,
         carry_in=carry,
         lineup_slot=lineup_slot,
+        preferred_person_id=preferred_person_id,
     )
     sess.flush()
     row, Cls = find_player_row(sess, name, team)
@@ -225,9 +227,9 @@ def add_player_to_team_roster(
     skip_status_cascade: bool = False,
 ) -> dict[str, Any]:
     from utils import cumulative_mirror
-    from utils.common_db import rebuild_common_database
+    from utils.common_db import rebuild_common_database, resolve_team_name_for_cl_pool
+    from utils.player_field_edit import find_player_row as fpr
     from utils.player_transfer import normalize_player_name_for_db
-    from utils.squad_roster_sync import _carry_from_row, _merge_carry_dicts
     from utils.transfer_input import normalize_nation, normalize_position
     from utils.utils import session_cl as default_cl
     from utils.utils import session_league as default_league
@@ -242,16 +244,25 @@ def add_player_to_team_roster(
     if st not in ("start", "bench", "reserve"):
         raise ValueError("status: start | bench | reserve")
 
+    cl_team = resolve_team_name_for_cl_pool(team)
+    _Cls_l, row_l = fpr(sleague, team, nm, pos)
+    row_c = None
+    if cl_team:
+        _Cls_c, row_c = fpr(scl, cl_team, nm, pos)
+
     cum = _find_rows_cumulative_common(nm, pos)
-    carry_l, ovr_l, nat_l = _purge_name_position_in_session(sleague, nm, pos, team=team)
-    carry_c, ovr_c, nat_c = _purge_name_position_in_session(scl, nm, pos, team=team)
+    existing = row_l is not None or row_c is not None
 
-    carry: dict[str, Any] | None = carry_l
-    if carry_c:
-        carry = _merge_carry_dicts(carry_l or {}, carry_c) if carry_l else carry_c
-
-    if carry is not None:
-        ovr_res = int(overall if overall is not None else (ovr_l or ovr_c or 72))
+    if existing:
+        ovr_res = int(
+            overall
+            if overall is not None
+            else (
+                int(getattr(row_l, "overall", 0) or 0)
+                or int(getattr(row_c, "overall", 0) or 0)
+                or 72
+            )
+        )
         if nation is not None:
             ns = str(nation).strip()
             nat_res = (
@@ -260,7 +271,10 @@ def add_player_to_team_roster(
                 else normalize_nation(nation)
             )
         else:
-            nat_res = normalize_nation(nat_l) if nat_l else None
+            nat_l = (getattr(row_l, "nation", None) or "").strip() if row_l else ""
+            nat_c = (getattr(row_c, "nation", None) or "").strip() if row_c else ""
+            nat_res = normalize_nation(nat_l or nat_c) if (nat_l or nat_c) else None
+        carry = None
     elif cum:
         # Только overall/нация из накопительной common; полевая стата в клубе — с нулей.
         r0 = cum[0][0]
@@ -291,6 +305,15 @@ def add_player_to_team_roster(
         else:
             ns = str(nation).strip()
             nat_res = None if ns in ("", "-", "—") else normalize_nation(nation)
+        carry = None
+
+    from utils.person_registry import lookup_canonical_person_id, row_person_id
+
+    preferred_pid = None
+    if existing:
+        preferred_pid = row_person_id(row_l) or row_person_id(row_c)
+    if preferred_pid is None:
+        preferred_pid = lookup_canonical_person_id(nm, pos, team=team)
 
     ovr_res = max(1, min(99, int(ovr_res)))
 
@@ -305,10 +328,8 @@ def add_player_to_team_roster(
         carry,
         skip_status_cascade=skip_status_cascade,
         lineup_slot=lineup_slot if st == "start" else None,
+        preferred_person_id=preferred_pid,
     )
-    from utils.common_db import resolve_team_name_for_cl_pool
-
-    cl_team = resolve_team_name_for_cl_pool(team)
     if cl_team:
         _apply_upsert_and_cascade(
             scl,
@@ -321,6 +342,7 @@ def add_player_to_team_roster(
             carry,
             skip_status_cascade=skip_status_cascade,
             lineup_slot=lineup_slot if st == "start" else None,
+            preferred_person_id=preferred_pid,
         )
 
     if commit:
@@ -1015,6 +1037,9 @@ def rewrite_team_player_identity(
     carry_l = _carry_from_row(row_old_l)
     ovr_from_old = int(getattr(row_old_l, "overall", 0) or 0)
     nat_from_old = (getattr(row_old_l, "nation", None) or "").strip() or None
+    from utils.person_registry import row_person_id
+
+    keep_pid = row_person_id(row_old_l)
 
     cl_team = resolve_team_name_for_cl_pool(team)
     carry_c = None
@@ -1027,6 +1052,8 @@ def rewrite_team_player_identity(
             carry_c = _carry_from_row(row_old_c)
             ovr_from_old_c = int(getattr(row_old_c, "overall", 0) or 0)
             nat_from_old_c = (getattr(row_old_c, "nation", None) or "").strip() or None
+            if keep_pid is None:
+                keep_pid = row_person_id(row_old_c)
 
     try:
         if row_old_c is not None:
@@ -1079,6 +1106,7 @@ def rewrite_team_player_identity(
             st,
             merged,
             skip_status_cascade=True,
+            preferred_person_id=keep_pid,
         )
         if cl_team:
             _apply_upsert_and_cascade(
@@ -1091,6 +1119,7 @@ def rewrite_team_player_identity(
                 st,
                 merged,
                 skip_status_cascade=True,
+                preferred_person_id=keep_pid,
             )
         sleague.commit()
         scl.commit()

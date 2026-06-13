@@ -65,6 +65,10 @@ def _find_row_by_identity(dst: Any, Cls: type, src_row: Any) -> Any | None:
     for row in dst.query(Cls).all():
         if _merge_key_career(row) == want:
             return row
+    ident = _player_identity_key(src_row)
+    for row in dst.query(Cls).all():
+        if _player_identity_key(row) == ident:
+            return row
     return None
 
 

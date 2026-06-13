@@ -39,38 +39,21 @@ from utils.utils import (
 
 
 def _key(p: Any) -> tuple:
-    """Слияние common: фамилия + клуб + позиция (один игрок из league и ЛЧ — одна строка)."""
+    """Слияние common: ``person_id`` + клуб + позиция; иначе фамилия + клуб + позиция."""
+    from utils.person_registry import row_person_id
+
+    pid = row_person_id(p)
+    if pid is not None:
+        return (
+            "pid",
+            pid,
+            (p.team or "").strip().lower(),
+            (p.position or "").strip().upper(),
+        )
     return (
         player_stats_identity_token(p).casefold(),
         (p.team or "").strip().lower(),
         (p.position or "").strip().upper(),
-    )
-
-
-def _outfield_stats_duplicate_of_bucket(b: dict, p: Any) -> bool:
-    """Лига и ЛЧ иногда несут одну карьерную сумму — не суммировать повторно."""
-    m = int(getattr(p, "matches", 0) or 0)
-    if m <= 0:
-        return False
-    g = int(getattr(p, "goals", 0) or 0)
-    a = int(getattr(p, "assists", 0) or 0)
-    return (
-        int(b.get("matches", 0) or 0) == m
-        and int(b.get("goals", 0) or 0) == g
-        and int(b.get("assists", 0) or 0) == a
-    )
-
-
-def _gk_stats_duplicate_of_bucket(b: dict, p: Any) -> bool:
-    m = int(getattr(p, "matches", 0) or 0)
-    if m <= 0:
-        return False
-    return (
-        int(b.get("matches", 0) or 0) == m
-        and int(b.get("clean_sheets", 0) or 0)
-        == int(getattr(p, "clean_sheets", 0) or 0)
-        and int(b.get("missed_goals", 0) or 0)
-        == int(getattr(p, "missed_goals", 0) or 0)
     )
 
 
@@ -171,8 +154,6 @@ def _merge_bucket_outfield(
             st = getattr(p, "status", None)
             if st and not b.get("status"):
                 b["status"] = str(st).strip().lower() or None
-            if is_cl and _outfield_stats_duplicate_of_bucket(b, p):
-                continue
             m = int(p.matches or 0)
             b["matches"] += m
             b["goals"] += int(getattr(p, "goals", 0) or 0)
@@ -372,8 +353,6 @@ def rebuild_common_database(
             st = getattr(p, "status", None)
             if st and not b.get("status"):
                 b["status"] = str(st).strip().lower() or None
-            if is_cl and _gk_stats_duplicate_of_bucket(b, p):
-                continue
             m = int(p.matches or 0)
             b["matches"] += m
             b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)

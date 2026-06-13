@@ -104,6 +104,115 @@ def row_person_id(row) -> int | None:
     return v if v > 0 else None
 
 
+def _identity_pos_key(name: str, position: str) -> tuple[str, str]:
+    from utils.player_names import player_stats_identity_token
+
+    class _Row:
+        def __init__(self, n: str, p: str) -> None:
+            self.name = n
+            self.position = p
+
+    ident = player_stats_identity_token(_Row((name or "").strip(), position)).casefold()
+    pos = (position or "").strip().upper()
+    return ident, pos
+
+
+def lookup_canonical_person_id(
+    name: str,
+    position: str,
+    *,
+    team: str | None = None,
+) -> int | None:
+    """
+    Стабильный ``person_id`` из накопительных БД и архивов сезонов.
+
+    Канон: строка с max ``matches``; при равенстве — min ``person_id``.
+    """
+    import sqlite3
+
+    from utils import season_paths
+    from utils.player_transfer import _norm_cmp
+
+    ident, pos = _identity_pos_key(name, position)
+    want_team = _norm_cmp(team) if team else None
+    best: tuple[int, int] | None = None  # (matches, -person_id for min pid)
+
+    def _consider(pid_raw: object, matches_raw: object) -> None:
+        nonlocal best
+        try:
+            pid = int(pid_raw or 0)
+        except (TypeError, ValueError):
+            return
+        if pid <= 0:
+            return
+        m = int(matches_raw or 0)
+        cand = (m, -pid)
+        if best is None or cand > best:
+            best = cand
+
+    db_paths: list[str] = []
+    for getter in (
+        season_paths.get_cumulative_common_db_path,
+        season_paths.get_cumulative_league_db_path,
+        season_paths.get_cumulative_cl_db_path,
+    ):
+        p = getter()
+        if p and os.path.isfile(p):
+            db_paths.append(p)
+
+    db_dir = os.path.join(PROJECT_ROOT, "db")
+    if os.path.isdir(db_dir):
+        for entry in os.listdir(db_dir):
+            if not entry.startswith("season_"):
+                continue
+            for fname in (
+                season_paths.SEASON_LEAGUE_NAME,
+                season_paths.SEASON_CL_NAME,
+                season_paths.SEASON_COMMON_NAME,
+            ):
+                path = os.path.join(db_dir, entry, fname)
+                if os.path.isfile(path):
+                    db_paths.append(path)
+
+    for active in (season_paths.get_league_db_path(), season_paths.get_cl_db_path()):
+        if active and os.path.isfile(active):
+            db_paths.append(active)
+
+    seen_paths: set[str] = set()
+    tables = ("forwards", "midfielders", "defenders", "goalkeepers")
+    for path in db_paths:
+        path = os.path.abspath(path)
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
+        conn = sqlite3.connect(path)
+        try:
+            for tbl in tables:
+                cols = {
+                    r[1] for r in conn.execute(f"PRAGMA table_info({tbl})").fetchall()
+                }
+                if "person_id" not in cols or "name" not in cols:
+                    continue
+                team_sql = ", team" if "team" in cols else ""
+                q = (
+                    f"SELECT name, position, person_id, matches{team_sql} FROM {tbl}"
+                )
+                for row in conn.execute(q):
+                    nm, pos_row, pid, matches = row[0], row[1], row[2], row[3]
+                    tm = row[4] if len(row) > 4 else None
+                    if _identity_pos_key(nm or "", pos_row or "") != (ident, pos):
+                        continue
+                    if want_team is not None and _norm_cmp(tm or "") != want_team:
+                        continue
+                    _consider(pid, matches)
+        finally:
+            conn.close()
+
+    if best is None:
+        return None
+    return -best[1]
+
+
 def ensure_row_person_id(row, *, notes: str = "", persist: bool = True) -> int:
     """
     Вернуть ``person_id`` строки; если NULL — выделить и записать в row.
