@@ -1213,6 +1213,11 @@ async def _begin_play_next(
     *,
     session_kind: str | None = None,
 ) -> None:
+    from utils.transfer_window import blocks_matches, match_block_message_html
+
+    if blocks_matches():
+        await message.answer(match_block_message_html(), parse_mode="HTML")
+        return
     from main import find_next_match_in_schedule, load_or_generate_mixed_schedule
 
     sch = await asyncio.to_thread(load_or_generate_mixed_schedule)
@@ -1391,6 +1396,15 @@ async def on_next_score(message: Message, state: FSMContext) -> None:
 
 @match_router.callback_query(F.data == "play:manual")
 async def cb_manual_start(callback: CallbackQuery, state: FSMContext) -> None:
+    from utils.transfer_window import blocks_matches, match_block_message_html
+
+    if blocks_matches():
+        await callback.answer("Трансферное окно открыто", show_alert=True)
+        if callback.message:
+            await callback.message.answer(
+                match_block_message_html(), parse_mode="HTML"
+            )
+        return
     await callback.answer()
     await state.clear()
     await callback.message.answer(
@@ -1401,6 +1415,11 @@ async def cb_manual_start(callback: CallbackQuery, state: FSMContext) -> None:
 
 @match_router.message(Command("match"))
 async def cmd_manual(message: Message, state: FSMContext) -> None:
+    from utils.transfer_window import blocks_matches, match_block_message_html
+
+    if blocks_matches():
+        await message.answer(match_block_message_html(), parse_mode="HTML")
+        return
     await state.clear()
     await message.answer(
         "Ручной ввод матча.\nВыбери лигу:",
@@ -1794,6 +1813,15 @@ async def _ordered_remaining_filtered(league_filter: str, session_kind: str) -> 
 
 @match_router.callback_query(F.data == "play:schedule")
 async def cb_play_schedule(callback: CallbackQuery, state: FSMContext) -> None:
+    from utils.transfer_window import blocks_matches, match_block_message_html
+
+    if blocks_matches():
+        await callback.answer("Трансферное окно открыто", show_alert=True)
+        if callback.message:
+            await callback.message.answer(
+                match_block_message_html(), parse_mode="HTML"
+            )
+        return
     await callback.answer()
     await state.clear()
     if callback.message:
@@ -1984,6 +2012,11 @@ async def cb_sched_pick(callback: CallbackQuery, state: FSMContext) -> None:
 
 @match_router.message(Command("play_schedule"))
 async def cmd_play_schedule(message: Message, state: FSMContext) -> None:
+    from utils.transfer_window import blocks_matches, match_block_message_html
+
+    if blocks_matches():
+        await message.answer(match_block_message_html(), parse_mode="HTML")
+        return
     await state.clear()
     await _send_schedule_play_league_step(message)
 

@@ -510,27 +510,85 @@ async def cb_transfer_kind(callback: CallbackQuery, state: FSMContext) -> None:
     )
 
 
-@transfer_router.message(Command("transfer"))
-async def cmd_transfer(message: Message, state: FSMContext) -> None:
+async def begin_batch_for_team(
+    message: Message,
+    state: FSMContext,
+    to_team: str,
+    *,
+    dash_lg: str | None = None,
+    dash_ti: int | None = None,
+) -> None:
+    """Пакет трансферов с заранее выбранным клубом назначения."""
+    from utils.utils import session_league
+
+    to_res = resolve_team_name(to_team, session_league)
+    to_t = to_res if to_res else _team_name_as_in_db(to_team)
+    rows_probe = _league_roster_tuples(to_t)
+    if not rows_probe:
+        await message.answer(f"Клуб «{to_t}» в нац. лиге не найден.")
+        return
     await state.set_state(TransferEnter.batch_to_count)
-    await state.update_data(tr_meta_patch={})
+    await state.update_data(
+        tr_batch_to=to_t,
+        tr_dash_lg=dash_lg,
+        tr_dash_ti=dash_ti,
+        tr_meta_patch={},
+    )
+    from utils.transfer_window import quota_line
+
     await message.answer(
-        "🔄 <b>Пакет трансферов</b>\n\n"
-        "Шаг 1 — в одной строке: <b>клуб назначения</b> и <b>число трансферов</b> (1–"
-        f"{_TRANSFER_BATCH_MAX}) через пробел.\n"
-        "Пример: <code>Урал 5</code>\n\n"
-        "Потом распределишь трансферы по источникам (из клубов / св. агенты); "
-        "сумма по группам должна совпасть с числом.\n\n"
-        "<b>Одиночный режим:</b> кнопка ниже.\n"
-        "/cancel — отмена.",
+        f"📦 Пакет в <b>{html_escape(to_t)}</b>\n"
+        f"Квота: <code>{html_escape(quota_line(to_t))}</code>\n\n"
+        f"Введи <b>число трансферов</b> (1–{_TRANSFER_BATCH_MAX}).\n/cancel — отмена.",
         parse_mode="HTML",
-        reply_markup=_legacy_entry_keyboard(),
+    )
+
+
+def _dash_return_kb(data: dict) -> InlineKeyboardMarkup | None:
+    lg = data.get("tr_dash_lg")
+    ti = data.get("tr_dash_ti")
+    if lg is None or ti is None:
+        return None
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="← К клубу в дашборде",
+                    callback_data=f"xfd:tm:{lg}:{ti}",
+                )
+            ],
+            [InlineKeyboardButton(text="🏠 Дашборд", callback_data="xfd:home")],
+        ]
     )
 
 
 @transfer_router.message(TransferEnter.batch_to_count, _TEXT_NOT_CMD)
 async def on_batch_to_and_count(message: Message, state: FSMContext) -> None:
     raw = (message.text or "").strip()
+    data = await state.get_data()
+    preset_to = (data.get("tr_batch_to") or "").strip()
+
+    if preset_to and raw.isdigit():
+        n_total = int(raw)
+        if n_total < 1 or n_total > _TRANSFER_BATCH_MAX:
+            await message.answer(
+                f"Число от 1 до {_TRANSFER_BATCH_MAX}.",
+                parse_mode="HTML",
+            )
+            return
+        to_t = preset_to
+        await state.update_data(
+            tr_batch_active=True,
+            tr_batch_total=n_total,
+            tr_batch_segments=[],
+            tr_batch_ops=[],
+            tr_batch_op_idx=0,
+            tr_to=to_t,
+        )
+        await state.set_state(TransferEnter.batch_plan_kind)
+        await _prompt_batch_plan_kind(message, state)
+        return
+
     m = _RE_BATCH_DEST.match(raw)
     if not m:
         await message.answer(
@@ -1006,6 +1064,12 @@ async def on_transfer_status(
     if kind == "fa":
         ovr = int(data.get("tr_overall") or 72)
         nation_fa = data.get("tr_fa_nation")
+        from utils.transfer_window import check_transfer, quota_line, record_transfer
+
+        ok_q, err_q = check_transfer("", to_t, free_agent=True)
+        if not ok_q:
+            await callback.message.answer(err_q or "Квота не позволяет.")
+            return
         try:
             from utils.player_transfer import add_player_to_club
 
@@ -1041,11 +1105,14 @@ async def on_transfer_status(
             if not data.get("tr_batch_active"):
                 await state.clear()
             return
+        record_transfer("", to_t, free_agent=True)
         batch_active = bool(data.get("tr_batch_active"))
+        q_after = quota_line(to_t)
         lines = [
             "✓ <b>Игрок</b> добавлен в клуб.",
             f"БД: нац. — <b>{counts['league']}</b>, ЛЧ — <b>{counts['cl']}</b>.",
             f"Overall: <b>{ovr}</b>, заявка: <b>{st}</b>.",
+            f"Квота <b>{to_t}</b>: <code>{q_after}</code>",
         ]
         if nation_fa:
             lines.append(f"Нация: <b>{nation_fa}</b>.")
@@ -1056,7 +1123,11 @@ async def on_transfer_status(
             "Журнал: <code>data/transfers.json</code>",
         ]
         )
-        await callback.message.answer("\n".join(lines), parse_mode="HTML")
+        await callback.message.answer(
+            "\n".join(lines),
+            parse_mode="HTML",
+            reply_markup=None if batch_active else _dash_return_kb(data),
+        )
         if batch_active:
             idx = int(data.get("tr_batch_op_idx") or 0)
             await state.update_data(tr_batch_op_idx=idx + 1)
@@ -1070,6 +1141,12 @@ async def on_transfer_status(
     new_ov = meta.get("overall")
     nation_update = "nation" in meta
     nat_val = meta.get("nation") if nation_update else None
+    from utils.transfer_window import check_transfer, quota_line, record_transfer
+
+    ok_q, err_q = check_transfer(from_t, to_t, free_agent=False)
+    if not ok_q:
+        await callback.message.answer(err_q or "Квота не позволяет.")
+        return
     try:
         from utils.player_transfer import apply_transfer_with_status
 
@@ -1110,6 +1187,7 @@ async def on_transfer_status(
     batch_active = bool(data.get("tr_batch_active"))
     if not batch_active:
         save_transfer_shortcut(uid, from_t, to_t)
+    record_transfer(from_t, to_t, free_agent=False)
     n_db = counts.get("league", 0) + counts.get("cl", 0)
     warn = ""
     if n_db == 0:
@@ -1134,13 +1212,19 @@ async def on_transfer_status(
     lines.extend(
         [
         f"Заявка: <b>{st}</b>",
+        f"Квота <b>{to_t}</b>: <code>{quota_line(to_t)}</code>",
+        f"Квота <b>{from_t}</b>: <code>{quota_line(from_t)}</code>",
         "Журнал: <code>data/transfers.json</code>",
         "",
         f"<b>{player}</b> ({pos})",
         f"{from_t} → {to_t}",
     ]
     )
-    await callback.message.answer("\n".join(lines), parse_mode="HTML")
+    await callback.message.answer(
+        "\n".join(lines),
+        parse_mode="HTML",
+        reply_markup=None if batch_active else _dash_return_kb(data),
+    )
     if batch_active:
         idx = int(data.get("tr_batch_op_idx") or 0)
         await state.update_data(tr_batch_op_idx=idx + 1)
@@ -1167,3 +1251,8 @@ async def cmd_cancel_transfer_fsm(message: Message, state: FSMContext) -> None:
         return
     await state.clear()
     await message.answer("Трансфер отменён.")
+
+
+from bot.transfer_dashboard import register_transfer_dashboard
+
+register_transfer_dashboard(transfer_router)
