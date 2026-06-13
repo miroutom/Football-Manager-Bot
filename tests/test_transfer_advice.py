@@ -183,6 +183,28 @@ def test_build_reasons_outgrown_and_new():
     assert REASON_NEW in newbie
 
 
+def test_starter_never_gets_depth_surplus_reason():
+    from utils.transfer_advice import _BADGE_DEPTH, _BADGE_PROD, _build_reasons
+
+    reasons = _build_reasons(
+        badges=[_BADGE_DEPTH, _BADGE_PROD],
+        frustration_pen=0.0,
+        skill_norm=0.0,
+        ovr=80,
+        team_median_overall=82.0,
+        depth_rank=3,
+        prod_ratio=0.5,
+        ovr_delta_live=0,
+        completed_play_seasons=1,
+        stable_core=False,
+        usage_pen=0.0,
+        matches=5,
+        in_start=True,
+    )
+    assert _BADGE_DEPTH not in reasons
+    assert _BADGE_PROD in reasons
+
+
 def test_format_summary_view():
     from utils.transfer_advice import (
         TransferAdviceRow,

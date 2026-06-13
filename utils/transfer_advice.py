@@ -161,6 +161,11 @@ def _is_gk(position: str) -> bool:
     return (position or "").strip().upper() in _GOALKEEPER_POS
 
 
+def _is_lineup_starter(status: str | None) -> bool:
+    """Игрок в стартовом составе (поле ``status`` в league.db)."""
+    return (status or "").strip().lower() == "start"
+
+
 def _player_fits_formation(position: str, slots: tuple[Any, ...]) -> bool:
     from bot.squad_pitch import _Pl, _player_fits_slot
 
@@ -638,6 +643,7 @@ def _build_reasons(
     stable_core: bool,
     usage_pen: float,
     matches: int,
+    in_start: bool = False,
 ) -> list[str]:
     """До 3 причин для отображения (порядок = важность)."""
     raw: list[str] = []
@@ -667,6 +673,8 @@ def _build_reasons(
         raw.append(REASON_UNDERCLUB)
 
     for b in badges:
+        if b == _BADGE_DEPTH and in_start:
+            continue
         if b in (_BADGE_DEPTH, _BADGE_FIT, _BADGE_PROD) and b not in raw:
             raw.append(b)
 
@@ -720,13 +728,14 @@ def _compute_advice_for_player(
     pid = player.get("person_id")
     is_gk = _is_gk(pos)
     badges: list[str] = []
+    in_start = _is_lineup_starter(player.get("status"))
 
     fit = _player_fits_formation(pos, slots)
     if not fit:
         badges.append(_BADGE_FIT)
 
     depth_surplus = (is_gk and depth_rank >= 2) or (not is_gk and depth_rank >= 3)
-    if depth_surplus:
+    if depth_surplus and not in_start:
         badges.append(_BADGE_DEPTH)
 
     med = team_median_by_pos.get(pos, float(ovr))
@@ -854,12 +863,13 @@ def _compute_advice_for_player(
         )
 
     depth_pen = 0.0
-    if depth_rank >= 4:
-        depth_pen = -13.0
-    elif depth_rank == 3:
-        depth_pen = -5.0
-    elif depth_rank == 2 and not is_gk:
-        depth_pen = -2.5
+    if not in_start:
+        if depth_rank >= 4:
+            depth_pen = -13.0
+        elif depth_rank == 3:
+            depth_pen = -5.0
+        elif depth_rank == 2 and not is_gk:
+            depth_pen = -2.5
 
     usage_pen = 0.0
     if depth_rank <= 2 and stint.completed_play_seasons >= 2 and stint.matches >= 1:
@@ -890,7 +900,7 @@ def _compute_advice_for_player(
         + usage_pen
         + (10.0 if fit else -8.0)
     )
-    if depth_surplus and not fit:
+    if depth_surplus and not fit and not in_start:
         score -= 5.0
     if depth_rank >= 4 and not fit:
         score -= 4.0
@@ -950,6 +960,7 @@ def _compute_advice_for_player(
         stable_core=stable_core,
         usage_pen=usage_pen,
         matches=stint.matches,
+        in_start=in_start,
     )
 
     return TransferAdviceRow(
@@ -992,6 +1003,7 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
                     "position": (r.position or "").strip().upper(),
                     "overall": int(r.overall or 0),
                     "person_id": getattr(r, "person_id", None),
+                    "status": (getattr(r, "status", None) or "").strip().lower() or None,
                 }
             )
 
