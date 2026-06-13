@@ -19,10 +19,13 @@ from bot.services import LEAGUE_LABELS
 from bot.states import TransferEnter
 from player_stats import LEAGUE_TEAMS
 from utils.transfer_advice import (
+    VERDICT_NO,
     VERDICT_NU,
+    VERDICT_SO,
     VERDICT_SU,
     TransferAdviceRow,
     collect_transfer_advice,
+    format_team_advice_html,
 )
 from utils.transfer_window import (
     blocks_transfers,
@@ -36,6 +39,7 @@ from utils.transfer_window import (
 logger = logging.getLogger(__name__)
 
 _DASH_PAGE_SIZE = 12
+_DASH_ADVICE_PAGE_SIZE = 10
 _NATIONAL_LEAGUES = ("rpl", "eng", "esp", "ger", "ita")
 _LEAGUE_TITLE = dict(LEAGUE_LABELS)
 
@@ -134,80 +138,6 @@ def _dash_league_kb(code: str, page: int = 0) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def _team_detail_kb(
-    code: str, ti: int, *, sell_only: bool, page: int, total_pages: int
-) -> InlineKeyboardMarkup:
-    filt_btn = (
-        "📋 Все игроки"
-        if sell_only
-        else "📉 Только СУ+НУ"
-    )
-    filt_data = (
-        f"xfd:tm:{code}:{ti}:{page}:all"
-        if sell_only
-        else f"xfd:tm:{code}:{ti}:{page}:sell"
-    )
-    rows: list[list[InlineKeyboardButton]] = [
-        [
-            InlineKeyboardButton(text=filt_btn, callback_data=filt_data),
-        ],
-        [
-            InlineKeyboardButton(
-                text="➡ Продать (выбор)",
-                callback_data=f"xfd:pick:{code}:{ti}:sell",
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="➕ Купить из клуба",
-                callback_data=f"xfd:buy:{code}:{ti}",
-            ),
-            InlineKeyboardButton(
-                text="➕ Св. агент",
-                callback_data=f"xfd:fa:{code}:{ti}",
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="📦 Пакет в клуб",
-                callback_data=f"xfd:bt:{code}:{ti}",
-            ),
-        ],
-    ]
-    nav: list[InlineKeyboardButton] = []
-    if page > 0:
-        nav.append(
-            InlineKeyboardButton(
-                text="◀", callback_data=f"xfd:tm:{code}:{ti}:{page - 1}:{'sell' if sell_only else 'all'}"
-            )
-        )
-    if total_pages > 1:
-        nav.append(
-            InlineKeyboardButton(
-                text=f"{page + 1}/{total_pages}",
-                callback_data="xfd:noop",
-            )
-        )
-    if page < total_pages - 1:
-        nav.append(
-            InlineKeyboardButton(
-                text="▶",
-                callback_data=f"xfd:tm:{code}:{ti}:{page + 1}:{'sell' if sell_only else 'all'}",
-            )
-        )
-    if nav:
-        rows.append(nav)
-    rows.append(
-        [
-            InlineKeyboardButton(
-                text=f"← {_LEAGUE_TITLE.get(code, code)}",
-                callback_data=f"xfd:lg:{code}",
-            )
-        ]
-    )
-    return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
 def _sell_pick_kb(
     code: str,
     ti: int,
@@ -222,7 +152,7 @@ def _sell_pick_kb(
     rows: list[list[InlineKeyboardButton]] = []
     for i, r in enumerate(chunk):
         pi = page * ps + i
-        label = r.line_text()
+        label = f"{r.verdict} {r.compact_line()}"
         if len(label) > 60:
             label = label[:57] + "…"
         rows.append(
@@ -267,7 +197,7 @@ async def send_dashboard_home(message: Message) -> None:
         f"{window_status_html()}\n\n"
         "Выбери лигу — увидишь квоты <code>in/out</code> и рекомендации "
         "<b>НО СО СУ НУ</b> по каждому клубу.\n\n"
-        "<i>НО СО СУ НУ · Т− П↓ З+ С×</i>"
+        f"{_ADVICE_LEGEND_HTML}"
     )
     await message.answer(text, parse_mode="HTML", reply_markup=_dash_home_kb())
 
@@ -281,45 +211,145 @@ def _PATH_exists_open_default() -> bool:
 
 
 _ADVICE_LEGEND_HTML = (
-    "<i>НО надо остаться · СО стоит остаться · СУ стоит уходить · НУ надо уходить\n"
-    "Т− трофеи · П↓ продуктивность · З+ избыток · С× не в схему</i>\n"
+    "<i>П+ перерос · П− не дорос · Т− трофеи · Т× тащит без титулов · "
+    "Н новичок · ≈ уровень</i>\n"
 )
+
+# view в callback: summary | nu | su | so | no | sell | all
+_VIEW_TO_VERDICT = {
+    "nu": VERDICT_NU,
+    "su": VERDICT_SU,
+    "so": VERDICT_SO,
+    "no": VERDICT_NO,
+}
+
+
+def _parse_team_view(raw: str | None) -> str:
+    v = (raw or "summary").strip().lower()
+    if v in ("summary", "nu", "su", "so", "no", "sell", "all"):
+        return v
+    if v == "sell":
+        return "sell"
+    return "summary"
+
+
+def _team_detail_kb(
+    code: str,
+    ti: int,
+    *,
+    view: str,
+    page: int,
+    total_pages: int,
+    counts: dict[str, int],
+) -> InlineKeyboardMarkup:
+    def _cnt(key: str) -> str:
+        verdict = _VIEW_TO_VERDICT.get(key)
+        n = counts.get(verdict, 0) if verdict else 0
+        if key == "sell":
+            n = counts.get(VERDICT_SU, 0) + counts.get(VERDICT_NU, 0)
+        return str(n)
+
+    def _vbtn(label: str, vkey: str) -> InlineKeyboardButton:
+        mark = "• " if view == vkey else ""
+        return InlineKeyboardButton(
+            text=f"{mark}{label} {_cnt(vkey)}",
+            callback_data=f"xfd:tm:{code}:{ti}:0:{vkey}",
+        )
+
+    rows: list[list[InlineKeyboardButton]] = [
+        [_vbtn("НУ", "nu"), _vbtn("СУ", "su")],
+        [_vbtn("СО", "so"), _vbtn("НО", "no")],
+        [
+            InlineKeyboardButton(
+                text=("• Сводка" if view == "summary" else "Сводка"),
+                callback_data=f"xfd:tm:{code}:{ti}:0:summary",
+            ),
+            InlineKeyboardButton(
+                text=("• Все" if view == "all" else "Все"),
+                callback_data=f"xfd:tm:{code}:{ti}:0:all",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text=("• СУ+НУ" if view == "sell" else "СУ+НУ"),
+                callback_data=f"xfd:tm:{code}:{ti}:0:sell",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="➡ Продать (выбор)",
+                callback_data=f"xfd:pick:{code}:{ti}:sell",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="➕ Купить из клуба",
+                callback_data=f"xfd:buy:{code}:{ti}",
+            ),
+            InlineKeyboardButton(
+                text="➕ Св. агент",
+                callback_data=f"xfd:fa:{code}:{ti}",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="📦 Пакет в клуб",
+                callback_data=f"xfd:bt:{code}:{ti}",
+            ),
+        ],
+    ]
+    if view != "summary" and total_pages > 1:
+        nav: list[InlineKeyboardButton] = []
+        if page > 0:
+            nav.append(
+                InlineKeyboardButton(
+                    text="◀",
+                    callback_data=f"xfd:tm:{code}:{ti}:{page - 1}:{view}",
+                )
+            )
+        nav.append(
+            InlineKeyboardButton(
+                text=f"{page + 1}/{total_pages}",
+                callback_data="xfd:noop",
+            )
+        )
+        if page < total_pages - 1:
+            nav.append(
+                InlineKeyboardButton(
+                    text="▶",
+                    callback_data=f"xfd:tm:{code}:{ti}:{page + 1}:{view}",
+                )
+            )
+        rows.append(nav)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=f"← {_LEAGUE_TITLE.get(code, code)}",
+                callback_data=f"xfd:lg:{code}",
+            )
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _format_team_detail(
     team: str,
     rows: list[TransferAdviceRow],
     *,
-    sell_only: bool,
+    view: str,
     page: int,
-) -> tuple[str, int]:
-    q = quota_line(team)
-    body_rows = rows
-    if sell_only:
-        body_rows = [r for r in rows if r.verdict in (VERDICT_SU, VERDICT_NU)]
-    ps = _DASH_PAGE_SIZE
-    total_pages = max(1, (len(body_rows) + ps - 1) // ps)
-    page = max(0, min(page, total_pages - 1))
-    chunk = body_rows[page * ps : page * ps + ps]
-
+) -> tuple[str, int, dict[str, int]]:
     counts = {v: sum(1 for r in rows if r.verdict == v) for v in ("НО", "СО", "СУ", "НУ")}
-    header = (
-        f"<b>{html_escape(team)}</b>  ·  <code>{html_escape(q)}</code>\n"
-        f"{_ADVICE_LEGEND_HTML}"
-        f"НО {counts['НО']} · СО {counts['СО']} · СУ {counts['СУ']} · НУ {counts['НУ']}\n"
+    advice_view = _VIEW_TO_VERDICT.get(view, view)
+    text, total_pages = format_team_advice_html(
+        team,
+        rows,
+        view=advice_view if view in _VIEW_TO_VERDICT else view,
+        page=page,
+        page_size=_DASH_ADVICE_PAGE_SIZE,
+        quota=quota_line(team),
     )
-    if sell_only:
-        header += "<i>Фильтр: только СУ и НУ</i>\n"
-    if not chunk:
-        header += "\nНет игроков в этом фильтре."
-        return header, total_pages
-
-    lines = [html_escape(r.line_text()) for r in chunk]
-    if len(body_rows) > ps:
-        lines.append(
-            f"<i>стр. {page + 1}/{total_pages}</i>"
-        )
-    return header + "\n".join(lines), total_pages
+    return text, total_pages, counts
 
 
 def register_transfer_dashboard(router: Router) -> None:
@@ -384,13 +414,15 @@ def register_transfer_dashboard(router: Router) -> None:
             )
 
     @router.callback_query(
-        F.data.regexp(r"^xfd:tm:([a-z]+):(\d+)(?::(\d+))?(?::(sell|all))?$")
+        F.data.regexp(
+            r"^xfd:tm:([a-z]+):(\d+)(?::(\d+))?(?::(summary|nu|su|so|no|sell|all))?$"
+        )
     )
     async def cb_dash_team(callback: CallbackQuery) -> None:
         import re
 
         m = re.match(
-            r"^xfd:tm:([a-z]+):(\d+)(?::(\d+))?(?::(sell|all))?$",
+            r"^xfd:tm:([a-z]+):(\d+)(?::(\d+))?(?::(summary|nu|su|so|no|sell|all))?$",
             callback.data or "",
         )
         if not m:
@@ -399,7 +431,7 @@ def register_transfer_dashboard(router: Router) -> None:
         code = m.group(1)
         ti = int(m.group(2))
         page = int(m.group(3)) if m.group(3) else 0
-        sell_only = m.group(4) == "sell"
+        view = _parse_team_view(m.group(4))
         team = _team_at(code, ti)
         if not team:
             await callback.answer("Клуб не найден", show_alert=True)
@@ -408,8 +440,8 @@ def register_transfer_dashboard(router: Router) -> None:
         if err:
             await callback.answer(err, show_alert=True)
             return
-        text, total_pages = _format_team_detail(
-            canon, rows, sell_only=sell_only, page=page
+        text, total_pages, counts = _format_team_detail(
+            canon, rows, view=view, page=page
         )
         await callback.answer()
         if callback.message:
@@ -418,7 +450,12 @@ def register_transfer_dashboard(router: Router) -> None:
                     text,
                     parse_mode="HTML",
                     reply_markup=_team_detail_kb(
-                        code, ti, sell_only=sell_only, page=page, total_pages=total_pages
+                        code,
+                        ti,
+                        view=view,
+                        page=page,
+                        total_pages=total_pages,
+                        counts=counts,
                     ),
                 )
             except Exception:
@@ -426,7 +463,12 @@ def register_transfer_dashboard(router: Router) -> None:
                     text,
                     parse_mode="HTML",
                     reply_markup=_team_detail_kb(
-                        code, ti, sell_only=sell_only, page=page, total_pages=total_pages
+                        code,
+                        ti,
+                        view=view,
+                        page=page,
+                        total_pages=total_pages,
+                        counts=counts,
                     ),
                 )
 

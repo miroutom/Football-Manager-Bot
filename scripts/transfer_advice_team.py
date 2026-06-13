@@ -65,14 +65,24 @@ def main() -> int:
             exit_code = 1
             continue
         print(f"=== {canon} ===")
-        print("НО СО СУ НУ · Т− П↓ З+ С×")
-        show = rows
+        from utils.transfer_advice import format_team_advice_html
+
+        text, _ = format_team_advice_html(canon, rows, view="summary", quota=None)
+        print(text.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", ""))
+        print()
+        for vkey, vlabel in (("nu", "НУ"), ("su", "СУ"), ("so", "СО"), ("no", "НО")):
+            grp = [r for r in rows if r.verdict == vlabel]
+            if not grp:
+                continue
+            print(f"--- {vlabel} ({len(grp)}) ---")
+            for r in grp:
+                print(f"  {r.compact_line()}")
         if filt:
             show = [r for r in rows if r.verdict in filt]
-        for r in show:
-            print(r.line_text())
-        if not show:
-            print("(нет строк по фильтру)")
+            if show != [r for r in rows]:
+                print("--- фильтр ---")
+                for r in show:
+                    print(f"  {r.line_text()}")
         c = {VERDICT_NO: 0, VERDICT_SO: 0, VERDICT_SU: 0, VERDICT_NU: 0}
         for r in rows:
             c[r.verdict] = c.get(r.verdict, 0) + 1

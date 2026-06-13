@@ -50,7 +50,42 @@ _BADGE_PROD = "П↓"
 _BADGE_DEPTH = "З+"
 _BADGE_FIT = "С×"
 
-_VERDICT_ORDER = {VERDICT_NU: 0, VERDICT_SU: 1, VERDICT_SO: 2, VERDICT_NO: 3}
+# Человекочитаемые причины для экрана (до 3 на игрока).
+REASON_OUTGREW = "П+"
+REASON_UNDERCLUB = "П−"
+REASON_CARRY_FAIL = "Т×"
+REASON_NEW = "Н"
+REASON_LEVEL = "≈"
+REASON_USAGE = "⏱"
+REASON_GROWTH = "↑"
+REASON_DECLINE = "↓"
+
+REASON_LEGEND: dict[str, str] = {
+    REASON_OUTGREW: "перерос клуб",
+    REASON_UNDERCLUB: "не дорос до клуба",
+    _BADGE_TROPHY: "нет трофеев",
+    REASON_CARRY_FAIL: "тащит — нет титулов",
+    _BADGE_DEPTH: "избыток на позиции",
+    _BADGE_FIT: "не в схему",
+    _BADGE_PROD: "слабая стата",
+    REASON_NEW: "недавно в клубе",
+    REASON_LEVEL: "на уровне команды",
+    REASON_USAGE: "мало игр для роли",
+    REASON_GROWTH: "вырос в клубе",
+    REASON_DECLINE: "упал рейтинг",
+}
+
+ADVICE_REASON_LEGEND_HTML = (
+    "<i>П+ перерос · П− не дорос · Т− трофеи · Т× тащит без титулов\n"
+    "З+ запас · С× схема · П↓ стата · Н новичок · ≈ уровень · ⏱ мало игр</i>\n"
+)
+
+_VERDICT_SECTION = {
+    VERDICT_NU: "📕 НУ",
+    VERDICT_SU: "📙 СУ",
+    VERDICT_SO: "📗 СО",
+    VERDICT_NO: "📘 НО",
+}
 
 
 @dataclass
@@ -88,19 +123,31 @@ class TransferAdviceRow:
     overall: int
     verdict: str
     badges: list[str] = field(default_factory=list)
+    reasons: list[str] = field(default_factory=list)
     score: float = 50.0
     depth_rank: int = 1
     person_id: int | None = None
     is_goalkeeper: bool = False
 
     def label_short(self) -> str:
-        parts = [self.verdict, *self.badges]
+        parts = [self.verdict, *(self.reasons or self.badges)]
         return " · ".join(parts)
+
+    def compact_line(self) -> str:
+        """Строка без вердикта (для группировки по секциям)."""
+        sur = (player_surname(self.name) or self.name).strip()
+        tags = self.reasons or self.badges
+        tag_s = " · ".join(tags) if tags else "—"
+        return f"{sur} {self.overall} {self.position} · {tag_s}"
 
     def line_text(self) -> str:
         sur = (player_surname(self.name) or self.name).strip()
-        badge = (" · " + " ".join(self.badges)) if self.badges else ""
+        tags = self.reasons or self.badges
+        badge = (" · " + " ".join(tags)) if tags else ""
         return f"{self.verdict}{badge}  {sur} {self.position} {self.overall}"
+
+
+_VERDICT_ORDER = {VERDICT_NU: 0, VERDICT_SU: 1, VERDICT_SO: 2, VERDICT_NO: 3}
 
 
 def _norm_team(team: str) -> str:
@@ -577,6 +624,72 @@ def _tenure_trophy_factor(completed_play_seasons: int) -> float:
     return 1.0
 
 
+def _build_reasons(
+    *,
+    badges: list[str],
+    frustration_pen: float,
+    skill_norm: float,
+    ovr: int,
+    team_median_overall: float,
+    depth_rank: int,
+    prod_ratio: float,
+    ovr_delta_live: int,
+    completed_play_seasons: int,
+    stable_core: bool,
+    usage_pen: float,
+    matches: int,
+) -> list[str]:
+    """До 3 причин для отображения (порядок = важность)."""
+    raw: list[str] = []
+
+    if frustration_pen < 0:
+        raw.append(REASON_CARRY_FAIL)
+    if _BADGE_TROPHY in badges:
+        raw.append(_BADGE_TROPHY)
+
+    outgrown = (
+        depth_rank <= 2
+        and (
+            skill_norm >= 0.85
+            or float(ovr) >= team_median_overall + 4.0
+        )
+        and (frustration_pen < 0 or prod_ratio >= 0.92)
+    )
+    if outgrown:
+        raw.append(REASON_OUTGREW)
+
+    underclub = (
+        skill_norm <= -0.55
+        or float(ovr) < team_median_overall - 4.5
+        or (prod_ratio < 0.52 and matches >= 5 and depth_rank >= 2)
+    )
+    if underclub:
+        raw.append(REASON_UNDERCLUB)
+
+    for b in badges:
+        if b in (_BADGE_DEPTH, _BADGE_FIT, _BADGE_PROD) and b not in raw:
+            raw.append(b)
+
+    if usage_pen < 0:
+        raw.append(REASON_USAGE)
+    if completed_play_seasons <= 1:
+        raw.append(REASON_NEW)
+    if stable_core:
+        raw.append(REASON_LEVEL)
+    if ovr_delta_live >= 3:
+        raw.append(REASON_GROWTH)
+    elif ovr_delta_live <= -2:
+        raw.append(REASON_DECLINE)
+
+    seen: set[str] = set()
+    out: list[str] = []
+    for code in raw:
+        if code not in seen:
+            seen.add(code)
+            out.append(code)
+    return out[:3]
+
+
 def _score_to_verdict(score: float) -> str:
     if score >= 72:
         return VERDICT_NO
@@ -824,12 +937,28 @@ def _compute_advice_for_player(
 
     badges = badges[:2]
 
+    reasons = _build_reasons(
+        badges=badges,
+        frustration_pen=frustration_pen,
+        skill_norm=skill_norm,
+        ovr=ovr,
+        team_median_overall=team_median_overall,
+        depth_rank=depth_rank,
+        prod_ratio=prod_ratio,
+        ovr_delta_live=ovr_delta_live,
+        completed_play_seasons=stint.completed_play_seasons,
+        stable_core=stable_core,
+        usage_pen=usage_pen,
+        matches=stint.matches,
+    )
+
     return TransferAdviceRow(
         name=name,
         position=pos,
         overall=ovr,
         verdict=verdict,
         badges=badges,
+        reasons=reasons,
         score=round(score, 1),
         depth_rank=depth_rank,
         person_id=int(pid) if pid is not None else None,
@@ -938,6 +1067,112 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
     return canon, rows, None
 
 
+def _rows_for_view(
+    rows: list[TransferAdviceRow], view: str
+) -> list[TransferAdviceRow]:
+    if view == "sell":
+        return [r for r in rows if r.verdict in (VERDICT_SU, VERDICT_NU)]
+    if view in _VERDICT_ORDER:
+        return [r for r in rows if r.verdict == view]
+    return list(rows)
+
+
+def _summary_names(rows: list[TransferAdviceRow], limit: int = 3) -> str:
+    if not rows:
+        return "—"
+    names = [(player_surname(r.name) or r.name).strip() for r in rows]
+    if len(names) <= limit:
+        return ", ".join(names)
+    extra = len(names) - limit
+    return ", ".join(names[:limit]) + f" +{extra}"
+
+
+def format_team_advice_html(
+    team: str,
+    rows: list[TransferAdviceRow],
+    *,
+    view: str = "summary",
+    page: int = 0,
+    page_size: int = 10,
+    quota: str | None = None,
+) -> tuple[str, int]:
+    """
+    HTML для Telegram.
+
+    view: summary (сводка) | all (секции) | nu/su/so/no/sell (одна группа).
+    Возвращает (текст, число_страниц).
+    """
+    from html import escape
+
+    team_e = escape(team)
+    q_part = f" · <code>{escape(quota)}</code>" if quota else ""
+    counts = {v: sum(1 for r in rows if r.verdict == v) for v in _VERDICT_ORDER}
+
+    if view == "summary":
+        lines = [f"<b>{team_e}</b>{q_part}", ""]
+        for v in (VERDICT_NU, VERDICT_SU, VERDICT_SO, VERDICT_NO):
+            grp = [r for r in rows if r.verdict == v]
+            if not grp:
+                continue
+            lines.append(
+                f"{_VERDICT_SECTION[v]} <b>{counts[v]}</b> — "
+                f"{escape(_summary_names(grp))}"
+            )
+        lines.append("")
+        lines.append(ADVICE_REASON_LEGEND_HTML.rstrip())
+        lines.append("<i>Выбери группу кнопками ниже</i>")
+        return "\n".join(lines), 1
+
+    if view == "all":
+        flat: list[tuple[str, TransferAdviceRow]] = []
+        for v in (VERDICT_NU, VERDICT_SU, VERDICT_SO, VERDICT_NO):
+            for r in rows:
+                if r.verdict == v:
+                    flat.append((v, r))
+        total_pages = max(1, (len(flat) + page_size - 1) // page_size)
+        page = max(0, min(page, total_pages - 1))
+        chunk_slice = flat[page * page_size : page * page_size + page_size]
+        lines = [f"<b>{team_e}</b>{q_part}", "<i>Все игроки по группам</i>", ""]
+        prev_v: str | None = None
+        for v, r in chunk_slice:
+            if v != prev_v:
+                lines.append(f"{_VERDICT_SECTION[v]}")
+                prev_v = v
+            lines.append(escape(r.compact_line()))
+        if len(flat) > page_size:
+            lines.append(f"\n<i>стр. {page + 1}/{total_pages}</i>")
+        if page == 0:
+            lines.append("\n" + ADVICE_REASON_LEGEND_HTML.rstrip())
+        return "\n".join(lines), total_pages
+
+    body_rows = _rows_for_view(rows, view)
+    total_pages = max(1, (len(body_rows) + page_size - 1) // page_size)
+    page = max(0, min(page, total_pages - 1))
+    chunk = body_rows[page * page_size : page * page_size + page_size]
+
+    if view in _VERDICT_ORDER:
+        title = _VERDICT_SECTION.get(view, view)
+        header = f"<b>{team_e}</b>{q_part}\n{title} <b>{len(body_rows)}</b>\n"
+    elif view == "sell":
+        header = (
+            f"<b>{team_e}</b>{q_part}\n"
+            f"📉 <b>СУ+НУ {len(body_rows)}</b>\n"
+        )
+    else:
+        header = f"<b>{team_e}</b>{q_part}\n"
+
+    if not chunk:
+        return header + "\nНет игроков в этой группе.", 1
+
+    lines = [header.rstrip(), ""]
+    lines.extend(escape(r.compact_line()) for r in chunk)
+    if len(body_rows) > page_size:
+        lines.append(f"\n<i>стр. {page + 1}/{total_pages}</i>")
+    if page == 0:
+        lines.append("\n" + ADVICE_REASON_LEGEND_HTML.rstrip())
+    return "\n".join(lines), total_pages
+
+
 def format_advice_telegram(
     team: str,
     rows: list[TransferAdviceRow],
@@ -945,50 +1180,23 @@ def format_advice_telegram(
     max_lines: int = 35,
     filter_verdicts: frozenset[str] | None = None,
 ) -> list[str]:
-    """Разбить отчёт на сообщения Telegram (HTML)."""
-    from html import escape
-
-    team_e = escape(team)
-    header = (
-        f"<b>{team_e}</b> · рекомендации\n"
-        f"<i>НО СО СУ НУ · Т− П↓ З+ С×</i>\n"
-        f"Стата и трофеи — только в этом клубе (ЛЧ ×{W_CL:g}).\n"
+    """Разбить отчёт на сообщения Telegram (HTML), группами по вердикту."""
+    view = "sell" if filter_verdicts == frozenset({VERDICT_SU, VERDICT_NU}) else "all"
+    if filter_verdicts and len(filter_verdicts) == 1:
+        view = next(iter(filter_verdicts))
+    text, _pages = format_team_advice_html(
+        team, rows, view=view, page=0, page_size=max_lines
     )
     counts = {VERDICT_NO: 0, VERDICT_SO: 0, VERDICT_SU: 0, VERDICT_NU: 0}
     for r in rows:
         counts[r.verdict] = counts.get(r.verdict, 0) + 1
-
-    body_rows = rows
-    if filter_verdicts:
-        body_rows = [r for r in rows if r.verdict in filter_verdicts]
-
-    lines = [r.line_text() for r in body_rows[:max_lines]]
-    if len(body_rows) > max_lines:
-        lines.append(f"… ещё {len(body_rows) - max_lines}")
-
     summary = (
         f"\n<b>Итого:</b> НО {counts[VERDICT_NO]} · СО {counts[VERDICT_SO]} · "
         f"СУ {counts[VERDICT_SU]} · НУ {counts[VERDICT_NU]}"
     )
-
-    text = header + "\n".join(escape(ln) for ln in lines) + summary
-    if len(text) <= 4000:
-        return [text]
-
-    chunks: list[str] = []
-    part_lines: list[str] = []
-    for ln in lines:
-        part_lines.append(ln)
-        chunk_body = header + "\n".join(escape(x) for x in part_lines)
-        if len(chunk_body) > 3800:
-            part_lines.pop()
-            chunks.append(
-                header + "\n".join(escape(x) for x in part_lines) + summary
-            )
-            part_lines = [ln]
-    if part_lines:
-        chunks.append(header + "\n".join(escape(x) for x in part_lines) + summary)
-    return chunks
+    if len(text + summary) <= 4000:
+        return [text + summary]
+    return [text, summary]
 
 
 def all_league_teams() -> list[str]:

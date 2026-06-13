@@ -138,3 +138,68 @@ def test_frustrated_star_pressure_only_for_carriers():
     )
     assert star < -15.0
     assert bench == 0.0
+
+
+def test_build_reasons_outgrown_and_new():
+    from utils.transfer_advice import (
+        REASON_CARRY_FAIL,
+        REASON_NEW,
+        REASON_OUTGREW,
+        _BADGE_TROPHY,
+        _build_reasons,
+    )
+
+    reasons = _build_reasons(
+        badges=[_BADGE_TROPHY],
+        frustration_pen=-10.0,
+        skill_norm=1.1,
+        ovr=88,
+        team_median_overall=82.0,
+        depth_rank=1,
+        prod_ratio=1.1,
+        ovr_delta_live=4,
+        completed_play_seasons=2,
+        stable_core=False,
+        usage_pen=0.0,
+        matches=20,
+    )
+    assert REASON_CARRY_FAIL in reasons
+    assert REASON_OUTGREW in reasons
+
+    newbie = _build_reasons(
+        badges=[],
+        frustration_pen=0.0,
+        skill_norm=0.0,
+        ovr=83,
+        team_median_overall=82.0,
+        depth_rank=1,
+        prod_ratio=0.8,
+        ovr_delta_live=0,
+        completed_play_seasons=1,
+        stable_core=True,
+        usage_pen=0.0,
+        matches=10,
+    )
+    assert REASON_NEW in newbie
+
+
+def test_format_summary_view():
+    from utils.transfer_advice import (
+        TransferAdviceRow,
+        VERDICT_SU,
+        format_team_advice_html,
+    )
+
+    rows = [
+        TransferAdviceRow(
+            name="Хаверц",
+            position="ФРВ",
+            overall=88,
+            verdict=VERDICT_SU,
+            reasons=["П+", "Т×"],
+        )
+    ]
+    text, pages = format_team_advice_html("Арсенал", rows, view="summary")
+    assert pages == 1
+    assert "Хаверц" in text
+    assert "СУ" in text
