@@ -25,8 +25,12 @@ from utils.transfer_advice import (
     VERDICT_SU,
     TransferAdviceRow,
     collect_transfer_advice,
+    flat_advice_rows,
+    format_player_advice_card_html,
     format_team_advice_html,
+    paginate_advice_view,
 )
+from utils.player_names import player_surname
 from utils.transfer_window import (
     blocks_transfers,
     is_window_open,
@@ -241,6 +245,7 @@ def _team_detail_kb(
     page: int,
     total_pages: int,
     counts: dict[str, int],
+    advice_rows: list[TransferAdviceRow] | None = None,
 ) -> InlineKeyboardMarkup:
     def _cnt(key: str) -> str:
         verdict = _VIEW_TO_VERDICT.get(key)
@@ -256,7 +261,7 @@ def _team_detail_kb(
             callback_data=f"xfd:tm:{code}:{ti}:0:{vkey}",
         )
 
-    rows: list[list[InlineKeyboardButton]] = [
+    kb_rows: list[list[InlineKeyboardButton]] = [
         [_vbtn("НУ", "nu"), _vbtn("СУ", "su")],
         [_vbtn("СО", "so"), _vbtn("НО", "no")],
         [
@@ -298,6 +303,26 @@ def _team_detail_kb(
             ),
         ],
     ]
+    if view != "summary" and advice_rows:
+        chunk, _, _ = paginate_advice_view(
+            advice_rows, view, page, _DASH_ADVICE_PAGE_SIZE
+        )
+        for i, r in enumerate(chunk):
+            global_idx = page * _DASH_ADVICE_PAGE_SIZE + i
+            sur = (player_surname(r.name) or r.name).strip()
+            if len(sur) > 14:
+                sur = sur[:12] + "…"
+            label = f"{r.verdict} {sur} {r.overall}"
+            if len(label) > 42:
+                label = label[:39] + "…"
+            kb_rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=label,
+                        callback_data=f"xfd:pl:{code}:{ti}:{view}:{page}:{global_idx}",
+                    )
+                ]
+            )
     if view != "summary" and total_pages > 1:
         nav: list[InlineKeyboardButton] = []
         if page > 0:
@@ -320,8 +345,8 @@ def _team_detail_kb(
                     callback_data=f"xfd:tm:{code}:{ti}:{page + 1}:{view}",
                 )
             )
-        rows.append(nav)
-    rows.append(
+        kb_rows.append(nav)
+    kb_rows.append(
         [
             InlineKeyboardButton(
                 text=f"← {_LEAGUE_TITLE.get(code, code)}",
@@ -329,7 +354,7 @@ def _team_detail_kb(
             )
         ]
     )
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+    return InlineKeyboardMarkup(inline_keyboard=kb_rows)
 
 
 def _format_team_detail(
@@ -456,6 +481,7 @@ def register_transfer_dashboard(router: Router) -> None:
                         page=page,
                         total_pages=total_pages,
                         counts=counts,
+                        advice_rows=rows,
                     ),
                 )
             except Exception:
@@ -469,8 +495,63 @@ def register_transfer_dashboard(router: Router) -> None:
                         page=page,
                         total_pages=total_pages,
                         counts=counts,
+                        advice_rows=rows,
                     ),
                 )
+
+    @router.callback_query(
+        F.data.regexp(
+            r"^xfd:pl:([a-z]+):(\d+):(summary|nu|su|so|no|sell|all):(\d+):(\d+)$"
+        )
+    )
+    async def cb_dash_player_card(callback: CallbackQuery) -> None:
+        import re
+
+        m = re.match(
+            r"^xfd:pl:([a-z]+):(\d+):(summary|nu|su|so|no|sell|all):(\d+):(\d+)$",
+            callback.data or "",
+        )
+        if not m:
+            await callback.answer()
+            return
+        code, ti_s, view, page_s, idx_s = (
+            m.group(1),
+            m.group(2),
+            m.group(3),
+            m.group(4),
+            m.group(5),
+        )
+        ti, page, idx = int(ti_s), int(page_s), int(idx_s)
+        team = _team_at(code, ti)
+        if not team:
+            await callback.answer("Клуб не найден", show_alert=True)
+            return
+        canon, rows, err = collect_transfer_advice(team)
+        if err:
+            await callback.answer(err, show_alert=True)
+            return
+        flat = flat_advice_rows(rows, view)
+        if idx < 0 or idx >= len(flat):
+            await callback.answer("Игрок не найден", show_alert=True)
+            return
+        row = flat[idx]
+        card = format_player_advice_card_html(canon, row)
+        back_cb = f"xfd:tm:{code}:{ti}:{page}:{view}"
+        kb = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="← К составу",
+                        callback_data=back_cb,
+                    )
+                ]
+            ]
+        )
+        await callback.answer()
+        if callback.message:
+            await callback.message.edit_text(
+                card, parse_mode="HTML", reply_markup=kb
+            )
 
     @router.callback_query(F.data.regexp(r"^xfd:pick:([a-z]+):(\d+):sell(?::(\d+))?$"))
     async def cb_dash_pick_sell(callback: CallbackQuery, state: FSMContext) -> None:

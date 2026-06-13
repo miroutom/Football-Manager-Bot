@@ -104,6 +104,11 @@ class ClubStintStats:
     season_nums: list[int] = field(default_factory=list)
     ovr_first: int | None = None
     ovr_last_completed: int | None = None
+    ovr_peak: int | None = None
+    last_season_num: int | None = None
+    last_season_matches: int = 0
+    last_season_ga: int = 0
+    last_season_ovr: int | None = None
 
     @property
     def trophy_value(self) -> float:
@@ -124,6 +129,7 @@ class TransferAdviceRow:
     verdict: str
     badges: list[str] = field(default_factory=list)
     reasons: list[str] = field(default_factory=list)
+    detail: dict[str, Any] = field(default_factory=dict)
     score: float = 50.0
     depth_rank: int = 1
     person_id: int | None = None
@@ -417,11 +423,18 @@ def _collect_club_stint_stats(
             stint.play_seasons += 1
             if stint.ovr_first is None and ovr > 0:
                 stint.ovr_first = ovr
+            if ovr > 0:
+                stint.ovr_peak = max(int(stint.ovr_peak or 0), ovr)
             completed = (sn < active) or (sn == active and m >= 3)
             if completed and m >= 3:
                 stint.completed_play_seasons += 1
                 if ovr > 0:
                     stint.ovr_last_completed = ovr
+                if stint.last_season_num is None or sn >= int(stint.last_season_num):
+                    stint.last_season_num = sn
+                    stint.last_season_matches = m
+                    stint.last_season_ga = int(snap["ga"])
+                    stint.last_season_ovr = ovr
 
     hist = load_history()
     for sn in seasons:
@@ -586,8 +599,9 @@ def _frustrated_star_pressure(
     finish_frust: float,
     depth_rank: int,
     prod_ratio: float,
-    ovr_delta: int,
+    ovr_drop_peak: int,
     player_amb: float,
+    trophy_earned: float,
 ) -> float:
     """
     Давление «уходить» для основы, которая тащит, но клуб стабильно ниже ожиданий.
@@ -597,24 +611,28 @@ def _frustrated_star_pressure(
         return 0.0
     if completed_play_seasons < 2 or depth_rank > 2 or finish_frust < 0.30:
         return 0.0
+    if trophy_earned < _EARNED_TROPHY_MIN:
+        return 0.0
 
     carry = 0.0
     if prod_ratio >= 0.82:
         carry += 0.40
     if prod_ratio >= 1.0:
         carry += 0.28
-    if ovr_delta >= 3:
-        carry += 0.22
-    elif ovr_delta >= 1:
-        carry += 0.12
-    elif ovr_delta < -1:
+    if ovr_drop_peak <= -2:
+        carry -= 0.38
+    elif ovr_drop_peak <= -1:
         carry -= 0.20
+    elif ovr_drop_peak >= 3:
+        carry += 0.22
+    elif ovr_drop_peak >= 1:
+        carry += 0.12
     carry = max(0.0, min(1.0, carry))
     if carry < 0.30:
         return 0.0
 
     tenure = min(1.0, completed_play_seasons / 2.0)
-    intensity = club_amb * finish_frust * carry * tenure * max(0.45, player_amb)
+    intensity = club_amb * finish_frust * carry * tenure * max(0.45, player_amb) * trophy_earned
     return -40.0 * intensity
 
 
@@ -627,6 +645,61 @@ def _tenure_trophy_factor(completed_play_seasons: int) -> float:
     if completed_play_seasons == 2:
         return 0.78
     return 1.0
+
+
+def _prod_ratio(
+    *,
+    position: str,
+    overall: int,
+    ga: int,
+    matches: int,
+    expected_rates: dict[tuple[str, int], float],
+    is_gk: bool,
+) -> float:
+    m = max(int(matches), 1)
+    if is_gk:
+        actual = float(ga) / m
+        exp = _expected_rate(position, overall, expected_rates, kind="cs")
+    else:
+        actual = float(ga) / m
+        exp = _expected_rate(position, overall, expected_rates, kind="ga")
+    if exp <= 0:
+        return 1.0 if actual > 0 else 0.5
+    return actual / exp
+
+
+def _trophy_earned_factor(
+    *,
+    prod_ratio: float,
+    prod_ratio_last: float | None,
+    ovr_drop_peak: int,
+    ovr: int,
+    depth_rank: int,
+) -> float:
+    """
+    0..1 — заслужил ли игрок претензии по трофеям (вклад в результаты клуба).
+    Падение с пика и слабая стата для рейтинга снижают вес трофейного давления.
+    """
+    career = min(1.0, max(0.0, float(prod_ratio) / 1.08))
+    last_v = prod_ratio_last if prod_ratio_last is not None else prod_ratio
+    factor = min(career, min(1.0, max(0.0, float(last_v) / 1.05)))
+
+    if ovr_drop_peak <= -2:
+        factor *= 0.22
+    elif ovr_drop_peak <= -1:
+        factor *= 0.42
+
+    if ovr >= 85 and last_v < 1.30:
+        factor *= 0.38
+    elif ovr >= 82 and last_v < 1.15:
+        factor *= 0.50
+
+    if depth_rank >= 3:
+        factor *= 0.28
+    return max(0.0, min(1.0, factor))
+
+
+_EARNED_TROPHY_MIN = 0.32
 
 
 def _build_reasons(
@@ -800,6 +873,33 @@ def _compute_advice_for_player(
         if stint.ovr_first is not None
         else stint.ovr_delta
     )
+    ovr_peak = max(
+        int(ovr),
+        int(stint.ovr_peak or 0),
+        int(stint.ovr_first or 0),
+        int(stint.ovr_last_completed or 0),
+    )
+    ovr_drop_peak = int(ovr) - int(ovr_peak)
+
+    prod_ratio_last: float | None = None
+    if int(stint.last_season_matches or 0) >= 3:
+        prod_ratio_last = _prod_ratio(
+            position=pos,
+            overall=int(stint.last_season_ovr or ovr),
+            ga=int(stint.last_season_ga),
+            matches=int(stint.last_season_matches),
+            expected_rates=expected_rates,
+            is_gk=is_gk,
+        )
+
+    trophy_earned = _trophy_earned_factor(
+        prod_ratio=prod_ratio,
+        prod_ratio_last=prod_ratio_last,
+        ovr_drop_peak=ovr_drop_peak,
+        ovr=ovr,
+        depth_rank=depth_rank,
+    )
+
     finish_places = _team_league_places_during_seasons(
         team, league_code, stint.season_nums
     )
@@ -813,8 +913,9 @@ def _compute_advice_for_player(
         finish_frust=finish_frust,
         depth_rank=depth_rank,
         prod_ratio=prod_ratio,
-        ovr_delta=ovr_delta_live,
+        ovr_drop_peak=ovr_drop_peak,
         player_amb=player_amb,
+        trophy_earned=trophy_earned,
     )
     t_exp_club = _expected_trophies(
         trophy_seasons,
@@ -835,6 +936,7 @@ def _compute_advice_for_player(
         and player_amb >= 0.30
         and trophy_sens >= _TROPHY_SENSITIVITY_BADGE
         and rel_deficit > _TROPHY_REL_DEFICIT_BADGE
+        and trophy_earned >= _EARNED_TROPHY_MIN
     ):
         if _BADGE_TROPHY not in badges:
             badges.append(_BADGE_TROPHY)
@@ -846,6 +948,7 @@ def _compute_advice_for_player(
         and trophy_sens >= _TROPHY_SENSITIVITY_BADGE
         and depth_rank <= 3
         and player_amb >= 0.28
+        and trophy_earned >= _EARNED_TROPHY_MIN
     ):
         if depth_rank <= 1:
             trophy_role = 1.0
@@ -859,6 +962,7 @@ def _compute_advice_for_player(
             * trophy_sens
             * trophy_role
             * tenure_tf
+            * trophy_earned
             * max(-1.5, min(1.5, -rel_deficit))
         )
 
@@ -963,6 +1067,29 @@ def _compute_advice_for_player(
         in_start=in_start,
     )
 
+    expected_place = _expected_league_place(team)
+    detail = {
+        "seasons_completed": stint.completed_play_seasons,
+        "matches": stint.matches,
+        "goals": stint.goals,
+        "assists": stint.assists,
+        "ga": stint.ga,
+        "ovr_first": stint.ovr_first,
+        "ovr_peak": ovr_peak,
+        "ovr_drop_peak": ovr_drop_peak,
+        "trophy_earned": round(trophy_earned, 2),
+        "prod_ratio": round(prod_ratio, 2),
+        "prod_ratio_last": round(prod_ratio_last, 2) if prod_ratio_last is not None else None,
+        "finish_places": finish_places,
+        "expected_place": round(expected_place, 1),
+        "league_trophies": stint.league_trophies,
+        "cl_trophies": stint.cl_trophies,
+        "depth_rank": depth_rank,
+        "status": player.get("status"),
+        "in_start": in_start,
+        "fit": fit,
+    }
+
     return TransferAdviceRow(
         name=name,
         position=pos,
@@ -970,6 +1097,7 @@ def _compute_advice_for_player(
         verdict=verdict,
         badges=badges,
         reasons=reasons,
+        detail=detail,
         score=round(score, 1),
         depth_rank=depth_rank,
         person_id=int(pid) if pid is not None else None,
@@ -1099,6 +1227,98 @@ def _summary_names(rows: list[TransferAdviceRow], limit: int = 3) -> str:
     return ", ".join(names[:limit]) + f" +{extra}"
 
 
+def flat_advice_rows(rows: list[TransferAdviceRow], view: str) -> list[TransferAdviceRow]:
+    if view == "all":
+        out: list[TransferAdviceRow] = []
+        for v in (VERDICT_NU, VERDICT_SU, VERDICT_SO, VERDICT_NO):
+            out.extend(r for r in rows if r.verdict == v)
+        return out
+    return _rows_for_view(rows, view)
+
+
+def paginate_advice_view(
+    rows: list[TransferAdviceRow],
+    view: str,
+    page: int,
+    page_size: int,
+) -> tuple[list[TransferAdviceRow], int, int]:
+    """Страница списка для view; возвращает (chunk, page, total_pages)."""
+    body = flat_advice_rows(rows, view)
+    total_pages = max(1, (len(body) + page_size - 1) // page_size)
+    page = max(0, min(page, total_pages - 1))
+    chunk = body[page * page_size : page * page_size + page_size]
+    return chunk, page, total_pages
+
+
+def format_player_advice_card_html(
+    team: str,
+    row: TransferAdviceRow,
+) -> str:
+    """Карточка игрока для дашборда (HTML)."""
+    from html import escape
+
+    d = row.detail or {}
+    sur = escape((player_surname(row.name) or row.name).strip())
+    team_e = escape(team)
+    verdict_e = escape(row.verdict)
+    reasons = row.reasons or row.badges
+    reason_lines: list[str] = []
+    for code in reasons:
+        hint = REASON_LEGEND.get(code, code)
+        reason_lines.append(f"· <b>{escape(code)}</b> — {escape(hint)}")
+    if not reason_lines:
+        reason_lines.append("· нет отдельных меток")
+
+    ovr_first = d.get("ovr_first")
+    ovr_peak = d.get("ovr_peak")
+    ovr_line = f"{ovr_first or '—'} → {ovr_peak or '—'} → {row.overall}"
+    drop = int(d.get("ovr_drop_peak") or 0)
+    if drop < 0:
+        ovr_line += f" ({drop:+d} с пика)"
+
+    places = d.get("finish_places") or []
+    places_s = ", ".join(str(x) for x in places) if places else "—"
+    exp_pl = d.get("expected_place")
+    places_line = f"{places_s}"
+    if exp_pl is not None and places:
+        places_line += f" (ожид. ~{exp_pl:g})"
+
+    status = d.get("status") or "—"
+    if d.get("in_start"):
+        status = "start"
+
+    prod_c = d.get("prod_ratio")
+    prod_l = d.get("prod_ratio_last")
+    prod_line = f"карьера в клубе ×{prod_c}" if prod_c is not None else "—"
+    if prod_l is not None:
+        prod_line += f", последний сезон ×{prod_l}"
+
+    earned = d.get("trophy_earned")
+    trophy_line = (
+        f"лига {d.get('league_trophies', 0)}, ЛЧ {d.get('cl_trophies', 0)}"
+    )
+    if earned is not None:
+        trophy_line += f" · вклад в трофеи {earned:.0%}"
+
+    lines = [
+        f"<b>{sur}</b> · {escape(row.position)} · {row.overall}",
+        f"<b>{team_e}</b> · <b>{verdict_e}</b> · score {row.score}",
+        "",
+        "<b>Причины</b>",
+        *reason_lines,
+        "",
+        "<b>В клубе</b>",
+        f"Сезонов {d.get('seasons_completed', 0)}, матчей {d.get('matches', 0)}, "
+        f"Г {d.get('goals', 0)} А {d.get('assists', 0)}",
+        f"Рейтинг: {escape(ovr_line)}",
+        f"Статус: <code>{escape(str(status))}</code>, глубина {d.get('depth_rank', '?')}",
+        f"Продуктивность: {escape(prod_line)}",
+        f"Места команды: {escape(places_line)}",
+        f"Трофеи: {escape(trophy_line)}",
+    ]
+    return "\n".join(lines)
+
+
 def format_team_advice_html(
     team: str,
     rows: list[TransferAdviceRow],
@@ -1155,6 +1375,7 @@ def format_team_advice_html(
             lines.append(f"\n<i>стр. {page + 1}/{total_pages}</i>")
         if page == 0:
             lines.append("\n" + ADVICE_REASON_LEGEND_HTML.rstrip())
+        lines.append("<i>Нажми на игрока ниже — карточка с деталями</i>")
         return "\n".join(lines), total_pages
 
     body_rows = _rows_for_view(rows, view)
@@ -1182,6 +1403,7 @@ def format_team_advice_html(
         lines.append(f"\n<i>стр. {page + 1}/{total_pages}</i>")
     if page == 0:
         lines.append("\n" + ADVICE_REASON_LEGEND_HTML.rstrip())
+    lines.append("<i>Нажми на игрока ниже — карточка с деталями</i>")
     return "\n".join(lines), total_pages
 
 

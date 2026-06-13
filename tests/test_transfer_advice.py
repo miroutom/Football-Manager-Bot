@@ -123,8 +123,9 @@ def test_frustrated_star_pressure_only_for_carriers():
         finish_frust=1.0,
         depth_rank=1,
         prod_ratio=1.2,
-        ovr_delta=4,
+        ovr_drop_peak=2,
         player_amb=0.85,
+        trophy_earned=0.9,
     )
     bench = _frustrated_star_pressure(
         position="ЛЗ",
@@ -133,11 +134,37 @@ def test_frustrated_star_pressure_only_for_carriers():
         finish_frust=1.0,
         depth_rank=1,
         prod_ratio=1.2,
-        ovr_delta=-2,
+        ovr_drop_peak=-2,
         player_amb=0.5,
+        trophy_earned=0.9,
+    )
+    declined = _frustrated_star_pressure(
+        position="ФРВ",
+        club_amb=0.95,
+        completed_play_seasons=2,
+        finish_frust=1.0,
+        depth_rank=1,
+        prod_ratio=1.2,
+        ovr_drop_peak=-2,
+        player_amb=0.85,
+        trophy_earned=0.2,
     )
     assert star < -15.0
     assert bench == 0.0
+    assert declined == 0.0
+
+
+def test_trophy_earned_low_for_declined_underperformer():
+    from utils.transfer_advice import _EARNED_TROPHY_MIN, _trophy_earned_factor
+
+    earned = _trophy_earned_factor(
+        prod_ratio=2.0,
+        prod_ratio_last=1.6,
+        ovr_drop_peak=-2,
+        ovr=86,
+        depth_rank=1,
+    )
+    assert earned < _EARNED_TROPHY_MIN
 
 
 def test_build_reasons_outgrown_and_new():
