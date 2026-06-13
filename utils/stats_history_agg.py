@@ -158,11 +158,20 @@ def _apply_last_club_by_matches(b: dict, p: Any, *, merge_by_player: bool) -> No
 
 
 def _apply_last_club_latest_row(b: dict, p: Any, *, merge_by_player: bool) -> None:
-    """Один сезон, 2+ клуба в той же лиге: последняя запись в БД (обычно финальный клуб)."""
+    """Один сезон, 2+ клуба: подпись с наибольшим вкладом (матчи, Г+А), не просто max id."""
     if not merge_by_player:
         return
     rid = int(getattr(p, "id", 0) or 0)
-    if rid >= int(b.get("_pick_id", -1)):
+    m = int(getattr(p, "matches", 0) or 0)
+    g = int(getattr(p, "goals", 0) or 0)
+    a = int(getattr(p, "assists", 0) or 0)
+    ga = int(getattr(p, "ga", 0) or 0) or (g + a)
+    prev_m = int(b.get("_pick_m", -1))
+    prev_ga = int(b.get("_pick_ga", -1))
+    prev_id = int(b.get("_pick_id", -1))
+    if (m, ga, rid) > (prev_m, prev_ga, prev_id):
+        b["_pick_m"] = m
+        b["_pick_ga"] = ga
         b["_pick_id"] = rid
         b["team"] = p.team
         b["name"] = p.name
@@ -267,6 +276,7 @@ def _finalize_life_rows(rows: list[dict]) -> list[dict]:
     _apply_active_season_club_labels(rows)
     for b in rows:
         b.pop("_pick_m", None)
+        b.pop("_pick_ga", None)
         b.pop("_pick_id", None)
         b.pop("last_season", None)
     return rows
@@ -507,6 +517,7 @@ def _aggregate_outfield_from_db(
         return _finalize_life_rows(rows)
     for b in rows:
         b.pop("_pick_m", None)
+        b.pop("_pick_ga", None)
         b.pop("_pick_id", None)
     return rows
 
@@ -576,6 +587,8 @@ def aggregate_outfield(
             eng.dispose()
     rows = list(buckets.values())
     for b in rows:
+        b.pop("_pick_m", None)
+        b.pop("_pick_ga", None)
         b.pop("_pick_id", None)
         b.pop("last_season", None)
     return rows
@@ -667,6 +680,7 @@ def aggregate_cards(
             eng.dispose()
     rows = list(buckets.values())
     for b in rows:
+        b.pop("_pick_ga", None)
         b.pop("_pick_id", None)
         b.pop("last_season", None)
     return rows
@@ -721,6 +735,7 @@ def aggregate_clean_sheets(
             eng.dispose()
     gk = list(gk_buckets.values())
     for b in gk:
+        b.pop("_pick_ga", None)
         b.pop("_pick_id", None)
         b.pop("last_season", None)
     return gk, []
