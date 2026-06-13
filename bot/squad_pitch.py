@@ -31,6 +31,7 @@ from coach_squad_state import label_for_squad_caption, resolve_formation_key_for
 from squad_kit_palette import KitSpec, kit_for_team
 from team_squad_schemas import SquadSlot, get_slots_for_formation_key
 from utils import season_paths
+from utils.lineup_slot import resolve_lineup_slot_for_formation
 from utils.squad_graphics_assets import (
     commons_crest_filename_for_team,
     load_commons_crest_rgba,
@@ -1278,8 +1279,10 @@ def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], lis
     slot_player: dict[str, _Pl] = {}
     valid_slot_ids = {s.slot_id for s in slots}
     for p in starters:
-        sid = (p.lineup_slot or "").strip().upper()
-        if sid and sid in valid_slot_ids and sid not in slot_player:
+        sid = resolve_lineup_slot_for_formation(
+            (p.lineup_slot or "").strip().upper(), valid_slot_ids
+        )
+        if sid and sid not in slot_player:
             slot_player[sid] = p
             used.add(id(p))
     slot_iter = _slots_explicit_order(slots)
