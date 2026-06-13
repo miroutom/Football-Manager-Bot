@@ -450,7 +450,10 @@ def rebuild_common_database_for_disk_paths(
     if parent:
         os.makedirs(parent, exist_ok=True)
     from utils.migrate_player_left_team import migrate_left_team_for_sqlite
+    from utils.migrate_lineup_slot import ensure_lineup_slot_schema
 
+    for path in (league_path, cl_path, common_path):
+        ensure_lineup_slot_schema(path)
     migrate_left_team_for_sqlite(common_path, label=common_path)
     el = create_engine(f"sqlite:///{league_path}")
     ec = create_engine(f"sqlite:///{cl_path}")

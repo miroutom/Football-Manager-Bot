@@ -73,6 +73,9 @@ def _find_rows_cumulative_common(name: str, position: str) -> list[tuple[Any, ty
     path = get_cumulative_common_db_path()
     if not os.path.isfile(path):
         return []
+    from utils.migrate_lineup_slot import ensure_lineup_slot_schema
+
+    ensure_lineup_slot_schema(path)
     want_n, want_p = _norm_pair(name, position)
     eng = create_engine(f"sqlite:///{path}")
     sess = sessionmaker(bind=eng)()

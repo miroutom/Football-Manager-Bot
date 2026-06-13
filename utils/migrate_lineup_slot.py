@@ -63,13 +63,18 @@ def migrate_lineup_slot_for_sqlite(db_path: str, *, label: str = "") -> list[str
     return out
 
 
+def ensure_lineup_slot_schema(db_path: str) -> None:
+    """Идемпотентно: колонка ``lineup_slot`` в четырёх таблицах игроков."""
+    migrate_lineup_slot_for_sqlite(db_path)
+
+
 def migrate_all_lineup_slot_columns() -> list[str]:
     from utils import season_paths
 
     out = _add_column_via_engines()
     seen = set(out)
     for label, path in season_paths.iter_player_roster_db_paths(
-        include_synced=True, include_archives=False
+        include_synced=True, include_archives=True
     ):
         for item in migrate_lineup_slot_for_sqlite(path, label=label):
             if item not in seen:

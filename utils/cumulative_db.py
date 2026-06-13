@@ -256,11 +256,11 @@ def _season_num_from_path(league_path: str) -> int:
 
 def _migrate_archive_schema_for_orm(league_path: str, cl_path: str) -> None:
     """Архивы сезонов могут отставать по схеме (``lineup_slot`` и т.п.)."""
-    from utils.migrate_lineup_slot import migrate_lineup_slot_for_sqlite
+    from utils.migrate_lineup_slot import ensure_lineup_slot_schema
 
     for path in (league_path, cl_path):
         if os.path.isfile(path):
-            migrate_lineup_slot_for_sqlite(path)
+            ensure_lineup_slot_schema(path)
 
 
 def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[str, Any]:

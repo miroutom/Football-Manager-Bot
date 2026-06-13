@@ -331,6 +331,9 @@ def _season_db_path(season_num: int, *, cl: bool) -> str | None:
 
 
 def _open_session(path: str) -> tuple[Session, Any]:
+    from utils.migrate_lineup_slot import ensure_lineup_slot_schema
+
+    ensure_lineup_slot_schema(path)
     eng = create_engine(f"sqlite:///{path}")
     return sessionmaker(bind=eng)(), eng
 
