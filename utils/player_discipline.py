@@ -13,7 +13,8 @@
 - травма: «имя Nм» / «имя Nm» / «имя Nм тип» — срок с текущего месяца календаря;
   «имя сM Nм» / «имя @M Nм» — с месяца M календаря на N месяцев (тип после месяцев опционально).
   В JSON травмы — **список периодов** на игрока (несколько строк: м1→м4, потом м4→м10).
-  Поля периода: ``key``, ``out_from_month``, ``return_month``, ``type``.
+  Поля периода: ``key``, ``out_from_month``, ``return_month``, ``type``, ``season``
+  (номер сезона, когда начался период; без ``season`` запись не блокирует игру).
   **Новый** период (не дубликат с тем же с/до): сразу к overall — 1–2 мес. 0; 3–6 мес. −2;
   7 мес. −4; 8+ мес. −7 (лига + ЛЧ + common + cumulative).
 - дисквал: в JSON ``unavailable_from_round`` — с какого тура чемпионата бан действует (null = как раньше).
@@ -267,7 +268,7 @@ def _injury_blocks_at_month(
 
     Поддерживает «перенос остатка» в следующие сезоны: если травма создана в сезоне S
     с ``return_month`` > 10, в сезоне S+1 она блокирует месяцы 1..(return_month-10) и т. д.
-    Для старых записей без поля ``season`` поведение прежнее (тот же сезон).
+    Без ``season`` период **не** блокирует (нужно проставить сезон в JSON).
     """
     ofm = inj.get("out_from_month")
     if ofm is None:
@@ -279,7 +280,9 @@ def _injury_blocks_at_month(
         return False
     m = max(1, min(_SEASON_MONTHS, int(month)))
     inj_season = inj.get("season")
-    if inj_season is None or current_season is None:
+    if inj_season is None:
+        return False
+    if current_season is None:
         return start <= m < ret
     try:
         elapsed = int(current_season) - int(inj_season)
@@ -339,7 +342,21 @@ def _consolidate_cl_yellow_rows(st: dict, name_norm: str, *, keep_team: str) -> 
     return primary
 
 
-def _injury_period_key(name: str, team: str, out_from_month: int, return_month: int) -> str:
+def _injury_period_key(
+    name: str,
+    team: str,
+    out_from_month: int,
+    return_month: int,
+    season: int | None = None,
+) -> str:
+    s = int(season) if season is not None else 0
+    return f"{_norm(name)}|{_norm(team)}|{s}|{int(out_from_month)}|{int(return_month)}"
+
+
+def _injury_period_key_legacy(
+    name: str, team: str, out_from_month: int, return_month: int
+) -> str:
+    """Ключ до введения ``season`` в key (обратная совместимость)."""
     return f"{_norm(name)}|{_norm(team)}|{int(out_from_month)}|{int(return_month)}"
 
 
@@ -353,21 +370,34 @@ def _injuries_for_player(st: dict, name: str, team: str) -> list[dict]:
 
 
 def _find_injury_period(
-    st: dict, name: str, team: str, out_from_month: int, return_month: int
+    st: dict,
+    name: str,
+    team: str,
+    out_from_month: int,
+    return_month: int,
+    *,
+    season: int | None = None,
 ) -> dict | None:
-    want = _injury_period_key(name, team, out_from_month, return_month)
+    want = _injury_period_key(name, team, out_from_month, return_month, season)
+    want_legacy = _injury_period_key_legacy(name, team, out_from_month, return_month)
     for row in st.get("injuries", []):
-        if row.get("key") == want:
+        if row.get("key") in (want, want_legacy):
             return row
         try:
             ofm = row.get("out_from_month")
             ret = row.get("return_month")
+            row_season = row.get("season")
             if (
                 row.get("name_norm") == _norm(name)
                 and row.get("team_norm") == _norm(team)
                 and ofm is not None
                 and int(ofm) == int(out_from_month)
                 and int(ret) == int(return_month)
+                and (
+                    season is None
+                    or row_season is None
+                    or int(row_season) == int(season)
+                )
             ):
                 return row
         except (TypeError, ValueError):
@@ -937,11 +967,15 @@ def _apply_injury(
     season_now = _get_active_season_or_default()
     with _lock:
         st = _load()
-        inj = _find_injury_period(st, player.name, team, cur, ret)
+        inj = _find_injury_period(
+            st, player.name, team, cur, ret, season=season_now
+        )
         if inj is None:
             st.setdefault("injuries", []).append(
                 {
-                    "key": _injury_period_key(player.name, team, cur, ret),
+                    "key": _injury_period_key(
+                        player.name, team, cur, ret, season_now
+                    ),
                     "name": player.name,
                     "name_norm": _norm(player.name),
                     "team": team,
@@ -955,9 +989,10 @@ def _apply_injury(
             added = True
         else:
             inj["type"] = injury_type
-            if not inj.get("key"):
-                inj["key"] = _injury_period_key(player.name, team, cur, ret)
-            inj.setdefault("season", season_now)
+            inj["season"] = season_now
+            inj["key"] = _injury_period_key(
+                player.name, team, cur, ret, season_now
+            )
             added = False
         _save(st)
     rating_note = ""
@@ -1091,7 +1126,7 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
     chunks: list[str] = [f"Месяц календаря: {month} (сезон {season_now}).", ""]
 
     # --- травмы ---
-    inj_rows: list[tuple[str, str, str, str, int, str]] = []
+    inj_rows: list[tuple[str, str, str, str, int, int, str]] = []
     for inj in st.get("injuries", []):
         ret = int(inj.get("return_month") or 99)
         ofm = inj.get("out_from_month")
@@ -1099,42 +1134,47 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
         name = str(inj.get("name") or "?").strip()
         team = str(inj.get("team") or "?").strip()
         kind = (inj.get("type") or "травма").strip() or "травма"
+        inj_season = inj.get("season")
+        season_s = int(inj_season) if inj_season is not None else 0
         if ofm is None:
             st_mark = "?"
+        elif inj_season is None:
+            st_mark = "нет сезона"
         elif _injury_blocks_at_month(inj, month, current_season=season_now):
             st_mark = "активна"
         elif (
-            inj.get("season") is not None
-            and int(inj.get("season")) < season_now
-            and ret <= _SEASON_MONTHS * (season_now - int(inj.get("season"))) + month
+            int(inj_season) < season_now
+            and ret <= _SEASON_MONTHS * (season_now - int(inj_season)) + month
         ):
             st_mark = "прошла"
-        elif (inj.get("season") in (None, season_now)) and month >= ret:
+        elif int(inj_season) == season_now and month >= ret:
             st_mark = "прошла"
         else:
             st_mark = "позже"
-        inj_rows.append((team, name, kind, ofm_s, ret, st_mark))
+        inj_rows.append((team, name, kind, ofm_s, ret, season_s, st_mark))
     chunks.append("── ТРАВМЫ (все периоды в JSON) ──")
     chunks.append(
         "Несколько строк на одного игрока — норма (туры вразнобой). "
-        "«с»/«до» — месяцы; статус — для текущего месяца календаря."
+        "«с»/«до» — месяцы календаря; «сез» — номер сезона; статус — для текущего месяца."
     )
     if not inj_rows:
         chunks.append("Записей о травмах нет.")
     else:
-        inj_rows.sort(key=lambda r: (r[0].casefold(), r[1].casefold(), r[3], r[4]))
+        inj_rows.sort(
+            key=lambda r: (r[0].casefold(), r[1].casefold(), r[5], r[3], r[4])
+        )
         w_team = max(len("Клуб"), max(len(r[0]) for r in inj_rows))
         w_name = max(len("Игрок"), max(len(r[1]) for r in inj_rows))
         head = (
             f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<10}  "
-            f"с   до   статус"
+            f"сез  с   до   статус"
         )
         sep = "-" * len(head)
         lines = [head, sep]
-        for team, name, kind, ofm_s, ret, st_mark in inj_rows:
+        for team, name, kind, ofm_s, ret, season_s, st_mark in inj_rows:
             lines.append(
                 f"{team:<{w_team}}  {name:<{w_name}}  {kind[:10]:<10}  "
-                f"{ofm_s:<3} м{ret:<3} {st_mark}"
+                f"{season_s:<3}  {ofm_s:<3} м{ret:<3} {st_mark}"
             )
         chunks.append(f"Периодов: {len(inj_rows)}.")
         chunks.extend(lines)
