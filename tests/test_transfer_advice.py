@@ -374,3 +374,66 @@ def test_team_is_apex_inter():
     assert _team_is_apex_destination(
         "Интер", lc, _league_strength_rank("Интер", lc), _cl_strength_rank("Интер")
     )
+
+
+def test_defender_pm_clean_sheets_and_cards():
+    from utils.transfer_advice import _defender_pm_season
+
+    rates = {("ЦЗ", 84, "cs"): 0.35}
+    good = _defender_pm_season(
+        position="ЦЗ",
+        overall=85,
+        clean_sheets=10,
+        ga=1,
+        matches=15,
+        yellow=0,
+        red=0,
+        injury_months=0,
+        depth_rank=1,
+        expected_rates=rates,
+    )
+    bad = _defender_pm_season(
+        position="ЦЗ",
+        overall=85,
+        clean_sheets=2,
+        ga=1,
+        matches=15,
+        yellow=4,
+        red=1,
+        injury_months=3,
+        depth_rank=1,
+        expected_rates=rates,
+    )
+    assert good > 0
+    assert bad < good
+
+
+def test_goalkeeper_pm_missed_goals():
+    from utils.transfer_advice import _goalkeeper_pm_season
+
+    rates = {("ВРТ", 90, "cs"): 0.35, ("ВРТ", 90, "mg"): 1.0}
+    good = _goalkeeper_pm_season(
+        position="ВРТ",
+        overall=90,
+        clean_sheets=12,
+        missed_goals=8,
+        matches=15,
+        yellow=0,
+        red=0,
+        injury_months=0,
+        depth_rank=1,
+        expected_rates=rates,
+    )
+    bad = _goalkeeper_pm_season(
+        position="ВРТ",
+        overall=90,
+        clean_sheets=4,
+        missed_goals=22,
+        matches=15,
+        yellow=1,
+        red=0,
+        injury_months=2,
+        depth_rank=1,
+        expected_rates=rates,
+    )
+    assert good > bad

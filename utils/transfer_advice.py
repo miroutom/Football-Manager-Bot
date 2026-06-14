@@ -34,6 +34,8 @@ _ALL = (Forward, Midfielder, Defender, Goalkeeper)
 _GOALKEEPER_POS = frozenset({"ВРТ"})
 # Позиции, где высокая продуктивность = «тащит» команду (не ЦЗ/ЛЗ/ПЗ).
 _CARRY_POSITIONS = frozenset({"ФРВ", "ЛФА", "ПФА", "ЦАП"})
+_DEF_POS = frozenset({"ЦЗ", "ЛЗ", "ПЗ", "ЛЦЗ", "ПЦЗ"})
+_MID_POS = frozenset({"ЦП", "ЦОП", "ЛП", "ПП", "ЦАП", "ЛЦП", "ПЦП"})
 
 W_CL = 1.75
 MIN_SEASONS_TROPHY_RULE = 2
@@ -118,8 +120,10 @@ class ClubStintStats:
     per_season_yellow: dict[int, int] = field(default_factory=dict)
     per_season_red: dict[int, int] = field(default_factory=dict)
     per_season_clean_sheets: dict[int, int] = field(default_factory=dict)
+    per_season_missed_goals: dict[int, int] = field(default_factory=dict)
     yellow_cards: int = 0
     red_cards: int = 0
+    missed_goals: int = 0
     trophy_events: list[tuple[int, str, float]] = field(default_factory=list)
     last_season_num: int | None = None
     last_season_matches: int = 0
@@ -398,11 +402,14 @@ def _row_stats_snapshot(row: Any) -> dict[str, int]:
     m = int(getattr(row, "matches", 0) or 0)
     yc = int(getattr(row, "yellow_cards", 0) or 0)
     rc = int(getattr(row, "red_cards", 0) or 0)
-    if _is_gk(getattr(row, "position", "") or ""):
+    pos = (getattr(row, "position", "") or "").strip().upper()
+    cs = int(getattr(row, "clean_sheets", 0) or 0)
+    mg = int(getattr(row, "missed_goals", 0) or 0)
+    if _is_gk(pos):
         return {
             "matches": m,
-            "clean_sheets": int(getattr(row, "clean_sheets", 0) or 0),
-            "missed_goals": int(getattr(row, "missed_goals", 0) or 0),
+            "clean_sheets": cs,
+            "missed_goals": mg,
             "ga": 0,
             "goals": 0,
             "assists": 0,
@@ -417,7 +424,7 @@ def _row_stats_snapshot(row: Any) -> dict[str, int]:
         "goals": g,
         "assists": a,
         "ga": ga,
-        "clean_sheets": 0,
+        "clean_sheets": cs,
         "missed_goals": 0,
         "yellow_cards": yc,
         "red_cards": rc,
@@ -457,8 +464,8 @@ def _collect_injuries_for_stint(
     *,
     name: str,
     season_nums: list[int],
-) -> tuple[int, int, dict[int, int], int]:
-    """Травмы в клубе за сезоны стажа: периодов, месяцев, штраф по сезону, пик до штрафа."""
+) -> tuple[int, int, dict[int, int], dict[int, int], int]:
+    """Травмы в клубе за сезоны стажа: периодов, месяцев, штраф/мес. по сезону, пик до штрафа."""
     from utils.player_discipline import _load, _injury_total_months, injury_overall_penalty
 
     team_cmp = _norm_cmp(_norm_team(team))
@@ -528,6 +535,7 @@ def _collect_club_stint_stats(
         season_mg = 0
         season_yellow = 0
         season_red = 0
+        season_missed = 0
         ovr_best = 0
         for cl in (False, True):
             lp = _season_db_path_for_stint(sn, cl=cl)
@@ -545,6 +553,7 @@ def _collect_club_stint_stats(
             season_mg += int(snap["missed_goals"])
             season_yellow += int(snap["yellow_cards"])
             season_red += int(snap["red_cards"])
+            season_missed += int(snap["missed_goals"])
             stint.goals += snap["goals"]
             stint.assists += snap["assists"]
             ovr = int(getattr(row, "overall", 0) or 0)
@@ -559,6 +568,7 @@ def _collect_club_stint_stats(
         stint.per_season_yellow[sn] = season_yellow
         stint.per_season_red[sn] = season_red
         stint.per_season_clean_sheets[sn] = season_cs
+        stint.per_season_missed_goals[sn] = season_missed
         if ovr_best > 0:
             stint.per_season_ovr[sn] = ovr_best
 
@@ -568,6 +578,7 @@ def _collect_club_stint_stats(
         stint.missed_goals += season_mg
         stint.yellow_cards += season_yellow
         stint.red_cards += season_red
+        stint.missed_goals += season_missed
         if season_m > 0:
             stint.play_seasons += 1
             if stint.ovr_first is None and ovr_best > 0:
@@ -640,7 +651,13 @@ def _league_expected_rates(session) -> dict[tuple[str, int], float]:
             bucket = (ovr // 3) * 3
             if _is_gk(pos):
                 rate = int(getattr(r, "clean_sheets", 0) or 0) / m
-                kind = "cs"
+                buckets.setdefault((pos, bucket, "cs"), []).append(rate)
+                mg = int(getattr(r, "missed_goals", 0) or 0) / m
+                buckets.setdefault((pos, bucket, "mg"), []).append(mg)
+            elif pos in _DEF_POS:
+                cs = int(getattr(r, "clean_sheets", 0) or 0)
+                rate = cs / m
+                buckets.setdefault((pos, bucket, "cs"), []).append(rate)
             else:
                 ga = int(getattr(r, "ga", 0) or 0)
                 if ga <= 0:
@@ -667,7 +684,7 @@ def _expected_rate(
         v = expected.get((pos, bucket + delta, kind))
         if v is not None and v > 0:
             return v
-    return 0.35 if kind == "ga" else 0.25
+    return 0.35 if kind == "ga" else (1.05 if kind == "mg" else 0.25)
 
 
 def _depth_ranks(roster: list[dict[str, Any]]) -> dict[tuple[str, str], int]:
@@ -865,21 +882,19 @@ def _trophy_earned_factor(
     return max(0.0, min(1.0, factor))
 
 
-_DEF_POS = frozenset({"ЦЗ", "ЛЗ", "ПЗ", "ЛЦЗ", "ПЦЗ"})
-_MID_POS = frozenset({"ЦП", "ЦОП", "ЛП", "ПП", "ЦАП", "ЛЦП", "ПЦП"})
-
-
-def _position_pm_weight(position: str) -> float:
-    pos = (position or "").strip().upper()
-    if pos in _CARRY_POSITIONS:
+def _depth_role_mult(depth_rank: int) -> float:
+    if depth_rank <= 1:
         return 1.0
-    if pos in _MID_POS:
+    if depth_rank == 2:
         return 0.82
-    if pos in _DEF_POS:
-        return 0.58
-    if pos == "ВРТ":
-        return 0.72
-    return 0.65
+    return 0.55
+
+
+def _injury_pm_impact(depth_rank: int, injury_months: int, *, scale: float = 1.0) -> float:
+    if injury_months <= 0:
+        return 0.0
+    w = 0.38 if depth_rank <= 1 else 0.2
+    return -injury_months * w * scale
 
 
 def _team_recent_trophy_count(
@@ -945,24 +960,154 @@ def _discipline_pm_impact(
     return -pen
 
 
-def _production_surplus_pm(
+def _outfield_pm_season(
     *,
     position: str,
     overall: int,
     ga: int,
-    clean_sheets: int,
     matches: int,
+    yellow: int,
+    red: int,
+    injury_months: int,
+    depth_rank: int,
     expected_rates: dict[tuple[str, int], float],
-    is_gk: bool,
 ) -> float:
+    """Нападающие и полузащита: избыток голов+передач, карточки, травмы."""
     if matches <= 0:
         return 0.0
-    w = _position_pm_weight(position)
+    pos = (position or "").strip().upper()
+    exp = _expected_rate(pos, overall, expected_rates, kind="ga") * matches
+    w = 1.0 if pos in _CARRY_POSITIONS else 0.82
+    prod = (ga - exp) * w
+    cards = _discipline_pm_impact(pos, yellow=yellow, red=red, matches=matches)
+    inj = _injury_pm_impact(depth_rank, injury_months)
+    return (prod + cards + inj) * _depth_role_mult(depth_rank)
+
+
+def _defender_pm_season(
+    *,
+    position: str,
+    overall: int,
+    clean_sheets: int,
+    ga: int,
+    matches: int,
+    yellow: int,
+    red: int,
+    injury_months: int,
+    depth_rank: int,
+    expected_rates: dict[tuple[str, int], float],
+) -> float:
+    """Защитники: сухие матчи, мало пропущенных (прокси), карточки, травмы; Г+А — бонус."""
+    if matches <= 0:
+        return 0.0
+    pos = (position or "").strip().upper()
+    cs_rate = _expected_rate(pos, overall, expected_rates, kind="cs")
+    if cs_rate <= 0:
+        cs_rate = 0.28 + max(0, (overall - 78)) * 0.006
+    exp_cs = cs_rate * matches
+    cs_pm = (clean_sheets - exp_cs) * 1.35
+
+    conceded = max(0, matches - clean_sheets)
+    exp_conceded = max(0.0, 1.0 - cs_rate) * matches
+    conceded_pm = (exp_conceded - conceded) * 0.9
+
+    cards = _discipline_pm_impact(pos, yellow=yellow, red=red, matches=matches)
+    inj = _injury_pm_impact(depth_rank, injury_months, scale=1.15)
+    ga_bonus = min(1.2, ga * 0.1)
+
+    raw = cs_pm + conceded_pm + ga_bonus + cards + inj
+    return raw * _depth_role_mult(depth_rank)
+
+
+def _goalkeeper_pm_season(
+    *,
+    position: str,
+    overall: int,
+    clean_sheets: int,
+    missed_goals: int,
+    matches: int,
+    yellow: int,
+    red: int,
+    injury_months: int,
+    depth_rank: int,
+    expected_rates: dict[tuple[str, int], float],
+) -> float:
+    """Вратари: сухие матчи, мало пропущенных, травмы."""
+    if matches <= 0:
+        return 0.0
+    pos = (position or "").strip().upper()
+    cs_rate = _expected_rate(pos, overall, expected_rates, kind="cs")
+    if cs_rate <= 0:
+        cs_rate = 0.32
+    exp_cs = cs_rate * matches
+    cs_pm = (clean_sheets - exp_cs) * 1.4
+
+    mg_rate = _expected_rate(pos, overall, expected_rates, kind="mg")
+    if mg_rate <= 0:
+        mg_rate = 1.05
+    exp_mg = mg_rate * matches
+    mg_pm = (exp_mg - missed_goals) * 0.65
+
+    cards = _discipline_pm_impact(pos, yellow=yellow, red=red, matches=matches) * 0.5
+    inj = _injury_pm_impact(depth_rank, injury_months, scale=1.2)
+
+    raw = cs_pm + mg_pm + cards + inj
+    return raw * _depth_role_mult(depth_rank)
+
+
+def _season_pm_by_role(
+    *,
+    position: str,
+    is_gk: bool,
+    overall: int,
+    ga: int,
+    clean_sheets: int,
+    missed_goals: int,
+    matches: int,
+    yellow: int,
+    red: int,
+    injury_months: int,
+    depth_rank: int,
+    expected_rates: dict[tuple[str, int], float],
+) -> float:
+    pos = (position or "").strip().upper()
     if is_gk:
-        exp = _expected_rate(position, overall, expected_rates, kind="cs") * matches
-        return (clean_sheets - exp) * w * 1.05
-    exp = _expected_rate(position, overall, expected_rates, kind="ga") * matches
-    return (ga - exp) * w
+        return _goalkeeper_pm_season(
+            position=pos,
+            overall=overall,
+            clean_sheets=clean_sheets,
+            missed_goals=missed_goals,
+            matches=matches,
+            yellow=yellow,
+            red=red,
+            injury_months=injury_months,
+            depth_rank=depth_rank,
+            expected_rates=expected_rates,
+        )
+    if pos in _DEF_POS:
+        return _defender_pm_season(
+            position=pos,
+            overall=overall,
+            clean_sheets=clean_sheets,
+            ga=ga,
+            matches=matches,
+            yellow=yellow,
+            red=red,
+            injury_months=injury_months,
+            depth_rank=depth_rank,
+            expected_rates=expected_rates,
+        )
+    return _outfield_pm_season(
+        position=pos,
+        overall=overall,
+        ga=ga,
+        matches=matches,
+        yellow=yellow,
+        red=red,
+        injury_months=injury_months,
+        depth_rank=depth_rank,
+        expected_rates=expected_rates,
+    )
 
 
 def _result_impact_pm(
@@ -974,9 +1119,10 @@ def _result_impact_pm(
     is_gk: bool,
 ) -> float:
     """
-    Вклад в результаты клуба за стаж (±, как NBA plus-minus).
+    Вклад в результаты клуба за стаж (±).
 
-    Плюс: стата выше ожиданий для роли; минус: слабая стата, карточки, травмы.
+    Формула зависит от роли: нападающие — Г+А; защитники — сухие/пропущенные
+    и дисциплина; вратари — сухие, пропущенные, травмы.
     """
     total = 0.0
     pos = (position or "").strip().upper()
@@ -986,28 +1132,20 @@ def _result_impact_pm(
         if m <= 0:
             continue
         ovr_s = int(stint.per_season_ovr.get(sn, 0) or 0) or 80
-        ga = int(stint.per_season_ga.get(sn, 0) or 0)
-        cs = int(stint.per_season_clean_sheets.get(sn, 0) or 0)
-        yc = int(stint.per_season_yellow.get(sn, 0) or 0)
-        rc = int(stint.per_season_red.get(sn, 0) or 0)
-        inj_m = int(stint.injury_months_by_season.get(sn, 0) or 0)
-
-        prod = _production_surplus_pm(
+        total += _season_pm_by_role(
             position=pos,
-            overall=ovr_s,
-            ga=ga,
-            clean_sheets=cs,
-            matches=m,
-            expected_rates=expected_rates,
             is_gk=is_gk,
+            overall=ovr_s,
+            ga=int(stint.per_season_ga.get(sn, 0) or 0),
+            clean_sheets=int(stint.per_season_clean_sheets.get(sn, 0) or 0),
+            missed_goals=int(stint.per_season_missed_goals.get(sn, 0) or 0),
+            matches=m,
+            yellow=int(stint.per_season_yellow.get(sn, 0) or 0),
+            red=int(stint.per_season_red.get(sn, 0) or 0),
+            injury_months=int(stint.injury_months_by_season.get(sn, 0) or 0),
+            depth_rank=depth_rank,
+            expected_rates=expected_rates,
         )
-        cards = _discipline_pm_impact(pos, yellow=yc, red=rc, matches=m)
-        inj = 0.0
-        if inj_m > 0:
-            inj = -inj_m * (0.38 if depth_rank <= 1 else 0.2)
-
-        role = 1.0 if depth_rank <= 1 else (0.82 if depth_rank == 2 else 0.55)
-        total += (prod + cards + inj) * role
 
     return round(total, 1)
 
