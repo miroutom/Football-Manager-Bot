@@ -35,6 +35,8 @@ _GOALKEEPER_POS = frozenset({"ВРТ"})
 # Позиции, где высокая продуктивность = «тащит» команду (не ЦЗ/ЛЗ/ПЗ).
 _CARRY_POSITIONS = frozenset({"ФРВ", "ЛФА", "ПФА", "ЦАП"})
 _DEF_POS = frozenset({"ЦЗ", "ЛЗ", "ПЗ", "ЛЦЗ", "ПЦЗ"})
+_WIDE_DEF_POS = frozenset({"ЛЗ", "ПЗ"})
+_CENTER_DEF_POS = frozenset({"ЦЗ", "ЛЦЗ", "ПЦЗ"})
 _MID_POS = frozenset({"ЦП", "ЦОП", "ЛП", "ПП", "ЦАП", "ЛЦП", "ПЦП"})
 
 W_CL = 1.75
@@ -139,6 +141,16 @@ class ClubStintStats:
         if self.ovr_first is None or self.ovr_last_completed is None:
             return 0
         return int(self.ovr_last_completed) - int(self.ovr_first)
+
+
+@dataclass(frozen=True)
+class TeamSeasonDefense:
+    """Командная оборона за сезон: сухие — у вратарей, пропущенные — из таблицы лиги."""
+
+    gk_cs: int = 0
+    gk_matches: int = 0
+    table_matches: int = 0
+    conceded: int = 0
 
 
 @dataclass
@@ -658,6 +670,12 @@ def _league_expected_rates(session) -> dict[tuple[str, int], float]:
                 cs = int(getattr(r, "clean_sheets", 0) or 0)
                 rate = cs / m
                 buckets.setdefault((pos, bucket, "cs"), []).append(rate)
+                ga = int(getattr(r, "ga", 0) or 0)
+                if ga <= 0:
+                    g = int(getattr(r, "goals", 0) or 0)
+                    a = int(getattr(r, "assists", 0) or 0)
+                    ga = g + a
+                buckets.setdefault((pos, bucket, "ga"), []).append(ga / m)
             else:
                 ga = int(getattr(r, "ga", 0) or 0)
                 if ga <= 0:
@@ -740,6 +758,69 @@ def _load_league_teams_dict(league_code: str, season_num: int) -> dict[str, Any]
         return None
     with open(pkl_path, "rb") as f:
         return pickle.load(f)
+
+
+def _team_gk_season_stats(team: str, season_num: int) -> tuple[int, int]:
+    """Сумма clean_sheets и matches вратарей клуба (лига + ЛЧ)."""
+    from player_stats import _team_name_as_in_db
+
+    team_n = _norm_team(team)
+    db_team = _team_name_as_in_db(team_n)
+    gk_cs = 0
+    gk_matches = 0
+    for cl in (False, True):
+        lp = _season_db_path_for_stint(season_num, cl=cl)
+        if not lp:
+            continue
+        eng = create_engine(f"sqlite:///{lp}")
+        Session = sessionmaker(bind=eng)
+        try:
+            with Session() as sess:
+                for row in sess.query(Goalkeeper).filter(_filter_team(Goalkeeper, db_team)):
+                    gk_cs += int(getattr(row, "clean_sheets", 0) or 0)
+                    gk_matches += int(getattr(row, "matches", 0) or 0)
+        finally:
+            eng.dispose()
+    return gk_cs, gk_matches
+
+
+def _team_table_conceded_stats(
+    team: str, league_code: str | None, season_num: int
+) -> tuple[int, int]:
+    """(matches, conceded) из таблицы национальной лиги."""
+    from player_stats import _find_team_in_standings, _team_name_as_in_db
+
+    teams_dict = _load_league_teams_dict(league_code or "", season_num)
+    if not teams_dict:
+        return 0, 0
+    st = _find_team_in_standings(teams_dict, _team_name_as_in_db(_norm_team(team)))
+    if st is None:
+        return 0, 0
+    table_matches = int(getattr(st, "matches", 0) or 0)
+    conceded = int(getattr(st, "missed", 0) or 0)
+    return table_matches, conceded
+
+
+def _team_season_defense_stats(
+    team: str, league_code: str | None, season_num: int
+) -> TeamSeasonDefense:
+    gk_cs, gk_matches = _team_gk_season_stats(team, season_num)
+    table_matches, conceded = _team_table_conceded_stats(team, league_code, season_num)
+    return TeamSeasonDefense(
+        gk_cs=gk_cs,
+        gk_matches=gk_matches,
+        table_matches=table_matches,
+        conceded=conceded,
+    )
+
+
+def _build_team_season_defense_cache(
+    team: str, league_code: str | None, season_nums: list[int]
+) -> dict[int, TeamSeasonDefense]:
+    cache: dict[int, TeamSeasonDefense] = {}
+    for sn in sorted(set(int(x) for x in season_nums)):
+        cache[sn] = _team_season_defense_stats(team, league_code, sn)
+    return cache
 
 
 def _team_league_places_during_seasons(
@@ -984,11 +1065,34 @@ def _outfield_pm_season(
     return (prod + cards + inj) * _depth_role_mult(depth_rank)
 
 
+def _defender_ga_pm(
+    *,
+    position: str,
+    overall: int,
+    ga: int,
+    matches: int,
+    expected_rates: dict[tuple[str, int], float],
+) -> float:
+    """Г+А: у крайних — небольшой вес, ноль может дать минус; у центральных — только плюс."""
+    if matches <= 0:
+        return 0.0
+    pos = (position or "").strip().upper()
+    exp_ga = _expected_rate(pos, overall, expected_rates, kind="ga") * matches
+    if pos in _WIDE_DEF_POS:
+        ga_pm = (ga - exp_ga) * 0.35
+        if ga <= 0 and matches >= 5:
+            ga_pm -= 0.6
+        return ga_pm
+    if pos in _CENTER_DEF_POS:
+        return max(0.0, ga - exp_ga) * 0.25
+    exp_ga_small = max(0.08, exp_ga * 0.5)
+    return (ga - exp_ga_small) * 0.3
+
+
 def _defender_pm_season(
     *,
     position: str,
     overall: int,
-    clean_sheets: int,
     ga: int,
     matches: int,
     yellow: int,
@@ -996,26 +1100,43 @@ def _defender_pm_season(
     injury_months: int,
     depth_rank: int,
     expected_rates: dict[tuple[str, int], float],
+    team_defense: TeamSeasonDefense | None = None,
 ) -> float:
-    """Защитники: сухие матчи, мало пропущенных (прокси), карточки, травмы; Г+А — бонус."""
+    """Защитники: сухие вратарей команды, пропущенные из таблицы, Г+А по роли."""
     if matches <= 0:
         return 0.0
     pos = (position or "").strip().upper()
-    cs_rate = _expected_rate(pos, overall, expected_rates, kind="cs")
-    if cs_rate <= 0:
-        cs_rate = 0.28 + max(0, (overall - 78)) * 0.006
-    exp_cs = cs_rate * matches
-    cs_pm = (clean_sheets - exp_cs) * 1.35
+    td = team_defense or TeamSeasonDefense()
 
-    conceded = max(0, matches - clean_sheets)
-    exp_conceded = max(0.0, 1.0 - cs_rate) * matches
-    conceded_pm = (exp_conceded - conceded) * 0.9
+    cs_pm = 0.0
+    if td.gk_cs > 0 and (td.gk_matches > 0 or td.table_matches > 0):
+        denom = max(td.gk_matches, td.table_matches, 1)
+        participation = min(1.0, matches / denom)
+        attributed_cs = td.gk_cs * participation
+        cs_rate = _expected_rate(pos, overall, expected_rates, kind="cs")
+        if cs_rate <= 0:
+            cs_rate = 0.28 + max(0, (overall - 78)) * 0.006
+        exp_cs = cs_rate * matches
+        cs_pm = (attributed_cs - exp_cs) * 1.35
 
+    conceded_pm = 0.0
+    if td.table_matches > 0:
+        team_conceded_rate = td.conceded / td.table_matches
+        exp_conceded_rate = 1.15
+        league_factor = min(matches, td.table_matches)
+        conceded_pm = (exp_conceded_rate - team_conceded_rate) * league_factor * 0.9
+
+    ga_pm = _defender_ga_pm(
+        position=pos,
+        overall=overall,
+        ga=ga,
+        matches=matches,
+        expected_rates=expected_rates,
+    )
     cards = _discipline_pm_impact(pos, yellow=yellow, red=red, matches=matches)
     inj = _injury_pm_impact(depth_rank, injury_months, scale=1.15)
-    ga_bonus = min(1.2, ga * 0.1)
 
-    raw = cs_pm + conceded_pm + ga_bonus + cards + inj
+    raw = cs_pm + conceded_pm + ga_pm + cards + inj
     return raw * _depth_role_mult(depth_rank)
 
 
@@ -1069,6 +1190,7 @@ def _season_pm_by_role(
     injury_months: int,
     depth_rank: int,
     expected_rates: dict[tuple[str, int], float],
+    team_defense: TeamSeasonDefense | None = None,
 ) -> float:
     pos = (position or "").strip().upper()
     if is_gk:
@@ -1088,7 +1210,6 @@ def _season_pm_by_role(
         return _defender_pm_season(
             position=pos,
             overall=overall,
-            clean_sheets=clean_sheets,
             ga=ga,
             matches=matches,
             yellow=yellow,
@@ -1096,6 +1217,7 @@ def _season_pm_by_role(
             injury_months=injury_months,
             depth_rank=depth_rank,
             expected_rates=expected_rates,
+            team_defense=team_defense,
         )
     return _outfield_pm_season(
         position=pos,
@@ -1117,15 +1239,17 @@ def _result_impact_pm(
     depth_rank: int,
     expected_rates: dict[tuple[str, int], float],
     is_gk: bool,
+    team_season_defense: dict[int, TeamSeasonDefense] | None = None,
 ) -> float:
     """
     Вклад в результаты клуба за стаж (±).
 
-    Формула зависит от роли: нападающие — Г+А; защитники — сухие/пропущенные
-    и дисциплина; вратари — сухие, пропущенные, травмы.
+    Формула зависит от роли: нападающие — Г+А; защитники — сухие вратарей
+    команды и пропущенные из таблицы; вратари — сухие, пропущенные, травмы.
     """
     total = 0.0
     pos = (position or "").strip().upper()
+    defense_cache = team_season_defense or {}
 
     for sn in stint.season_nums:
         m = int(stint.per_season_matches.get(sn, 0) or 0)
@@ -1145,6 +1269,7 @@ def _result_impact_pm(
             injury_months=int(stint.injury_months_by_season.get(sn, 0) or 0),
             depth_rank=depth_rank,
             expected_rates=expected_rates,
+            team_defense=defense_cache.get(int(sn)),
         )
 
     return round(total, 1)
@@ -1258,6 +1383,7 @@ def _compute_advice_for_player(
     expected_rates: dict[tuple[str, int], float],
     stint: ClubStintStats,
     team_is_apex: bool = False,
+    team_season_defense: dict[int, TeamSeasonDefense] | None = None,
 ) -> TransferAdviceRow:
     name = str(player.get("name") or "")
     pos = (player.get("position") or "").strip().upper()
@@ -1370,6 +1496,7 @@ def _compute_advice_for_player(
         depth_rank=depth_rank,
         expected_rates=expected_rates,
         is_gk=is_gk,
+        team_season_defense=team_season_defense,
     )
 
     finish_places = _team_league_places_during_seasons(
@@ -1651,6 +1778,10 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
     team_is_apex = _team_is_apex_destination(
         canon, league_code, league_rank, cl_rank
     )
+    active = int(season_paths.get_state().get("active_season") or 1)
+    team_season_defense = _build_team_season_defense_cache(
+        canon, league_code, list(range(1, active + 1))
+    )
 
     rows: list[TransferAdviceRow] = []
     for p in roster:
@@ -1676,6 +1807,7 @@ def collect_transfer_advice(team: str) -> tuple[str, list[TransferAdviceRow], st
                 expected_rates=expected_rates,
                 stint=stint,
                 team_is_apex=team_is_apex,
+                team_season_defense=team_season_defense,
             )
         )
 

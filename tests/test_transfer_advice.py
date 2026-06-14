@@ -377,13 +377,18 @@ def test_team_is_apex_inter():
 
 
 def test_defender_pm_clean_sheets_and_cards():
-    from utils.transfer_advice import _defender_pm_season
+    from utils.transfer_advice import (
+        TeamSeasonDefense,
+        _defender_ga_pm,
+        _defender_pm_season,
+    )
 
-    rates = {("ЦЗ", 84, "cs"): 0.35}
+    rates = {("ЦЗ", 84, "cs"): 0.35, ("ЦЗ", 84, "ga"): 0.05}
+    good_def = TeamSeasonDefense(gk_cs=12, gk_matches=20, table_matches=18, conceded=14)
+    bad_def = TeamSeasonDefense(gk_cs=4, gk_matches=20, table_matches=18, conceded=28)
     good = _defender_pm_season(
         position="ЦЗ",
         overall=85,
-        clean_sheets=10,
         ga=1,
         matches=15,
         yellow=0,
@@ -391,11 +396,11 @@ def test_defender_pm_clean_sheets_and_cards():
         injury_months=0,
         depth_rank=1,
         expected_rates=rates,
+        team_defense=good_def,
     )
     bad = _defender_pm_season(
         position="ЦЗ",
         overall=85,
-        clean_sheets=2,
         ga=1,
         matches=15,
         yellow=4,
@@ -403,9 +408,19 @@ def test_defender_pm_clean_sheets_and_cards():
         injury_months=3,
         depth_rank=1,
         expected_rates=rates,
+        team_defense=bad_def,
     )
     assert good > 0
     assert bad < good
+
+    wide_zero = _defender_ga_pm(
+        position="ЛЗ", overall=82, ga=0, matches=10, expected_rates=rates
+    )
+    center_zero = _defender_ga_pm(
+        position="ЦЗ", overall=82, ga=0, matches=10, expected_rates=rates
+    )
+    assert wide_zero < 0
+    assert center_zero == 0.0
 
 
 def test_goalkeeper_pm_missed_goals():
