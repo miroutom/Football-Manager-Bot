@@ -67,6 +67,12 @@ def player_stats_identity_token(row: Any) -> str:
     return sn or (getattr(row, "name", None) or "").strip()
 
 
+def player_name_identity_token(name: str) -> str:
+    """Токен идентичности по строке имени (без ORM-строки)."""
+    _, sn = _name_parts((name or "").strip())
+    return sn or (name or "").strip()
+
+
 def _parse_initial_surname_query(query: str) -> tuple[str | None, str | None]:
     """«Л. Мартинез», «Л Мартинез», «л.мартинез» → (буква, фамилия)."""
     s = (query or "").strip()

@@ -310,13 +310,19 @@ def add_player_to_team_roster(
             nat_res = None if ns in ("", "-", "—") else normalize_nation(nation)
         carry = None
 
-    from utils.person_registry import lookup_canonical_person_id, row_person_id
+    from utils.person_registry import (
+        lookup_canonical_person_id,
+        lookup_canonical_person_id_by_team,
+        row_person_id,
+    )
 
     preferred_pid = None
     if existing:
         preferred_pid = row_person_id(row_l) or row_person_id(row_c)
     if preferred_pid is None:
-        preferred_pid = lookup_canonical_person_id(nm, pos, team=team)
+        preferred_pid = lookup_canonical_person_id_by_team(nm, team=team) or lookup_canonical_person_id(
+            nm, pos, team=team
+        )
 
     ovr_res = max(1, min(99, int(ovr_res)))
 

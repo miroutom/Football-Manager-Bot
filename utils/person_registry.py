@@ -213,6 +213,91 @@ def lookup_canonical_person_id(
     return -best[1]
 
 
+def lookup_canonical_person_id_by_team(
+    name: str,
+    *,
+    team: str,
+) -> int | None:
+    """``person_id`` по имени+клубу (любая позиция) — для смены роли в заявке."""
+    import sqlite3
+
+    from utils import season_paths
+    from utils.player_names import player_name_identity_token
+    from utils.player_transfer import _norm_cmp
+
+    ident = player_name_identity_token(name or "").casefold()
+    want_team = _norm_cmp(team)
+    best: tuple[int, int] | None = None
+
+    def _consider(pid_raw: object, matches_raw: object) -> None:
+        nonlocal best
+        try:
+            pid = int(pid_raw or 0)
+        except (TypeError, ValueError):
+            return
+        if pid <= 0:
+            return
+        m = int(matches_raw or 0)
+        cand = (m, -pid)
+        if best is None or cand > best:
+            best = cand
+
+    db_paths: list[str] = []
+    for getter in (
+        season_paths.get_cumulative_common_db_path,
+        season_paths.get_cumulative_league_db_path,
+        season_paths.get_cumulative_cl_db_path,
+    ):
+        p = getter()
+        if p and os.path.isfile(p):
+            db_paths.append(p)
+    db_dir = os.path.join(PROJECT_ROOT, "db")
+    if os.path.isdir(db_dir):
+        for entry in os.listdir(db_dir):
+            if not entry.startswith("season_"):
+                continue
+            for fname in (
+                season_paths.SEASON_LEAGUE_NAME,
+                season_paths.SEASON_CL_NAME,
+                season_paths.SEASON_COMMON_NAME,
+            ):
+                path = os.path.join(db_dir, entry, fname)
+                if os.path.isfile(path):
+                    db_paths.append(path)
+    for active in (season_paths.get_league_db_path(), season_paths.get_cl_db_path()):
+        if active and os.path.isfile(active):
+            db_paths.append(active)
+
+    seen: set[str] = set()
+    tables = ("forwards", "midfielders", "defenders", "goalkeepers")
+    for path in db_paths:
+        path = os.path.abspath(path)
+        if path in seen:
+            continue
+        seen.add(path)
+        conn = sqlite3.connect(path)
+        try:
+            for tbl in tables:
+                cols = {
+                    r[1] for r in conn.execute(f"PRAGMA table_info({tbl})").fetchall()
+                }
+                if "person_id" not in cols or "name" not in cols or "team" not in cols:
+                    continue
+                q = f"SELECT name, person_id, matches, team FROM {tbl}"
+                for nm, pid, matches, tm in conn.execute(q):
+                    if player_name_identity_token(nm or "").casefold() != ident:
+                        continue
+                    if _norm_cmp(tm or "") != want_team:
+                        continue
+                    _consider(pid, matches)
+        finally:
+            conn.close()
+
+    if best is None:
+        return None
+    return -best[1]
+
+
 def ensure_row_person_id(row, *, notes: str = "", persist: bool = True) -> int:
     """
     Вернуть ``person_id`` строки; если NULL — выделить и записать в row.

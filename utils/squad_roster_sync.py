@@ -122,24 +122,30 @@ def _merge_carry_dicts(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
 
 def _dedupe_player_rows_for_team(
     session, name: str, team: str
-) -> tuple[Any, type | None, dict[str, Any] | None]:
+) -> tuple[Any, type | None, dict[str, Any] | None, int | None]:
     """
     Одна строка на игрока+клуб. Если в БД несколько дублей — удаляем все и возвращаем
-    объединённый carry, чтобы вставка не обнуляла статистику.
+    объединённый carry и сохранённый ``person_id``, чтобы вставка не обнуляла статистику.
     """
+    from utils.person_registry import row_person_id
+
     found = _all_rows_same_player(session, name, team)
     if not found:
-        return None, None, None
+        return None, None, None, None
     if len(found) == 1:
         r, c = found[0]
-        return r, c, None
+        return r, c, None, row_person_id(r)
     merged: dict[str, Any] | None = None
+    kept_pid: int | None = None
     for r, _Cls in found:
         c = _carry_from_row(r)
         merged = c if merged is None else _merge_carry_dicts(merged, c)
+        pid = row_person_id(r)
+        if pid is not None and (kept_pid is None or pid < kept_pid):
+            kept_pid = pid
         session.delete(r)
     session.flush()
-    return None, None, merged
+    return None, None, merged, kept_pid
 
 
 def _new_player_kwargs(
@@ -256,9 +262,13 @@ def upsert_roster_player(
 
     lookup_name = resolve_canonical_name(team, name)
     tgt_cls = _cls_for_position(position)
-    row, cur_cls, dedupe_carry = _dedupe_player_rows_for_team(session, lookup_name, team)
+    row, cur_cls, dedupe_carry, dedupe_pid = _dedupe_player_rows_for_team(
+        session, lookup_name, team
+    )
     if row is None and _norm_cmp(lookup_name) != _norm_cmp(name):
-        row, cur_cls, dedupe_carry = _dedupe_player_rows_for_team(session, name, team)
+        row, cur_cls, dedupe_carry, dedupe_pid = _dedupe_player_rows_for_team(
+            session, name, team
+        )
     pos_u = position.strip().upper()
     insert_carry = carry_in
     if dedupe_carry is not None:
@@ -268,13 +278,16 @@ def upsert_roster_player(
         from utils.person_registry import (
             allocate_person_id,
             lookup_canonical_person_id,
+            lookup_canonical_person_id_by_team,
             row_person_id,
         )
 
         new_pid = (
             int(preferred_person_id)
             if preferred_person_id is not None and int(preferred_person_id) > 0
-            else lookup_canonical_person_id(name, pos_u, team=team)
+            else dedupe_pid
+            or lookup_canonical_person_id_by_team(name, team=team)
+            or lookup_canonical_person_id(name, pos_u, team=team)
             or allocate_person_id(notes=f"{name} · {team}")
         )
         session.add(
@@ -511,7 +524,9 @@ def run_squads_sync_on_disk_paths(
         saved2 = teams_mod.teams_champ_league
         try:
             teams_mod.teams_champ_league = _cl_teams_dict_from_sqlite(cl_path)
-            rebuild_common_database_for_disk_paths(league_path, cl_path, common_path)
+            rebuild_common_database_for_disk_paths(
+                league_path, cl_path, common_path, include_all_cl_teams=True
+            )
         finally:
             teams_mod.teams_champ_league = saved2
     return out
