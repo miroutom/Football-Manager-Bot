@@ -45,6 +45,11 @@ MIN_SEASONS_TROPHY_RULE = 2
 _TROPHY_REL_DEFICIT_BADGE = 0.58
 _TROPHY_SENSITIVITY_BADGE = 0.22
 
+# Пороги score → вердикт (чем выше score, тем сильнее «остаться»).
+SCORE_VERDICT_NO = 72.0
+SCORE_VERDICT_SO = 55.0
+SCORE_VERDICT_SU = 38.0
+
 VERDICT_NO = "НО"
 VERDICT_SO = "СО"
 VERDICT_SU = "СУ"
@@ -85,6 +90,11 @@ REASON_LEGEND: dict[str, str] = {
 ADVICE_REASON_LEGEND_HTML = (
     "<i>П+ перерос · П− не дорос · Т− трофеи · Т× тащит без титулов\n"
     "З+ запас · С× схема · П↓ стата · Н новичок · ≈ уровень · ⏱ мало игр · Тр травмы</i>\n"
+)
+
+VERDICT_RULES_HTML = (
+    "<i>Score: НО ≥72 · СО ≥55 · СУ ≥38 · НУ &lt;38\n"
+    "Роль, продуктивность, трофеи, травмы; ± вклад в результаты — отдельная метрика.</i>"
 )
 
 _VERDICT_SECTION = {
@@ -1451,12 +1461,28 @@ def _build_reasons(
     return out[:3]
 
 
+def _result_pm_score_term(
+    result_pm: float, *, position: str, is_gk: bool, matches: int
+) -> float:
+    """Часть score от ± вклада в результаты (отдельно от строки в карточке)."""
+    if matches < 3:
+        return 0.0
+    pos = (position or "").strip().upper()
+    if is_gk or pos in _DEF_POS:
+        scale = 0.55
+        cap = 18.0
+    else:
+        scale = 0.32
+        cap = 22.0
+    return max(-cap, min(cap, float(result_pm) * scale))
+
+
 def _score_to_verdict(score: float) -> str:
-    if score >= 72:
+    if score >= SCORE_VERDICT_NO:
         return VERDICT_NO
-    if score >= 55:
+    if score >= SCORE_VERDICT_SO:
         return VERDICT_SO
-    if score >= 38:
+    if score >= SCORE_VERDICT_SU:
         return VERDICT_SU
     return VERDICT_NU
 
@@ -1699,7 +1725,12 @@ def _compute_advice_for_player(
         + usage_pen
         + (10.0 if fit else -8.0)
         + _injury_stint_score_penalty(stint.injury_periods, stint.injury_months)
+        + _result_pm_score_term(
+            float(result_pm), position=pos, is_gk=is_gk, matches=stint.matches
+        )
     )
+    if ovr_drop_peak <= -2:
+        score -= min(14.0, abs(int(ovr_drop_peak)) * 4.0)
     if depth_surplus and not fit and not in_start:
         score -= 5.0
     if depth_rank >= 4 and not fit:
@@ -1710,11 +1741,13 @@ def _compute_advice_for_player(
         and fit
         and abs(float(ovr) - team_median_overall) <= 4.5
         and ovr_delta_live <= 0
+        and ovr_drop_peak > -2
         and stint.completed_play_seasons <= 2
         and frustration_pen == 0.0
+        and (prod_ratio_last is None or prod_ratio_last >= 1.0)
     )
     if stable_core:
-        score += 22.0
+        score += 14.0
         if _BADGE_TROPHY in badges:
             badges = [b for b in badges if b != _BADGE_TROPHY]
 
@@ -2033,6 +2066,8 @@ def format_player_advice_card_html(
     lines = [
         f"<b>{sur}</b> · {escape(row.position)} · {row.overall}",
         f"<b>{team_e}</b> · <b>{verdict_e}</b> · score {row.score}",
+        f"<i>вердикт по score (НО ≥{SCORE_VERDICT_NO:g}, СО ≥{SCORE_VERDICT_SO:g}, "
+        f"СУ ≥{SCORE_VERDICT_SU:g})</i>",
         "",
         "<b>Причины</b>",
         *reason_lines,
@@ -2092,6 +2127,7 @@ def format_team_advice_html(
             )
         lines.append("")
         lines.append(ADVICE_REASON_LEGEND_HTML.rstrip())
+        lines.append(VERDICT_RULES_HTML.rstrip())
         lines.append("<i>Выбери группу кнопками ниже</i>")
         return "\n".join(lines), 1
 
@@ -2114,6 +2150,7 @@ def format_team_advice_html(
             lines.append(f"\n<i>стр. {page + 1}/{total_pages}</i>")
         if page == 0:
             lines.append("\n" + ADVICE_REASON_LEGEND_HTML.rstrip())
+            lines.append(VERDICT_RULES_HTML.rstrip())
         lines.append("<i>Нажми на игрока ниже — карточка с деталями</i>")
         return "\n".join(lines), total_pages
 
@@ -2143,6 +2180,7 @@ def format_team_advice_html(
         lines.append(f"\n<i>стр. {page + 1}/{total_pages}</i>")
     if page == 0:
         lines.append("\n" + ADVICE_REASON_LEGEND_HTML.rstrip())
+        lines.append(VERDICT_RULES_HTML.rstrip())
     lines.append("<i>Нажми на игрока ниже — карточка с деталями</i>")
     return "\n".join(lines), total_pages
 

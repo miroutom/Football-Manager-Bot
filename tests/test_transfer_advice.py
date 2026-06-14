@@ -20,10 +20,19 @@ def _seed_teams_registry():
 
 
 def test_score_to_verdict_thresholds():
+    from utils.transfer_advice import (
+        SCORE_VERDICT_NO,
+        SCORE_VERDICT_SO,
+        SCORE_VERDICT_SU,
+        _score_to_verdict,
+    )
+
     assert _score_to_verdict(80) == "НО"
-    assert _score_to_verdict(72) == "НО"
+    assert _score_to_verdict(SCORE_VERDICT_NO) == "НО"
     assert _score_to_verdict(60) == "СО"
+    assert _score_to_verdict(SCORE_VERDICT_SO) == "СО"
     assert _score_to_verdict(45) == "СУ"
+    assert _score_to_verdict(SCORE_VERDICT_SU) == "СУ"
     assert _score_to_verdict(20) == "НУ"
 
 
@@ -348,6 +357,17 @@ def test_result_pm_martinez_top_at_inter():
     pms = [float(r.detail.get("result_pm") or -999) for r in rows]
     assert mart.detail.get("result_pm") == max(pms)
     assert float(mart.detail["result_pm"]) > 20.0
+
+
+def test_score_respects_result_pm_sane_below_kane():
+    from utils.transfer_advice import collect_transfer_advice
+
+    _, bayern, _ = collect_transfer_advice("Бавария")
+    sane = next(r for r in bayern if r.name == "Сане")
+    kane = next(r for r in bayern if r.name == "Кейн")
+    assert float(sane.detail["result_pm"]) < float(kane.detail["result_pm"])
+    assert float(sane.score) < float(kane.score)
+    assert "≈" not in sane.reasons
 
 
 def test_result_pm_shown_for_rohl():
