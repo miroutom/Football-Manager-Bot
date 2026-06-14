@@ -194,7 +194,7 @@ def set_player_position(
 ) -> dict[str, Any]:
     """Смена позиции в league (+ cl при необходимости), с переносом между таблицами."""
     from utils.common_db import rebuild_common_database
-    from utils.squad_roster_sync import find_player_row
+    from utils.squad_roster_sync import _resolve_roster_row
 
     team_t = (team or "").strip().title()
     new_pos = _norm_pos(new_position)
@@ -202,7 +202,7 @@ def set_player_position(
         raise ValueError(f"Неизвестная позиция: {new_position!r}")
 
     def _apply(session, label: str) -> str | None:
-        row, SrcCls = find_player_row(session, name, team_t)
+        row, SrcCls, _, _ = _resolve_roster_row(session, name, team_t)
         if not row or not SrcCls:
             return None
         if old_position:

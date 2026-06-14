@@ -120,12 +120,57 @@ def _merge_carry_dicts(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _row_stat_score(row: Any) -> int:
+    goals = int(getattr(row, "goals", 0) or 0)
+    assists = int(getattr(row, "assists", 0) or 0)
+    matches = int(getattr(row, "matches", 0) or 0)
+    cs = int(getattr(row, "clean_sheets", 0) or 0)
+    return matches + goals + assists + cs
+
+
+def _find_row_by_person_id(
+    session, team: str, person_id: int
+) -> tuple[Any, type | None]:
+    from utils.person_registry import row_person_id
+
+    want = int(person_id)
+    if want <= 0:
+        return None, None
+    for Cls in _ALL_PLAYER:
+        for r in session.query(Cls).filter(_filter_team(Cls, team)).all():
+            if row_person_id(r) == want:
+                return r, Cls
+    return None, None
+
+
+def _apply_carry_to_row(row: Any, carry: dict[str, Any]) -> None:
+    row.matches = int(carry.get("matches", getattr(row, "matches", 0)) or 0)
+    row.trophies = int(carry.get("trophies", getattr(row, "trophies", 0)) or 0)
+    row.golden_balls = int(carry.get("golden_balls", getattr(row, "golden_balls", 0)) or 0)
+    if hasattr(row, "goals"):
+        row.goals = int(carry.get("goals", getattr(row, "goals", 0)) or 0)
+        row.assists = int(carry.get("assists", getattr(row, "assists", 0)) or 0)
+        row.ga = int(carry.get("ga", getattr(row, "ga", 0)) or 0)
+    if hasattr(row, "golden_boots"):
+        row.golden_boots = int(carry.get("golden_boots", getattr(row, "golden_boots", 0)) or 0)
+    if hasattr(row, "golden_boys"):
+        row.golden_boys = int(carry.get("golden_boys", getattr(row, "golden_boys", 0)) or 0)
+    if hasattr(row, "clean_sheets") and not hasattr(row, "goals"):
+        row.clean_sheets = int(carry.get("clean_sheets", getattr(row, "clean_sheets", 0)) or 0)
+    if hasattr(row, "missed_goals"):
+        row.missed_goals = int(carry.get("missed_goals", getattr(row, "missed_goals", 0)) or 0)
+    if hasattr(row, "golden_gloves"):
+        row.golden_gloves = int(
+            carry.get("golden_gloves", getattr(row, "golden_gloves", 0)) or 0
+        )
+
+
 def _dedupe_player_rows_for_team(
     session, name: str, team: str
 ) -> tuple[Any, type | None, dict[str, Any] | None, int | None]:
     """
-    Одна строка на игрока+клуб. Если в БД несколько дублей — удаляем все и возвращаем
-    объединённый carry и сохранённый ``person_id``, чтобы вставка не обнуляла статистику.
+    Одна строка на игрока+клуб. Дубли (разные позиции / person_id) сливаются в одну
+    существующую строку — без удаления всех и повторного insert.
     """
     from utils.person_registry import row_person_id
 
@@ -135,17 +180,57 @@ def _dedupe_player_rows_for_team(
     if len(found) == 1:
         r, c = found[0]
         return r, c, None, row_person_id(r)
-    merged: dict[str, Any] | None = None
-    kept_pid: int | None = None
-    for r, _Cls in found:
-        c = _carry_from_row(r)
-        merged = c if merged is None else _merge_carry_dicts(merged, c)
+
+    ranked = sorted(
+        found,
+        key=lambda rc: (_row_stat_score(rc[0]), int(getattr(rc[0], "id", 0) or 0)),
+        reverse=True,
+    )
+    keep_r, keep_cls = ranked[0]
+    merged = _carry_from_row(keep_r)
+    kept_pid = row_person_id(keep_r)
+    for r, _Cls in ranked[1:]:
+        merged = _merge_carry_dicts(merged, _carry_from_row(r))
         pid = row_person_id(r)
         if pid is not None and (kept_pid is None or pid < kept_pid):
             kept_pid = pid
         session.delete(r)
+    _apply_carry_to_row(keep_r, merged)
+    if kept_pid is not None:
+        keep_r.person_id = kept_pid
     session.flush()
-    return None, None, merged, kept_pid
+    return keep_r, keep_cls, None, kept_pid
+
+
+def _resolve_roster_row(
+    session,
+    name: str,
+    team: str,
+    *,
+    preferred_person_id: int | None = None,
+) -> tuple[Any, type | None, dict[str, Any] | None, int | None]:
+    """Найти единственную строку игрока в клубе (имя или person_id), сливая дубли."""
+    from utils.player_identity import resolve_canonical_name
+    from utils.person_registry import lookup_canonical_person_id_by_team
+
+    lookup_name = resolve_canonical_name(team, name)
+    for cand in (lookup_name, name):
+        if not (cand or "").strip():
+            continue
+        row, cur_cls, carry, pid = _dedupe_player_rows_for_team(session, cand, team)
+        if row is not None:
+            return row, cur_cls, carry, pid
+
+    want_pid = (
+        int(preferred_person_id)
+        if preferred_person_id is not None and int(preferred_person_id) > 0
+        else lookup_canonical_person_id_by_team(name, team=team)
+    )
+    if want_pid:
+        row, cur_cls = _find_row_by_person_id(session, team, want_pid)
+        if row is not None:
+            return row, cur_cls, None, want_pid
+    return None, None, None, None
 
 
 def _new_player_kwargs(
@@ -262,12 +347,18 @@ def upsert_roster_player(
 
     lookup_name = resolve_canonical_name(team, name)
     tgt_cls = _cls_for_position(position)
-    row, cur_cls, dedupe_carry, dedupe_pid = _dedupe_player_rows_for_team(
-        session, lookup_name, team
+    row, cur_cls, dedupe_carry, dedupe_pid = _resolve_roster_row(
+        session,
+        name,
+        team,
+        preferred_person_id=preferred_person_id,
     )
     if row is None and _norm_cmp(lookup_name) != _norm_cmp(name):
-        row, cur_cls, dedupe_carry, dedupe_pid = _dedupe_player_rows_for_team(
-            session, name, team
+        row, cur_cls, dedupe_carry, dedupe_pid = _resolve_roster_row(
+            session,
+            lookup_name,
+            team,
+            preferred_person_id=preferred_person_id,
         )
     pos_u = position.strip().upper()
     insert_carry = carry_in
@@ -315,6 +406,11 @@ def upsert_roster_player(
         keep_pid = row_person_id(row) or ensure_row_person_id(
             row, notes=f"{name} · {team}", persist=True
         )
+        from utils.person_registry import lookup_canonical_person_id_by_team
+
+        canon_pid = lookup_canonical_person_id_by_team(name, team=team)
+        if canon_pid:
+            keep_pid = canon_pid
         session.delete(row)
         session.flush()
         session.add(
@@ -340,9 +436,12 @@ def upsert_roster_player(
     row.overall = int(overall)
     row.nation = (nation.strip() if nation else None) or None
     row.status = st
-    if preferred_person_id is not None and int(preferred_person_id) > 0:
-        from utils.person_registry import row_person_id
+    from utils.person_registry import lookup_canonical_person_id_by_team, row_person_id
 
+    canon_pid = lookup_canonical_person_id_by_team(name, team=team)
+    if canon_pid and row_person_id(row) != canon_pid:
+        row.person_id = canon_pid
+    if preferred_person_id is not None and int(preferred_person_id) > 0:
         if row_person_id(row) is None:
             row.person_id = int(preferred_person_id)
     if hasattr(row, "lineup_slot"):
@@ -350,6 +449,42 @@ def upsert_roster_player(
     if hasattr(row, "left_team"):
         row.left_team = False
     return "updated"
+
+
+def consolidate_player_team_duplicates(
+    session, *, team: str | None = None
+) -> dict[str, int]:
+    """
+    Слить дубли «один игрок — один клуб — две строки» в одну строку (все таблицы).
+    """
+    from collections import defaultdict
+
+    from utils.player_names import player_name_identity_token
+
+    buckets: dict[tuple[str, str], list[tuple[Any, type]]] = defaultdict(list)
+    for Cls in _ALL_PLAYER:
+        q = session.query(Cls)
+        if team:
+            q = q.filter(_filter_team(Cls, team))
+        for r in q.all():
+            if getattr(r, "left_team", False):
+                continue
+            ident = player_name_identity_token(getattr(r, "name", "") or "").casefold()
+            tm = _norm_cmp(getattr(r, "team", "") or "")
+            if ident and tm:
+                buckets[(ident, tm)].append((r, Cls))
+
+    log = {"groups_merged": 0, "rows_deleted": 0}
+    for (_ident, _tm), found in buckets.items():
+        if len(found) <= 1:
+            continue
+        nm = (found[0][0].name or "").strip()
+        club = (found[0][0].team or "").strip()
+        before = len(found)
+        _dedupe_player_rows_for_team(session, nm, club)
+        log["groups_merged"] += 1
+        log["rows_deleted"] += before - 1
+    return log
 
 
 def delete_team_players_not_in_names(session, team: str, roster_names: set[str]) -> int:

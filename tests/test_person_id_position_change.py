@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""person_id не меняется при смене позиции в клубе."""
+"""Один игрок + один клуб = одна строка; смена позиции — update/move, не insert."""
 from __future__ import annotations
 
 import os
@@ -15,7 +15,10 @@ from utils.person_registry import (
     lookup_canonical_person_id_by_team,
 )
 from utils.player_names import player_name_identity_token
-from utils.squad_roster_sync import upsert_roster_player
+from utils.squad_roster_sync import (
+    _dedupe_player_rows_for_team,
+    upsert_roster_player,
+)
 
 
 def test_player_name_identity_token_from_string():
@@ -33,6 +36,55 @@ def test_lookup_by_team_finds_muriel_across_positions():
     assert pid_team is not None
     assert pid_team == 60
     assert pid_old == 60
+
+
+def test_dedupe_keeps_one_row_not_insert():
+    """Два дубля в клубе → остаётся одна строка, не None."""
+    row_stats = SimpleNamespace(
+        id=10,
+        name="Муриэль",
+        team="Аталанта",
+        position="ЛФА",
+        person_id=60,
+        matches=10,
+        goals=8,
+        assists=2,
+        ga=10,
+        trophies=0,
+        golden_balls=0,
+        golden_boots=0,
+        golden_boys=0,
+    )
+    row_empty = SimpleNamespace(
+        id=99,
+        name="Муриэль",
+        team="Аталанта",
+        position="ПФА",
+        person_id=3384,
+        matches=0,
+        goals=0,
+        assists=0,
+        ga=0,
+        trophies=0,
+        golden_balls=0,
+        golden_boots=0,
+        golden_boys=0,
+    )
+    session = MagicMock()
+
+    with patch(
+        "utils.squad_roster_sync._all_rows_same_player",
+        return_value=[(row_stats, Forward), (row_empty, Forward)],
+    ):
+        keep, cls, carry, pid = _dedupe_player_rows_for_team(session, "Муриэль", "Аталанта")
+
+    assert keep is row_stats
+    assert cls is Forward
+    assert carry is None
+    assert pid == 60
+    assert row_stats.goals == 8
+    session.delete.assert_called_once_with(row_empty)
+    session.flush.assert_called_once()
 
 
 def test_upsert_position_change_keeps_person_id():
@@ -63,7 +115,7 @@ def test_upsert_position_change_keeps_person_id():
     session.flush = MagicMock()
 
     with patch(
-        "utils.squad_roster_sync._dedupe_player_rows_for_team",
+        "utils.squad_roster_sync._resolve_roster_row",
         return_value=(old_row, Midfielder, None, 347),
     ):
         result = upsert_roster_player(
@@ -83,25 +135,34 @@ def test_upsert_position_change_keeps_person_id():
     assert added.person_id == 347
 
 
-def test_upsert_after_dedupe_merge_reuses_saved_person_id():
+def test_upsert_existing_row_updates_position_no_insert():
+    row = SimpleNamespace(
+        name="Муриэль",
+        team="Аталанта",
+        position="ЛФА",
+        overall=85,
+        nation=None,
+        person_id=60,
+        matches=5,
+        goals=2,
+        assists=1,
+        ga=3,
+        status="bench",
+        left_team=False,
+        lineup_slot=None,
+    )
     session = MagicMock()
     session.add = MagicMock()
-    session.flush = MagicMock()
-    carry = {
-        "matches": 5,
-        "goals": 2,
-        "assists": 1,
-        "ga": 3,
-        "trophies": 0,
-        "golden_balls": 0,
-    }
 
     with (
         patch(
-            "utils.squad_roster_sync._dedupe_player_rows_for_team",
-            return_value=(None, None, carry, 60),
+            "utils.squad_roster_sync._resolve_roster_row",
+            return_value=(row, Forward, None, 60),
         ),
-        patch("utils.person_registry.allocate_person_id") as alloc,
+        patch(
+            "utils.person_registry.lookup_canonical_person_id_by_team",
+            return_value=60,
+        ),
     ):
         result = upsert_roster_player(
             session,
@@ -113,9 +174,6 @@ def test_upsert_after_dedupe_merge_reuses_saved_person_id():
             status="bench",
         )
 
-    assert result == "inserted"
-    alloc.assert_not_called()
-    added = session.add.call_args[0][0]
-    assert added.person_id == 60
-    assert added.matches == 5
-    assert added.goals == 2
+    assert result == "updated"
+    assert row.position == "ПФА"
+    session.add.assert_not_called()
