@@ -970,6 +970,22 @@ def to_pre_html(text: str) -> str:
     return f"<pre>{html_escape(text)}</pre>"
 
 
+def compose_match_record_reply(
+    plain_log: str, html_lines: list[str] | None = None
+) -> str:
+    """
+    Ответ после записи матча: stdout — экранируется, готовые HTML-блоки бота — как есть.
+    """
+    parts: list[str] = []
+    if (plain_log or "").strip():
+        parts.append(html_escape(plain_log.strip()))
+    for line in html_lines or []:
+        s = (line or "").strip()
+        if s:
+            parts.append(s)
+    return "\n".join(parts)
+
+
 def needs_cl_penalty_shootout(
     home: str,
     away: str,
@@ -1003,10 +1019,12 @@ def run_process_match_bot(
     round_num: int | None = None,
     cl_phase: str | None = None,
     penalties_override: dict[str, int] | None = None,
-) -> tuple[bool, str]:
+) -> tuple[bool, str, list[str]]:
     """
     Запись матча как в main.process_match, без input().
     penalties_override — {хозяева ответного: голы в серии, гости: ...} для ЛЧ-стыка.
+
+    Возвращает (ok, plain_log из stdout, html_lines для Telegram без экранирования).
     """
     import contextlib
     import io
@@ -1014,6 +1032,7 @@ def run_process_match_bot(
     from main import process_match
 
     buf = io.StringIO()
+    html_lines: list[str] = []
     with contextlib.redirect_stdout(buf):
         ok = process_match(
             home,
@@ -1038,15 +1057,13 @@ def run_process_match_bot(
             try:
                 from utils.cl_knockout_schedule import cl_knockout_post_match_messages
 
-                extra = cl_knockout_post_match_messages(
+                html_lines = cl_knockout_post_match_messages(
                     home,
                     away,
                     league_code,
                     cl_phase,
                     penalties_by_team=penalties_override,
                 )
-                if extra:
-                    buf.write("\n" + "\n".join(extra))
             except Exception:
                 logging.getLogger(__name__).exception("cl_knockout_post_match_messages")
-    return ok, (buf.getvalue() or "").strip()
+    return ok, (buf.getvalue() or "").strip(), html_lines

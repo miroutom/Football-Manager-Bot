@@ -20,6 +20,7 @@ from aiogram.types import (
 
 from bot.services import (
     LEAGUE_LABELS,
+    compose_match_record_reply,
     needs_cl_penalty_shootout,
     run_process_match_bot,
     split_text_chunks,
@@ -72,18 +73,22 @@ async def _finish_match_and_offer_stats(
     aws: int,
     league_code: str,
     schedule_day: int | None = None,
+    log_html_lines: list[str] | None = None,
 ) -> None:
     """После записи матча — опционально предложить статистику (если INPUT_PLAYER_STATS в main)."""
     from main import INPUT_PLAYER_STATS
 
-    log_html = html_escape(log)
     if not ok:
         await state.clear()
         txt = log if log else "Не удалось записать матч."
         await message.answer(f"✗ {txt}")
         return
 
-    await message.answer(f"✓ Записано.\n{log_html}", parse_mode="HTML")
+    body = compose_match_record_reply(log, log_html_lines)
+    await message.answer(
+        f"✓ Записано.\n{body}" if body else "✓ Записано.",
+        parse_mode="HTML",
+    )
 
     if not INPUT_PLAYER_STATS:
         await state.clear()
@@ -157,7 +162,7 @@ async def _record_match_or_request_penalties(
         )
         return
 
-    ok, log = await asyncio.to_thread(
+    ok, log, log_html_lines = await asyncio.to_thread(
         run_process_match_bot,
         hn,
         an,
@@ -178,6 +183,7 @@ async def _record_match_or_request_penalties(
         aws=aws,
         league_code=league_code,
         schedule_day=round_num,
+        log_html_lines=log_html_lines,
     )
 
 
@@ -2186,7 +2192,7 @@ async def on_cl_penalties_series(message: Message, state: FSMContext) -> None:
         return
 
     pens = {data["pen_home"]: ph, data["pen_away"]: pa}
-    ok, log = await asyncio.to_thread(
+    ok, log, log_html_lines = await asyncio.to_thread(
         run_process_match_bot,
         data["pen_home"],
         data["pen_away"],
@@ -2208,6 +2214,7 @@ async def on_cl_penalties_series(message: Message, state: FSMContext) -> None:
         aws=data["pen_aws"],
         league_code=data["pen_league"],
         schedule_day=data.get("pen_round"),
+        log_html_lines=log_html_lines,
     )
 
 
