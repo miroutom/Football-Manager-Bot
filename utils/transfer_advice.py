@@ -989,6 +989,15 @@ def _team_league_places_during_seasons(
     return places
 
 
+def _club_seasons_count(*, finish_places: list[int], stint: ClubStintStats) -> int:
+    """Сезоны в клубе для карточки — в одном ключе с «Места команды»."""
+    if finish_places:
+        return len(finish_places)
+    if stint.seasons > 0:
+        return stint.seasons
+    return stint.play_seasons
+
+
 def _finish_frustration(places: list[int], expected_place: float) -> float:
     if not places:
         return 0.0
@@ -2221,6 +2230,9 @@ def _compute_advice_for_player(
         "seasons_completed": stint.completed_play_seasons,
         "play_seasons": stint.play_seasons,
         "tenure_seasons": stint.seasons,
+        "club_seasons": _club_seasons_count(
+            finish_places=finish_places, stint=stint
+        ),
         "matches": stint.matches,
         "goals": stint.goals,
         "assists": stint.assists,
@@ -2494,7 +2506,7 @@ def format_player_advice_card_html(
         *reason_lines,
         "",
         "<b>В клубе</b>",
-        f"Сезонов {d.get('play_seasons', d.get('seasons_completed', 0))}, "
+        f"Сезонов {d.get('club_seasons', len(places) if places else d.get('tenure_seasons', 0))}, "
         f"матчей {d.get('matches', 0)}, "
         f"Г {d.get('goals', 0)} А {d.get('assists', 0)}",
         f"Рейтинг: {escape(ovr_line)}",

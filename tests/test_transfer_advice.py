@@ -536,6 +536,37 @@ def test_result_pm_shown_for_rohl():
     assert "<small>" not in card
 
 
+def test_club_seasons_matches_team_places():
+    from utils.transfer_advice import (
+        _club_seasons_count,
+        collect_transfer_advice,
+        format_player_advice_card_html,
+    )
+
+    _, rows, err = collect_transfer_advice("Барселона")
+    assert not err
+    unner = next(r for r in rows if "Уннерсталь" in r.name)
+    kounde = next(r for r in rows if "Кунде" in r.name)
+    assert len(unner.detail["finish_places"]) == 1
+    assert unner.detail["club_seasons"] == 1
+    assert len(kounde.detail["finish_places"]) == 2
+    assert kounde.detail["club_seasons"] == 2
+
+    unner_card = format_player_advice_card_html("Барселона", unner)
+    kounde_card = format_player_advice_card_html("Барселона", kounde)
+    assert "Сезонов 1," in unner_card
+    assert "Сезонов 2," in kounde_card
+
+
+def test_club_seasons_count_fallback():
+    from utils.transfer_advice import ClubStintStats, _club_seasons_count
+
+    stint = ClubStintStats(seasons=2, play_seasons=0)
+    assert _club_seasons_count(finish_places=[1], stint=stint) == 1
+    assert _club_seasons_count(finish_places=[], stint=stint) == 2
+    assert _club_seasons_count(finish_places=[], stint=ClubStintStats(play_seasons=1)) == 1
+
+
 def test_team_is_apex_inter():
     from utils.transfer_advice import (
         _cl_strength_rank,
