@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from unittest.mock import patch
+
 from utils.common_db import _key, _merge_bucket_outfield
 
 
@@ -61,6 +63,43 @@ def test_common_merge_same_person_id_league_and_cl():
     assert b["assists"] == 26
     assert b["matches"] == 47
     assert b["person_id"] == 105
+
+
+def test_common_merge_skips_cl_out_of_pool_when_disabled():
+    """Без include_all_cl_teams клуб вне пула ЛЧ не попадает из cl.db."""
+    from unittest.mock import patch
+
+    league = _FakeSession(
+        [_fwd("Лукаку", "Реал", "ФРВ", pid=30, goals=5, assists=2, matches=12)]
+    )
+    cl = _FakeSession(
+        [_fwd("Лукаку", "Реал", "ФРВ", pid=30, goals=6, assists=4, matches=11)]
+    )
+    with patch("utils.common_db._team_in_cl_pool", return_value=False):
+        buckets = _merge_bucket_outfield(
+            object, league, cl, include_all_cl_teams=False
+        )
+    assert len(buckets) == 1
+    b = next(iter(buckets.values()))
+    assert b["goals"] == 5
+    assert b["matches"] == 12
+
+
+def test_common_merge_includes_cl_out_of_pool_by_default():
+    league = _FakeSession(
+        [_fwd("Лукаку", "Реал", "ФРВ", pid=30, goals=5, assists=2, matches=12)]
+    )
+    cl = _FakeSession(
+        [_fwd("Лукаку", "Реал", "ФРВ", pid=30, goals=6, assists=4, matches=11)]
+    )
+    with patch("utils.common_db._team_in_cl_pool", return_value=False):
+        buckets = _merge_bucket_outfield(
+            object, league, cl, include_all_cl_teams=True
+        )
+    b = next(iter(buckets.values()))
+    assert b["goals"] == 11
+    assert b["assists"] == 6
+    assert b["matches"] == 23
 
 
 def test_common_key_uses_person_id():

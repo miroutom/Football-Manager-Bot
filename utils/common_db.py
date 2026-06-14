@@ -287,11 +287,12 @@ def rebuild_common_database(
     session_league_: Any = None,
     session_cl_: Any = None,
     session_common_: Any = None,
-    include_all_cl_teams: bool = False,
+    include_all_cl_teams: bool = True,
 ) -> None:
     """
     Полная перезапись common слиянием двух источников (имя+команда+позиция).
-    По умолчанию — глобальные сессии из ``utils``; можно передать свои (например, в тестах).
+    По умолчанию в common попадают **все** клубы из ``champions_league.db`` сезона
+    (не только текущий пул ЛЧ).
     """
     sleague = session_league_ or session_league
     scl = session_cl_ or session_cl
@@ -432,14 +433,13 @@ def rebuild_common_database_for_disk_paths(
     cl_path: str,
     common_path: str,
     *,
-    include_all_cl_teams: bool = False,
+    include_all_cl_teams: bool = True,
 ) -> None:
     """
     Пересобрать ``common`` на диске из двух указанных SQLite (лига + ЛЧ).
     Не трогает глобальные сессии ``utils``.
 
-    ``include_all_cl_teams=True`` — для накопительных ``*_synced.db``: не отсекать клубы
-    вне текущего пула ЛЧ (историческая стата ЛЧ).
+    ``include_all_cl_teams=False`` — только клубы из текущего пула ЛЧ (редкий случай).
     """
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
