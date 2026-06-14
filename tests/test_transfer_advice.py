@@ -939,3 +939,74 @@ def test_brahim_real_stint_league_plus_cl():
     assert st.goals == 18
     assert st.assists == 16
     assert st.matches == 33
+
+
+def test_cl_knockout_stage_from_journal_season2():
+    from utils.cl_knockout_results import (
+        CL_STAGE_CHAMP,
+        CL_STAGE_FINAL,
+        CL_STAGE_R4,
+        CL_STAGE_R8,
+        team_cl_knockout_stage,
+    )
+
+    assert team_cl_knockout_stage("Аталанта", 2) == CL_STAGE_FINAL
+    assert team_cl_knockout_stage("Ливерпуль", 2) == CL_STAGE_CHAMP
+    assert team_cl_knockout_stage("Сити", 2) == 4  # 1/2
+    assert team_cl_knockout_stage("Динамо", 2) == CL_STAGE_R8
+    assert team_cl_knockout_stage("Интер", 1) == CL_STAGE_CHAMP
+
+
+def test_cl_stage_performance_examples():
+    from player_stats import national_league_code_for_team
+    from utils.cl_knockout_results import team_cl_stage_performance
+    from utils.transfer_advice import _cl_strength_rank, _league_strength_rank
+
+    def perf(team):
+        lc = national_league_code_for_team(team)
+        return team_cl_stage_performance(
+            team,
+            [1, 2],
+            league_code=lc,
+            league_rank=_league_strength_rank(team, lc),
+            cl_rank=_cl_strength_rank(team),
+        )
+
+    at_delta, _, _ = perf("Аталанта")
+    assert at_delta > 0.5
+
+    zen_delta, _, _ = perf("Зенит")
+    assert zen_delta >= 1.2
+
+    dyn_delta, _, det = perf("Динамо")
+    assert dyn_delta >= 1.0
+    assert det[-1][1] == 2
+
+    inter_delta, inter_trend, _ = perf("Интер")
+    assert inter_delta < 0
+    assert inter_trend < -1.0
+
+
+def test_miranchuk_atalanta_cl_final_softens_leave_pressure():
+    from utils.transfer_advice import (
+        REASON_CL_OVER,
+        REASON_NO_TROPHIES,
+        REASON_CL_UNDER,
+        collect_transfer_advice,
+    )
+
+    _, rows, _ = collect_transfer_advice("Аталанта")
+    m = next(r for r in rows if "Миранчук" in r.name)
+    assert float(m.detail["cl_stage_delta"]) > 0.5
+    assert REASON_NO_TROPHIES not in m.reasons
+    assert REASON_CL_UNDER not in m.reasons
+    assert REASON_CL_OVER in m.reasons or float(m.detail["place_delta"]) > 0
+
+
+def test_inter_cl_regression_after_title():
+    from utils.transfer_advice import REASON_CL_UNDER, collect_transfer_advice
+
+    _, rows, _ = collect_transfer_advice("Интер")
+    star = next(r for r in rows if r.depth_rank <= 2 and r.overall >= 80)
+    assert float(star.detail["cl_stage_delta"]) < 0
+    assert REASON_CL_UNDER in star.reasons

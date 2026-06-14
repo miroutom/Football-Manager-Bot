@@ -379,6 +379,15 @@ def finalize_season() -> dict[str, Any]:
         log["match_results_cleared"] = f"error: {e!s}"
     except Exception as e:
         log["match_results_cleared"] = f"error: {e!s}"
+    if ended and archive_dir:
+        try:
+            from bot.season_history_store import record_cl_knockout_stages_from_archive
+
+            log["cl_knockout_stages"] = record_cl_knockout_stages_from_archive(
+                int(ended), archive_dir
+            )
+        except Exception as e:
+            log["cl_knockout_stages"] = f"error: {e!s}"
     try:
         from champions_league.knockout_bracket import (
             reset_cl_playoff_bracket_json_to_placeholders,

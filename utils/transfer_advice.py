@@ -67,6 +67,8 @@ REASON_NO_TROPHIES = "Т0"
 REASON_RESULTS_BELOW = "Р−"
 REASON_RESULTS_WELL_BELOW = "Р−−"
 REASON_CARRY_STAR = "Т+"
+REASON_CL_OVER = "ЛЧ+"
+REASON_CL_UNDER = "ЛЧ−"
 REASON_NEW = "Н"
 REASON_LEVEL = "≈"
 REASON_USAGE = "⏱"
@@ -82,6 +84,8 @@ REASON_LEGEND: dict[str, str] = {
     REASON_RESULTS_BELOW: "клуб ниже ожидаемого",
     REASON_RESULTS_WELL_BELOW: "клуб сильно ниже ожидаемого",
     REASON_CARRY_STAR: "тащит при слабых результатах",
+    REASON_CL_OVER: "сильный результат в ЛЧ",
+    REASON_CL_UNDER: "слабый результат в ЛЧ",
     _BADGE_DEPTH: "избыток на позиции",
     _BADGE_FIT: "не в схему",
     _BADGE_PROD: "слабая стата",
@@ -95,7 +99,7 @@ REASON_LEGEND: dict[str, str] = {
 
 ADVICE_REASON_LEGEND_HTML = (
     "<i>П+ перерос · П− не дорос · Т0 нет титулов · Т− мало трофеев · "
-    "Р− ниже ожиданий · Р−− сильно ниже · Т+ тащит\n"
+    "Р− ниже ожиданий · Р−− сильно ниже · Т+ тащит · ЛЧ+ сильная ЛЧ · ЛЧ− слабая ЛЧ\n"
     "З+ запас · С× схема · П↓ стата · Н новичок · ≈ уровень · ⏱ мало игр · Тр травмы</i>\n"
 )
 
@@ -862,6 +866,7 @@ _VERDICT_LEAVE_MARKERS = frozenset(
         REASON_NO_TROPHIES,
         REASON_OUTGREW,
         _BADGE_TROPHY,
+        REASON_CL_UNDER,
     }
 )
 _VERDICT_SELL_MARKERS = frozenset(
@@ -879,6 +884,7 @@ def _apply_verdict_modifiers(
     trophies_critical: bool,
     depth_rank: int,
     frustration_pen: float = 0.0,
+    cl_stage_delta: float = 0.0,
 ) -> tuple[str, float]:
     """Согласовать вердикт со score, причинами и контекстом клуба."""
     v = verdict
@@ -891,6 +897,7 @@ def _apply_verdict_modifiers(
             REASON_RESULTS_BELOW,
             REASON_RESULTS_WELL_BELOW,
             REASON_NO_TROPHIES,
+            REASON_CL_UNDER,
         )
     )
     trophy_miss = _BADGE_TROPHY in raw_reasons
@@ -928,7 +935,11 @@ def _apply_verdict_modifiers(
             v = _cap_verdict_at_most(v, VERDICT_SU)
             s = min(s, SCORE_VERDICT_SO - 0.1)
 
-    if not trophies_critical and place_delta >= 1.0:
+    if not trophies_critical and (place_delta >= 1.0 or cl_stage_delta >= 1.2):
+        v = _cap_verdict_at_most(v, VERDICT_SO)
+        s = min(s, SCORE_VERDICT_NO - 0.1)
+
+    if trophies_critical and cl_stage_delta <= -2.0 and depth_rank <= 2:
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
 
@@ -1103,12 +1114,16 @@ def _finish_frustration(places: list[int], expected_place: float) -> float:
 
 @dataclass(frozen=True)
 class TeamResultsContext:
-    """Места в таблице с учётом трофеев клуба за стаж игрока."""
+    """Места в таблице с учётом трофеев клуба и стадий ЛЧ за стаж игрока."""
 
     finish_frust: float
     place_delta: float
+    cl_stage_delta: float = 0.0
+    cl_stage_trend: float = 0.0
     suppress_carry_with_results: bool = False
     cap_results_at_below: bool = False
+    soften_cl_under: bool = False
+    cl_stage_apply: float = 0.0
 
 
 def _team_trophy_results_cushion(
@@ -1154,6 +1169,8 @@ def _team_results_context(
     league_trophies: int,
     cl_trophies: int,
     trophies_critical: bool,
+    cl_stage_delta: float = 0.0,
+    cl_stage_trend: float = 0.0,
 ) -> TeamResultsContext:
     finish_frust = _finish_frustration(finish_places, expected_place)
     place_delta = _finish_place_delta(finish_places, expected_place)
@@ -1166,6 +1183,26 @@ def _team_results_context(
     )
     suppress_carry = False
     cap_at_below = False
+
+    cl_delta = float(cl_stage_delta)
+    cl_trend = float(cl_stage_trend)
+    soften_cl_under = cushion >= 0.5 and cl_trend > -3.0
+    cl_apply = cl_delta
+    if cushion > 0.0 and cl_delta < 0.0:
+        cl_apply = cl_delta * max(0.2, 1.0 - cushion * 0.8)
+
+    if cl_apply >= 1.0:
+        place_delta += cl_apply * 0.9
+        finish_frust *= max(0.12, 1.0 - cl_apply * 0.18)
+        if cl_apply >= 1.5:
+            suppress_carry = True
+    elif cl_apply <= -1.0:
+        place_delta += cl_apply * 0.75
+        finish_frust = min(1.0, finish_frust + abs(cl_apply) * 0.14)
+    if cl_trend <= -1.5:
+        place_delta -= 0.8
+        finish_frust = min(1.0, finish_frust + 0.12)
+
     if cushion > 0.0:
         finish_frust *= 1.0 - cushion
         place_delta += cushion * 1.5
@@ -1175,8 +1212,12 @@ def _team_results_context(
     return TeamResultsContext(
         finish_frust=finish_frust,
         place_delta=place_delta,
+        cl_stage_delta=cl_delta,
+        cl_stage_trend=cl_trend,
         suppress_carry_with_results=suppress_carry,
         cap_results_at_below=cap_at_below,
+        soften_cl_under=soften_cl_under,
+        cl_stage_apply=cl_apply,
     )
 
 
@@ -1754,6 +1795,8 @@ def _reason_codes_raw(
     trophies_critical: bool = True,
     suppress_carry_with_results: bool = False,
     cap_results_at_below: bool = False,
+    cl_stage_delta: float = 0.0,
+    soften_cl_under: bool = False,
 ) -> list[str]:
     """Сырые коды причин (до фильтра под вердикт)."""
     raw: list[str] = []
@@ -1770,13 +1813,24 @@ def _reason_codes_raw(
     ):
         raw.append(REASON_CARRY_STAR)
 
+    club_overperforming = float(place_delta) > 0.0 or float(cl_stage_delta) >= 1.0
+
     if (
         trophies_critical
         and completed_play_seasons >= MIN_SEASONS_TROPHY_RULE
         and int(league_trophies) + int(cl_trophies) == 0
-        and float(place_delta) <= 0.0
+        and not club_overperforming
     ):
         raw.append(REASON_NO_TROPHIES)
+
+    if float(cl_stage_delta) >= 1.2:
+        raw.append(REASON_CL_OVER)
+    elif (
+        float(cl_stage_delta) <= -1.2
+        and trophies_critical
+        and not soften_cl_under
+    ):
+        raw.append(REASON_CL_UNDER)
 
     if _BADGE_TROPHY in badges:
         raw.append(_BADGE_TROPHY)
@@ -1791,7 +1845,7 @@ def _reason_codes_raw(
         )
         and frustration_pen == 0.0
         and finish_frust < 0.45
-        and float(place_delta) <= 0.0
+        and not club_overperforming
         and prod_ratio >= 0.92
     )
     if outgrown:
@@ -1849,6 +1903,7 @@ def _filter_reasons_for_verdict(
             REASON_NO_TROPHIES,
             REASON_OUTGREW,
             _BADGE_TROPHY,
+            REASON_CL_UNDER,
             REASON_UNDERCLUB,
             _BADGE_PROD,
             REASON_DECLINE,
@@ -1892,6 +1947,8 @@ def _build_reasons(
     trophies_critical: bool = True,
     suppress_carry_with_results: bool = False,
     cap_results_at_below: bool = False,
+    cl_stage_delta: float = 0.0,
+    soften_cl_under: bool = False,
 ) -> list[str]:
     """До 3 причин для отображения (порядок = важность)."""
     raw = _reason_codes_raw(
@@ -1919,6 +1976,7 @@ def _build_reasons(
         trophies_critical=trophies_critical,
         suppress_carry_with_results=suppress_carry_with_results,
         cap_results_at_below=cap_results_at_below,
+        cl_stage_delta=cl_stage_delta,
     )
     return _filter_reasons_for_verdict(
         raw,
@@ -2095,6 +2153,18 @@ def _compute_advice_for_player(
     finish_places = _team_league_places_during_seasons(
         team, league_code, stint.season_nums
     )
+    from utils.cl_knockout_results import (
+        cl_stage_label_ru,
+        team_cl_stage_performance,
+    )
+
+    cl_stage_delta, cl_stage_trend, cl_stage_details = team_cl_stage_performance(
+        team,
+        stint.season_nums,
+        league_code=league_code,
+        league_rank=league_rank,
+        cl_rank=cl_rank,
+    )
     results_ctx = _team_results_context(
         finish_places=finish_places,
         expected_place=expected_place,
@@ -2102,9 +2172,13 @@ def _compute_advice_for_player(
         league_trophies=stint.league_trophies,
         cl_trophies=stint.cl_trophies,
         trophies_critical=trophies_critical,
+        cl_stage_delta=cl_stage_delta,
+        cl_stage_trend=cl_stage_trend,
     )
     finish_frust = results_ctx.finish_frust
     place_delta = results_ctx.place_delta
+    cl_stage_delta = results_ctx.cl_stage_delta
+    cl_stage_trend = results_ctx.cl_stage_trend
     frustration_pen = _frustrated_star_pressure(
         position=pos,
         club_amb=club_amb,
@@ -2138,6 +2212,7 @@ def _compute_advice_for_player(
         and rel_deficit > _TROPHY_REL_DEFICIT_BADGE
         and trophy_earned >= _EARNED_TROPHY_MIN
         and float(place_delta) <= 0.0
+        and float(cl_stage_delta) < 1.0
     ):
         if _BADGE_TROPHY not in badges:
             badges.append(_BADGE_TROPHY)
@@ -2152,6 +2227,7 @@ def _compute_advice_for_player(
         and player_amb >= 0.28
         and trophy_earned >= _EARNED_TROPHY_MIN
         and float(place_delta) <= 0.0
+        and float(cl_stage_delta) < 1.0
     ):
         if depth_rank <= 1:
             trophy_role = 1.0
@@ -2208,6 +2284,7 @@ def _compute_advice_for_player(
         + _result_pm_score_term(
             float(result_pm), position=pos, is_gk=is_gk, matches=stint.matches
         )
+        + max(-8.0, min(8.0, float(results_ctx.cl_stage_apply) * 1.5))
     )
     if ovr_drop_peak <= -2:
         score -= min(14.0, abs(int(ovr_drop_peak)) * 4.0)
@@ -2312,6 +2389,8 @@ def _compute_advice_for_player(
         trophies_critical=trophies_critical,
         suppress_carry_with_results=results_ctx.suppress_carry_with_results,
         cap_results_at_below=results_ctx.cap_results_at_below,
+        cl_stage_delta=cl_stage_delta,
+        soften_cl_under=results_ctx.soften_cl_under,
     )
     verdict, score = _apply_verdict_modifiers(
         verdict,
@@ -2322,6 +2401,7 @@ def _compute_advice_for_player(
         trophies_critical=trophies_critical,
         depth_rank=depth_rank,
         frustration_pen=frustration_pen,
+        cl_stage_delta=cl_stage_delta,
     )
     reasons = _filter_reasons_for_verdict(
         raw_reasons,
@@ -2357,6 +2437,12 @@ def _compute_advice_for_player(
         "trophies_critical": trophies_critical,
         "league_trophies": stint.league_trophies,
         "cl_trophies": stint.cl_trophies,
+        "cl_stage_delta": cl_stage_delta,
+        "cl_stage_trend": cl_stage_trend,
+        "cl_stages": [
+            {"season": sn, "stage": cl_stage_label_ru(st), "expected": exp}
+            for sn, st, exp in cl_stage_details
+        ],
         "depth_rank": depth_rank,
         "status": player.get("status"),
         "in_start": in_start,
@@ -2583,6 +2669,13 @@ def format_player_advice_card_html(
     trophy_line = (
         f"лига {d.get('league_trophies', 0)}, ЛЧ {d.get('cl_trophies', 0)}"
     )
+    cl_stages = d.get("cl_stages") or []
+    if cl_stages:
+        parts = [
+            f"S{x['season']} {escape(str(x['stage']))}" for x in cl_stages if x
+        ]
+        if parts:
+            trophy_line += f" · {' · '.join(parts)}"
     result_pm = d.get("result_pm")
     result_lines: list[str] = []
     if result_pm is not None and int(d.get("matches", 0) or 0) > 0:

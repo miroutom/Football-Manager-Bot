@@ -28,6 +28,7 @@ def _default_data() -> dict[str, Any]:
             "ger": [],
         },
         "champions_league": [],
+        "cl_knockout_stages": [],
         "golden_ball": [],
         "golden_boot": [],
         "golden_glove": [],
@@ -52,7 +53,14 @@ def load_history() -> dict[str, Any]:
         for code in out["league_winners"]:
             if code in lw and isinstance(lw[code], list):
                 out["league_winners"][code] = lw[code]
-    for key in ("champions_league", "golden_ball", "golden_boot", "golden_glove", "golden_boy"):
+    for key in (
+        "champions_league",
+        "cl_knockout_stages",
+        "golden_ball",
+        "golden_boot",
+        "golden_glove",
+        "golden_boy",
+    ):
         v = raw.get(key)
         if isinstance(v, list):
             out[key] = v
@@ -102,6 +110,45 @@ def record_tournament_winners_from_finalize(ended_season: int, trophies_log: dic
         _upsert_season_row(cl_rows, ended_season, [ended_season, team_cl])
 
     save_history(data)
+
+
+def record_cl_knockout_stages_for_season(
+    season: int,
+    stages_by_team: dict[str, int],
+) -> None:
+    """Записать стадии плей-офф ЛЧ всех клубов сезона."""
+    if not stages_by_team:
+        return
+    data = load_history()
+    rows = data.setdefault("cl_knockout_stages", [])
+    if not isinstance(rows, list):
+        rows = []
+        data["cl_knockout_stages"] = rows
+    clean = {str(k).strip().title(): int(v) for k, v in stages_by_team.items() if k}
+    _upsert_season_row(rows, int(season), [int(season), clean])
+    save_history(data)
+
+
+def record_cl_knockout_stages_from_archive(ended_season: int, archive_dir: str) -> str:
+    """
+    Считать стадии из ``match_results.json`` архива и сохранить в историю.
+    Возвращает ``ok``, ``no_journal`` или ``error:…``.
+    """
+    import os
+
+    jp = os.path.join(archive_dir, "match_results.json")
+    if not os.path.isfile(jp):
+        return "no_journal"
+    try:
+        from utils.cl_knockout_results import all_cl_knockout_stages_from_journal
+
+        stages = all_cl_knockout_stages_from_journal(jp)
+        if stages:
+            record_cl_knockout_stages_for_season(int(ended_season), stages)
+        return "ok"
+    except Exception as e:
+        logger.warning("cl_knockout_stages season %s: %s", ended_season, e)
+        return f"error:{e!s}"
 
 
 _AWARD_KIND_KEYS = {

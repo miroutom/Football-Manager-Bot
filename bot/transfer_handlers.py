@@ -333,7 +333,7 @@ async def cmd_transfer_advice(message: Message) -> None:
             "Пример: <code>/transfer_advice Цска</code>\n\n"
             "Коды: <b>НО</b> надо остаться · <b>СО</b> стоит остаться · "
             "<b>СУ</b> стоит уходить · <b>НУ</b> надо уходить\n"
-            "Метки: Т− П↓ З+ С×",
+            "Метки: Т− П↓ З+ С× · ЛЧ+ ЛЧ−",
             parse_mode="HTML",
         )
         return
