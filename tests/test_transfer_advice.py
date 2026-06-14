@@ -456,6 +456,41 @@ def test_build_reasons_outgrown_and_new():
     assert REASON_NEW in listed_no_matches
 
 
+def test_min_depth_by_formation_slots():
+    from coach_squad_state import resolve_formation_key_for_team
+    from team_squad_schemas import get_slots_for_formation_key
+    from utils.transfer_advice import _min_depth_for_position
+
+    slots = get_slots_for_formation_key(resolve_formation_key_for_team("Аталанта"))
+    assert _min_depth_for_position("ВРТ", slots) == 3
+    assert _min_depth_for_position("ЦЗ", slots) == 4
+    assert _min_depth_for_position("ЦП", slots) == 4
+    assert _min_depth_for_position("ЦОП", slots) == 2
+
+
+def test_gk_depth_three_not_surplus():
+    from coach_squad_state import resolve_formation_key_for_team
+    from team_squad_schemas import get_slots_for_formation_key
+    from utils.transfer_advice import (
+        _BADGE_DEPTH,
+        _is_depth_surplus,
+        collect_transfer_advice,
+    )
+
+    slots = get_slots_for_formation_key(resolve_formation_key_for_team("Аталанта"))
+    assert not _is_depth_surplus(
+        position="ВРТ",
+        depth_rank=3,
+        slots=slots,
+        in_start=False,
+    )
+    _, rows, _ = collect_transfer_advice("Аталанта")
+    gk = next(r for r in rows if "Шевалье" in r.name)
+    assert gk.detail.get("depth_rank") == 3
+    assert _BADGE_DEPTH not in gk.reasons
+    assert _BADGE_DEPTH not in gk.badges
+
+
 def test_starter_never_gets_depth_surplus_reason():
     from utils.transfer_advice import _BADGE_DEPTH, _BADGE_PROD, _build_reasons
 

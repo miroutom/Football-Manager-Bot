@@ -255,6 +255,70 @@ def _player_fits_formation(position: str, slots: tuple[Any, ...]) -> bool:
     return False
 
 
+def _formation_slots_for_position(position: str, slots: tuple[Any, ...]) -> int:
+    """Сколько слотов схемы явно принимают эту позицию."""
+    pos = (position or "").strip().upper()
+    if not pos or not slots:
+        return 0
+    count = 0
+    for slot in slots:
+        allowed = slot.allowed_positions or frozenset()
+        if pos not in allowed:
+            continue
+        # CAM — слот «десятки», не глубина чистых ЦП.
+        if pos == "ЦП" and str(getattr(slot, "slot_id", "") or "").upper() in {
+            "CAM",
+            "ACM",
+        }:
+            continue
+        count += 1
+    return count
+
+
+def _min_depth_for_position(position: str, slots: tuple[Any, ...]) -> int:
+    """
+    Норма глубины на позиции: слоты схемы × 2 (основа + дубль на банку), минимум 2.
+    Вратари: минимум 3 — третий в заявке ещё не избыток.
+    """
+    slot_count = _formation_slots_for_position(position, slots)
+    if slot_count <= 0:
+        return 3 if _is_gk(position) else 2
+    needed = max(2, slot_count * 2)
+    if _is_gk(position):
+        return max(3, needed)
+    return needed
+
+
+def _is_depth_surplus(
+    *,
+    position: str,
+    depth_rank: int,
+    slots: tuple[Any, ...],
+    in_start: bool,
+) -> bool:
+    if in_start:
+        return False
+    return int(depth_rank) > _min_depth_for_position(position, slots)
+
+
+def _depth_score_penalty(
+    *,
+    position: str,
+    depth_rank: int,
+    slots: tuple[Any, ...],
+    in_start: bool,
+) -> float:
+    if in_start:
+        return 0.0
+    min_depth = _min_depth_for_position(position, slots)
+    surplus = int(depth_rank) - min_depth
+    if surplus <= 0:
+        return 0.0
+    if surplus == 1:
+        return -5.0
+    return -13.0
+
+
 def _league_strength_rank(team: str, league_code: str | None) -> int:
     if not league_code:
         return 99
@@ -1918,7 +1982,12 @@ def _compute_advice_for_player(
     if not fit:
         badges.append(_BADGE_FIT)
 
-    depth_surplus = (is_gk and depth_rank >= 2) or (not is_gk and depth_rank >= 3)
+    depth_surplus = _is_depth_surplus(
+        position=pos,
+        depth_rank=depth_rank,
+        slots=slots,
+        in_start=in_start,
+    )
     if depth_surplus and not in_start:
         badges.append(_BADGE_DEPTH)
 
@@ -2100,14 +2169,12 @@ def _compute_advice_for_player(
             * max(-1.5, min(1.5, -rel_deficit))
         )
 
-    depth_pen = 0.0
-    if not in_start:
-        if depth_rank >= 4:
-            depth_pen = -13.0
-        elif depth_rank == 3:
-            depth_pen = -5.0
-        elif depth_rank == 2 and not is_gk:
-            depth_pen = -2.5
+    depth_pen = _depth_score_penalty(
+        position=pos,
+        depth_rank=depth_rank,
+        slots=slots,
+        in_start=in_start,
+    )
 
     usage_pen = 0.0
     if depth_rank <= 2 and stint.completed_play_seasons >= 2 and stint.matches >= 1:
