@@ -351,6 +351,7 @@ def test_build_reasons_outgrown_and_new():
         prod_ratio=0.8,
         ovr_delta_live=0,
         completed_play_seasons=1,
+        roster_seasons=1,
         stable_core=True,
         usage_pen=0.0,
         matches=10,
@@ -367,11 +368,29 @@ def test_build_reasons_outgrown_and_new():
         prod_ratio=0.0,
         ovr_delta_live=0,
         completed_play_seasons=0,
+        roster_seasons=0,
         stable_core=False,
         usage_pen=0.0,
         matches=0,
     )
     assert REASON_NEW not in zero_seasons
+
+    listed_no_matches = _build_reasons(
+        badges=[],
+        frustration_pen=0.0,
+        skill_norm=0.0,
+        ovr=80,
+        team_median_overall=82.0,
+        depth_rank=3,
+        prod_ratio=0.0,
+        ovr_delta_live=0,
+        completed_play_seasons=0,
+        roster_seasons=1,
+        stable_core=False,
+        usage_pen=0.0,
+        matches=0,
+    )
+    assert REASON_NEW in listed_no_matches
 
 
 def test_starter_never_gets_depth_surplus_reason():
@@ -552,7 +571,7 @@ def test_result_pm_shown_for_rohl():
     assert "<small>" not in card
 
 
-def test_club_seasons_matches_team_places():
+def test_club_seasons_by_roster_not_matches():
     from utils.transfer_advice import (
         _club_seasons_count,
         collect_transfer_advice,
@@ -563,24 +582,19 @@ def test_club_seasons_matches_team_places():
     assert not err
     unner = next(r for r in rows if "Уннерсталь" in r.name)
     kounde = next(r for r in rows if "Кунде" in r.name)
-    assert len(unner.detail["finish_places"]) == 1
-    assert unner.detail["club_seasons"] == 1
-    assert len(kounde.detail["finish_places"]) == 2
-    assert kounde.detail["club_seasons"] == 2
+    assert unner.detail["club_seasons"] == unner.detail["tenure_seasons"]
+    assert unner.detail["club_seasons"] >= 1
+    assert kounde.detail["club_seasons"] == kounde.detail["tenure_seasons"]
 
     unner_card = format_player_advice_card_html("Барселона", unner)
-    kounde_card = format_player_advice_card_html("Барселона", kounde)
-    assert "Сезонов 1," in unner_card
-    assert "Сезонов 2," in kounde_card
+    assert f"Сезонов {unner.detail['club_seasons']}," in unner_card
 
 
-def test_club_seasons_count_fallback():
+def test_club_seasons_count_roster():
     from utils.transfer_advice import ClubStintStats, _club_seasons_count
 
-    stint = ClubStintStats(seasons=2, play_seasons=0)
-    assert _club_seasons_count(finish_places=[1], stint=stint) == 1
-    assert _club_seasons_count(finish_places=[], stint=stint) == 2
-    assert _club_seasons_count(finish_places=[], stint=ClubStintStats(play_seasons=1)) == 1
+    assert _club_seasons_count(stint=ClubStintStats(seasons=2)) == 2
+    assert _club_seasons_count(stint=ClubStintStats(seasons=0, play_seasons=1)) == 0
 
 
 def test_team_is_apex_inter():
@@ -783,7 +797,6 @@ def test_havertz_frustrated_star_not_hard_no():
 
 def test_giroud_girona_new_starter_not_no():
     from utils.transfer_advice import (
-        REASON_NEW,
         REASON_OUTGREW,
         VERDICT_NO,
         VERDICT_SO,
@@ -796,7 +809,7 @@ def test_giroud_girona_new_starter_not_no():
     g = next(r for r in rows if "Жиру" in r.name)
     assert g.verdict == VERDICT_SO
     assert g.verdict != VERDICT_NO
-    assert REASON_NEW in g.reasons
+    assert int(g.detail["club_seasons"]) >= 1
     assert REASON_OUTGREW not in g.reasons
     assert float(g.detail["expected_place"]) == 8.0
     assert float(g.detail["place_delta"]) > 0

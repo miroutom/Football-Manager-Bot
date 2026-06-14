@@ -594,6 +594,8 @@ def _collect_club_stint_stats(
 
         if ovr_best > 0:
             per_season_ovr[sn] = ovr_best
+            if stint.ovr_first is None:
+                stint.ovr_first = ovr_best
 
         stint.per_season_matches[sn] = season_m
         stint.per_season_ga[sn] = season_ga
@@ -989,13 +991,9 @@ def _team_league_places_during_seasons(
     return places
 
 
-def _club_seasons_count(*, finish_places: list[int], stint: ClubStintStats) -> int:
-    """Сезоны в клубе для карточки — в одном ключе с «Места команды»."""
-    if finish_places:
-        return len(finish_places)
-    if stint.seasons > 0:
-        return stint.seasons
-    return stint.play_seasons
+def _club_seasons_count(*, stint: ClubStintStats) -> int:
+    """Сезоны в клубе — по факту числения в составе, без учёта матчей."""
+    return int(stint.seasons or 0)
 
 
 def _finish_frustration(places: list[int], expected_place: float) -> float:
@@ -1644,6 +1642,7 @@ def _reason_codes_raw(
     prod_ratio: float,
     ovr_delta_live: int,
     completed_play_seasons: int,
+    roster_seasons: int,
     stable_core: bool,
     usage_pen: float,
     matches: int,
@@ -1715,7 +1714,7 @@ def _reason_codes_raw(
 
     if usage_pen < 0:
         raw.append(REASON_USAGE)
-    if completed_play_seasons == 1:
+    if int(roster_seasons) == 1:
         raw.append(REASON_NEW)
     if stable_core:
         raw.append(REASON_LEVEL)
@@ -1778,6 +1777,7 @@ def _build_reasons(
     prod_ratio: float,
     ovr_delta_live: int,
     completed_play_seasons: int,
+    roster_seasons: int = 0,
     stable_core: bool,
     usage_pen: float,
     matches: int,
@@ -1805,6 +1805,7 @@ def _build_reasons(
         prod_ratio=prod_ratio,
         ovr_delta_live=ovr_delta_live,
         completed_play_seasons=completed_play_seasons,
+        roster_seasons=roster_seasons,
         stable_core=stable_core,
         usage_pen=usage_pen,
         matches=matches,
@@ -2195,6 +2196,7 @@ def _compute_advice_for_player(
         prod_ratio=prod_ratio,
         ovr_delta_live=ovr_delta_live,
         completed_play_seasons=stint.completed_play_seasons,
+        roster_seasons=stint.seasons,
         stable_core=stable_core,
         usage_pen=usage_pen,
         matches=stint.matches,
@@ -2230,9 +2232,7 @@ def _compute_advice_for_player(
         "seasons_completed": stint.completed_play_seasons,
         "play_seasons": stint.play_seasons,
         "tenure_seasons": stint.seasons,
-        "club_seasons": _club_seasons_count(
-            finish_places=finish_places, stint=stint
-        ),
+        "club_seasons": _club_seasons_count(stint=stint),
         "matches": stint.matches,
         "goals": stint.goals,
         "assists": stint.assists,
