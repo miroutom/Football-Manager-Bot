@@ -1089,26 +1089,30 @@ def _defender_ga_pm(
     return (ga - exp_ga_small) * 0.3
 
 
-def _defender_rating_progress_pm(stint: ClubStintStats) -> float:
+def _defender_rating_progress_pm(
+    stint: ClubStintStats, *, current_ovr: int | None = None
+) -> float:
     """
     Динамика рейтинга за стаж: падение — сильный минус, стагнация — лёгкий минус.
 
-    Учитываются переходы между сезонами с игрой и общий тренд first → last completed.
+    Учитываются рейтинги на границах сезонов (в т.ч. без матчей в новом сезоне —
+    overall в БД сезона N задаётся после окончания сезона N−1).
     """
     if stint.matches < 3:
         return 0.0
 
     pm = 0.0
-    played: list[tuple[int, int, int]] = []
+    chain: list[tuple[int, int, int]] = []
     for sn in sorted(int(x) for x in stint.season_nums):
-        m = int(stint.per_season_matches.get(sn, 0) or 0)
         ovr = int(stint.per_season_ovr.get(sn, 0) or 0)
-        if m >= 3 and ovr > 0:
-            played.append((sn, ovr, m))
+        if ovr <= 0:
+            continue
+        m = int(stint.per_season_matches.get(sn, 0) or 0)
+        chain.append((sn, ovr, m))
 
     prev_ovr: int | None = None
-    for _sn, ovr, m in played:
-        weight = min(1.0, m / 10.0)
+    for _sn, ovr, m in chain:
+        weight = min(1.0, m / 10.0) if m >= 3 else 0.45
         if prev_ovr is not None:
             delta = ovr - prev_ovr
             if delta < 0:
@@ -1119,18 +1123,23 @@ def _defender_rating_progress_pm(stint: ClubStintStats) -> float:
                 pm += min(delta * 0.55, 2.2) * weight
         prev_ovr = ovr
 
+    peak = int(stint.ovr_peak or stint.ovr_first or 0)
+    live = int(current_ovr or 0)
+    if peak > 0 and live > 0 and live < peak:
+        pm -= (peak - live) * 3.5 + 2.0
+
     first = stint.ovr_first
-    last = stint.ovr_last_completed
-    if first is not None and last is not None and stint.matches >= 8:
+    if first is not None and stint.matches >= 8:
         comp = max(1, int(stint.completed_play_seasons or 1))
-        total_delta = int(last) - int(first)
+        anchor = live if live > 0 else int(stint.ovr_last_completed or first)
+        total_delta = int(anchor) - int(first)
         if total_delta < 0:
             pm -= abs(total_delta) * 2.8 * comp + 2.0
-        elif total_delta == 0:
+        elif total_delta == 0 and peak <= int(first):
             pm -= 3.5 * comp
         elif total_delta == 1:
             pm += 0.6 * comp
-        else:
+        elif total_delta > 1:
             pm += total_delta * 0.45 * comp
 
     return pm
@@ -1287,6 +1296,7 @@ def _result_impact_pm(
     expected_rates: dict[tuple[str, int], float],
     is_gk: bool,
     team_season_defense: dict[int, TeamSeasonDefense] | None = None,
+    current_ovr: int | None = None,
 ) -> float:
     """
     Вклад в результаты клуба за стаж (±).
@@ -1320,9 +1330,41 @@ def _result_impact_pm(
         )
 
     if pos in _DEF_POS:
-        total += _defender_rating_progress_pm(stint)
+        total += _defender_rating_progress_pm(stint, current_ovr=current_ovr)
 
     return round(total, 1)
+
+
+def _result_pm_hint(
+    pm: float, *, position: str, is_gk: bool
+) -> tuple[str, str]:
+    """
+    Короткая оценка ± вклада для карточки: (ярлык, пояснение).
+
+    Пороги зависят от роли — у защитников и вратарей типичный размах меньше.
+    """
+    pos = (position or "").strip().upper()
+    is_def = pos in _DEF_POS
+    if is_gk or is_def:
+        bands: list[tuple[float, str, str]] = [
+            (8.0, "заметный плюс", "стабильно выше ожиданий для роли"),
+            (2.0, "положительный", "скорее помогает, чем мешает"),
+            (-5.0, "в норме", "без яркого перекоса"),
+            (-12.0, "ниже ожиданий", "результат слабее, чем ждут от игрока"),
+            (-999.0, "слабый вклад", "заметно тянет оценку вниз"),
+        ]
+    else:
+        bands = [
+            (25.0, "выдающийся", "один из лучших по вкладу в составе"),
+            (12.0, "заметный плюс", "стабильно выше ожиданий для роли"),
+            (-3.0, "в норме", "без яркого перекоса"),
+            (-15.0, "ниже ожиданий", "результат слабее, чем ждут от игрока"),
+            (-999.0, "слабый вклад", "заметно тянет оценку вниз"),
+        ]
+    for threshold, label, explain in bands:
+        if pm >= threshold:
+            return label, explain
+    return "слабый вклад", "заметно тянет оценку вниз"
 
 
 def _format_result_pm(pm: float) -> str:
@@ -1547,6 +1589,10 @@ def _compute_advice_for_player(
         expected_rates=expected_rates,
         is_gk=is_gk,
         team_season_defense=team_season_defense,
+        current_ovr=ovr,
+    )
+    result_pm_label, result_pm_explain = _result_pm_hint(
+        float(result_pm), position=pos, is_gk=is_gk
     )
 
     finish_places = _team_league_places_during_seasons(
@@ -1734,6 +1780,8 @@ def _compute_advice_for_player(
         "injury_months": stint.injury_months,
         "trophy_earned": round(trophy_earned, 2),
         "result_pm": result_pm,
+        "result_pm_label": result_pm_label,
+        "result_pm_explain": result_pm_explain,
         "prod_ratio": round(prod_ratio, 2),
         "prod_ratio_last": round(prod_ratio_last, 2) if prod_ratio_last is not None else None,
         "finish_places": finish_places,
@@ -1971,9 +2019,15 @@ def format_player_advice_card_html(
     result_pm = d.get("result_pm")
     result_line = None
     if result_pm is not None and int(d.get("matches", 0) or 0) > 0:
+        pm_label = d.get("result_pm_label") or ""
+        pm_explain = d.get("result_pm_explain") or ""
         result_line = (
             f"Вклад в результаты: <b>{escape(_format_result_pm(float(result_pm)))}</b>"
         )
+        if pm_label:
+            result_line += f" · <i>{escape(str(pm_label))}</i>"
+        if pm_explain:
+            result_line += f"\n<small>{escape(str(pm_explain))}</small>"
 
     lines = [
         f"<b>{sur}</b> · {escape(row.position)} · {row.overall}",

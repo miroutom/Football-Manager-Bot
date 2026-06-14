@@ -360,6 +360,7 @@ def test_result_pm_shown_for_rohl():
     card = format_player_advice_card_html("Бавария", rohl)
     assert "Вклад в результаты" in card
     assert "вклад в трофеи" not in card
+    assert "<i>" in card
 
 
 def test_team_is_apex_inter():
@@ -456,6 +457,26 @@ def test_defender_rating_progress_pm():
     assert _defender_rating_progress_pm(growth) > 0
     assert _defender_rating_progress_pm(flat) < 0
     assert _defender_rating_progress_pm(drop) < _defender_rating_progress_pm(flat)
+
+    bastoni_arc = ClubStintStats(
+        matches=14,
+        completed_play_seasons=1,
+        ovr_first=85,
+        ovr_last_completed=85,
+        ovr_peak=87,
+        season_nums=[1, 2, 3],
+        per_season_matches={1: 14, 2: 0, 3: 0},
+        per_season_ovr={1: 85, 2: 87, 3: 85},
+    )
+    assert _defender_rating_progress_pm(bastoni_arc, current_ovr=85) < -5.0
+
+
+def test_result_pm_hint_labels():
+    from utils.transfer_advice import _result_pm_hint
+
+    assert _result_pm_hint(62.0, position="ФРВ", is_gk=False)[0] == "выдающийся"
+    assert _result_pm_hint(8.5, position="ЛЗ", is_gk=False)[0] == "заметный плюс"
+    assert _result_pm_hint(-11.9, position="ЦЗ", is_gk=False)[0] == "ниже ожиданий"
 
 
 def test_goalkeeper_pm_missed_goals():
