@@ -122,6 +122,14 @@ def test_finish_frustration_ambitious_club_underperform():
     assert _finish_frustration([2, 1], 2.0) < 0.2
 
 
+def test_expected_place_scales_to_league_size():
+    from utils.transfer_advice import _expected_league_place
+
+    assert _expected_league_place("Жирона") == 8.0
+    assert _expected_league_place("Арсенал") == 2.0
+    assert _expected_league_place("Атлетик") == 3.0
+
+
 def test_frustrated_star_pressure_only_for_carriers():
     from utils.transfer_advice import _frustrated_star_pressure
 
@@ -582,3 +590,24 @@ def test_havertz_frustrated_star_not_hard_no():
     assert REASON_CARRY_FAIL in h.reasons
     assert REASON_OUTGREW not in h.reasons
     assert h.score < 72.0
+
+
+def test_giroud_girona_new_starter_not_no():
+    from utils.transfer_advice import (
+        REASON_NEW,
+        REASON_OUTGREW,
+        VERDICT_NO,
+        VERDICT_SO,
+        _expected_league_place,
+        collect_transfer_advice,
+    )
+
+    assert _expected_league_place("Жирона") == 8.0
+    _, rows, _ = collect_transfer_advice("Жирона")
+    g = next(r for r in rows if "Жиру" in r.name)
+    assert g.verdict == VERDICT_SO
+    assert g.verdict != VERDICT_NO
+    assert REASON_NEW in g.reasons
+    assert REASON_OUTGREW not in g.reasons
+    assert float(g.detail["expected_place"]) == 8.0
+    assert float(g.detail["place_delta"]) > 0

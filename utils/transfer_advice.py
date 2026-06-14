@@ -734,13 +734,99 @@ def _depth_ranks(roster: list[dict[str, Any]]) -> dict[tuple[str, str], int]:
 
 
 def _expected_league_place(team: str) -> float:
-    from utils.team_registry import get_team
+    from utils.team_registry import get_team, teams_in_league
 
     tm = get_team(team)
     if tm is None:
         return 5.0
     tier = max(1, min(5, int(tm.trophy_tier)))
-    return {5: 2.0, 4: 4.0, 3: 6.0, 2: 8.0, 1: 10.0}.get(tier, 5.0)
+    baseline = {5: 2.0, 4: 4.0, 3: 6.0, 2: 8.0, 1: 10.0}.get(tier, 5.0)
+    n = max(1, len(teams_in_league(tm.league_code)))
+    scaled = baseline * (n / 10.0)
+    return float(max(1, min(n, round(scaled))))
+
+
+def _trophies_critical_for_team(team: str) -> bool:
+    """Трофеи важны для вердикта (топ-клубы / высокий trophy_tier)."""
+    from utils.team_registry import get_team
+
+    tm = get_team(team)
+    if tm is None:
+        return False
+    return int(tm.trophy_tier) >= 4 or club_trophy_ambition(team) >= 0.42
+
+
+def _finish_place_delta(places: list[int], expected_place: float) -> float:
+    """>0 — команда выше ожиданий (место лучше), <0 — ниже."""
+    if not places:
+        return 0.0
+    avg = sum(places) / len(places)
+    return float(expected_place) - float(avg)
+
+
+def _cap_verdict_at_most(current: str, ceiling: str) -> str:
+    """Не выше ceiling по «остаться» (НО > СО > СУ > НУ)."""
+    if _VERDICT_ORDER[current] > _VERDICT_ORDER[ceiling]:
+        return ceiling
+    return current
+
+
+def _cap_verdict_at_least(current: str, floor: str) -> str:
+    """Не ниже floor — сильнее к продаже."""
+    if _VERDICT_ORDER[current] < _VERDICT_ORDER[floor]:
+        return floor
+    return current
+
+
+_VERDICT_LEAVE_MARKERS = frozenset(
+    {REASON_CARRY_FAIL, REASON_OUTGREW, _BADGE_TROPHY}
+)
+_VERDICT_SELL_MARKERS = frozenset(
+    {REASON_UNDERCLUB, _BADGE_PROD, REASON_DECLINE, _BADGE_DEPTH, REASON_USAGE}
+)
+
+
+def _apply_verdict_modifiers(
+    verdict: str,
+    score: float,
+    *,
+    raw_reasons: list[str],
+    completed_play_seasons: int,
+    place_delta: float,
+    trophies_critical: bool,
+    depth_rank: int,
+) -> tuple[str, float]:
+    """Согласовать вердикт со score, причинами и контекстом клуба."""
+    v = verdict
+    s = score
+
+    if any(c in _VERDICT_LEAVE_MARKERS for c in raw_reasons):
+        v = _cap_verdict_at_most(v, VERDICT_SO)
+        s = min(s, SCORE_VERDICT_NO - 0.1)
+
+    if REASON_OUTGREW in raw_reasons and REASON_NEW in raw_reasons:
+        v = _cap_verdict_at_most(v, VERDICT_SO)
+        s = min(s, SCORE_VERDICT_NO - 0.1)
+
+    if completed_play_seasons <= 1:
+        v = _cap_verdict_at_most(v, VERDICT_SO)
+        s = min(s, SCORE_VERDICT_NO - 0.1)
+
+    if any(c in _VERDICT_SELL_MARKERS for c in raw_reasons):
+        if depth_rank >= 3:
+            v = _cap_verdict_at_least(v, VERDICT_NU)
+        else:
+            v = _cap_verdict_at_least(v, VERDICT_SU)
+
+    if trophies_critical and place_delta <= -1.5 and depth_rank <= 2:
+        v = _cap_verdict_at_most(v, VERDICT_SO)
+        s = min(s, SCORE_VERDICT_NO - 0.1)
+
+    if not trophies_critical and place_delta >= 1.0:
+        v = _cap_verdict_at_most(v, VERDICT_SO)
+        s = min(s, SCORE_VERDICT_NO - 0.1)
+
+    return v, s
 
 
 def _load_league_teams_dict(league_code: str, season_num: int) -> dict[str, Any] | None:
@@ -1388,7 +1474,7 @@ def _format_result_pm(pm: float) -> str:
 _EARNED_TROPHY_MIN = 0.32
 
 
-def _build_reasons(
+def _reason_codes_raw(
     *,
     badges: list[str],
     frustration_pen: float,
@@ -1407,9 +1493,9 @@ def _build_reasons(
     injury_months: int = 0,
     team_is_apex: bool = False,
     finish_frust: float = 0.0,
-    verdict: str | None = None,
+    trophies_critical: bool = True,
 ) -> list[str]:
-    """До 3 причин для отображения (порядок = важность)."""
+    """Сырые коды причин (до фильтра под вердикт)."""
     raw: list[str] = []
 
     if frustration_pen < 0:
@@ -1465,7 +1551,17 @@ def _build_reasons(
         if code not in seen:
             seen.add(code)
             out.append(code)
+    return out
 
+
+def _filter_reasons_for_verdict(
+    raw: list[str],
+    *,
+    verdict: str,
+    stable_core: bool,
+    ovr_delta_live: int,
+) -> list[str]:
+    out = list(raw)
     if verdict == VERDICT_NO:
         leave_codes = {
             REASON_CARRY_FAIL,
@@ -1484,8 +1580,58 @@ def _build_reasons(
                 out = [REASON_GROWTH]
             elif REASON_NEW in raw:
                 out = [REASON_NEW]
-
     return out[:3]
+
+
+def _build_reasons(
+    *,
+    badges: list[str],
+    frustration_pen: float,
+    skill_norm: float,
+    ovr: int,
+    team_median_overall: float,
+    depth_rank: int,
+    prod_ratio: float,
+    ovr_delta_live: int,
+    completed_play_seasons: int,
+    stable_core: bool,
+    usage_pen: float,
+    matches: int,
+    in_start: bool = False,
+    injury_periods: int = 0,
+    injury_months: int = 0,
+    team_is_apex: bool = False,
+    finish_frust: float = 0.0,
+    verdict: str | None = None,
+    trophies_critical: bool = True,
+) -> list[str]:
+    """До 3 причин для отображения (порядок = важность)."""
+    raw = _reason_codes_raw(
+        badges=badges,
+        frustration_pen=frustration_pen,
+        skill_norm=skill_norm,
+        ovr=ovr,
+        team_median_overall=team_median_overall,
+        depth_rank=depth_rank,
+        prod_ratio=prod_ratio,
+        ovr_delta_live=ovr_delta_live,
+        completed_play_seasons=completed_play_seasons,
+        stable_core=stable_core,
+        usage_pen=usage_pen,
+        matches=matches,
+        in_start=in_start,
+        injury_periods=injury_periods,
+        injury_months=injury_months,
+        team_is_apex=team_is_apex,
+        finish_frust=finish_frust,
+        trophies_critical=trophies_critical,
+    )
+    return _filter_reasons_for_verdict(
+        raw,
+        verdict=verdict or VERDICT_SO,
+        stable_core=stable_core,
+        ovr_delta_live=ovr_delta_live,
+    )
 
 
 def _result_pm_score_term(
@@ -1648,12 +1794,13 @@ def _compute_advice_for_player(
         float(result_pm), position=pos, is_gk=is_gk
     )
 
+    expected_place = _expected_league_place(team)
+    trophies_critical = _trophies_critical_for_team(team)
     finish_places = _team_league_places_during_seasons(
         team, league_code, stint.season_nums
     )
-    finish_frust = _finish_frustration(
-        finish_places, _expected_league_place(team)
-    )
+    finish_frust = _finish_frustration(finish_places, expected_place)
+    place_delta = _finish_place_delta(finish_places, expected_place)
     frustration_pen = _frustrated_star_pressure(
         position=pos,
         club_amb=club_amb,
@@ -1679,7 +1826,8 @@ def _compute_advice_for_player(
     )
 
     if (
-        stint.completed_play_seasons >= MIN_SEASONS_TROPHY_RULE
+        trophies_critical
+        and stint.completed_play_seasons >= MIN_SEASONS_TROPHY_RULE
         and depth_rank <= 3
         and player_amb >= 0.30
         and trophy_sens >= _TROPHY_SENSITIVITY_BADGE
@@ -1691,7 +1839,8 @@ def _compute_advice_for_player(
 
     trophy_score = 0.0
     if (
-        t_exp_player > 0.08
+        trophies_critical
+        and t_exp_player > 0.08
         and rel_deficit > 0
         and trophy_sens >= _TROPHY_SENSITIVITY_BADGE
         and depth_rank <= 3
@@ -1798,7 +1947,8 @@ def _compute_advice_for_player(
     if frustration_pen < 0:
         score = min(score, SCORE_VERDICT_NO - 0.1)
     if (
-        finish_frust >= 0.50
+        trophies_critical
+        and finish_frust >= 0.50
         and depth_rank <= 1
         and _BADGE_TROPHY in badges
         and stint.completed_play_seasons >= MIN_SEASONS_TROPHY_RULE
@@ -1816,6 +1966,7 @@ def _compute_advice_for_player(
         and finish_frust < 0.35
         and ovr_drop_peak > -2
         and ovr_delta_live > -2
+        and stint.completed_play_seasons >= 2
         and (
             is_gk
             or pos in _DEF_POS
@@ -1832,7 +1983,7 @@ def _compute_advice_for_player(
 
     badges = badges[:2]
 
-    reasons = _build_reasons(
+    raw_reasons = _reason_codes_raw(
         badges=badges,
         frustration_pen=frustration_pen,
         skill_norm=skill_norm,
@@ -1850,10 +2001,23 @@ def _compute_advice_for_player(
         injury_months=stint.injury_months,
         team_is_apex=team_is_apex,
         finish_frust=finish_frust,
-        verdict=verdict,
+        trophies_critical=trophies_critical,
     )
-
-    expected_place = _expected_league_place(team)
+    verdict, score = _apply_verdict_modifiers(
+        verdict,
+        score,
+        raw_reasons=raw_reasons,
+        completed_play_seasons=stint.completed_play_seasons,
+        place_delta=place_delta,
+        trophies_critical=trophies_critical,
+        depth_rank=depth_rank,
+    )
+    reasons = _filter_reasons_for_verdict(
+        raw_reasons,
+        verdict=verdict,
+        stable_core=stable_core,
+        ovr_delta_live=ovr_delta_live,
+    )
     detail = {
         "seasons_completed": stint.completed_play_seasons,
         "play_seasons": stint.play_seasons,
@@ -1875,6 +2039,8 @@ def _compute_advice_for_player(
         "prod_ratio_last": round(prod_ratio_last, 2) if prod_ratio_last is not None else None,
         "finish_places": finish_places,
         "expected_place": round(expected_place, 1),
+        "place_delta": round(place_delta, 1),
+        "trophies_critical": trophies_critical,
         "league_trophies": stint.league_trophies,
         "cl_trophies": stint.cl_trophies,
         "depth_rank": depth_rank,
