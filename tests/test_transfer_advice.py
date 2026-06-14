@@ -198,16 +198,78 @@ def test_results_reason_codes_tiers():
     assert _results_reason_codes(0.2, -2.5) == [REASON_RESULTS_WELL_BELOW]
 
 
-def test_build_reasons_carry_and_results_not_zero_trophies():
+def test_results_reason_codes_tiers():
+    from utils.transfer_advice import (
+        REASON_RESULTS_BELOW,
+        REASON_RESULTS_WELL_BELOW,
+        _results_reason_codes,
+    )
+
+    assert _results_reason_codes(0.2, 0.0) == []
+    assert _results_reason_codes(0.35, -0.5) == [REASON_RESULTS_BELOW]
+    assert _results_reason_codes(0.2, -1.2) == [REASON_RESULTS_BELOW]
+    assert _results_reason_codes(0.9, 0.0) == [REASON_RESULTS_WELL_BELOW]
+    assert _results_reason_codes(0.2, -2.5) == [REASON_RESULTS_WELL_BELOW]
+    assert _results_reason_codes(0.9, -2.5, cap_at_below=True) == [
+        REASON_RESULTS_BELOW
+    ]
+
+
+def test_team_results_context_trophy_cushion():
+    from utils.transfer_advice import (
+        REASON_RESULTS_BELOW,
+        _results_reason_codes,
+        _team_results_context,
+    )
+
+    barca = _team_results_context(
+        finish_places=[4, 1],
+        expected_place=2.0,
+        completed_play_seasons=2,
+        league_trophies=1,
+        cl_trophies=0,
+        trophies_critical=True,
+    )
+    assert barca.finish_frust < 0.30
+    assert barca.place_delta > -1.0
+    assert barca.suppress_carry_with_results is True
+
+    atleti = _team_results_context(
+        finish_places=[1, 8],
+        expected_place=2.0,
+        completed_play_seasons=2,
+        league_trophies=1,
+        cl_trophies=0,
+        trophies_critical=True,
+    )
+    assert atleti.cap_results_at_below is True
+    assert _results_reason_codes(
+        atleti.finish_frust,
+        atleti.place_delta,
+        cap_at_below=atleti.cap_results_at_below,
+    ) == [REASON_RESULTS_BELOW]
+
+
+def test_build_reasons_one_tag_when_team_has_trophy():
     from utils.transfer_advice import (
         REASON_CARRY_STAR,
         REASON_NO_TROPHIES,
         REASON_OUTGREW,
+        REASON_RESULTS_BELOW,
         REASON_RESULTS_WELL_BELOW,
         _BADGE_TROPHY,
         _build_reasons,
+        _team_results_context,
     )
 
+    ctx = _team_results_context(
+        finish_places=[1, 8],
+        expected_place=2.0,
+        completed_play_seasons=2,
+        league_trophies=1,
+        cl_trophies=0,
+        trophies_critical=True,
+    )
     reasons = _build_reasons(
         badges=[_BADGE_TROPHY],
         frustration_pen=-10.0,
@@ -221,13 +283,16 @@ def test_build_reasons_carry_and_results_not_zero_trophies():
         stable_core=False,
         usage_pen=0.0,
         matches=20,
-        finish_frust=1.0,
-        place_delta=-3.0,
+        finish_frust=ctx.finish_frust,
+        place_delta=ctx.place_delta,
         league_trophies=1,
         cl_trophies=0,
+        suppress_carry_with_results=ctx.suppress_carry_with_results,
+        cap_results_at_below=ctx.cap_results_at_below,
     )
-    assert REASON_RESULTS_WELL_BELOW in reasons
-    assert REASON_CARRY_STAR in reasons
+    assert REASON_RESULTS_BELOW in reasons
+    assert REASON_RESULTS_WELL_BELOW not in reasons
+    assert REASON_CARRY_STAR not in reasons
     assert REASON_NO_TROPHIES not in reasons
     assert REASON_OUTGREW not in reasons
 
@@ -618,12 +683,43 @@ def test_goalkeeper_pm_missed_goals():
     assert good > bad
 
 
+def test_lewa_barcelona_no_results_pressure_with_title():
+    from utils.transfer_advice import (
+        REASON_CARRY_STAR,
+        REASON_RESULTS_BELOW,
+        REASON_RESULTS_WELL_BELOW,
+        collect_transfer_advice,
+    )
+
+    _, rows, _ = collect_transfer_advice("Барселона")
+    lewa = next(r for r in rows if "Лева" in r.name)
+    assert REASON_RESULTS_BELOW not in lewa.reasons
+    assert REASON_RESULTS_WELL_BELOW not in lewa.reasons
+    assert REASON_CARRY_STAR not in lewa.reasons
+
+
+def test_morata_atletico_one_results_tag_with_title():
+    from utils.transfer_advice import (
+        REASON_CARRY_STAR,
+        REASON_RESULTS_BELOW,
+        REASON_RESULTS_WELL_BELOW,
+        collect_transfer_advice,
+    )
+
+    _, rows, _ = collect_transfer_advice("Атлетико")
+    morata = next(r for r in rows if "Мората" in r.name)
+    assert REASON_RESULTS_BELOW in morata.reasons
+    assert REASON_RESULTS_WELL_BELOW not in morata.reasons
+    assert REASON_CARRY_STAR not in morata.reasons
+
+
 def test_havertz_frustrated_star_not_hard_no():
-    """Звезда при слабых местах — не НО, с метками результатов и «тащит»."""
+    """Звезда при слабых местах без трофеев — не НО, с метками результатов и «тащит»."""
     from utils.transfer_advice import (
         REASON_CARRY_STAR,
         REASON_OUTGREW,
         REASON_RESULTS_BELOW,
+        REASON_RESULTS_WELL_BELOW,
         VERDICT_NO,
         VERDICT_SU,
         collect_transfer_advice,
@@ -633,7 +729,7 @@ def test_havertz_frustrated_star_not_hard_no():
     h = next(r for r in rows if "Хаверц" in r.name)
     assert h.verdict == VERDICT_SU
     assert h.verdict != VERDICT_NO
-    assert REASON_CARRY_STAR in h.reasons or REASON_RESULTS_BELOW in h.reasons
+    assert REASON_RESULTS_WELL_BELOW in h.reasons or REASON_CARRY_STAR in h.reasons
     assert REASON_OUTGREW not in h.reasons
     assert h.score < 72.0
 

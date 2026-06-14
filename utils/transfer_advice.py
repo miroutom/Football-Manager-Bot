@@ -997,6 +997,85 @@ def _finish_frustration(places: list[int], expected_place: float) -> float:
     return max(0.0, min(1.0, avg_def / 3.0))
 
 
+@dataclass(frozen=True)
+class TeamResultsContext:
+    """Места в таблице с учётом трофеев клуба за стаж игрока."""
+
+    finish_frust: float
+    place_delta: float
+    suppress_carry_with_results: bool = False
+    cap_results_at_below: bool = False
+
+
+def _team_trophy_results_cushion(
+    *,
+    completed_play_seasons: int,
+    league_trophies: int,
+    cl_trophies: int,
+    trophies_critical: bool,
+) -> float:
+    """
+    Смягчение давления по местам, если клуб за стаж уже взял трофей.
+    2 сезона и ≥1 трофей — норма для топа; 1 трофей за 3 — уже слабо.
+    """
+    if not trophies_critical or completed_play_seasons < 2:
+        return 0.0
+    team_trophies = int(league_trophies) + int(cl_trophies)
+    if team_trophies <= 0:
+        return 0.0
+    n = int(completed_play_seasons)
+    if n == 2:
+        if team_trophies >= 2:
+            return 0.78
+        return 0.62
+    if n == 3:
+        if team_trophies >= 3:
+            return 0.72
+        if team_trophies >= 2:
+            return 0.42
+        return 0.10
+    rate = team_trophies / float(n)
+    if rate >= 0.55:
+        return min(0.80, 0.35 + rate * 0.65)
+    if rate >= 0.33:
+        return 0.22
+    return 0.0
+
+
+def _team_results_context(
+    *,
+    finish_places: list[int],
+    expected_place: float,
+    completed_play_seasons: int,
+    league_trophies: int,
+    cl_trophies: int,
+    trophies_critical: bool,
+) -> TeamResultsContext:
+    finish_frust = _finish_frustration(finish_places, expected_place)
+    place_delta = _finish_place_delta(finish_places, expected_place)
+    team_trophies = int(league_trophies) + int(cl_trophies)
+    cushion = _team_trophy_results_cushion(
+        completed_play_seasons=completed_play_seasons,
+        league_trophies=league_trophies,
+        cl_trophies=cl_trophies,
+        trophies_critical=trophies_critical,
+    )
+    suppress_carry = False
+    cap_at_below = False
+    if cushion > 0.0:
+        finish_frust *= 1.0 - cushion
+        place_delta += cushion * 1.5
+        if completed_play_seasons == 2 and team_trophies >= 1:
+            suppress_carry = True
+            cap_at_below = True
+    return TeamResultsContext(
+        finish_frust=finish_frust,
+        place_delta=place_delta,
+        suppress_carry_with_results=suppress_carry,
+        cap_results_at_below=cap_at_below,
+    )
+
+
 def _frustrated_star_pressure(
     *,
     position: str,
@@ -1526,16 +1605,23 @@ _EARNED_TROPHY_MIN = 0.32
 def _results_reason_codes(
     finish_frust: float,
     place_delta: float,
+    *,
+    cap_at_below: bool = False,
 ) -> list[str]:
     """Метки по местам в таблице относительно ожиданий клуба."""
+    code: str | None = None
     if (
         finish_frust >= _FINISH_FRUST_WELL_BELOW
         or place_delta <= _PLACE_DELTA_WELL_BELOW
     ):
-        return [REASON_RESULTS_WELL_BELOW]
-    if finish_frust >= _FINISH_FRUST_BELOW or place_delta <= _PLACE_DELTA_BELOW:
-        return [REASON_RESULTS_BELOW]
-    return []
+        code = REASON_RESULTS_WELL_BELOW
+    elif finish_frust >= _FINISH_FRUST_BELOW or place_delta <= _PLACE_DELTA_BELOW:
+        code = REASON_RESULTS_BELOW
+    if code is None:
+        return []
+    if cap_at_below and code == REASON_RESULTS_WELL_BELOW:
+        code = REASON_RESULTS_BELOW
+    return [code]
 
 
 def _reason_codes_raw(
@@ -1561,14 +1647,22 @@ def _reason_codes_raw(
     league_trophies: int = 0,
     cl_trophies: int = 0,
     trophies_critical: bool = True,
+    suppress_carry_with_results: bool = False,
+    cap_results_at_below: bool = False,
 ) -> list[str]:
     """Сырые коды причин (до фильтра под вердикт)."""
     raw: list[str] = []
 
-    for code in _results_reason_codes(finish_frust, place_delta):
-        raw.append(code)
+    results_codes = _results_reason_codes(
+        finish_frust,
+        place_delta,
+        cap_at_below=cap_results_at_below,
+    )
+    raw.extend(results_codes)
 
-    if frustration_pen < 0:
+    if frustration_pen < 0 and not (
+        suppress_carry_with_results and results_codes
+    ):
         raw.append(REASON_CARRY_STAR)
 
     if (
@@ -1688,6 +1782,8 @@ def _build_reasons(
     cl_trophies: int = 0,
     verdict: str | None = None,
     trophies_critical: bool = True,
+    suppress_carry_with_results: bool = False,
+    cap_results_at_below: bool = False,
 ) -> list[str]:
     """До 3 причин для отображения (порядок = важность)."""
     raw = _reason_codes_raw(
@@ -1712,6 +1808,8 @@ def _build_reasons(
         league_trophies=league_trophies,
         cl_trophies=cl_trophies,
         trophies_critical=trophies_critical,
+        suppress_carry_with_results=suppress_carry_with_results,
+        cap_results_at_below=cap_results_at_below,
     )
     return _filter_reasons_for_verdict(
         raw,
@@ -1886,8 +1984,16 @@ def _compute_advice_for_player(
     finish_places = _team_league_places_during_seasons(
         team, league_code, stint.season_nums
     )
-    finish_frust = _finish_frustration(finish_places, expected_place)
-    place_delta = _finish_place_delta(finish_places, expected_place)
+    results_ctx = _team_results_context(
+        finish_places=finish_places,
+        expected_place=expected_place,
+        completed_play_seasons=stint.completed_play_seasons,
+        league_trophies=stint.league_trophies,
+        cl_trophies=stint.cl_trophies,
+        trophies_critical=trophies_critical,
+    )
+    finish_frust = results_ctx.finish_frust
+    place_delta = results_ctx.place_delta
     frustration_pen = _frustrated_star_pressure(
         position=pos,
         club_amb=club_amb,
@@ -2092,6 +2198,8 @@ def _compute_advice_for_player(
         league_trophies=stint.league_trophies,
         cl_trophies=stint.cl_trophies,
         trophies_critical=trophies_critical,
+        suppress_carry_with_results=results_ctx.suppress_carry_with_results,
+        cap_results_at_below=results_ctx.cap_results_at_below,
     )
     verdict, score = _apply_verdict_modifiers(
         verdict,
