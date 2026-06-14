@@ -2017,17 +2017,18 @@ def format_player_advice_card_html(
         f"лига {d.get('league_trophies', 0)}, ЛЧ {d.get('cl_trophies', 0)}"
     )
     result_pm = d.get("result_pm")
-    result_line = None
+    result_lines: list[str] = []
     if result_pm is not None and int(d.get("matches", 0) or 0) > 0:
         pm_label = d.get("result_pm_label") or ""
         pm_explain = d.get("result_pm_explain") or ""
-        result_line = (
+        head = (
             f"Вклад в результаты: <b>{escape(_format_result_pm(float(result_pm)))}</b>"
         )
         if pm_label:
-            result_line += f" · <i>{escape(str(pm_label))}</i>"
+            head += f" · <i>{escape(str(pm_label))}</i>"
+        result_lines.append(head)
         if pm_explain:
-            result_line += f"\n<small>{escape(str(pm_explain))}</small>"
+            result_lines.append(escape(str(pm_explain)))
 
     lines = [
         f"<b>{sur}</b> · {escape(row.position)} · {row.overall}",
@@ -2050,8 +2051,7 @@ def format_player_advice_card_html(
     lines.extend([
         f"Продуктивность: {escape(prod_line)}",
     ])
-    if result_line:
-        lines.append(result_line)
+    lines.extend(result_lines)
     lines.extend([
         f"Места команды: {escape(places_line)}",
         f"Трофеи: {escape(trophy_line)}",

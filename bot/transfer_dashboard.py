@@ -46,6 +46,27 @@ _DASH_PAGE_SIZE = 12
 _DASH_ADVICE_PAGE_SIZE = 10
 _NATIONAL_LEAGUES = ("rpl", "eng", "esp", "ger", "ita")
 _LEAGUE_TITLE = dict(LEAGUE_LABELS)
+_ADVICE_CACHE: dict[str, tuple[float, str, list[TransferAdviceRow], str | None]] = {}
+_ADVICE_CACHE_TTL_SEC = 60.0
+
+
+def _get_team_advice(
+    team: str,
+) -> tuple[str, list[TransferAdviceRow], str | None]:
+    """Кэш рекомендаций по клубу (~1 с на расчёт без кэша)."""
+    import time
+
+    from utils import season_paths
+
+    active = int(season_paths.get_state().get("active_season") or 1)
+    key = f"{team}\0{active}"
+    now = time.monotonic()
+    hit = _ADVICE_CACHE.get(key)
+    if hit and now - hit[0] < _ADVICE_CACHE_TTL_SEC:
+        return hit[1], hit[2], hit[3]
+    canon, rows, err = collect_transfer_advice(team)
+    _ADVICE_CACHE[key] = (now, canon, rows, err)
+    return canon, rows, err
 
 
 def _teams_for_league(code: str) -> list[str]:
@@ -461,7 +482,7 @@ def register_transfer_dashboard(router: Router) -> None:
         if not team:
             await callback.answer("Клуб не найден", show_alert=True)
             return
-        canon, rows, err = collect_transfer_advice(team)
+        canon, rows, err = _get_team_advice(team)
         if err:
             await callback.answer(err, show_alert=True)
             return
@@ -526,7 +547,7 @@ def register_transfer_dashboard(router: Router) -> None:
         if not team:
             await callback.answer("Клуб не найден", show_alert=True)
             return
-        canon, rows, err = collect_transfer_advice(team)
+        canon, rows, err = _get_team_advice(team)
         if err:
             await callback.answer(err, show_alert=True)
             return
@@ -549,9 +570,20 @@ def register_transfer_dashboard(router: Router) -> None:
         )
         await callback.answer()
         if callback.message:
-            await callback.message.edit_text(
-                card, parse_mode="HTML", reply_markup=kb
-            )
+            try:
+                await callback.message.edit_text(
+                    card, parse_mode="HTML", reply_markup=kb
+                )
+            except Exception:
+                logger.exception("transfer dashboard player card edit failed")
+                try:
+                    await callback.message.answer(
+                        card, parse_mode="HTML", reply_markup=kb
+                    )
+                except Exception:
+                    await callback.answer(
+                        "Не удалось показать карточку", show_alert=True
+                    )
 
     @router.callback_query(F.data.regexp(r"^xfd:pick:([a-z]+):(\d+):sell(?::(\d+))?$"))
     async def cb_dash_pick_sell(callback: CallbackQuery, state: FSMContext) -> None:
@@ -568,7 +600,7 @@ def register_transfer_dashboard(router: Router) -> None:
         if not team:
             await callback.answer("Клуб не найден", show_alert=True)
             return
-        _, rows, err = collect_transfer_advice(team)
+        _, rows, err = _get_team_advice(team)
         if err:
             await callback.answer(err, show_alert=True)
             return
@@ -602,7 +634,7 @@ def register_transfer_dashboard(router: Router) -> None:
         if not team:
             await callback.answer("Клуб не найден", show_alert=True)
             return
-        canon, rows, err = collect_transfer_advice(team)
+        canon, rows, err = _get_team_advice(team)
         if err:
             await callback.answer(err, show_alert=True)
             return

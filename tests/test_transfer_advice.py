@@ -361,6 +361,7 @@ def test_result_pm_shown_for_rohl():
     assert "Вклад в результаты" in card
     assert "вклад в трофеи" not in card
     assert "<i>" in card
+    assert "<small>" not in card
 
 
 def test_team_is_apex_inter():
