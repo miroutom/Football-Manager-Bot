@@ -671,7 +671,7 @@ def test_result_pm_shown_for_rohl():
 
 def test_club_seasons_by_roster_not_matches():
     from utils.transfer_advice import (
-        _club_seasons_count,
+        _club_seasons_display_count,
         collect_transfer_advice,
         format_player_advice_card_html,
     )
@@ -680,30 +680,34 @@ def test_club_seasons_by_roster_not_matches():
     assert not err
     unner = next(r for r in rows if "Уннерсталь" in r.name)
     kounde = next(r for r in rows if "Кунде" in r.name)
-    assert unner.detail["club_seasons"] == unner.detail["tenure_seasons"]
+    assert unner.detail["club_seasons"] == len(unner.detail["finish_places"])
     assert unner.detail["club_seasons"] >= 1
-    assert kounde.detail["club_seasons"] == 1
-    assert kounde.detail["tenure_seasons"] == 3
+    assert kounde.detail["club_seasons"] == len(kounde.detail["finish_places"])
 
     unner_card = format_player_advice_card_html("Барселона", unner)
     assert f"Сезонов {unner.detail['club_seasons']}," in unner_card
 
 
-def test_club_seasons_count_roster():
-    from utils.transfer_advice import ClubStintStats, _club_seasons_count
+def test_club_seasons_display_matches_finish_places():
+    from utils.transfer_advice import (
+        ClubStintStats,
+        _club_seasons_display_count,
+    )
 
-    assert _club_seasons_count(stint=ClubStintStats(seasons=2, play_seasons=2)) == 2
     assert (
-        _club_seasons_count(
-            stint=ClubStintStats(
-                seasons=3,
-                play_seasons=2,
-                per_season_matches={1: 30, 2: 3, 3: 0},
-            )
+        _club_seasons_display_count(
+            stint=ClubStintStats(seasons=3),
+            finish_places=[1, 1],
         )
         == 2
     )
-    assert _club_seasons_count(stint=ClubStintStats(seasons=1, play_seasons=0)) == 1
+    assert (
+        _club_seasons_display_count(
+            stint=ClubStintStats(seasons=2),
+            finish_places=[],
+        )
+        == 2
+    )
 
 
 def test_martinez_inter_two_played_seasons_not_three():

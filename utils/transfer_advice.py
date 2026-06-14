@@ -1070,10 +1070,12 @@ def _team_league_places_during_seasons(
     return places
 
 
-def _club_seasons_count(*, stint: ClubStintStats) -> int:
-    """Сезоны в клубе с матчами; если матчей ещё не было — по ростеру."""
-    if int(stint.play_seasons or 0) > 0:
-        return int(stint.play_seasons)
+def _club_seasons_display_count(
+    *, stint: ClubStintStats, finish_places: list[int]
+) -> int:
+    """Сезонов в карточке = число мест в таблице (1, 1 → 2)."""
+    if finish_places:
+        return len(finish_places)
     return int(stint.seasons or 0)
 
 
@@ -2426,7 +2428,9 @@ def _compute_advice_for_player(
         "seasons_completed": stint.completed_play_seasons,
         "play_seasons": stint.play_seasons,
         "tenure_seasons": stint.seasons,
-        "club_seasons": _club_seasons_count(stint=stint),
+        "club_seasons": _club_seasons_display_count(
+            stint=stint, finish_places=finish_places
+        ),
         "matches": stint.matches,
         "goals": stint.goals,
         "assists": stint.assists,
