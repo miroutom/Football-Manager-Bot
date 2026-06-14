@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-
 from unittest.mock import patch
 
 from utils.common_db import _key, _merge_bucket_outfield
@@ -54,9 +53,7 @@ def test_common_merge_same_person_id_league_and_cl():
     cl = _FakeSession(
         [_fwd("Хаверц", "Арсенал", "ФРВ", pid=105, goals=13, assists=9, matches=18)]
     )
-    buckets = _merge_bucket_outfield(
-        object, league, cl, include_all_cl_teams=True
-    )
+    buckets = _merge_bucket_outfield(object, league, cl)
     assert len(buckets) == 1
     b = next(iter(buckets.values()))
     assert b["goals"] == 35
@@ -65,10 +62,8 @@ def test_common_merge_same_person_id_league_and_cl():
     assert b["person_id"] == 105
 
 
-def test_common_merge_skips_cl_out_of_pool_when_disabled():
-    """Без include_all_cl_teams клуб вне пула ЛЧ не попадает из cl.db."""
-    from unittest.mock import patch
-
+def test_common_merge_always_sums_cl_even_if_team_not_in_current_pool():
+    """common = league + cl из файла; пул ЛЧ сезона не фильтрует merge."""
     league = _FakeSession(
         [_fwd("Лукаку", "Реал", "ФРВ", pid=30, goals=5, assists=2, matches=12)]
     )
@@ -76,30 +71,22 @@ def test_common_merge_skips_cl_out_of_pool_when_disabled():
         [_fwd("Лукаку", "Реал", "ФРВ", pid=30, goals=6, assists=4, matches=11)]
     )
     with patch("utils.common_db._team_in_cl_pool", return_value=False):
-        buckets = _merge_bucket_outfield(
-            object, league, cl, include_all_cl_teams=False
-        )
-    assert len(buckets) == 1
-    b = next(iter(buckets.values()))
-    assert b["goals"] == 5
-    assert b["matches"] == 12
-
-
-def test_common_merge_includes_cl_out_of_pool_by_default():
-    league = _FakeSession(
-        [_fwd("Лукаку", "Реал", "ФРВ", pid=30, goals=5, assists=2, matches=12)]
-    )
-    cl = _FakeSession(
-        [_fwd("Лукаку", "Реал", "ФРВ", pid=30, goals=6, assists=4, matches=11)]
-    )
-    with patch("utils.common_db._team_in_cl_pool", return_value=False):
-        buckets = _merge_bucket_outfield(
-            object, league, cl, include_all_cl_teams=True
-        )
+        buckets = _merge_bucket_outfield(object, league, cl)
     b = next(iter(buckets.values()))
     assert b["goals"] == 11
     assert b["assists"] == 6
     assert b["matches"] == 23
+
+
+def test_common_merge_league_only_when_no_cl_row():
+    league = _FakeSession(
+        [_fwd("Игрок", "Реал", "ФРВ", pid=1, goals=3, assists=1, matches=10)]
+    )
+    cl = _FakeSession([])
+    buckets = _merge_bucket_outfield(object, league, cl)
+    b = next(iter(buckets.values()))
+    assert b["goals"] == 3
+    assert b["matches"] == 10
 
 
 def test_common_key_uses_person_id():

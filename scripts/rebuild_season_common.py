@@ -23,7 +23,7 @@ def rebuild_season(sn: int) -> None:
     op = f"{d}/{season_paths.SEASON_COMMON_NAME}"
     for path, label in ((lp, "league"), (cp, "cl"), (op, "common")):
         migrate_person_id_for_sqlite(path, label=f"s{sn}/{label}")
-    rebuild_common_database_for_disk_paths(lp, cp, op, include_all_cl_teams=True)
+    rebuild_common_database_for_disk_paths(lp, cp, op)
     print(f"OK season_{sn}/common.db ← league + cl")
 
 

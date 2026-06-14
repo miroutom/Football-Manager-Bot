@@ -345,7 +345,6 @@ def append_season_snapshot_to_all_time(league_path: str, cl_path: str) -> dict[s
         cum_l,
         cum_c,
         season_paths.get_cumulative_common_db_path(),
-        include_all_cl_teams=True,
     )
     log["cumulative"].append("rebuilt db/common.db (all-time)")
     return log
@@ -395,7 +394,7 @@ def rebuild_all_time_databases_from_season_archives() -> dict[str, Any]:
     from utils.common_db import rebuild_common_database_for_disk_paths
 
     rebuild_common_database_for_disk_paths(
-        cum_l, cum_c, cum_o, include_all_cl_teams=True
+        cum_l, cum_c, cum_o
     )
     log["cumulative"].append("rebuilt common_synced.db")
     return log

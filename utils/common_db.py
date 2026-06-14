@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Объединённая БД (``common_*.db``): суммарная статистика по лиге и ЛЧ.
+Объединённая БД (``common_*.db``): **всегда** сумма ``league.db`` + ``champions_league.db``.
+Есть строка в ЛЧ — её стата идёт в common; нет в ЛЧ — только лига. Без фильтра по пулу ЛЧ.
 Пересборка: ``rebuild_common_database()``.
 
 - ``trophies`` в common = сумма трофеев из нац. БД + ЛЧ (трофей лиги и трофей ЛЧ по отдельным источникам).
@@ -107,16 +108,12 @@ def _merge_bucket_outfield(
     PlayerCls,
     session_league,
     session_cl,
-    *,
-    include_all_cl_teams: bool = False,
 ):
-    """Слияние сессий. Счётчики наград сезона (golden_*) в двух БД — одна сущность; в common берётся max."""
+    """Слияние league + cl. Счётчики наград сезона (golden_*) — max; остальное суммируется."""
     buckets: dict = {}
     for src in (session_league, session_cl):
         is_cl = src is session_cl
         for p in src.query(PlayerCls).all():
-            if is_cl and not include_all_cl_teams and not _team_in_cl_pool(p.team):
-                continue
             k = _key(p)
             if k not in buckets:
                 from utils.person_registry import row_person_id
@@ -287,13 +284,8 @@ def rebuild_common_database(
     session_league_: Any = None,
     session_cl_: Any = None,
     session_common_: Any = None,
-    include_all_cl_teams: bool = True,
 ) -> None:
-    """
-    Полная перезапись common слиянием двух источников (имя+команда+позиция).
-    По умолчанию в common попадают **все** клубы из ``champions_league.db`` сезона
-    (не только текущий пул ЛЧ).
-    """
+    """Полная перезапись common: сумма league + champions_league."""
     sleague = session_league_ or session_league
     scl = session_cl_ or session_cl
     scommon = session_common_ or session_common
@@ -306,17 +298,13 @@ def rebuild_common_database(
     common.commit()
 
     for Cls in (Forward, Midfielder, Defender):
-        buckets = _merge_bucket_outfield(
-            Cls, sleague, scl, include_all_cl_teams=include_all_cl_teams
-        )
+        buckets = _merge_bucket_outfield(Cls, sleague, scl)
         _add_outfield_rows(common, Cls, buckets)
 
     gk_buckets: dict = {}
     for src in (sleague, scl):
         is_cl = src is scl
         for p in src.query(Goalkeeper).all():
-            if is_cl and not include_all_cl_teams and not _team_in_cl_pool(p.team):
-                continue
             k = _key(p)
             if k not in gk_buckets:
                 from utils.person_registry import row_person_id
@@ -432,15 +420,8 @@ def rebuild_common_database_for_disk_paths(
     league_path: str,
     cl_path: str,
     common_path: str,
-    *,
-    include_all_cl_teams: bool = True,
 ) -> None:
-    """
-    Пересобрать ``common`` на диске из двух указанных SQLite (лига + ЛЧ).
-    Не трогает глобальные сессии ``utils``.
-
-    ``include_all_cl_teams=False`` — только клубы из текущего пула ЛЧ (редкий случай).
-    """
+    """Пересобрать ``common`` на диске: league + champions_league."""
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
@@ -467,7 +448,6 @@ def rebuild_common_database_for_disk_paths(
             session_league_=sl,
             session_cl_=scl,
             session_common_=so,
-            include_all_cl_teams=include_all_cl_teams,
         )
     finally:
         sl.close()

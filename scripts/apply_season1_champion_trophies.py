@@ -110,7 +110,7 @@ def main() -> None:
             el.dispose()
             ec.dispose()
         rebuild_common_database_for_disk_paths(
-            cum_l, cum_c, cum_o, include_all_cl_teams=True
+            cum_l, cum_c, cum_o
         )
         print("  common_synced пересобран:", cum_o)
     else:

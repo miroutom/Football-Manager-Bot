@@ -659,9 +659,7 @@ def run_squads_sync_on_disk_paths(
         saved2 = teams_mod.teams_champ_league
         try:
             teams_mod.teams_champ_league = _cl_teams_dict_from_sqlite(cl_path)
-            rebuild_common_database_for_disk_paths(
-                league_path, cl_path, common_path, include_all_cl_teams=True
-            )
+            rebuild_common_database_for_disk_paths(league_path, cl_path, common_path)
         finally:
             teams_mod.teams_champ_league = saved2
     return out

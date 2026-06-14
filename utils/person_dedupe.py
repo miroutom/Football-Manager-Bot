@@ -327,7 +327,6 @@ def dedupe_all_player_databases(*, rebuild_common: bool = True) -> dict[str, Any
             season_paths.get_cumulative_league_db_path(),
             season_paths.get_cumulative_cl_db_path(),
             season_paths.get_cumulative_common_db_path(),
-            include_all_cl_teams=True,
         )
         out["common_rebuilt"] = True
 
@@ -335,9 +334,7 @@ def dedupe_all_player_databases(*, rebuild_common: bool = True) -> dict[str, Any
         cp = season_paths.get_cl_db_path()
         active_common = season_paths.get_common_db_path()
         if os.path.isfile(lp) and os.path.isfile(cp) and os.path.isfile(active_common):
-            rebuild_common_database_for_disk_paths(
-                lp, cp, active_common, include_all_cl_teams=False
-            )
+            rebuild_common_database_for_disk_paths(lp, cp, active_common)
             out["active_common_rebuilt"] = True
 
     return out
