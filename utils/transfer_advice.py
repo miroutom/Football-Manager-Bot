@@ -1089,6 +1089,53 @@ def _defender_ga_pm(
     return (ga - exp_ga_small) * 0.3
 
 
+def _defender_rating_progress_pm(stint: ClubStintStats) -> float:
+    """
+    Динамика рейтинга за стаж: падение — сильный минус, стагнация — лёгкий минус.
+
+    Учитываются переходы между сезонами с игрой и общий тренд first → last completed.
+    """
+    if stint.matches < 3:
+        return 0.0
+
+    pm = 0.0
+    played: list[tuple[int, int, int]] = []
+    for sn in sorted(int(x) for x in stint.season_nums):
+        m = int(stint.per_season_matches.get(sn, 0) or 0)
+        ovr = int(stint.per_season_ovr.get(sn, 0) or 0)
+        if m >= 3 and ovr > 0:
+            played.append((sn, ovr, m))
+
+    prev_ovr: int | None = None
+    for _sn, ovr, m in played:
+        weight = min(1.0, m / 10.0)
+        if prev_ovr is not None:
+            delta = ovr - prev_ovr
+            if delta < 0:
+                pm -= (abs(delta) * 3.5 + 2.0) * weight
+            elif delta == 0:
+                pm -= 2.5 * weight
+            else:
+                pm += min(delta * 0.55, 2.2) * weight
+        prev_ovr = ovr
+
+    first = stint.ovr_first
+    last = stint.ovr_last_completed
+    if first is not None and last is not None and stint.matches >= 8:
+        comp = max(1, int(stint.completed_play_seasons or 1))
+        total_delta = int(last) - int(first)
+        if total_delta < 0:
+            pm -= abs(total_delta) * 2.8 * comp + 2.0
+        elif total_delta == 0:
+            pm -= 3.5 * comp
+        elif total_delta == 1:
+            pm += 0.6 * comp
+        else:
+            pm += total_delta * 0.45 * comp
+
+    return pm
+
+
 def _defender_pm_season(
     *,
     position: str,
@@ -1271,6 +1318,9 @@ def _result_impact_pm(
             expected_rates=expected_rates,
             team_defense=defense_cache.get(int(sn)),
         )
+
+    if pos in _DEF_POS:
+        total += _defender_rating_progress_pm(stint)
 
     return round(total, 1)
 

@@ -423,6 +423,41 @@ def test_defender_pm_clean_sheets_and_cards():
     assert center_zero == 0.0
 
 
+def test_defender_rating_progress_pm():
+    from utils.transfer_advice import ClubStintStats, _defender_rating_progress_pm
+
+    growth = ClubStintStats(
+        matches=30,
+        completed_play_seasons=2,
+        ovr_first=82,
+        ovr_last_completed=84,
+        season_nums=[1, 2],
+        per_season_matches={1: 15, 2: 15},
+        per_season_ovr={1: 82, 2: 84},
+    )
+    flat = ClubStintStats(
+        matches=14,
+        completed_play_seasons=1,
+        ovr_first=85,
+        ovr_last_completed=85,
+        season_nums=[1],
+        per_season_matches={1: 14},
+        per_season_ovr={1: 85},
+    )
+    drop = ClubStintStats(
+        matches=28,
+        completed_play_seasons=2,
+        ovr_first=86,
+        ovr_last_completed=83,
+        season_nums=[1, 2],
+        per_season_matches={1: 14, 2: 14},
+        per_season_ovr={1: 86, 2: 83},
+    )
+    assert _defender_rating_progress_pm(growth) > 0
+    assert _defender_rating_progress_pm(flat) < 0
+    assert _defender_rating_progress_pm(drop) < _defender_rating_progress_pm(flat)
+
+
 def test_goalkeeper_pm_missed_goals():
     from utils.transfer_advice import _goalkeeper_pm_season
 
