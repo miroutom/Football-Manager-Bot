@@ -25,6 +25,7 @@ from bot.history_handlers import history_router
 from bot.loan_handlers import loan_router
 from bot.injury_handlers import injury_router
 from bot.players_position_handlers import players_pos_router
+from bot.stats_position_handlers import stats_pos_router
 from bot.settings import get_bot_token
 from utils.migrate_player_discipline import migrate_all_player_discipline_columns
 from utils.migrate_player_awards import migrate_player_awards_columns
@@ -98,6 +99,8 @@ async def main() -> None:
     injury_router.callback_query.middleware(AccessMiddleware())
     players_pos_router.message.middleware(AccessMiddleware())
     players_pos_router.callback_query.middleware(AccessMiddleware())
+    stats_pos_router.message.middleware(AccessMiddleware())
+    stats_pos_router.callback_query.middleware(AccessMiddleware())
     season_router.message.middleware(AccessMiddleware())
     season_router.callback_query.middleware(AccessMiddleware())
     router.message.middleware(AccessMiddleware())
@@ -113,6 +116,7 @@ async def main() -> None:
     dp.include_router(loan_router)
     dp.include_router(injury_router)
     dp.include_router(players_pos_router)
+    dp.include_router(stats_pos_router)
     dp.include_router(season_router)
     dp.include_router(router)
 

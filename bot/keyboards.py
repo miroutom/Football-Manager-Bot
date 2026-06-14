@@ -102,6 +102,10 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
         ],
         [
             InlineKeyboardButton(
+                text="📊 Стата по позициям",
+                callback_data="menu:stats_pos",
+            ),
+            InlineKeyboardButton(
                 text="👤 Игроки по позициям",
                 callback_data="menu:players_pos",
             ),
