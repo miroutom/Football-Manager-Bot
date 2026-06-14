@@ -10,7 +10,6 @@ from functools import partial
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
-    BufferedInputFile,
     CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -194,13 +193,14 @@ async def cb_injury_root_view(callback: CallbackQuery, state: FSMContext) -> Non
     if not blobs:
         await callback.message.answer("Отчёт пуст.")
         return
-    for i, blob in enumerate(blobs):
-        title = "Травмы и дисциплина" if i == 0 else "Травмы и дисциплина · продолж."
-        await callback.message.answer_photo(
-            BufferedInputFile(blob, filename=f"injuries_{i}.png"),
-            caption=f"<b>{title}</b>",
-            parse_mode="HTML",
-        )
+    from bot.handlers import answer_png_pages
+
+    await answer_png_pages(
+        callback.message,
+        blobs,
+        "<b>Травмы и дисциплина</b>",
+        filename_prefix="injuries",
+    )
 
 
 @injury_router.callback_query(F.data.regexp(_RE_INJ_LG))

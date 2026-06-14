@@ -558,15 +558,94 @@ def roster_pk(player: MatchRosterPlayer) -> str:
     return player_row_key(player_surname(player), player.position)
 
 
-def parse_roster_name_lines(text: str) -> list[str]:
-    """Строки «кто сыграл» — по одному игроку, можно несколько в одном сообщении."""
+_SKIP_PLAYED_LIST = frozenset(
+    {"пропустить", "пропуск", "skip", "-", "нет списка", "без списка"}
+)
+
+
+def is_skip_played_list(text: str) -> bool:
+    return (text or "").strip().lower() in _SKIP_PLAYED_LIST
+
+
+def parse_played_names_message(text: str) -> list[str]:
+    """Имена «кто сыграл» — одно сообщение, по строкам и/или через запятую."""
     out: list[str] = []
     for line in (text or "").replace("\r", "").split("\n"):
         s = line.strip()
         if not s or s.startswith("#"):
             continue
-        out.append(s)
+        for part in re.split(r"[,;]+", s):
+            p = part.strip()
+            if p:
+                out.append(p)
     return out
+
+
+def parse_roster_name_lines(text: str) -> list[str]:
+    """Алиас для построчного ввода (как ``parse_played_names_message``)."""
+    return parse_played_names_message(text)
+
+
+def resolve_player_in_fixture(
+    session,
+    home: str,
+    away: str,
+    raw_name: str,
+) -> tuple[Any | None, str]:
+    """Найти игрока среди хозяев или гостей матча."""
+    from utils.player_names import resolve_player_query_in_team
+
+    home_t = (home or "").strip().title()
+    away_t = (away or "").strip().title()
+    pl, _ = resolve_player_query_in_team(session, home_t, raw_name)
+    if pl:
+        return pl, ""
+    pl, _ = resolve_player_query_in_team(session, away_t, raw_name)
+    if pl:
+        return pl, ""
+    return None, f"«{raw_name}»: не найден ни у {home_t}, ни у {away_t}"
+
+
+def apply_played_names_for_fixture(
+    names: list[str],
+    *,
+    home: str,
+    away: str,
+    tournament: str,
+) -> tuple[set[str], list[str], list[str]]:
+    """
+    +1 матч каждому из списка имён (матч уже записан).
+    Возвращает (session_keys, ok_lines, err_lines).
+    """
+    from player_stats import _stats_session_key
+    from utils.utils import get_session
+
+    if not names:
+        return set(), [], ["Список пуст — введи имена или «пропустить»."]
+    sess = get_session(tournament)
+    keys: set[str] = set()
+    ok: list[str] = []
+    err: list[str] = []
+    seen: set[str] = set()
+    for raw in names:
+        pl, emsg = resolve_player_in_fixture(sess, home, away, raw)
+        if not pl:
+            err.append(emsg or raw)
+            continue
+        key = _stats_session_key(pl.name, pl.team)
+        if key in seen:
+            ok.append(f"⊘ {player_display_name(pl)} — уже в списке")
+            continue
+        seen.add(key)
+        k_list, ok_one, err_one = apply_roster_names_for_team(
+            [player_display_name(pl)],
+            pl.team,
+            tournament=tournament,
+        )
+        keys.update(k_list)
+        ok.extend(ok_one)
+        err.extend(err_one)
+    return keys, ok, err
 
 
 def resolve_player_in_team(session, raw_name: str, team: str) -> tuple[Any | None, str]:

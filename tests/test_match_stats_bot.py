@@ -4,7 +4,9 @@ from team_squad_schemas import get_slots_for_formation_key
 from utils.match_stats_bot import (
     PlayerMatchAcc,
     format_player_acc,
+    is_skip_played_list,
     merge_player_acc,
+    parse_played_names_message,
     parse_player_stat_line,
     sort_slots_for_pitch_list,
     validate_stat_delta,
@@ -52,3 +54,19 @@ def test_formation_attack_order_left_to_right_fid2():
     slots = get_slots_for_formation_key("fid_2")
     ordered = sort_slots_for_pitch_list(slots)
     assert [s.slot_id for s in ordered[:3]] == ["LW", "ST", "RW"]
+
+
+def test_parse_played_names_multiline_and_commas():
+    assert parse_played_names_message("Сане\nКейн, Мартинес") == [
+        "Сане",
+        "Кейн",
+        "Мартинес",
+    ]
+    assert parse_played_names_message("  # коммент\n") == []
+
+
+def test_is_skip_played_list():
+    assert is_skip_played_list("пропустить")
+    assert is_skip_played_list("SKIP")
+    assert is_skip_played_list("-")
+    assert not is_skip_played_list("Сане")

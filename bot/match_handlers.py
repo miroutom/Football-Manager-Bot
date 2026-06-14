@@ -930,7 +930,7 @@ async def _begin_stats_for_played_slot(
         f"Матч: <b>{hn}</b> <code>{hs}:{aws}</code> <b>{an}</b> — счёт из журнала.",
         parse_mode="HTML",
     )
-    await _send_stats_lines_ui(message, state)
+    await _prompt_stats_played_list(message, state)
 
 
 def _post_match_continue_kb(
@@ -1087,6 +1087,26 @@ def _stats_lines_done_kb() -> InlineKeyboardMarkup:
     )
 
 
+async def _prompt_stats_played_list(message: Message, state: FSMContext) -> None:
+    """Опционально: список сыгравших одним сообщением, затем построчная стата."""
+    data = await state.get_data()
+    home = data["stats_home"]
+    away = data["stats_away"]
+    hs = data["stats_hs"]
+    aws = data["stats_aws"]
+    hn = html_escape(home)
+    an = html_escape(away)
+    await state.set_state(PostMatch.stats_played_list)
+    await message.answer(
+        f"<b>Кто сыграл?</b> {hn} <code>{hs}:{aws}</code> {an}\n\n"
+        "Одним сообщением — имена через перевод строки или запятую "
+        "(каждому сразу <b>+1 матч</b>, потом вводишь голы/пасы/жк по строкам).\n"
+        "Не хочешь списком — напиши <code>пропустить</code> "
+        "(стата как раньше, +1 матч при первой строке игрока).",
+        parse_mode="HTML",
+    )
+
+
 async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
     """Шпаргалка + построчный ввод статистики (как консоль)."""
     from bot.services import split_text_chunks
@@ -1107,8 +1127,8 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
         stats_current_team=data["stats_home"],
         stats_mode_new=False,
         stats_susp_snapshot=snap,
-        stats_session_match_keys=[],
-        stats_session_acc={},
+        stats_session_match_keys=sorted(data.get("stats_session_match_keys") or []),
+        stats_session_acc=dict(data.get("stats_session_acc") or {}),
     )
     await state.set_state(PostMatch.stats_wait_lines)
 
@@ -1126,8 +1146,16 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
 
     hn = html_escape(home)
     an = html_escape(away)
+    played_note = ""
+    played_keys = data.get("stats_played_keys")
+    if played_keys:
+        played_note = (
+            f"\nСыгравших в списке: <b>{len(played_keys)}</b>. "
+            "Строка для другого игрока — спросим, играл ли он.\n"
+        )
     await message.answer(
         f"<b>Статистика</b> · {hn} ({hs}:{aws}) {an}\n\n"
+        f"{played_note}"
         "Строки как в консоли: <code>имя голы передачи</code> "
         "(в т.ч. поправки: <code>имя -1 0</code>). "
         "Несколько строк на игрока слаживаются; "
@@ -2276,7 +2304,65 @@ async def cb_postmatch_stats_yes(callback: CallbackQuery, state: FSMContext) -> 
         return
 
     await callback.answer()
-    await _send_stats_lines_ui(callback.message, state)
+    await _prompt_stats_played_list(callback.message, state)
+
+
+@match_router.message(StateFilter(PostMatch.stats_played_list), _TEXT_NOT_CMD)
+async def on_stats_played_list(message: Message, state: FSMContext) -> None:
+    from utils.match_stats_bot import (
+        apply_played_names_for_fixture,
+        is_skip_played_list,
+        parse_played_names_message,
+    )
+
+    data = await state.get_data()
+    home = data.get("stats_home")
+    away = data.get("stats_away")
+    if not home or not away:
+        await message.answer("Сессия устарела. Начни снова с записи счёта.")
+        await state.clear()
+        return
+    raw = (message.text or "").strip()
+    if is_skip_played_list(raw):
+        await state.update_data(stats_played_keys=None)
+        await _send_stats_lines_ui(message, state)
+        return
+    names = parse_played_names_message(raw)
+    if not names:
+        await message.answer(
+            "Не разобрал имена. Повтори список или напиши <code>пропустить</code>.",
+            parse_mode="HTML",
+        )
+        return
+    keys, ok_lines, err_lines = await asyncio.to_thread(
+        apply_played_names_for_fixture,
+        names,
+        home=str(home),
+        away=str(away),
+        tournament=str(data.get("stats_tournament", "league")),
+    )
+    parts: list[str] = []
+    if ok_lines:
+        parts.append("✓ Матч засчитан:\n" + "\n".join(ok_lines[:40]))
+        if len(ok_lines) > 40:
+            parts.append(f"…ещё {len(ok_lines) - 40}")
+    if err_lines:
+        parts.append("⚠ Не записано:\n" + "\n".join(err_lines[:20]))
+        if len(err_lines) > 20:
+            parts.append(f"…ещё {len(err_lines) - 20}")
+    if parts:
+        await message.answer(html_escape("\n\n".join(parts)), parse_mode="HTML")
+    if not keys and err_lines:
+        await message.answer(
+            "Никого не засчитали — поправь список или <code>пропустить</code>.",
+            parse_mode="HTML",
+        )
+        return
+    await state.update_data(
+        stats_played_keys=sorted(keys),
+        stats_session_match_keys=sorted(keys),
+    )
+    await _send_stats_lines_ui(message, state)
 
 
 @match_router.callback_query(StateFilter(PostMatch.stats_wait_lines), F.data == "stats:done")
@@ -2295,6 +2381,8 @@ async def _apply_stats_line_from_message(
     message: Message,
     state: FSMContext,
     line: str,
+    *,
+    confirm_unlisted_apply: bool = False,
 ) -> None:
     from player_stats import apply_stats_bot_line
 
@@ -2311,7 +2399,9 @@ async def _apply_stats_line_from_message(
     mode_new = bool(data.get("stats_mode_new"))
     session_seen = set(data.get("stats_session_match_keys") or [])
     session_acc: dict[str, dict] = dict(data.get("stats_session_acc") or {})
-    reply, new_team, new_mode, _confirm = await asyncio.to_thread(
+    played_raw = data.get("stats_played_keys")
+    stats_played_keys = set(played_raw) if played_raw else None
+    reply, new_team, new_mode, confirm = await asyncio.to_thread(
         apply_stats_bot_line,
         line,
         home_team=str(home),
@@ -2326,15 +2416,58 @@ async def _apply_stats_line_from_message(
         increment_matches=True,
         session_match_players=session_seen,
         session_acc=session_acc,
+        stats_played_keys=stats_played_keys,
+        confirm_unlisted_apply=confirm_unlisted_apply,
     )
+    if confirm and not confirm_unlisted_apply:
+        await state.update_data(stats_pending_confirm=confirm)
+        await state.set_state(PostMatch.stats_confirm_unlisted)
+        nm = html_escape(str(confirm.get("name") or ""))
+        tm = html_escape(str(confirm.get("team") or ""))
+        await message.answer(
+            f"<b>{nm}</b> ({tm}) не был в списке сыгравших.\n"
+            "Играл в этом матче? Ответь <code>да</code> или <code>нет</code>.",
+            parse_mode="HTML",
+        )
+        return
+    played_out = sorted(stats_played_keys) if stats_played_keys else None
     await state.update_data(
         stats_current_team=new_team,
         stats_mode_new=new_mode,
         stats_session_match_keys=sorted(session_seen),
         stats_session_acc=session_acc,
+        stats_played_keys=played_out,
+        stats_pending_confirm=None,
     )
+    await state.set_state(PostMatch.stats_wait_lines)
     if reply:
         await message.answer(html_escape(reply), parse_mode="HTML")
+
+
+@match_router.message(StateFilter(PostMatch.stats_confirm_unlisted), _TEXT_NOT_CMD)
+async def on_stats_confirm_unlisted(message: Message, state: FSMContext) -> None:
+    raw = (message.text or "").strip().lower()
+    if raw in ("да", "yes", "y", "д"):
+        data = await state.get_data()
+        confirm = data.get("stats_pending_confirm") or {}
+        line = str(confirm.get("line") or "").strip()
+        if not line:
+            await state.set_state(PostMatch.stats_wait_lines)
+            await message.answer("Строка потерялась — введи статистику заново.")
+            return
+        await _apply_stats_line_from_message(
+            message, state, line, confirm_unlisted_apply=True
+        )
+        return
+    if raw in ("нет", "no", "n", "н"):
+        await state.update_data(stats_pending_confirm=None)
+        await state.set_state(PostMatch.stats_wait_lines)
+        await message.answer("Ок, строку не записываем. Продолжай ввод статы.")
+        return
+    await message.answer(
+        "Ответь <code>да</code> (играл — записать строку) или <code>нет</code>.",
+        parse_mode="HTML",
+    )
 
 
 @match_router.message(StateFilter(PostMatch.stats_wait_lines), _TEXT_NOT_CMD)
