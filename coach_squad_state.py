@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-**Тренер** (тактика на поле) → три числовых id схем (1–10, см. ``formation_catalog``), один active;
+**Тренер** (тактика на поле) → одна активная схема (id 1–10, см. ``formation_catalog``);
 **команда** → текущий тренер в ``team_coach``. Смена — через JSON или API ниже.
 
 **Менеджеры** Roman / Lika (кто ведёт клуб в карьере) задаются в ``config/leagues_config.MANAGER_TEAMS``,
 не в этом файле — здесь только тренерские схемы.
 
-JSON v2: ``formation_ids`` (ровно 3 числа), ``active_formation_id`` (одно из трёх).
+JSON: ``active_formation_id`` (1–10). Поле ``formation_ids`` в старых файлах игнорируется.
 Старый формат с ``formations`` [{key, state}] читается, если key вида ``fid_6`` или ``"6"``.
 """
 from __future__ import annotations
@@ -35,24 +35,21 @@ _COACH_ID_RE = re.compile(r"^[a-z0-9_]{1,64}$", re.I)
 class CoachRecord:
     coach_id: str
     name: str
-    formation_ids: tuple[int, int, int]
     active_formation_id: int
 
     def to_json(self) -> dict[str, Any]:
         return {
             "name": self.name,
-            "formation_ids": list(self.formation_ids),
             "active_formation_id": self.active_formation_id,
         }
 
     @staticmethod
     def from_json(coach_id: str, raw: Mapping[str, Any]) -> CoachRecord:
         name = str(raw.get("name", coach_id)).strip() or coach_id
-        if "formation_ids" in raw and "active_formation_id" in raw:
-            ids = tuple(int(x) for x in raw["formation_ids"])
+        if "active_formation_id" in raw:
             aid = int(raw["active_formation_id"])
-            CoachRecord._validate_triplet(ids, aid)
-            return CoachRecord(coach_id, name, ids, aid)
+            validate_formation_id(aid)
+            return CoachRecord(coach_id, name, aid)
         return CoachRecord._from_legacy_formations(coach_id, name, raw)
 
     @staticmethod
@@ -60,11 +57,10 @@ class CoachRecord:
         coach_id: str, name: str, raw: Mapping[str, Any]
     ) -> CoachRecord:
         forms_raw = raw.get("formations") or []
-        if len(forms_raw) != 3:
+        if not forms_raw:
             raise ValueError(
-                f"Тренер {coach_id}: нужны formation_ids/active_formation_id или 3 legacy formations."
+                f"Тренер {coach_id}: нужен active_formation_id или legacy formations."
             )
-        ids_list: list[int] = []
         active_fid: int | None = None
         for f in forms_raw:
             k = str(f.get("key", "")).strip()
@@ -73,34 +69,22 @@ class CoachRecord:
             else:
                 fid = int(k)
             validate_formation_id(fid)
-            ids_list.append(fid)
             st = str(f.get("state", "inactive")).lower()
             if st == "active":
                 active_fid = fid
-        ids = tuple(ids_list)
         if active_fid is None:
-            active_fid = ids[0]
-        CoachRecord._validate_triplet(ids, active_fid)
-        return CoachRecord(coach_id, name, ids, active_fid)
-
-    @staticmethod
-    def _validate_triplet(
-        formation_ids: tuple[int, int, int], active_formation_id: int
-    ) -> None:
-        if len(formation_ids) != 3:
-            raise ValueError("Должно быть ровно 3 id схем.")
-        for fid in formation_ids:
-            validate_formation_id(fid)
-        validate_formation_id(active_formation_id)
-        if active_formation_id not in formation_ids:
-            raise ValueError(
-                f"active_formation_id={active_formation_id} не входит в {formation_ids!r}."
-            )
+            k = str(forms_raw[0].get("key", "")).strip()
+            if k.lower().startswith("fid_"):
+                active_fid = int(k.split("_", 1)[1])
+            else:
+                active_fid = int(k)
+            validate_formation_id(active_fid)
+        return CoachRecord(coach_id, name, active_fid)
 
 
 def _load() -> dict[str, Any]:
     if not _PATH.exists():
-        return {"version": 2, "coaches": {}, "team_coach": {}}
+        return {"version": 3, "coaches": {}, "team_coach": {}}
     with open(_PATH, encoding="utf-8") as f:
         return json.load(f)
 
@@ -165,93 +149,63 @@ def label_for_squad_caption(team_db: str) -> str:
 def register_coach(
     coach_id: str,
     display_name: str,
-    formation_ids: tuple[int, int, int],
     active_formation_id: int,
 ) -> None:
     if not _COACH_ID_RE.match(coach_id):
         raise ValueError(
             "coach_id: латиница, цифры, подчёркивание, 1..64 символа (напр. pep)."
         )
-    CoachRecord._validate_triplet(formation_ids, active_formation_id)
+    validate_formation_id(active_formation_id)
     with _lock:
         data = _load()
         coaches = data.setdefault("coaches", {})
         coaches[coach_id] = CoachRecord(
-            coach_id=coach_id,
-            name=display_name.strip() or coach_id,
-            formation_ids=formation_ids,
-            active_formation_id=active_formation_id,
+            coach_id,
+            display_name.strip() or coach_id,
+            active_formation_id,
         ).to_json()
-        data["version"] = 2
+        data["version"] = 3
         _save(data)
 
 
 def set_coach_formations(
     coach_id: str,
-    formation_ids: tuple[int, int, int],
+    formation_ids: tuple[int, ...] | list[int],
     active_formation_id: int,
 ) -> None:
+    """Совместимость: ``formation_ids`` игнорируется, меняется только active."""
     rec = get_coach_record(coach_id)
     if not rec:
         raise KeyError(f"Нет тренера {coach_id!r}. Сначала register_coach.")
-    register_coach(coach_id, rec.name, formation_ids, active_formation_id)
+    register_coach(coach_id, rec.name, active_formation_id)
 
 
 def set_active_formation_index(coach_id: str, active_index: int) -> None:
-    """Сделать active схему с индексом 0, 1 или 2 в списке formation_ids."""
-    if active_index not in (0, 1, 2):
-        raise ValueError("active_index должен быть 0, 1 или 2.")
-    rec = get_coach_record(coach_id)
-    if not rec:
-        raise KeyError(f"Нет тренера {coach_id!r}.")
-    new_active = rec.formation_ids[active_index]
-    set_active_formation_id(coach_id, new_active)
+    """Устарело: используйте ``set_active_formation_id`` с числовым id схемы."""
+    raise ValueError(
+        "set_active_formation_index устарел: задайте схему через set_active_formation_id."
+    )
 
 
 def set_active_formation_id(coach_id: str, tactical_id: int) -> None:
-    """Сделать active одну из трёх схем по числовому id (должен быть в тройке)."""
+    """Сделать active любую схему 1–10."""
     validate_formation_id(tactical_id)
     rec = get_coach_record(coach_id)
     if not rec:
         raise KeyError(f"Нет тренера {coach_id!r}.")
-    if tactical_id not in rec.formation_ids:
-        raise ValueError(
-            f"id {tactical_id} не из набора тренера {rec.formation_ids!r}."
-        )
     with _lock:
         data = _load()
         c = data.setdefault("coaches", {})[coach_id]
+        c["name"] = rec.name
         c["active_formation_id"] = tactical_id
-        data["version"] = 2
+        c.pop("formation_ids", None)
+        data["version"] = 3
         _save(data)
 
 
 def set_active_formation_id_any(coach_id: str, tactical_id: int) -> None:
-    """Сделать active **любую** из 10 схем.
-
-    Если ``tactical_id`` уже есть в тройке тренера — просто переключает active.
-    Если нет — встраивает её в тройку, заменяя один из неактивных слотов
-    (предпочтение последнему), и делает её активной. Инвариант
-    ``active_formation_id ∈ formation_ids`` сохраняется.
-    """
-    validate_formation_id(tactical_id)
-    rec = get_coach_record(coach_id)
-    if not rec:
-        raise KeyError(f"Нет тренера {coach_id!r}.")
-    if tactical_id in rec.formation_ids:
-        set_active_formation_id(coach_id, tactical_id)
-        return
-    cur = list(rec.formation_ids)
-    replace_idx = None
-    for i in range(len(cur) - 1, -1, -1):
-        if cur[i] != rec.active_formation_id:
-            replace_idx = i
-            break
-    if replace_idx is None:
-        replace_idx = len(cur) - 1
-    cur[replace_idx] = tactical_id
-    new_triplet = (cur[0], cur[1], cur[2])
-    set_coach_formations(coach_id, new_triplet, tactical_id)
+    """Алиас для ``set_active_formation_id`` (любая из 10 схем)."""
+    set_active_formation_id(coach_id, tactical_id)
 
 
 def assign_coach_to_team(*, team_db: str, coach_id: str | None) -> None:
@@ -272,7 +226,7 @@ def assign_coach_to_team(*, team_db: str, coach_id: str | None) -> None:
             if cid == coach_id and t != team:
                 del tc[t]
         tc[team] = coach_id
-        data["version"] = 2
+        data["version"] = 3
         _save(data)
 
 

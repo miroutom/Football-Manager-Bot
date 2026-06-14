@@ -456,6 +456,28 @@ def test_build_reasons_outgrown_and_new():
     assert REASON_NEW in listed_no_matches
 
 
+def test_krasnodar_villa_coach_single_active_formation():
+    """Тренеры с >3 formation_ids в JSON — только active_formation_id."""
+    from coach_squad_state import get_coach_for_team, resolve_formation_key_for_team
+    from formation_catalog import label_for_formation_id
+    from utils.transfer_advice import collect_transfer_advice
+
+    k = get_coach_for_team("Краснодар")
+    v = get_coach_for_team("Астон Вилла")
+    assert k is not None and k.coach_id == "emery"
+    assert k.active_formation_id == 1
+    assert label_for_formation_id(k.active_formation_id) == "4-3-3 ат"
+    assert v is not None and v.coach_id == "sahin"
+    assert v.active_formation_id == 5
+    assert label_for_formation_id(v.active_formation_id) == "4-3-1-2"
+
+    for team in ("Краснодар", "Астон Вилла"):
+        assert resolve_formation_key_for_team(team).startswith("fid_")
+        _, rows, err = collect_transfer_advice(team)
+        assert err is None
+        assert len(rows) >= 1
+
+
 def test_min_depth_by_formation_slots():
     from coach_squad_state import resolve_formation_key_for_team
     from team_squad_schemas import get_slots_for_formation_key

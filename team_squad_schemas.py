@@ -4,14 +4,14 @@
 
 Каждый слот задаётся позициями из БД (как в поле ``players.position``).
 Какой **ключ** схемы применяется к команде, читайте в ``coach_squad_state``:
-тренер · три **числовых id** (1–10, см. ``formation_catalog``), один active,
+тренер · **active_formation_id** (1–10, см. ``formation_catalog``),
 привязка тренер→команда. Ключ слотов на поле: ``fid_<id>`` (геометрия в ``formation_geometry``).
 
 Статический запасной вариант: ``TEAM_FORMATION_KEY`` / ``DEFAULT`` (``433``),
 если тренер для команды ещё не настроен.
 
 1. В ``FORMATION_SLOTS`` при необходимости завести геометрию под ``fid_<id>``.
-2. В ``data/coach_squad_state.json`` — ``formation_ids`` и ``active_formation_id``;
+2. В ``data/coach_squad_state.json`` — ``active_formation_id``;
    команде тренер через ``coach_squad_state.assign_coach_to_team``.
 
 Пока тренер не задан — сработает ``TEAM_FORMATION_KEY[команда]`` или ``433``.

@@ -1949,8 +1949,8 @@ async def cb_coach_assign(callback: CallbackQuery) -> None:
         assign_coach_to_team(team_db=team_name, coach_id=coach_id)
         rec = get_coach_record(coach_id)
         nm = rec.name if rec else coach_id
-        labs = ", ".join(label_for_formation_id(x) for x in rec.formation_ids) if rec else ""
-        extra = f"\nСхемы: {labs}" if labs else ""
+        lab = label_for_formation_id(rec.active_formation_id) if rec else ""
+        extra = f"\nСхема: {lab}" if lab else ""
         await callback.message.answer(
             f"✓ Клуб <b>{team_name}</b>: тренер — <b>{nm}</b>.{extra}",
             parse_mode=ParseMode.HTML,
@@ -1965,7 +1965,7 @@ async def cb_menu_formation_pick(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
         "📐 <b>Активная схема</b>\n\n"
-        "Выберите лигу и клуб, затем одну из <b>трёх</b> схем текущего тренера.\n"
+        "Выберите лигу и клуб, затем любую схему 1–10 для текущего тренера.\n"
         "Если у клуба ещё нет тренера — сначала назначьте через «Сменить тренера».",
         reply_markup=_league_keyboard("formationlg"),
         parse_mode=ParseMode.HTML,
