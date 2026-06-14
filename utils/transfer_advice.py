@@ -561,41 +561,26 @@ def _collect_club_stint_stats(
         ovr_best = 0
         season_goals = 0
         season_assists = 0
-        # Стаж в клубе для советов — только нац. лига (ЛЧ отдельная стата).
-        lp_league = _season_db_path_for_stint(sn, cl=False)
-        row_lg = (
-            _find_row_in_season_db(lp_league, team_n, person_id=person_id, name=name)
-            if lp_league
-            else None
-        )
-        if row_lg is not None:
-            snap = _row_stats_snapshot(row_lg)
-            season_m = int(snap["matches"])
-            season_ga = int(snap["ga"])
-            season_goals = int(snap["goals"])
-            season_assists = int(snap["assists"])
-            season_yellow = int(snap["yellow_cards"])
-            season_red = int(snap["red_cards"])
-            ovr = int(getattr(row_lg, "overall", 0) or 0)
-            if ovr > 0:
+        # Стаж в клубе: лига + ЛЧ за сезон (как common / common_synced).
+        for cl_flag in (False, True):
+            lp = _season_db_path_for_stint(sn, cl=cl_flag)
+            if not lp:
+                continue
+            row = _find_row_in_season_db(
+                lp, team_n, person_id=person_id, name=name
+            )
+            if row is None:
+                continue
+            snap = _row_stats_snapshot(row)
+            season_m += int(snap["matches"])
+            season_ga += int(snap["ga"])
+            season_goals += int(snap["goals"])
+            season_assists += int(snap["assists"])
+            season_yellow += int(snap["yellow_cards"])
+            season_red += int(snap["red_cards"])
+            ovr = int(getattr(row, "overall", 0) or 0)
+            if ovr > ovr_best:
                 ovr_best = ovr
-        elif league_code:
-            lp_cl = _season_db_path_for_stint(sn, cl=True)
-            if lp_cl:
-                row_cl = _find_row_in_season_db(
-                    lp_cl, team_n, person_id=person_id, name=name
-                )
-                if row_cl is not None:
-                    snap = _row_stats_snapshot(row_cl)
-                    season_m = int(snap["matches"])
-                    season_ga = int(snap["ga"])
-                    season_goals = int(snap["goals"])
-                    season_assists = int(snap["assists"])
-                    season_yellow = int(snap["yellow_cards"])
-                    season_red = int(snap["red_cards"])
-                    ovr = int(getattr(row_cl, "overall", 0) or 0)
-                    if ovr > 0:
-                        ovr_best = ovr
 
         stint.goals += season_goals
         stint.assists += season_assists
