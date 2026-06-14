@@ -1715,7 +1715,7 @@ def _reason_codes_raw(
 
     if usage_pen < 0:
         raw.append(REASON_USAGE)
-    if completed_play_seasons <= 1:
+    if completed_play_seasons == 1:
         raw.append(REASON_NEW)
     if stable_core:
         raw.append(REASON_LEVEL)
