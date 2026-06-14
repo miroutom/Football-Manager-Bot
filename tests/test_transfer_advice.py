@@ -326,8 +326,8 @@ def test_archived_season_counts_with_few_matches():
     assert st.completed_play_seasons >= 1
 
 
-def test_collect_club_stint_includes_champions_league():
-    """Стаж в клубе суммирует league.db и champions_league.db."""
+def test_collect_club_stint_league_only_for_advice():
+    """Стаж в карточке совета — только нац. лига (ЛЧ не дублирует матчи)."""
     import os
 
     from utils import season_paths
@@ -336,10 +336,7 @@ def test_collect_club_stint_includes_champions_league():
     s1_league = os.path.join(
         season_paths.season_archive_directory(1), season_paths.SEASON_LEAGUE_NAME
     )
-    s1_cl = os.path.join(
-        season_paths.season_archive_directory(1), season_paths.SEASON_CL_NAME
-    )
-    if not (os.path.isfile(s1_league) and os.path.isfile(s1_cl)):
+    if not os.path.isfile(s1_league):
         import pytest
 
         pytest.skip("season 1 archives missing")
@@ -347,9 +344,9 @@ def test_collect_club_stint_includes_champions_league():
     st = _collect_club_stint_stats(
         "Интер", person_id=62, name="Мартинез", league_code="ita_serie_a"
     )
-    assert st.matches >= 30
-    assert st.goals >= 56
-    assert st.assists >= 8
+    assert st.matches == 18
+    assert st.goals == 40
+    assert st.assists == 7
     assert st.completed_play_seasons >= 2
 
 
@@ -579,13 +576,13 @@ def test_havertz_frustrated_star_not_hard_no():
         REASON_CARRY_FAIL,
         REASON_OUTGREW,
         VERDICT_NO,
-        VERDICT_SO,
+        VERDICT_SU,
         collect_transfer_advice,
     )
 
     _, rows, _ = collect_transfer_advice("Арсенал")
     h = next(r for r in rows if "Хаверц" in r.name)
-    assert h.verdict == VERDICT_SO
+    assert h.verdict == VERDICT_SU
     assert h.verdict != VERDICT_NO
     assert REASON_CARRY_FAIL in h.reasons
     assert REASON_OUTGREW not in h.reasons
@@ -611,3 +608,35 @@ def test_giroud_girona_new_starter_not_no():
     assert REASON_OUTGREW not in g.reasons
     assert float(g.detail["expected_place"]) == 8.0
     assert float(g.detail["place_delta"]) > 0
+
+
+def test_club_stint_league_only_not_double_cl():
+    from player_stats import national_league_code_for_team
+    from utils.transfer_advice import _collect_club_stint_stats
+
+    lc = national_league_code_for_team("Реал")
+    st = _collect_club_stint_stats(
+        "Реал", person_id=30, name="Лукаку", league_code=lc
+    )
+    assert st.goals == 16
+    assert st.assists == 3
+    assert st.matches == 25
+    assert st.per_season_matches[1] == 13
+    assert st.per_season_matches[2] == 12
+
+
+def test_brahim_real_carry_fail_verdict_su():
+    from utils.transfer_advice import (
+        REASON_CARRY_FAIL,
+        VERDICT_SO,
+        VERDICT_SU,
+        collect_transfer_advice,
+    )
+
+    _, rows, _ = collect_transfer_advice("Реал")
+    b = next(r for r in rows if "Браим" in r.name)
+    assert b.verdict == VERDICT_SU
+    assert b.verdict != VERDICT_SO
+    assert REASON_CARRY_FAIL in b.reasons
+    assert int(b.detail["goals"]) == 11
+    assert int(b.detail["assists"]) == 7

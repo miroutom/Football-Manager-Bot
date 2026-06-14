@@ -559,28 +559,46 @@ def _collect_club_stint_stats(
         season_red = 0
         season_missed = 0
         ovr_best = 0
-        for cl in (False, True):
-            lp = _season_db_path_for_stint(sn, cl=cl)
-            if not lp:
-                continue
-            row = _find_row_in_season_db(
-                lp, team_n, person_id=person_id, name=name
-            )
-            if row is None:
-                continue
-            snap = _row_stats_snapshot(row)
-            season_m += int(snap["matches"])
-            season_ga += int(snap["ga"])
-            season_cs += int(snap["clean_sheets"])
-            season_mg += int(snap["missed_goals"])
-            season_yellow += int(snap["yellow_cards"])
-            season_red += int(snap["red_cards"])
-            season_missed += int(snap["missed_goals"])
-            stint.goals += snap["goals"]
-            stint.assists += snap["assists"]
-            ovr = int(getattr(row, "overall", 0) or 0)
+        season_goals = 0
+        season_assists = 0
+        # Стаж в клубе для советов — только нац. лига (ЛЧ отдельная стата).
+        lp_league = _season_db_path_for_stint(sn, cl=False)
+        row_lg = (
+            _find_row_in_season_db(lp_league, team_n, person_id=person_id, name=name)
+            if lp_league
+            else None
+        )
+        if row_lg is not None:
+            snap = _row_stats_snapshot(row_lg)
+            season_m = int(snap["matches"])
+            season_ga = int(snap["ga"])
+            season_goals = int(snap["goals"])
+            season_assists = int(snap["assists"])
+            season_yellow = int(snap["yellow_cards"])
+            season_red = int(snap["red_cards"])
+            ovr = int(getattr(row_lg, "overall", 0) or 0)
             if ovr > 0:
-                ovr_best = max(ovr_best, ovr)
+                ovr_best = ovr
+        elif league_code:
+            lp_cl = _season_db_path_for_stint(sn, cl=True)
+            if lp_cl:
+                row_cl = _find_row_in_season_db(
+                    lp_cl, team_n, person_id=person_id, name=name
+                )
+                if row_cl is not None:
+                    snap = _row_stats_snapshot(row_cl)
+                    season_m = int(snap["matches"])
+                    season_ga = int(snap["ga"])
+                    season_goals = int(snap["goals"])
+                    season_assists = int(snap["assists"])
+                    season_yellow = int(snap["yellow_cards"])
+                    season_red = int(snap["red_cards"])
+                    ovr = int(getattr(row_cl, "overall", 0) or 0)
+                    if ovr > 0:
+                        ovr_best = ovr
+
+        stint.goals += season_goals
+        stint.assists += season_assists
 
         if ovr_best > 0:
             per_season_ovr[sn] = ovr_best
@@ -795,14 +813,26 @@ def _apply_verdict_modifiers(
     place_delta: float,
     trophies_critical: bool,
     depth_rank: int,
+    frustration_pen: float = 0.0,
 ) -> tuple[str, float]:
     """Согласовать вердикт со score, причинами и контекстом клуба."""
     v = verdict
     s = score
 
-    if any(c in _VERDICT_LEAVE_MARKERS for c in raw_reasons):
-        v = _cap_verdict_at_most(v, VERDICT_SO)
-        s = min(s, SCORE_VERDICT_NO - 0.1)
+    carry_fail = REASON_CARRY_FAIL in raw_reasons
+    trophy_miss = _BADGE_TROPHY in raw_reasons
+
+    if carry_fail or trophy_miss or REASON_OUTGREW in raw_reasons:
+        ceiling = VERDICT_SU if (carry_fail and trophies_critical) else VERDICT_SO
+        if carry_fail and trophy_miss:
+            ceiling = VERDICT_SU
+        v = _cap_verdict_at_most(v, ceiling)
+        s = min(
+            s,
+            SCORE_VERDICT_SO - 0.1
+            if ceiling == VERDICT_SU
+            else SCORE_VERDICT_NO - 0.1,
+        )
 
     if REASON_OUTGREW in raw_reasons and REASON_NEW in raw_reasons:
         v = _cap_verdict_at_most(v, VERDICT_SO)
@@ -821,10 +851,17 @@ def _apply_verdict_modifiers(
     if trophies_critical and place_delta <= -1.5 and depth_rank <= 2:
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
+        if carry_fail or trophy_miss:
+            v = _cap_verdict_at_most(v, VERDICT_SU)
+            s = min(s, SCORE_VERDICT_SO - 0.1)
 
     if not trophies_critical and place_delta >= 1.0:
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
+
+    if frustration_pen < -8.0 and trophies_critical:
+        v = _cap_verdict_at_most(v, VERDICT_SU)
+        s = min(s, SCORE_VERDICT_SO - 0.1)
 
     return v, s
 
@@ -2011,6 +2048,7 @@ def _compute_advice_for_player(
         place_delta=place_delta,
         trophies_critical=trophies_critical,
         depth_rank=depth_rank,
+        frustration_pen=frustration_pen,
     )
     reasons = _filter_reasons_for_verdict(
         raw_reasons,
