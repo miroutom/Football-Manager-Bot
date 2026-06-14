@@ -885,6 +885,7 @@ def _apply_verdict_modifiers(
     depth_rank: int,
     frustration_pen: float = 0.0,
     cl_stage_delta: float = 0.0,
+    league_trophies: int = 0,
 ) -> tuple[str, float]:
     """Согласовать вердикт со score, причинами и контекстом клуба."""
     v = verdict
@@ -900,9 +901,21 @@ def _apply_verdict_modifiers(
         )
     )
     trophy_miss = _BADGE_TROPHY in raw_reasons
+    league_title_in_stint = int(league_trophies) >= 1
+    only_mild_results = (
+        REASON_RESULTS_BELOW in raw_reasons
+        and REASON_RESULTS_WELL_BELOW not in raw_reasons
+    )
 
     if results_pressure or trophy_miss or REASON_OUTGREW in raw_reasons:
-        ceiling = VERDICT_SU if (results_pressure and trophies_critical) else VERDICT_SO
+        if league_title_in_stint and only_mild_results and depth_rank <= 2:
+            ceiling = VERDICT_SO
+            v = _cap_verdict_at_least(v, VERDICT_SO)
+            s = max(s, SCORE_VERDICT_SO)
+        elif results_pressure and trophies_critical:
+            ceiling = VERDICT_SU
+        else:
+            ceiling = VERDICT_SO
         if results_pressure and trophy_miss:
             ceiling = VERDICT_SU
         v = _cap_verdict_at_most(v, ceiling)
@@ -927,7 +940,12 @@ def _apply_verdict_modifiers(
         else:
             v = _cap_verdict_at_least(v, VERDICT_SU)
 
-    if trophies_critical and place_delta <= -1.5 and depth_rank <= 2:
+    if (
+        trophies_critical
+        and place_delta <= -1.5
+        and depth_rank <= 2
+        and not league_title_in_stint
+    ):
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
         if results_pressure or trophy_miss:
@@ -947,7 +965,9 @@ def _apply_verdict_modifiers(
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
 
-    if frustration_pen < -8.0 and trophies_critical:
+    if frustration_pen < -8.0 and trophies_critical and not (
+        league_title_in_stint and only_mild_results and depth_rank <= 2
+    ):
         v = _cap_verdict_at_most(v, VERDICT_SU)
         s = min(s, SCORE_VERDICT_SO - 0.1)
 
@@ -1080,12 +1100,10 @@ def _club_seasons_display_count(
 
 
 def _ovr_history_parts(stint: ClubStintStats, current_ovr: int) -> list[int]:
-    """Рейтинг по сезонам стажа (только сезоны с матчами), в хронологическом порядке."""
+    """Рейтинг на старте каждого сезона в клубе (из БД сезона 1/2/3)."""
     active = int(season_paths.get_state().get("active_season") or 1)
     parts: list[int] = []
     for sn in sorted(int(x) for x in stint.season_nums):
-        if int(stint.per_season_matches.get(sn, 0) or 0) <= 0:
-            continue
         ovr_s = int(stint.per_season_ovr.get(sn, 0) or 0)
         if ovr_s <= 0 and sn == active:
             ovr_s = int(current_ovr)
@@ -1098,8 +1116,7 @@ def _ovr_history_parts(stint: ClubStintStats, current_ovr: int) -> list[int]:
         parts.append(int(current_ovr))
         return parts
     if int(active) in {int(x) for x in stint.season_nums}:
-        if int(stint.per_season_matches.get(active, 0) or 0) > 0:
-            parts[-1] = int(current_ovr)
+        parts[-1] = int(current_ovr)
     return parts
 
 
@@ -2205,6 +2222,8 @@ def _compute_advice_for_player(
         player_amb=player_amb,
         trophy_earned=trophy_earned,
     )
+    if results_ctx.suppress_carry_with_results:
+        frustration_pen = 0.0
     t_exp_club = _expected_trophies(
         trophy_seasons,
         league_rank=league_rank,
@@ -2283,7 +2302,10 @@ def _compute_advice_for_player(
         and prod_ratio >= 0.88
         and depth_rank <= 2
     ):
-        prod_weight *= 0.28
+        if results_ctx.suppress_carry_with_results:
+            prod_weight *= 0.55
+        else:
+            prod_weight *= 0.28
 
     score = (
         50.0
@@ -2417,6 +2439,7 @@ def _compute_advice_for_player(
         depth_rank=depth_rank,
         frustration_pen=frustration_pen,
         cl_stage_delta=cl_stage_delta,
+        league_trophies=stint.league_trophies,
     )
     reasons = _filter_reasons_for_verdict(
         raw_reasons,

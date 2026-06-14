@@ -362,7 +362,7 @@ def test_miranchuk_atalanta_no_trophy_leave_tags():
     assert REASON_NO_TROPHIES not in m.reasons
     assert _BADGE_TROPHY not in m.reasons
     assert REASON_OUTGREW not in m.reasons
-    assert m.detail.get("ovr_history") == "77 → 83"
+    assert m.detail.get("ovr_history") == "77 → 83 → 86"
 
 
 def test_ovr_history_from_season_dbs():
@@ -381,7 +381,7 @@ def test_ovr_history_from_season_dbs():
         name=m.name,
         league_code=national_league_code_for_team("Аталанта"),
     )
-    assert _format_ovr_history(stint, m.overall) == "77 → 83"
+    assert _format_ovr_history(stint, m.overall) == "77 → 83 → 86"
 
 
 def test_build_reasons_outgrown_and_new():
@@ -887,6 +887,9 @@ def test_morata_atletico_one_results_tag_with_title():
         REASON_CARRY_STAR,
         REASON_RESULTS_BELOW,
         REASON_RESULTS_WELL_BELOW,
+        VERDICT_SO,
+        VERDICT_SU,
+        _VERDICT_ORDER,
         collect_transfer_advice,
     )
 
@@ -895,6 +898,9 @@ def test_morata_atletico_one_results_tag_with_title():
     assert REASON_RESULTS_BELOW in morata.reasons
     assert REASON_RESULTS_WELL_BELOW not in morata.reasons
     assert REASON_CARRY_STAR not in morata.reasons
+    assert _VERDICT_ORDER[morata.verdict] >= _VERDICT_ORDER[VERDICT_SO]
+    assert morata.verdict != VERDICT_SU
+    assert morata.detail.get("ovr_history", "").count("→") >= 1
 
 
 def test_havertz_frustrated_star_not_hard_no():
