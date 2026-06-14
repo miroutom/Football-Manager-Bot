@@ -362,7 +362,7 @@ def test_miranchuk_atalanta_no_trophy_leave_tags():
     assert REASON_NO_TROPHIES not in m.reasons
     assert _BADGE_TROPHY not in m.reasons
     assert REASON_OUTGREW not in m.reasons
-    assert m.detail.get("ovr_history") == "77 → 83 → 86"
+    assert m.detail.get("ovr_history") == "77 → 83"
 
 
 def test_ovr_history_from_season_dbs():
@@ -381,7 +381,7 @@ def test_ovr_history_from_season_dbs():
         name=m.name,
         league_code=national_league_code_for_team("Аталанта"),
     )
-    assert _format_ovr_history(stint, m.overall) == "77 → 83 → 86"
+    assert _format_ovr_history(stint, m.overall) == "77 → 83"
 
 
 def test_build_reasons_outgrown_and_new():
@@ -682,7 +682,8 @@ def test_club_seasons_by_roster_not_matches():
     kounde = next(r for r in rows if "Кунде" in r.name)
     assert unner.detail["club_seasons"] == unner.detail["tenure_seasons"]
     assert unner.detail["club_seasons"] >= 1
-    assert kounde.detail["club_seasons"] == kounde.detail["tenure_seasons"]
+    assert kounde.detail["club_seasons"] == 1
+    assert kounde.detail["tenure_seasons"] == 3
 
     unner_card = format_player_advice_card_html("Барселона", unner)
     assert f"Сезонов {unner.detail['club_seasons']}," in unner_card
@@ -691,8 +692,28 @@ def test_club_seasons_by_roster_not_matches():
 def test_club_seasons_count_roster():
     from utils.transfer_advice import ClubStintStats, _club_seasons_count
 
-    assert _club_seasons_count(stint=ClubStintStats(seasons=2)) == 2
-    assert _club_seasons_count(stint=ClubStintStats(seasons=0, play_seasons=1)) == 0
+    assert _club_seasons_count(stint=ClubStintStats(seasons=2, play_seasons=2)) == 2
+    assert (
+        _club_seasons_count(
+            stint=ClubStintStats(
+                seasons=3,
+                play_seasons=2,
+                per_season_matches={1: 30, 2: 3, 3: 0},
+            )
+        )
+        == 2
+    )
+    assert _club_seasons_count(stint=ClubStintStats(seasons=1, play_seasons=0)) == 1
+
+
+def test_martinez_inter_two_played_seasons_not_three():
+    from utils.transfer_advice import collect_transfer_advice
+
+    _, rows, _ = collect_transfer_advice("Интер")
+    m = next(r for r in rows if "Мартинез" in r.name)
+    assert m.detail["club_seasons"] == 2
+    assert len(m.detail["finish_places"]) == 2
+    assert m.detail["tenure_seasons"] == 3
 
 
 def test_team_is_apex_inter():

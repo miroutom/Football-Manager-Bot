@@ -1071,15 +1071,19 @@ def _team_league_places_during_seasons(
 
 
 def _club_seasons_count(*, stint: ClubStintStats) -> int:
-    """Сезоны в клубе — по факту числения в составе, без учёта матчей."""
+    """Сезоны в клубе с матчами; если матчей ещё не было — по ростеру."""
+    if int(stint.play_seasons or 0) > 0:
+        return int(stint.play_seasons)
     return int(stint.seasons or 0)
 
 
 def _ovr_history_parts(stint: ClubStintStats, current_ovr: int) -> list[int]:
-    """Рейтинг по сезонам стажа (из БД каждого сезона), в хронологическом порядке."""
+    """Рейтинг по сезонам стажа (только сезоны с матчами), в хронологическом порядке."""
     active = int(season_paths.get_state().get("active_season") or 1)
     parts: list[int] = []
     for sn in sorted(int(x) for x in stint.season_nums):
+        if int(stint.per_season_matches.get(sn, 0) or 0) <= 0:
+            continue
         ovr_s = int(stint.per_season_ovr.get(sn, 0) or 0)
         if ovr_s <= 0 and sn == active:
             ovr_s = int(current_ovr)
@@ -1092,7 +1096,8 @@ def _ovr_history_parts(stint: ClubStintStats, current_ovr: int) -> list[int]:
         parts.append(int(current_ovr))
         return parts
     if int(active) in {int(x) for x in stint.season_nums}:
-        parts[-1] = int(current_ovr)
+        if int(stint.per_season_matches.get(active, 0) or 0) > 0:
+            parts[-1] = int(current_ovr)
     return parts
 
 
