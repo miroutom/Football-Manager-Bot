@@ -1997,7 +1997,7 @@ def show_team_goalscorers_table(
         tname = "национальные лиги"
     suf = f" · {title_suffix}" if title_suffix else ""
     print(f"\n{sep}")
-    print(f"  Голы и передачи: {team} ({tname}){suf}")
+    print(f"  Статистика: {team} ({tname}){suf}")
     print(sep)
     if not rows:
         print("  Нет игроков с голами или передачами в этой базе.")
@@ -2124,7 +2124,7 @@ def format_team_goalscorers_league_report(
     head_extra = f" · {title_suffix}" if title_suffix else ""
     parts = [
         "\n" + "=" * 60,
-        f"  {league_name} — голеадоры всех команд{head_extra}",
+        f"  {league_name} — стата всех клубов{head_extra}",
         "=" * 60 + "\n",
     ]
     for team in teams:

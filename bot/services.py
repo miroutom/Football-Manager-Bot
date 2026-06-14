@@ -388,6 +388,85 @@ def render_archived_season_team_goalscorers_league(
         e.dispose()
 
 
+def render_team_goalscorers_all_time_single(
+    league_code: str, team_index: int, scope: str = "league"
+) -> str:
+    """Статистика клуба за все сезоны (synced БД)."""
+    import os
+
+    from player_stats import format_team_goalscorers_table_str
+
+    teams = teams_ordered_for_goalscorers(league_code)
+    if not (0 <= team_index < len(teams)):
+        raise IndexError("Некорректный выбор команды")
+    team = teams[team_index]
+    tournament = tournament_for_goalscorers_scope(scope)
+    p = _cumulative_db_path_for_goalscorers_scope(scope)
+    if not os.path.isfile(p):
+        scope_lab = {"league": "лига", "cl": "ЛЧ", "common": "лига+ЛЧ"}.get(
+            tournament, tournament
+        )
+        return (
+            f"Нет накопительной БД ({scope_lab}): {p}. "
+            "Завершите хотя бы один сезон или пересоберите synced."
+        )
+    e, S_factory = _goalscorers_session_from_path(p)
+    sess = S_factory()
+    try:
+        return format_team_goalscorers_table_str(
+            team,
+            tournament,
+            None,
+            session=sess,
+            title_suffix="за все время",
+        )
+    finally:
+        sess.close()
+        e.dispose()
+
+
+def render_team_goalscorers_all_time_league(league_code: str) -> str:
+    """Статистика всех клубов лиги за все сезоны."""
+    import os
+
+    from player_stats import format_team_goalscorers_league_report
+
+    tournament = tournament_db_for_league(league_code)
+    p = _cumulative_db_path_for_goalscorers_scope(tournament)
+    if not os.path.isfile(p):
+        return f"Нет накопительной БД: {p}."
+    e, S_factory = _goalscorers_session_from_path(p)
+    sess = S_factory()
+    try:
+        return format_team_goalscorers_league_report(
+            league_code,
+            session=sess,
+            title_suffix="за все время",
+        )
+    finally:
+        sess.close()
+        e.dispose()
+
+
+def _cumulative_db_path_for_goalscorers_scope(scope: str) -> str:
+    from utils import season_paths
+
+    tournament = tournament_for_goalscorers_scope(scope)
+    if tournament == "cl":
+        return season_paths.get_cumulative_cl_db_path()
+    if tournament == "common":
+        return season_paths.get_cumulative_common_db_path()
+    return season_paths.get_cumulative_league_db_path()
+
+
+def _goalscorers_session_from_path(db_path: str):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    eng = create_engine(f"sqlite:///{db_path}")
+    return eng, sessionmaker(bind=eng)
+
+
 def render_archived_season_team_goalscorers_single(
     season_num: int, league_code: str, team_index: int, scope: str = "league"
 ) -> str:

@@ -98,7 +98,7 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
         ],
         [
             InlineKeyboardButton(text="🔢 Топ-100 всего", callback_data="menu:top100"),
-            InlineKeyboardButton(text="👥 Голеадоры по клубам", callback_data="menu:tgs_league"),
+            InlineKeyboardButton(text="👥 Стата по клубам", callback_data="menu:tgs_league"),
         ],
         [
             InlineKeyboardButton(
