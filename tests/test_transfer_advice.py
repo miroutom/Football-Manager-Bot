@@ -198,9 +198,27 @@ def test_build_reasons_outgrown_and_new():
         stable_core=False,
         usage_pen=0.0,
         matches=20,
+        finish_frust=1.0,
     )
     assert REASON_CARRY_FAIL in reasons
-    assert REASON_OUTGREW in reasons
+    assert REASON_OUTGREW not in reasons
+
+    outgrown_ok = _build_reasons(
+        badges=[],
+        frustration_pen=0.0,
+        skill_norm=1.1,
+        ovr=88,
+        team_median_overall=82.0,
+        depth_rank=1,
+        prod_ratio=1.1,
+        ovr_delta_live=4,
+        completed_play_seasons=2,
+        stable_core=False,
+        usage_pen=0.0,
+        matches=20,
+        finish_frust=0.2,
+    )
+    assert REASON_OUTGREW in outgrown_ok
 
     newbie = _build_reasons(
         badges=[],
@@ -545,3 +563,22 @@ def test_goalkeeper_pm_missed_goals():
         expected_rates=rates,
     )
     assert good > bad
+
+
+def test_havertz_frustrated_star_not_hard_no():
+    """Звезда при 5-м местах и без титулов — не НО с причинами «уходить»."""
+    from utils.transfer_advice import (
+        REASON_CARRY_FAIL,
+        REASON_OUTGREW,
+        VERDICT_NO,
+        VERDICT_SO,
+        collect_transfer_advice,
+    )
+
+    _, rows, _ = collect_transfer_advice("Арсенал")
+    h = next(r for r in rows if "Хаверц" in r.name)
+    assert h.verdict == VERDICT_SO
+    assert h.verdict != VERDICT_NO
+    assert REASON_CARRY_FAIL in h.reasons
+    assert REASON_OUTGREW not in h.reasons
+    assert h.score < 72.0

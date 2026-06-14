@@ -1406,6 +1406,8 @@ def _build_reasons(
     injury_periods: int = 0,
     injury_months: int = 0,
     team_is_apex: bool = False,
+    finish_frust: float = 0.0,
+    verdict: str | None = None,
 ) -> list[str]:
     """До 3 причин для отображения (порядок = важность)."""
     raw: list[str] = []
@@ -1418,11 +1420,14 @@ def _build_reasons(
     outgrown = (
         not team_is_apex
         and depth_rank <= 2
+        and completed_play_seasons >= 2
         and (
             skill_norm >= 0.85
             or float(ovr) >= team_median_overall + 4.0
         )
-        and (frustration_pen < 0 or prod_ratio >= 0.92)
+        and frustration_pen == 0.0
+        and finish_frust < 0.45
+        and prod_ratio >= 0.92
     )
     if outgrown:
         raw.append(REASON_OUTGREW)
@@ -1460,6 +1465,26 @@ def _build_reasons(
         if code not in seen:
             seen.add(code)
             out.append(code)
+
+    if verdict == VERDICT_NO:
+        leave_codes = {
+            REASON_CARRY_FAIL,
+            REASON_OUTGREW,
+            _BADGE_TROPHY,
+            REASON_UNDERCLUB,
+            _BADGE_PROD,
+            REASON_DECLINE,
+            REASON_USAGE,
+        }
+        out = [c for c in out if c not in leave_codes]
+        if not out:
+            if stable_core:
+                out = [REASON_LEVEL]
+            elif ovr_delta_live >= 2:
+                out = [REASON_GROWTH]
+            elif REASON_NEW in raw:
+                out = [REASON_NEW]
+
     return out[:3]
 
 
@@ -1770,6 +1795,16 @@ def _compute_advice_for_player(
     ):
         score = max(score, 39.0)
 
+    if frustration_pen < 0:
+        score = min(score, SCORE_VERDICT_NO - 0.1)
+    if (
+        finish_frust >= 0.50
+        and depth_rank <= 1
+        and _BADGE_TROPHY in badges
+        and stint.completed_play_seasons >= MIN_SEASONS_TROPHY_RULE
+    ):
+        score = min(score, SCORE_VERDICT_NO - 0.1)
+
     verdict = _score_to_verdict(score)
 
     hard_no = (
@@ -1814,6 +1849,8 @@ def _compute_advice_for_player(
         injury_periods=stint.injury_periods,
         injury_months=stint.injury_months,
         team_is_apex=team_is_apex,
+        finish_frust=finish_frust,
+        verdict=verdict,
     )
 
     expected_place = _expected_league_place(team)
