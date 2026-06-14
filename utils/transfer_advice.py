@@ -897,7 +897,6 @@ def _apply_verdict_modifiers(
             REASON_RESULTS_BELOW,
             REASON_RESULTS_WELL_BELOW,
             REASON_NO_TROPHIES,
-            REASON_CL_UNDER,
         )
     )
     trophy_miss = _BADGE_TROPHY in raw_reasons
@@ -939,7 +938,12 @@ def _apply_verdict_modifiers(
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
 
-    if trophies_critical and cl_stage_delta <= -2.0 and depth_rank <= 2:
+    if (
+        trophies_critical
+        and cl_stage_delta <= -2.5
+        and place_delta <= 0.0
+        and depth_rank <= 2
+    ):
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
 
@@ -1174,6 +1178,7 @@ def _team_results_context(
 ) -> TeamResultsContext:
     finish_frust = _finish_frustration(finish_places, expected_place)
     place_delta = _finish_place_delta(finish_places, expected_place)
+    base_place_delta = place_delta
     team_trophies = int(league_trophies) + int(cl_trophies)
     cushion = _team_trophy_results_cushion(
         completed_play_seasons=completed_play_seasons,
@@ -1184,24 +1189,27 @@ def _team_results_context(
     suppress_carry = False
     cap_at_below = False
 
+    # Стадия ЛЧ — вспомогательный сигнал, не ключевой. Для клубов, которые
+    # доминируют внутри страны (трофеи или место выше ожиданий), слабый
+    # европейский результат сильно смягчается и метку ЛЧ− не показываем.
     cl_delta = float(cl_stage_delta)
     cl_trend = float(cl_stage_trend)
-    soften_cl_under = cushion >= 0.5 and cl_trend > -3.0
+    soften_cl_under = cushion >= 0.5 or base_place_delta > 0.0
+
     cl_apply = cl_delta
-    if cushion > 0.0 and cl_delta < 0.0:
+    if cl_delta < 0.0 and soften_cl_under:
+        cl_apply = cl_delta * 0.3
+    elif cl_delta < 0.0 and cushion > 0.0:
         cl_apply = cl_delta * max(0.2, 1.0 - cushion * 0.8)
 
     if cl_apply >= 1.0:
-        place_delta += cl_apply * 0.9
-        finish_frust *= max(0.12, 1.0 - cl_apply * 0.18)
-        if cl_apply >= 1.5:
+        place_delta += cl_apply * 0.5
+        finish_frust *= max(0.30, 1.0 - cl_apply * 0.10)
+        if cl_apply >= 2.0:
             suppress_carry = True
     elif cl_apply <= -1.0:
-        place_delta += cl_apply * 0.75
-        finish_frust = min(1.0, finish_frust + abs(cl_apply) * 0.14)
-    if cl_trend <= -1.5:
-        place_delta -= 0.8
-        finish_frust = min(1.0, finish_frust + 0.12)
+        place_delta += cl_apply * 0.35
+        finish_frust = min(1.0, finish_frust + abs(cl_apply) * 0.07)
 
     if cushion > 0.0:
         finish_frust *= 1.0 - cushion
@@ -2284,7 +2292,7 @@ def _compute_advice_for_player(
         + _result_pm_score_term(
             float(result_pm), position=pos, is_gk=is_gk, matches=stint.matches
         )
-        + max(-8.0, min(8.0, float(results_ctx.cl_stage_apply) * 1.5))
+        + max(-5.0, min(6.0, float(results_ctx.cl_stage_apply) * 1.0))
     )
     if ovr_drop_peak <= -2:
         score -= min(14.0, abs(int(ovr_drop_peak)) * 4.0)

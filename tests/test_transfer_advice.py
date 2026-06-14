@@ -1003,10 +1003,20 @@ def test_miranchuk_atalanta_cl_final_softens_leave_pressure():
     assert REASON_CL_OVER in m.reasons or float(m.detail["place_delta"]) > 0
 
 
-def test_inter_cl_regression_after_title():
-    from utils.transfer_advice import REASON_CL_UNDER, collect_transfer_advice
+def test_inter_cl_regression_softened_by_domestic_dominance():
+    """Интер вылетел из ЛЧ, но берёт лигу и трофеи — ЛЧ− не давит звёзд."""
+    from utils.transfer_advice import (
+        REASON_CL_UNDER,
+        VERDICT_SO,
+        VERDICT_SU,
+        _VERDICT_ORDER,
+        collect_transfer_advice,
+    )
 
     _, rows, _ = collect_transfer_advice("Интер")
-    star = next(r for r in rows if r.depth_rank <= 2 and r.overall >= 80)
-    assert float(star.detail["cl_stage_delta"]) < 0
-    assert REASON_CL_UNDER in star.reasons
+    mart = next(r for r in rows if "Мартинез" in r.name)
+    assert float(mart.detail["cl_stage_delta"]) < 0
+    # Лучший бомбардир лучшего клуба не должен получать «уходить» из-за ЛЧ.
+    assert REASON_CL_UNDER not in mart.reasons
+    assert _VERDICT_ORDER[mart.verdict] >= _VERDICT_ORDER[VERDICT_SO]
+    assert mart.verdict != VERDICT_SU
