@@ -367,6 +367,8 @@ def test_score_respects_result_pm_sane_below_kane():
     kane = next(r for r in bayern if r.name == "Кейн")
     assert float(sane.detail["result_pm"]) < float(kane.detail["result_pm"])
     assert float(sane.score) < float(kane.score)
+    assert sane.verdict in ("СО", "СУ")
+    assert 52.0 <= float(sane.score) <= 72.0
     assert "≈" not in sane.reasons
 
 

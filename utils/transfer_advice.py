@@ -1731,6 +1731,14 @@ def _compute_advice_for_player(
     )
     if ovr_drop_peak <= -2:
         score -= min(14.0, abs(int(ovr_drop_peak)) * 4.0)
+    if (
+        depth_rank == 1
+        and not is_gk
+        and pos not in _DEF_POS
+        and ovr_drop_peak <= -2
+        and float(result_pm) < 22.0
+    ):
+        score -= 22.0
     if depth_surplus and not fit and not in_start:
         score -= 5.0
     if depth_rank >= 4 and not fit:
@@ -1769,6 +1777,13 @@ def _compute_advice_for_player(
         and ovr >= med
         and frustration_pen == 0.0
         and finish_frust < 0.35
+        and ovr_drop_peak > -2
+        and ovr_delta_live > -2
+        and (
+            is_gk
+            or pos in _DEF_POS
+            or float(result_pm) >= 22.0
+        )
     )
 
     if hard_no:
