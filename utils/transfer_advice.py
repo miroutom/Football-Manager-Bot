@@ -77,7 +77,7 @@ REASON_INJURY = "Тр"
 REASON_LEGEND: dict[str, str] = {
     REASON_OUTGREW: "перерос клуб",
     REASON_UNDERCLUB: "не дорос до клуба",
-    _BADGE_TROPHY: "мало трофеев для амбиций",
+    _BADGE_TROPHY: "трофеев меньше, чем ждёт от карьеры",
     REASON_NO_TROPHIES: "нет титулов за стаж",
     REASON_RESULTS_BELOW: "клуб ниже ожидаемого",
     REASON_RESULTS_WELL_BELOW: "клуб сильно ниже ожидаемого",
@@ -996,6 +996,39 @@ def _club_seasons_count(*, stint: ClubStintStats) -> int:
     return int(stint.seasons or 0)
 
 
+def _ovr_history_parts(stint: ClubStintStats, current_ovr: int) -> list[int]:
+    """Рейтинг по сезонам стажа (из БД каждого сезона), в хронологическом порядке."""
+    active = int(season_paths.get_state().get("active_season") or 1)
+    parts: list[int] = []
+    for sn in sorted(int(x) for x in stint.season_nums):
+        ovr_s = int(stint.per_season_ovr.get(sn, 0) or 0)
+        if ovr_s <= 0 and sn == active:
+            ovr_s = int(current_ovr)
+        if ovr_s <= 0:
+            continue
+        parts.append(ovr_s)
+    if not parts:
+        if stint.ovr_first is not None:
+            parts.append(int(stint.ovr_first))
+        parts.append(int(current_ovr))
+        return parts
+    if int(active) in {int(x) for x in stint.season_nums}:
+        parts[-1] = int(current_ovr)
+    return parts
+
+
+def _format_ovr_history(stint: ClubStintStats, current_ovr: int) -> str:
+    parts = _ovr_history_parts(stint, current_ovr)
+    return " → ".join(str(x) for x in parts)
+
+
+def _ovr_drop_from_history(parts: list[int], current_ovr: int) -> int:
+    if not parts:
+        return 0
+    peak = max(parts)
+    return int(current_ovr) - int(peak)
+
+
 def _finish_frustration(places: list[int], expected_place: float) -> float:
     if not places:
         return 0.0
@@ -1677,6 +1710,7 @@ def _reason_codes_raw(
         trophies_critical
         and completed_play_seasons >= MIN_SEASONS_TROPHY_RULE
         and int(league_trophies) + int(cl_trophies) == 0
+        and float(place_delta) <= 0.0
     ):
         raw.append(REASON_NO_TROPHIES)
 
@@ -1693,6 +1727,7 @@ def _reason_codes_raw(
         )
         and frustration_pen == 0.0
         and finish_frust < 0.45
+        and float(place_delta) <= 0.0
         and prod_ratio >= 0.92
     )
     if outgrown:
@@ -1949,14 +1984,11 @@ def _compute_advice_for_player(
         if stint.ovr_first is not None
         else stint.ovr_delta
     )
-    ovr_peak_display = max(
-        int(stint.ovr_peak_hist or 0),
-        int(stint.ovr_first or 0),
-    )
-    if int(ovr) > ovr_peak_display:
-        ovr_peak_display = int(ovr)
-    ovr_peak = max(ovr_peak_display, int(ovr))
-    ovr_drop_peak = int(ovr) - int(ovr_peak)
+    ovr_history_parts = _ovr_history_parts(stint, ovr)
+    ovr_history_line = _format_ovr_history(stint, ovr)
+    ovr_peak_display = max(ovr_history_parts) if ovr_history_parts else int(ovr)
+    ovr_peak = max(int(ovr_peak_display), int(ovr))
+    ovr_drop_peak = _ovr_drop_from_history(ovr_history_parts, ovr)
 
     prod_ratio_last: float | None = None
     if int(stint.last_season_matches or 0) >= 3:
@@ -2036,6 +2068,7 @@ def _compute_advice_for_player(
         and trophy_sens >= _TROPHY_SENSITIVITY_BADGE
         and rel_deficit > _TROPHY_REL_DEFICIT_BADGE
         and trophy_earned >= _EARNED_TROPHY_MIN
+        and float(place_delta) <= 0.0
     ):
         if _BADGE_TROPHY not in badges:
             badges.append(_BADGE_TROPHY)
@@ -2049,6 +2082,7 @@ def _compute_advice_for_player(
         and depth_rank <= 3
         and player_amb >= 0.28
         and trophy_earned >= _EARNED_TROPHY_MIN
+        and float(place_delta) <= 0.0
     ):
         if depth_rank <= 1:
             trophy_role = 1.0
@@ -2239,6 +2273,8 @@ def _compute_advice_for_player(
         "ga": stint.ga,
         "ovr_first": stint.ovr_first,
         "ovr_peak": ovr_peak_display,
+        "ovr_history": ovr_history_line,
+        "ovr_by_season": ovr_history_parts,
         "ovr_drop_peak": ovr_drop_peak,
         "injury_periods": stint.injury_periods,
         "injury_months": stint.injury_months,
@@ -2455,9 +2491,7 @@ def format_player_advice_card_html(
     if not reason_lines:
         reason_lines.append("· нет отдельных меток")
 
-    ovr_first = d.get("ovr_first")
-    ovr_peak = d.get("ovr_peak")
-    ovr_line = f"{ovr_first or '—'} → {ovr_peak or '—'} → {row.overall}"
+    ovr_line = escape(str(d.get("ovr_history") or "—"))
     drop = int(d.get("ovr_drop_peak") or 0)
     if drop < 0:
         ovr_line += f" ({drop:+d} с пика)"

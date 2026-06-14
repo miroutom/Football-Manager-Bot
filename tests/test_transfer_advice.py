@@ -298,7 +298,11 @@ def test_build_reasons_one_tag_when_team_has_trophy():
 
 
 def test_build_reasons_zero_trophies_tag():
-    from utils.transfer_advice import REASON_NO_TROPHIES, _build_reasons
+    from utils.transfer_advice import (
+        REASON_NO_TROPHIES,
+        REASON_OUTGREW,
+        _build_reasons,
+    )
 
     reasons = _build_reasons(
         badges=[],
@@ -314,11 +318,70 @@ def test_build_reasons_zero_trophies_tag():
         usage_pen=0.0,
         matches=30,
         finish_frust=0.1,
+        place_delta=-1.0,
         league_trophies=0,
         cl_trophies=0,
         trophies_critical=True,
     )
     assert REASON_NO_TROPHIES in reasons
+
+    no_t0_overperform = _build_reasons(
+        badges=[],
+        frustration_pen=0.0,
+        skill_norm=1.0,
+        ovr=86,
+        team_median_overall=80.0,
+        depth_rank=1,
+        prod_ratio=2.0,
+        ovr_delta_live=5,
+        completed_play_seasons=2,
+        stable_core=False,
+        usage_pen=0.0,
+        matches=40,
+        finish_frust=0.0,
+        place_delta=2.0,
+        league_trophies=0,
+        cl_trophies=0,
+        trophies_critical=True,
+    )
+    assert REASON_NO_TROPHIES not in no_t0_overperform
+    assert REASON_OUTGREW not in no_t0_overperform
+
+
+def test_miranchuk_atalanta_no_trophy_leave_tags():
+    from utils.transfer_advice import (
+        REASON_NO_TROPHIES,
+        REASON_OUTGREW,
+        _BADGE_TROPHY,
+        collect_transfer_advice,
+    )
+
+    _, rows, _ = collect_transfer_advice("Аталанта")
+    m = next(r for r in rows if "Миранчук" in r.name)
+    assert float(m.detail["place_delta"]) > 0
+    assert REASON_NO_TROPHIES not in m.reasons
+    assert _BADGE_TROPHY not in m.reasons
+    assert REASON_OUTGREW not in m.reasons
+    assert m.detail.get("ovr_history") == "77 → 83 → 86"
+
+
+def test_ovr_history_from_season_dbs():
+    from utils.transfer_advice import (
+        _collect_club_stint_stats,
+        _format_ovr_history,
+        collect_transfer_advice,
+    )
+    from player_stats import national_league_code_for_team
+
+    _, rows, _ = collect_transfer_advice("Аталанта")
+    m = next(r for r in rows if "Миранчук" in r.name)
+    stint = _collect_club_stint_stats(
+        "Аталанта",
+        person_id=m.person_id,
+        name=m.name,
+        league_code=national_league_code_for_team("Аталанта"),
+    )
+    assert _format_ovr_history(stint, m.overall) == "77 → 83 → 86"
 
 
 def test_build_reasons_outgrown_and_new():
