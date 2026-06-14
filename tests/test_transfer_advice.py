@@ -286,6 +286,20 @@ def test_paginate_view_no_filters_verdict():
     assert {r.name for r in chunk} == {"В", "Г"}
 
 
+def test_archived_season_counts_with_few_matches():
+    """Завершённый сезон в архиве — в стаже даже при 1–2 матчах (не ждать ≥3)."""
+    from utils.transfer_advice import _collect_club_stint_stats
+    from player_stats import national_league_code_for_team
+
+    lc = national_league_code_for_team("Ливерпуль")
+    st = _collect_club_stint_stats(
+        "Ливерпуль", person_id=None, name="Смоллинг", league_code=lc
+    )
+    assert st.matches >= 2
+    assert st.play_seasons >= 1
+    assert st.completed_play_seasons >= 1
+
+
 def test_collect_club_stint_includes_champions_league():
     """Стаж в клубе суммирует league.db и champions_league.db."""
     import os

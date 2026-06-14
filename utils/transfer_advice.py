@@ -605,8 +605,10 @@ def _collect_club_stint_stats(
             stint.play_seasons += 1
             if stint.ovr_first is None and ovr_best > 0:
                 stint.ovr_first = ovr_best
-            completed = (sn < active) or (sn == active and season_m >= 3)
-            if completed and season_m >= 3:
+            archived = sn < active
+            min_completed_m = 1 if archived else 3
+            season_done = archived or season_m >= 3
+            if season_done and season_m >= min_completed_m:
                 stint.completed_play_seasons += 1
                 if ovr_best > 0:
                     stint.ovr_last_completed = ovr_best
@@ -1817,6 +1819,8 @@ def _compute_advice_for_player(
     expected_place = _expected_league_place(team)
     detail = {
         "seasons_completed": stint.completed_play_seasons,
+        "play_seasons": stint.play_seasons,
+        "tenure_seasons": stint.seasons,
         "matches": stint.matches,
         "goals": stint.goals,
         "assists": stint.assists,
@@ -2088,7 +2092,8 @@ def format_player_advice_card_html(
         *reason_lines,
         "",
         "<b>В клубе</b>",
-        f"Сезонов {d.get('seasons_completed', 0)}, матчей {d.get('matches', 0)}, "
+        f"Сезонов {d.get('play_seasons', d.get('seasons_completed', 0))}, "
+        f"матчей {d.get('matches', 0)}, "
         f"Г {d.get('goals', 0)} А {d.get('assists', 0)}",
         f"Рейтинг: {escape(ovr_line)}",
         f"Статус: <code>{escape(str(status))}</code>, глубина {d.get('depth_rank', '?')}",
