@@ -972,6 +972,36 @@ def test_brahim_real_stint_league_plus_cl():
     assert st.matches == 33
 
 
+def test_liverpool_cl_winner_starters_not_sell():
+    """Победа в ЛЧ + мягкое 4-е место — основа не СУ; звезда может остаться НО."""
+    from utils.transfer_advice import (
+        REASON_CL_OVER,
+        REASON_RESULTS_WELL_BELOW,
+        VERDICT_NO,
+        VERDICT_NU,
+        VERDICT_SO,
+        VERDICT_SU,
+        collect_transfer_advice,
+    )
+
+    _, rows, _ = collect_transfer_advice("Ливерпуль")
+    mbappe = next(r for r in rows if "Мбаппе" in r.name)
+    smalling = next(r for r in rows if "Смоллинг" in r.name)
+    jones = next(r for r in rows if "Джонс" in r.name)
+
+    assert mbappe.verdict == VERDICT_NO
+    assert mbappe.verdict != VERDICT_SU
+    assert REASON_CL_OVER in mbappe.reasons
+    assert REASON_RESULTS_WELL_BELOW not in mbappe.reasons
+    assert mbappe.score >= 72.0
+
+    assert smalling.verdict == VERDICT_SO
+    assert smalling.verdict != VERDICT_SU
+    assert REASON_CL_OVER in smalling.reasons
+
+    assert jones.verdict == VERDICT_NU
+
+
 def test_cl_knockout_stage_from_journal_season2():
     from utils.cl_knockout_results import (
         CL_STAGE_CHAMP,

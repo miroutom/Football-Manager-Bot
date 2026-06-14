@@ -886,10 +886,12 @@ def _apply_verdict_modifiers(
     frustration_pen: float = 0.0,
     cl_stage_delta: float = 0.0,
     league_trophies: int = 0,
+    cl_trophies: int = 0,
 ) -> tuple[str, float]:
     """Согласовать вердикт со score, причинами и контекстом клуба."""
     v = verdict
     s = score
+    original_score = score
 
     results_pressure = any(
         c in raw_reasons
@@ -901,14 +903,28 @@ def _apply_verdict_modifiers(
         )
     )
     trophy_miss = _BADGE_TROPHY in raw_reasons
-    league_title_in_stint = int(league_trophies) >= 1
+    trophy_in_stint = int(league_trophies) >= 1 or int(cl_trophies) >= 1
     only_mild_results = (
         REASON_RESULTS_BELOW in raw_reasons
         and REASON_RESULTS_WELL_BELOW not in raw_reasons
     )
+    domestic_mild_miss = (
+        float(place_delta) > -1.5
+        and REASON_RESULTS_WELL_BELOW not in raw_reasons
+    )
+    cl_champion_star_stay = (
+        int(cl_trophies) >= 1
+        and REASON_CL_OVER in raw_reasons
+        and domestic_mild_miss
+        and depth_rank == 1
+        and original_score >= 85.0
+    )
 
     if results_pressure or trophy_miss or REASON_OUTGREW in raw_reasons:
-        if league_title_in_stint and only_mild_results and depth_rank <= 2:
+        if cl_champion_star_stay:
+            v = _cap_verdict_at_least(v, VERDICT_NO)
+            s = max(s, SCORE_VERDICT_NO)
+        elif trophy_in_stint and (only_mild_results or domestic_mild_miss) and depth_rank <= 2:
             ceiling = VERDICT_SO
             v = _cap_verdict_at_least(v, VERDICT_SO)
             s = max(s, SCORE_VERDICT_SO)
@@ -918,19 +934,29 @@ def _apply_verdict_modifiers(
             ceiling = VERDICT_SO
         if results_pressure and trophy_miss:
             ceiling = VERDICT_SU
-        v = _cap_verdict_at_most(v, ceiling)
-        s = min(
-            s,
-            SCORE_VERDICT_SO - 0.1
-            if ceiling == VERDICT_SU
-            else SCORE_VERDICT_NO - 0.1,
-        )
+        if not cl_champion_star_stay:
+            v = _cap_verdict_at_most(v, ceiling)
+            s = min(
+                s,
+                SCORE_VERDICT_SO - 0.1
+                if ceiling == VERDICT_SU
+                else SCORE_VERDICT_NO - 0.1,
+            )
+
+    if (
+        trophy_in_stint
+        and domestic_mild_miss
+        and depth_rank <= 2
+        and not cl_champion_star_stay
+    ):
+        v = _cap_verdict_at_least(v, VERDICT_SO)
+        s = max(s, SCORE_VERDICT_SO)
 
     if REASON_OUTGREW in raw_reasons and REASON_NEW in raw_reasons:
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
 
-    if completed_play_seasons <= 1:
+    if completed_play_seasons <= 1 and not cl_champion_star_stay:
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
 
@@ -944,7 +970,7 @@ def _apply_verdict_modifiers(
         trophies_critical
         and place_delta <= -1.5
         and depth_rank <= 2
-        and not league_title_in_stint
+        and not trophy_in_stint
     ):
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
@@ -966,10 +992,16 @@ def _apply_verdict_modifiers(
         s = min(s, SCORE_VERDICT_NO - 0.1)
 
     if frustration_pen < -8.0 and trophies_critical and not (
-        league_title_in_stint and only_mild_results and depth_rank <= 2
+        trophy_in_stint
+        and (only_mild_results or domestic_mild_miss)
+        and depth_rank <= 2
     ):
         v = _cap_verdict_at_most(v, VERDICT_SU)
         s = min(s, SCORE_VERDICT_SO - 0.1)
+
+    if cl_champion_star_stay:
+        v = VERDICT_NO
+        s = max(original_score, SCORE_VERDICT_NO)
 
     return v, s
 
@@ -1164,13 +1196,20 @@ def _team_trophy_results_cushion(
     """
     Смягчение давления по местам, если клуб за стаж уже взял трофей.
     2 сезона и ≥1 трофей — норма для топа; 1 трофей за 3 — уже слабо.
+    Победа в ЛЧ за 1 завершённый сезон — сильный смягчающий фактор.
     """
-    if not trophies_critical or completed_play_seasons < 2:
+    if not trophies_critical or completed_play_seasons < 1:
         return 0.0
     team_trophies = int(league_trophies) + int(cl_trophies)
     if team_trophies <= 0:
         return 0.0
     n = int(completed_play_seasons)
+    if n == 1:
+        if int(cl_trophies) >= 1:
+            return 0.58
+        if int(league_trophies) >= 1:
+            return 0.45
+        return 0.0
     if n == 2:
         if team_trophies >= 2:
             return 0.78
@@ -1238,7 +1277,9 @@ def _team_results_context(
     if cushion > 0.0:
         finish_frust *= 1.0 - cushion
         place_delta += cushion * 1.5
-        if completed_play_seasons == 2 and team_trophies >= 1:
+        if team_trophies >= 1 and (
+            completed_play_seasons >= 2 or int(cl_trophies) >= 1
+        ):
             suppress_carry = True
             cap_at_below = True
     return TeamResultsContext(
@@ -2440,6 +2481,7 @@ def _compute_advice_for_player(
         frustration_pen=frustration_pen,
         cl_stage_delta=cl_stage_delta,
         league_trophies=stint.league_trophies,
+        cl_trophies=stint.cl_trophies,
     )
     reasons = _filter_reasons_for_verdict(
         raw_reasons,
