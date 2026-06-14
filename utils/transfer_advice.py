@@ -63,7 +63,10 @@ _BADGE_FIT = "С×"
 # Человекочитаемые причины для экрана (до 3 на игрока).
 REASON_OUTGREW = "П+"
 REASON_UNDERCLUB = "П−"
-REASON_CARRY_FAIL = "Т×"
+REASON_NO_TROPHIES = "Т0"
+REASON_RESULTS_BELOW = "Р−"
+REASON_RESULTS_WELL_BELOW = "Р−−"
+REASON_CARRY_STAR = "Т+"
 REASON_NEW = "Н"
 REASON_LEVEL = "≈"
 REASON_USAGE = "⏱"
@@ -74,8 +77,11 @@ REASON_INJURY = "Тр"
 REASON_LEGEND: dict[str, str] = {
     REASON_OUTGREW: "перерос клуб",
     REASON_UNDERCLUB: "не дорос до клуба",
-    _BADGE_TROPHY: "нет трофеев",
-    REASON_CARRY_FAIL: "тащит — нет титулов",
+    _BADGE_TROPHY: "мало трофеев для амбиций",
+    REASON_NO_TROPHIES: "нет титулов за стаж",
+    REASON_RESULTS_BELOW: "клуб ниже ожидаемого",
+    REASON_RESULTS_WELL_BELOW: "клуб сильно ниже ожидаемого",
+    REASON_CARRY_STAR: "тащит при слабых результатах",
     _BADGE_DEPTH: "избыток на позиции",
     _BADGE_FIT: "не в схему",
     _BADGE_PROD: "слабая стата",
@@ -88,7 +94,8 @@ REASON_LEGEND: dict[str, str] = {
 }
 
 ADVICE_REASON_LEGEND_HTML = (
-    "<i>П+ перерос · П− не дорос · Т− трофеи · Т× тащит без титулов\n"
+    "<i>П+ перерос · П− не дорос · Т0 нет титулов · Т− мало трофеев · "
+    "Р− ниже ожиданий · Р−− сильно ниже · Т+ тащит\n"
     "З+ запас · С× схема · П↓ стата · Н новичок · ≈ уровень · ⏱ мало игр · Тр травмы</i>\n"
 )
 
@@ -782,7 +789,14 @@ def _cap_verdict_at_least(current: str, floor: str) -> str:
 
 
 _VERDICT_LEAVE_MARKERS = frozenset(
-    {REASON_CARRY_FAIL, REASON_OUTGREW, _BADGE_TROPHY}
+    {
+        REASON_CARRY_STAR,
+        REASON_RESULTS_BELOW,
+        REASON_RESULTS_WELL_BELOW,
+        REASON_NO_TROPHIES,
+        REASON_OUTGREW,
+        _BADGE_TROPHY,
+    }
 )
 _VERDICT_SELL_MARKERS = frozenset(
     {REASON_UNDERCLUB, _BADGE_PROD, REASON_DECLINE, _BADGE_DEPTH, REASON_USAGE}
@@ -804,12 +818,20 @@ def _apply_verdict_modifiers(
     v = verdict
     s = score
 
-    carry_fail = REASON_CARRY_FAIL in raw_reasons
+    results_pressure = any(
+        c in raw_reasons
+        for c in (
+            REASON_CARRY_STAR,
+            REASON_RESULTS_BELOW,
+            REASON_RESULTS_WELL_BELOW,
+            REASON_NO_TROPHIES,
+        )
+    )
     trophy_miss = _BADGE_TROPHY in raw_reasons
 
-    if carry_fail or trophy_miss or REASON_OUTGREW in raw_reasons:
-        ceiling = VERDICT_SU if (carry_fail and trophies_critical) else VERDICT_SO
-        if carry_fail and trophy_miss:
+    if results_pressure or trophy_miss or REASON_OUTGREW in raw_reasons:
+        ceiling = VERDICT_SU if (results_pressure and trophies_critical) else VERDICT_SO
+        if results_pressure and trophy_miss:
             ceiling = VERDICT_SU
         v = _cap_verdict_at_most(v, ceiling)
         s = min(
@@ -836,7 +858,7 @@ def _apply_verdict_modifiers(
     if trophies_critical and place_delta <= -1.5 and depth_rank <= 2:
         v = _cap_verdict_at_most(v, VERDICT_SO)
         s = min(s, SCORE_VERDICT_NO - 0.1)
-        if carry_fail or trophy_miss:
+        if results_pressure or trophy_miss:
             v = _cap_verdict_at_most(v, VERDICT_SU)
             s = min(s, SCORE_VERDICT_SO - 0.1)
 
@@ -1493,7 +1515,27 @@ def _format_result_pm(pm: float) -> str:
     return f"{pm:.1f}"
 
 
+_FINISH_FRUST_BELOW = 0.30
+_FINISH_FRUST_WELL_BELOW = 0.55
+_PLACE_DELTA_BELOW = -1.0
+_PLACE_DELTA_WELL_BELOW = -2.0
+
 _EARNED_TROPHY_MIN = 0.32
+
+
+def _results_reason_codes(
+    finish_frust: float,
+    place_delta: float,
+) -> list[str]:
+    """Метки по местам в таблице относительно ожиданий клуба."""
+    if (
+        finish_frust >= _FINISH_FRUST_WELL_BELOW
+        or place_delta <= _PLACE_DELTA_WELL_BELOW
+    ):
+        return [REASON_RESULTS_WELL_BELOW]
+    if finish_frust >= _FINISH_FRUST_BELOW or place_delta <= _PLACE_DELTA_BELOW:
+        return [REASON_RESULTS_BELOW]
+    return []
 
 
 def _reason_codes_raw(
@@ -1515,13 +1557,27 @@ def _reason_codes_raw(
     injury_months: int = 0,
     team_is_apex: bool = False,
     finish_frust: float = 0.0,
+    place_delta: float = 0.0,
+    league_trophies: int = 0,
+    cl_trophies: int = 0,
     trophies_critical: bool = True,
 ) -> list[str]:
     """Сырые коды причин (до фильтра под вердикт)."""
     raw: list[str] = []
 
+    for code in _results_reason_codes(finish_frust, place_delta):
+        raw.append(code)
+
     if frustration_pen < 0:
-        raw.append(REASON_CARRY_FAIL)
+        raw.append(REASON_CARRY_STAR)
+
+    if (
+        trophies_critical
+        and completed_play_seasons >= MIN_SEASONS_TROPHY_RULE
+        and int(league_trophies) + int(cl_trophies) == 0
+    ):
+        raw.append(REASON_NO_TROPHIES)
+
     if _BADGE_TROPHY in badges:
         raw.append(_BADGE_TROPHY)
 
@@ -1586,7 +1642,10 @@ def _filter_reasons_for_verdict(
     out = list(raw)
     if verdict == VERDICT_NO:
         leave_codes = {
-            REASON_CARRY_FAIL,
+            REASON_CARRY_STAR,
+            REASON_RESULTS_BELOW,
+            REASON_RESULTS_WELL_BELOW,
+            REASON_NO_TROPHIES,
             REASON_OUTGREW,
             _BADGE_TROPHY,
             REASON_UNDERCLUB,
@@ -1624,6 +1683,9 @@ def _build_reasons(
     injury_months: int = 0,
     team_is_apex: bool = False,
     finish_frust: float = 0.0,
+    place_delta: float = 0.0,
+    league_trophies: int = 0,
+    cl_trophies: int = 0,
     verdict: str | None = None,
     trophies_critical: bool = True,
 ) -> list[str]:
@@ -1646,6 +1708,9 @@ def _build_reasons(
         injury_months=injury_months,
         team_is_apex=team_is_apex,
         finish_frust=finish_frust,
+        place_delta=place_delta,
+        league_trophies=league_trophies,
+        cl_trophies=cl_trophies,
         trophies_critical=trophies_critical,
     )
     return _filter_reasons_for_verdict(
@@ -2023,6 +2088,9 @@ def _compute_advice_for_player(
         injury_months=stint.injury_months,
         team_is_apex=team_is_apex,
         finish_frust=finish_frust,
+        place_delta=place_delta,
+        league_trophies=stint.league_trophies,
+        cl_trophies=stint.cl_trophies,
         trophies_critical=trophies_critical,
     )
     verdict, score = _apply_verdict_modifiers(

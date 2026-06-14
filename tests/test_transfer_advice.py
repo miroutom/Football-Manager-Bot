@@ -184,11 +184,26 @@ def test_trophy_earned_low_for_declined_underperformer():
     assert earned < _EARNED_TROPHY_MIN
 
 
-def test_build_reasons_outgrown_and_new():
+def test_results_reason_codes_tiers():
     from utils.transfer_advice import (
-        REASON_CARRY_FAIL,
-        REASON_NEW,
+        REASON_RESULTS_BELOW,
+        REASON_RESULTS_WELL_BELOW,
+        _results_reason_codes,
+    )
+
+    assert _results_reason_codes(0.2, 0.0) == []
+    assert _results_reason_codes(0.35, -0.5) == [REASON_RESULTS_BELOW]
+    assert _results_reason_codes(0.2, -1.2) == [REASON_RESULTS_BELOW]
+    assert _results_reason_codes(0.9, 0.0) == [REASON_RESULTS_WELL_BELOW]
+    assert _results_reason_codes(0.2, -2.5) == [REASON_RESULTS_WELL_BELOW]
+
+
+def test_build_reasons_carry_and_results_not_zero_trophies():
+    from utils.transfer_advice import (
+        REASON_CARRY_STAR,
+        REASON_NO_TROPHIES,
         REASON_OUTGREW,
+        REASON_RESULTS_WELL_BELOW,
         _BADGE_TROPHY,
         _build_reasons,
     )
@@ -207,9 +222,42 @@ def test_build_reasons_outgrown_and_new():
         usage_pen=0.0,
         matches=20,
         finish_frust=1.0,
+        place_delta=-3.0,
+        league_trophies=1,
+        cl_trophies=0,
     )
-    assert REASON_CARRY_FAIL in reasons
+    assert REASON_RESULTS_WELL_BELOW in reasons
+    assert REASON_CARRY_STAR in reasons
+    assert REASON_NO_TROPHIES not in reasons
     assert REASON_OUTGREW not in reasons
+
+
+def test_build_reasons_zero_trophies_tag():
+    from utils.transfer_advice import REASON_NO_TROPHIES, _build_reasons
+
+    reasons = _build_reasons(
+        badges=[],
+        frustration_pen=0.0,
+        skill_norm=0.5,
+        ovr=85,
+        team_median_overall=82.0,
+        depth_rank=1,
+        prod_ratio=1.0,
+        ovr_delta_live=2,
+        completed_play_seasons=2,
+        stable_core=False,
+        usage_pen=0.0,
+        matches=30,
+        finish_frust=0.1,
+        league_trophies=0,
+        cl_trophies=0,
+        trophies_critical=True,
+    )
+    assert REASON_NO_TROPHIES in reasons
+
+
+def test_build_reasons_outgrown_and_new():
+    from utils.transfer_advice import REASON_NEW, REASON_OUTGREW, _build_reasons
 
     outgrown_ok = _build_reasons(
         badges=[],
@@ -280,7 +328,7 @@ def test_format_summary_view():
             position="ФРВ",
             overall=88,
             verdict=VERDICT_SU,
-            reasons=["П+", "Т×"],
+            reasons=["П+", "Р−"],
         )
     ]
     text, pages = format_team_advice_html("Арсенал", rows, view="summary")
@@ -571,10 +619,11 @@ def test_goalkeeper_pm_missed_goals():
 
 
 def test_havertz_frustrated_star_not_hard_no():
-    """Звезда при 5-м местах и без титулов — не НО с причинами «уходить»."""
+    """Звезда при слабых местах — не НО, с метками результатов и «тащит»."""
     from utils.transfer_advice import (
-        REASON_CARRY_FAIL,
+        REASON_CARRY_STAR,
         REASON_OUTGREW,
+        REASON_RESULTS_BELOW,
         VERDICT_NO,
         VERDICT_SU,
         collect_transfer_advice,
@@ -584,7 +633,7 @@ def test_havertz_frustrated_star_not_hard_no():
     h = next(r for r in rows if "Хаверц" in r.name)
     assert h.verdict == VERDICT_SU
     assert h.verdict != VERDICT_NO
-    assert REASON_CARRY_FAIL in h.reasons
+    assert REASON_CARRY_STAR in h.reasons or REASON_RESULTS_BELOW in h.reasons
     assert REASON_OUTGREW not in h.reasons
     assert h.score < 72.0
 
