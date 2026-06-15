@@ -28,6 +28,15 @@
       "away_score": 2,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Рома",
+      "league": "ita",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
     }
   ]
 }

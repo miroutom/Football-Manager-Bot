@@ -1712,6 +1712,18 @@
       "return_month": 2,
       "type": "травма",
       "season": 3
+    },
+    {
+      "key": "вини|ювентус|3|1|8",
+      "name": "Вини",
+      "name_norm": "вини",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "out_from_month": 1,
+      "return_month": 8,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 88
     }
   ]
 }
