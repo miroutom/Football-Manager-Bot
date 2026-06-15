@@ -415,6 +415,7 @@ def find_or_create_player(session, name: str, position: str, team: str):
                 matches=0, clean_sheets=0, missed_goals=0,
                 trophies=0, golden_balls=0, golden_boots=0, golden_gloves=0,
                 golden_boys=0, nation=None, status=None, yellow_cards=0, red_cards=0,
+                motm=0,
             )
         elif pos_type == 'defender':
             player = PlayerClass(
@@ -422,6 +423,7 @@ def find_or_create_player(session, name: str, position: str, team: str):
                 matches=0, goals=0, assists=0, ga=0,
                 trophies=0, golden_balls=0, golden_boots=0,
                 golden_boys=0, nation=None, status=None, yellow_cards=0, red_cards=0,
+                motm=0,
             )
         else:
             player = PlayerClass(
@@ -429,6 +431,7 @@ def find_or_create_player(session, name: str, position: str, team: str):
                 matches=0, goals=0, assists=0, ga=0,
                 trophies=0, golden_balls=0, golden_boots=0, golden_boys=0,
                 nation=None, status=None, yellow_cards=0, red_cards=0,
+                motm=0,
             )
 
         session.add(player)
@@ -689,6 +692,39 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
     disp = player.name
     print(f"  ✓ {disp} {position} {team}{ga_str}{cs_str}")
 
+    return True
+
+
+def apply_match_motm(
+    name: str,
+    position: str,
+    team: str,
+    *,
+    tournament: str = "league",
+    sync_derived: bool = True,
+) -> bool:
+    """Засчитать одного игрока матча (MOTM) за текущий матч."""
+    session = get_session(tournament)
+    name = (name or "").strip()
+    team = (team or "").strip()
+    player, err = None, None
+    from utils.player_names import resolve_player_query_in_team
+
+    if position:
+        player, err = resolve_player_query_in_team(
+            session, team, name, position=position.upper()
+        )
+    else:
+        player, err = resolve_player_query_in_team(session, team, name, position=None)
+    if err or not player:
+        print(f"  ✗ MOTM: {err or f'не найден «{name}» ({team})'}")
+        return False
+    player.motm = int(getattr(player, "motm", 0) or 0) + 1
+    session.commit()
+    from utils.stats_derived_sync import record_stat_write
+
+    record_stat_write(player, tournament, d_motm=1, flush=sync_derived)
+    print(f"  ✓ MOTM: {player.name} ({player.team})")
     return True
 
 
@@ -1891,6 +1927,7 @@ def show_all_leagues_combined_full_list(limit: int = 100) -> None:
                     "goals": g,
                     "assists": a,
                     "ga": ga,
+                    "motm": int(getattr(p, "motm", 0) or 0),
                 }
             )
 
@@ -1914,16 +1951,17 @@ def show_all_leagues_combined_full_list(limit: int = 100) -> None:
     print()
     hdr = (
         f"{'#':<4} {'Игрок':<20} {'Команда':<18} {'Поз':<5} "
-        f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5}"
+        f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5} {'MOTM':>4}"
     )
     print(hdr)
-    print("-" * 76)
+    print("-" * 80)
     for i, p in enumerate(rows, 1):
         print(
             f"{i:<4} {p['name']:<20} {p['team']:<18} {p['position']:<5} "
-            f"{p['matches']:>4} {p['goals']:>4} {p['assists']:>4} {p['ga']:>5}"
+            f"{p['matches']:>4} {p['goals']:>4} {p['assists']:>4} "
+            f"{p['ga']:>5} {int(p.get('motm', 0)):>4}"
         )
-    print("-" * 76)
+    print("-" * 80)
 
 
 def _team_name_as_in_db(team: str) -> str:
@@ -1983,11 +2021,12 @@ def show_team_goalscorers_table(
                     "g": g,
                     "a": a,
                     "ga": ga,
+                    "motm": int(getattr(p, "motm", 0) or 0),
                 }
             )
     rows.sort(key=lambda x: (-x["ga"], -x["g"], x["name"].lower()))
 
-    width = 68
+    width = 74
     sep = "=" * width
     if tournament in ("cl", "champ_league"):
         tname = "Лига Чемпионов"
@@ -2002,12 +2041,12 @@ def show_team_goalscorers_table(
     if not rows:
         print("  Нет игроков с голами или передачами в этой базе.")
     else:
-        print(f"{'#':<4} {'Игрок':<18} {'Поз':<6} {'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5}")
+        print(f"{'#':<4} {'Игрок':<18} {'Поз':<6} {'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5} {'MOTM':>4}")
         print("-" * width)
         for i, r in enumerate(rows, 1):
             print(
                 f"{i:<4} {r['name']:<18} {r['pos']:<6} {r['matches']:>4} "
-                f"{r['g']:>4} {r['a']:>4} {r['ga']:>5}"
+                f"{r['g']:>4} {r['a']:>4} {r['ga']:>5} {int(r.get('motm', 0)):>4}"
             )
 
     sum_goals = sum(r["g"] for r in rows)

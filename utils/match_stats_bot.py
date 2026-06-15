@@ -820,3 +820,120 @@ def stats_played_pick_intro(
         f"Отмечено: <b>{played_count}</b>. Нажми на игрока — переключить ✅.\n"
         f"Стр. {page + 1}/{total_pages}. Затем «Далее» — каждому +1 матч, потом строки статы."
     )
+
+
+def build_motm_pick_keyboard(
+    players: list[MatchRosterPlayer],
+    *,
+    page: int = 0,
+    side: str = "all",
+) -> tuple[Any, int, int]:
+    """Клавиатура выбора одного игрока матча (MOTM)."""
+    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+    visible = filter_roster_by_side(players, side)
+    ps = _PAGE
+    n = len(visible)
+    total_pages = max(1, (n + ps - 1) // ps)
+    page = max(0, min(int(page), total_pages - 1))
+    chunk = visible[page * ps : page * ps + ps]
+    rows: list[list[InlineKeyboardButton]] = []
+    for p in chunk:
+        sec = ""
+        if p.squad_status == "bench":
+            sec = "·б "
+        elif p.squad_status == "reserve":
+            sec = "·р "
+        label = f"⭐ {player_display_name(p)} {sec}{p.position}"
+        if len(label) > 58:
+            label = label[:55] + "…"
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=label,
+                    callback_data=f"motm:pick:{p.idx}",
+                )
+            ]
+        )
+    if total_pages > 1:
+        nav: list[InlineKeyboardButton] = []
+        if page > 0:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"« {page}/{total_pages}",
+                    callback_data=f"motm:pg:{page - 1}",
+                )
+            )
+        if page < total_pages - 1:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"{page + 2}/{total_pages} »",
+                    callback_data=f"motm:pg:{page + 1}",
+                )
+            )
+        if nav:
+            rows.append(nav)
+    side_tag = _played_side_filter(side)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="Все" + (" ✓" if side_tag == "all" else ""),
+                callback_data="motm:side:all",
+            ),
+            InlineKeyboardButton(
+                text="Хозяева" + (" ✓" if side_tag in ("home", "h", "хоз") else ""),
+                callback_data="motm:side:home",
+            ),
+            InlineKeyboardButton(
+                text="Гости" + (" ✓" if side_tag in ("away", "a", "гост") else ""),
+                callback_data="motm:side:away",
+            ),
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows), page, total_pages
+
+
+def motm_pick_intro(
+    *,
+    home: str,
+    away: str,
+    hs: int,
+    aws: int,
+    page: int,
+    total_pages: int,
+) -> str:
+    return (
+        f"<b>Игрок матча (MOTM)</b> · {home} ({hs}:{aws}) {away}\n"
+        f"Выбери одного игрока — нап, полузащитник, защитник или вратарь.\n"
+        f"Стр. {page + 1}/{total_pages}. Или введи имя текстом."
+    )
+
+
+def roster_from_state(raw: list[dict] | None) -> list[MatchRosterPlayer]:
+    out: list[MatchRosterPlayer] = []
+    for item in raw or []:
+        out.append(
+            MatchRosterPlayer(
+                idx=int(item.get("idx", 0)),
+                name=str(item.get("name") or ""),
+                position=str(item.get("position") or ""),
+                team=str(item.get("team") or ""),
+                side_label=str(item.get("side_label") or ""),
+                squad_status=str(item.get("squad_status") or ""),
+            )
+        )
+    return out
+
+
+def roster_to_state(players: list[MatchRosterPlayer]) -> list[dict]:
+    return [
+        {
+            "idx": p.idx,
+            "name": p.name,
+            "position": p.position,
+            "team": p.team,
+            "side_label": p.side_label,
+            "squad_status": p.squad_status,
+        }
+        for p in players
+    ]

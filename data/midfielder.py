@@ -70,3 +70,4 @@ class Midfielder(Base):
     left_team = Column(Boolean, default=False, nullable=False)
     yellow_cards = Column(Integer, default=0)
     red_cards = Column(Integer, default=0)
+    motm = Column(Integer, default=0)

@@ -381,6 +381,7 @@ def _fold_outfield_bucket(
             "assists": 0,
             "ga": 0,
             "matches": 0,
+            "motm": 0,
             "last_season": season_num if merge_by_player else None,
         }
     b = buckets[k]
@@ -390,6 +391,7 @@ def _fold_outfield_bucket(
     b["assists"] += a
     b["ga"] += int(getattr(p, "ga", 0) or 0) or (g + a)
     b["matches"] += int(getattr(p, "matches", 0) or 0)
+    b["motm"] += int(getattr(p, "motm", 0) or 0)
     from utils.person_registry import row_person_id
 
     pid = row_person_id(p)
@@ -463,11 +465,13 @@ def _fold_cs_bucket(
             "position": p.position,
             "clean_sheets": 0,
             "matches": 0,
+            "motm": 0,
             "last_season": season_num if merge_by_player else None,
         }
     b = buckets[k]
     b["clean_sheets"] += int(getattr(p, "clean_sheets", 0) or 0)
     b["matches"] += int(getattr(p, "matches", 0) or 0)
+    b["motm"] += int(getattr(p, "motm", 0) or 0)
     _apply_club_label(
         b, p, season_num, merge_by_player=merge_by_player, pick_club=pick_club
     )
@@ -847,16 +851,17 @@ def format_life_top_scorers(league_code: str | None, limit: int = 30) -> str:
         print(f"  ТОП-{limit} БОМБАРДИРОВ - {league_name}")
         print(f"{'='*65}")
         print(
-            f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} {'Г':<4} {'А':<4} {'Г+А':<5}"
+            f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} {'Г':<4} {'А':<4} {'Г+А':<5} {'MOTM':<4}"
         )
-        print("-" * 65)
+        print("-" * 69)
         if not players:
             print("  Нет данных")
         else:
             for i, p in enumerate(players[:limit], 1):
                 print(
                     f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
-                    f"{p['goals']:<4} {p['assists']:<4} {p['ga']:<5}"
+                    f"{p['goals']:<4} {p['assists']:<4} {p['ga']:<5} "
+                    f"{int(p.get('motm', 0)):<4}"
                 )
     return buf.getvalue()
 
@@ -879,16 +884,17 @@ def format_life_top_assists(league_code: str | None, limit: int = 30) -> str:
         print(f"  ТОП-{limit} АССИСТЕНТОВ - {league_name}")
         print(f"{'='*65}")
         print(
-            f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} {'А':<4} {'Г':<4} {'Г+А':<5}"
+            f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} {'А':<4} {'Г':<4} {'Г+А':<5} {'MOTM':<4}"
         )
-        print("-" * 65)
+        print("-" * 69)
         if not players:
             print("  Нет данных")
         else:
             for i, p in enumerate(players[:limit], 1):
                 print(
                     f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
-                    f"{p['assists']:<4} {p['goals']:<4} {p['ga']:<5}"
+                    f"{p['assists']:<4} {p['goals']:<4} {p['ga']:<5} "
+                    f"{int(p.get('motm', 0)):<4}"
                 )
     return buf.getvalue()
 
@@ -911,16 +917,17 @@ def format_life_top_ga(league_code: str | None, limit: int = 30) -> str:
         print(f"  ТОП-{limit} ПО Г+А - {league_name}")
         print(f"{'='*65}")
         print(
-            f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} {'Г+А':<5} {'Г':<4} {'А':<4}"
+            f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} {'Г+А':<5} {'Г':<4} {'А':<4} {'MOTM':<4}"
         )
-        print("-" * 65)
+        print("-" * 69)
         if not players:
             print("  Нет данных")
         else:
             for i, p in enumerate(players[:limit], 1):
                 print(
                     f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
-                    f"{p['ga']:<5} {p['goals']:<4} {p['assists']:<4}"
+                    f"{p['ga']:<5} {p['goals']:<4} {p['assists']:<4} "
+                    f"{int(p.get('motm', 0)):<4}"
                 )
     return buf.getvalue()
 
@@ -1056,16 +1063,17 @@ def format_season_stat(
             print(f"{'='*65}")
             print(
                 f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} "
-                f"{'Г':<4} {'А':<4} {'Г+А':<5}"
+                f"{'Г':<4} {'А':<4} {'Г+А':<5} {'MOTM':<4}"
             )
-            print("-" * 65)
+            print("-" * 69)
             if not players:
                 print("  Нет данных")
             else:
                 for i, p in enumerate(players[:limit], 1):
                     print(
                         f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
-                        f"{p['goals']:<4} {p['assists']:<4} {p['ga']:<5}"
+                        f"{p['goals']:<4} {p['assists']:<4} {p['ga']:<5} "
+                        f"{int(p.get('motm', 0)):<4}"
                     )
         elif m in ("as", "a", "assists"):
             players = [p for p in players if int(p.get("assists", 0) or 0) > 0]
@@ -1075,16 +1083,17 @@ def format_season_stat(
             print(f"{'='*65}")
             print(
                 f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} "
-                f"{'А':<4} {'Г':<4} {'Г+А':<5}"
+                f"{'А':<4} {'Г':<4} {'Г+А':<5} {'MOTM':<4}"
             )
-            print("-" * 65)
+            print("-" * 69)
             if not players:
                 print("  Нет данных")
             else:
                 for i, p in enumerate(players[:limit], 1):
                     print(
                         f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
-                        f"{p['assists']:<4} {p['goals']:<4} {p['ga']:<5}"
+                        f"{p['assists']:<4} {p['goals']:<4} {p['ga']:<5} "
+                        f"{int(p.get('motm', 0)):<4}"
                     )
         elif m in ("ga", "g+a"):
             players = [p for p in players if int(p.get("ga", 0) or 0) > 0]
@@ -1094,16 +1103,17 @@ def format_season_stat(
             print(f"{'='*65}")
             print(
                 f"{'#':<4} {'Игрок':<18} {'Команда':<15} {'Поз':<5} "
-                f"{'Г+А':<5} {'Г':<4} {'А':<4}"
+                f"{'Г+А':<5} {'Г':<4} {'А':<4} {'MOTM':<4}"
             )
-            print("-" * 65)
+            print("-" * 69)
             if not players:
                 print("  Нет данных")
             else:
                 for i, p in enumerate(players[:limit], 1):
                     print(
                         f"{i:<4} {p['name']:<18} {p['team']:<15} {p['position']:<5} "
-                        f"{p['ga']:<5} {p['goals']:<4} {p['assists']:<4}"
+                        f"{p['ga']:<5} {p['goals']:<4} {p['assists']:<4} "
+                        f"{int(p.get('motm', 0)):<4}"
                     )
         else:
             return f"Неизвестная метрика: {metric!r}"
@@ -1233,18 +1243,18 @@ def format_top100_str(
         print("=" * 76)
         hdr = (
             f"{'#':<4} {'Игрок':<20} {'Команда':<18} {'Поз':<5} "
-            f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5}"
+            f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5} {'MOTM':>4}"
         )
         print()
         print(hdr)
-        print("-" * 76)
+        print("-" * 80)
         for i, p in enumerate(rows, 1):
             print(
                 f"{i:<4} {p['name']:<20} {p['team']:<18} {p['position']:<5} "
                 f"{int(p.get('matches', 0) or 0):>4} {p['goals']:>4} {p['assists']:>4} "
-                f"{p['ga']:>5}"
+                f"{p['ga']:>5} {int(p.get('motm', 0)):>4}"
             )
-        print("-" * 76)
+        print("-" * 80)
     return buf.getvalue().strip()
 
 

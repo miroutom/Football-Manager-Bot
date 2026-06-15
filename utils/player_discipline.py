@@ -1003,7 +1003,7 @@ def _apply_injury(
 
             bump_res = apply_overall_bumps_for_team(team, f"{player.name} {delta:+d}")
             if bump_res.ok:
-                rating_note = f" Рейтинг <b>{delta:+d}</b>."
+                rating_note = f" Рейтинг {delta:+d}."
                 if overall_before_penalty > 0:
                     with _lock:
                         st2 = _load()
@@ -1029,7 +1029,7 @@ def _apply_injury(
             f" Переход на следующий сезон: ~{in_this} мес. в этом, ~{in_next} мес. в следующем."
         )
     return (
-        f"✓ Травма ({tk}): {player.name} — с <b>{cur}</b> мес., выход с <b>{ret}</b> "
+        f"✓ Травма ({tk}): {player.name} — с {cur} мес., выход с {ret} "
         f"(срок {nmonths} мес.).{carry}{rating_note} {note}",
         True,
     )

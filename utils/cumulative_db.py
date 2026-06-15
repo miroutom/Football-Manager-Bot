@@ -153,6 +153,10 @@ def _fold_stats_into_row(dst_row: Any, src_row: Any) -> None:
         int(getattr(dst_row, "red_cards", 0) or 0),
         int(getattr(src_row, "red_cards", 0) or 0),
     )
+    if hasattr(dst_row, "motm"):
+        dst_row.motm = int(getattr(dst_row, "motm", 0) or 0) + int(
+            getattr(src_row, "motm", 0) or 0
+        )
     for attr in ("golden_balls", "golden_boots", "golden_boys", "golden_gloves"):
         if hasattr(dst_row, attr):
             setattr(

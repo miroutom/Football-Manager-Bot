@@ -40,6 +40,8 @@ def test_format_group_stats_titles():
     text = format_group_stats("life", "mid")
     assert "Полузащитники" in text
     assert "Г+А" in text
+    assert "MOTM" in text
     gk_text = format_group_stats("life", "gk")
     assert "Вратари" in gk_text
     assert "Сух." in gk_text
+    assert "MOTM" in gk_text

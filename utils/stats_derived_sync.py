@@ -28,6 +28,7 @@ class StatWriteDelta:
     d_goals: int = 0
     d_assists: int = 0
     d_clean_sheets: int = 0
+    d_motm: int = 0
 
 
 def _player_class(position: str):
@@ -65,6 +66,8 @@ def _apply_outfield_delta(row: Any, player: Any, delta: StatWriteDelta) -> None:
     row.goals = int(getattr(row, "goals", 0) or 0) + delta.d_goals
     row.assists = int(getattr(row, "assists", 0) or 0) + delta.d_assists
     row.ga = int(getattr(row, "goals", 0) or 0) + int(getattr(row, "assists", 0) or 0)
+    if hasattr(row, "motm"):
+        row.motm = int(getattr(row, "motm", 0) or 0) + delta.d_motm
     _weighted_overall(row, player, delta.d_matches)
     if (getattr(player, "name", None) or "").strip():
         row.name = player.name
@@ -75,6 +78,8 @@ def _apply_outfield_delta(row: Any, player: Any, delta: StatWriteDelta) -> None:
 def _apply_gk_delta(row: Any, player: Any, delta: StatWriteDelta) -> None:
     row.matches = int(getattr(row, "matches", 0) or 0) + delta.d_matches
     row.clean_sheets = int(getattr(row, "clean_sheets", 0) or 0) + delta.d_clean_sheets
+    if hasattr(row, "motm"):
+        row.motm = int(getattr(row, "motm", 0) or 0) + delta.d_motm
     _weighted_overall(row, player, delta.d_matches)
     if (getattr(player, "name", None) or "").strip():
         row.name = player.name
@@ -116,6 +121,8 @@ def _apply_delta_to_synced_career(session: Any, player: Any, delta: StatWriteDel
     if PlayerCls is Goalkeeper:
         row.matches = int(getattr(row, "matches", 0) or 0) + delta.d_matches
         row.clean_sheets = int(getattr(row, "clean_sheets", 0) or 0) + delta.d_clean_sheets
+        if hasattr(row, "motm"):
+            row.motm = int(getattr(row, "motm", 0) or 0) + delta.d_motm
         _weighted_overall(row, player, delta.d_matches)
         return
     stub = SimpleNamespace(
@@ -128,6 +135,7 @@ def _apply_delta_to_synced_career(session: Any, player: Any, delta: StatWriteDel
         trophies=0,
         yellow_cards=0,
         red_cards=0,
+        motm=delta.d_motm,
         golden_balls=0,
         golden_boots=0,
         golden_boys=0,
@@ -145,6 +153,7 @@ def record_stat_write(
     d_goals: int = 0,
     d_assists: int = 0,
     d_clean_sheets: int = 0,
+    d_motm: int = 0,
     flush: bool = False,
 ) -> None:
     """Запомнить дельту; при ``flush=True`` сразу применить буфер."""
@@ -158,6 +167,7 @@ def record_stat_write(
                 d_goals=int(d_goals or 0),
                 d_assists=int(d_assists or 0),
                 d_clean_sheets=int(d_clean_sheets or 0),
+                d_motm=int(d_motm or 0),
             ),
         )
     )

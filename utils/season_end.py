@@ -75,6 +75,8 @@ def _zero_player_row(row: Any, Cls: type) -> None:
         row.yellow_cards = 0
     if hasattr(row, "red_cards"):
         row.red_cards = 0
+    if hasattr(row, "motm"):
+        row.motm = 0
     row.matches = 0
     if hasattr(row, "goals"):
         row.goals = 0
@@ -105,6 +107,8 @@ def _zero_match_stats_for_new_season(row: Any, Cls: type) -> None:
         row.clean_sheets = 0
     if hasattr(row, "missed_goals"):
         row.missed_goals = 0
+    if hasattr(row, "motm"):
+        row.motm = 0
     row.trophies = 0
     row.golden_balls = 0
     row.golden_boots = 0

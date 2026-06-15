@@ -129,6 +129,7 @@ def _merge_bucket_outfield(
                     "assists": 0,
                     "yellow_cards": 0,
                     "red_cards": 0,
+                    "motm": 0,
                     "trophies": 0,
                     "golden_balls": 0,
                     "golden_boots": 0,
@@ -161,6 +162,7 @@ def _merge_bucket_outfield(
             b["red_cards"] = b.get("red_cards", 0) + int(
                 getattr(p, "red_cards", 0) or 0
             )
+            b["motm"] = b.get("motm", 0) + int(getattr(p, "motm", 0) or 0)
             b["trophies"] += int(getattr(p, "trophies", 0) or 0)  # common: лиг. + лч, суммарно
             b["golden_balls"] = max(
                 b["golden_balls"], int(getattr(p, "golden_balls", 0) or 0)
@@ -217,6 +219,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     left_team=bool(b.get("left_team", False)),
                     yellow_cards=int(b.get("yellow_cards", 0) or 0),
                     red_cards=int(b.get("red_cards", 0) or 0),
+                    motm=int(b.get("motm", 0) or 0),
                 )
             )
         elif PlayerCls is Midfielder:
@@ -240,6 +243,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     left_team=bool(b.get("left_team", False)),
                     yellow_cards=int(b.get("yellow_cards", 0) or 0),
                     red_cards=int(b.get("red_cards", 0) or 0),
+                    motm=int(b.get("motm", 0) or 0),
                 )
             )
         else:
@@ -263,6 +267,7 @@ def _add_outfield_rows(common, PlayerCls, buckets: dict) -> None:
                     left_team=bool(b.get("left_team", False)),
                     yellow_cards=int(b.get("yellow_cards", 0) or 0),
                     red_cards=int(b.get("red_cards", 0) or 0),
+                    motm=int(b.get("motm", 0) or 0),
                 )
             )
 
@@ -320,6 +325,7 @@ def rebuild_common_database(
                     "trophies": 0,
                     "yellow_cards": 0,
                     "red_cards": 0,
+                    "motm": 0,
                     "golden_balls": 0,
                     "golden_boots": 0,
                     "golden_gloves": 0,
@@ -353,6 +359,7 @@ def rebuild_common_database(
             b["red_cards"] = b.get("red_cards", 0) + int(
                 getattr(p, "red_cards", 0) or 0
             )
+            b["motm"] = b.get("motm", 0) + int(getattr(p, "motm", 0) or 0)
             b["golden_balls"] = max(
                 b["golden_balls"], int(getattr(p, "golden_balls", 0) or 0)
             )
@@ -402,6 +409,7 @@ def rebuild_common_database(
                 left_team=bool(b.get("left_team", False)),
                 yellow_cards=int(b.get("yellow_cards", 0) or 0),
                 red_cards=int(b.get("red_cards", 0) or 0),
+                motm=int(b.get("motm", 0) or 0),
             )
         )
 
