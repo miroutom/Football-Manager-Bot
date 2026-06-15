@@ -1701,6 +1701,17 @@
       "return_month": 13,
       "type": "травма",
       "season": 2
+    },
+    {
+      "key": "коло муани|арсенал|3|1|2",
+      "name": "Коло Муани",
+      "name_norm": "коло муани",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "out_from_month": 1,
+      "return_month": 2,
+      "type": "травма",
+      "season": 3
     }
   ]
 }

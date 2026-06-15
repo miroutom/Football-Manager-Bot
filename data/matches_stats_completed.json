@@ -1093,5 +1093,24 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 10
+  },
+  {
+    "home": "Мю",
+    "away": "Ювентус",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Франкфурт",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Арсенал",
+    "away": "Астон Вилла",
+    "tournament": "league",
+    "day": 1
   }
 ]
