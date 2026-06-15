@@ -417,7 +417,7 @@ def upsert_roster_player(
             tgt_cls(
                 **_new_player_kwargs(
                     tgt_cls,
-                    name=(row.name or name).strip(),
+                    name=name.strip(),
                     team=team,
                     position=pos_u,
                     overall=overall,

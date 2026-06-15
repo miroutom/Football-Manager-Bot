@@ -1,8 +1,40 @@
 {
-  "version": 2,
+  "version": 1,
   "status": "draft_review",
-  "description": "v2: без ВРТ; топ-16 усиливаются; РПЛ 81+ → элита.",
+  "description": "Черновик трансферного окна (оценка, без применения в БД).",
   "moves": [
+    {
+      "player": "Ермаков",
+      "position": "ЦП",
+      "overall": 68,
+      "from_team": "Цска",
+      "to_team": "Урал",
+      "note": "резерв"
+    },
+    {
+      "player": "Агапов",
+      "position": "ЦЗ",
+      "overall": 68,
+      "from_team": "Цска",
+      "to_team": "Крылья Советов",
+      "note": "П↓"
+    },
+    {
+      "player": "Спортиелло",
+      "position": "ВРТ",
+      "overall": 78,
+      "from_team": "Цска",
+      "to_team": "Крылья Советов",
+      "note": "3-й ВРТ КС"
+    },
+    {
+      "player": "Мудрык",
+      "position": "ФРВ",
+      "overall": 73,
+      "from_team": "Цска",
+      "to_team": "Жирона",
+      "note": "З+"
+    },
     {
       "player": "Дивеев",
       "position": "ЦЗ",
@@ -15,16 +47,32 @@
       "player": "Павар",
       "position": "ЦЗ",
       "overall": 78,
-      "from_team": "Интер",
-      "to_team": "Зенит",
+      "from_team": "Зенит",
+      "to_team": "Спартак",
       "note": "обмен ЦЗ"
+    },
+    {
+      "player": "Ерохин",
+      "position": "ЦП",
+      "overall": 74,
+      "from_team": "Зенит",
+      "to_team": "Локомотив",
+      "note": "ЛЧ+"
+    },
+    {
+      "player": "Кержаков",
+      "position": "ВРТ",
+      "overall": 82,
+      "from_team": "Зенит",
+      "to_team": "Вольфсбург",
+      "note": "step-up 81+"
     },
     {
       "player": "Давид",
       "position": "ФРВ",
       "overall": 83,
       "from_team": "Зенит",
-      "to_team": "Барселона",
+      "to_team": "Бетис",
       "note": "step-up 81+"
     },
     {
@@ -32,15 +80,31 @@
       "position": "ЦП",
       "overall": 82,
       "from_team": "Зенит",
-      "to_team": "Ливерпуль",
+      "to_team": "Ньюкасл",
       "note": "step-up 81+"
+    },
+    {
+      "player": "Маркао",
+      "position": "ЦЗ",
+      "overall": 78,
+      "from_team": "Спартак",
+      "to_team": "Зенит",
+      "note": "обмен ЦЗ"
+    },
+    {
+      "player": "Тезе",
+      "position": "ПЗ",
+      "overall": 76,
+      "from_team": "Спартак",
+      "to_team": "Интер",
+      "note": "резерв"
     },
     {
       "player": "Фуллкруг",
       "position": "ФРВ",
       "overall": 81,
       "from_team": "Спартак",
-      "to_team": "Милан",
+      "to_team": "Франкфурт",
       "note": "СУ step-up"
     },
     {
@@ -56,7 +120,7 @@
       "position": "ЦАП",
       "overall": 82,
       "from_team": "Спартак",
-      "to_team": "Аталанта",
+      "to_team": "Тоттенхэм",
       "note": "step-up 81+"
     },
     {
@@ -72,7 +136,7 @@
       "position": "ЦЗ",
       "overall": 85,
       "from_team": "Динамо",
-      "to_team": "Сити",
+      "to_team": "Севилья",
       "note": "step-up ЛЧ+"
     },
     {
@@ -80,7 +144,7 @@
       "position": "ЦАП",
       "overall": 81,
       "from_team": "Динамо",
-      "to_team": "Наполи",
+      "to_team": "Хоффенхайм",
       "note": "step-up 81+"
     },
     {
@@ -88,7 +152,7 @@
       "position": "ЦОП",
       "overall": 81,
       "from_team": "Динамо",
-      "to_team": "Интер",
+      "to_team": "Боруссия М",
       "note": "step-up 81+"
     },
     {
@@ -100,11 +164,19 @@
       "note": "П↓"
     },
     {
+      "player": "Агкацев",
+      "position": "ВРТ",
+      "overall": 71,
+      "from_team": "Краснодар",
+      "to_team": "Дортмунд",
+      "note": "резерв"
+    },
+    {
       "player": "Ляказет",
       "position": "ФРВ",
       "overall": 83,
       "from_team": "Краснодар",
-      "to_team": "Реал",
+      "to_team": "Жирона",
       "note": "step-up 81+"
     },
     {
@@ -114,6 +186,14 @@
       "from_team": "Краснодар",
       "to_team": "Урал",
       "note": "П↓"
+    },
+    {
+      "player": "Кривцов",
+      "position": "ЦАП",
+      "overall": 71,
+      "from_team": "Краснодар",
+      "to_team": "Франкфурт",
+      "note": "резерв"
     },
     {
       "player": "Алонсо",
@@ -130,6 +210,14 @@
       "from_team": "Локомотив",
       "to_team": "Зенит",
       "note": "обмен"
+    },
+    {
+      "player": "Фабиански",
+      "position": "ВРТ",
+      "overall": 79,
+      "from_team": "Локомотив",
+      "to_team": "Севилья",
+      "note": "СУ"
     },
     {
       "player": "Минамино",
@@ -164,12 +252,60 @@
       "note": "обмен"
     },
     {
+      "player": "Ломаев",
+      "position": "ВРТ",
+      "overall": 74,
+      "from_team": "Крылья Советов",
+      "to_team": "Бетис",
+      "note": "3-й ВРТ"
+    },
+    {
+      "player": "Йилдыз",
+      "position": "ФРВ",
+      "overall": 64,
+      "from_team": "Крылья Советов",
+      "to_team": "Урал",
+      "note": "СУ"
+    },
+    {
+      "player": "Горшков",
+      "position": "ЛЗ",
+      "overall": 74,
+      "from_team": "Крылья Советов",
+      "to_team": "Ювентус",
+      "note": "П↓"
+    },
+    {
+      "player": "Пруцев",
+      "position": "ЦП",
+      "overall": 71,
+      "from_team": "Крылья Советов",
+      "to_team": "Спартак",
+      "note": "глубина"
+    },
+    {
       "player": "Мунетси",
       "position": "ЦП",
       "overall": 77,
       "from_team": "Урал",
       "to_team": "Цска",
-      "note": "обмен"
+      "note": "усиление ЦСКА"
+    },
+    {
+      "player": "Менди",
+      "position": "ВРТ",
+      "overall": 81,
+      "from_team": "Урал",
+      "to_team": "Байер",
+      "note": "step-up 81+"
+    },
+    {
+      "player": "Палмер",
+      "position": "ЦАП",
+      "overall": 68,
+      "from_team": "Урал",
+      "to_team": "Рома",
+      "note": "СУ"
     },
     {
       "player": "Эмерсон",
@@ -188,11 +324,27 @@
       "note": "опыт"
     },
     {
+      "player": "Одои",
+      "position": "ЛФА",
+      "overall": 75,
+      "from_team": "Сити",
+      "to_team": "Ливерпуль",
+      "note": "З+"
+    },
+    {
+      "player": "Эдерсон",
+      "position": "ВРТ",
+      "overall": 80,
+      "from_team": "Сити",
+      "to_team": "Арсенал",
+      "note": "П↓"
+    },
+    {
       "player": "Вандерсон",
       "position": "ПЗ",
       "overall": 77,
       "from_team": "Сити",
-      "to_team": "Фиорентина",
+      "to_team": "Челси",
       "note": "П−"
     },
     {
@@ -200,7 +352,7 @@
       "position": "ЦП",
       "overall": 79,
       "from_team": "Сити",
-      "to_team": "Байер",
+      "to_team": "Тоттенхэм",
       "note": "З+"
     },
     {
@@ -232,7 +384,7 @@
       "position": "ЦАП",
       "overall": 76,
       "from_team": "Арсенал",
-      "to_team": "Боруссия М",
+      "to_team": "Ливерпуль",
       "note": "П−"
     },
     {
@@ -242,6 +394,14 @@
       "from_team": "Арсенал",
       "to_team": "Челси",
       "note": "П↓"
+    },
+    {
+      "player": "Рамсдейл",
+      "position": "ВРТ",
+      "overall": 84,
+      "from_team": "Арсенал",
+      "to_team": "Ньюкасл",
+      "note": "3-й ВРТ"
     },
     {
       "player": "Диалло",
@@ -276,6 +436,14 @@
       "note": "З+"
     },
     {
+      "player": "Онана",
+      "position": "ВРТ",
+      "overall": 86,
+      "from_team": "Мю",
+      "to_team": "Интер",
+      "note": "ВРТ в обмен"
+    },
+    {
       "player": "Рабьо",
       "position": "ЦП",
       "overall": 80,
@@ -289,6 +457,14 @@
       "overall": 75,
       "from_team": "Ливерпуль",
       "to_team": "Франкфурт",
+      "note": "З+"
+    },
+    {
+      "player": "Гомес",
+      "position": "ЦЗ",
+      "overall": 75,
+      "from_team": "Ливерпуль",
+      "to_team": "Челси",
       "note": "З+"
     },
     {
@@ -308,12 +484,28 @@
       "note": "глубина"
     },
     {
+      "player": "Чалоба",
+      "position": "ЦЗ",
+      "overall": 76,
+      "from_team": "Челси",
+      "to_team": "Фиорентина",
+      "note": "З+"
+    },
+    {
       "player": "Джексон",
       "position": "ФРВ",
       "overall": 78,
       "from_team": "Челси",
       "to_team": "Лацио",
       "note": "З+"
+    },
+    {
+      "player": "Мамардашвили",
+      "position": "ВРТ",
+      "overall": 82,
+      "from_team": "Челси",
+      "to_team": "Барселона",
+      "note": "3-й ВРТ"
     },
     {
       "player": "Гюсто",
@@ -330,6 +522,14 @@
       "from_team": "Челси",
       "to_team": "Мю",
       "note": "ЛФА"
+    },
+    {
+      "player": "Семеньо",
+      "position": "ФРВ",
+      "overall": 70,
+      "from_team": "Тоттенхэм",
+      "to_team": "Мю",
+      "note": "З+"
     },
     {
       "player": "Сарабиа",
@@ -354,6 +554,22 @@
       "from_team": "Тоттенхэм",
       "to_team": "Байер",
       "note": "П−"
+    },
+    {
+      "player": "Викарио",
+      "position": "ВРТ",
+      "overall": 81,
+      "from_team": "Тоттенхэм",
+      "to_team": "Милан",
+      "note": "П↓"
+    },
+    {
+      "player": "Дубравка",
+      "position": "ВРТ",
+      "overall": 78,
+      "from_team": "Ньюкасл",
+      "to_team": "Цска",
+      "note": "3-й ВРТ"
     },
     {
       "player": "Колпани",
@@ -404,6 +620,22 @@
       "note": "ЦАП"
     },
     {
+      "player": "Мартинез",
+      "position": "ВРТ",
+      "overall": 85,
+      "from_team": "Астон Вилла",
+      "to_team": "Наполи",
+      "note": "обмен ВРТ"
+    },
+    {
+      "player": "Хато",
+      "position": "ЦЗ",
+      "overall": 73,
+      "from_team": "Астон Вилла",
+      "to_team": "Аталанта",
+      "note": "З+"
+    },
+    {
       "player": "Заниоло",
       "position": "ФРВ",
       "overall": 77,
@@ -436,6 +668,14 @@
       "note": "П−"
     },
     {
+      "player": "Уннерсталь",
+      "position": "ВРТ",
+      "overall": 80,
+      "from_team": "Барселона",
+      "to_team": "Реал Сосьедад",
+      "note": "ВРТ"
+    },
+    {
       "player": "Висса",
       "position": "ЛФА",
       "overall": 77,
@@ -448,7 +688,7 @@
       "position": "ЛФА",
       "overall": 72,
       "from_team": "Реал",
-      "to_team": "Франкфурт",
+      "to_team": "Сити",
       "note": "П−"
     },
     {
@@ -460,12 +700,20 @@
       "note": "П↓"
     },
     {
+      "player": "Кепа",
+      "position": "ВРТ",
+      "overall": 82,
+      "from_team": "Реал",
+      "to_team": "Атлетик",
+      "note": "3-й ВРТ"
+    },
+    {
       "player": "Камавинга",
       "position": "ЦП",
       "overall": 82,
       "from_team": "Реал",
-      "to_team": "Челси",
-      "note": "З+, нужна глубина"
+      "to_team": "Боруссия М",
+      "note": "З+"
     },
     {
       "player": "Карвахаль",
@@ -489,6 +737,14 @@
       "overall": 77,
       "from_team": "Атлетико",
       "to_team": "Фиорентина",
+      "note": "П−"
+    },
+    {
+      "player": "Муслера",
+      "position": "ВРТ",
+      "overall": 80,
+      "from_team": "Атлетико",
+      "to_team": "Бетис",
       "note": "П−"
     },
     {
@@ -522,6 +778,14 @@
       "from_team": "Севилья",
       "to_team": "Атлетико",
       "note": "ЦОП"
+    },
+    {
+      "player": "Дмитрович",
+      "position": "ВРТ",
+      "overall": 80,
+      "from_team": "Севилья",
+      "to_team": "Локомотив",
+      "note": "3-й ВРТ"
     },
     {
       "player": "Сков",
@@ -572,6 +836,14 @@
       "note": "П↓"
     },
     {
+      "player": "Пикфорд",
+      "position": "ВРТ",
+      "overall": 82,
+      "from_team": "Атлетик",
+      "to_team": "Реал",
+      "note": "ВРТ"
+    },
+    {
       "player": "Виллиан Жозе",
       "position": "ФРВ",
       "overall": 76,
@@ -594,6 +866,14 @@
       "from_team": "Бетис",
       "to_team": "Вольфсбург",
       "note": "Р−"
+    },
+    {
+      "player": "Сильва",
+      "position": "ВРТ",
+      "overall": 83,
+      "from_team": "Бетис",
+      "to_team": "Атлетико",
+      "note": "3-й ВРТ"
     },
     {
       "player": "Ханко",
@@ -628,6 +908,14 @@
       "note": "П↓"
     },
     {
+      "player": "Лено",
+      "position": "ВРТ",
+      "overall": 82,
+      "from_team": "Реал Сосьедад",
+      "to_team": "Барселона",
+      "note": "3-й ВРТ"
+    },
+    {
       "player": "Муньоз",
       "position": "ЛЗ",
       "overall": 72,
@@ -652,6 +940,14 @@
       "note": "З+"
     },
     {
+      "player": "Марчесин",
+      "position": "ВРТ",
+      "overall": 78,
+      "from_team": "Жирона",
+      "to_team": "Динамо",
+      "note": "3-й ВРТ"
+    },
+    {
       "player": "Батурина",
       "position": "ЦП",
       "overall": 74,
@@ -666,6 +962,14 @@
       "from_team": "Жирона",
       "to_team": "Реал",
       "note": "ПЗ"
+    },
+    {
+      "player": "Койта",
+      "position": "ФРВ",
+      "overall": 75,
+      "from_team": "Интер",
+      "to_team": "Барселона",
+      "note": "П−"
     },
     {
       "player": "Уоткинс",
@@ -700,6 +1004,14 @@
       "note": "З+"
     },
     {
+      "player": "Остигард",
+      "position": "ЦЗ",
+      "overall": 73,
+      "from_team": "Наполи",
+      "to_team": "Аталанта",
+      "note": "З+"
+    },
+    {
       "player": "Энрике",
       "position": "ЦП",
       "overall": 75,
@@ -724,6 +1036,22 @@
       "note": "З+"
     },
     {
+      "player": "Мерет",
+      "position": "ВРТ",
+      "overall": 87,
+      "from_team": "Наполи",
+      "to_team": "Астон Вилла",
+      "note": "обмен ВРТ"
+    },
+    {
+      "player": "Камбиасо",
+      "position": "ЛЗ",
+      "overall": 74,
+      "from_team": "Ювентус",
+      "to_team": "Фиорентина",
+      "note": "З+"
+    },
+    {
       "player": "Веа",
       "position": "ПЗ",
       "overall": 74,
@@ -738,6 +1066,30 @@
       "from_team": "Ювентус",
       "to_team": "Интер",
       "note": "ПФА"
+    },
+    {
+      "player": "Перин",
+      "position": "ВРТ",
+      "overall": 79,
+      "from_team": "Ювентус",
+      "to_team": "Лейпциг",
+      "note": "ВРТ"
+    },
+    {
+      "player": "Коуто",
+      "position": "ПЗ",
+      "overall": 75,
+      "from_team": "Ювентус",
+      "to_team": "Челси",
+      "note": "ПЗ"
+    },
+    {
+      "player": "Эль Ямик",
+      "position": "ЦЗ",
+      "overall": 71,
+      "from_team": "Милан",
+      "to_team": "Урал",
+      "note": "обмен"
     },
     {
       "player": "Муса",
@@ -756,12 +1108,28 @@
       "note": "П−"
     },
     {
+      "player": "Маньян",
+      "position": "ВРТ",
+      "overall": 82,
+      "from_team": "Милан",
+      "to_team": "Тоттенхэм",
+      "note": "3-й ВРТ"
+    },
+    {
       "player": "Тиау",
       "position": "ЦЗ",
       "overall": 75,
       "from_team": "Милан",
       "to_team": "Ливерпуль",
       "note": "ЦЗ"
+    },
+    {
+      "player": "Холм",
+      "position": "ПЗ",
+      "overall": 72,
+      "from_team": "Аталанта",
+      "to_team": "Рома",
+      "note": "З+"
     },
     {
       "player": "Баккер",
@@ -776,8 +1144,16 @@
       "position": "ЦАП",
       "overall": 76,
       "from_team": "Аталанта",
-      "to_team": "Мю",
+      "to_team": "Арсенал",
       "note": "П−"
+    },
+    {
+      "player": "Шевалье",
+      "position": "ВРТ",
+      "overall": 78,
+      "from_team": "Аталанта",
+      "to_team": "Бетис",
+      "note": "ВРТ"
     },
     {
       "player": "Заппакоста",
@@ -786,6 +1162,14 @@
       "from_team": "Аталанта",
       "to_team": "Наполи",
       "note": "ЛЧ+"
+    },
+    {
+      "player": "Дилросун",
+      "position": "ПФА",
+      "overall": 73,
+      "from_team": "Рома",
+      "to_team": "Бавария",
+      "note": "ПФА"
     },
     {
       "player": "Ренч",
@@ -836,6 +1220,14 @@
       "note": "ЦЗ"
     },
     {
+      "player": "Сафонов",
+      "position": "ВРТ",
+      "overall": 78,
+      "from_team": "Фиорентина",
+      "to_team": "Крылья Советов",
+      "note": "3-й ВРТ"
+    },
+    {
       "player": "Соттил",
       "position": "ЛФА",
       "overall": 78,
@@ -884,6 +1276,14 @@
       "note": "опыт"
     },
     {
+      "player": "Райкович",
+      "position": "ВРТ",
+      "overall": 78,
+      "from_team": "Лацио",
+      "to_team": "Дортмунд",
+      "note": "ВРТ"
+    },
+    {
       "player": "Давсари",
       "position": "ЛП",
       "overall": 77,
@@ -904,8 +1304,32 @@
       "position": "ФРВ",
       "overall": 78,
       "from_team": "Бавария",
-      "to_team": "Бетис",
+      "to_team": "Франкфурт",
       "note": "З+"
+    },
+    {
+      "player": "Грохе",
+      "position": "ВРТ",
+      "overall": 79,
+      "from_team": "Бавария",
+      "to_team": "Дортмунд",
+      "note": "ВРТ"
+    },
+    {
+      "player": "Сориа",
+      "position": "ВРТ",
+      "overall": 81,
+      "from_team": "Бавария",
+      "to_team": "Ювентус",
+      "note": "резерв"
+    },
+    {
+      "player": "Мейер",
+      "position": "ВРТ",
+      "overall": 74,
+      "from_team": "Дортмунд",
+      "to_team": "Краснодар",
+      "note": "3-й ВРТ"
     },
     {
       "player": "Мукоко",
@@ -932,6 +1356,14 @@
       "note": "⏱"
     },
     {
+      "player": "Влаходимос",
+      "position": "ВРТ",
+      "overall": 81,
+      "from_team": "Дортмунд",
+      "to_team": "Байер",
+      "note": "ВРТ"
+    },
+    {
       "player": "Судаков",
       "position": "ЦАП",
       "overall": 75,
@@ -946,6 +1378,14 @@
       "from_team": "Лейпциг",
       "to_team": "Милан",
       "note": "П−"
+    },
+    {
+      "player": "Блашвич",
+      "position": "ВРТ",
+      "overall": 77,
+      "from_team": "Лейпциг",
+      "to_team": "Спартак",
+      "note": "3-й ВРТ"
     },
     {
       "player": "Биссума",
@@ -980,12 +1420,36 @@
       "note": "замена Ляказета"
     },
     {
+      "player": "Мбемо",
+      "position": "ПФА",
+      "overall": 74,
+      "from_team": "Франкфурт",
+      "to_team": "Хоффенхайм",
+      "note": "П−"
+    },
+    {
       "player": "Робертон",
       "position": "ЦП",
       "overall": 79,
       "from_team": "Франкфурт",
-      "to_team": "Арсенал",
-      "note": "опыт в прессинг"
+      "to_team": "Ливерпуль",
+      "note": "опыт"
+    },
+    {
+      "player": "Трапп",
+      "position": "ВРТ",
+      "overall": 84,
+      "from_team": "Франкфурт",
+      "to_team": "Бавария",
+      "note": "ВРТ"
+    },
+    {
+      "player": "Оспина",
+      "position": "ВРТ",
+      "overall": 80,
+      "from_team": "Байер",
+      "to_team": "Урал",
+      "note": "замена Менди"
     },
     {
       "player": "Обляков",
@@ -1020,6 +1484,14 @@
       "note": "ПЗ"
     },
     {
+      "player": "Шмейхель",
+      "position": "ВРТ",
+      "overall": 81,
+      "from_team": "Вольфсбург",
+      "to_team": "Зенит",
+      "note": "3-й ВРТ"
+    },
+    {
       "player": "Буфаль",
       "position": "ФРВ",
       "overall": 76,
@@ -1034,6 +1506,14 @@
       "from_team": "Вольфсбург",
       "to_team": "Локомотив",
       "note": "готовый"
+    },
+    {
+      "player": "Батши",
+      "position": "ПФА",
+      "overall": 73,
+      "from_team": "Вольфсбург",
+      "to_team": "Атлетик",
+      "note": "ПФА"
     },
     {
       "player": "Герхардт",
@@ -1076,6 +1556,14 @@
       "note": "ЦП"
     },
     {
+      "player": "Миньоле",
+      "position": "ВРТ",
+      "overall": 80,
+      "from_team": "Боруссия М",
+      "to_team": "Фиорентина",
+      "note": "ВРТ"
+    },
+    {
       "player": "Джон",
       "position": "ЛЗ",
       "overall": 71,
@@ -1108,308 +1596,12 @@
       "note": "опыт"
     },
     {
-      "player": "Скалли",
-      "position": "ПЗ",
-      "overall": 75,
-      "from_team": "Боруссия М",
-      "to_team": "Локомотив",
-      "note": "ПЗ"
-    },
-    {
-      "player": "Рассказов",
-      "position": "ПЗ",
-      "overall": 70,
-      "from_team": "Крылья Советов",
-      "to_team": "Реал Сосьедад",
-      "note": "П−"
-    },
-    {
-      "player": "Пеццелла",
-      "position": "ЦЗ",
+      "player": "Нюбель",
+      "position": "ВРТ",
       "overall": 76,
-      "from_team": "Бетис",
-      "to_team": "Крылья Советов",
-      "note": "ЦЗ"
-    },
-    {
-      "player": "Иванисеня",
-      "position": "ЦП",
-      "overall": 70,
-      "from_team": "Крылья Советов",
-      "to_team": "Спартак",
-      "note": "обмен"
-    },
-    {
-      "player": "Палинья",
-      "position": "ЦП",
-      "overall": 83,
-      "from_team": "Сити",
-      "to_team": "Франкфурт",
-      "note": "З+"
-    },
-    {
-      "player": "Аканжи",
-      "position": "ЦЗ",
-      "overall": 82,
-      "from_team": "Сити",
-      "to_team": "Байер",
-      "note": "глубина"
-    },
-    {
-      "player": "Стерлинг",
-      "position": "ЛФА",
-      "overall": 86,
-      "from_team": "Челси",
-      "to_team": "Ювентус",
-      "note": "Т−, свежий старт"
-    },
-    {
-      "player": "Бадиашиле",
-      "position": "ЦЗ",
-      "overall": 78,
-      "from_team": "Челси",
-      "to_team": "Севилья",
-      "note": "З+"
-    },
-    {
-      "player": "Кунде",
-      "position": "ЦЗ",
-      "overall": 83,
-      "from_team": "Барселона",
-      "to_team": "Ювентус",
-      "note": "П↓, травмы"
-    },
-    {
-      "player": "Калулу",
-      "position": "ЦЗ",
-      "overall": 77,
-      "from_team": "Милан",
-      "to_team": "Аталанта",
-      "note": "П−"
-    },
-    {
-      "player": "Зубер",
-      "position": "ФРВ",
-      "overall": 76,
-      "from_team": "Милан",
-      "to_team": "Боруссия М",
-      "note": "З+"
-    },
-    {
-      "player": "Джало",
-      "position": "ЦЗ",
-      "overall": 76,
-      "from_team": "Аталанта",
-      "to_team": "Жирона",
-      "note": "П−"
-    },
-    {
-      "player": "Купмайнерс",
-      "position": "ЦП",
-      "overall": 76,
-      "from_team": "Аталанта",
-      "to_team": "Ньюкасл",
-      "note": "П−"
-    },
-    {
-      "player": "Торрейра",
-      "position": "ЦП",
-      "overall": 82,
-      "from_team": "Атлетик",
-      "to_team": "Рома",
-      "note": "П↓"
-    },
-    {
-      "player": "Лаймер",
-      "position": "ЦП",
-      "overall": 78,
-      "from_team": "Бавария",
-      "to_team": "Дортмунд",
-      "note": "П−"
-    },
-    {
-      "player": "Йенц",
-      "position": "ЦЗ",
-      "overall": 74,
-      "from_team": "Вольфсбург",
-      "to_team": "Хоффенхайм",
-      "note": "П↓"
-    },
-    {
-      "player": "Фишер",
-      "position": "ПЗ",
-      "overall": 78,
-      "from_team": "Вольфсбург",
-      "to_team": "Бетис",
-      "note": "П↓"
-    },
-    {
-      "player": "Шарахили",
-      "position": "ЦЗ",
-      "overall": 75,
-      "from_team": "Дортмунд",
-      "to_team": "Жирона",
-      "note": "П−"
-    },
-    {
-      "player": "Райерсон",
-      "position": "ПЗ",
-      "overall": 79,
-      "from_team": "Дортмунд",
-      "to_team": "Фиорентина",
-      "note": "ПЗ"
-    },
-    {
-      "player": "Мухин",
-      "position": "ЦП",
-      "overall": 71,
-      "from_team": "Цска",
-      "to_team": "Краснодар",
-      "note": "глубина"
-    },
-    {
-      "player": "Антони",
-      "position": "ПФА",
-      "overall": 79,
-      "from_team": "Мю",
-      "to_team": "Бетис",
-      "note": "Т0"
-    },
-    {
-      "player": "Миранда",
-      "position": "ЛЗ",
-      "overall": 77,
-      "from_team": "Фиорентина",
-      "to_team": "Бетис",
-      "note": "Р−"
-    },
-    {
-      "player": "Траоре",
-      "position": "ПФА",
-      "overall": 75,
-      "from_team": "Астон Вилла",
-      "to_team": "Вольфсбург",
-      "note": "П−"
-    },
-    {
-      "player": "Бето",
-      "position": "ФРВ",
-      "overall": 81,
-      "from_team": "Спартак",
-      "to_team": "Дортмунд",
-      "note": "step-up 81+"
-    },
-    {
-      "player": "Данк",
-      "position": "ЦЗ",
-      "overall": 81,
-      "from_team": "Спартак",
-      "to_team": "Лейпциг",
-      "note": "step-up 81+"
-    },
-    {
-      "player": "Заха",
-      "position": "ЛФА",
-      "overall": 81,
-      "from_team": "Зенит",
-      "to_team": "Атлетико",
-      "note": "step-up 81+"
-    },
-    {
-      "player": "Бовен",
-      "position": "ПФА",
-      "overall": 81,
-      "from_team": "Зенит",
-      "to_team": "Бавария",
-      "note": "step-up 81+"
-    },
-    {
-      "player": "Фомин",
-      "position": "ЦАП",
-      "overall": 81,
-      "from_team": "Зенит",
-      "to_team": "Челси",
-      "note": "step-up 81+"
-    },
-    {
-      "player": "Хаверц",
-      "position": "ФРВ",
-      "overall": 88,
-      "from_team": "Арсенал",
-      "to_team": "Челси",
-      "note": "Р−−, не тянет результаты"
-    },
-    {
-      "player": "Зелински",
-      "position": "ЦП",
-      "overall": 82,
-      "from_team": "Наполи",
-      "to_team": "Цска",
-      "note": "усиление ЦСКА"
-    },
-    {
-      "player": "Йилдыз",
-      "position": "ФРВ",
-      "overall": 64,
-      "from_team": "Крылья Советов",
-      "to_team": "Урал",
-      "note": "СУ"
-    },
-    {
-      "player": "Палмер",
-      "position": "ЦАП",
-      "overall": 68,
-      "from_team": "Урал",
-      "to_team": "Рома",
-      "note": "СУ"
-    },
-    {
-      "player": "Ермаков",
-      "position": "ЦП",
-      "overall": 68,
-      "from_team": "Цска",
-      "to_team": "Урал",
-      "note": "резерв"
-    },
-    {
-      "player": "Агапов",
-      "position": "ЦЗ",
-      "overall": 68,
-      "from_team": "Цска",
-      "to_team": "Крылья Советов",
-      "note": "П↓"
-    },
-    {
-      "player": "Кривцов",
-      "position": "ЦАП",
-      "overall": 71,
-      "from_team": "Краснодар",
-      "to_team": "Франкфурт",
-      "note": "резерв"
-    },
-    {
-      "player": "Камбиасо",
-      "position": "ЛЗ",
-      "overall": 74,
-      "from_team": "Ювентус",
-      "to_team": "Фиорентина",
-      "note": "З+"
-    },
-    {
-      "player": "Дилросун",
-      "position": "ПФА",
-      "overall": 73,
-      "from_team": "Рома",
-      "to_team": "Бавария",
-      "note": "ПФА"
-    },
-    {
-      "player": "Ерохин",
-      "position": "ЦП",
-      "overall": 74,
-      "from_team": "Локомотив",
-      "to_team": "Зенит",
-      "note": "ЛЧ+"
+      "from_team": "Хоффенхайм",
+      "to_team": "Наполи",
+      "note": "ВРТ"
     }
   ]
 }

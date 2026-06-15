@@ -207,6 +207,10 @@ def _apply_upsert_and_cascade(
     sess.flush()
     row, Cls = find_player_row(sess, name, team)
     if row is None or Cls is None:
+        from utils.squad_roster_sync import find_player_row_first_match
+
+        row, Cls, _ = find_player_row_first_match(sess, name, team)
+    if row is None or Cls is None:
         raise RuntimeError(f"После upsert не найден игрок {name!r} в {team!r}.")
     pos_u = (position or "").strip().upper()
     if not skip_status_cascade:
