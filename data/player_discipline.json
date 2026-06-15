@@ -64,7 +64,28 @@
       "unavailable_from_round": 15
     }
   ],
-  "yellow_cycle": [],
+  "yellow_cycle": [
+    {
+      "key": "нзола|фиорентина|ita|league",
+      "name": "Нзола",
+      "name_norm": "нзола",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "манчини|фиорентина|ita|league",
+      "name": "Манчини",
+      "name_norm": "манчини",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    }
+  ],
   "injuries": [
     {
       "name": "Бонавентура",

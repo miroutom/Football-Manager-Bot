@@ -37,6 +37,15 @@
       "away_score": 2,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 0,
+      "day": 1,
+      "entry_type": "play"
     }
   ]
 }
