@@ -84,6 +84,46 @@
       "league_code": "ita",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "гроб|цска|cl|cl",
+      "name": "Гроб",
+      "name_norm": "гроб",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "чилвелл|цска|cl|cl",
+      "name": "Чилвелл",
+      "name_norm": "чилвелл",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "ангуло|цска|cl|cl",
+      "name": "Ангуло",
+      "name_norm": "ангуло",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "кондогбия|арсенал|cl|cl",
+      "name": "Кондогбия",
+      "name_norm": "кондогбия",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
     }
   ],
   "injuries": [

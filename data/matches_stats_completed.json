@@ -1124,5 +1124,12 @@
     "away": "Фиорентина",
     "tournament": "league",
     "day": 1
+  },
+  {
+    "home": "Цска",
+    "away": "Арсенал",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
   }
 ]
