@@ -1131,5 +1131,11 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 1
+  },
+  {
+    "home": "Спартак",
+    "away": "Динамо",
+    "tournament": "league",
+    "day": 1
   }
 ]

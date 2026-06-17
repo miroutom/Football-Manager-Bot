@@ -66,6 +66,15 @@
       "day": 1,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Спартак",
+      "away": "Динамо",
+      "league": "rpl",
+      "home_score": 1,
+      "away_score": 5,
+      "day": 1,
+      "entry_type": "play"
     }
   ]
 }
