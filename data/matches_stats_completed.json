@@ -1137,5 +1137,12 @@
     "away": "Динамо",
     "tournament": "league",
     "day": 1
+  },
+  {
+    "home": "Динамо",
+    "away": "Милан",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
   }
 ]
