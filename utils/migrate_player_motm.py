@@ -63,19 +63,18 @@ def migrate_motm_for_sqlite(db_path: str, *, label: str | None = None) -> list[s
 
 
 def migrate_all_player_motm_columns() -> list[str]:
-    import os
-
+    """Идемпотентно добавить ``motm`` во все SQLite с игроками (сезон, synced, архивы)."""
     from utils import season_paths
 
-    out = _legacy_add_via_sql()
-    for path_fn in (
-        season_paths.get_cumulative_league_db_path,
-        season_paths.get_cumulative_cl_db_path,
-        season_paths.get_cumulative_common_db_path,
+    out: list[str] = []
+    seen: set[str] = set()
+    for label, path in season_paths.iter_player_roster_db_paths(
+        include_synced=True, include_archives=True
     ):
-        path = path_fn()
-        if os.path.isfile(path):
-            out.extend(migrate_motm_for_sqlite(path, label=path))
+        for item in migrate_motm_for_sqlite(path, label=label):
+            if item not in seen:
+                seen.add(item)
+                out.append(item)
     return out
 
 

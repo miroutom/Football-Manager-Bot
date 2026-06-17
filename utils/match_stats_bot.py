@@ -937,3 +937,38 @@ def roster_to_state(players: list[MatchRosterPlayer]) -> list[dict]:
         }
         for p in players
     ]
+
+
+def resolve_motm_from_roster(
+    roster: list[MatchRosterPlayer],
+    query: str,
+    *,
+    side: str = "all",
+) -> tuple[MatchRosterPlayer | None, str]:
+    """Сопоставить ввод с игроками состава матча (как на кнопках)."""
+    from types import SimpleNamespace
+
+    from utils.player_names import format_ambiguity_message, player_matches_query
+
+    q = (query or "").strip()
+    if not q:
+        return None, "Пустая строка."
+
+    def _scan(pool: list[MatchRosterPlayer]) -> list[MatchRosterPlayer]:
+        return [
+            p
+            for p in pool
+            if player_matches_query(SimpleNamespace(name=p.name), q)
+        ]
+
+    visible = filter_roster_by_side(roster, side) if side not in ("", "all") else list(roster)
+    matches = _scan(visible)
+    if not matches and side not in ("", "all"):
+        matches = _scan(list(roster))
+    if len(matches) == 1:
+        return matches[0], ""
+    if len(matches) > 1:
+        stubs = [SimpleNamespace(name=p.name, position=p.position, team=p.team) for p in matches]
+        team = matches[0].team if matches else ""
+        return None, format_ambiguity_message(team, q, stubs)
+    return None, f"Не найден в составе матча «{q}». Выбери кнопкой или уточни имя."

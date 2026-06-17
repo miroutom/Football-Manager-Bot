@@ -444,88 +444,104 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
     a = data.get("stats_away")
     lc = data.get("stats_league_code")
     tourn = data.get("stats_tournament", "league")
-    if h and a:
-        if not lc:
-            from player_stats import infer_league_code_for_stats
-
-            lc = infer_league_code_for_stats(h, a, tourn)
-        cl_ph = None
-        if tourn == "cl" or lc == "cl":
-            from match_results import find_journal_match_record
-
-            rec = await asyncio.to_thread(
-                find_journal_match_record, h, a, lc or "cl", cl_phase=None
-            )
-            if rec:
-                cl_ph = rec.get("cl_phase")
-        from matches_stats_tracking import mark_stats_completed
-
-        await asyncio.to_thread(
-            mark_stats_completed,
-            h,
-            a,
-            tourn,
-            cl_phase=cl_ph,
-            day=data.get("stats_schedule_day"),
-        )
-        from utils.common_db import sync_stats_derived_databases
-
-        await asyncio.to_thread(sync_stats_derived_databases)
-        from utils.player_discipline import register_match_played_for_discipline
-
-        snap = data.get("stats_susp_snapshot")
-        await asyncio.to_thread(
-            register_match_played_for_discipline,
-            h,
-            a,
-            lc,
-            tourn,
-            susp_snapshot_before_stats=snap,
-        )
-        from utils.player_loans import process_loan_expirations
-
-        loan_logs = await asyncio.to_thread(
-            process_loan_expirations, data.get("stats_schedule_day")
-        )
-        if loan_logs:
-            tail = "\n".join(loan_logs[:8])
-            more = f"\n…ещё {len(loan_logs) - 8}" if len(loan_logs) > 8 else ""
-            await message.answer(f"Аренды:\n{tail}{more}")
-
-    await state.clear()
-
-    extra = ""
-    if pj:
-        from match_results import add_match_result, is_match_played as _played
-
-        h = pj["home"]
-        a = pj["away"]
-        lc = pj["lc"]
-        hs = pj["hs"]
-        aws = pj["aws"]
-        if lc == "cl":
-            cl_ph = pj.get("cl_phase", "knockout")
-        else:
-            cl_ph = None
-        if not _played(h, a, lc, cl_phase=cl_ph):
-            add_match_result(
-                h,
-                a,
-                lc,
-                home_score=hs,
-                away_score=aws,
-                cl_phase=cl_ph,
-            )
-            extra = "\nМатч добавлен в журнал match_results.json."
-
     continue_src = (data.get("stats_continue_source") or "calendar").strip().lower()
     ason_ctx = dict(data.get("stats_ason_ctx") or {})
 
+    extra = ""
+    finalize_err: str | None = None
+    try:
+        if h and a:
+            if not lc:
+                from player_stats import infer_league_code_for_stats
+
+                lc = infer_league_code_for_stats(h, a, tourn)
+            cl_ph = None
+            if tourn == "cl" or lc == "cl":
+                from match_results import find_journal_match_record
+
+                rec = await asyncio.to_thread(
+                    find_journal_match_record, h, a, lc or "cl", cl_phase=None
+                )
+                if rec:
+                    cl_ph = rec.get("cl_phase")
+            from matches_stats_tracking import mark_stats_completed
+
+            await asyncio.to_thread(
+                mark_stats_completed,
+                h,
+                a,
+                tourn,
+                cl_phase=cl_ph,
+                day=data.get("stats_schedule_day"),
+            )
+            from utils.common_db import sync_stats_derived_databases
+
+            await asyncio.to_thread(sync_stats_derived_databases)
+            from utils.player_discipline import register_match_played_for_discipline
+
+            snap = data.get("stats_susp_snapshot")
+            await asyncio.to_thread(
+                register_match_played_for_discipline,
+                h,
+                a,
+                lc,
+                tourn,
+                susp_snapshot_before_stats=snap,
+            )
+            from utils.player_loans import process_loan_expirations
+
+            loan_logs = await asyncio.to_thread(
+                process_loan_expirations, data.get("stats_schedule_day")
+            )
+            if loan_logs:
+                tail = "\n".join(loan_logs[:8])
+                more = f"\n…ещё {len(loan_logs) - 8}" if len(loan_logs) > 8 else ""
+                await message.answer(f"Аренды:\n{tail}{more}")
+
+        if pj:
+            from match_results import add_match_result, is_match_played as _played
+
+            h = pj["home"]
+            a = pj["away"]
+            lc = pj["lc"]
+            hs = pj["hs"]
+            aws = pj["aws"]
+            if lc == "cl":
+                cl_ph = pj.get("cl_phase", "knockout")
+            else:
+                cl_ph = None
+            if not _played(h, a, lc, cl_phase=cl_ph):
+                add_match_result(
+                    h,
+                    a,
+                    lc,
+                    home_score=hs,
+                    away_score=aws,
+                    cl_phase=cl_ph,
+                )
+                extra = "\nМатч добавлен в журнал match_results.json."
+    except Exception:
+        logger.exception("Ошибка при закрытии сессии статистики")
+        finalize_err = "часть служебных шагов не выполнилась — проверь БД при необходимости"
+    finally:
+        await state.clear()
+
+    if finalize_err:
+        await message.answer(
+            f"⚠ {finalize_err.capitalize()}. MOTM и строки статы в БД должны быть на месте."
+        )
     await message.answer(f"Готово. Статистика сохранена в базу.{extra}")
-    if continue_src == "ason":
-        await _send_ason_continue_after_stats(message, state, ason_ctx)
-    else:
-        await _send_post_match_continue_prompt(message)
+    try:
+        if continue_src == "ason":
+            await _send_ason_continue_after_stats(message, state, ason_ctx)
+        else:
+            await _send_post_match_continue_prompt(message)
+    except Exception:
+        logger.exception("Не удалось показать «следующий матч» после статы")
+        await message.answer(
+            "Не удалось показать кнопки следующего матча. "
+            "Используй «📋 Из календаря» или /play_next."
+        )
 
 
 def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
@@ -2543,6 +2559,7 @@ async def cb_motm_side(callback: CallbackQuery, state: FSMContext) -> None:
 
 @match_router.message(StateFilter(PostMatch.stats_pick_motm), _TEXT_NOT_CMD)
 async def on_motm_name_text(message: Message, state: FSMContext) -> None:
+    from utils.match_stats_bot import resolve_motm_from_roster, roster_from_state
     from utils.player_names import resolve_player_query_in_team
     from utils.utils import get_session
 
@@ -2554,17 +2571,38 @@ async def on_motm_name_text(message: Message, state: FSMContext) -> None:
     home = data.get("stats_home")
     away = data.get("stats_away")
     tourn = data.get("stats_tournament", "league")
+    roster = roster_from_state(data.get("stats_motm_roster"))
+    side = str(data.get("stats_motm_side") or "all")
+
+    picked_roster, roster_err = resolve_motm_from_roster(roster, raw, side=side)
+    if picked_roster:
+        await _apply_motm_and_finalize(
+            message,
+            state,
+            name=picked_roster.name,
+            position=picked_roster.position,
+            team=picked_roster.team,
+        )
+        return
+    if roster_err and "Не найден в составе" not in roster_err:
+        await message.answer(roster_err)
+        return
+
     sess = get_session(str(tourn))
     picked = None
+    err_msg = ""
     for team in (home, away):
         pl, err = resolve_player_query_in_team(sess, str(team), raw, position=None)
         if pl:
             picked = pl
             break
+        if err:
+            err_msg = err
     if not picked:
         await message.answer(
-            "Игрок не найден в составе хозяев или гостей. "
-            "Проверь имя по шпаргалке или выбери кнопкой."
+            err_msg
+            or roster_err
+            or "Игрок не найден. Проверь имя по кнопкам или нажми на игрока."
         )
         return
     await _apply_motm_and_finalize(
