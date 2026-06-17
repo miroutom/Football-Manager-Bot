@@ -75,6 +75,25 @@
       "away_score": 5,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Жирона",
+      "league": "esp",
+      "home_score": 5,
+      "away_score": 1,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Бетис",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
     }
   ]
 }

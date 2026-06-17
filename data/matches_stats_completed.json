@@ -1144,5 +1144,18 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 1
+  },
+  {
+    "home": "Атлетик",
+    "away": "Жирона",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Сити",
+    "away": "Бетис",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
   }
 ]
