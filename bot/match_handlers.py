@@ -421,7 +421,7 @@ async def _apply_motm_and_finalize(
         position,
         team,
         tournament=str(tourn),
-        sync_derived=True,
+        sync_derived=False,
     )
     if not ok:
         await message.answer(

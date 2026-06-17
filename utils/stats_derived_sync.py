@@ -225,22 +225,26 @@ def flush_stat_deltas() -> None:
 def sync_stats_derived_databases(*, full_rebuild: bool = False) -> None:
     """
     После статы: инкремент из буфера; ``full_rebuild=True`` — полная пересборка (ремонт).
+
+    Если буфер пуст и ``full_rebuild`` не задан — ничего не делаем (дельты уже сброшены).
     """
-    if _BUFFER and not full_rebuild:
-        flush_stat_deltas()
+    if full_rebuild:
+        if _BUFFER:
+            _BUFFER.clear()
+        from utils.common_db import ensure_common_db_fresh
+
+        from utils import season_paths
+
+        ensure_common_db_fresh()
+        if season_paths.is_legacy_mode():
+            return
+        from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
+
+        rebuild_all_time_databases_from_season_archives()
         return
+
     if _BUFFER:
-        _BUFFER.clear()
-    from utils.common_db import ensure_common_db_fresh
-
-    from utils import season_paths
-
-    ensure_common_db_fresh()
-    if season_paths.is_legacy_mode():
-        return
-    from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
-
-    rebuild_all_time_databases_from_season_archives()
+        flush_stat_deltas()
 
 
 def clear_stat_delta_buffer() -> None:
