@@ -1157,5 +1157,24 @@
     "tournament": "cl",
     "cl_phase": "league",
     "day": 1
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Реал Сосьедад",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Наполи",
+    "away": "Лацио",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Локомотив",
+    "away": "Спартак",
+    "tournament": "league",
+    "day": 1
   }
 ]

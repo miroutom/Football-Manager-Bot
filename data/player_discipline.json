@@ -1785,6 +1785,18 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 88
+    },
+    {
+      "key": "мендез|реал сосьедад|3|1|4",
+      "name": "Мендез",
+      "name_norm": "мендез",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 85
     }
   ]
 }
