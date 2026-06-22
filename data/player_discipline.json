@@ -49,7 +49,7 @@
       "team_norm": "хоффенхайм",
       "league_code": "ger",
       "scope": "league",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 14
     },
     {
@@ -121,6 +121,56 @@
       "name_norm": "кондогбия",
       "team": "Арсенал",
       "team_norm": "арсенал",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "диоманде|краснодар|rpl|league",
+      "name": "Диоманде",
+      "name_norm": "диоманде",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
+      "league_code": "rpl",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "леау|атлетик|cl|cl",
+      "name": "Леау",
+      "name_norm": "леау",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "коке|ливерпуль|cl|cl",
+      "name": "Коке",
+      "name_norm": "коке",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "тута|франкфурт|ger|league",
+      "name": "Тута",
+      "name_norm": "тута",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "тилеманс|астон вилла|cl|cl",
+      "name": "Тилеманс",
+      "name_norm": "тилеманс",
+      "team": "Астон Вилла",
+      "team_norm": "астон вилла",
       "league_code": "cl",
       "scope": "cl",
       "count": 1
@@ -1797,6 +1847,114 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 85
+    },
+    {
+      "key": "садик|фиорентина|3|1|4",
+      "name": "Садик",
+      "name_norm": "садик",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 79
+    },
+    {
+      "key": "коронадо|боруссия м|3|1|4",
+      "name": "Коронадо",
+      "name_norm": "коронадо",
+      "team": "Боруссия М",
+      "team_norm": "боруссия м",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 78
+    },
+    {
+      "key": "зоммер|интер|3|1|4",
+      "name": "Зоммер",
+      "name_norm": "зоммер",
+      "team": "Интер",
+      "team_norm": "интер",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 90
+    },
+    {
+      "key": "ундав|севилья|3|1|4",
+      "name": "Ундав",
+      "name_norm": "ундав",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 82
+    },
+    {
+      "key": "ди мария|севилья|3|1|4",
+      "name": "Ди Мария",
+      "name_norm": "ди мария",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 85
+    },
+    {
+      "key": "эрнандез|милан|3|1|4",
+      "name": "Эрнандез",
+      "name_norm": "эрнандез",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 82
+    },
+    {
+      "key": "байер|лацио|3|1|4",
+      "name": "Байер",
+      "name_norm": "байер",
+      "team": "Лацио",
+      "team_norm": "лацио",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 76
+    },
+    {
+      "key": "торрес|лацио|3|1|4",
+      "name": "Торрес",
+      "name_norm": "торрес",
+      "team": "Лацио",
+      "team_norm": "лацио",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 82
+    },
+    {
+      "key": "салах|лацио|3|1|4",
+      "name": "Салах",
+      "name_norm": "салах",
+      "team": "Лацио",
+      "team_norm": "лацио",
+      "out_from_month": 1,
+      "return_month": 4,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 78
     }
   ]
 }
