@@ -1,5 +1,6 @@
 -- memory_scan_v4.lua
 -- EA FC 24 — безопасный поиск счёта в RAM (quick match / турнир, НЕ карьера)
+-- v4.1: один ReadBytes на плагин, чекпоинты после каждого шага (переживает краш)
 -- Перед запуском: укажите HOME_TEAM_ID и AWAY_TEAM_ID ниже.
 -- Запуск: после матча, на экране результата → Live Editor → Lua Engine → Execute
 -- Вывод: %USERPROFILE%\Desktop\fm_bot_probe\memory_scan_v4.*
@@ -18,18 +19,34 @@ local AWAY_TEAM_ID = 243      -- Real Madrid (гости)
 -- Если знаете счёт — укажите для фильтра (иначе -1)
 local EXPECTED_HOME_SCORE = -1
 local EXPECTED_AWAY_SCORE = -1
+-- Второй плагин (может крашить) — включите только если MatchJournal отработал
+local SCAN_MOTM = false
 -- =============================================
 
 local OUT_DIR = string.format("%s\\Desktop\\fm_bot_probe", os.getenv("USERPROFILE"))
-local SCRIPT_VERSION = "v4"
+local SCRIPT_VERSION = "v4.1"
+local WINDOW_BYTES = 0x200   -- один блок ReadBytes (512 байт)
 
-local WINDOW_BYTES = 0x100       -- сколько байт читать вокруг объекта
-local MAX_HOP_POINTERS = 3       -- не больше 3 переходов по указателю
-local HOP_OFFSETS = { 0x0, 0x8, 0x10, 0x18, 0x20, 0x28, 0x30 }
-local MAX_CANDIDATES = 40
+local PROGRESS_PATH = OUT_DIR .. "\\memory_scan_v4_progress.txt"
+local PARTIAL_JSON_PATH = OUT_DIR .. "\\memory_scan_v4_partial.json"
+local JSON_PATH = OUT_DIR .. "\\memory_scan_v4.json"
+local TXT_PATH = OUT_DIR .. "\\memory_scan_v4_summary.txt"
 
 local function ensure_dir(path)
     os.execute(string.format('mkdir "%s" 2>nul', path))
+end
+
+local function write_text(path, content, append)
+    local mode = append and "a" or "w"
+    local f = io.open(path, mode)
+    if not f then return false end
+    f:write(content)
+    f:close()
+    return true
+end
+
+local function checkpoint(msg)
+    write_text(PROGRESS_PATH, os.date("%H:%M:%S") .. " " .. msg .. "\n", true)
 end
 
 local function write_json(path, data)
@@ -42,6 +59,13 @@ local function write_json(path, data)
     return true, nil
 end
 
+local function flush_partial(payload, step)
+    payload.meta.last_step = step
+    payload.meta.updated_at = os.date("%Y-%m-%d %H:%M:%S")
+    write_json(PARTIAL_JSON_PATH, payload)
+    write_json(JSON_PATH, payload)
+end
+
 local function is_plausible_ptr(ptr)
     if not ptr or ptr == 0 then return false end
     if ptr < 0x10000 then return false end
@@ -49,26 +73,29 @@ local function is_plausible_ptr(ptr)
     return true
 end
 
-local function safe_read_int(addr)
-    if not is_plausible_ptr(addr) then return nil end
-    local ok, v = pcall(function() return MEMORY:ReadInt(addr) end)
-    if ok then return v end
-    return nil
+local function byte_at(bytes, idx)
+    local v = bytes[idx]
+    if v == nil then return nil end
+    if v < 0 then v = v + 256 end
+    return v % 256
 end
 
-local function safe_read_char(addr)
-    if not is_plausible_ptr(addr) then return nil end
-    local ok, v = pcall(function() return MEMORY:ReadChar(addr) end)
-    if ok then return v end
-    return nil
+local function read_int32_le(bytes, idx)
+    local b1 = byte_at(bytes, idx)
+    local b2 = byte_at(bytes, idx + 1)
+    local b3 = byte_at(bytes, idx + 2)
+    local b4 = byte_at(bytes, idx + 3)
+    if not b1 or not b2 or not b3 or not b4 then return nil end
+    return b1 + b2 * 256 + b3 * 65536 + b4 * 16777216
 end
 
-local function int32_to_aob(id)
-    local b1 = id % 256
-    local b2 = math.floor(id / 256) % 256
-    local b3 = math.floor(id / 65536) % 256
-    local b4 = math.floor(id / 16777216) % 256
-    return string.format("%02X %02X %02X %02X", b1, b2, b3, b4)
+local function safe_read_bytes(addr, count)
+    if not is_plausible_ptr(addr) then return nil, "invalid pointer" end
+    if count <= 0 or count > 0x400 then return nil, "count out of range" end
+    local ok, result = pcall(function() return MEMORY:ReadBytes(addr, count) end)
+    if not ok then return nil, tostring(result) end
+    if type(result) ~= "table" or #result < 4 then return nil, "empty bytes" end
+    return result, nil
 end
 
 local function team_name(team_id)
@@ -85,14 +112,14 @@ local function score_pair_ok(h, a)
     return true
 end
 
-local function find_scores_near(base, rel_home_off, rel_away_off)
+local function find_scores_in_bytes(bytes, rel_home_off, rel_away_off)
     local found = {}
     local scan_start = math.max(0, math.min(rel_home_off, rel_away_off) - 32)
-    local scan_end = math.max(rel_home_off, rel_away_off) + 48
+    local scan_end = math.min(#bytes - 2, math.max(rel_home_off, rel_away_off) + 48)
 
     for off = scan_start, scan_end do
-        local h = safe_read_char(base + off)
-        local a = safe_read_char(base + off + 1)
+        local h = byte_at(bytes, off + 1)
+        local a = byte_at(bytes, off + 2)
         if score_pair_ok(h, a) then
             found[#found + 1] = {
                 score_offset = string.format("+0x%X", off),
@@ -100,10 +127,9 @@ local function find_scores_near(base, rel_home_off, rel_away_off)
                 away_score = a,
             }
         end
-        -- иногда счёт int32
-        local hi = safe_read_int(base + off)
+        local hi = read_int32_le(bytes, off + 1)
         if hi and hi >= 0 and hi <= 15 then
-            local ai = safe_read_int(base + off + 4)
+            local ai = read_int32_le(bytes, off + 5)
             if score_pair_ok(hi, ai) then
                 found[#found + 1] = {
                     score_offset = string.format("+0x%X(i32)", off),
@@ -116,25 +142,25 @@ local function find_scores_near(base, rel_home_off, rel_away_off)
     return found
 end
 
-local function scan_window(base, source_label)
+local function scan_bytes_for_match(bytes, source_label, base_addr)
     local hits = {}
-    if not is_plausible_ptr(base) then
-        return hits
-    end
+    local limit = #bytes - 3
 
-    for off = 0, WINDOW_BYTES - 4, 4 do
-        local v = safe_read_int(base + off)
+    for off = 1, limit, 4 do
+        local v = read_int32_le(bytes, off)
         if v == HOME_TEAM_ID then
-            for off2 = 0, WINDOW_BYTES - 4, 4 do
+            for off2 = 1, limit, 4 do
                 if off2 ~= off then
-                    local v2 = safe_read_int(base + off2)
+                    local v2 = read_int32_le(bytes, off2)
                     if v2 == AWAY_TEAM_ID then
-                        local scores = find_scores_near(base, off, off2)
+                        local rel_home = off - 1
+                        local rel_away = off2 - 1
+                        local scores = find_scores_in_bytes(bytes, rel_home, rel_away)
                         hits[#hits + 1] = {
                             source = source_label,
-                            base = base,
-                            home_team_offset = string.format("+0x%X", off),
-                            away_team_offset = string.format("+0x%X", off2),
+                            base = base_addr,
+                            home_team_offset = string.format("+0x%X", rel_home),
+                            away_team_offset = string.format("+0x%X", rel_away),
                             scores = scores,
                         }
                     end
@@ -150,6 +176,7 @@ local function collect_from_plugin(plugin_name, plugin_id)
         plugin = plugin_name,
         plugin_id = plugin_id,
         pointer = 0,
+        bytes_read = 0,
         hits = {},
         error = nil,
     }
@@ -165,116 +192,14 @@ local function collect_from_plugin(plugin_name, plugin_id)
         return out
     end
 
-    -- Только плоское окно вокруг самого объекта
-    for _, h in ipairs(scan_window(ptr, plugin_name .. "@root")) do
-        out.hits[#out.hits + 1] = h
-    end
-
-    -- Один безопасный уровень: читаем указатель, но не уходим глубже
-    local hops = 0
-    for _, hop in ipairs(HOP_OFFSETS) do
-        if hops >= MAX_HOP_POINTERS then break end
-        local child = safe_read_int(ptr + hop)
-        if is_plausible_ptr(child) and child ~= ptr then
-            hops = hops + 1
-            local label = string.format("%s@ptr%s", plugin_name, string.format("+0x%X", hop))
-            for _, h in ipairs(scan_window(child, label)) do
-                out.hits[#out.hits + 1] = h
-            end
-        end
-    end
-
-    return out
-end
-
-local function aob_scan_team_ids()
-    local out = {
-        home_pattern = int32_to_aob(HOME_TEAM_ID),
-        away_pattern = int32_to_aob(AWAY_TEAM_ID),
-        home_hits = {},
-        away_hits = {},
-    }
-
-    local ok_home, addr_home = pcall(function()
-        return MEMORY:AOBScanGameModule(int32_to_aob(HOME_TEAM_ID))
-    end)
-    if ok_home and addr_home and addr_home ~= 0 then
-        out.home_hits[#out.home_hits + 1] = addr_home
-        for _, h in ipairs(scan_window(addr_home, "AOB_home")) do
-            out.near_home = out.near_home or {}
-            out.near_home[#out.near_home + 1] = h
-        end
-    end
-
-    local ok_away, addr_away = pcall(function()
-        return MEMORY:AOBScanGameModule(int32_to_aob(AWAY_TEAM_ID))
-    end)
-    if ok_away and addr_away and addr_away ~= 0 then
-        out.away_hits[#out.away_hits + 1] = addr_away
-        for _, h in ipairs(scan_window(addr_away, "AOB_away")) do
-            out.near_away = out.near_away or {}
-            out.near_away[#out.near_away + 1] = h
-        end
-    end
-
-    return out
-end
-
-local function try_fce_data_manager()
-    local out = { attempted = true, fixtures = {}, error = nil }
-    local ok, result = pcall(function()
-        local iface = GetPlugin(ENUM_djb2IFCEInterface_CLSS)
-        if not is_plausible_ptr(iface) then
-            return { error = "IFCEInterface pointer invalid" }
-        end
-        local mgr = MEMORY:ReadMultilevelPointer(iface, { 0x18, 0x10, 0x08, 0x00 })
-        if not is_plausible_ptr(mgr) then
-            return { error = "FCEDataManager null (expected outside career)" }
-        end
-
-        local fixture_list = MEMORY:ReadPointer(mgr + 0x60)
-        if not is_plausible_ptr(fixture_list) then
-            return { error = "FixtureDataList null" }
-        end
-
-        local item_size = 0x18
-        local m_begin = MEMORY:ReadPointer(fixture_list + 0x28)
-        if not is_plausible_ptr(m_begin) then
-            return { error = "fixture mBegin null" }
-        end
-        local max_items = safe_read_int(fixture_list + 0x1C)
-        if not max_items or max_items <= 0 or max_items > 500 then
-            return { error = "fixture count out of range" }
-        end
-
-        local fixtures = {}
-        local limit = math.min(max_items - 1, 30)
-        for i = 0, limit do
-            local cur = m_begin + item_size * i
-            local used = safe_read_char(cur + 0x14)
-            if used and used ~= 0 then
-                fixtures[#fixtures + 1] = {
-                    mHomeScore = safe_read_char(cur + 0x0F),
-                    mAwayScore = safe_read_char(cur + 0x11),
-                    mGameCompletion = safe_read_char(cur + 0x13),
-                    mCompObjId = safe_read_int(cur + 0x08),
-                    mHomeStandingId = safe_read_int(cur + 0x0A),
-                    mAwayStandingId = safe_read_int(cur + 0x0C),
-                }
-            end
-        end
-        return { fixtures = fixtures }
-    end)
-
-    if not ok then
-        out.error = tostring(result)
+    local bytes, err = safe_read_bytes(ptr, WINDOW_BYTES)
+    if not bytes then
+        out.error = err or "ReadBytes failed"
         return out
     end
-    if result.error then
-        out.error = result.error
-        return out
-    end
-    out.fixtures = result.fixtures or {}
+    out.bytes_read = #bytes
+
+    out.hits = scan_bytes_for_match(bytes, plugin_name .. "@root", ptr)
     return out
 end
 
@@ -300,32 +225,8 @@ end
 
 -- MAIN
 ensure_dir(OUT_DIR)
-
-local all_hits = {}
-
-local mj = collect_from_plugin("MatchJournalInterface", ENUM_djb2MatchJournalInterface_CLSS)
-for _, h in ipairs(mj.hits) do
-    if #all_hits < MAX_CANDIDATES then all_hits[#all_hits + 1] = h end
-end
-
-local motm = collect_from_plugin("ManOfTheMatchService", ENUM_djb2ManOfTheMatchService_CLSS)
-for _, h in ipairs(motm.hits) do
-    if #all_hits < MAX_CANDIDATES then all_hits[#all_hits + 1] = h end
-end
-
-local aob = aob_scan_team_ids()
-if aob.near_home then
-    for _, h in ipairs(aob.near_home) do
-        if #all_hits < MAX_CANDIDATES then all_hits[#all_hits + 1] = h end
-    end
-end
-if aob.near_away then
-    for _, h in ipairs(aob.near_away) do
-        if #all_hits < MAX_CANDIDATES then all_hits[#all_hits + 1] = h end
-    end
-end
-
-local ranked = rank_candidates(all_hits)
+write_text(PROGRESS_PATH, "=== memory_scan " .. SCRIPT_VERSION .. " started " .. os.date() .. " ===\n", false)
+checkpoint("init ok, no memory touched yet")
 
 local payload = {
     meta = {
@@ -342,24 +243,47 @@ local payload = {
             away = EXPECTED_AWAY_SCORE,
         },
         output_dir = OUT_DIR,
+        scan_motm = SCAN_MOTM,
+        window_bytes = WINDOW_BYTES,
     },
-    plugins = {
-        match_journal = mj,
-        motm_service = motm,
-    },
-    aob_scan = aob,
-    fce_data_manager = try_fce_data_manager(),
-    hits = all_hits,
-    best_candidates = ranked,
+    plugins = {},
+    hits = {},
+    best_candidates = {},
 }
+flush_partial(payload, "init")
+checkpoint("partial json written (meta only)")
 
-local json_path = OUT_DIR .. "\\memory_scan_v4.json"
-local txt_path = OUT_DIR .. "\\memory_scan_v4_summary.txt"
+checkpoint("reading MatchJournalInterface")
+local mj = collect_from_plugin("MatchJournalInterface", ENUM_djb2MatchJournalInterface_CLSS)
+payload.plugins.match_journal = mj
+for _, h in ipairs(mj.hits) do
+    payload.hits[#payload.hits + 1] = h
+end
+flush_partial(payload, "match_journal")
+checkpoint(string.format("MatchJournal ptr=%s bytes=%s hits=%d err=%s",
+    tostring(mj.pointer), tostring(mj.bytes_read), #mj.hits, tostring(mj.error or "none")))
 
-write_json(json_path, payload)
+local motm = { skipped = true }
+if SCAN_MOTM then
+    checkpoint("reading ManOfTheMatchService")
+    motm = collect_from_plugin("ManOfTheMatchService", ENUM_djb2ManOfTheMatchService_CLSS)
+    for _, h in ipairs(motm.hits) do
+        payload.hits[#payload.hits + 1] = h
+    end
+    flush_partial(payload, "motm")
+    checkpoint(string.format("MOTM ptr=%s bytes=%s hits=%d err=%s",
+        tostring(motm.pointer), tostring(motm.bytes_read), #motm.hits, tostring(motm.error or "none")))
+end
+payload.plugins.motm_service = motm
+
+local ranked = rank_candidates(payload.hits)
+payload.best_candidates = ranked
+flush_partial(payload, "done")
+checkpoint(string.format("finished, best_candidates=%d", #ranked))
+
 write_json(OUT_DIR .. "\\last_memory_scan_v4.json", payload)
 
-local f = io.open(txt_path, "w")
+local f = io.open(TXT_PATH, "w")
 if f then
     f:write("=== FC24 Memory Scan " .. SCRIPT_VERSION .. " ===\n")
     f:write(string.format("Match: %s (%d) vs %s (%d)\n",
@@ -369,43 +293,46 @@ if f then
     f:write("Folder: " .. OUT_DIR .. "\n\n")
 
     f:write("[Plugins]\n")
-    f:write(string.format("  MatchJournal ptr: %s (hits %d)\n",
-        tostring(mj.pointer), #mj.hits))
-    f:write(string.format("  ManOfTheMatch ptr: %s (hits %d)\n",
-        tostring(motm.pointer), #motm.hits))
-
-    f:write("\n[AOB in game module]\n")
-    f:write(string.format("  home pattern: %s -> %s\n",
-        aob.home_pattern, tostring(aob.home_hits[1] or "not found")))
-    f:write(string.format("  away pattern: %s -> %s\n",
-        aob.away_pattern, tostring(aob.away_hits[1] or "not found")))
-
-    f:write("\n[FCEDataManager]\n")
-    f:write("  " .. tostring(payload.fce_data_manager.error or
-        string.format("%d fixtures", #(payload.fce_data_manager.fixtures or {}))) .. "\n")
+    f:write(string.format("  MatchJournal ptr: %s bytes: %s hits: %d err: %s\n",
+        tostring(mj.pointer), tostring(mj.bytes_read), #mj.hits, tostring(mj.error or "none")))
+    if SCAN_MOTM then
+        f:write(string.format("  ManOfTheMatch ptr: %s bytes: %s hits: %d err: %s\n",
+            tostring(motm.pointer), tostring(motm.bytes_read), #motm.hits, tostring(motm.error or "none")))
+    else
+        f:write("  ManOfTheMatch: skipped (SCAN_MOTM=false)\n")
+    end
 
     f:write("\n[Best score candidates]\n")
     if #ranked == 0 then
-        f:write("  NONE — team ids not found near scores in scanned windows\n")
+        f:write("  NONE — team ids not found near scores in scanned window\n")
+        f:write("  Check HOME/AWAY_TEAM_ID or set EXPECTED_HOME/AWAY_SCORE\n")
     else
         for i, c in ipairs(ranked) do
             f:write(string.format(
-                "  #%d: %d:%d at %s (%s, score %s)\n",
+                "  #%d: %d:%d at %s (%s, base %s)\n",
                 i, c.home_score, c.away_score, c.source, c.score_offset,
                 tostring(c.base)))
         end
     end
 
-    f:write("\nFiles:\n  " .. txt_path .. "\n  " .. json_path .. "\n")
+    f:write("\n[Checkpoint log]\n  " .. PROGRESS_PATH .. "\n")
+    f:write("\nFiles:\n  " .. TXT_PATH .. "\n  " .. JSON_PATH .. "\n  " .. PARTIAL_JSON_PATH .. "\n")
     f:close()
 end
 
-local msg = "Memory scan v4 done\n\n" .. OUT_DIR .. "\n\n"
+checkpoint("summary txt written")
+
+local msg = "Memory scan " .. SCRIPT_VERSION .. " done\n\n" .. OUT_DIR .. "\n\n"
 if #ranked > 0 then
     local c = ranked[1]
     msg = msg .. string.format("Best guess: %d:%d\n", c.home_score, c.away_score)
+elseif mj.error then
+    msg = msg .. "MatchJournal read failed:\n" .. mj.error .. "\n"
 else
     msg = msg .. "No score found in memory\nEdit HOME/AWAY_TEAM_ID in script"
 end
-MessageBox("Memory Scan v4", msg)
+if not SCAN_MOTM then
+    msg = msg .. "\n\nMOTM scan disabled (safer)"
+end
+MessageBox("Memory Scan v4.1", msg)
 LOGGER:LogInfo("memory_scan_v4 done -> " .. OUT_DIR)
