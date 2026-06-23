@@ -18,8 +18,8 @@ local json = require 'imports/external/json'
 local HOME_TEAM_ID = 32       -- Bayer Leverkusen / Байер (дом)
 local AWAY_TEAM_ID = 10029    -- TSG Hoffenheim / Хоффенхайм (гости)
 -- Если знаете счёт — укажите для фильтра (иначе -1)
-local EXPECTED_HOME_SCORE = -1
-local EXPECTED_AWAY_SCORE = -1
+local EXPECTED_HOME_SCORE = 3   -- Байер (дом)
+local EXPECTED_AWAY_SCORE = 4   -- Хоффенхайм (гости)
 -- Второй плагин (может крашить) — включите только если MatchJournal отработал
 local SCAN_MOTM = false
 -- =============================================
