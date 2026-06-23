@@ -17,8 +17,8 @@ local json = require 'imports/external/json'
 local HOME_TEAM_ID = 9        -- Liverpool / Ливерпуль (дом)
 local AWAY_TEAM_ID = 13       -- Newcastle United / Ньюкасл (гости)
 -- Если знаете счёт — укажите для фильтра (иначе -1)
-local EXPECTED_HOME_SCORE = -1
-local EXPECTED_AWAY_SCORE = -1
+local EXPECTED_HOME_SCORE = 3   -- Ливерпуль (дом)
+local EXPECTED_AWAY_SCORE = 1   -- Ньюкасл (гости)
 -- Второй плагин (может крашить) — включите только если MatchJournal отработал
 local SCAN_MOTM = false
 -- =============================================
