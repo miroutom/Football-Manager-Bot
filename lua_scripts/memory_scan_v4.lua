@@ -1,6 +1,6 @@
 -- memory_scan_v4.lua
 -- EA FC 24 — безопасный поиск счёта в RAM (quick match / турнир, НЕ карьера)
--- v4.2: hex-дамп, поиск счёта без ID, один уровень указателей (+ ReadBytes)
+-- v4.3: int32-счёт рядом с ID команд, фильтр 0xFFFFFFFF
 -- Перед запуском: укажите HOME_TEAM_ID и AWAY_TEAM_ID ниже.
 -- Запуск: после матча, на экране результата → Live Editor → Lua Engine → Execute
 -- Вывод: %USERPROFILE%\Desktop\fm_bot_probe\memory_scan_v4.*
@@ -24,10 +24,11 @@ local SCAN_MOTM = false
 -- =============================================
 
 local OUT_DIR = string.format("%s\\Desktop\\fm_bot_probe", os.getenv("USERPROFILE"))
-local SCRIPT_VERSION = "v4.2"
+local SCRIPT_VERSION = "v4.3"
 local WINDOW_BYTES = 0x200   -- один блок ReadBytes (512 байт)
 local HOP_OFFSETS = { 0x8, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40 }
 local MAX_HOP_READS = 6
+local SCORE_SEARCH_RADIUS = 0x80
 
 local PROGRESS_PATH = OUT_DIR .. "\\memory_scan_v4_progress.txt"
 local PARTIAL_JSON_PATH = OUT_DIR .. "\\memory_scan_v4_partial.json"
@@ -71,6 +72,7 @@ end
 
 local function is_plausible_ptr(ptr)
     if not ptr or ptr == 0 then return false end
+    if ptr == 0xFFFFFFFF or ptr == 4294967295 then return false end
     if ptr < 0x10000 then return false end
     if ptr > 0x7FFFFFFFFFFF then return false end
     return true
@@ -144,14 +146,19 @@ end
 local function find_team_ids_in_bytes(bytes)
     local home_offsets = {}
     local away_offsets = {}
+    local home_num = {}
+    local away_num = {}
     local limit = #bytes - 3
     for off = 1, limit, 4 do
+        local rel = off - 1
         local v = read_int32_le(bytes, off)
         if v == HOME_TEAM_ID then
-            home_offsets[#home_offsets + 1] = string.format("+0x%X", off - 1)
+            home_offsets[#home_offsets + 1] = string.format("+0x%X", rel)
+            home_num[#home_num + 1] = rel
         end
         if v == AWAY_TEAM_ID then
-            away_offsets[#away_offsets + 1] = string.format("+0x%X", off - 1)
+            away_offsets[#away_offsets + 1] = string.format("+0x%X", rel)
+            away_num[#away_num + 1] = rel
         end
     end
     return {
@@ -159,7 +166,51 @@ local function find_team_ids_in_bytes(bytes)
         away_count = #away_offsets,
         home_offsets = home_offsets,
         away_offsets = away_offsets,
+        home_num = home_num,
+        away_num = away_num,
     }
+end
+
+local function find_int32_scores_near_teams(bytes, rel_home_off, rel_away_off, source_label, base_addr)
+    local found = {}
+    local lo = math.max(0, math.min(rel_home_off, rel_away_off) - SCORE_SEARCH_RADIUS)
+    local hi = math.min(#bytes - 4, math.max(rel_home_off, rel_away_off) + SCORE_SEARCH_RADIUS)
+
+    local home_candidates = {}
+    local away_candidates = {}
+
+    for off = lo, hi, 4 do
+        local v = read_int32_le(bytes, off + 1)
+        if v and v >= 0 and v <= 15 then
+            if math.abs(off - rel_home_off) <= SCORE_SEARCH_RADIUS then
+                home_candidates[#home_candidates + 1] = { offset = off, value = v }
+            end
+            if math.abs(off - rel_away_off) <= SCORE_SEARCH_RADIUS then
+                away_candidates[#away_candidates + 1] = { offset = off, value = v }
+            end
+        end
+    end
+
+    for _, hc in ipairs(home_candidates) do
+        for _, ac in ipairs(away_candidates) do
+            if hc.offset ~= ac.offset and score_pair_ok(hc.value, ac.value) then
+                found[#found + 1] = {
+                    kind = "i32_near_teams",
+                    source = source_label,
+                    base = base_addr,
+                    home_team_offset = string.format("+0x%X", rel_home_off),
+                    away_team_offset = string.format("+0x%X", rel_away_off),
+                    home_score = hc.value,
+                    away_score = ac.value,
+                    home_score_offset = string.format("+0x%X", hc.offset),
+                    away_score_offset = string.format("+0x%X", ac.offset),
+                    score_offset = string.format("home+0x%X away+0x%X", hc.offset, ac.offset),
+                }
+            end
+        end
+    end
+
+    return found
 end
 
 local function find_bare_scores_in_bytes(bytes, source_label, base_addr)
@@ -197,24 +248,29 @@ end
 
 local function find_scores_in_bytes(bytes, rel_home_off, rel_away_off)
     local found = {}
-    local scan_start = math.max(0, math.min(rel_home_off, rel_away_off) - 32)
-    local scan_end = math.min(#bytes - 2, math.max(rel_home_off, rel_away_off) + 48)
+    local scan_start = math.max(0, math.min(rel_home_off, rel_away_off) - SCORE_SEARCH_RADIUS)
+    local scan_end = math.min(#bytes - 2, math.max(rel_home_off, rel_away_off) + SCORE_SEARCH_RADIUS)
 
     for off = scan_start, scan_end do
         local h = byte_at(bytes, off + 1)
         local a = byte_at(bytes, off + 2)
         if score_pair_ok(h, a) then
             found[#found + 1] = {
+                kind = "u8_pair",
                 score_offset = string.format("+0x%X", off),
                 home_score = h,
                 away_score = a,
             }
         end
+    end
+
+    for off = scan_start, scan_end - 3, 4 do
         local hi = read_int32_le(bytes, off + 1)
         if hi and hi >= 0 and hi <= 15 then
             local ai = read_int32_le(bytes, off + 5)
             if score_pair_ok(hi, ai) then
                 found[#found + 1] = {
+                    kind = "i32_adjacent",
                     score_offset = string.format("+0x%X(i32)", off),
                     home_score = hi,
                     away_score = ai,
@@ -222,11 +278,13 @@ local function find_scores_in_bytes(bytes, rel_home_off, rel_away_off)
             end
         end
     end
+
     return found
 end
 
 local function scan_bytes_for_match(bytes, source_label, base_addr)
     local hits = {}
+    local int32_score_hits = {}
     local limit = #bytes - 3
 
     for off = 1, limit, 4 do
@@ -239,19 +297,25 @@ local function scan_bytes_for_match(bytes, source_label, base_addr)
                         local rel_home = off - 1
                         local rel_away = off2 - 1
                         local scores = find_scores_in_bytes(bytes, rel_home, rel_away)
+                        local i32_near = find_int32_scores_near_teams(
+                            bytes, rel_home, rel_away, source_label, base_addr)
+                        for _, s in ipairs(i32_near) do
+                            int32_score_hits[#int32_score_hits + 1] = s
+                        end
                         hits[#hits + 1] = {
                             source = source_label,
                             base = base_addr,
                             home_team_offset = string.format("+0x%X", rel_home),
                             away_team_offset = string.format("+0x%X", rel_away),
                             scores = scores,
+                            int32_scores = i32_near,
                         }
                     end
                 end
             end
         end
     end
-    return hits
+    return hits, int32_score_hits
 end
 
 local function scan_region(base_addr, label)
@@ -263,6 +327,7 @@ local function scan_region(base_addr, label)
         team_ids = {},
         bare_scores = {},
         match_hits = {},
+        int32_score_hits = {},
         hex_preview = nil,
     }
 
@@ -275,7 +340,7 @@ local function scan_region(base_addr, label)
     out.bytes_read = #bytes
     out.team_ids = find_team_ids_in_bytes(bytes)
     out.bare_scores = find_bare_scores_in_bytes(bytes, label, base_addr)
-    out.match_hits = scan_bytes_for_match(bytes, label, base_addr)
+    out.match_hits, out.int32_score_hits = scan_bytes_for_match(bytes, label, base_addr)
     out.hex_preview = bytes_to_hex_lines(bytes, 128)
     return out, bytes
 end
@@ -335,6 +400,7 @@ end
 local function flatten_plugin_results(plugin_result)
     local hits = {}
     local bare_scores = {}
+    local int32_scores = {}
     for _, region in ipairs(plugin_result.regions or {}) do
         for _, h in ipairs(region.match_hits or {}) do
             hits[#hits + 1] = h
@@ -342,19 +408,38 @@ local function flatten_plugin_results(plugin_result)
         for _, s in ipairs(region.bare_scores or {}) do
             bare_scores[#bare_scores + 1] = s
         end
+        for _, s in ipairs(region.int32_score_hits or {}) do
+            int32_scores[#int32_scores + 1] = s
+        end
     end
-    return hits, bare_scores
+    return hits, bare_scores, int32_scores
 end
 
-local function rank_candidates(match_hits, bare_scores)
+local function rank_candidates(match_hits, bare_scores, int32_scores)
     local best = {}
+
+    for _, s in ipairs(int32_scores) do
+        best[#best + 1] = {
+            rank = 0,
+            kind = s.kind or "i32_near_teams",
+            source = s.source,
+            base = s.base,
+            home_team_offset = s.home_team_offset,
+            away_team_offset = s.away_team_offset,
+            home_score = s.home_score,
+            away_score = s.away_score,
+            score_offset = s.score_offset,
+            home_score_offset = s.home_score_offset,
+            away_score_offset = s.away_score_offset,
+        }
+    end
 
     for _, h in ipairs(match_hits) do
         if h.scores and #h.scores > 0 then
             for _, s in ipairs(h.scores) do
                 best[#best + 1] = {
                     rank = 1,
-                    kind = "team_ids+score",
+                    kind = s.kind or "team_ids+score",
                     source = h.source,
                     base = h.base,
                     home_team_offset = h.home_team_offset,
@@ -425,6 +510,7 @@ local payload = {
     regions = {},
     hits = {},
     bare_scores = {},
+    int32_scores = {},
     best_candidates = {},
 }
 flush_partial(payload, "init")
@@ -435,32 +521,34 @@ local mj = collect_from_plugin("MatchJournalInterface", ENUM_djb2MatchJournalInt
 payload.plugins.match_journal = mj
 payload.regions = mj.regions or {}
 
-local mj_hits, mj_bare = flatten_plugin_results(mj)
+local mj_hits, mj_bare, mj_i32 = flatten_plugin_results(mj)
 for _, h in ipairs(mj_hits) do payload.hits[#payload.hits + 1] = h end
 for _, s in ipairs(mj_bare) do payload.bare_scores[#payload.bare_scores + 1] = s end
+for _, s in ipairs(mj_i32) do payload.int32_scores[#payload.int32_scores + 1] = s end
 flush_partial(payload, "match_journal")
-checkpoint(string.format("MatchJournal ptr=%s regions=%d hits=%d bare_scores=%d err=%s hex=%s",
-    tostring(mj.pointer), #(mj.regions or {}), #mj_hits, #mj_bare,
-    tostring(mj.error or "none"), HEX_PATH))
+checkpoint(string.format("MatchJournal ptr=%s regions=%d hits=%d i32_scores=%d bare=%d err=%s",
+    tostring(mj.pointer), #(mj.regions or {}), #mj_hits, #mj_i32, #mj_bare,
+    tostring(mj.error or "none")))
 
 local motm = { skipped = true }
 if SCAN_MOTM then
     checkpoint("reading ManOfTheMatchService")
     motm = collect_from_plugin("ManOfTheMatchService", ENUM_djb2ManOfTheMatchService_CLSS, append_hex)
-    local motm_hits, motm_bare = flatten_plugin_results(motm)
+    local motm_hits, motm_bare, motm_i32 = flatten_plugin_results(motm)
     for _, h in ipairs(motm_hits) do payload.hits[#payload.hits + 1] = h end
     for _, s in ipairs(motm_bare) do payload.bare_scores[#payload.bare_scores + 1] = s end
+    for _, s in ipairs(motm_i32) do payload.int32_scores[#payload.int32_scores + 1] = s end
     flush_partial(payload, "motm")
     checkpoint(string.format("MOTM ptr=%s regions=%d bare_scores=%d err=%s",
         tostring(motm.pointer), #(motm.regions or {}), #motm_bare, tostring(motm.error or "none")))
 end
 payload.plugins.motm_service = motm
 
-local ranked = rank_candidates(payload.hits, payload.bare_scores)
+local ranked = rank_candidates(payload.hits, payload.bare_scores, payload.int32_scores)
 payload.best_candidates = ranked
 flush_partial(payload, "done")
-checkpoint(string.format("finished, best_candidates=%d bare_scores=%d hex_sections=%d",
-    #ranked, #payload.bare_scores, hex_sections))
+checkpoint(string.format("finished, best=%d i32_scores=%d hex_sections=%d",
+    #ranked, #payload.int32_scores, hex_sections))
 
 write_json(OUT_DIR .. "\\last_memory_scan_v4.json", payload)
 
@@ -479,11 +567,11 @@ if f then
     f:write("[MatchJournal regions]\n")
     for i, region in ipairs(mj.regions or {}) do
         f:write(string.format("  #%d %s @ %s\n", i, region.label, tostring(region.base)))
-        f:write(string.format("      bytes=%s err=%s home_id_hits=%d away_id_hits=%d bare_scores=%d match_hits=%d\n",
+        f:write(string.format("      bytes=%s err=%s home_id=%d away_id=%d i32_scores=%d match_hits=%d\n",
             tostring(region.bytes_read), tostring(region.error or "none"),
             (region.team_ids and region.team_ids.home_count) or 0,
             (region.team_ids and region.team_ids.away_count) or 0,
-            #(region.bare_scores or {}), #(region.match_hits or {})))
+            #(region.int32_score_hits or {}), #(region.match_hits or {})))
         if region.team_ids and (region.team_ids.home_count > 0 or region.team_ids.away_count > 0) then
             f:write(string.format("      home offsets: %s\n",
                 table.concat(region.team_ids.home_offsets or {}, ", ")))
@@ -502,6 +590,19 @@ if f then
         f:write("\n[ManOfTheMatch] skipped (SCAN_MOTM=false)\n")
     end
 
+    f:write("\n[Int32 score hits (near team ids)]\n")
+    if #payload.int32_scores == 0 then
+        f:write("  NONE\n")
+    else
+        for i, s in ipairs(payload.int32_scores) do
+            f:write(string.format("  #%d: %d:%d at %s\n", i, s.home_score, s.away_score, s.source))
+            f:write(string.format("      teams home%s away%s\n",
+                s.home_team_offset or "?", s.away_team_offset or "?"))
+            f:write(string.format("      scores home%s away%s\n",
+                s.home_score_offset or "?", s.away_score_offset or "?"))
+        end
+    end
+
     f:write("\n[Bare score hits (no team id required)]\n")
     if #payload.bare_scores == 0 then
         f:write("  NONE\n")
@@ -518,9 +619,14 @@ if f then
         f:write("  See hex dump: " .. HEX_PATH .. "\n")
     else
         for i, c in ipairs(ranked) do
-            f:write(string.format("  #%d [%s] %d:%d at %s %s\n",
-                i, c.kind, c.home_score, c.away_score, c.source,
-                c.score_offset or ""))
+            f:write(string.format("  #%d [%s] %d:%d at %s\n",
+                i, c.kind, c.home_score, c.away_score, c.source))
+            if c.home_score_offset then
+                f:write(string.format("      home_score%s away_score%s\n",
+                    c.home_score_offset, c.away_score_offset or "?"))
+            elseif c.score_offset then
+                f:write(string.format("      %s\n", c.score_offset))
+            end
         end
     end
 
@@ -534,11 +640,14 @@ local msg = "Memory scan " .. SCRIPT_VERSION .. " done\n\n" .. OUT_DIR .. "\n\n"
 if #ranked > 0 then
     local c = ranked[1]
     msg = msg .. string.format("Best: %d:%d (%s)\n", c.home_score, c.away_score, c.kind)
+    if c.home_score_offset then
+        msg = msg .. string.format("%s / %s\n", c.home_score_offset, c.away_score_offset or "?")
+    end
 elseif mj.error then
     msg = msg .. "MatchJournal read failed:\n" .. mj.error .. "\n"
 else
     msg = msg .. string.format("No score found\nRegions: %d\nHex: memory_scan_v4_hex.txt\n",
         #(mj.regions or {}))
 end
-MessageBox("Memory Scan v4.2", msg)
+MessageBox("Memory Scan v4.3", msg)
 LOGGER:LogInfo("memory_scan_v4 done -> " .. OUT_DIR)
