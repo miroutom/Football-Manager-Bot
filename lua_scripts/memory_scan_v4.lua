@@ -11,8 +11,10 @@ require 'imports/services/enums'
 local json = require 'imports/external/json'
 
 -- ============ НАСТРОЙКА ПОД МАТЧ ============
-local HOME_TEAM_ID = 112172   -- Лейпциг (дом)
-local AWAY_TEAM_ID = 175      -- Вольфсбург (гости)
+-- FC 24 squad IDs: Barcelona=241, Real Madrid=243
+-- Если Реал дома — поменяйте HOME и AWAY местами
+local HOME_TEAM_ID = 241      -- Barcelona (дом)
+local AWAY_TEAM_ID = 243      -- Real Madrid (гости)
 -- Если знаете счёт — укажите для фильтра (иначе -1)
 local EXPECTED_HOME_SCORE = -1
 local EXPECTED_AWAY_SCORE = -1
