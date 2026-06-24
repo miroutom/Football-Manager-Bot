@@ -67,8 +67,14 @@ local function safe_read_int(addr)
 end
 
 local function team_name(team_id)
+    if not team_id or team_id <= 0 then return "unknown" end
     local ok, name = pcall(function() return GetTeamName(team_id) end)
-    if ok and name and name ~= "" then return name end
+    if ok and name and name ~= "" then
+        local lower = string.lower(name)
+        if lower ~= "not found" and lower ~= "unknown" then
+            return name
+        end
+    end
     return string.format("team_%d", team_id)
 end
 
@@ -182,8 +188,9 @@ end
 
 local msg
 if result.ok then
-    msg = string.format("%s %d : %d %s\n\n%s",
-        result.home_team_name, home_score, away_score, result.away_team_name, OUT_DIR)
+    msg = string.format("%s (%d) %d : %d %s (%d)\n\n%s",
+        result.home_team_name, home_id, home_score, away_score,
+        result.away_team_name, away_id, OUT_DIR)
     if next(result.validation) then
         msg = msg .. "\nWarning: team id mismatch (check EXPECT_* in script)"
     end

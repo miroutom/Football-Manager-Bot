@@ -120,7 +120,12 @@ end
 local function team_name(team_id)
     if not team_id or team_id < 0 then return "AUTO" end
     local ok, name = pcall(function() return GetTeamName(team_id) end)
-    if ok and name and name ~= "" then return name end
+    if ok and name and name ~= "" then
+        local lower = string.lower(name)
+        if lower ~= "not found" and lower ~= "unknown" then
+            return name
+        end
+    end
     return string.format("team_%d", team_id)
 end
 
@@ -746,8 +751,10 @@ checkpoint("summary txt written")
 
 local msg = "Memory scan " .. SCRIPT_VERSION .. "\n\n"
 if detected.ok then
-    msg = msg .. string.format("Match: %s %d:%d %s\n\n",
-        detected.home_team_name, detected.home_score, detected.away_score, detected.away_team_name)
+    msg = msg .. string.format("Match: %s (%d) %d:%d %s (%d)\n\n",
+        detected.home_team_name, detected.home_team_id,
+        detected.home_score, detected.away_score,
+        detected.away_team_name, detected.away_team_id)
 elseif #ranked > 0 then
     local c = ranked[1]
     msg = msg .. string.format("Best: %d:%d (%s)\n", c.home_score, c.away_score, c.kind)
