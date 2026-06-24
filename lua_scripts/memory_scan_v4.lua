@@ -1,8 +1,8 @@
 -- memory_scan_v4.lua
--- EA FC 24 — безопасный поиск счёта в RAM (quick match / турнир, НЕ карьера)
+-- EA FC 24 — разведка RAM quick match (hex, поиск по ID если заданы)
+-- Для АВТО-чтения команд и счёта без настройки → quick_match_score_v5.lua
 -- v4.3: int32-счёт рядом с ID команд, фильтр 0xFFFFFFFF
--- Перед запуском: укажите HOME_TEAM_ID и AWAY_TEAM_ID ниже.
--- Запуск: после матча, на экране результата → Live Editor → Lua Engine → Execute
+-- Запуск: экран результата или статы → Live Editor → Lua Engine → Execute
 -- Вывод: %USERPROFILE%\Desktop\fm_bot_probe\memory_scan_v4.*
 
 require 'imports/career_mode/helpers'
@@ -11,17 +11,22 @@ require 'imports/services/enums'
 
 local json = require 'imports/external/json'
 
--- ============ НАСТРОЙКА ПОД МАТЧ ============
--- FC 24 squad IDs: Liverpool=9, Newcastle United=13
--- Если Ньюкасл дома — поменяйте HOME и AWAY местами
-local HOME_TEAM_ID = 9        -- Liverpool / Ливерпуль (дом)
-local AWAY_TEAM_ID = 13       -- Newcastle United / Ньюкасл (гости)
--- Если знаете счёт — укажите для фильтра (иначе -1)
-local EXPECTED_HOME_SCORE = 3   -- Ливерпуль (дом)
-local EXPECTED_AWAY_SCORE = 1   -- Ньюкасл (гости)
+-- ============ НАСТРОЙКА (опционально, для фильтра при разведке) ============
+-- -1 = не фильтровать; авто-чтение матча всегда в detected_match (как v5)
+-- Для авто-счёта на экране результата достаточно quick_match_score_v5.lua
+local HOME_TEAM_ID = -1
+local AWAY_TEAM_ID = -1
+local EXPECTED_HOME_SCORE = -1
+local EXPECTED_AWAY_SCORE = -1
 -- Второй плагин (может крашить) — включите только если MatchJournal отработал
 local SCAN_MOTM = false
--- =============================================
+-- Фиксированные offsets матча (MatchJournal → +0x20), как в v5
+local MATCH_CHILD_OFFSET = 0x20
+local OFF_AWAY_TEAM = 0x0C
+local OFF_HOME_TEAM = 0x54
+local OFF_AWAY_SCORE = 0x24
+local OFF_HOME_SCORE = 0x9C
+-- =============================================================================
 
 local OUT_DIR = string.format("%s\\Desktop\\fm_bot_probe", os.getenv("USERPROFILE"))
 local SCRIPT_VERSION = "v4.3"
@@ -113,9 +118,69 @@ local function safe_read_ptr(addr)
 end
 
 local function team_name(team_id)
+    if not team_id or team_id < 0 then return "AUTO" end
     local ok, name = pcall(function() return GetTeamName(team_id) end)
     if ok and name and name ~= "" then return name end
     return string.format("team_%d", team_id)
+end
+
+local function score_ok(v)
+    return v ~= nil and v >= 0 and v <= 15
+end
+
+local function read_detected_match()
+    local out = {
+        ok = false,
+        source = "MatchJournal+0x20",
+        match_journal_ptr = 0,
+        match_block_ptr = 0,
+        home_team_id = 0,
+        away_team_id = 0,
+        home_team_name = "",
+        away_team_name = "",
+        home_score = nil,
+        away_score = nil,
+        error = nil,
+    }
+
+    local ok_plugin, mj_ptr = pcall(function() return GetPlugin(ENUM_djb2MatchJournalInterface_CLSS) end)
+    if not ok_plugin or not is_plausible_ptr(mj_ptr) then
+        out.error = "MatchJournalInterface pointer invalid"
+        return out
+    end
+    out.match_journal_ptr = mj_ptr
+
+    local block_ptr = safe_read_ptr(mj_ptr + MATCH_CHILD_OFFSET)
+    if not is_plausible_ptr(block_ptr) then
+        out.error = string.format("Match block null at journal+0x%X", MATCH_CHILD_OFFSET)
+        return out
+    end
+    out.match_block_ptr = block_ptr
+
+    local ok_int, away_id = pcall(function() return MEMORY:ReadInt(block_ptr + OFF_AWAY_TEAM) end)
+    local ok_int2, home_id = pcall(function() return MEMORY:ReadInt(block_ptr + OFF_HOME_TEAM) end)
+    local ok_int3, away_score = pcall(function() return MEMORY:ReadInt(block_ptr + OFF_AWAY_SCORE) end)
+    local ok_int4, home_score = pcall(function() return MEMORY:ReadInt(block_ptr + OFF_HOME_SCORE) end)
+    if not ok_int or not ok_int2 or not ok_int3 or not ok_int4 then
+        out.error = "ReadInt failed on match block"
+        return out
+    end
+
+    out.away_team_id = away_id or 0
+    out.home_team_id = home_id or 0
+    out.away_score = away_score
+    out.home_score = home_score
+    out.home_team_name = team_name(home_id)
+    out.away_team_name = team_name(away_id)
+
+    if not score_ok(home_score) or not score_ok(away_score) then
+        out.error = string.format("Invalid scores: %s:%s", tostring(home_score), tostring(away_score))
+    elseif not home_id or home_id == 0 or not away_id or away_id == 0 then
+        out.error = string.format("Invalid team ids: %s vs %s", tostring(home_id), tostring(away_id))
+    else
+        out.ok = true
+    end
+    return out
 end
 
 local function score_pair_ok(h, a)
@@ -144,6 +209,17 @@ local function bytes_to_hex_lines(bytes, max_bytes)
 end
 
 local function find_team_ids_in_bytes(bytes)
+    if HOME_TEAM_ID < 0 or AWAY_TEAM_ID < 0 then
+        return {
+            home_count = 0,
+            away_count = 0,
+            home_offsets = {},
+            away_offsets = {},
+            home_num = {},
+            away_num = {},
+            skipped = "filter ids not set (use -1 = auto only)",
+        }
+    end
     local home_offsets = {}
     local away_offsets = {}
     local home_num = {}
@@ -283,6 +359,9 @@ local function find_scores_in_bytes(bytes, rel_home_off, rel_away_off)
 end
 
 local function scan_bytes_for_match(bytes, source_label, base_addr)
+    if HOME_TEAM_ID < 0 or AWAY_TEAM_ID < 0 then
+        return {}, {}
+    end
     local hits = {}
     local int32_score_hits = {}
     local limit = #bytes - 3
@@ -516,6 +595,18 @@ local payload = {
 flush_partial(payload, "init")
 checkpoint("partial json written (meta only)")
 
+checkpoint("auto-read match from fixed offsets (v5)")
+local detected = read_detected_match()
+payload.detected_match = detected
+flush_partial(payload, "detected_match")
+if detected.ok then
+    checkpoint(string.format("detected %s %d:%d %s (ids %d vs %d)",
+        detected.home_team_name, detected.home_score, detected.away_score,
+        detected.away_team_name, detected.home_team_id, detected.away_team_id))
+else
+    checkpoint("detected_match failed: " .. tostring(detected.error))
+end
+
 checkpoint("reading MatchJournalInterface (root + pointer hops)")
 local mj = collect_from_plugin("MatchJournalInterface", ENUM_djb2MatchJournalInterface_CLSS, append_hex)
 payload.plugins.match_journal = mj
@@ -555,14 +646,31 @@ write_json(OUT_DIR .. "\\last_memory_scan_v4.json", payload)
 local f = io.open(TXT_PATH, "w")
 if f then
     f:write("=== FC24 Memory Scan " .. SCRIPT_VERSION .. " ===\n")
-    f:write(string.format("Match: %s (%d) vs %s (%d)\n",
-        payload.meta.home_team_name, HOME_TEAM_ID,
-        payload.meta.away_team_name, AWAY_TEAM_ID))
-    f:write(string.format("Expected score: %s:%s\n",
-        EXPECTED_HOME_SCORE >= 0 and tostring(EXPECTED_HOME_SCORE) or "?",
-        EXPECTED_AWAY_SCORE >= 0 and tostring(EXPECTED_AWAY_SCORE) or "?"))
     f:write("IsInCM: " .. tostring(payload.meta.is_in_career_mode) .. "\n")
     f:write("Folder: " .. OUT_DIR .. "\n\n")
+
+    f:write("[Auto-detected match from RAM (no config needed)]\n")
+    if detected.ok then
+        f:write(string.format("  %s (%d) %d : %d %s (%d)\n",
+            detected.home_team_name, detected.home_team_id,
+            detected.home_score, detected.away_score,
+            detected.away_team_name, detected.away_team_id))
+        f:write(string.format("  block @ %s (journal+0x20)\n", tostring(detected.match_block_ptr)))
+    else
+        f:write("  FAILED: " .. tostring(detected.error) .. "\n")
+        f:write("  Tip: run on score screen, or use quick_match_score_v5.lua\n")
+    end
+
+    if HOME_TEAM_ID >= 0 and AWAY_TEAM_ID >= 0 then
+        f:write(string.format("\n[Filter config] %s (%d) vs %s (%d), expected %s:%s\n",
+            payload.meta.home_team_name, HOME_TEAM_ID,
+            payload.meta.away_team_name, AWAY_TEAM_ID,
+            EXPECTED_HOME_SCORE >= 0 and tostring(EXPECTED_HOME_SCORE) or "?",
+            EXPECTED_AWAY_SCORE >= 0 and tostring(EXPECTED_AWAY_SCORE) or "?"))
+    else
+        f:write("\n[Filter config] OFF (HOME/AWAY_TEAM_ID = -1)\n")
+    end
+    f:write("\n")
 
     f:write("[MatchJournal regions]\n")
     for i, region in ipairs(mj.regions or {}) do
@@ -636,8 +744,11 @@ end
 
 checkpoint("summary txt written")
 
-local msg = "Memory scan " .. SCRIPT_VERSION .. " done\n\n" .. OUT_DIR .. "\n\n"
-if #ranked > 0 then
+local msg = "Memory scan " .. SCRIPT_VERSION .. "\n\n"
+if detected.ok then
+    msg = msg .. string.format("Match: %s %d:%d %s\n\n",
+        detected.home_team_name, detected.home_score, detected.away_score, detected.away_team_name)
+elseif #ranked > 0 then
     local c = ranked[1]
     msg = msg .. string.format("Best: %d:%d (%s)\n", c.home_score, c.away_score, c.kind)
     if c.home_score_offset then
@@ -645,9 +756,11 @@ if #ranked > 0 then
     end
 elseif mj.error then
     msg = msg .. "MatchJournal read failed:\n" .. mj.error .. "\n"
+elseif detected.error then
+    msg = msg .. "Auto-detect failed:\n" .. detected.error .. "\n"
 else
-    msg = msg .. string.format("No score found\nRegions: %d\nHex: memory_scan_v4_hex.txt\n",
-        #(mj.regions or {}))
+    msg = msg .. "No score found\n"
 end
+msg = msg .. "\n" .. OUT_DIR
 MessageBox("Memory Scan v4.3", msg)
 LOGGER:LogInfo("memory_scan_v4 done -> " .. OUT_DIR)

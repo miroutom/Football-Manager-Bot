@@ -1,6 +1,7 @@
 -- quick_match_score_v5.lua
--- EA FC 24 — чтение счёта quick match / турнир (НЕ карьера)
--- Фиксированная структура: MatchJournalInterface → ptr+0x20 → offsets из v4.3
+-- EA FC 24 — АВТО чтение матча из RAM (quick match / турнир, НЕ карьера)
+-- Ничего настраивать не нужно: сам находит команды (GetTeamName) и счёт
+-- Фиксированная структура: MatchJournalInterface → ptr+0x20
 -- Запуск: экран результата → Live Editor → Lua Engine → Execute
 -- Вывод: %USERPROFILE%\Desktop\fm_bot_probe\quick_match_score_v5.json
 
@@ -14,7 +15,7 @@ local json = require 'imports/external/json'
 local EXPECT_HOME_TEAM_ID = -1
 local EXPECT_AWAY_TEAM_ID = -1
 
--- Offsets внутри блока MatchJournal+0x20 (проверено Liverpool 9 vs Newcastle 13, 3:1)
+-- Offsets внутри блока MatchJournal+0x20 (проверено на Liverpool 9 vs Newcastle 13)
 local MATCH_CHILD_OFFSET = 0x20
 local OFF_AWAY_TEAM = 0x0C
 local OFF_HOME_TEAM = 0x54
