@@ -72,7 +72,7 @@ def is_calendar_month_complete(month: int, schedule: list[dict] | None = None) -
                 continue
             home, away, league_code = parts[0], parts[1], parts[2]
             cl_ph = (
-                cl_phase_from_mixed_schedule_line(match_str)
+                cl_phase_from_mixed_schedule_line(match_str, day=month)
                 if league_code == "cl"
                 else None
             )

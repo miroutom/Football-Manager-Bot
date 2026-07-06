@@ -51,6 +51,9 @@ def _key(home, away, tournament):
     return (_norm(home), _norm(away), tournament)
 
 
+KNOCKOUT_CALENDAR_MONTH_MIN = 6
+
+
 def _normalize_cl_phase(raw) -> str:
     """Для ЛЧ: ``league`` (группа) или ``knockout`` (плей-офф)."""
     if raw is None:
@@ -59,6 +62,29 @@ def _normalize_cl_phase(raw) -> str:
     if p in ("league", "group", "лига", "группа", "гр", "groups"):
         return "league"
     return "knockout"
+
+
+def cl_phase_from_calendar_day(day: int | None) -> str:
+    """Месяцы 1–5 календаря — группа; с 6-го — нокаут."""
+    if day is not None and int(day) >= KNOCKOUT_CALENDAR_MONTH_MIN:
+        return "knockout"
+    return "league"
+
+
+def resolve_cl_phase(cl_phase=None, *, day=None, match_str=None) -> str:
+    """
+    Единое правило фазы ЛЧ: явный 4-й сегмент в строке расписания или
+    переданный ``cl_phase``; иначе — по месяцу календаря (1–5 группа, 6+ нокаут).
+    """
+    if match_str:
+        parts = [x.strip() for x in str(match_str).split(";")]
+        if len(parts) >= 4 and parts[2] == "cl":
+            return _normalize_cl_phase(parts[3])
+    if cl_phase is not None and str(cl_phase).strip():
+        return _normalize_cl_phase(cl_phase)
+    if day is not None:
+        return cl_phase_from_calendar_day(day)
+    return "league"
 
 
 def record_key(
@@ -111,13 +137,16 @@ def _cl_group_phase_pairs() -> frozenset:
     return _CL_GROUP_PAIRS
 
 
-def cl_phase_from_mixed_schedule_line(match_str: str) -> Optional[str]:
+def cl_phase_from_mixed_schedule_line(
+    match_str: str, *, day: int | None = None
+) -> Optional[str]:
     """
     Какую фазу ЛЧ ожидать для строки ``mixed_schedule``.
 
     - Не ЛЧ → ``None``.
     - 4-й сегмент (``league`` / ``knockout`` и синонимы) — явно.
-    - Иначе: пара есть в групповой сетке ``schedule_cl`` → ``league``, иначе ``knockout``.
+    - Иначе при известном ``day``: месяцы 1–5 → ``league``, 6+ → ``knockout``.
+    - Без ``day``: пара в групповой сетке ``schedule_cl`` → ``league``, иначе ``knockout``.
 
     Если одна и та же пара в группе и в плей-оффе совпадает по направлению, в JSON
     расписания укажите 4-й сегмент (например ``...;cl;knockout``).
@@ -127,6 +156,8 @@ def cl_phase_from_mixed_schedule_line(match_str: str) -> Optional[str]:
         return None
     if len(parts) >= 4:
         return _normalize_cl_phase(parts[3])
+    if day is not None:
+        return cl_phase_from_calendar_day(day)
     h, a = _norm(parts[0]), _norm(parts[1])
     if (h, a) in _cl_group_phase_pairs():
         return "league"
@@ -460,7 +491,7 @@ def add_match_result(
     records, keys = load_records_and_keys()
     h, a = _norm(home), _norm(away)
     if tournament == 'cl':
-        phase = _normalize_cl_phase(cl_phase)
+        phase = resolve_cl_phase(cl_phase, day=day)
         k = record_key(h, a, tournament, phase)
     else:
         phase = None

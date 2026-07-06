@@ -4,6 +4,7 @@
 import json
 import os
 
+from match_results import resolve_cl_phase
 from utils.utils import PROJECT_ROOT
 SKIPPED_FILE = os.path.join(PROJECT_ROOT, 'skipped_matches.json')
 
@@ -34,8 +35,8 @@ def add_skipped_match(home, away, tournament, round_num, cl_phase=None):
             return False
         if tournament != 'cl':
             return True
-        mp = m.get('cl_phase') or 'knockout'
-        ep = cl_phase or 'knockout'
+        mp = resolve_cl_phase(m.get('cl_phase'), day=m.get('round'))
+        ep = resolve_cl_phase(cl_phase, day=round_num)
         return mp == ep
 
     # Проверяем, нет ли уже такого матча
@@ -51,7 +52,7 @@ def add_skipped_match(home, away, tournament, round_num, cl_phase=None):
         'round': round_num,
     }
     if tournament == 'cl':
-        row['cl_phase'] = cl_phase or 'knockout'
+        row['cl_phase'] = resolve_cl_phase(cl_phase, day=round_num)
     matches.append(row)
 
     save_skipped_matches(matches)
@@ -69,8 +70,8 @@ def remove_skipped_match(home, away, round_num=None, tournament=None, cl_phase=N
         if tournament is not None and m.get('tournament') != tournament:
             return False
         if tournament == 'cl':
-            mp = m.get('cl_phase') or 'knockout'
-            ep = cl_phase or 'knockout'
+            mp = resolve_cl_phase(m.get('cl_phase'), day=m.get('round'))
+            ep = resolve_cl_phase(cl_phase, day=round_num)
             if mp != ep:
                 return False
         return True

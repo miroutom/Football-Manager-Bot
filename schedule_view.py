@@ -80,7 +80,11 @@ def _mixed_line_is_remaining(line: str, _match_day: int, skipped: list) -> bool:
     teams = teams_map.get(league_code)
     if not teams:
         return True
-    cl_ph = cl_phase_from_mixed_schedule_line(line) if league_code == "cl" else None
+    cl_ph = (
+        cl_phase_from_mixed_schedule_line(line, day=_match_day)
+        if league_code == "cl"
+        else None
+    )
     ht, at = home.title(), away.title()
     if ht not in teams or at not in teams:
         return True
@@ -102,7 +106,7 @@ def _intrinsic_line_is_remaining(line: str) -> bool:
     return not journal_match_played(ht, at, league_code, cl_phase=cl_ph)
 
 
-def _mixed_line_is_played(line: str, _skipped: list) -> bool:
+def _mixed_line_is_played(line: str, _skipped: list, *, match_day: int | None = None) -> bool:
     """Слот из смешанного расписания уже занесён в журнал как сыгранный."""
     parts = line.split(";")
     if len(parts) < 3:
@@ -128,7 +132,11 @@ def _mixed_line_is_played(line: str, _skipped: list) -> bool:
     teams = teams_map.get(league_code)
     if not teams:
         return False
-    cl_ph = cl_phase_from_mixed_schedule_line(line) if league_code == "cl" else None
+    cl_ph = (
+        cl_phase_from_mixed_schedule_line(line, day=match_day)
+        if league_code == "cl"
+        else None
+    )
     ht, at = home.title(), away.title()
     if ht not in teams or at not in teams:
         return False
@@ -283,7 +291,9 @@ def iter_mixed_filtered(
                 line, day, skipped
             ):
                 continue
-            if mf == MATCH_FILTER_PLAYED and not _mixed_line_is_played(line, skipped):
+            if mf == MATCH_FILTER_PLAYED and not _mixed_line_is_played(
+                line, skipped, match_day=day
+            ):
                 continue
             if sk:
                 lk = _mixed_line_session_kind(line)

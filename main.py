@@ -25,6 +25,7 @@ from match_results import (
     add_match_result,
     cl_knockout_two_leg_totals,
     cl_phase_from_mixed_schedule_line,
+    resolve_cl_phase,
     count_recorded_matches,
     find_cl_knockout_first_leg_record,
     format_played_matches_report,
@@ -145,7 +146,7 @@ def find_next_match_in_schedule(mixed_schedule, session_kind=None):
                 continue
             home, away, league_code = parts[0], parts[1], parts[2]
             cl_ph = (
-                cl_phase_from_mixed_schedule_line(match_str)
+                cl_phase_from_mixed_schedule_line(match_str, day=day_num)
                 if league_code == 'cl'
                 else None
             )
@@ -184,7 +185,7 @@ def count_remaining_in_schedule(mixed_schedule):
                 continue
             home, away, league_code = parts[0], parts[1], parts[2]
             cl_ph = (
-                cl_phase_from_mixed_schedule_line(match_str)
+                cl_phase_from_mixed_schedule_line(match_str, day=day_num)
                 if league_code == 'cl'
                 else None
             )
@@ -240,7 +241,7 @@ def list_remaining_schedule_matches(
             if lf and str(league_code).strip().lower() != lf:
                 continue
             cl_ph = (
-                cl_phase_from_mixed_schedule_line(match_str)
+                cl_phase_from_mixed_schedule_line(match_str, day=day_num)
                 if league_code == "cl"
                 else None
             )
@@ -324,7 +325,7 @@ def list_played_schedule_matches(
             if lf and str(league_code).strip().lower() != lf:
                 continue
             cl_ph = (
-                cl_phase_from_mixed_schedule_line(match_str)
+                cl_phase_from_mixed_schedule_line(match_str, day=day_num)
                 if league_code == "cl"
                 else None
             )
@@ -573,7 +574,7 @@ def process_match(home, away, home_score, away_score, league_code, round_num=Non
 
     cl_ph = None
     if league_code == 'cl':
-        cl_ph = cl_phase if cl_phase is not None else 'knockout'
+        cl_ph = resolve_cl_phase(cl_phase, day=round_num)
     if is_match_in_results(home, away, league_code, cl_phase=cl_ph):
         print(f"Матч {home} - {away} уже был сыгран!")
         return False
@@ -657,7 +658,7 @@ def is_match_played(home, away, league_code, teams, cl_phase=None):
     home = home.title()
     away = away.title()
     if league_code == "cl":
-        cl_ph = cl_phase if cl_phase is not None else "knockout"
+        cl_ph = resolve_cl_phase(cl_phase, day=None)
         return is_match_in_results(home, away, league_code, cl_phase=cl_ph)
     return is_match_in_results(home, away, league_code)
 
@@ -685,7 +686,7 @@ def get_next_available_match(matches, league_code, round_num, teams):
         parts = match_str.split(';')
         home, away = parts[0], parts[1]
         cl_ph = (
-            cl_phase_from_mixed_schedule_line(match_str)
+            cl_phase_from_mixed_schedule_line(match_str, day=round_num)
             if league_code == 'cl'
             else None
         )
@@ -720,7 +721,7 @@ def count_remaining_matches(matches, league_code, round_num, teams):
         parts = match_str.split(';')
         home, away = parts[0], parts[1]
         cl_ph = (
-            cl_phase_from_mixed_schedule_line(match_str)
+            cl_phase_from_mixed_schedule_line(match_str, day=round_num)
             if league_code == 'cl'
             else None
         )
@@ -778,7 +779,7 @@ def play_next_match():
 
     if score_input.lower() == 's':
         skip_ph = (
-            cl_phase_from_mixed_schedule_line(match_str)
+            cl_phase_from_mixed_schedule_line(match_str, day=day_num)
             if league_code == 'cl'
             else None
         )
@@ -792,7 +793,7 @@ def play_next_match():
         return
 
     slot_ph = (
-        cl_phase_from_mixed_schedule_line(match_str)
+        cl_phase_from_mixed_schedule_line(match_str, day=day_num)
         if league_code == 'cl'
         else None
     )

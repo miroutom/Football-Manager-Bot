@@ -578,7 +578,7 @@ def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
     from match_results import cl_phase_from_mixed_schedule_line
 
     cl_ph = (
-        cl_phase_from_mixed_schedule_line(match_str) if league_code == "cl" else None
+        cl_phase_from_mixed_schedule_line(match_str, day=day) if league_code == "cl" else None
     )
     from utils.calendar_slot_labels import home_display_tour
     from utils.player_discipline import find_fixture_round
