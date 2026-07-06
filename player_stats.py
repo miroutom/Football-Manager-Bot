@@ -728,6 +728,86 @@ def apply_match_motm(
     return True
 
 
+def correct_match_motm(
+    wrong_name: str,
+    wrong_team: str,
+    correct_name: str,
+    correct_team: str,
+    *,
+    wrong_position: str = "",
+    correct_position: str = "",
+    tournament: str = "league",
+    sync_derived: bool = True,
+) -> tuple[bool, str]:
+    """
+    Перенести MOTM с ошибочно выбранного игрока на правильного.
+
+    Если у «wrong» motm=0 (ошибка не записана в этой БД), начисляет motm только «correct».
+    Повторный запуск при wrong=0 и correct.motm>=1 — no-op.
+    """
+    from utils.player_names import resolve_player_query_in_team
+    from utils.stats_derived_sync import record_stat_write
+
+    session = get_session(tournament)
+    wrong_name = (wrong_name or "").strip()
+    wrong_team = (wrong_team or "").strip()
+    correct_name = (correct_name or "").strip()
+    correct_team = (correct_team or "").strip()
+
+    def _resolve(name: str, team: str, position: str):
+        if position:
+            return resolve_player_query_in_team(
+                session, team, name, position=position.upper()
+            )
+        return resolve_player_query_in_team(session, team, name, position=None)
+
+    wrong, wrong_err = _resolve(wrong_name, wrong_team, wrong_position)
+    correct, correct_err = _resolve(correct_name, correct_team, correct_position)
+    if wrong_err or not wrong:
+        return False, wrong_err or f"не найден «{wrong_name}» ({wrong_team})"
+    if correct_err or not correct:
+        return False, correct_err or f"не найден «{correct_name}» ({correct_team})"
+
+    wrong_motm = int(getattr(wrong, "motm", 0) or 0)
+    correct_motm = int(getattr(correct, "motm", 0) or 0)
+
+    if wrong_motm <= 0 and correct_motm >= 1:
+        msg = (
+            f"MOTM уже у {correct.name} ({correct_motm}); "
+            f"у {wrong.name} motm={wrong_motm} — правка не нужна."
+        )
+        print(f"  ○ {msg}")
+        return True, msg
+
+    d_wrong = 0
+    d_correct = 0
+    if wrong_motm > 0:
+        wrong.motm = wrong_motm - 1
+        d_wrong = -1
+        correct.motm = correct_motm + 1
+        d_correct = 1
+    else:
+        correct.motm = correct_motm + 1
+        d_correct = 1
+
+    session.commit()
+    if d_wrong:
+        record_stat_write(wrong, tournament, d_motm=d_wrong, flush=False)
+    if d_correct:
+        record_stat_write(correct, tournament, d_motm=d_correct, flush=sync_derived)
+    elif sync_derived:
+        from utils.stats_derived_sync import flush_stat_deltas
+
+        flush_stat_deltas()
+
+    msg = (
+        f"MOTM: {wrong.name} {wrong.motm} → {correct.name} {correct.motm} "
+        f"({tournament})"
+    )
+    print(f"  ✓ {msg}")
+    return True, msg
+
+
 def apply_match_lineup(
     rows: list,
     tournament: str,
