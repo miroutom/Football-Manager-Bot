@@ -1920,5 +1920,25 @@
     "away": "Мю",
     "tournament": "league",
     "day": 3
+  },
+  {
+    "home": "Челси",
+    "away": "Арсенал",
+    "tournament": "league",
+    "day": 3
+  },
+  {
+    "home": "Зенит",
+    "away": "Мю",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 3
+  },
+  {
+    "home": "Сити",
+    "away": "Байер",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 3
   }
 ]
