@@ -3438,6 +3438,30 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 82
+    },
+    {
+      "key": "милинкович-савич|мю|3|3|6",
+      "name": "Милинкович-Савич",
+      "name_norm": "милинкович-савич",
+      "team": "Мю",
+      "team_norm": "мю",
+      "out_from_month": 3,
+      "return_month": 6,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 87
+    },
+    {
+      "key": "гордон|ньюкасл|3|3|6",
+      "name": "Гордон",
+      "name_norm": "гордон",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "out_from_month": 3,
+      "return_month": 6,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 75
     }
   ]
 }
