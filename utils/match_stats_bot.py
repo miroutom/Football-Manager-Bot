@@ -822,13 +822,13 @@ def stats_played_pick_intro(
     )
 
 
-def build_motm_pick_keyboard(
+def build_potm_pick_keyboard(
     players: list[MatchRosterPlayer],
     *,
     page: int = 0,
     side: str = "all",
 ) -> tuple[Any, int, int]:
-    """Клавиатура выбора одного игрока матча (MOTM)."""
+    """Клавиатура выбора игрока матча (POTM)."""
     from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
     visible = filter_roster_by_side(players, side)
@@ -851,7 +851,7 @@ def build_motm_pick_keyboard(
             [
                 InlineKeyboardButton(
                     text=label,
-                    callback_data=f"motm:pick:{p.idx}",
+                    callback_data=f"potm:pick:{p.idx}",
                 )
             ]
         )
@@ -861,14 +861,14 @@ def build_motm_pick_keyboard(
             nav.append(
                 InlineKeyboardButton(
                     text=f"« {page}/{total_pages}",
-                    callback_data=f"motm:pg:{page - 1}",
+                    callback_data=f"potm:pg:{page - 1}",
                 )
             )
         if page < total_pages - 1:
             nav.append(
                 InlineKeyboardButton(
                     text=f"{page + 2}/{total_pages} »",
-                    callback_data=f"motm:pg:{page + 1}",
+                    callback_data=f"potm:pg:{page + 1}",
                 )
             )
         if nav:
@@ -878,22 +878,25 @@ def build_motm_pick_keyboard(
         [
             InlineKeyboardButton(
                 text="Все" + (" ✓" if side_tag == "all" else ""),
-                callback_data="motm:side:all",
+                callback_data="potm:side:all",
             ),
             InlineKeyboardButton(
                 text="Хозяева" + (" ✓" if side_tag in ("home", "h", "хоз") else ""),
-                callback_data="motm:side:home",
+                callback_data="potm:side:home",
             ),
             InlineKeyboardButton(
                 text="Гости" + (" ✓" if side_tag in ("away", "a", "гост") else ""),
-                callback_data="motm:side:away",
+                callback_data="potm:side:away",
             ),
         ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows), page, total_pages
 
 
-def motm_pick_intro(
+build_motm_pick_keyboard = build_potm_pick_keyboard
+
+
+def potm_pick_intro(
     *,
     home: str,
     away: str,
@@ -903,27 +906,33 @@ def motm_pick_intro(
     total_pages: int,
 ) -> str:
     return (
-        f"<b>Игрок матча (MOTM)</b> · {home} ({hs}:{aws}) {away}\n"
+        f"<b>Игрок матча (POTM)</b> · {home} ({hs}:{aws}) {away}\n"
         f"Выбери одного игрока — нап, полузащитник, защитник или вратарь.\n"
         f"Стр. {page + 1}/{total_pages}. Или введи имя текстом."
     )
 
 
-def build_motm_confirm_keyboard() -> Any:
+motm_pick_intro = potm_pick_intro
+
+
+def build_potm_confirm_keyboard() -> Any:
     """Да / Нет после выбора игрока матча."""
     from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="Да", callback_data="motm:confirm:yes"),
-                InlineKeyboardButton(text="Нет", callback_data="motm:confirm:no"),
+                InlineKeyboardButton(text="Да", callback_data="potm:confirm:yes"),
+                InlineKeyboardButton(text="Нет", callback_data="potm:confirm:no"),
             ],
         ]
     )
 
 
-def motm_confirm_text(*, name: str, position: str, team: str) -> str:
+build_motm_confirm_keyboard = build_potm_confirm_keyboard
+
+
+def potm_confirm_text(*, name: str, position: str, team: str) -> str:
     from html import escape as html_escape
 
     pos = f" ({html_escape(position)})" if position else ""
@@ -931,6 +940,9 @@ def motm_confirm_text(*, name: str, position: str, team: str) -> str:
         f"⭐ Игрок матча: <b>{html_escape(name)}</b>{pos} · {html_escape(team)}\n"
         f"Подтверждаете?"
     )
+
+
+motm_confirm_text = potm_confirm_text
 
 
 def roster_from_state(raw: list[dict] | None) -> list[MatchRosterPlayer]:
@@ -996,3 +1008,6 @@ def resolve_motm_from_roster(
         team = matches[0].team if matches else ""
         return None, format_ambiguity_message(team, q, stubs)
     return None, f"Не найден в составе матча «{q}». Выбери кнопкой или уточни имя."
+
+
+resolve_potm_from_roster = resolve_motm_from_roster

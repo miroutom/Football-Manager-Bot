@@ -83,6 +83,7 @@ _STAT_COPY_FIELDS = (
     "golden_boys",
     "yellow_cards",
     "red_cards",
+    "potm",
     "motm",
 )
 
@@ -122,6 +123,7 @@ def merge_row_stats_into(keeper: Any, donor: Any) -> None:
         "golden_boys",
         "yellow_cards",
         "red_cards",
+        "potm",
         "motm",
     ):
         if not hasattr(keeper, fld) or not hasattr(donor, fld):

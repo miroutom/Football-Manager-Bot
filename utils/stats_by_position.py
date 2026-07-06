@@ -77,6 +77,7 @@ def _fold_outfield(buckets: dict[tuple, dict], row: Any) -> None:
             "goals": 0,
             "assists": 0,
             "ga": 0,
+            "potm": 0,
             "motm": 0,
         }
     b = buckets[key]
@@ -84,6 +85,7 @@ def _fold_outfield(buckets: dict[tuple, dict], row: Any) -> None:
     b["goals"] += g
     b["assists"] += a
     b["ga"] += int(getattr(row, "ga", 0) or 0) or (g + a)
+    b["potm"] += int(getattr(row, "potm", 0) or 0)
     b["motm"] += int(getattr(row, "motm", 0) or 0)
 
 
@@ -102,11 +104,13 @@ def _fold_goalkeeper(buckets: dict[tuple, dict], row: Any) -> None:
             "position": pos,
             "matches": 0,
             "clean_sheets": 0,
+            "potm": 0,
             "motm": 0,
         }
     b = buckets[key]
     b["matches"] += m
     b["clean_sheets"] += cs
+    b["potm"] += int(getattr(row, "potm", 0) or 0)
     b["motm"] += int(getattr(row, "motm", 0) or 0)
 
 
@@ -194,14 +198,14 @@ def _format_outfield_table(rows: list[dict], *, title: str) -> str:
         return "\n".join(lines)
     lines.append(
         f"{'#':<4} {'Игрок':<16} {'Команда':<14} {'Поз':<5} "
-        f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5} {'MOTM':>4}"
+        f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5} {'POTM':>4} {'MOTM':>4}"
     )
     lines.append("-" * width)
     for i, r in enumerate(rows, 1):
         lines.append(
             f"{i:<4} {r['name']:<16} {r['team']:<14} {r['position']:<5} "
             f"{int(r['matches']):>4} {int(r['goals']):>4} {int(r['assists']):>4} "
-            f"{int(r['ga']):>5} {int(r.get('motm', 0)):>4}"
+            f"{int(r['ga']):>5} {int(r.get('potm', 0)):>4} {int(r.get('motm', 0)):>4}"
         )
     lines.append(sep)
     lines.append("")
@@ -218,14 +222,14 @@ def _format_goalkeeper_table(rows: list[dict], *, title: str) -> str:
         lines.append("")
         return "\n".join(lines)
     lines.append(
-        f"{'#':<4} {'Игрок':<18} {'Команда':<16} {'И':>4} {'Сух.':>5} {'MOTM':>4}"
+        f"{'#':<4} {'Игрок':<18} {'Команда':<16} {'И':>4} {'Сух.':>5} {'POTM':>4} {'MOTM':>4}"
     )
     lines.append("-" * width)
     for i, r in enumerate(rows, 1):
         lines.append(
             f"{i:<4} {r['name']:<18} {r['team']:<16} "
             f"{int(r['matches']):>4} {int(r['clean_sheets']):>5} "
-            f"{int(r.get('motm', 0)):>4}"
+            f"{int(r.get('potm', 0)):>4} {int(r.get('motm', 0)):>4}"
         )
     lines.append(sep)
     lines.append("")

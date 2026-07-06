@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Колонка ``motm`` (Man Of The Month) во всех таблицах игроков."""
+"""
+Колонка ``potm`` (Player Of The Match) во всех таблицах игроков.
+
+При первом добавлении ``potm`` переносит накопленные значения из ``motm`` в ``potm``
+и обнуляет ``motm`` — далее ``motm`` = Man Of The Month (награда за месяц).
+"""
 from __future__ import annotations
 
 import logging
@@ -13,34 +18,22 @@ if str(_ROOT) not in sys.path:
 logger = logging.getLogger(__name__)
 
 _TABLES = ("forwards", "midfielders", "defenders", "goalkeepers")
-_COL = ("motm", "INTEGER DEFAULT 0")
+_COL = ("potm", "INTEGER DEFAULT 0")
 
 
-def _legacy_add_via_sql() -> list[str]:
+def _split_motm_into_potm(conn, table: str) -> None:
     from sqlalchemy import text
-    from sqlalchemy.exc import OperationalError
 
-    from utils.utils import engine_cl, engine_common, engine_league
-
-    out: list[str] = []
-    col, typ = _COL
-    for engine, label in (
-        (engine_league, "league"),
-        (engine_cl, "cl"),
-        (engine_common, "common"),
-    ):
-        with engine.begin() as conn:
-            for table in _TABLES:
-                try:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
-                    out.append(f"{label}:{table}.{col}")
-                except OperationalError as e:
-                    if "duplicate column name" not in str(e).lower():
-                        raise
-    return out
+    conn.execute(
+        text(
+            f"UPDATE {table} SET potm = COALESCE(motm, 0) "
+            f"WHERE COALESCE(potm, 0) = 0 AND COALESCE(motm, 0) > 0"
+        )
+    )
+    conn.execute(text(f"UPDATE {table} SET motm = 0 WHERE COALESCE(motm, 0) > 0"))
 
 
-def migrate_motm_for_sqlite(db_path: str, *, label: str | None = None) -> list[str]:
+def migrate_potm_for_sqlite(db_path: str, *, label: str | None = None) -> list[str]:
     from sqlalchemy import create_engine, text
     from sqlalchemy.exc import OperationalError
 
@@ -51,19 +44,23 @@ def migrate_motm_for_sqlite(db_path: str, *, label: str | None = None) -> list[s
     try:
         with eng.begin() as conn:
             for table in _TABLES:
+                added = False
                 try:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
                     out.append(f"{tag}:{table}.{col}")
+                    added = True
                 except OperationalError as e:
                     if "duplicate column name" not in str(e).lower():
                         raise
+                if added:
+                    _split_motm_into_potm(conn, table)
     finally:
         eng.dispose()
     return out
 
 
-def migrate_all_player_motm_columns() -> list[str]:
-    """Идемпотентно добавить ``motm`` во все SQLite с игроками (сезон, synced, архивы)."""
+def migrate_all_player_potm_columns() -> list[str]:
+    """Идемпотентно добавить ``potm`` и перенести старые match-MOTM в неё."""
     from utils import season_paths
 
     out: list[str] = []
@@ -71,7 +68,7 @@ def migrate_all_player_motm_columns() -> list[str]:
     for label, path in season_paths.iter_player_roster_db_paths(
         include_synced=True, include_archives=True
     ):
-        for item in migrate_motm_for_sqlite(path, label=label):
+        for item in migrate_potm_for_sqlite(path, label=label):
             if item not in seen:
                 seen.add(item)
                 out.append(item)
@@ -79,5 +76,5 @@ def migrate_all_player_motm_columns() -> list[str]:
 
 
 if __name__ == "__main__":
-    r = migrate_all_player_motm_columns()
+    r = migrate_all_player_potm_columns()
     print("OK" if not r else "Added: " + ", ".join(r))

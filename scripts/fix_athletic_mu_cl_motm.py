@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Атлетик — Мю (ЛЧ): MOTM ошибочно записан на Марсиаля → перенести на Мартинелли.
+Атлетик — Мю (ЛЧ): POTM ошибочно записан на Марсиаля → перенести на Мартинелли.
 
   python3 scripts/fix_athletic_mu_cl_motm.py
   python3 scripts/fix_athletic_mu_cl_motm.py --dry-run
@@ -23,7 +23,7 @@ POSITION = "ФРВ"
 TOURNAMENT = "cl"
 
 
-def _read_motm() -> tuple[int, int]:
+def _read_potm() -> tuple[int, int]:
     from data.forward import Forward
     from player_stats import get_session
 
@@ -31,26 +31,26 @@ def _read_motm() -> tuple[int, int]:
     w = s.query(Forward).filter_by(name=WRONG_NAME, team=WRONG_TEAM).first()
     c = s.query(Forward).filter_by(name=CORRECT_NAME, team=CORRECT_TEAM).first()
     return (
-        int(getattr(w, "motm", 0) or 0) if w else -1,
-        int(getattr(c, "motm", 0) or 0) if c else -1,
+        int(getattr(w, "potm", 0) or 0) if w else -1,
+        int(getattr(c, "potm", 0) or 0) if c else -1,
     )
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dry-run", action="store_true", help="только показать текущие motm")
+    ap.add_argument("--dry-run", action="store_true", help="только показать текущие potm")
     args = ap.parse_args()
 
-    wm, cm = _read_motm()
+    wm, cm = _read_potm()
     print(f"Матч: {HOME} — {AWAY} (ЛЧ)")
-    print(f"До:  {WRONG_NAME} motm={wm}, {CORRECT_NAME} motm={cm}")
+    print(f"До:  {WRONG_NAME} potm={wm}, {CORRECT_NAME} potm={cm}")
 
     if args.dry_run:
         return 0
 
-    from player_stats import correct_match_motm
+    from player_stats import correct_match_potm
 
-    ok, msg = correct_match_motm(
+    ok, msg = correct_match_potm(
         WRONG_NAME,
         WRONG_TEAM,
         CORRECT_NAME,
@@ -64,8 +64,8 @@ def main() -> int:
         print(f"Ошибка: {msg}")
         return 1
 
-    wm2, cm2 = _read_motm()
-    print(f"После: {WRONG_NAME} motm={wm2}, {CORRECT_NAME} motm={cm2}")
+    wm2, cm2 = _read_potm()
+    print(f"После: {WRONG_NAME} potm={wm2}, {CORRECT_NAME} potm={cm2}")
     print(msg)
     return 0
 

@@ -366,7 +366,7 @@ def build_ason_league_kb() -> InlineKeyboardMarkup:
 
 
 async def _prompt_motm_pick(message: Message, state: FSMContext) -> None:
-    """После ввода статы — обязательный выбор игрока матча (MOTM)."""
+    """После ввода статы — обязательный выбор игрока матча (POTM)."""
     from utils.match_stats_bot import (
         build_motm_pick_keyboard,
         load_match_roster,
@@ -386,11 +386,11 @@ async def _prompt_motm_pick(message: Message, state: FSMContext) -> None:
         return
     roster = await asyncio.to_thread(load_match_roster, str(home), str(away), str(tourn))
     await state.update_data(
-        stats_motm_roster=roster_to_state(roster),
-        stats_motm_page=0,
-        stats_motm_side="all",
+        stats_potm_roster=roster_to_state(roster),
+        stats_potm_page=0,
+        stats_potm_side="all",
     )
-    await state.set_state(PostMatch.stats_pick_motm)
+    await state.set_state(PostMatch.stats_pick_potm)
     kb, page, total = build_motm_pick_keyboard(roster, page=0, side="all")
     text = motm_pick_intro(
         home=str(home),
@@ -414,13 +414,13 @@ async def _prompt_motm_confirm(
     from utils.match_stats_bot import build_motm_confirm_keyboard, motm_confirm_text
 
     await state.update_data(
-        stats_pending_motm={
+        stats_pending_potm={
             "name": name,
             "position": position,
             "team": team,
         },
     )
-    await state.set_state(PostMatch.stats_confirm_motm)
+    await state.set_state(PostMatch.stats_confirm_potm)
     await message.answer(
         motm_confirm_text(name=name, position=position, team=team),
         reply_markup=build_motm_confirm_keyboard(),
@@ -436,12 +436,12 @@ async def _apply_motm_and_finalize(
     position: str,
     team: str,
 ) -> None:
-    from player_stats import apply_match_motm
+    from player_stats import apply_match_potm
 
     data = await state.get_data()
     tourn = data.get("stats_tournament", "league")
     ok = await asyncio.to_thread(
-        apply_match_motm,
+        apply_match_potm,
         name,
         position,
         team,
@@ -449,12 +449,12 @@ async def _apply_motm_and_finalize(
         sync_derived=False,
     )
     if not ok:
-        await state.set_state(PostMatch.stats_pick_motm)
+        await state.set_state(PostMatch.stats_pick_potm)
         await message.answer(
-            "Не удалось записать MOTM. Выбери игрока кнопкой или введи имя из состава матча."
+            "Не удалось записать POTM. Выбери игрока кнопкой или введи имя из состава матча."
         )
         return
-    await state.update_data(stats_pending_motm=None)
+    await state.update_data(stats_pending_potm=None)
     await message.answer(
         f"⭐ Игрок матча: <b>{html_escape(name)}</b> ({html_escape(team)})",
         parse_mode="HTML",
@@ -555,7 +555,7 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
 
     if finalize_err:
         await message.answer(
-            f"⚠ {finalize_err.capitalize()}. MOTM и строки статы в БД должны быть на месте."
+            f"⚠ {finalize_err.capitalize()}. POTM и строки статы в БД должны быть на месте."
         )
     await message.answer(f"Готово. Статистика сохранена в базу.{extra}")
     try:
@@ -1278,7 +1278,7 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
         "Режим: <code>1</code> только БД · <code>2</code> новый игрок. "
         "Дисциплина: <code>фамилия жк</code>, <code>… 8м</code> и т.д.\n"
         "Закончить — кнопка ниже или <code>/done</code>. "
-        "Затем выберешь <b>игрока матча (MOTM)</b> и подтвердишь выбор. /cancel — отмена.",
+        "Затем выберешь <b>игрока матча (POTM)</b> и подтвердишь выбор. /cancel — отмена.",
         reply_markup=_stats_lines_done_kb(),
         parse_mode="HTML",
     )
@@ -1414,6 +1414,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "AddOnlyStats",
             "ClPenalties",
             "AwardEnter",
+            "MonthMotmEnter",
             "RatingEnter",
             "SquadStatusEnter",
             "PlayerFieldEnter",
@@ -1431,6 +1432,8 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         await message.answer("Ввод для статистики без матча отменён.")
     elif str(cur).startswith("ClPenalties"):
         await message.answer("Ввод пенальти отменён.")
+    elif str(cur).startswith("MonthMotmEnter"):
+        await message.answer("Выбор игрока месяца отменён.")
     elif str(cur).startswith("AwardEnter"):
         await message.answer("Ввод награды отменён.")
     elif str(cur).startswith("RatingEnter"):
@@ -2491,7 +2494,7 @@ async def cmd_stats_done_cmd(message: Message, state: FSMContext) -> None:
     await _prompt_motm_pick(message, state)
 
 
-@match_router.callback_query(StateFilter(PostMatch.stats_pick_motm), F.data.startswith("motm:pick:"))
+@match_router.callback_query(StateFilter(PostMatch.stats_pick_potm), F.data.startswith("potm:pick:"))
 async def cb_motm_pick(callback: CallbackQuery, state: FSMContext) -> None:
     from utils.match_stats_bot import roster_from_state
 
@@ -2504,7 +2507,7 @@ async def cb_motm_pick(callback: CallbackQuery, state: FSMContext) -> None:
         await callback.message.answer("Некорректный выбор.")
         return
     data = await state.get_data()
-    roster = roster_from_state(data.get("stats_motm_roster"))
+    roster = roster_from_state(data.get("stats_potm_roster"))
     picked = next((p for p in roster if p.idx == idx), None)
     if not picked:
         await callback.message.answer("Игрок не найден в составе матча.")
@@ -2518,18 +2521,18 @@ async def cb_motm_pick(callback: CallbackQuery, state: FSMContext) -> None:
     )
 
 
-@match_router.callback_query(StateFilter(PostMatch.stats_confirm_motm), F.data == "motm:confirm:yes")
+@match_router.callback_query(StateFilter(PostMatch.stats_confirm_potm), F.data == "potm:confirm:yes")
 async def cb_motm_confirm_yes(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     if not callback.message:
         return
     data = await state.get_data()
-    pending = data.get("stats_pending_motm") or {}
+    pending = data.get("stats_pending_potm") or {}
     name = str(pending.get("name") or "").strip()
     team = str(pending.get("team") or "").strip()
     position = str(pending.get("position") or "").strip()
     if not name or not team:
-        await state.set_state(PostMatch.stats_pick_motm)
+        await state.set_state(PostMatch.stats_pick_potm)
         await callback.message.answer("Выбор потерялся — выбери игрока матча снова.")
         await _prompt_motm_pick(callback.message, state)
         return
@@ -2542,17 +2545,17 @@ async def cb_motm_confirm_yes(callback: CallbackQuery, state: FSMContext) -> Non
     )
 
 
-@match_router.callback_query(StateFilter(PostMatch.stats_confirm_motm), F.data == "motm:confirm:no")
+@match_router.callback_query(StateFilter(PostMatch.stats_confirm_potm), F.data == "potm:confirm:no")
 async def cb_motm_confirm_no(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     if not callback.message:
         return
-    await state.update_data(stats_pending_motm=None)
+    await state.update_data(stats_pending_potm=None)
     await callback.message.answer("Ок, выбери другого игрока матча.")
     await _prompt_motm_pick(callback.message, state)
 
 
-@match_router.message(StateFilter(PostMatch.stats_confirm_motm), _TEXT_NOT_CMD)
+@match_router.message(StateFilter(PostMatch.stats_confirm_potm), _TEXT_NOT_CMD)
 async def on_motm_confirm_text(message: Message, state: FSMContext) -> None:
     await message.answer(
         "Нажми <b>Да</b> или <b>Нет</b> под сообщением с игроком матча.",
@@ -2560,7 +2563,7 @@ async def on_motm_confirm_text(message: Message, state: FSMContext) -> None:
     )
 
 
-@match_router.callback_query(StateFilter(PostMatch.stats_pick_motm), F.data.startswith("motm:pg:"))
+@match_router.callback_query(StateFilter(PostMatch.stats_pick_potm), F.data.startswith("potm:pg:"))
 async def cb_motm_page(callback: CallbackQuery, state: FSMContext) -> None:
     from utils.match_stats_bot import (
         build_motm_pick_keyboard,
@@ -2576,14 +2579,14 @@ async def cb_motm_page(callback: CallbackQuery, state: FSMContext) -> None:
     except ValueError:
         return
     data = await state.get_data()
-    roster = roster_from_state(data.get("stats_motm_roster"))
-    side = str(data.get("stats_motm_side") or "all")
+    roster = roster_from_state(data.get("stats_potm_roster"))
+    side = str(data.get("stats_potm_side") or "all")
     home = data.get("stats_home")
     away = data.get("stats_away")
     hs = data.get("stats_hs")
     aws = data.get("stats_aws")
     kb, page, total = build_motm_pick_keyboard(roster, page=page, side=side)
-    await state.update_data(stats_motm_page=page)
+    await state.update_data(stats_potm_page=page)
     text = motm_pick_intro(
         home=str(home),
         away=str(away),
@@ -2595,7 +2598,7 @@ async def cb_motm_page(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
 
 
-@match_router.callback_query(StateFilter(PostMatch.stats_pick_motm), F.data.startswith("motm:side:"))
+@match_router.callback_query(StateFilter(PostMatch.stats_pick_potm), F.data.startswith("potm:side:"))
 async def cb_motm_side(callback: CallbackQuery, state: FSMContext) -> None:
     from utils.match_stats_bot import (
         build_motm_pick_keyboard,
@@ -2608,13 +2611,13 @@ async def cb_motm_side(callback: CallbackQuery, state: FSMContext) -> None:
         return
     side = (callback.data or "").split(":")[-1]
     data = await state.get_data()
-    roster = roster_from_state(data.get("stats_motm_roster"))
+    roster = roster_from_state(data.get("stats_potm_roster"))
     home = data.get("stats_home")
     away = data.get("stats_away")
     hs = data.get("stats_hs")
     aws = data.get("stats_aws")
     kb, page, total = build_motm_pick_keyboard(roster, page=0, side=side)
-    await state.update_data(stats_motm_side=side, stats_motm_page=0)
+    await state.update_data(stats_potm_side=side, stats_potm_page=0)
     text = motm_pick_intro(
         home=str(home),
         away=str(away),
@@ -2626,7 +2629,7 @@ async def cb_motm_side(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
 
 
-@match_router.message(StateFilter(PostMatch.stats_pick_motm), _TEXT_NOT_CMD)
+@match_router.message(StateFilter(PostMatch.stats_pick_potm), _TEXT_NOT_CMD)
 async def on_motm_name_text(message: Message, state: FSMContext) -> None:
     from utils.match_stats_bot import resolve_motm_from_roster, roster_from_state
     from utils.player_names import resolve_player_query_in_team
@@ -2640,8 +2643,8 @@ async def on_motm_name_text(message: Message, state: FSMContext) -> None:
     home = data.get("stats_home")
     away = data.get("stats_away")
     tourn = data.get("stats_tournament", "league")
-    roster = roster_from_state(data.get("stats_motm_roster"))
-    side = str(data.get("stats_motm_side") or "all")
+    roster = roster_from_state(data.get("stats_potm_roster"))
+    side = str(data.get("stats_potm_side") or "all")
 
     picked_roster, roster_err = resolve_motm_from_roster(roster, raw, side=side)
     if picked_roster:

@@ -130,6 +130,12 @@ def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarku
             InlineKeyboardButton(text="🔄 Трансферы", callback_data="xfd:home"),
             InlineKeyboardButton(text="🏅 Награды", callback_data="menu:awards"),
             InlineKeyboardButton(
+                text="📆 Игрок месяца",
+                callback_data="menu:month_motm",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
                 text="✏️ Изменить игроков",
                 callback_data="menu:edit_players",
             ),

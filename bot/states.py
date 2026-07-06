@@ -25,8 +25,13 @@ class PostMatch(StatesGroup):
     stats_played_list = State()
     stats_confirm_unlisted = State()
     stats_wait_lines = State()
-    stats_pick_motm = State()
-    stats_confirm_motm = State()
+    stats_pick_potm = State()
+    stats_confirm_potm = State()
+
+
+class MonthMotmEnter(StatesGroup):
+    """Man Of The Month: месяц → лига → клуб → имя."""
+    wait_name = State()
 
 
 class AddOnlyStats(StatesGroup):

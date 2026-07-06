@@ -58,6 +58,7 @@ def _has_meaningful_stats(row: Any) -> bool:
         "golden_gloves",
         "yellow_cards",
         "red_cards",
+        "potm",
         "motm",
     ):
         if int(getattr(row, k, 0) or 0) > 0:

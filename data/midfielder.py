@@ -70,4 +70,5 @@ class Midfielder(Base):
     left_team = Column(Boolean, default=False, nullable=False)
     yellow_cards = Column(Integer, default=0)
     red_cards = Column(Integer, default=0)
-    motm = Column(Integer, default=0)
+    potm = Column(Integer, default=0)  # Player Of The Match (за матч)
+    motm = Column(Integer, default=0)  # Man Of The Month (награда за месяц)

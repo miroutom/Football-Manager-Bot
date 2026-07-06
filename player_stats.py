@@ -415,7 +415,7 @@ def find_or_create_player(session, name: str, position: str, team: str):
                 matches=0, clean_sheets=0, missed_goals=0,
                 trophies=0, golden_balls=0, golden_boots=0, golden_gloves=0,
                 golden_boys=0, nation=None, status=None, yellow_cards=0, red_cards=0,
-                motm=0,
+                potm=0, motm=0,
             )
         elif pos_type == 'defender':
             player = PlayerClass(
@@ -423,7 +423,7 @@ def find_or_create_player(session, name: str, position: str, team: str):
                 matches=0, goals=0, assists=0, ga=0,
                 trophies=0, golden_balls=0, golden_boots=0,
                 golden_boys=0, nation=None, status=None, yellow_cards=0, red_cards=0,
-                motm=0,
+                potm=0, motm=0,
             )
         else:
             player = PlayerClass(
@@ -431,7 +431,7 @@ def find_or_create_player(session, name: str, position: str, team: str):
                 matches=0, goals=0, assists=0, ga=0,
                 trophies=0, golden_balls=0, golden_boots=0, golden_boys=0,
                 nation=None, status=None, yellow_cards=0, red_cards=0,
-                motm=0,
+                potm=0, motm=0,
             )
 
         session.add(player)
@@ -695,7 +695,7 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
     return True
 
 
-def apply_match_motm(
+def apply_match_potm(
     name: str,
     position: str,
     team: str,
@@ -703,7 +703,7 @@ def apply_match_motm(
     tournament: str = "league",
     sync_derived: bool = True,
 ) -> bool:
-    """Засчитать одного игрока матча (MOTM) за текущий матч."""
+    """Засчитать игрока матча (POTM — Player Of The Match)."""
     session = get_session(tournament)
     name = (name or "").strip()
     team = (team or "").strip()
@@ -717,18 +717,32 @@ def apply_match_motm(
     else:
         player, err = resolve_player_query_in_team(session, team, name, position=None)
     if err or not player:
-        print(f"  ✗ MOTM: {err or f'не найден «{name}» ({team})'}")
+        print(f"  ✗ POTM: {err or f'не найден «{name}» ({team})'}")
         return False
-    player.motm = int(getattr(player, "motm", 0) or 0) + 1
+    player.potm = int(getattr(player, "potm", 0) or 0) + 1
     session.commit()
     from utils.stats_derived_sync import record_stat_write
 
-    record_stat_write(player, tournament, d_motm=1, flush=sync_derived)
-    print(f"  ✓ MOTM: {player.name} ({player.team})")
+    record_stat_write(player, tournament, d_potm=1, flush=sync_derived)
+    print(f"  ✓ POTM: {player.name} ({player.team})")
     return True
 
 
-def correct_match_motm(
+def apply_match_motm(
+    name: str,
+    position: str,
+    team: str,
+    *,
+    tournament: str = "league",
+    sync_derived: bool = True,
+) -> bool:
+    """Алиас для обратной совместимости — см. ``apply_match_potm``."""
+    return apply_match_potm(
+        name, position, team, tournament=tournament, sync_derived=sync_derived
+    )
+
+
+def correct_match_potm(
     wrong_name: str,
     wrong_team: str,
     correct_name: str,
@@ -740,10 +754,10 @@ def correct_match_motm(
     sync_derived: bool = True,
 ) -> tuple[bool, str]:
     """
-    Перенести MOTM с ошибочно выбранного игрока на правильного.
+    Перенести POTM с ошибочно выбранного игрока на правильного.
 
-    Если у «wrong» motm=0 (ошибка не записана в этой БД), начисляет motm только «correct».
-    Повторный запуск при wrong=0 и correct.motm>=1 — no-op.
+    Если у «wrong» potm=0 (ошибка не записана в этой БД), начисляет potm только «correct».
+    Повторный запуск при wrong=0 и correct.potm>=1 — no-op.
     """
     from utils.player_names import resolve_player_query_in_team
     from utils.stats_derived_sync import record_stat_write
@@ -768,44 +782,89 @@ def correct_match_motm(
     if correct_err or not correct:
         return False, correct_err or f"не найден «{correct_name}» ({correct_team})"
 
-    wrong_motm = int(getattr(wrong, "motm", 0) or 0)
-    correct_motm = int(getattr(correct, "motm", 0) or 0)
+    wrong_potm = int(getattr(wrong, "potm", 0) or 0)
+    correct_potm = int(getattr(correct, "potm", 0) or 0)
 
-    if wrong_motm <= 0 and correct_motm >= 1:
+    if wrong_potm <= 0 and correct_potm >= 1:
         msg = (
-            f"MOTM уже у {correct.name} ({correct_motm}); "
-            f"у {wrong.name} motm={wrong_motm} — правка не нужна."
+            f"POTM уже у {correct.name} ({correct_potm}); "
+            f"у {wrong.name} potm={wrong_potm} — правка не нужна."
         )
         print(f"  ○ {msg}")
         return True, msg
 
     d_wrong = 0
     d_correct = 0
-    if wrong_motm > 0:
-        wrong.motm = wrong_motm - 1
+    if wrong_potm > 0:
+        wrong.potm = wrong_potm - 1
         d_wrong = -1
-        correct.motm = correct_motm + 1
+        correct.potm = correct_potm + 1
         d_correct = 1
     else:
-        correct.motm = correct_motm + 1
+        correct.potm = correct_potm + 1
         d_correct = 1
 
     session.commit()
     if d_wrong:
-        record_stat_write(wrong, tournament, d_motm=d_wrong, flush=False)
+        record_stat_write(wrong, tournament, d_potm=d_wrong, flush=False)
     if d_correct:
-        record_stat_write(correct, tournament, d_motm=d_correct, flush=sync_derived)
+        record_stat_write(correct, tournament, d_potm=d_correct, flush=sync_derived)
     elif sync_derived:
         from utils.stats_derived_sync import flush_stat_deltas
 
         flush_stat_deltas()
 
     msg = (
-        f"MOTM: {wrong.name} {wrong.motm} → {correct.name} {correct.motm} "
+        f"POTM: {wrong.name} {wrong.potm} → {correct.name} {correct.potm} "
         f"({tournament})"
     )
     print(f"  ✓ {msg}")
     return True, msg
+
+
+def correct_match_motm(
+    wrong_name: str,
+    wrong_team: str,
+    correct_name: str,
+    correct_team: str,
+    **kwargs,
+) -> tuple[bool, str]:
+    """Алиас — см. ``correct_match_potm``."""
+    return correct_match_potm(
+        wrong_name, wrong_team, correct_name, correct_team, **kwargs
+    )
+
+
+def apply_month_motm(
+    name: str,
+    position: str,
+    team: str,
+    *,
+    tournament: str = "league",
+    sync_derived: bool = True,
+) -> bool:
+    """Награда MOTM — Man Of The Month (+1 к полю motm)."""
+    session = get_session(tournament)
+    name = (name or "").strip()
+    team = (team or "").strip()
+    from utils.player_names import resolve_player_query_in_team
+
+    if position:
+        player, err = resolve_player_query_in_team(
+            session, team, name, position=position.upper()
+        )
+    else:
+        player, err = resolve_player_query_in_team(session, team, name, position=None)
+    if err or not player:
+        print(f"  ✗ MOTM месяца: {err or f'не найден «{name}» ({team})'}")
+        return False
+    player.motm = int(getattr(player, "motm", 0) or 0) + 1
+    session.commit()
+    from utils.stats_derived_sync import record_stat_write
+
+    record_stat_write(player, tournament, d_motm=1, flush=sync_derived)
+    print(f"  ✓ MOTM месяца: {player.name} ({player.team})")
+    return True
 
 
 def apply_match_lineup(
@@ -2007,6 +2066,7 @@ def show_all_leagues_combined_full_list(limit: int = 100) -> None:
                     "goals": g,
                     "assists": a,
                     "ga": ga,
+                    "potm": int(getattr(p, "potm", 0) or 0),
                     "motm": int(getattr(p, "motm", 0) or 0),
                 }
             )
@@ -2031,7 +2091,7 @@ def show_all_leagues_combined_full_list(limit: int = 100) -> None:
     print()
     hdr = (
         f"{'#':<4} {'Игрок':<20} {'Команда':<18} {'Поз':<5} "
-        f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5} {'MOTM':>4}"
+        f"{'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5} {'POTM':>4} {'MOTM':>4}"
     )
     print(hdr)
     print("-" * 80)
@@ -2039,7 +2099,7 @@ def show_all_leagues_combined_full_list(limit: int = 100) -> None:
         print(
             f"{i:<4} {p['name']:<20} {p['team']:<18} {p['position']:<5} "
             f"{p['matches']:>4} {p['goals']:>4} {p['assists']:>4} "
-            f"{p['ga']:>5} {int(p.get('motm', 0)):>4}"
+            f"{p['ga']:>5} {int(p.get('potm', 0)):>4} {int(p.get('motm', 0)):>4}"
         )
     print("-" * 80)
 
@@ -2101,6 +2161,7 @@ def show_team_goalscorers_table(
                     "g": g,
                     "a": a,
                     "ga": ga,
+                    "potm": int(getattr(p, "potm", 0) or 0),
                     "motm": int(getattr(p, "motm", 0) or 0),
                 }
             )
@@ -2121,12 +2182,12 @@ def show_team_goalscorers_table(
     if not rows:
         print("  Нет игроков с голами или передачами в этой базе.")
     else:
-        print(f"{'#':<4} {'Игрок':<18} {'Поз':<6} {'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5} {'MOTM':>4}")
+        print(f"{'#':<4} {'Игрок':<18} {'Поз':<6} {'И':>4} {'Г':>4} {'А':>4} {'Г+А':>5} {'POTM':>4} {'MOTM':>4}")
         print("-" * width)
         for i, r in enumerate(rows, 1):
             print(
                 f"{i:<4} {r['name']:<18} {r['pos']:<6} {r['matches']:>4} "
-                f"{r['g']:>4} {r['a']:>4} {r['ga']:>5} {int(r.get('motm', 0)):>4}"
+                f"{r['g']:>4} {r['a']:>4} {r['ga']:>5} {int(r.get('potm', 0)):>4} {int(r.get('motm', 0)):>4}"
             )
 
     sum_goals = sum(r["g"] for r in rows)

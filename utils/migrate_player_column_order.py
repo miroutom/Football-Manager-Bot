@@ -40,6 +40,7 @@ _OUTFIELD_TAIL = (
     "left_team",
     "yellow_cards",
     "red_cards",
+    "potm",
     "motm",
 )
 
@@ -81,7 +82,8 @@ _TABLE_TAIL: dict[str, tuple[str, ...]] = {
         "left_team",
         "yellow_cards",
         "red_cards",
-        "motm",
+        "potm",
+    "motm",
     ),
 }
 
