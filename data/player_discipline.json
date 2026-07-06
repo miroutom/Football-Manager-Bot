@@ -124,7 +124,7 @@
       "team_norm": "челси",
       "league_code": "eng",
       "scope": "league",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 6
     },
     {
@@ -1298,6 +1298,16 @@
       "team_norm": "реал сосьедад",
       "league_code": "cl",
       "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "фофана|челси|eng|league",
+      "name": "Фофана",
+      "name_norm": "фофана",
+      "team": "Челси",
+      "team_norm": "челси",
+      "league_code": "eng",
+      "scope": "league",
       "count": 1
     }
   ],
@@ -3462,6 +3472,66 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 75
+    },
+    {
+      "key": "мерино|арсенал|3|3|10",
+      "name": "Мерино",
+      "name_norm": "мерино",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "out_from_month": 3,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 87
+    },
+    {
+      "key": "акунья|арсенал|3|3|6",
+      "name": "Акунья",
+      "name_norm": "акунья",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "out_from_month": 3,
+      "return_month": 6,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 83
+    },
+    {
+      "key": "виртц|зенит|3|3|10",
+      "name": "Виртц",
+      "name_norm": "виртц",
+      "team": "Зенит",
+      "team_norm": "зенит",
+      "out_from_month": 3,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 80
+    },
+    {
+      "key": "рэшфорд|сити|3|3|6",
+      "name": "Рэшфорд",
+      "name_norm": "рэшфорд",
+      "team": "Сити",
+      "team_norm": "сити",
+      "out_from_month": 3,
+      "return_month": 6,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 86
+    },
+    {
+      "key": "тонали|сити|3|3|6",
+      "name": "Тонали",
+      "name_norm": "тонали",
+      "team": "Сити",
+      "team_norm": "сити",
+      "out_from_month": 3,
+      "return_month": 6,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 89
     }
   ]
 }

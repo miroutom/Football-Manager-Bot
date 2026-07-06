@@ -1321,6 +1321,35 @@
       "away_score": 6,
       "day": 3,
       "entry_type": "play"
+    },
+    {
+      "home": "Челси",
+      "away": "Арсенал",
+      "league": "eng",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 3,
+      "entry_type": "play"
+    },
+    {
+      "home": "Зенит",
+      "away": "Мю",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 3,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Байер",
+      "league": "cl",
+      "home_score": 8,
+      "away_score": 0,
+      "day": 3,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }

@@ -1,1 +1,36 @@
-{}
+{
+  "season_3": {
+    "1": {
+      "rpl": {
+        "player": "Заха",
+        "team": "Зенит",
+        "position": "ЛФА"
+      },
+      "eng": {
+        "player": "Месси",
+        "team": "Сити",
+        "position": "ПФА"
+      },
+      "ger": {
+        "player": "Кейн",
+        "team": "Бавария",
+        "position": "ФРВ"
+      },
+      "esp": {
+        "player": "Осимен",
+        "team": "Реал",
+        "position": "ФРВ"
+      },
+      "ita": {
+        "player": "Квара",
+        "team": "Наполи",
+        "position": "ЛФА"
+      },
+      "cl": {
+        "player": "Бензема",
+        "team": "Милан",
+        "position": "ФРВ"
+      }
+    }
+  }
+}
