@@ -1261,5 +1261,658 @@
     "away": "Тоттенхэм",
     "tournament": "league",
     "day": 1
+  },
+  {
+    "home": "Ювентус",
+    "away": "Спартак",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Зенит",
+    "away": "Жирона",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Вольфсбург",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Барселона",
+    "away": "Реал",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Байер",
+    "away": "Хоффенхайм",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Ньюкасл",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Зенит",
+    "away": "Цска",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Наполи",
+    "away": "Аталанта",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Мю",
+    "away": "Сити",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Вольфсбург",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Астон Вилла",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Атлетико",
+    "away": "Севилья",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Сити",
+    "away": "Наполи",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
+  },
+  {
+    "home": "Рома",
+    "away": "Интер",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Бетис",
+    "away": "Интер",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Крылья Советов",
+    "away": "Жирона",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Байер",
+    "away": "Боруссия М",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Аталанта",
+    "away": "Фиорентина",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Милан",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Бавария",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Барселона",
+    "away": "Жирона",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Краснодар",
+    "away": "Хоффенхайм",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Севилья",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Зенит",
+    "away": "Аталанта",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Атлетик",
+    "away": "Хоффенхайм",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Бетис",
+    "away": "Реал",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Зенит",
+    "away": "Крылья Советов",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Краснодар",
+    "away": "Урал",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Арсенал",
+    "away": "Тоттенхэм",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Локомотив",
+    "away": "Крылья Советов",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Наполи",
+    "away": "Цска",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Сити",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Байер",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Крылья Советов",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Атлетико",
+    "away": "Бетис",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Астон Вилла",
+    "away": "Челси",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Фиорентина",
+    "away": "Бавария",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Урал",
+    "away": "Цска",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Челси",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Интер",
+    "away": "Арсенал",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Реал Сосьедад",
+    "away": "Севилья",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Реал Сосьедад",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Атлетик",
+    "away": "Реал Сосьедад",
+    "tournament": "league",
+    "day": 1
+  },
+  {
+    "home": "Спартак",
+    "away": "Байер",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 1
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Мю",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Милан",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 2
+  },
+  {
+    "home": "Крылья Советов",
+    "away": "Астон Вилла",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Зенит",
+    "away": "Спартак",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Севилья",
+    "away": "Реал",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Бетис",
+    "away": "Севилья",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Челси",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Франкфурт",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Арсенал",
+    "away": "Милан",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Интер",
+    "away": "Байер",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Реал Сосьедад",
+    "away": "Наполи",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Фиорентина",
+    "away": "Интер",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Ювентус",
+    "away": "Наполи",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Милан",
+    "away": "Ювентус",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Барселона",
+    "away": "Бавария",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Зенит",
+    "away": "Краснодар",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Цска",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Динамо",
+    "away": "Цска",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Хоффенхайм",
+    "away": "Наполи",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Крылья Советов",
+    "away": "Цска",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Краснодар",
+    "away": "Локомотив",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Милан",
+    "away": "Аталанта",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Хоффенхайм",
+    "away": "Лейпциг",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Цска",
+    "away": "Ливерпуль",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Жирона",
+    "away": "Реал",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Бавария",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Байер",
+    "away": "Краснодар",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Хоффенхайм",
+    "away": "Боруссия М",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Арсенал",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Мю",
+    "away": "Жирона",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 2
+  },
+  {
+    "home": "Рома",
+    "away": "Наполи",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Лацио",
+    "away": "Интер",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Зенит",
+    "away": "Интер",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Мю",
+    "away": "Астон Вилла",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Барселона",
+    "away": "Реал Сосьедад",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Франкфурт",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Атлетик",
+    "away": "Крылья Советов",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Бетис",
+    "away": "Вольфсбург",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Мю",
+    "away": "Ливерпуль",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Астон Вилла",
+    "away": "Бавария",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Барселона",
+    "away": "Арсенал",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Барселона",
+    "away": "Атлетико",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Зенит",
+    "away": "Фиорентина",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Байер",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Боруссия М",
+    "away": "Бавария",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Севилья",
+    "away": "Ливерпуль",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Жирона",
+    "away": "Реал Сосьедад",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Севилья",
+    "away": "Вольфсбург",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Жирона",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 2
+  },
+  {
+    "home": "Атлетико",
+    "away": "Атлетик",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Арсенал",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Челси",
+    "away": "Сити",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Тоттенхэм",
+    "away": "Астон Вилла",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Бетис",
+    "away": "Атлетик",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Крылья Советов",
+    "away": "Спартак",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Бетис",
+    "away": "Ювентус",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Байер",
+    "away": "Лейпциг",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Атлетик",
+    "away": "Мю",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 3
   }
 ]

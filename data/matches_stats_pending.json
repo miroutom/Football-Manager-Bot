@@ -11,5 +11,19 @@
     "away": "Тоттенхэм",
     "tournament": "league",
     "day": 8
+  },
+  {
+    "home": "Краснодар",
+    "away": "Аталанта",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Спартак",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 2
   }
 ]
