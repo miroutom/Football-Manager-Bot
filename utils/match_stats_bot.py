@@ -909,6 +909,30 @@ def motm_pick_intro(
     )
 
 
+def build_motm_confirm_keyboard() -> Any:
+    """Да / Нет после выбора игрока матча."""
+    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Да", callback_data="motm:confirm:yes"),
+                InlineKeyboardButton(text="Нет", callback_data="motm:confirm:no"),
+            ],
+        ]
+    )
+
+
+def motm_confirm_text(*, name: str, position: str, team: str) -> str:
+    from html import escape as html_escape
+
+    pos = f" ({html_escape(position)})" if position else ""
+    return (
+        f"⭐ Игрок матча: <b>{html_escape(name)}</b>{pos} · {html_escape(team)}\n"
+        f"Подтверждаете?"
+    )
+
+
 def roster_from_state(raw: list[dict] | None) -> list[MatchRosterPlayer]:
     out: list[MatchRosterPlayer] = []
     for item in raw or []:

@@ -403,6 +403,31 @@ async def _prompt_motm_pick(message: Message, state: FSMContext) -> None:
     await message.answer(text, reply_markup=kb, parse_mode="HTML")
 
 
+async def _prompt_motm_confirm(
+    message: Message,
+    state: FSMContext,
+    *,
+    name: str,
+    position: str,
+    team: str,
+) -> None:
+    from utils.match_stats_bot import build_motm_confirm_keyboard, motm_confirm_text
+
+    await state.update_data(
+        stats_pending_motm={
+            "name": name,
+            "position": position,
+            "team": team,
+        },
+    )
+    await state.set_state(PostMatch.stats_confirm_motm)
+    await message.answer(
+        motm_confirm_text(name=name, position=position, team=team),
+        reply_markup=build_motm_confirm_keyboard(),
+        parse_mode="HTML",
+    )
+
+
 async def _apply_motm_and_finalize(
     message: Message,
     state: FSMContext,
@@ -424,10 +449,12 @@ async def _apply_motm_and_finalize(
         sync_derived=False,
     )
     if not ok:
+        await state.set_state(PostMatch.stats_pick_motm)
         await message.answer(
             "Не удалось записать MOTM. Выбери игрока кнопкой или введи имя из состава матча."
         )
         return
+    await state.update_data(stats_pending_motm=None)
     await message.answer(
         f"⭐ Игрок матча: <b>{html_escape(name)}</b> ({html_escape(team)})",
         parse_mode="HTML",
@@ -1251,7 +1278,7 @@ async def _send_stats_lines_ui(message: Message, state: FSMContext) -> None:
         "Режим: <code>1</code> только БД · <code>2</code> новый игрок. "
         "Дисциплина: <code>фамилия жк</code>, <code>… 8м</code> и т.д.\n"
         "Закончить — кнопка ниже или <code>/done</code>. "
-        "Затем выберешь <b>игрока матча (MOTM)</b>. /cancel — отмена.",
+        "Затем выберешь <b>игрока матча (MOTM)</b> и подтвердишь выбор. /cancel — отмена.",
         reply_markup=_stats_lines_done_kb(),
         parse_mode="HTML",
     )
@@ -2482,12 +2509,54 @@ async def cb_motm_pick(callback: CallbackQuery, state: FSMContext) -> None:
     if not picked:
         await callback.message.answer("Игрок не найден в составе матча.")
         return
-    await _apply_motm_and_finalize(
+    await _prompt_motm_confirm(
         callback.message,
         state,
         name=picked.name,
         position=picked.position,
         team=picked.team,
+    )
+
+
+@match_router.callback_query(StateFilter(PostMatch.stats_confirm_motm), F.data == "motm:confirm:yes")
+async def cb_motm_confirm_yes(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if not callback.message:
+        return
+    data = await state.get_data()
+    pending = data.get("stats_pending_motm") or {}
+    name = str(pending.get("name") or "").strip()
+    team = str(pending.get("team") or "").strip()
+    position = str(pending.get("position") or "").strip()
+    if not name or not team:
+        await state.set_state(PostMatch.stats_pick_motm)
+        await callback.message.answer("Выбор потерялся — выбери игрока матча снова.")
+        await _prompt_motm_pick(callback.message, state)
+        return
+    await _apply_motm_and_finalize(
+        callback.message,
+        state,
+        name=name,
+        position=position,
+        team=team,
+    )
+
+
+@match_router.callback_query(StateFilter(PostMatch.stats_confirm_motm), F.data == "motm:confirm:no")
+async def cb_motm_confirm_no(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if not callback.message:
+        return
+    await state.update_data(stats_pending_motm=None)
+    await callback.message.answer("Ок, выбери другого игрока матча.")
+    await _prompt_motm_pick(callback.message, state)
+
+
+@match_router.message(StateFilter(PostMatch.stats_confirm_motm), _TEXT_NOT_CMD)
+async def on_motm_confirm_text(message: Message, state: FSMContext) -> None:
+    await message.answer(
+        "Нажми <b>Да</b> или <b>Нет</b> под сообщением с игроком матча.",
+        parse_mode="HTML",
     )
 
 
@@ -2576,7 +2645,7 @@ async def on_motm_name_text(message: Message, state: FSMContext) -> None:
 
     picked_roster, roster_err = resolve_motm_from_roster(roster, raw, side=side)
     if picked_roster:
-        await _apply_motm_and_finalize(
+        await _prompt_motm_confirm(
             message,
             state,
             name=picked_roster.name,
@@ -2605,7 +2674,7 @@ async def on_motm_name_text(message: Message, state: FSMContext) -> None:
             or "Игрок не найден. Проверь имя по кнопкам или нажми на игрока."
         )
         return
-    await _apply_motm_and_finalize(
+    await _prompt_motm_confirm(
         message,
         state,
         name=picked.name,

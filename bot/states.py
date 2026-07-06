@@ -26,6 +26,7 @@ class PostMatch(StatesGroup):
     stats_confirm_unlisted = State()
     stats_wait_lines = State()
     stats_pick_motm = State()
+    stats_confirm_motm = State()
 
 
 class AddOnlyStats(StatesGroup):
