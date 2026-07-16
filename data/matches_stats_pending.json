@@ -25,5 +25,126 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 2
+  },
+  {
+    "home": "Бетис",
+    "away": "Хоффенхайм",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 3
+  },
+  {
+    "home": "Урал",
+    "away": "Локомотив",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Урал",
+    "away": "Динамо",
+    "tournament": "league",
+    "day": 2
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Цска",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 3
+  },
+  {
+    "home": "Урал",
+    "away": "Зенит",
+    "tournament": "league",
+    "day": 3
+  },
+  {
+    "home": "Крылья Советов",
+    "away": "Краснодар",
+    "tournament": "league",
+    "day": 3
+  },
+  {
+    "home": "Бетис",
+    "away": "Крылья Советов",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 4
+  },
+  {
+    "home": "Крылья Советов",
+    "away": "Урал",
+    "tournament": "league",
+    "day": 4
+  },
+  {
+    "home": "Жирона",
+    "away": "Хоффенхайм",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 4
+  },
+  {
+    "home": "Цска",
+    "away": "Реал Сосьедад",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 5
+  },
+  {
+    "home": "Бавария",
+    "away": "Севилья",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 5
+  },
+  {
+    "home": "Спартак",
+    "away": "Хоффенхайм",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 5
+  },
+  {
+    "home": "Сити",
+    "away": "Краснодар",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 5
+  },
+  {
+    "home": "Наполи",
+    "away": "Крылья Советов",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 5
+  },
+  {
+    "home": "Ньюкасл",
+    "away": "Байер",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 4
+  },
+  {
+    "home": "Зенит",
+    "away": "Ливерпуль",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 5
+  },
+  {
+    "home": "Динамо",
+    "away": "Жирона",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 5
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Аталанта",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 5
   }
 ]

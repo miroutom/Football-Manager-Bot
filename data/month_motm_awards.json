@@ -31,6 +31,38 @@
         "team": "Милан",
         "position": "ФРВ"
       }
+    },
+    "2": {
+      "rpl": {
+        "player": "Заха",
+        "team": "Зенит",
+        "position": "ЛФА"
+      },
+      "eng": {
+        "player": "Мбаппе",
+        "team": "Ливерпуль",
+        "position": "ЛФА"
+      },
+      "esp": {
+        "player": "Педри",
+        "team": "Барселона",
+        "position": "ЦАП"
+      },
+      "ita": {
+        "player": "Мартинез",
+        "team": "Интер",
+        "position": "ФРВ"
+      },
+      "ger": {
+        "player": "Рёль",
+        "team": "Бавария",
+        "position": "ЦАП"
+      },
+      "cl": {
+        "player": "Нуньес",
+        "team": "Мю",
+        "position": "ФРВ"
+      }
     }
   }
 }

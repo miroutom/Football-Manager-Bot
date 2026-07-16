@@ -81,7 +81,7 @@
       "team_norm": "барселона",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "араухо|барселона|esp|league",
@@ -91,7 +91,7 @@
       "team_norm": "барселона",
       "league_code": "esp",
       "scope": "league",
-      "matches_left": 3,
+      "matches_left": 2,
       "unavailable_from_round": 6
     },
     {
@@ -113,7 +113,7 @@
       "team_norm": "ливерпуль",
       "league_code": "eng",
       "scope": "league",
-      "matches_left": 3,
+      "matches_left": 2,
       "unavailable_from_round": 6
     },
     {
@@ -137,6 +137,47 @@
       "scope": "league",
       "matches_left": 3,
       "unavailable_from_round": 6
+    },
+    {
+      "key": "рахмани|наполи|cl|cl",
+      "name": "Рахмани",
+      "name_norm": "рахмани",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 1
+    },
+    {
+      "key": "чалханоглу|интер|cl|cl",
+      "name": "Чалханоглу",
+      "name_norm": "чалханоглу",
+      "team": "Интер",
+      "team_norm": "интер",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 0,
+      "unavailable_from_round": 2
+    },
+    {
+      "key": "алейш гарсия|жирона|cl|cl",
+      "name": "Алейш Гарсия",
+      "name_norm": "алейш гарсия",
+      "team": "Жирона",
+      "team_norm": "жирона",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 1
+    },
+    {
+      "key": "зобнин|спартак|cl|cl",
+      "name": "Зобнин",
+      "name_norm": "зобнин",
+      "team": "Спартак",
+      "team_norm": "спартак",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 1
     }
   ],
   "yellow_cycle": [
@@ -198,7 +239,7 @@
       "team_norm": "арсенал",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "диоманде|краснодар|rpl|league",
@@ -308,7 +349,7 @@
       "team_norm": "цска",
       "league_code": "rpl",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "мойзес|цска|rpl|league",
@@ -538,7 +579,7 @@
       "team_norm": "крылья советов",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "де поль|атлетико|esp|league",
@@ -728,7 +769,7 @@
       "team_norm": "лейпциг",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "ниакате|крылья советов|cl|cl",
@@ -768,7 +809,7 @@
       "team_norm": "реал сосьедад",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "лапорт|милан|ita|league",
@@ -798,7 +839,7 @@
       "team_norm": "бавария",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "горетцка|бавария|cl|cl",
@@ -888,7 +929,7 @@
       "team_norm": "краснодар",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "гакпо|арсенал|eng|league",
@@ -1168,7 +1209,7 @@
       "team_norm": "аталанта",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "гендузи|лацио|ita|league",
@@ -1268,7 +1309,7 @@
       "team_norm": "сити",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "габриэль|сити|cl|cl",
@@ -1288,7 +1329,7 @@
       "team_norm": "дортмунд",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "вендел|реал сосьедад|cl|cl",
@@ -1308,6 +1349,426 @@
       "team_norm": "челси",
       "league_code": "eng",
       "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "джеймс|астон вилла|eng|league",
+      "name": "Джеймс",
+      "name_norm": "джеймс",
+      "team": "Астон Вилла",
+      "team_norm": "астон вилла",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "элустондо|реал сосьедад|esp|league",
+      "name": "Элустондо",
+      "name_norm": "элустондо",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "романьоли|наполи|cl|cl",
+      "name": "Романьоли",
+      "name_norm": "романьоли",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "феликс|бетис|esp|league",
+      "name": "Феликс",
+      "name_norm": "феликс",
+      "team": "Бетис",
+      "team_norm": "бетис",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "йерай|севилья|cl|cl",
+      "name": "Йерай",
+      "name_norm": "йерай",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "хакими|милан|cl|cl",
+      "name": "Хакими",
+      "name_norm": "хакими",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "эн-несри|ювентус|cl|cl",
+      "name": "Эн-Несри",
+      "name_norm": "эн-несри",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "бастони|интер|cl|cl",
+      "name": "Бастони",
+      "name_norm": "бастони",
+      "team": "Интер",
+      "team_norm": "интер",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "бабич|спартак|cl|cl",
+      "name": "Бабич",
+      "name_norm": "бабич",
+      "team": "Спартак",
+      "team_norm": "спартак",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "элустондо|реал сосьедад|cl|cl",
+      "name": "Элустондо",
+      "name_norm": "элустондо",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "фримпонг|бавария|cl|cl",
+      "name": "Фримпонг",
+      "name_norm": "фримпонг",
+      "team": "Бавария",
+      "team_norm": "бавария",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "рёль|бавария|cl|cl",
+      "name": "Рёль",
+      "name_norm": "рёль",
+      "team": "Бавария",
+      "team_norm": "бавария",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "илич|аталанта|cl|cl",
+      "name": "Илич",
+      "name_norm": "илич",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "симонс|аталанта|cl|cl",
+      "name": "Симонс",
+      "name_norm": "симонс",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "фабиньо|лейпциг|cl|cl",
+      "name": "Фабиньо",
+      "name_norm": "фабиньо",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "ангисса|милан|cl|cl",
+      "name": "Ангисса",
+      "name_norm": "ангисса",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "александер-арнольд|ливерпуль|cl|cl",
+      "name": "Александер-Арнольд",
+      "name_norm": "александер-арнольд",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "маркао|жирона|cl|cl",
+      "name": "Маркао",
+      "name_norm": "маркао",
+      "team": "Жирона",
+      "team_norm": "жирона",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "сучич|жирона|cl|cl",
+      "name": "Сучич",
+      "name_norm": "сучич",
+      "team": "Жирона",
+      "team_norm": "жирона",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "инасиу|ювентус|cl|cl",
+      "name": "Инасиу",
+      "name_norm": "инасиу",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "перейра|реал сосьедад|cl|cl",
+      "name": "Перейра",
+      "name_norm": "перейра",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "бензема|милан|cl|cl",
+      "name": "Бензема",
+      "name_norm": "бензема",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "гави|барселона|cl|cl",
+      "name": "Гави",
+      "name_norm": "гави",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "жустван|хоффенхайм|cl|cl",
+      "name": "Жустван",
+      "name_norm": "жустван",
+      "team": "Хоффенхайм",
+      "team_norm": "хоффенхайм",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "антонио|динамо|cl|cl",
+      "name": "Антонио",
+      "name_norm": "антонио",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "вебстер|цска|cl|cl",
+      "name": "Вебстер",
+      "name_norm": "вебстер",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "фишер|вольфсбург|cl|cl",
+      "name": "Фишер",
+      "name_norm": "фишер",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "виммер|вольфсбург|cl|cl",
+      "name": "Виммер",
+      "name_norm": "виммер",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "мухин|цска|cl|cl",
+      "name": "Мухин",
+      "name_norm": "мухин",
+      "team": "Цска",
+      "team_norm": "цска",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "умтити|краснодар|cl|cl",
+      "name": "Умтити",
+      "name_norm": "умтити",
+      "team": "Краснодар",
+      "team_norm": "краснодар",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "толои|зенит|cl|cl",
+      "name": "Толои",
+      "name_norm": "толои",
+      "team": "Зенит",
+      "team_norm": "зенит",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "бах|ювентус|cl|cl",
+      "name": "Бах",
+      "name_norm": "бах",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "брозович|мю|cl|cl",
+      "name": "Брозович",
+      "name_norm": "брозович",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "канселу|барселона|cl|cl",
+      "name": "Канселу",
+      "name_norm": "канселу",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "карраскаль|лейпциг|cl|cl",
+      "name": "Карраскаль",
+      "name_norm": "карраскаль",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "вернер|лейпциг|cl|cl",
+      "name": "Вернер",
+      "name_norm": "вернер",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "марушич|дортмунд|cl|cl",
+      "name": "Марушич",
+      "name_norm": "марушич",
+      "team": "Дортмунд",
+      "team_norm": "дортмунд",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "фелипе|дортмунд|cl|cl",
+      "name": "Фелипе",
+      "name_norm": "фелипе",
+      "team": "Дортмунд",
+      "team_norm": "дортмунд",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "косуну|байер|cl|cl",
+      "name": "Косуну",
+      "name_norm": "косуну",
+      "team": "Байер",
+      "team_norm": "байер",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "марсиаль|мю|cl|cl",
+      "name": "Марсиаль",
+      "name_norm": "марсиаль",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "мармуш|ньюкасл|cl|cl",
+      "name": "Мармуш",
+      "name_norm": "мармуш",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "заир-эмери|ювентус|cl|cl",
+      "name": "Заир-Эмери",
+      "name_norm": "заир-эмери",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "league_code": "cl",
+      "scope": "cl",
       "count": 1
     }
   ],
@@ -3532,6 +3993,173 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 89
+    },
+    {
+      "key": "лукман|аталанта|3|3|6",
+      "name": "Лукман",
+      "name_norm": "лукман",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "out_from_month": 3,
+      "return_month": 6,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 81
+    },
+    {
+      "key": "кунде|сити|3|3|10",
+      "name": "Кунде",
+      "name_norm": "кунде",
+      "team": "Сити",
+      "team_norm": "сити",
+      "out_from_month": 3,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 83
+    },
+    {
+      "key": "лева|барселона|3|3|6",
+      "name": "Лева",
+      "name_norm": "лева",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "out_from_month": 3,
+      "return_month": 6,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 91
+    },
+    {
+      "key": "квара|наполи|3|3|10",
+      "name": "Квара",
+      "name_norm": "квара",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "out_from_month": 3,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 90
+    },
+    {
+      "key": "лоботка|наполи|3|3|6",
+      "name": "Лоботка",
+      "name_norm": "лоботка",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "out_from_month": 3,
+      "return_month": 6,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 86
+    },
+    {
+      "key": "гонсалвеш|севилья|3|4|11",
+      "name": "Гонсалвеш",
+      "name_norm": "гонсалвеш",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "out_from_month": 4,
+      "return_month": 11,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 86
+    },
+    {
+      "key": "бензема|милан|3|4|7",
+      "name": "Бензема",
+      "name_norm": "бензема",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 90
+    },
+    {
+      "key": "лориент|реал сосьедад|3|4|7",
+      "name": "Лориент",
+      "name_norm": "лориент",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 79
+    },
+    {
+      "key": "гнабри|бавария|3|4|7",
+      "name": "Гнабри",
+      "name_norm": "гнабри",
+      "team": "Бавария",
+      "team_norm": "бавария",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 87
+    },
+    {
+      "key": "гроб|цска|3|4|5",
+      "name": "Гроб",
+      "name_norm": "гроб",
+      "team": "Цска",
+      "team_norm": "цска",
+      "out_from_month": 4,
+      "return_month": 5,
+      "type": "травма",
+      "season": 3
+    },
+    {
+      "key": "мингз|фиорентина|3|4|7",
+      "name": "Мингз",
+      "name_norm": "мингз",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 79
+    },
+    {
+      "key": "гедеш|интер|3|4|7",
+      "name": "Гедеш",
+      "name_norm": "гедеш",
+      "team": "Интер",
+      "team_norm": "интер",
+      "out_from_month": 4,
+      "return_month": 7,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 79
+    },
+    {
+      "key": "кьеза|милан|3|5|12",
+      "name": "Кьеза",
+      "name_norm": "кьеза",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 5,
+      "return_month": 12,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 87
+    },
+    {
+      "key": "конса|астон вилла|3|5|8",
+      "name": "Конса",
+      "name_norm": "конса",
+      "team": "Астон Вилла",
+      "team_norm": "астон вилла",
+      "out_from_month": 5,
+      "return_month": 8,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 80
     }
   ]
 }
