@@ -26,6 +26,7 @@ async def setup_bot_commands(bot: Bot) -> None:
             BotCommand(command="assists", description="Ассисты (картинка)"),
             BotCommand(command="ga", description="Голы + передачи (картинка)"),
             BotCommand(command="bracket", description="Сетка ЛЧ (картинка)"),
+            BotCommand(command="cl_draw", description="Жребий 1/16 или 1/8 ЛЧ (когда доступен)"),
             BotCommand(command="status", description="Полный статус сезона (картинка)"),
             BotCommand(command="next", description="Следующий матч по календарю"),
             BotCommand(command="skipped", description="Отложенные матчи (просмотр)"),

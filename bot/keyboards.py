@@ -55,92 +55,117 @@ def reply_keyboard_menu_button() -> ReplyKeyboardMarkup:
     )
 
 
-def main_menu_inline_kb(*, show_end_season: bool = False) -> InlineKeyboardMarkup:
+def main_menu_inline_kb(
+    *,
+    show_end_season: bool = False,
+    cl_draw_action: str | None = None,
+) -> InlineKeyboardMarkup:
     """Главное меню (inline). «Завершить сезон» — только когда в календаре не осталось матчей."""
-    rows: list[list[InlineKeyboardButton]] = [
+    rows: list[list[InlineKeyboardButton]] = []
+    if cl_draw_action == "r1":
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="🎟 Жребий 1/16 ЛЧ",
+                    callback_data="menu:cl_draw",
+                ),
+            ]
+        )
+    elif cl_draw_action == "r2":
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="🎟 Жребий 1/8 ЛЧ",
+                    callback_data="menu:cl_draw",
+                ),
+            ]
+        )
+    rows.extend(
         [
-            InlineKeyboardButton(
-                text="✏️ Ручной матч",
-                callback_data="play:manual",
-            ),
-            InlineKeyboardButton(
-                text="📌 Из пропусков",
-                callback_data="skip:list",
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="📋 Из календаря",
-                callback_data="play:schedule",
-            ),
-            InlineKeyboardButton(text="📊 Таблица", callback_data="menu:table"),
-        ],
-        [
-            InlineKeyboardButton(text="📜 История", callback_data="menu:history"),
-        ],
-        [
-            InlineKeyboardButton(text="🏟 Сетка ЛЧ", callback_data="menu:bracket"),
-            InlineKeyboardButton(text="📌 Статус", callback_data="menu:status"),
-        ],
-        [
-            InlineKeyboardButton(text="📅 Расписание", callback_data="menu:schedule"),
-            InlineKeyboardButton(text="📜 Журнал", callback_data="menu:journal"),
-        ],
-        [
-            InlineKeyboardButton(
-                text="🏥 Травмы · жк/кк",
-                callback_data="menu:injury",
-            ),
-        ],
-        [
-            InlineKeyboardButton(text="📊 Стата без матча", callback_data="menu:stats_match"),
-            InlineKeyboardButton(text="📚 Стата сезонов", callback_data="menu:stats_history"),
-        ],
-        [
-            InlineKeyboardButton(text="🔢 Топ-100 всего", callback_data="menu:top100"),
-            InlineKeyboardButton(text="👥 Стата по клубам", callback_data="menu:tgs_league"),
-        ],
-        [
-            InlineKeyboardButton(
-                text="📊 Стата по позициям",
-                callback_data="menu:stats_pos",
-            ),
-            InlineKeyboardButton(
-                text="👤 Игроки по позициям",
-                callback_data="menu:players_pos",
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="⚽ Схема",
-                callback_data="menu:squad_league",
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="👤 Сменить тренера",
-                callback_data="menu:coach_team",
-            ),
-            InlineKeyboardButton(
-                text="📐 Схема (активная)",
-                callback_data="menu:formation_pick",
-            ),
-        ],
-        [
-            InlineKeyboardButton(text="🔄 Трансферы", callback_data="xfd:home"),
-            InlineKeyboardButton(text="🏅 Награды", callback_data="menu:awards"),
-            InlineKeyboardButton(
-                text="📆 Игрок месяца",
-                callback_data="menu:month_motm",
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="✏️ Изменить игроков",
-                callback_data="menu:edit_players",
-            ),
-        ],
-    ]
+            [
+                InlineKeyboardButton(
+                    text="✏️ Ручной матч",
+                    callback_data="play:manual",
+                ),
+                InlineKeyboardButton(
+                    text="📌 Из пропусков",
+                    callback_data="skip:list",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📋 Из календаря",
+                    callback_data="play:schedule",
+                ),
+                InlineKeyboardButton(text="📊 Таблица", callback_data="menu:table"),
+            ],
+            [
+                InlineKeyboardButton(text="📜 История", callback_data="menu:history"),
+            ],
+            [
+                InlineKeyboardButton(text="🏟 Сетка ЛЧ", callback_data="menu:bracket"),
+                InlineKeyboardButton(text="📌 Статус", callback_data="menu:status"),
+            ],
+            [
+                InlineKeyboardButton(text="📅 Расписание", callback_data="menu:schedule"),
+                InlineKeyboardButton(text="📜 Журнал", callback_data="menu:journal"),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🏥 Травмы · жк/кк",
+                    callback_data="menu:injury",
+                ),
+            ],
+            [
+                InlineKeyboardButton(text="📊 Стата без матча", callback_data="menu:stats_match"),
+                InlineKeyboardButton(text="📚 Стата сезонов", callback_data="menu:stats_history"),
+            ],
+            [
+                InlineKeyboardButton(text="🔢 Топ-100 всего", callback_data="menu:top100"),
+                InlineKeyboardButton(text="👥 Стата по клубам", callback_data="menu:tgs_league"),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📊 Стата по позициям",
+                    callback_data="menu:stats_pos",
+                ),
+                InlineKeyboardButton(
+                    text="👤 Игроки по позициям",
+                    callback_data="menu:players_pos",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⚽ Схема",
+                    callback_data="menu:squad_league",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="👤 Сменить тренера",
+                    callback_data="menu:coach_team",
+                ),
+                InlineKeyboardButton(
+                    text="📐 Схема (активная)",
+                    callback_data="menu:formation_pick",
+                ),
+            ],
+            [
+                InlineKeyboardButton(text="🔄 Трансферы", callback_data="xfd:home"),
+                InlineKeyboardButton(text="🏅 Награды", callback_data="menu:awards"),
+                InlineKeyboardButton(
+                    text="📆 Игрок месяца",
+                    callback_data="menu:month_motm",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✏️ Изменить игроков",
+                    callback_data="menu:edit_players",
+                ),
+            ],
+        ]
+    )
     if show_end_season:
         rows.append(
             [
@@ -161,6 +186,7 @@ async def send_main_menu_screen(
 ) -> None:
     """Два сообщения: нижняя reply-клавиатура и inline-меню (один reply_markup на сообщение)."""
     from bot.season_tools import can_finish_season
+    from utils.cl_draw import cl_draw_menu_action
 
     body = intro_text if intro_text is not None else _MENU_REPLY_ONLY_BODY
     await message.answer(
@@ -169,6 +195,10 @@ async def send_main_menu_screen(
         parse_mode=intro_parse_mode,
     )
     end_ok = can_finish_season()
+    draw = cl_draw_menu_action()
     await message.answer(
-        inline_title, reply_markup=main_menu_inline_kb(show_end_season=end_ok)
+        inline_title,
+        reply_markup=main_menu_inline_kb(
+            show_end_season=end_ok, cl_draw_action=draw
+        ),
     )

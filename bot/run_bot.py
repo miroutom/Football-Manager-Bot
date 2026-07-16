@@ -18,6 +18,7 @@ from bot.match_handlers import match_router
 from bot.transfer_handlers import transfer_router
 from bot.awards_handlers import awards_router
 from bot.month_motm_handlers import month_motm_router
+from bot.cl_draw_handlers import cl_draw_router
 from bot.rating_handlers import rating_router
 from bot.player_edit_handlers import player_edit_router
 from bot.squad_roster_handlers import squad_roster_router
@@ -102,6 +103,8 @@ async def main() -> None:
     awards_router.callback_query.middleware(AccessMiddleware())
     month_motm_router.message.middleware(AccessMiddleware())
     month_motm_router.callback_query.middleware(AccessMiddleware())
+    cl_draw_router.message.middleware(AccessMiddleware())
+    cl_draw_router.callback_query.middleware(AccessMiddleware())
     rating_router.message.middleware(AccessMiddleware())
     rating_router.callback_query.middleware(AccessMiddleware())
     player_edit_router.message.middleware(AccessMiddleware())
@@ -128,6 +131,7 @@ async def main() -> None:
     dp.include_router(transfer_router)
     dp.include_router(awards_router)
     dp.include_router(month_motm_router)
+    dp.include_router(cl_draw_router)
     dp.include_router(rating_router)
     dp.include_router(player_edit_router)
     dp.include_router(squad_roster_router)

@@ -63,12 +63,72 @@ def reset_cl_playoff_bracket_json_to_placeholders() -> None:
     """
     Записать ``data/cl_playoff_bracket.json`` плейсхолдерами (новый сезон / сетка без жребия).
     """
+    save_cl_playoff_bracket(
+        [("—", "—")] * 8,
+        ["—"] * 8,
+    )
+
+
+def _is_placeholder_name(name: str | None) -> bool:
+    n = (name or "").strip()
+    return (not n) or n in ("—", "-", "–")
+
+
+def round1_pairs_are_placeholders(
+    pairs: Sequence[tuple[str, str]] | None = None,
+) -> bool:
+    """True, если жребий 1/16 ещё не записан (все/любые пары — плейсхолдеры)."""
+    if pairs is None:
+        pairs, _ = load_cl_playoff_bracket_from_disk()
+    if len(pairs) < 8:
+        return True
+    return any(
+        _is_placeholder_name(h) or _is_placeholder_name(a) for h, a in pairs[:8]
+    )
+
+
+def round2_seeds_are_placeholders(seeds: Sequence[str] | None = None) -> bool:
+    """True, если жребий 1/8 ещё не записан."""
+    if seeds is None:
+        _, seeds = load_cl_playoff_bracket_from_disk()
+    if len(seeds) < 8:
+        return True
+    return any(_is_placeholder_name(s) for s in seeds[:8])
+
+
+def bracket_needs_r1_draw() -> bool:
+    """Нужен ручной жребий 1/16 (пары пустые)."""
+    return round1_pairs_are_placeholders()
+
+
+def bracket_needs_r2_draw() -> bool:
+    """Нужен ручной жребий 1/8 (посевы пустые), при уже заполненных парах 1/16."""
+    if round1_pairs_are_placeholders():
+        return False
+    return round2_seeds_are_placeholders()
+
+
+def save_cl_playoff_bracket(
+    pairs: Sequence[tuple[str, str] | list[str]],
+    seeds: Sequence[str],
+) -> None:
+    """Записать ``data/cl_playoff_bracket.json``."""
     p = _bracket_json_path()
     p.parent.mkdir(parents=True, exist_ok=True)
+    pairs_out: list[list[str]] = []
+    for item in list(pairs)[:8]:
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise ValueError("Каждая пара round1 — два названия команд")
+        pairs_out.append([str(item[0]).strip(), str(item[1]).strip()])
+    while len(pairs_out) < 8:
+        pairs_out.append(["—", "—"])
+    seeds_out = [str(x).strip() if x is not None else "—" for x in list(seeds)[:8]]
+    while len(seeds_out) < 8:
+        seeds_out.append("—")
     payload = {
         "version": 1,
-        "round1_pairs": [["—", "—"] for _ in range(8)],
-        "round2_seeds": ["—"] * 8,
+        "round1_pairs": pairs_out,
+        "round2_seeds": seeds_out,
     }
     p.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",

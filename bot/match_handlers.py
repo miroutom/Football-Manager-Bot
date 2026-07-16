@@ -1415,6 +1415,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "ClPenalties",
             "AwardEnter",
             "MonthMotmEnter",
+            "ClDrawEnter",
             "RatingEnter",
             "SquadStatusEnter",
             "PlayerFieldEnter",
@@ -1434,6 +1435,8 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         await message.answer("Ввод пенальти отменён.")
     elif str(cur).startswith("MonthMotmEnter"):
         await message.answer("Выбор игрока месяца отменён.")
+    elif str(cur).startswith("ClDrawEnter"):
+        await message.answer("Жребий ЛЧ отменён.")
     elif str(cur).startswith("AwardEnter"):
         await message.answer("Ввод награды отменён.")
     elif str(cur).startswith("RatingEnter"):

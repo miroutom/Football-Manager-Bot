@@ -32,6 +32,8 @@ from champions_league.knockout_bracket import (
     default_cl_playoff_24_tree,
     get_default_round1_pairs,
     get_default_round2_seeds,
+    round1_pairs_are_placeholders,
+    round2_seeds_are_placeholders,
 )
 from match_results import find_cl_knockout_first_leg_record
 from utils.schedule_by_months import MIXED_FILE
@@ -149,10 +151,15 @@ def _round_ties_home_first(round_key: str, w: dict[tuple[str, int], str]) -> lis
     """Пары (хозяева 1-го матча, гости) для раунда; ``None`` если раунд ещё не собрать."""
     tree = default_cl_playoff_24_tree()
     if round_key == "round_1":
-        return list(get_default_round1_pairs())
+        pairs = list(get_default_round1_pairs())
+        if round1_pairs_are_placeholders(pairs):
+            return None
+        return pairs
 
     if round_key == "round_2":
         seeds = list(get_default_round2_seeds())
+        if round2_seeds_are_placeholders(seeds):
+            return None
         out: list[tuple[str, str]] = []
         for i in range(8):
             opp = w.get(("r1", i), "")
@@ -442,6 +449,52 @@ def _append_missing_knockout_lines(
         "final": "финал",
     }.get(round_key, round_key)
     return len(missing), label
+
+
+def strip_placeholder_knockout_lines(
+    *,
+    path: Path | str | None = None,
+    month: int | None = None,
+) -> int:
+    """
+    Удалить из календаря строки ``—;—;cl;knockout`` (и любые с плейсхолдером в имени).
+    ``month`` — только этот день календаря; ``None`` — все месяцы.
+    Возвращает число удалённых строк.
+    """
+    from champions_league.knockout_bracket import _is_placeholder_name
+
+    p = Path(path) if path else MIXED_FILE
+    doc = _load_mixed_v3(p)
+    removed = 0
+    for block in doc.get("rounds") or []:
+        if not isinstance(block, dict):
+            continue
+        if month is not None and int(block.get("day") or 0) != int(month):
+            continue
+        matches = list(block.get("matches") or [])
+        keep: list[str] = []
+        for ln in matches:
+            if not isinstance(ln, str) or not _is_cl_knockout_line(ln):
+                keep.append(ln)
+                continue
+            h, a = _line_key(ln)
+            if _is_placeholder_name(h) or _is_placeholder_name(a):
+                removed += 1
+                continue
+            keep.append(ln)
+        block["matches"] = keep
+    if removed:
+        _save_mixed_v3(doc, p)
+    return removed
+
+
+def apply_cl_draw_to_schedule(round_key: str) -> tuple[bool, str]:
+    """После ручного жребия: убрать плейсхолдеры в месяце раунда и дописать реальные матчи."""
+    month = CL_KNOCKOUT_ROUND_MONTH.get(round_key)
+    if month is None:
+        return False, f"Неизвестный раунд {round_key}"
+    strip_placeholder_knockout_lines(month=month)
+    return ensure_knockout_round_in_schedule(round_key)
 
 
 def ensure_knockout_round_in_schedule(

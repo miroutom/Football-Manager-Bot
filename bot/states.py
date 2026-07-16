@@ -34,6 +34,12 @@ class MonthMotmEnter(StatesGroup):
     wait_name = State()
 
 
+class ClDrawEnter(StatesGroup):
+    """Ручной жребий ЛЧ: 1/16 (пары) или 1/8 (посевы)."""
+    r1_picking = State()
+    r2_picking = State()
+
+
 class AddOnlyStats(StatesGroup):
     """Статистика по уже сыгранному матчу (выбор из календаря, без ввода счёта)."""
     cl_phase = State()
