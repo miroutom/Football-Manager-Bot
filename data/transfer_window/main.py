@@ -3,13 +3,18 @@
 """
 Локальное приложение трансферного окна (40 клубов).
 
+Окна:
+  summer — 5 IN / 5 OUT
+  winter — 2 IN / 2 OUT
+
 Запуск из корня проекта:
+  python3 tools/transfer_window_app/export_rosters.py
   python3 tools/transfer_window_app/main.py
+  # или: ./tools/transfer_window_app/run.sh
 
-Сборка .exe (Windows):
-  tools/transfer_window_app/build_windows.bat
-
-После сборки положите папку / exe рядом с rosters.json и state.json.
+Сборка:
+  Windows: build_windows.bat → TransferWindow.exe
+  macOS:   ./build_macos.sh → TransferWindow.app / TransferWindow
 """
 from __future__ import annotations
 
@@ -27,11 +32,26 @@ _ROOT = _APP_DIR.parents[1] if len(_APP_DIR.parents) > 2 else _APP_DIR
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+WINDOW_QUOTAS: dict[str, dict[str, int]] = {
+    "summer": {"max_in": 5, "max_out": 5, "label": "Лето"},
+    "winter": {"max_in": 2, "max_out": 2, "label": "Зима"},
+}
+DEFAULT_WINDOW = "summer"
+
+
+def _normalize_window(raw: str | None) -> str:
+    w = (raw or DEFAULT_WINDOW).strip().lower()
+    return w if w in WINDOW_QUOTAS else DEFAULT_WINDOW
+
 
 def _runtime_dir() -> Path:
-    """Папка с данными: рядом с exe или со скриптом."""
+    """Папка с данными: рядом с exe/.app или со скриптом."""
     if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
+        exe = Path(sys.executable).resolve()
+        # PyInstaller .app: Contents/MacOS/TransferWindow → рядом с .app
+        if exe.parent.name == "MacOS" and exe.parent.parent.name == "Contents":
+            return exe.parents[2].parent
+        return exe.parent
     return _APP_DIR
 
 
@@ -49,8 +69,16 @@ def _rosters_path() -> Path:
     return _bundle_dir() / "rosters.json"
 
 
-def _state_path() -> Path:
-    return _runtime_dir() / "transfer_window_state.json"
+def _state_path(window: str = DEFAULT_WINDOW) -> Path:
+    w = _normalize_window(window)
+    rd = _runtime_dir()
+    named = rd / f"transfer_window_state_{w}.json"
+    # Совместимость: старое единое сохранение = лето
+    if w == "summer":
+        legacy = rd / "transfer_window_state.json"
+        if not named.is_file() and legacy.is_file():
+            return legacy
+    return named
 
 
 def _collect_player_locations(teams: list[dict]) -> dict[str, tuple[str, str, dict]]:
@@ -144,10 +172,15 @@ def compute_transfers(state: dict) -> list[dict]:
 
 
 def build_state_payload(data: dict) -> dict:
-    """Persisted state: squads + baseline + computed transfer log."""
+    """Persisted state: squads + baseline + computed transfer log + window."""
     baseline_home = data.get("baseline_home") or {}
     teams = data.get("teams") or []
-    state = {"baseline_home": baseline_home, "teams": teams}
+    window = _normalize_window(data.get("window"))
+    state = {
+        "window": window,
+        "baseline_home": baseline_home,
+        "teams": teams,
+    }
     state["transfers"] = compute_transfers(state)
     return state
 
@@ -272,15 +305,28 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/web/"):
             rel = path[len("/web/") :]
             return self._send_file(_bundle_dir() / "web" / rel)
+        if path == "/api/config":
+            return self._send_json(
+                {
+                    "default_window": DEFAULT_WINDOW,
+                    "windows": WINDOW_QUOTAS,
+                }
+            )
         if path == "/api/rosters":
             p = _rosters_path()
             if not p.is_file():
                 return self._send_json({"error": f"нет {p}"}, 500)
             return self._send_json(json.loads(p.read_text(encoding="utf-8")))
         if path == "/api/state":
-            sp = _state_path()
+            qs = parse_qs(parsed.query)
+            window = _normalize_window((qs.get("window") or [DEFAULT_WINDOW])[0])
+            sp = _state_path(window)
             if sp.is_file():
-                return self._send_json(json.loads(sp.read_text(encoding="utf-8")))
+                raw = json.loads(sp.read_text(encoding="utf-8"))
+                if not isinstance(raw, dict):
+                    raw = {}
+                raw.setdefault("window", window)
+                return self._send_json(raw)
             self.send_response(404)
             self.end_headers()
             return
@@ -291,13 +337,16 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/save":
             data = self._read_json()
             payload = build_state_payload(data)
-            _state_path().write_text(
+            window = payload["window"]
+            sp = _state_path(window)
+            sp.write_text(
                 json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
             )
             return self._send_json(
                 {
                     "ok": True,
-                    "path": str(_state_path()),
+                    "path": str(sp),
+                    "window": window,
                     "transfers_count": len(payload.get("transfers") or []),
                 }
             )
@@ -309,31 +358,35 @@ class Handler(BaseHTTPRequestHandler):
             out_dir = _runtime_dir()
             if kind == "transfers":
                 rows = compute_transfers(data)
+                window = _normalize_window(data.get("window"))
+                suffix = f"_{window}"
                 if fmt == "xlsx":
-                    out = out_dir / "transfers_export.xlsx"
+                    out = out_dir / f"transfers_export{suffix}.xlsx"
                     try:
                         _write_export_xlsx(out, rows)
                     except ImportError:
                         return self._send_json({"ok": False, "error": "нужен openpyxl"}, 500)
                 elif fmt == "simple":
-                    out = out_dir / "transfers_simple.txt"
+                    out = out_dir / f"transfers_simple{suffix}.txt"
                     _write_transfers_simple_txt(out, rows)
                 else:
-                    out = out_dir / "transfers_export.txt"
+                    out = out_dir / f"transfers_export{suffix}.txt"
                     _write_export_txt(out, rows)
                 return self._send_json({"ok": True, "path": str(out), "count": len(rows)})
             rows = compute_squads(data)
+            window = _normalize_window(data.get("window"))
+            suffix = f"_{window}"
             if fmt == "xlsx":
-                out = out_dir / "squads_export.xlsx"
+                out = out_dir / f"squads_export{suffix}.xlsx"
                 try:
                     _write_squads_xlsx(out, rows)
                 except ImportError:
                     return self._send_json({"ok": False, "error": "нужен openpyxl"}, 500)
             elif fmt == "table":
-                out = out_dir / "squads_table.txt"
+                out = out_dir / f"squads_table{suffix}.txt"
                 _write_squads_table_txt(out, rows)
             else:
-                out = out_dir / "squads_export.txt"
+                out = out_dir / f"squads_export{suffix}.txt"
                 _write_squads_txt(out, data)
                 return self._send_json(
                     {
@@ -360,6 +413,7 @@ def main() -> int:
     url = f"http://127.0.0.1:{port}/"
     print(f"Transfer Window: {url}")
     print(f"Данные: {_runtime_dir()}")
+    print("Окна: лето 5/5, зима 2/2 — переключатель в шапке.")
     threading.Timer(0.4, lambda: webbrowser.open(url)).start()
     try:
         server.serve_forever()

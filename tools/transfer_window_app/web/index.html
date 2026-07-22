@@ -8,7 +8,11 @@
 </head>
 <body>
   <div id="toolbar">
-    <h1>Трансферное окно — 40 клубов</h1>
+    <h1 id="app-title">Трансферное окно — 40 клубов</h1>
+    <div id="window-switch" class="window-switch" role="group" aria-label="Тип окна">
+      <button type="button" class="win-btn active" data-window="summer" id="btn-summer">Лето 5/5</button>
+      <button type="button" class="win-btn" data-window="winter" id="btn-winter">Зима 2/2</button>
+    </div>
     <span class="status" id="status">загрузка…</span>
     <button type="button" id="btn-save">Сохранить</button>
     <button type="button" id="btn-export-txt">Выгрузить составы .txt</button>

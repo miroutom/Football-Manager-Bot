@@ -1,26 +1,46 @@
-# Трансферное окно — portable app
+# Трансферное окно — portable app (лето / зима)
 
-## Запуск (из корня проекта, с БД season_3)
+Одно приложение, переключатель в шапке:
+
+| Окно | Лимит |
+|------|--------|
+| **Лето** | 5 IN / 5 OUT |
+| **Зима** | 2 IN / 2 OUT |
+
+Сохранения раздельные: `transfer_window_state_summer.json` и `transfer_window_state_winter.json`.
+
+## Запуск (из корня проекта, с БД)
 
 ```bash
-python3 tools/transfer_window_app/export_rosters.py
-python3 tools/transfer_window_app/main.py
+python3 tools/transfer_window_app/export_rosters.py   # актуальные составы из season DB
+./tools/transfer_window_app/run.sh
+# или: python3 tools/transfer_window_app/main.py
 ```
 
-Откроется браузер на `http://127.0.0.1:8765/`.
+Браузер: `http://127.0.0.1:8765/` (порт: `--port N`).
 
-## Сборка .exe (Windows)
+## macOS
 
-1. Python 3.11+ и `pip install pyinstaller openpyxl`
-2. `tools/transfer_window_app/build_windows.bat`
-3. Из `dist/`: `TransferWindow.exe` + `rosters.json` в одну папку
+```bash
+cd tools/transfer_window_app
+./run.sh                 # нужен Python 3
+# или сборка .app:
+./build_macos.sh
+open dist/TransferWindow.app
+# если macOS ругается:
+xattr -dr com.apple.quarantine dist/TransferWindow.app
+```
 
-Сохранение: `transfer_window_state.json` рядом с exe.  
-Экспорт: `transfers_export.txt` / `transfers_export.xlsx`.
+Рядом с `.app` держите `rosters.json`. Состояние пишется в ту же папку.
+
+## Windows
+
+1. `pip install pyinstaller openpyxl`
+2. `build_windows.bat` из этой папки
+3. `dist/TransferWindow.exe` + `rosters.json`
 
 ## Функции
 
-- 50 клубов, схемы как в боте, прокрутка вниз
-- Drag-and-drop игроков
-- X/5 IN · Y/5 OUT, жёлтый = новый в клубе
-- Сохранить / выгрузить переходы
+- 40 клубов, схемы как в боте, drag-and-drop
+- Счётчики IN/OUT по выбранному окну; красная рамка, если лимит превышен
+- Сохранить / выгрузить составы и переходы (файлы с суффиксом `_summer` / `_winter`)

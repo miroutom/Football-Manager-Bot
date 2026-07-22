@@ -4,6 +4,11 @@ let baselineHome = {};
 let teams = [];
 let dragPayload = null;
 let dragScrollActive = false;
+let currentWindow = "summer";
+let maxIn = 5;
+let maxOut = 5;
+let dirty = false;
+let windowLabels = { summer: "Лето", winter: "Зима" };
 
 const DRAG_SCROLL_MARGIN = 72;
 const DRAG_SCROLL_SPEED = 18;
@@ -196,6 +201,7 @@ function setupDrop(el, teamName, zone, index) {
     dragPayload = null;
     stopDragScroll();
     renderAll();
+    dirty = true;
     setStatus("изменено (не сохранено)");
   });
 }
@@ -338,12 +344,19 @@ function renderTeam(team) {
   card.className = "team-card";
   card.dataset.team = team.name;
   const { inn, out } = countInOut(team);
+  const overIn = inn > maxIn;
+  const overOut = out > maxOut;
+  if (overIn || overOut) card.classList.add("over-quota");
   const hdr = document.createElement("div");
   hdr.className = "team-hdr";
   hdr.innerHTML = `
     <div class="name">${team.name}</div>
     <div class="meta">${team.formation} · ср. старт ${team.avg_start}</div>
-    <div class="counters"><span class="in">${inn}/5 IN</span> · <span class="out">${out}/5 OUT</span></div>
+    <div class="counters">
+      <span class="in${overIn ? " over" : ""}">${inn}/${maxIn} IN</span>
+      ·
+      <span class="out${overOut ? " over" : ""}">${out}/${maxOut} OUT</span>
+    </div>
   `;
   const body = document.createElement("div");
   body.className = "team-body";
@@ -407,25 +420,55 @@ function renderAll() {
 }
 
 function currentState() {
-  return { baseline_home: baselineHome, teams };
+  return { window: currentWindow, baseline_home: baselineHome, teams };
 }
 
 function setStatus(msg) {
   document.getElementById("status").textContent = msg;
 }
 
-async function loadData() {
-  const rostersRes = await fetch("/api/rosters");
-  const rosters = await rostersRes.json();
-  const freshBaseline = rosters.baseline_home || {};
+function updateTitle() {
+  const label = windowLabels[currentWindow] || currentWindow;
+  document.getElementById("app-title").textContent =
+    `Трансферное окно (${label} ${maxIn}/${maxOut}) — 40 клубов`;
+  document.title = `Трансферное окно — ${label}`;
+  document.querySelectorAll(".win-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.window === currentWindow);
+  });
+}
 
-  const stateRes = await fetch("/api/state");
+function applyWindowQuotas(cfg, windowKey) {
+  currentWindow = windowKey;
+  const w = (cfg.windows || {})[windowKey] || {};
+  maxIn = Number(w.max_in) || (windowKey === "winter" ? 2 : 5);
+  maxOut = Number(w.max_out) || (windowKey === "winter" ? 2 : 5);
+  if (w.label) windowLabels[windowKey] = w.label;
+  updateTitle();
+}
+
+async function loadData() {
+  const [cfgRes, rostersRes] = await Promise.all([
+    fetch("/api/config"),
+    fetch("/api/rosters"),
+  ]);
+  const cfg = await cfgRes.json();
+  const rosters = await rostersRes.json();
+  if (cfg.windows) {
+    Object.entries(cfg.windows).forEach(([k, v]) => {
+      if (v && v.label) windowLabels[k] = v.label;
+    });
+  }
+  applyWindowQuotas(cfg, currentWindow || cfg.default_window || "summer");
+
+  const freshBaseline = rosters.baseline_home || {};
+  const stateRes = await fetch(`/api/state?window=${encodeURIComponent(currentWindow)}`);
   if (stateRes.ok) {
     const saved = await stateRes.json();
     baselineHome = freshBaseline;
     teams = migrateSavedState(saved, rosters);
     dedupeGlobally(teams);
-    setStatus("загружено сохранение");
+    dirty = false;
+    setStatus(`загружено: ${windowLabels[currentWindow] || currentWindow}`);
     renderAll();
     return;
   }
@@ -433,8 +476,21 @@ async function loadData() {
   baselineHome = freshBaseline;
   teams = JSON.parse(JSON.stringify(rosters.teams || []));
   dedupeGlobally(teams);
-  setStatus(`сезон ${rosters.season || "?"} — исходные составы`);
+  dirty = false;
+  setStatus(`сезон ${rosters.season || "?"} — исходные составы (${windowLabels[currentWindow]})`);
   renderAll();
+}
+
+async function switchWindow(next) {
+  if (next === currentWindow) return;
+  if (dirty) {
+    const ok = window.confirm(
+      "Есть несохранённые изменения. Переключить окно без сохранения текущего?"
+    );
+    if (!ok) return;
+  }
+  currentWindow = next;
+  await loadData();
 }
 
 async function saveState() {
@@ -444,11 +500,24 @@ async function saveState() {
     body: JSON.stringify(currentState()),
   });
   const j = await res.json();
-  if (j.ok && j.transfers_count != null) {
-    setStatus(`сохранено, трансферов: ${j.transfers_count}`);
+  if (j.ok) {
+    dirty = false;
+    const over = teams.filter((t) => {
+      const { inn, out } = countInOut(t);
+      return inn > maxIn || out > maxOut;
+    });
+    const base =
+      j.transfers_count != null
+        ? `сохранено (${windowLabels[currentWindow]}), трансферов: ${j.transfers_count}`
+        : "сохранено";
+    setStatus(
+      over.length
+        ? `${base} · сверх лимита: ${over.map((t) => t.name).join(", ")}`
+        : base
+    );
     return;
   }
-  setStatus(j.ok ? "сохранено" : "ошибка сохранения");
+  setStatus("ошибка сохранения");
 }
 
 async function exportFmt(fmt) {
@@ -476,5 +545,7 @@ document.getElementById("btn-export-txt").addEventListener("click", () => export
 document.getElementById("btn-export-xlsx").addEventListener("click", () => exportFmt("xlsx"));
 document.getElementById("btn-export-transfers-txt").addEventListener("click", () => exportTransfersFmt("simple"));
 document.getElementById("btn-export-transfers-xlsx").addEventListener("click", () => exportTransfersFmt("xlsx"));
+document.getElementById("btn-summer").addEventListener("click", () => switchWindow("summer"));
+document.getElementById("btn-winter").addEventListener("click", () => switchWindow("winter"));
 
 loadData().catch((e) => setStatus("ошибка: " + e.message));
