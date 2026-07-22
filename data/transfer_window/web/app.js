@@ -196,6 +196,17 @@ function isIncoming(teamName, player) {
   return baselineHome[player.id] !== teamName;
 }
 
+function injuryTipText(p) {
+  if (!p || !p.injured) return "";
+  const from = p.injury_from != null ? p.injury_from : "?";
+  const until = p.injury_until != null ? p.injury_until : "?";
+  const months = p.injury_months != null ? p.injury_months : null;
+  let tip = `Травма: с ${from} по ${until} мес.`;
+  if (months != null) tip += ` (${months} мес.)`;
+  tip += ` · сейчас ${injuryAsOfMonth}-й`;
+  return tip;
+}
+
 function renderPlayer(teamName, p, inline) {
   if (!p || !p.id) {
     const el = document.createElement("div");
@@ -209,10 +220,13 @@ function renderPlayer(teamName, p, inline) {
   el.draggable = true;
   el.dataset.id = p.id;
   el.dataset.team = teamName;
+  const tip = injuryTipText(p);
+  if (tip) {
+    el.dataset.tip = tip;
+    el.setAttribute("aria-label", tip);
+  }
   const injuryBadge = p.injured
-    ? `<span class="inj" title="Травма на ${injuryAsOfMonth} мес.${
-        p.injury_until ? ` (до ${p.injury_until})` : ""
-      }">🏥</span>`
+    ? `<span class="inj" aria-hidden="true">🏥</span>`
     : "";
   el.innerHTML = inline
     ? `${injuryBadge}<span class="ovr">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
