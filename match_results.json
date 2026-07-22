@@ -2055,6 +2055,24 @@
       "day": 5,
       "cl_phase": "league",
       "entry_type": "play"
+    },
+    {
+      "home": "Ливерпуль",
+      "away": "Сити",
+      "league": "eng",
+      "home_score": 0,
+      "away_score": 4,
+      "day": 5,
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Мю",
+      "league": "eng",
+      "home_score": 5,
+      "away_score": 4,
+      "day": 5,
+      "entry_type": "play"
     }
   ]
 }

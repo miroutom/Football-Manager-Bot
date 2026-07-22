@@ -113,7 +113,7 @@
       "team_norm": "ливерпуль",
       "league_code": "eng",
       "scope": "league",
-      "matches_left": 2,
+      "matches_left": 1,
       "unavailable_from_round": 6
     },
     {
@@ -1769,6 +1769,36 @@
       "team_norm": "ювентус",
       "league_code": "cl",
       "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "гравенберх|ливерпуль|eng|league",
+      "name": "Гравенберх",
+      "name_norm": "гравенберх",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "диас|ливерпуль|eng|league",
+      "name": "Диас",
+      "name_norm": "диас",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "брозович|мю|eng|league",
+      "name": "Брозович",
+      "name_norm": "брозович",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "eng",
+      "scope": "league",
       "count": 1
     }
   ],
@@ -4160,6 +4190,42 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 80
+    },
+    {
+      "key": "коке|ливерпуль|3|5|8",
+      "name": "Коке",
+      "name_norm": "коке",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "out_from_month": 5,
+      "return_month": 8,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 85
+    },
+    {
+      "key": "жота|ливерпуль|3|5|12",
+      "name": "Жота",
+      "name_norm": "жота",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "out_from_month": 5,
+      "return_month": 12,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 90
+    },
+    {
+      "key": "алиссон|ливерпуль|3|5|8",
+      "name": "Алиссон",
+      "name_norm": "алиссон",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "out_from_month": 5,
+      "return_month": 8,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 90
     }
   ]
 }

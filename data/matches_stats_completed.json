@@ -2308,5 +2308,17 @@
     "tournament": "cl",
     "cl_phase": "league",
     "day": 5
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Сити",
+    "tournament": "league",
+    "day": 5
+  },
+  {
+    "home": "Арсенал",
+    "away": "Мю",
+    "tournament": "league",
+    "day": 5
   }
 ]
