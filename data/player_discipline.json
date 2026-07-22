@@ -233,6 +233,17 @@
       "scope": "league",
       "matches_left": 3,
       "unavailable_from_round": 9
+    },
+    {
+      "key": "градит|зенит|rpl|league",
+      "name": "Градит",
+      "name_norm": "градит",
+      "team": "Зенит",
+      "team_norm": "зенит",
+      "league_code": "rpl",
+      "scope": "league",
+      "matches_left": 1,
+      "unavailable_from_round": 9
     }
   ],
   "yellow_cycle": [

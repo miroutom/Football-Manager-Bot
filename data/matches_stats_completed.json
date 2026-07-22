@@ -2539,5 +2539,11 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 6
+  },
+  {
+    "home": "Динамо",
+    "away": "Зенит",
+    "tournament": "league",
+    "day": 4
   }
 ]
