@@ -17,6 +17,9 @@ python3 -m pip install -q 'pyinstaller>=6' openpyxl
 
 # Без --windowed нельзя: нужен .app. Но выкидываем тяжёлые пакеты (PIL и т.п.),
 # из‑за них холодный старт был несколько секунд.
+# Важно: сейвы лежат НЕ в dist/, а в
+#   ~/Library/Application Support/FootballManagerBot/transfer_window
+# rm -rf dist безопасен для пользовательских сохранений.
 rm -rf build dist TransferWindow.spec
 
 pyinstaller --noconfirm --windowed --name TransferWindow \

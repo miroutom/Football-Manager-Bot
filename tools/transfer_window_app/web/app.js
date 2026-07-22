@@ -683,10 +683,18 @@ async function loadData() {
       if (v && v.label) windowLabels[k] = v.label;
     });
   }
+  const savedWin = localStorage.getItem("tw_window");
+  if (savedWin === "summer" || savedWin === "winter") {
+    currentWindow = savedWin;
+  }
   applyWindowQuotas(cfg, currentWindow || cfg.default_window || "summer");
+  localStorage.setItem("tw_window", currentWindow);
   injuryAsOfMonth = Number(rosters.injury_as_of_month) || 6;
   injuryById = buildInjuryIndex(rosters);
   formationsCatalog = Array.isArray(rosters.formations) ? rosters.formations : [];
+  if (cfg.data_dir) {
+    window.__twDataDir = cfg.data_dir;
+  }
 
   const freshBaseline = rosters.baseline_home || {};
   const stateRes = await fetch(`/api/state?window=${encodeURIComponent(currentWindow)}`);
@@ -728,6 +736,7 @@ async function switchWindow(next) {
     if (!ok) return;
   }
   currentWindow = next;
+  localStorage.setItem("tw_window", currentWindow);
   await loadData();
 }
 
@@ -744,15 +753,14 @@ async function saveState() {
       const { inn, out } = countInOut(t);
       return inn > maxIn || out > maxOut;
     });
-    const base =
-      j.transfers_count != null
-        ? `сохранено (${windowLabels[currentWindow]}), трансферов: ${j.transfers_count}`
-        : "сохранено";
-    setStatus(
-      over.length
-        ? `${base} · сверх лимита: ${over.map((t) => t.name).join(", ")}`
-        : base
-    );
+    const n = j.transfers_count != null ? j.transfers_count : "?";
+    const path = j.path || window.__twDataDir || "";
+    let msg = `сохранено (${windowLabels[currentWindow]}), трансферов: ${n}`;
+    if (path) msg += ` → ${path}`;
+    if (over.length) {
+      msg += ` · сверх лимита: ${over.map((t) => t.name).join(", ")}`;
+    }
+    setStatus(msg);
     return;
   }
   setStatus("ошибка сохранения");

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import mimetypes
+import os
 import sys
 import threading
 import webbrowser
@@ -44,15 +45,20 @@ def _normalize_window(raw: str | None) -> str:
     return w if w in WINDOW_QUOTAS else DEFAULT_WINDOW
 
 
-def _runtime_dir() -> Path:
-    """Папка с данными: рядом с exe/.app или со скриптом."""
-    if getattr(sys, "frozen", False):
-        exe = Path(sys.executable).resolve()
-        # PyInstaller .app: Contents/MacOS/TransferWindow → рядом с .app
-        if exe.parent.name == "MacOS" and exe.parent.parent.name == "Contents":
-            return exe.parents[2].parent
-        return exe.parent
-    return _APP_DIR
+def _data_dir() -> Path:
+    """
+    Стабильная папка сейвов/экспортов — не внутри dist/ (rebuild .app её не трёт).
+    macOS: ~/Library/Application Support/FootballManagerBot/transfer_window
+    """
+    if sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support" / "FootballManagerBot"
+    elif sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA") or Path.home()) / "FootballManagerBot"
+    else:
+        base = Path.home() / ".local" / "share" / "FootballManagerBot"
+    d = base / "transfer_window"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 
 def _bundle_dir() -> Path:
@@ -61,24 +67,83 @@ def _bundle_dir() -> Path:
     return _APP_DIR
 
 
+def _legacy_state_dirs() -> list[Path]:
+    dirs: list[Path] = [_APP_DIR, _APP_DIR / "dist", _ROOT]
+    if getattr(sys, "frozen", False):
+        exe = Path(sys.executable).resolve()
+        if exe.parent.name == "MacOS" and exe.parent.parent.name == "Contents":
+            dirs.append(exe.parents[2].parent)
+            dirs.append(exe.parent)
+        else:
+            dirs.append(exe.parent)
+    seen: set[str] = set()
+    out: list[Path] = []
+    for p in dirs:
+        key = str(p)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(p)
+    return out
+
+
+def _migrate_legacy_state_files() -> list[str]:
+    """Перенести старые сейвы из dist/ и т.п. в ``_data_dir()``."""
+    dest = _data_dir()
+    moved: list[str] = []
+    mapping = {
+        "transfer_window_state_summer.json": "transfer_window_state_summer.json",
+        "transfer_window_state_winter.json": "transfer_window_state_winter.json",
+        "transfer_window_state.json": "transfer_window_state_summer.json",
+    }
+    for folder in _legacy_state_dirs():
+        for src_name, dst_name in mapping.items():
+            src = folder / src_name
+            if not src.is_file():
+                continue
+            target = dest / dst_name
+            if target.is_file():
+                continue
+            try:
+                target.write_bytes(src.read_bytes())
+                moved.append(f"{src} → {target}")
+            except Exception:
+                continue
+    return moved
+
+
 def _rosters_path() -> Path:
-    rd = _runtime_dir()
-    local = rd / "rosters.json"
-    if local.is_file():
-        return local
+    candidates = [
+        _APP_DIR / "rosters.json",
+        _bundle_dir() / "rosters.json",
+    ]
+    if getattr(sys, "frozen", False):
+        exe = Path(sys.executable).resolve()
+        if exe.parent.name == "MacOS" and exe.parent.parent.name == "Contents":
+            candidates.append(exe.parents[2].parent / "rosters.json")
+            candidates.append(exe.parent / "rosters.json")
+        candidates.append(exe.parent / "rosters.json")
+    for p in candidates:
+        if p.is_file():
+            return p
     return _bundle_dir() / "rosters.json"
 
 
 def _state_path(window: str = DEFAULT_WINDOW) -> Path:
     w = _normalize_window(window)
-    rd = _runtime_dir()
-    named = rd / f"transfer_window_state_{w}.json"
-    # Совместимость: старое единое сохранение = лето
-    if w == "summer":
-        legacy = rd / "transfer_window_state.json"
-        if not named.is_file() and legacy.is_file():
-            return legacy
-    return named
+    return _data_dir() / f"transfer_window_state_{w}.json"
+
+
+def _export_dir() -> Path:
+    return _data_dir()
+
+
+def _write_startup_log(msg: str) -> None:
+    try:
+        with (_data_dir() / "startup.log").open("a", encoding="utf-8") as f:
+            f.write(msg.rstrip() + "\n")
+    except Exception:
+        pass
 
 
 def _collect_player_locations(teams: list[dict]) -> dict[str, tuple[str, str, dict]]:
@@ -310,6 +375,16 @@ class Handler(BaseHTTPRequestHandler):
                 {
                     "default_window": DEFAULT_WINDOW,
                     "windows": WINDOW_QUOTAS,
+                    "data_dir": str(_data_dir()),
+                }
+            )
+        if path == "/api/paths":
+            return self._send_json(
+                {
+                    "data_dir": str(_data_dir()),
+                    "rosters": str(_rosters_path()),
+                    "state_summer": str(_state_path("summer")),
+                    "state_winter": str(_state_path("winter")),
                 }
             )
         if path == "/api/rosters":
@@ -348,6 +423,7 @@ class Handler(BaseHTTPRequestHandler):
                     "path": str(sp),
                     "window": window,
                     "transfers_count": len(payload.get("transfers") or []),
+                    "data_dir": str(_data_dir()),
                 }
             )
         if parsed.path == "/api/export":
@@ -355,7 +431,7 @@ class Handler(BaseHTTPRequestHandler):
             fmt = (qs.get("fmt") or ["txt"])[0]
             kind = (qs.get("kind") or ["squads"])[0]
             data = self._read_json()
-            out_dir = _runtime_dir()
+            out_dir = _export_dir()
             if kind == "transfers":
                 rows = compute_transfers(data)
                 window = _normalize_window(data.get("window"))
@@ -405,15 +481,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_error(404)
 
 
-def _write_startup_log(msg: str) -> None:
-    try:
-        p = _runtime_dir() / "transfer_window_startup.log"
-        with p.open("a", encoding="utf-8") as f:
-            f.write(msg.rstrip() + "\n")
-    except Exception:
-        pass
-
-
 def _port_is_open(port: int) -> bool:
     import socket
 
@@ -441,6 +508,9 @@ def main() -> int:
         port = int(sys.argv[sys.argv.index("--port") + 1])
     url = f"http://127.0.0.1:{port}/"
 
+    migrated = _migrate_legacy_state_files()
+    data = _data_dir()
+
     # Повторный клик по .app: сервер уже крутится — сразу браузер, без второго процесса.
     if _port_is_open(port):
         _write_startup_log(f"already running → {url}")
@@ -457,9 +527,13 @@ def main() -> int:
         raise
 
     print(f"Transfer Window: {url}")
-    print(f"Данные: {_runtime_dir()}")
+    print(f"Сейвы и экспорты: {data}")
     print("Окна: лето 5/5, зима 2/2 — переключатель в шапке.")
-    _write_startup_log(f"start {url} data={_runtime_dir()}")
+    if migrated:
+        print("Перенесены старые сейвы:")
+        for line in migrated:
+            print(f"  {line}")
+    _write_startup_log(f"start {url} data={data}")
     threading.Thread(
         target=_open_browser_when_ready, args=(url, port), daemon=True
     ).start()
