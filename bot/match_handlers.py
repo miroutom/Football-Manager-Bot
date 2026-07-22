@@ -61,6 +61,38 @@ def _league_title(code: str) -> str:
     return dict(LEAGUE_LABELS).get(code, code)
 
 
+async def _enqueue_stats_pending_for_fixture(
+    *,
+    home: str,
+    away: str,
+    league_code: str,
+    schedule_day: int | None = None,
+) -> None:
+    """Сразу после счёта — в «Стата без матча», пока стата не закрыта."""
+    from matches_stats_tracking import mark_stats_pending
+
+    hn = home.strip().title()
+    an = away.strip().title()
+    tourn = "cl" if league_code == "cl" else "league"
+    cl_ph = None
+    if tourn == "cl":
+        from match_results import find_journal_match_record
+
+        rec = await asyncio.to_thread(
+            find_journal_match_record, hn, an, league_code or "cl", cl_phase=None
+        )
+        if rec:
+            cl_ph = rec.get("cl_phase")
+    await asyncio.to_thread(
+        mark_stats_pending,
+        hn,
+        an,
+        tourn,
+        cl_phase=cl_ph,
+        day=schedule_day,
+    )
+
+
 async def _finish_match_and_offer_stats(
     message: Message,
     state: FSMContext,
@@ -88,6 +120,14 @@ async def _finish_match_and_offer_stats(
     await message.answer(
         f"✓ Записано.\n{body}" if body else "✓ Записано.",
         parse_mode="HTML",
+    )
+
+    # Даже если «Да» не нажмут / сессия сорвётся — матч доступен в «Стата без матча».
+    await _enqueue_stats_pending_for_fixture(
+        home=home,
+        away=away,
+        league_code=league_code,
+        schedule_day=schedule_day,
     )
 
     if not INPUT_PLAYER_STATS:
@@ -122,7 +162,8 @@ async def _finish_match_and_offer_stats(
         ]
     )
     await message.answer(
-        "Добавить статистику игроков (голы, передачи, сухие)?",
+        "Добавить статистику игроков (голы, передачи, сухие)?\n"
+        "Если пропустить — матч останется в «Стата без матча».",
         reply_markup=kb,
     )
 
@@ -1426,9 +1467,24 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
         ),
     ):
         return
+    data = await state.get_data()
     await state.clear()
     if str(cur).startswith("PostMatch"):
-        await message.answer("Ввод статистики отменён.")
+        home = data.get("stats_home")
+        away = data.get("stats_away")
+        lc = data.get("stats_league_code") or ""
+        if home and away and lc:
+            await _enqueue_stats_pending_for_fixture(
+                home=str(home),
+                away=str(away),
+                league_code=str(lc),
+                schedule_day=data.get("stats_schedule_day"),
+            )
+            await message.answer(
+                "Ввод статистики отменён. Матч в очереди «Стата без матча»."
+            )
+        else:
+            await message.answer("Ввод статистики отменён.")
     elif str(cur).startswith("AddOnlyStats"):
         await message.answer("Ввод для статистики без матча отменён.")
     elif str(cur).startswith("ClPenalties"):
@@ -2403,7 +2459,7 @@ async def cb_postmatch_stats_no(callback: CallbackQuery, state: FSMContext) -> N
     await callback.answer()
     await state.clear()
     await callback.message.answer(
-        "Без статистики. Матч в очереди «Стата без матча» — можно внести позже из меню."
+        "Без статистики сейчас. Матч уже в «Стата без матча» — можно внести позже из меню."
     )
     await _send_post_match_continue_prompt(callback.message)
 

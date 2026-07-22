@@ -135,7 +135,13 @@ def mark_stats_pending(
     cl_phase: str | None = None,
     day: int | None = None,
 ) -> None:
-    """Матч сыгран, пользователь отказался от статы сразу после матча."""
+    """
+    Матч со счётом без закрытой статы → очередь «Стата без матча».
+
+    Вызывается сразу после записи счёта (и при «Нет» / отмене ввода), чтобы матч
+    не терялся, если кнопки «Да, статистика» не нажали. ``mark_stats_completed``
+    снимает слот из очереди.
+    """
     if is_stats_completed(home, away, tournament, cl_phase=cl_phase):
         return
     key = _slot_row(home, away, tournament, cl_phase=cl_phase, day=day)
