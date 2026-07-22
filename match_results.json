@@ -2469,6 +2469,72 @@
       "away_score": 0,
       "day": 5,
       "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Динамо",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Ньюкасл",
+      "away": "Ливерпуль",
+      "league": "eng",
+      "home_score": 0,
+      "away_score": 9,
+      "day": 6,
+      "entry_type": "play"
+    },
+    {
+      "home": "Динамо",
+      "away": "Милан",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Фиорентина",
+      "away": "Аталанта",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 6,
+      "day": 6,
+      "entry_type": "play"
+    },
+    {
+      "home": "Франкфурт",
+      "away": "Лейпциг",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 6,
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Бетис",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Милан",
+      "league": "ita",
+      "home_score": 4,
+      "away_score": 2,
+      "day": 6,
+      "entry_type": "play"
     }
   ]
 }

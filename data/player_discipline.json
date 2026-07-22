@@ -2175,6 +2175,16 @@
       "league_code": "eng",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "адингра|динамо|cl|cl",
+      "name": "Адингра",
+      "name_norm": "адингра",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
     }
   ],
   "injuries": [
@@ -4625,6 +4635,90 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 79
+    },
+    {
+      "key": "форсберг|динамо|3|6|9",
+      "name": "Форсберг",
+      "name_norm": "форсберг",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 80
+    },
+    {
+      "key": "мармуш|ньюкасл|3|6|9",
+      "name": "Мармуш",
+      "name_norm": "мармуш",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 83
+    },
+    {
+      "key": "дармиан|динамо|3|6|13",
+      "name": "Дармиан",
+      "name_norm": "дармиан",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 80
+    },
+    {
+      "key": "ругани|динамо|3|6|9",
+      "name": "Ругани",
+      "name_norm": "ругани",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 77
+    },
+    {
+      "key": "айду|милан|3|6|9",
+      "name": "Айду",
+      "name_norm": "айду",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 81
+    },
+    {
+      "key": "нзола|фиорентина|3|6|13",
+      "name": "Нзола",
+      "name_norm": "нзола",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 81
+    },
+    {
+      "key": "мусиаля|франкфурт|3|6|9",
+      "name": "Мусиаля",
+      "name_norm": "мусиаля",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 84
     }
   ]
 }

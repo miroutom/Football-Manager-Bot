@@ -2518,5 +2518,26 @@
     "away": "Тоттенхэм",
     "tournament": "league",
     "day": 5
+  },
+  {
+    "home": "Милан",
+    "away": "Динамо",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Динамо",
+    "away": "Милан",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Атлетик",
+    "away": "Бетис",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
   }
 ]
