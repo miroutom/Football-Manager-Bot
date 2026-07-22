@@ -146,6 +146,17 @@ body {
 }
 .player:active { cursor: grabbing; }
 .player.incoming { background: #6d5a00; border-color: #f1c40f; }
+.player.injured { border-color: #e74c3c; box-shadow: 0 0 0 1px rgba(231, 76, 60, 0.35); }
+.player.incoming.injured { border-color: #e67e22; }
+.player .inj {
+  font-size: 11px;
+  line-height: 1;
+  margin-bottom: 1px;
+}
+.side-row .player .inj,
+.reserve-row .player .inj {
+  margin-right: 2px;
+}
 .player .ovr { font-size: 13px; font-weight: 700; color: #b8f0c8; line-height: 1; }
 .player .nm { font-size: 9px; line-height: 1.1; word-break: break-word; }
 .player .pos { font-size: 8px; color: #9ab; }

@@ -9,6 +9,8 @@ let maxIn = 5;
 let maxOut = 5;
 let dirty = false;
 let windowLabels = { summer: "Лето", winter: "Зима" };
+let injuryAsOfMonth = 6;
+let injuryById = {};
 
 const DRAG_SCROLL_MARGIN = 72;
 const DRAG_SCROLL_SPEED = 18;
@@ -130,6 +132,48 @@ function clonePlayer(p) {
   return p ? { ...p } : null;
 }
 
+function buildInjuryIndex(rosters) {
+  const map = {};
+  for (const team of rosters.teams || []) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (const p of team[zone] || []) {
+        if (!p || !p.id) continue;
+        if (p.injured) {
+          map[p.id] = {
+            injured: true,
+            injury_from: p.injury_from ?? null,
+            injury_until: p.injury_until ?? null,
+            injury_months: p.injury_months ?? null,
+          };
+        }
+      }
+    }
+  }
+  return map;
+}
+
+function applyInjuryFlags(teamList) {
+  for (const team of teamList) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (const p of team[zone] || []) {
+        if (!p || !p.id) continue;
+        const info = injuryById[p.id];
+        if (info) {
+          p.injured = true;
+          p.injury_from = info.injury_from;
+          p.injury_until = info.injury_until;
+          p.injury_months = info.injury_months;
+        } else {
+          p.injured = false;
+          delete p.injury_from;
+          delete p.injury_until;
+          delete p.injury_months;
+        }
+      }
+    }
+  }
+}
+
 function countInOut(team) {
   const ids = new Set();
   const collect = (arr) => arr.forEach((p) => { if (p && p.id) ids.add(p.id); });
@@ -161,13 +205,18 @@ function renderPlayer(teamName, p, inline) {
     return el;
   }
   const el = document.createElement("div");
-  el.className = "player" + (isIncoming(teamName, p) ? " incoming" : "");
+  el.className = "player" + (isIncoming(teamName, p) ? " incoming" : "") + (p.injured ? " injured" : "");
   el.draggable = true;
   el.dataset.id = p.id;
   el.dataset.team = teamName;
+  const injuryBadge = p.injured
+    ? `<span class="inj" title="Травма на ${injuryAsOfMonth} мес.${
+        p.injury_until ? ` (до ${p.injury_until})` : ""
+      }">🏥</span>`
+    : "";
   el.innerHTML = inline
-    ? `<span class="ovr">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
-    : `<span class="ovr">${p.overall}</span><span class="nm">${p.name}</span><span class="pos">${p.position}</span>`;
+    ? `${injuryBadge}<span class="ovr">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
+    : `${injuryBadge}<span class="ovr">${p.overall}</span><span class="nm">${p.name}</span><span class="pos">${p.position}</span>`;
   el.addEventListener("dragstart", onDragStart);
   el.addEventListener("dragend", stopDragScroll);
   return el;
@@ -459,6 +508,8 @@ async function loadData() {
     });
   }
   applyWindowQuotas(cfg, currentWindow || cfg.default_window || "summer");
+  injuryAsOfMonth = Number(rosters.injury_as_of_month) || 6;
+  injuryById = buildInjuryIndex(rosters);
 
   const freshBaseline = rosters.baseline_home || {};
   const stateRes = await fetch(`/api/state?window=${encodeURIComponent(currentWindow)}`);
@@ -467,8 +518,13 @@ async function loadData() {
     baselineHome = freshBaseline;
     teams = migrateSavedState(saved, rosters);
     dedupeGlobally(teams);
+    applyInjuryFlags(teams);
     dirty = false;
-    setStatus(`загружено: ${windowLabels[currentWindow] || currentWindow}`);
+    const injN = Object.keys(injuryById).length;
+    setStatus(
+      `загружено: ${windowLabels[currentWindow] || currentWindow}` +
+        (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "")
+    );
     renderAll();
     return;
   }
@@ -476,8 +532,13 @@ async function loadData() {
   baselineHome = freshBaseline;
   teams = JSON.parse(JSON.stringify(rosters.teams || []));
   dedupeGlobally(teams);
+  applyInjuryFlags(teams);
   dirty = false;
-  setStatus(`сезон ${rosters.season || "?"} — исходные составы (${windowLabels[currentWindow]})`);
+  const injN = Number(rosters.injured_count) || Object.keys(injuryById).length;
+  setStatus(
+    `сезон ${rosters.season || "?"} — исходные составы (${windowLabels[currentWindow]})` +
+      (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "")
+  );
   renderAll();
 }
 

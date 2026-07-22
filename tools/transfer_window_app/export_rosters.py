@@ -25,19 +25,55 @@ from utils.transfer_market_draft import _EXCLUDED_TEAMS  # noqa: E402
 
 EXTRA_RESERVE_SLOTS = 5
 _EMPTY = {"id": None, "name": None, "position": None, "overall": None}
+# Зимнее окно: показываем травмы «на момент» этого месяца календаря.
+INJURY_AS_OF_MONTH = 6
 
 
-def _pl_dict(p, team: str, slot_id: str | None = None) -> dict:
+def _injury_fields(name: str, team: str, *, season: int, month: int = INJURY_AS_OF_MONTH) -> dict:
+    """Поля травмы для карточки игрока (на ``month`` активного сезона)."""
+    from utils.player_discipline import (
+        _get_active_season_or_default,
+        _injury_blocking_at_month,
+        _injury_total_months,
+        _load,
+    )
+
+    st = _load()
+    season_now = int(season) if season else _get_active_season_or_default()
+    inj = _injury_blocking_at_month(
+        st, name, team, month, current_season=season_now
+    )
+    if not inj:
+        return {"injured": False}
+    ret = inj.get("return_month")
+    ofm = inj.get("out_from_month")
     return {
+        "injured": True,
+        "injury_from": int(ofm) if ofm is not None else None,
+        "injury_until": int(ret) if ret is not None else None,
+        "injury_months": _injury_total_months(inj),
+    }
+
+
+def _pl_dict(
+    p,
+    team: str,
+    slot_id: str | None = None,
+    *,
+    season: int,
+) -> dict:
+    row = {
         "id": f"{team}|{p.name}|{p.position}",
         "name": p.name,
         "position": p.position,
         "overall": int(p.score or 0),
         "slot": slot_id,
     }
+    row.update(_injury_fields(p.name, team, season=season))
+    return row
 
 
-def export_team(team: str) -> dict:
+def export_team(team: str, *, season: int) -> dict:
     players = load_team_squad_players(team, "league")
     slot_map, bench_all = _assign_slots(players, team)
     slots_tpl = get_slots_for_formation_key(resolve_formation_key_for_team(team))
@@ -45,21 +81,28 @@ def export_team(team: str) -> dict:
     for slot in slots_tpl:
         p = slot_map.get(slot.slot_id)
         if p:
-            start.append({**_pl_dict(p, team, slot.slot_id), "x": slot.x, "y": slot.y})
+            start.append(
+                {
+                    **_pl_dict(p, team, slot.slot_id, season=season),
+                    "x": slot.x,
+                    "y": slot.y,
+                }
+            )
         else:
             start.append(
                 {
                     **_EMPTY,
+                    "injured": False,
                     "slot": slot.slot_id,
                     "x": slot.x,
                     "y": slot.y,
                 }
             )
-    bench = [_pl_dict(p, team) for p in bench_all[:SUBSTITUTES_COUNT]]
-    reserve = [_pl_dict(p, team) for p in bench_all[SUBSTITUTES_COUNT:]]
+    bench = [_pl_dict(p, team, season=season) for p in bench_all[:SUBSTITUTES_COUNT]]
+    reserve = [_pl_dict(p, team, season=season) for p in bench_all[SUBSTITUTES_COUNT:]]
     while len(bench) < SUBSTITUTES_COUNT:
-        bench.append(dict(_EMPTY))
-    reserve.extend(dict(_EMPTY) for _ in range(EXTRA_RESERVE_SLOTS))
+        bench.append({**_EMPTY, "injured": False})
+    reserve.extend({**_EMPTY, "injured": False} for _ in range(EXTRA_RESERVE_SLOTS))
     starters_ovr = [s["overall"] for s in start if s.get("overall")]
     avg = round(sum(starters_ovr) / len(starters_ovr), 1) if starters_ovr else 0.0
     coach = get_coach_for_team(team)
@@ -80,19 +123,29 @@ def export_team(team: str) -> dict:
 
 
 def export_all() -> dict:
+    season = get_active_season()
     teams: list[dict] = []
     baseline_home: dict[str, str] = {}
     for code in ("rpl", "eng", "esp", "ita", "ger"):
         for team in LEAGUE_TEAMS.get(code, []):
             if team in _EXCLUDED_TEAMS:
                 continue
-            block = export_team(team)
+            block = export_team(team, season=season)
             block["league"] = LEAGUE_NAMES.get(code, code)
             teams.append(block)
             for pid in block["baseline_ids"]:
                 baseline_home[pid] = team
+    injured_n = sum(
+        1
+        for t in teams
+        for z in ("start", "bench", "reserve")
+        for p in t.get(z) or []
+        if p.get("injured")
+    )
     return {
-        "season": get_active_season(),
+        "season": season,
+        "injury_as_of_month": INJURY_AS_OF_MONTH,
+        "injured_count": injured_n,
         "teams": teams,
         "baseline_home": baseline_home,
     }

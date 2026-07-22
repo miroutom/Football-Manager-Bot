@@ -43,4 +43,5 @@ xattr -dr com.apple.quarantine dist/TransferWindow.app
 
 - 40 клубов, схемы как в боте, drag-and-drop
 - Счётчики IN/OUT по выбранному окну; красная рамка, если лимит превышен
+- 🏥 у игроков с травмой на **6-й месяц** (из `player_discipline.json`)
 - Сохранить / выгрузить составы и переходы (файлы с суффиксом `_summer` / `_winter`)
