@@ -2,11 +2,11 @@
   "version": 1,
   "suspensions": [
     {
-      "key": "адингра|цска|cl|cl",
+      "key": "адингра|динамо|cl|cl",
       "name": "Адингра",
       "name_norm": "адингра",
-      "team": "Цска",
-      "team_norm": "цска",
+      "team": "Динамо",
+      "team_norm": "динамо",
       "league_code": "cl",
       "scope": "cl",
       "matches_left": 0
@@ -257,11 +257,11 @@
       "count": 1
     },
     {
-      "key": "гроб|цска|cl|cl",
+      "key": "гроб|мю|cl|cl",
       "name": "Гроб",
       "name_norm": "гроб",
-      "team": "Цска",
-      "team_norm": "цска",
+      "team": "Мю",
+      "team_norm": "мю",
       "league_code": "cl",
       "scope": "cl",
       "count": 1
@@ -304,7 +304,7 @@
       "team_norm": "краснодар",
       "league_code": "rpl",
       "scope": "league",
-      "count": 1
+      "count": 0
     },
     {
       "key": "леау|атлетик|cl|cl",
@@ -404,7 +404,7 @@
       "team_norm": "цска",
       "league_code": "rpl",
       "scope": "league",
-      "count": 2
+      "count": 0
     },
     {
       "key": "мойзес|цска|rpl|league",
@@ -744,7 +744,7 @@
       "team_norm": "реал сосьедад",
       "league_code": "esp",
       "scope": "league",
-      "count": 2
+      "count": 0
     },
     {
       "key": "перейра|реал сосьедад|esp|league",
@@ -1237,11 +1237,11 @@
       "count": 3
     },
     {
-      "key": "патрик|динамо|cl|cl",
+      "key": "патрик|спартак|cl|cl",
       "name": "Патрик",
       "name_norm": "патрик",
-      "team": "Динамо",
-      "team_norm": "динамо",
+      "team": "Спартак",
+      "team_norm": "спартак",
       "league_code": "cl",
       "scope": "cl",
       "count": 1
@@ -1387,11 +1387,11 @@
       "count": 2
     },
     {
-      "key": "вендел|реал сосьедад|cl|cl",
+      "key": "вендел|арсенал|cl|cl",
       "name": "Вендел",
       "name_norm": "вендел",
-      "team": "Реал Сосьедад",
-      "team_norm": "реал сосьедад",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
       "league_code": "cl",
       "scope": "cl",
       "count": 1
@@ -1797,11 +1797,11 @@
       "count": 1
     },
     {
-      "key": "марсиаль|мю|cl|cl",
+      "key": "марсиаль|наполи|cl|cl",
       "name": "Марсиаль",
       "name_norm": "марсиаль",
-      "team": "Мю",
-      "team_norm": "мю",
+      "team": "Наполи",
+      "team_norm": "наполи",
       "league_code": "cl",
       "scope": "cl",
       "count": 1

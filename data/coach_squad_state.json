@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "coaches": {
     "berdyev": {
       "name": "Бердыев",
@@ -12,147 +12,66 @@
     },
     "semak": {
       "name": "Семак",
-      "formation_ids": [
-        10,
-        7,
-        1
-      ],
       "active_formation_id": 1
     },
     "ancelotti": {
       "name": "Анчеллоти",
-      "formation_ids": [
-        10,
-        1,
-        9
-      ],
       "active_formation_id": 9
     },
     "pochettino": {
       "name": "Почеттино",
-      "formation_ids": [
-        5,
-        4,
-        9
-      ],
       "active_formation_id": 5
     },
     "pep": {
       "name": "Пеп",
-      "formation_ids": [
-        1,
-        9,
-        8
-      ],
       "active_formation_id": 1
     },
     "valverde": {
       "name": "Вальверде",
-      "formation_ids": [
-        7,
-        10,
-        1
-      ],
       "active_formation_id": 1
     },
     "klopp": {
       "name": "Клопп",
-      "formation_ids": [
-        1,
-        9,
-        5
-      ],
       "active_formation_id": 1
     },
     "slutsky": {
       "name": "Слуцкий",
-      "formation_ids": [
-        7,
-        3,
-        1
-      ],
       "active_formation_id": 1
     },
     "slot": {
       "name": "Слот",
-      "formation_ids": [
-        8,
-        1,
-        7
-      ],
       "active_formation_id": 1
     },
     "emery": {
       "name": "Эмери",
-      "formation_ids": [
-        1,
-        7,
-        9,
-        2
-      ],
       "active_formation_id": 1
     },
     "simeone": {
       "name": "Симеоне",
-      "formation_ids": [
-        5,
-        8,
-        3
-      ],
       "active_formation_id": 5
     },
     "goncharenko": {
       "name": "Гончаренко",
-      "formation_ids": [
-        8,
-        1,
-        2
-      ],
       "active_formation_id": 1
     },
     "hiddink": {
       "name": "Хиддинк",
-      "formation_ids": [
-        8,
-        10,
-        1
-      ],
       "active_formation_id": 1
     },
     "gattuso": {
       "name": "Гаттузо",
-      "formation_ids": [
-        5,
-        4,
-        1
-      ],
       "active_formation_id": 1
     },
     "flick": {
       "name": "Флик",
-      "formation_ids": [
-        8,
-        1,
-        6
-      ],
       "active_formation_id": 1
     },
     "kompany": {
       "name": "Компани",
-      "formation_ids": [
-        7,
-        4,
-        1
-      ],
       "active_formation_id": 1
     },
     "zidane": {
       "name": "Зидан",
-      "formation_ids": [
-        1,
-        9,
-        8
-      ],
       "active_formation_id": 1
     },
     "tuchel": {
@@ -166,92 +85,42 @@
     },
     "arteta": {
       "name": "Артета",
-      "formation_ids": [
-        2,
-        8,
-        1
-      ],
       "active_formation_id": 1
     },
     "karpin": {
       "name": "Карпин",
-      "formation_ids": [
-        7,
-        6,
-        1
-      ],
       "active_formation_id": 1
     },
     "terzic": {
       "name": "Терзич",
-      "formation_ids": [
-        2,
-        1,
-        9
-      ],
       "active_formation_id": 2
     },
     "ten_hag": {
       "name": "тен Хаг",
-      "formation_ids": [
-        7,
-        9,
-        1
-      ],
       "active_formation_id": 1
     },
     "pellegrini": {
       "name": "Пеллегрини",
-      "formation_ids": [
-        7,
-        6,
-        1
-      ],
       "active_formation_id": 1
     },
     "michel": {
       "name": "Мишель",
-      "formation_ids": [
-        1,
-        5,
-        6
-      ],
       "active_formation_id": 1
     },
     "inzaghi": {
       "name": "Инзаги",
-      "formation_ids": [
-        8,
-        7,
-        4
-      ],
-      "active_formation_id": 4
+      "active_formation_id": 9
     },
     "abaskal": {
       "name": "Абаскаль",
-      "formation_ids": [
-        2,
-        4,
-        1
-      ],
       "active_formation_id": 1
     },
     "ignashevich": {
       "name": "Игнашевич",
-      "formation_ids": [
-        9,
-        7,
-        1
-      ],
       "active_formation_id": 1
     },
     "yuran": {
       "name": "Юран",
-      "formation_ids": [
-        8,
-        2,
-        1
-      ],
       "active_formation_id": 1
     },
     "alonso": {
@@ -283,12 +152,6 @@
     },
     "sahin": {
       "name": "Шахин",
-      "formation_ids": [
-        5,
-        4,
-        8,
-        9
-      ],
       "active_formation_id": 5
     },
     "iraola": {
@@ -302,29 +165,14 @@
     },
     "de_zerbi": {
       "name": "Де Дзерби",
-      "formation_ids": [
-        9,
-        2,
-        1
-      ],
       "active_formation_id": 1
     },
     "gonzalez": {
       "name": "Гонсалес",
-      "formation_ids": [
-        3,
-        4,
-        1
-      ],
       "active_formation_id": 1
     },
     "cooper": {
       "name": "Купер",
-      "formation_ids": [
-        2,
-        6,
-        1
-      ],
       "active_formation_id": 2
     },
     "dyche": {
@@ -338,47 +186,22 @@
     },
     "postecoglou": {
       "name": "Постекоглу",
-      "formation_ids": [
-        7,
-        6,
-        1
-      ],
       "active_formation_id": 1
     },
     "odegaard": {
       "name": "Одегаард",
-      "formation_ids": [
-        8,
-        6,
-        5
-      ],
       "active_formation_id": 8
     },
     "pioli": {
       "name": "Пиоли",
-      "formation_ids": [
-        9,
-        2,
-        1
-      ],
       "active_formation_id": 2
     },
     "pioli_spartak": {
       "name": "Пиоли",
-      "formation_ids": [
-        5,
-        2,
-        1
-      ],
       "active_formation_id": 5
     },
     "xavi": {
       "name": "Хави",
-      "formation_ids": [
-        1,
-        4,
-        6
-      ],
       "active_formation_id": 1
     },
     "ranieri": {
@@ -392,20 +215,10 @@
     },
     "nesta": {
       "name": "Неста",
-      "formation_ids": [
-        1,
-        4,
-        6
-      ],
       "active_formation_id": 1
     },
     "pirlo": {
       "name": "Пирло",
-      "formation_ids": [
-        1,
-        8,
-        2
-      ],
       "active_formation_id": 1
     },
     "lucescu": {
@@ -419,11 +232,6 @@
     },
     "mourinho": {
       "name": "Моуриньо",
-      "formation_ids": [
-        2,
-        3,
-        1
-      ],
       "active_formation_id": 1
     },
     "amorim": {
@@ -437,20 +245,10 @@
     },
     "juric": {
       "name": "Юрич",
-      "formation_ids": [
-        5,
-        3,
-        1
-      ],
       "active_formation_id": 1
     },
     "allegri": {
       "name": "Аллегри",
-      "formation_ids": [
-        5,
-        1,
-        3
-      ],
       "active_formation_id": 1
     },
     "motta": {
