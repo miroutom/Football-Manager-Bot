@@ -11,6 +11,9 @@ let dirty = false;
 let windowLabels = { summer: "Лето", winter: "Зима" };
 let injuryAsOfMonth = 6;
 let injuryById = {};
+let formationsCatalog = []; // [{id, label, key, slots}]
+const BENCH_SLOTS = 7;
+const EXTRA_RESERVE = 5;
 
 const DRAG_SCROLL_MARGIN = 72;
 const DRAG_SCROLL_SPEED = 18;
@@ -37,6 +40,7 @@ function migrateId(id, baseline) {
 function emptyTeamFromTemplate(tmpl) {
   return {
     ...JSON.parse(JSON.stringify(tmpl)),
+    formation_id: tmpl.formation_id || 1,
     start: tmpl.start.map((slot) => ({
       id: null,
       name: null,
@@ -82,6 +86,12 @@ function migrateSavedState(saved, rosters) {
         }
       });
     }
+    if (savedTeam.formation_id != null) {
+      team.formation_id = Number(savedTeam.formation_id);
+    }
+    if (savedTeam.formation) team.formation = savedTeam.formation;
+    if (savedTeam.caption) team.caption = savedTeam.caption;
+    if (savedTeam.coach != null) team.coach = savedTeam.coach;
     out.push(team);
   }
   return out;
@@ -402,6 +412,116 @@ function movePlayer(src, destTeamName, destZone, destIndex) {
   dedupeGlobally(teams);
 }
 
+function formationById(fid) {
+  const id = Number(fid);
+  return formationsCatalog.find((f) => Number(f.id) === id) || null;
+}
+
+function collectTeamPlayers(team) {
+  const out = [];
+  for (const zone of ["start", "bench", "reserve"]) {
+    for (const p of team[zone] || []) {
+      if (p && p.id) out.push({ ...p });
+    }
+  }
+  return out;
+}
+
+function recomputeAvgStart(team) {
+  const ovrs = (team.start || []).map((s) => s.overall).filter((x) => x != null);
+  team.avg_start = ovrs.length
+    ? Math.round((ovrs.reduce((a, b) => a + b, 0) / ovrs.length) * 10) / 10
+    : 0;
+}
+
+function applyFormationToTeam(team, fid) {
+  const form = formationById(fid);
+  if (!form) return false;
+  const players = collectTeamPlayers(team);
+  const remaining = players.slice();
+  const newStart = form.slots.map((slot) => {
+    const allowed = new Set(slot.allowed_positions || []);
+    let bestIdx = -1;
+    let bestOvr = -1;
+    for (let i = 0; i < remaining.length; i++) {
+      const p = remaining[i];
+      const pos = (p.position || "").trim();
+      if (!allowed.has(pos)) continue;
+      const ovr = Number(p.overall) || 0;
+      if (ovr > bestOvr) {
+        bestOvr = ovr;
+        bestIdx = i;
+      }
+    }
+    if (bestIdx < 0) {
+      return {
+        id: null,
+        name: null,
+        position: null,
+        overall: null,
+        injured: false,
+        slot: slot.slot_id,
+        x: slot.x,
+        y: slot.y,
+      };
+    }
+    const picked = remaining.splice(bestIdx, 1)[0];
+    return {
+      ...picked,
+      slot: slot.slot_id,
+      x: slot.x,
+      y: slot.y,
+    };
+  });
+
+  // Незанятые слоты: заполнить сильнейшими оставшимися
+  for (let i = 0; i < newStart.length; i++) {
+    if (newStart[i].id || !remaining.length) continue;
+    remaining.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
+    const picked = remaining.shift();
+    newStart[i] = {
+      ...picked,
+      slot: form.slots[i].slot_id,
+      x: form.slots[i].x,
+      y: form.slots[i].y,
+    };
+  }
+
+  remaining.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
+  const bench = [];
+  for (let i = 0; i < BENCH_SLOTS; i++) {
+    bench.push(
+      remaining.length
+        ? { ...remaining.shift() }
+        : { id: null, name: null, position: null, overall: null, injured: false }
+    );
+  }
+  const reserve = remaining.map((p) => ({ ...p }));
+  while (reserve.length < EXTRA_RESERVE) {
+    reserve.push({ id: null, name: null, position: null, overall: null, injured: false });
+  }
+
+  const label = form.label;
+  const coach = (team.coach || "").trim();
+  team.formation_id = Number(form.id);
+  team.formation = coach ? `${label} · ${coach}` : label;
+  team.caption = team.formation;
+  team.start = newStart;
+  team.bench = bench;
+  team.reserve = reserve;
+  recomputeAvgStart(team);
+  return true;
+}
+
+function onFormationChange(teamName, fid) {
+  const team = teams.find((t) => t.name === teamName);
+  if (!team) return;
+  if (!applyFormationToTeam(team, fid)) return;
+  dirty = true;
+  renderAll();
+  setStatus(`схема ${team.formation} — не сохранено`);
+}
+
 function renderTeam(team) {
   const card = document.createElement("div");
   card.className = "team-card";
@@ -410,17 +530,59 @@ function renderTeam(team) {
   const overIn = inn > maxIn;
   const overOut = out > maxOut;
   if (overIn || overOut) card.classList.add("over-quota");
+
   const hdr = document.createElement("div");
   hdr.className = "team-hdr";
-  hdr.innerHTML = `
-    <div class="name">${team.name}</div>
-    <div class="meta">${team.formation} · ср. старт ${team.avg_start}</div>
-    <div class="counters">
-      <span class="in${overIn ? " over" : ""}">${inn}/${maxIn} IN</span>
-      ·
-      <span class="out${overOut ? " over" : ""}">${out}/${maxOut} OUT</span>
-    </div>
+  const nameEl = document.createElement("div");
+  nameEl.className = "name";
+  nameEl.textContent = team.name;
+  hdr.appendChild(nameEl);
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  const formWrap = document.createElement("label");
+  formWrap.className = "formation-pick";
+  formWrap.textContent = "Схема ";
+  const sel = document.createElement("select");
+  const curFid = Number(team.formation_id) || 1;
+  if (!formationsCatalog.length) {
+    const opt = document.createElement("option");
+    opt.textContent = team.formation || "?";
+    sel.appendChild(opt);
+    sel.disabled = true;
+  } else {
+    formationsCatalog.forEach((f) => {
+      const opt = document.createElement("option");
+      opt.value = String(f.id);
+      opt.textContent = `${f.id}. ${f.label}`;
+      if (Number(f.id) === curFid) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener("change", (e) => {
+      onFormationChange(team.name, e.target.value);
+    });
+  }
+  formWrap.appendChild(sel);
+  meta.appendChild(formWrap);
+  const avgSpan = document.createElement("span");
+  avgSpan.textContent = ` · ср. старт ${team.avg_start}`;
+  meta.appendChild(avgSpan);
+  if (team.coach) {
+    const coachSpan = document.createElement("span");
+    coachSpan.textContent = ` · ${team.coach}`;
+    meta.appendChild(coachSpan);
+  }
+  hdr.appendChild(meta);
+
+  const counters = document.createElement("div");
+  counters.className = "counters";
+  counters.innerHTML = `
+    <span class="in${overIn ? " over" : ""}">${inn}/${maxIn} IN</span>
+    ·
+    <span class="out${overOut ? " over" : ""}">${out}/${maxOut} OUT</span>
   `;
+  hdr.appendChild(counters);
+
   const body = document.createElement("div");
   body.className = "team-body";
 
@@ -524,6 +686,7 @@ async function loadData() {
   applyWindowQuotas(cfg, currentWindow || cfg.default_window || "summer");
   injuryAsOfMonth = Number(rosters.injury_as_of_month) || 6;
   injuryById = buildInjuryIndex(rosters);
+  formationsCatalog = Array.isArray(rosters.formations) ? rosters.formations : [];
 
   const freshBaseline = rosters.baseline_home || {};
   const stateRes = await fetch(`/api/state?window=${encodeURIComponent(currentWindow)}`);

@@ -86,6 +86,21 @@ body {
 }
 .team-hdr .name { font-size: 15px; font-weight: 700; }
 .team-hdr .meta { font-size: 11px; color: #9ab; margin-top: 2px; }
+.team-hdr .formation-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #cde;
+}
+.team-hdr .formation-pick select {
+  background: #0f1820;
+  color: #e8eef4;
+  border: 1px solid #2a3a48;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  max-width: 160px;
+}
 .team-hdr .counters { font-size: 12px; margin-top: 4px; }
 .team-hdr .counters .in { color: #7dcea0; }
 .team-hdr .counters .out { color: #f1948a; }
