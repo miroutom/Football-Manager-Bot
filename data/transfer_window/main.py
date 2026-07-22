@@ -405,16 +405,64 @@ class Handler(BaseHTTPRequestHandler):
         self.send_error(404)
 
 
+def _write_startup_log(msg: str) -> None:
+    try:
+        p = _runtime_dir() / "transfer_window_startup.log"
+        with p.open("a", encoding="utf-8") as f:
+            f.write(msg.rstrip() + "\n")
+    except Exception:
+        pass
+
+
+def _port_is_open(port: int) -> bool:
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.15)
+        try:
+            return s.connect_ex(("127.0.0.1", port)) == 0
+        except OSError:
+            return False
+
+
+def _open_browser_when_ready(url: str, port: int) -> None:
+    """Открыть браузер сразу после готовности порта (без лишней паузы)."""
+    for _ in range(40):  # ~2 с
+        if _port_is_open(port):
+            webbrowser.open(url)
+            return
+        threading.Event().wait(0.05)
+    webbrowser.open(url)
+
+
 def main() -> int:
     port = 8765
     if "--port" in sys.argv:
         port = int(sys.argv[sys.argv.index("--port") + 1])
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}/"
+
+    # Повторный клик по .app: сервер уже крутится — сразу браузер, без второго процесса.
+    if _port_is_open(port):
+        _write_startup_log(f"already running → {url}")
+        webbrowser.open(url)
+        return 0
+
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    except OSError as e:
+        _write_startup_log(f"bind failed: {e}")
+        if _port_is_open(port):
+            webbrowser.open(url)
+            return 0
+        raise
+
     print(f"Transfer Window: {url}")
     print(f"Данные: {_runtime_dir()}")
     print("Окна: лето 5/5, зима 2/2 — переключатель в шапке.")
-    threading.Timer(0.4, lambda: webbrowser.open(url)).start()
+    _write_startup_log(f"start {url} data={_runtime_dir()}")
+    threading.Thread(
+        target=_open_browser_when_ready, args=(url, port), daemon=True
+    ).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
