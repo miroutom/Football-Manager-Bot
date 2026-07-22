@@ -184,6 +184,28 @@ function applyInjuryFlags(teamList) {
   }
 }
 
+function ensureExtraReserveSlots(teamList) {
+  /** В конце резерва всегда EXTRA_RESERVE пустых ячеек для дропа. */
+  for (const team of teamList || []) {
+    if (!Array.isArray(team.reserve)) team.reserve = [];
+    let trailingEmpty = 0;
+    for (let i = team.reserve.length - 1; i >= 0; i--) {
+      if (team.reserve[i] && team.reserve[i].id) break;
+      trailingEmpty += 1;
+    }
+    while (trailingEmpty < EXTRA_RESERVE) {
+      team.reserve.push({
+        id: null,
+        name: null,
+        position: null,
+        overall: null,
+        injured: false,
+      });
+      trailingEmpty += 1;
+    }
+  }
+}
+
 function countInOut(team) {
   const ids = new Set();
   const collect = (arr) => arr.forEach((p) => { if (p && p.id) ids.add(p.id); });
@@ -488,17 +510,21 @@ function applyFormationToTeam(team, fid) {
   }
 
   remaining.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
+  const emptySlot = () => ({
+    id: null,
+    name: null,
+    position: null,
+    overall: null,
+    injured: false,
+  });
   const bench = [];
   for (let i = 0; i < BENCH_SLOTS; i++) {
-    bench.push(
-      remaining.length
-        ? { ...remaining.shift() }
-        : { id: null, name: null, position: null, overall: null, injured: false }
-    );
+    bench.push(remaining.length ? { ...remaining.shift() } : emptySlot());
   }
+  // Как в export_rosters: все оставшиеся в резерве + всегда EXTRA_RESERVE пустых ячеек
   const reserve = remaining.map((p) => ({ ...p }));
-  while (reserve.length < EXTRA_RESERVE) {
-    reserve.push({ id: null, name: null, position: null, overall: null, injured: false });
+  for (let i = 0; i < EXTRA_RESERVE; i++) {
+    reserve.push(emptySlot());
   }
 
   const label = form.label;
@@ -704,6 +730,7 @@ async function loadData() {
     teams = migrateSavedState(saved, rosters);
     dedupeGlobally(teams);
     applyInjuryFlags(teams);
+    ensureExtraReserveSlots(teams);
     dirty = false;
     const injN = Object.keys(injuryById).length;
     setStatus(
@@ -718,6 +745,7 @@ async function loadData() {
   teams = JSON.parse(JSON.stringify(rosters.teams || []));
   dedupeGlobally(teams);
   applyInjuryFlags(teams);
+  ensureExtraReserveSlots(teams);
   dirty = false;
   const injN = Number(rosters.injured_count) || Object.keys(injuryById).length;
   setStatus(
