@@ -146,5 +146,41 @@
     "tournament": "cl",
     "cl_phase": "league",
     "day": 5
+  },
+  {
+    "home": "Спартак",
+    "away": "Краснодар",
+    "tournament": "league",
+    "day": 4
+  },
+  {
+    "home": "Динамо",
+    "away": "Крылья Советов",
+    "tournament": "league",
+    "day": 5
+  },
+  {
+    "home": "Спартак",
+    "away": "Урал",
+    "tournament": "league",
+    "day": 5
+  },
+  {
+    "home": "Краснодар",
+    "away": "Цска",
+    "tournament": "league",
+    "day": 5
+  },
+  {
+    "home": "Фиорентина",
+    "away": "Лацио",
+    "tournament": "league",
+    "day": 5
+  },
+  {
+    "home": "Аталанта",
+    "away": "Рома",
+    "tournament": "league",
+    "day": 5
   }
 ]
