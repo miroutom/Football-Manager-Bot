@@ -97,8 +97,9 @@ async def answer_png_pages(
     caption: str,
     *,
     filename_prefix: str = "report",
+    parse_mode: str | None = None,
 ) -> None:
-    """Одна или несколько готовых PNG; строка — текст ошибки."""
+    """Одна или несколько готовых PNG одним сообщением (альбом); строка — текст ошибки."""
     if isinstance(blobs, str):
         await message.answer(blobs)
         return
@@ -109,6 +110,7 @@ async def answer_png_pages(
         await message.answer_photo(
             BufferedInputFile(blobs[0], filename=f"{filename_prefix}_0.png"),
             caption=caption,
+            parse_mode=parse_mode,
         )
         return
     chunk_size = 10
@@ -119,7 +121,13 @@ async def answer_png_pages(
         for j, blob in enumerate(chunk):
             bf = BufferedInputFile(blob, filename=f"{filename_prefix}_{idx + j}.png")
             cap_j = caption if idx == 0 and j == 0 else None
-            media.append(InputMediaPhoto(media=bf, caption=cap_j))
+            media.append(
+                InputMediaPhoto(
+                    media=bf,
+                    caption=cap_j,
+                    parse_mode=parse_mode if cap_j else None,
+                )
+            )
         await message.answer_media_group(media)
         idx += chunk_size
 

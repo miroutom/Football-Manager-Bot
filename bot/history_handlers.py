@@ -27,7 +27,7 @@ from bot.team_history_render import (
     render_club_dossier_png,
     render_league_titles_chart_png,
     render_power_ranking_pages,
-    render_prestige_breakdown_png,
+    render_prestige_breakdown_pages,
 )
 
 logger = logging.getLogger(__name__)
@@ -146,12 +146,24 @@ def history_season_pick_kb(*, prefix: str, back: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-async def _send_png(callback: CallbackQuery, *, png: bytes, filename: str, caption: str) -> None:
+async def _send_png(
+    callback: CallbackQuery,
+    *,
+    png: bytes | list[bytes],
+    filename: str,
+    caption: str,
+) -> None:
     if not callback.message:
         return
-    await callback.message.answer_photo(
-        photo=BufferedInputFile(png, filename=filename),
-        caption=caption,
+    from bot.handlers import answer_png_pages
+
+    blobs = [png] if isinstance(png, (bytes, bytearray)) else list(png)
+    prefix = filename.rsplit(".", 1)[0] if filename else "history"
+    await answer_png_pages(
+        callback.message,
+        blobs,
+        caption,
+        filename_prefix=prefix,
         parse_mode="HTML",
     )
 
@@ -280,13 +292,15 @@ async def cb_hist_power(callback: CallbackQuery) -> None:
 async def cb_hist_break(callback: CallbackQuery) -> None:
     await callback.answer("Готовлю…")
     try:
-        png = await asyncio.to_thread(render_prestige_breakdown_png, limit=10)
+        pages = await asyncio.to_thread(render_prestige_breakdown_pages, page_size=10)
     except Exception as e:
         logger.exception("break")
         if callback.message:
             await callback.message.answer(f"Ошибка: {e}")
         return
-    await _send_png(callback, png=png, filename="history_break.png", caption="<b>Из чего престиж</b>")
+    n = len(pages)
+    cap = "<b>Из чего престиж</b>" if n <= 1 else f"<b>Из чего престиж</b> · {n} стр."
+    await _send_png(callback, png=pages, filename="history_break.png", caption=cap)
 
 
 @history_router.callback_query(F.data == "hist:t:titles")

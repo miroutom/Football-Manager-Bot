@@ -164,8 +164,25 @@ def render_power_ranking_pages(*, page_size: int = 20) -> list[bytes]:
     return pages
 
 
-def render_prestige_breakdown_png(*, limit: int = 10) -> bytes:
-    rows = rank_teams_by_prestige(limit=limit)
+def render_prestige_breakdown_png(
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+    global_max_score: float | None = None,
+) -> bytes:
+    all_rows = rank_teams_by_prestige(limit=limit)
+    max_score = float(global_max_score) if global_max_score is not None else (
+        max((r.score for r in all_rows), default=1.0) or 1.0
+    )
+    if page_size is not None:
+        rows = all_rows[offset : offset + int(page_size)]
+        rank0 = offset
+    else:
+        rows = all_rows
+        rank0 = 0
+
     keys = ["Лига", "ЛЧ титул", "ЛЧ путь", "Состав", "Награды"]
     colors = [
         (70, 140, 220),
@@ -180,12 +197,14 @@ def render_prestige_breakdown_png(*, limit: int = 10) -> bytes:
     h = header_h + len(rows) * row_h + legend_h + 40
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
+    title = "Из чего складывается престиж"
+    if page_label:
+        title = f"{title} · {page_label}"
     y = _draw_title(
         draw,
-        "Из чего складывается престиж",
-        "Стек-бар: вклад лиги / ЛЧ / состава / наград (топ клубов)",
+        title,
+        "Стек-бар: вклад лиги / ЛЧ / состава / наград (все 40 клубов)",
     )
-    # legend
     font_l = _pick_font(16)
     lx = _PAD
     for lab, col in zip(keys, colors):
@@ -194,13 +213,16 @@ def render_prestige_breakdown_png(*, limit: int = 10) -> bytes:
         lx += 22 + draw.textbbox((0, 0), lab, font=font_l)[2] + 18
     y += 28
 
+    font_r = _pick_font(20, bold=True)
     font_n = _pick_font(22, bold=True)
     font_s = _pick_font(15)
-    max_score = max((r.score for r in rows), default=1.0) or 1.0
-    bar_x0 = 210
-    bar_x1 = _CANVAS_W - _PAD - 70
+    name_x = _PAD + 78
+    bar_x0 = 390
+    bar_x1 = _CANVAS_W - _PAD - 78
+    name_max_w = bar_x0 - name_x - 16
 
     for i, r in enumerate(rows):
+        rank = rank0 + i + 1
         top = y + i * row_h
         draw.rounded_rectangle(
             [_PAD, top + 4, _CANVAS_W - _PAD, top + row_h - 4],
@@ -208,10 +230,21 @@ def render_prestige_breakdown_png(*, limit: int = 10) -> bytes:
             fill=_CARD,
             outline=_LINE,
         )
+        draw.text(
+            (_PAD + 10, top + 16),
+            f"{rank:02d}",
+            font=font_r,
+            fill=_GOLD if rank <= 3 else _TEXT,
+        )
         crest = _try_load_crest_rgba(r.team)
         if crest is not None:
-            _paste_crest_natural(im, crest, _PAD + 30, top + row_h // 2, 34)
-        draw.text((_PAD + 56, top + 16), _fit(draw, r.team, font_n, 140), font=font_n, fill=_TEXT)
+            _paste_crest_natural(im, crest, _PAD + 52, top + row_h // 2, 34)
+        draw.text(
+            (name_x, top + 16),
+            _fit(draw, r.team, font_n, name_max_w),
+            font=font_n,
+            fill=_TEXT,
+        )
 
         x = bar_x0
         parts = [float(r.breakdown.get(k, 0.0)) for k in keys]
@@ -221,14 +254,36 @@ def render_prestige_breakdown_png(*, limit: int = 10) -> bytes:
             w = max(3, int((bar_x1 - bar_x0) * (val / max_score)))
             draw.rectangle([x, top + 20, x + w, top + 38], fill=col)
             x += w
-        draw.text((bar_x1 + 8, top + 16), f"{r.score:.0f}", font=font_n, fill=_TEXT)
+        draw.text((bar_x1 + 10, top + 16), f"{r.score:.0f}", font=font_n, fill=_TEXT)
         tiny = (
             f"чемп.{r.league_titles} · ЛЧ {r.cl_titles} · "
             f"лучш. {cl_stage_short(r.best_cl_stage)}"
         )
-        draw.text((_PAD + 56, top + 38), tiny, font=font_s, fill=_DIM)
+        draw.text((name_x, top + 38), _fit(draw, tiny, font_s, name_max_w), font=font_s, fill=_DIM)
 
     return _to_png(im.convert("RGB"))
+
+
+def render_prestige_breakdown_pages(*, page_size: int = 10) -> list[bytes]:
+    """Все клубы пула, страницы по ``page_size`` (по умолчанию 10 → 4 фото на 40)."""
+    rows = rank_teams_by_prestige(limit=None)
+    max_score = max((r.score for r in rows), default=1.0) or 1.0
+    pages: list[bytes] = []
+    total = len(rows)
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (total + page_size - 1) // page_size)
+    for p in range(n_pages):
+        off = p * page_size
+        pages.append(
+            render_prestige_breakdown_png(
+                limit=None,
+                offset=off,
+                page_size=page_size,
+                page_label=f"{p + 1}/{n_pages}",
+                global_max_score=max_score,
+            )
+        )
+    return pages
 
 
 def render_club_dossier_png(team: str) -> bytes:
