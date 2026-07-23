@@ -702,6 +702,15 @@ def apply_match_potm(
     *,
     tournament: str = "league",
     sync_derived: bool = True,
+    home: str = "",
+    away: str = "",
+    day: int | None = None,
+    home_score: int | None = None,
+    away_score: int | None = None,
+    league_code: str | None = None,
+    cl_phase: str | None = None,
+    season: int | None = None,
+    log_journal: bool = True,
 ) -> bool:
     """Засчитать игрока матча (POTM — Player Of The Match)."""
     session = get_session(tournament)
@@ -725,6 +734,28 @@ def apply_match_potm(
 
     record_stat_write(player, tournament, d_potm=1, flush=sync_derived)
     print(f"  ✓ POTM: {player.name} ({player.team})")
+    if log_journal and (home or away or day is not None):
+        try:
+            from utils.match_potm_log import record_match_potm
+
+            record_match_potm(
+                player=player.name,
+                team=player.team,
+                position=str(getattr(player, "position", None) or position or ""),
+                home=home,
+                away=away,
+                tournament=tournament,
+                day=day,
+                home_score=home_score,
+                away_score=away_score,
+                league_code=league_code,
+                cl_phase=cl_phase,
+                season=season,
+            )
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception("match_potm_log")
     return True
 
 
@@ -735,10 +766,16 @@ def apply_match_motm(
     *,
     tournament: str = "league",
     sync_derived: bool = True,
+    **kwargs,
 ) -> bool:
     """Алиас для обратной совместимости — см. ``apply_match_potm``."""
     return apply_match_potm(
-        name, position, team, tournament=tournament, sync_derived=sync_derived
+        name,
+        position,
+        team,
+        tournament=tournament,
+        sync_derived=sync_derived,
+        **kwargs,
     )
 
 
@@ -752,6 +789,15 @@ def correct_match_potm(
     correct_position: str = "",
     tournament: str = "league",
     sync_derived: bool = True,
+    home: str = "",
+    away: str = "",
+    day: int | None = None,
+    home_score: int | None = None,
+    away_score: int | None = None,
+    league_code: str | None = None,
+    cl_phase: str | None = None,
+    season: int | None = None,
+    log_journal: bool = True,
 ) -> tuple[bool, str]:
     """
     Перенести POTM с ошибочно выбранного игрока на правильного.
@@ -813,6 +859,31 @@ def correct_match_potm(
         from utils.stats_derived_sync import flush_stat_deltas
 
         flush_stat_deltas()
+
+    if log_journal and (home or away or day is not None):
+        try:
+            from utils.match_potm_log import record_match_potm
+
+            record_match_potm(
+                player=correct.name,
+                team=correct.team,
+                position=str(
+                    getattr(correct, "position", None) or correct_position or ""
+                ),
+                home=home,
+                away=away,
+                tournament=tournament,
+                day=day,
+                home_score=home_score,
+                away_score=away_score,
+                league_code=league_code,
+                cl_phase=cl_phase,
+                season=season,
+            )
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception("match_potm_log.correct")
 
     msg = (
         f"POTM: {wrong.name} {wrong.potm} → {correct.name} {correct.potm} "

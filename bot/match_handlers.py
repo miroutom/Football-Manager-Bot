@@ -481,6 +481,39 @@ async def _apply_motm_and_finalize(
 
     data = await state.get_data()
     tourn = data.get("stats_tournament", "league")
+    home = str(data.get("stats_home") or "").strip()
+    away = str(data.get("stats_away") or "").strip()
+    day = data.get("stats_schedule_day")
+    hs = data.get("stats_hs")
+    aws = data.get("stats_aws")
+    lc = data.get("stats_league_code")
+    cl_ph = None
+    if str(tourn) == "cl" or str(lc or "") == "cl":
+        ason = data.get("stats_ason_ctx") or {}
+        cl_ph = ason.get("cl_ph") if isinstance(ason, dict) else None
+        if not cl_ph and home and away:
+            from match_results import find_journal_match_record
+
+            rec = await asyncio.to_thread(
+                find_journal_match_record, home, away, "cl", cl_phase=None
+            )
+            if rec:
+                cl_ph = rec.get("cl_phase")
+                if day is None and rec.get("day") is not None:
+                    day = rec.get("day")
+    if day is None and home and away:
+        from match_results import find_journal_match_record
+
+        rec = await asyncio.to_thread(
+            find_journal_match_record,
+            home,
+            away,
+            str(lc or ("cl" if tourn == "cl" else "league")),
+            cl_phase=cl_ph,
+        )
+        if rec and rec.get("day") is not None:
+            day = rec.get("day")
+
     ok = await asyncio.to_thread(
         apply_match_potm,
         name,
@@ -488,6 +521,13 @@ async def _apply_motm_and_finalize(
         team,
         tournament=str(tourn),
         sync_derived=False,
+        home=home,
+        away=away,
+        day=int(day) if day is not None else None,
+        home_score=int(hs) if hs is not None else None,
+        away_score=int(aws) if aws is not None else None,
+        league_code=str(lc) if lc else None,
+        cl_phase=str(cl_ph) if cl_ph else None,
     )
     if not ok:
         await state.set_state(PostMatch.stats_pick_potm)
