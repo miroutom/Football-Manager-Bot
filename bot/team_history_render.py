@@ -65,9 +65,10 @@ def _fit(draw: ImageDraw.ImageDraw, text: str, font, max_w: int) -> str:
     return t or text[:1]
 
 
-def render_power_ranking_png(*, limit: int = 15) -> bytes:
+def render_power_ranking_png(*, limit: int | None = None) -> bytes:
+    """Рейтинг силы. ``limit=None`` — все клубы (обычно 40)."""
     rows = rank_teams_by_prestige(limit=limit)
-    row_h = 54
+    row_h = 48 if len(rows) > 20 else 54
     header_h = 110
     foot_h = 56
     h = header_h + len(rows) * row_h + foot_h

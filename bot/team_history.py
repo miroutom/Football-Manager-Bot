@@ -194,7 +194,8 @@ def compute_team_prestige(team: str, hist: dict[str, Any] | None = None) -> Team
     )
 
 
-def rank_teams_by_prestige(*, limit: int | None = 20) -> list[TeamPrestige]:
+def rank_teams_by_prestige(*, limit: int | None = None) -> list[TeamPrestige]:
+    """``limit=None`` — полный список клубов; иначе топ-N."""
     hist = load_history()
     rows = [compute_team_prestige(t, hist) for t in sorted(_all_club_names(), key=_norm)]
     rows.sort(key=lambda r: (-r.score, r.team.casefold()))

@@ -245,7 +245,7 @@ async def cb_hist_power(callback: CallbackQuery) -> None:
     if not callback.message:
         return
     try:
-        png = await asyncio.to_thread(render_power_ranking_png, limit=15)
+        png = await asyncio.to_thread(render_power_ranking_png, limit=None)
     except Exception as e:
         logger.exception("render_power_ranking")
         await callback.message.answer(f"Не удалось нарисовать рейтинг: {e}")
