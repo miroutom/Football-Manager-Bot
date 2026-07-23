@@ -30,6 +30,10 @@ _RE_TM = re.compile(r"^mm:tm:\d+:[a-z0-9_]+:\d+$")
 _RE_CAND = re.compile(r"^mm:cand:\d+$")
 _RE_MANUAL = re.compile(r"^mm:manual:\d+:[a-z0-9_]+$")
 _RE_VIEW = re.compile(r"^mm:view:\d+:[a-z0-9_]+$")
+_RE_PL = re.compile(r"^mm:pl:\d+$")
+_RE_PLPG = re.compile(r"^mm:plpg:\d+$")
+
+_ROSTER_PAGE = 10
 
 
 def _league_title(code: str) -> str:
@@ -43,11 +47,103 @@ def _club_btn_label(text: str, max_chars: int = 40) -> str:
     return text[: max_chars - 1] + "…"
 
 
-def _cand_btn_label(text: str, max_chars: int = 56) -> str:
+def _cand_btn_label(text: str, max_chars: int = 58) -> str:
     text = (text or "").strip()
     if len(text) <= max_chars:
         return text
     return text[: max_chars - 1] + "…"
+
+
+def _mm_roster_entries(team: str, league_code: str) -> list[dict]:
+    """Состав клуба для кнопок: [{name, position, overall, team}, ...]."""
+    from data.defender import Defender
+    from data.forward import Forward
+    from data.goalkeeper import Goalkeeper
+    from data.midfielder import Midfielder
+    from utils.player_names import player_display_name, player_surname
+    from utils.player_transfer import _filter_team, _norm_cmp
+    from utils.transfer_input import resolve_team_name
+    from utils.utils import get_session
+
+    # Состав всегда из league.db; награда в CL/лиге пишется отдельно.
+    sess = get_session("league")
+    resolved = resolve_team_name(team, sess) or (team or "").strip().title()
+    best: dict[str, dict] = {}
+    for Cls in (Forward, Midfielder, Defender, Goalkeeper):
+        for r in sess.query(Cls).filter(_filter_team(Cls, resolved)).all():
+            disp = player_display_name(r)
+            if not disp:
+                continue
+            pos = (r.position or "").strip()
+            db_team = (r.team or "").strip() or resolved
+            ovr = int(getattr(r, "overall", 0) or 0)
+            nk = _norm_cmp(player_surname(r) or disp)
+            prev = best.get(nk)
+            if prev is None or ovr > int(prev.get("overall") or 0):
+                best[nk] = {
+                    "name": disp,
+                    "position": pos,
+                    "overall": ovr,
+                    "team": db_team,
+                }
+    return sorted(
+        best.values(),
+        key=lambda x: (-int(x.get("overall") or 0), str(x.get("name") or "").casefold()),
+    )
+
+
+def _players_kb(
+    month: int,
+    league_code: str,
+    team_idx: int,
+    roster: list[dict],
+    page: int,
+) -> InlineKeyboardMarkup:
+    n = len(roster)
+    ps = _ROSTER_PAGE
+    total_pages = max(1, (n + ps - 1) // ps)
+    page = max(0, min(int(page), total_pages - 1))
+    chunk = roster[page * ps : page * ps + ps]
+    base = page * ps
+    rows: list[list[InlineKeyboardButton]] = []
+    for i, p in enumerate(chunk):
+        gidx = base + i
+        label = f"{p.get('name')} · {p.get('position') or '?'} · {p.get('overall') or '?'}"
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_cand_btn_label(label),
+                    callback_data=f"mm:pl:{gidx}",
+                )
+            ]
+        )
+    if total_pages > 1:
+        nav: list[InlineKeyboardButton] = []
+        if page > 0:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"« {page}/{total_pages}",
+                    callback_data=f"mm:plpg:{page - 1}",
+                )
+            )
+        if page < total_pages - 1:
+            nav.append(
+                InlineKeyboardButton(
+                    text=f"{page + 2}/{total_pages} »",
+                    callback_data=f"mm:plpg:{page + 1}",
+                )
+            )
+        if nav:
+            rows.append(nav)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="« К клубам",
+                callback_data=f"mm:manual:{month}:{league_code}",
+            )
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _months_keyboard(months: list[int]) -> InlineKeyboardMarkup:
@@ -136,7 +232,7 @@ def _candidates_kb(month: int, league_code: str, cands: list) -> InlineKeyboardM
             [
                 InlineKeyboardButton(
                     text=_cand_btn_label(
-                        f"{i + 1}. {c.player} · {c.goals}+{c.assists} · P{c.potm}"
+                        f"{i + 1}. {c.player} · {c.goals}+{c.assists} · POTM×{c.potm}"
                     ),
                     callback_data=f"mm:cand:{i}",
                 )
@@ -358,14 +454,16 @@ async def cb_mm_view_cands(callback: CallbackQuery, state: FSMContext) -> None:
 
     lines = [
         f"📆 MOTM · м{month} · <b>{_league_title(code)}</b>",
-        "За месяц целиком: голы + передачи + POTM "
-        "(<code>гол×3 + пас×2 + POTM×5</code>).",
+        "Сводка <b>за месяц</b> (не по матчам):",
+        "• <b>Г+П</b> — сумма голов и передач за месяц",
+        "• <b>POTM</b> — сколько раз был игроком матча",
+        "• скор = <code>гол×3 + пас×2 + POTM×5</code>",
         "",
     ]
     for i, c in enumerate(cands, 1):
         lines.append(
-            f"{i}. <b>{c.player}</b> ({c.team}) — "
-            f"<b>{c.goals}+{c.assists}</b>, POTM×{c.potm}, скор {c.score:g}"
+            f"{i}. <b>{c.player}</b> ({c.team})\n"
+            f"    Г+П <b>{c.goals}+{c.assists}</b> · POTM <b>×{c.potm}</b> · скор {c.score:g}"
         )
     lines.append("\nНажми кандидата, чтобы выдать MOTM.")
     await callback.message.answer(
@@ -453,34 +551,95 @@ async def cb_mm_team(callback: CallbackQuery, state: FSMContext) -> None:
     except (IndexError, Exception) as e:
         await callback.message.answer(f"Клуб: ошибка: {e}")
         return
-    await state.update_data(mm_month=month, mm_lg=code, mm_team=team)
-    await state.set_state(MonthMotmEnter.wait_name)
+
+    roster = await asyncio.to_thread(_mm_roster_entries, team, code)
+    if not roster:
+        await callback.message.answer(f"В базе нет состава для «{team}».")
+        return
+    await state.update_data(
+        mm_month=month,
+        mm_lg=code,
+        mm_team=team,
+        mm_team_idx=idx,
+        mm_roster=roster,
+        mm_roster_page=0,
+    )
+    await state.set_state(MonthMotmEnter.pick_player)
     await callback.message.answer(
-        f"📆 <b>MOTM</b> · м{month} · {_league_title(code)} · {team}\n\n"
-        "Введи <b>имя игрока</b> как в базе.\n/cancel — отмена.",
+        f"📆 <b>MOTM</b> · м{month} · {_league_title(code)} · <b>{team}</b>\n"
+        f"Выбери игрока из состава ({len(roster)}):",
+        reply_markup=_players_kb(month, code, idx, roster, 0),
         parse_mode="HTML",
     )
 
 
-@month_motm_router.message(MonthMotmEnter.wait_name, _TEXT_NOT_CMD)
-async def on_mm_player_name(message: Message, state: FSMContext) -> None:
-    name = (message.text or "").strip()
-    if len(name) < 2:
-        await message.answer("Слишком коротко. Введи имя ещё раз.")
+@month_motm_router.callback_query(F.data.startswith("mm:plpg:"))
+async def cb_mm_player_page(callback: CallbackQuery, state: FSMContext) -> None:
+    d = callback.data
+    if not d or not _RE_PLPG.match(d):
+        return
+    await callback.answer()
+    if not callback.message:
+        return
+    try:
+        page = int(d.split(":")[-1])
+    except ValueError:
         return
     data = await state.get_data()
     month = data.get("mm_month")
-    lg = data.get("mm_lg", "")
-    team = data.get("mm_team", "")
-    if not month or not lg or not team:
-        await state.clear()
-        await message.answer("Сброс. Начни с меню «Игрок месяца».")
+    lg = data.get("mm_lg")
+    team_idx = int(data.get("mm_team_idx") or 0)
+    roster = data.get("mm_roster") or []
+    if month is None or not lg or not roster:
+        await callback.message.answer("Список устарел — начни заново.")
         return
+    await state.update_data(mm_roster_page=page)
+    try:
+        await callback.message.edit_reply_markup(
+            reply_markup=_players_kb(int(month), str(lg), team_idx, roster, page)
+        )
+    except Exception:
+        await callback.message.answer(
+            "Выбери игрока:",
+            reply_markup=_players_kb(int(month), str(lg), team_idx, roster, page),
+        )
+
+
+@month_motm_router.callback_query(F.data.startswith("mm:pl:"))
+async def cb_mm_player_pick(callback: CallbackQuery, state: FSMContext) -> None:
+    d = callback.data
+    if not d or not _RE_PL.match(d):
+        return
+    await callback.answer()
+    if not callback.message:
+        return
+    try:
+        idx = int(d.split(":")[-1])
+    except ValueError:
+        return
+    data = await state.get_data()
+    month = data.get("mm_month")
+    lg = data.get("mm_lg")
+    roster = data.get("mm_roster") or []
+    if month is None or not lg or idx < 0 or idx >= len(roster):
+        await callback.message.answer("Список устарел — начни заново.")
+        return
+    p = roster[idx]
     await _award_month_motm(
-        message,
+        callback.message,
         state,
         month=int(month),
         league_code=str(lg),
-        player_name=name,
-        team=str(team),
+        player_name=str(p.get("name") or ""),
+        team=str(p.get("team") or data.get("mm_team") or ""),
+        position=str(p.get("position") or ""),
+    )
+
+
+@month_motm_router.message(MonthMotmEnter.pick_player, _TEXT_NOT_CMD)
+@month_motm_router.message(MonthMotmEnter.wait_name, _TEXT_NOT_CMD)
+async def on_mm_player_text_fallback(message: Message, state: FSMContext) -> None:
+    await message.answer(
+        "Выбери игрока <b>кнопкой</b> из списка состава.",
+        parse_mode="HTML",
     )

@@ -30,8 +30,9 @@ class PostMatch(StatesGroup):
 
 
 class MonthMotmEnter(StatesGroup):
-    """Man Of The Month: месяц → лига → клуб → имя."""
-    wait_name = State()
+    """Man Of The Month: месяц → лига → клуб → игрок из списка."""
+    pick_player = State()
+    wait_name = State()  # устаревший; оставлен для совместимости FSM
 
 
 class ClDrawEnter(StatesGroup):
