@@ -26,7 +26,7 @@ from bot.team_history_gallery import (
 from bot.team_history_render import (
     render_club_dossier_png,
     render_league_titles_chart_png,
-    render_power_ranking_png,
+    render_power_ranking_pages,
     render_prestige_breakdown_png,
 )
 
@@ -259,13 +259,21 @@ async def cb_hist_award(callback: CallbackQuery) -> None:
 async def cb_hist_power(callback: CallbackQuery) -> None:
     await callback.answer("Готовлю…")
     try:
-        png = await asyncio.to_thread(render_power_ranking_png, limit=None)
+        pages = await asyncio.to_thread(render_power_ranking_pages, page_size=20)
     except Exception as e:
         logger.exception("power")
         if callback.message:
             await callback.message.answer(f"Ошибка: {e}")
         return
-    await _send_png(callback, png=png, filename="history_power.png", caption="<b>Рейтинг силы</b> — все 40 клубов")
+    if not callback.message:
+        return
+    n = len(pages)
+    for i, png in enumerate(pages, start=1):
+        await callback.message.answer_photo(
+            photo=BufferedInputFile(png, filename=f"history_power_{i}.png"),
+            caption=f"<b>Рейтинг силы</b> · стр. {i}/{n}",
+            parse_mode="HTML",
+        )
 
 
 @history_router.callback_query(F.data == "hist:t:break")

@@ -65,50 +65,70 @@ def _fit(draw: ImageDraw.ImageDraw, text: str, font, max_w: int) -> str:
     return t or text[:1]
 
 
-def render_power_ranking_png(*, limit: int | None = None) -> bytes:
-    """Рейтинг силы. ``limit=None`` — все клубы (обычно 40)."""
-    rows = rank_teams_by_prestige(limit=limit)
-    row_h = 48 if len(rows) > 20 else 54
+def render_power_ranking_png(
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+    global_max_score: float | None = None,
+) -> bytes:
+    """
+    Рейтинг силы.
+    ``page_size`` — нарезать страницу (например 20); ``offset`` — с какого места.
+    ``global_max_score`` — общая шкала баров для всех страниц.
+    """
+    all_rows = rank_teams_by_prestige(limit=limit)
+    max_score = float(global_max_score) if global_max_score is not None else (
+        max((r.score for r in all_rows), default=1.0) or 1.0
+    )
+    if page_size is not None:
+        rows = all_rows[offset : offset + int(page_size)]
+        rank0 = offset
+    else:
+        rows = all_rows
+        rank0 = 0
+
+    row_h = 52
     header_h = 110
     foot_h = 56
     h = header_h + len(rows) * row_h + foot_h
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
-    y = _draw_title(
-        draw,
-        "Рейтинг силы клубов",
-        prestige_formula_caption(),
-    )
+    title = "Рейтинг силы клубов"
+    if page_label:
+        title = f"{title} · {page_label}"
+    y = _draw_title(draw, title, prestige_formula_caption())
     font_r = _pick_font(22, bold=True)
-    font_n = _pick_font(24, bold=True)
+    font_n = _pick_font(22, bold=True)
     font_s = _pick_font(16)
-    max_score = max((r.score for r in rows), default=1.0) or 1.0
-    bar_x0 = 320
+    bar_x0 = 360
     bar_x1 = _CANVAS_W - _PAD - 90
 
-    for i, r in enumerate(rows, start=1):
-        top = y + (i - 1) * row_h
+    for i, r in enumerate(rows):
+        rank = rank0 + i + 1
+        top = y + i * row_h
         draw.rounded_rectangle(
             [_PAD, top + 4, _CANVAS_W - _PAD, top + row_h - 4],
             radius=10,
             fill=_CARD,
             outline=_LINE,
         )
-        rank_col = _GOLD if i <= 3 else _TEXT
-        draw.text((_PAD + 14, top + 14), f"{i:02d}", font=font_r, fill=rank_col)
+        rank_col = _GOLD if rank <= 3 else _TEXT
+        draw.text((_PAD + 14, top + 14), f"{rank:02d}", font=font_r, fill=rank_col)
         crest = _try_load_crest_rgba(r.team)
         if crest is not None:
             _paste_crest_natural(im, crest, _PAD + 88, top + row_h // 2, 36)
-        name = _fit(draw, r.team, font_n, 150)
-        draw.text((_PAD + 120, top + 12), name, font=font_n, fill=_TEXT)
+        name = _fit(draw, r.team, font_n, 200)
+        draw.text((_PAD + 120, top + 10), name, font=font_n, fill=_TEXT)
         meta = f"{r.league_code.upper() or '—'} · OVR {r.roster_ovr:g}"
-        draw.text((_PAD + 120, top + 36), meta, font=font_s, fill=_DIM)
+        draw.text((_PAD + 120, top + 34), meta, font=font_s, fill=_DIM)
 
-        bw = int((bar_x1 - bar_x0) * (r.score / max_score))
+        bw = int((bar_x1 - bar_x0) * (r.score / max_score)) if max_score else 0
         draw.rounded_rectangle(
-            [bar_x0, top + 18, bar_x0 + max(bw, 4), top + 36],
+            [bar_x0, top + 18, bar_x0 + max(bw, 4 if r.score > 0 else 0), top + 36],
             radius=6,
-            fill=_BAR if i > 3 else _GOLD,
+            fill=_BAR if rank > 3 else _GOLD,
         )
         draw.text((bar_x1 + 10, top + 16), f"{r.score:.0f}", font=font_r, fill=_TEXT)
 
@@ -120,6 +140,28 @@ def render_power_ranking_png(*, limit: int | None = None) -> bytes:
         fill=_DIM,
     )
     return _to_png(im.convert("RGB"))
+
+
+def render_power_ranking_pages(*, page_size: int = 20) -> list[bytes]:
+    """Две (или больше) страницы по ``page_size`` клубов, одна шкала баров."""
+    rows = rank_teams_by_prestige(limit=None)
+    max_score = max((r.score for r in rows), default=1.0) or 1.0
+    pages: list[bytes] = []
+    total = len(rows)
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (total + page_size - 1) // page_size)
+    for p in range(n_pages):
+        off = p * page_size
+        pages.append(
+            render_power_ranking_png(
+                limit=None,
+                offset=off,
+                page_size=page_size,
+                page_label=f"{p + 1}/{n_pages}",
+                global_max_score=max_score,
+            )
+        )
+    return pages
 
 
 def render_prestige_breakdown_png(*, limit: int = 10) -> bytes:
