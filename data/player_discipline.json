@@ -167,7 +167,7 @@
       "team_norm": "жирона",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "зобнин|спартак|cl|cl",
@@ -625,7 +625,7 @@
       "team_norm": "байер",
       "league_code": "cl",
       "scope": "cl",
-      "count": 2
+      "count": 3
     },
     {
       "key": "адейеми|дортмунд|cl|cl",
@@ -4764,6 +4764,30 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 77
+    },
+    {
+      "key": "нету|байер|3|6|9",
+      "name": "Нету",
+      "name_norm": "нету",
+      "team": "Байер",
+      "team_norm": "байер",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 77
+    },
+    {
+      "key": "торрес|аталанта|3|6|9",
+      "name": "Торрес",
+      "name_norm": "торрес",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 79
     }
   ]
 }

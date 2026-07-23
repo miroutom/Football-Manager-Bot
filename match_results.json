@@ -2572,6 +2572,26 @@
       "away_score": 1,
       "day": 6,
       "entry_type": "play"
+    },
+    {
+      "home": "Байер",
+      "away": "Аталанта",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Жирона",
+      "away": "Ювентус",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }
