@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from dataclasses import dataclass, field
@@ -396,3 +397,294 @@ def prestige_formula_caption() -> str:
 
 def cl_stage_short(stage: int) -> str:
     return CL_STAGE_LABEL_RU.get(int(stage), cl_stage_label_ru(stage))
+
+
+# ─── Доп. аналитика: H2H, матчи сезона, менеджеры, динамика ─────────
+
+def list_history_seasons() -> list[int]:
+    """Сезоны, по которым есть история / журналы."""
+    hist = load_history()
+    seasons: set[int] = set()
+    for rows in (hist.get("league_winners") or {}).values():
+        for row in rows or []:
+            if row:
+                seasons.add(int(row[0]))
+    for row in hist.get("champions_league") or []:
+        if row:
+            seasons.add(int(row[0]))
+    for sn, _mp in hist.get("cl_knockout_stages") or []:
+        seasons.add(int(sn))
+    for kind in AWARD_POINTS:
+        for row in hist.get(kind) or []:
+            if row:
+                seasons.add(int(row[0]))
+    for sn in list_season_archives_with_db():
+        seasons.add(int(sn))
+    try:
+        seasons.add(int(season_paths.get_active_season()))
+    except Exception:
+        pass
+    return sorted(seasons) if seasons else [1]
+
+
+def _match_journal_paths() -> list[tuple[int | None, str]]:
+    """(season|None, path) — None = текущий match_results.json в корне."""
+    out: list[tuple[int | None, str]] = []
+    root_jr = os.path.join(season_paths.PROJECT_ROOT, "match_results.json")
+    if os.path.isfile(root_jr):
+        try:
+            active = int(season_paths.get_active_season())
+        except Exception:
+            active = None
+        out.append((active, root_jr))
+    for sn in list_season_archives_with_db():
+        p = os.path.join(season_paths.season_archive_directory(int(sn)), "match_results.json")
+        if os.path.isfile(p):
+            # не дублируем active, если тот же файл
+            ap = os.path.abspath(p)
+            if any(os.path.abspath(x[1]) == ap for x in out):
+                continue
+            out.append((int(sn), p))
+    return out
+
+
+def _load_matches_from_path(path: str) -> list[dict[str, Any]]:
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+    if isinstance(raw, list):
+        return [m for m in raw if isinstance(m, dict)]
+    if isinstance(raw, dict):
+        rows = raw.get("matches") or []
+        return [m for m in rows if isinstance(m, dict)]
+    return []
+
+
+def iter_all_match_records() -> list[dict[str, Any]]:
+    """Все матчи из журналов с полем ``_season``."""
+    seen: set[tuple] = set()
+    out: list[dict[str, Any]] = []
+    for sn, path in _match_journal_paths():
+        for m in _load_matches_from_path(path):
+            home = str(m.get("home") or "").strip()
+            away = str(m.get("away") or "").strip()
+            if not home or not away:
+                continue
+            key = (
+                sn,
+                home.casefold(),
+                away.casefold(),
+                m.get("league"),
+                m.get("day"),
+                m.get("home_score"),
+                m.get("away_score"),
+                m.get("cl_phase"),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            row = dict(m)
+            row["_season"] = sn
+            out.append(row)
+    return out
+
+
+def head_to_head(team_a: str, team_b: str) -> dict[str, Any]:
+    a, b = team_a.strip(), team_b.strip()
+    an, bn = _norm(a), _norm(b)
+    matches: list[dict[str, Any]] = []
+    wa = wb = draws = gf_a = ga_a = 0
+    for m in iter_all_match_records():
+        h, aw = _norm(str(m.get("home") or "")), _norm(str(m.get("away") or ""))
+        if {h, aw} != {an, bn}:
+            continue
+        hs = int(m.get("home_score") or 0)
+        aws = int(m.get("away_score") or 0)
+        matches.append(m)
+        if h == an:
+            gf_a += hs
+            ga_a += aws
+            if hs > aws:
+                wa += 1
+            elif hs < aws:
+                wb += 1
+            else:
+                draws += 1
+        else:
+            gf_a += aws
+            ga_a += hs
+            if aws > hs:
+                wa += 1
+            elif aws < hs:
+                wb += 1
+            else:
+                draws += 1
+    matches.sort(
+        key=lambda m: (m.get("_season") or 0, m.get("day") or 0, str(m.get("league") or ""))
+    )
+    return {
+        "team_a": a,
+        "team_b": b,
+        "played": len(matches),
+        "wins_a": wa,
+        "wins_b": wb,
+        "draws": draws,
+        "goals_a": gf_a,
+        "goals_b": ga_a,
+        "matches": matches,
+    }
+
+
+def club_matches_in_season(team: str, season: int) -> list[dict[str, Any]]:
+    want = _norm(team)
+    rows = [
+        m
+        for m in iter_all_match_records()
+        if m.get("_season") == int(season)
+        and (
+            _norm(str(m.get("home") or "")) == want
+            or _norm(str(m.get("away") or "")) == want
+        )
+    ]
+    rows.sort(key=lambda m: (str(m.get("league") or ""), int(m.get("day") or 0)))
+    return rows
+
+
+def prestige_snapshot_for_season(team: str, season: int, hist: dict[str, Any] | None = None) -> float:
+    """Престиж только за вклад сезона N (без текущего OVR состава)."""
+    hist = hist or load_history()
+    want = _norm(team)
+    sn = int(season)
+    score = 0.0
+    for code, rows in (hist.get("league_winners") or {}).items():
+        w = float(LEAGUE_TITLE_WEIGHT.get(str(code), 0.7))
+        for row in rows or []:
+            if row and len(row) >= 2 and int(row[0]) == sn and _norm(str(row[1])) == want:
+                score += LEAGUE_TITLE_BASE * w
+    for row in hist.get("champions_league") or []:
+        if row and len(row) >= 2 and int(row[0]) == sn and _norm(str(row[1])) == want:
+            score += CL_TITLE_POINTS
+    for s2, mp in hist.get("cl_knockout_stages") or []:
+        if int(s2) != sn or not isinstance(mp, dict):
+            continue
+        for t, st in mp.items():
+            if _norm(str(t)) == want:
+                score += float(CL_STAGE_POINTS.get(int(st or 0), 0.0))
+    for kind, pts in AWARD_POINTS.items():
+        for row in hist.get(kind) or []:
+            if row and len(row) >= 3 and int(row[0]) == sn and _norm(str(row[2])) == want:
+                score += float(pts)
+    return round(score, 2)
+
+
+def prestige_dynamics(team: str) -> list[tuple[int, float]]:
+    return [(sn, prestige_snapshot_for_season(team, sn)) for sn in list_history_seasons()]
+
+
+def compare_clubs(team_a: str, team_b: str) -> dict[str, Any]:
+    pa = compute_team_prestige(team_a)
+    pb = compute_team_prestige(team_b)
+    da = build_club_dossier(team_a)
+    db = build_club_dossier(team_b)
+    h2h = head_to_head(team_a, team_b)
+    return {"a": pa, "b": pb, "dossier_a": da, "dossier_b": db, "h2h": h2h}
+
+
+def manager_side_stats(side: str) -> dict[str, Any]:
+    from config.leagues_config import MANAGER_TEAMS
+
+    key = (side or "").strip().lower()
+    clubs = [str(t).strip().title() for t in (MANAGER_TEAMS.get(key) or [])]
+    hist = load_history()
+    prestiges = [compute_team_prestige(t, hist) for t in clubs]
+    total = sum(p.score for p in prestiges)
+    league_titles = sum(p.league_titles for p in prestiges)
+    cl_titles = sum(p.cl_titles for p in prestiges)
+    awards = sum(p.awards for p in prestiges)
+    top = sorted(prestiges, key=lambda p: -p.score)[:8]
+    return {
+        "side": key,
+        "label": "Roman" if key == "roman" else "Lika" if key == "lika" else key,
+        "clubs": clubs,
+        "prestige_total": round(total, 1),
+        "league_titles": league_titles,
+        "cl_titles": cl_titles,
+        "awards": awards,
+        "top_clubs": top,
+        "avg_prestige": round(total / max(1, len(prestiges)), 1),
+    }
+
+
+def hall_of_fame_global(*, limit: int = 20) -> list[ClubLegend]:
+    """Топ игроков по всем клубам текущего пула (лига+ЛЧ в архивах)."""
+    best: dict[str, ClubLegend] = {}
+    for team in sorted(_current_pool_club_names(), key=_norm):
+        for leg in club_legends(team, limit=12):
+            # ключ: имя — берём лучший score (игрок мог сменить клуб)
+            k = leg.name.casefold()
+            prev = best.get(k)
+            if prev is None or leg.score > prev.score:
+                # помечаем клуб в position field? keep as is; store team in name suffix no
+                best[k] = ClubLegend(
+                    name=f"{leg.name}",
+                    position=leg.position,
+                    goals=leg.goals,
+                    assists=leg.assists,
+                    matches=leg.matches,
+                    potm=leg.potm,
+                    overall=leg.overall,
+                    score=leg.score,
+                )
+                # monkey: attach team via expanding - use a simple approach
+                setattr(best[k], "club", team)
+    rows = list(best.values())
+    rows.sort(key=lambda x: (-x.score, -x.goals, x.name.casefold()))
+    return rows[: max(1, int(limit))]
+
+
+def season_cover_data(season: int) -> dict[str, Any]:
+    hist = load_history()
+    sn = int(season)
+    leagues: dict[str, str | None] = {}
+    for code in ("rpl", "eng", "esp", "ita", "ger"):
+        winner = None
+        for row in (hist.get("league_winners") or {}).get(code) or []:
+            if row and int(row[0]) == sn:
+                winner = str(row[1])
+        leagues[code] = winner
+    cl = None
+    for row in hist.get("champions_league") or []:
+        if row and int(row[0]) == sn:
+            cl = str(row[1])
+    awards: dict[str, tuple[str, str] | None] = {}
+    labels = {
+        "golden_ball": "ЗМ",
+        "golden_boot": "Бутса",
+        "golden_glove": "Перчатка",
+        "golden_boy": "Golden Boy",
+    }
+    for kind, lab in labels.items():
+        hit = None
+        for row in hist.get(kind) or []:
+            if row and len(row) >= 3 and int(row[0]) == sn:
+                hit = (str(row[1]), str(row[2]))
+        awards[lab] = hit
+    return {"season": sn, "leagues": leagues, "cl": cl, "awards": awards}
+
+
+def league_winners_heatmap() -> dict[str, Any]:
+    """seasons × league codes → winner team."""
+    hist = load_history()
+    seasons = list_history_seasons()
+    codes = ["rpl", "eng", "esp", "ita", "ger"]
+    grid: dict[tuple[int, str], str | None] = {}
+    for sn in seasons:
+        for code in codes:
+            w = None
+            for row in (hist.get("league_winners") or {}).get(code) or []:
+                if row and int(row[0]) == sn:
+                    w = str(row[1])
+            grid[(sn, code)] = w
+    return {"seasons": seasons, "codes": codes, "grid": grid}
