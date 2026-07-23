@@ -211,22 +211,19 @@ def render_club_dossier_png(team: str) -> bytes:
     font_kpi = _pick_font(28, bold=True)
     font_kpi_sm = _pick_font(20, bold=True)
 
-    # Header centered-ish with crest
+    # Header: crest + title
     crest = _try_load_crest_rgba(d.team)
     if crest is not None:
-        _paste_crest_natural(im, crest, _CANVAS_W // 2 - 160, 52, 64)
-    title = d.team
-    tw = draw.textbbox((0, 0), title, font=font_t)[2]
-    draw.text(((_CANVAS_W - tw) // 2 + 20, 22), title, font=font_t, fill=_TEXT)
+        _paste_crest_natural(im, crest, _PAD + 36, 52, 64)
+    draw.text((_PAD + 90, 22), d.team, font=font_t, fill=_TEXT)
     sub = f"{d.league_title} · престиж {p.score:.0f} · OVR состава {p.roster_ovr:g}"
-    sw = draw.textbbox((0, 0), sub, font=font_s)[2]
-    draw.text(((_CANVAS_W - sw) // 2, 78), sub, font=font_s, fill=_DIM)
+    draw.text((_PAD + 90, 78), sub, font=font_s, fill=_DIM)
 
-    # KPI cards — equal width, centered value
+    # KPI cards — equal width, centered labels/values
     kpis = [
         ("Чемп. лиги", str(p.league_titles), False),
-        ("ЛЧ", str(p.cl_titles), False),
-        ("Лучш. ЛЧ", cl_stage_short(p.best_cl_stage), True),
+        ("Кубки ЛЧ", str(p.cl_titles), False),
+        ("Пик ЛЧ", cl_stage_short(p.best_cl_stage), True),
         ("Награды", str(p.awards), False),
     ]
     gap = 14
