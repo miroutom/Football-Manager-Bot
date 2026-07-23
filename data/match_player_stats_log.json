@@ -1,1 +1,371 @@
-[]
+[
+  {
+    "season": 3,
+    "day": 6,
+    "home": "Тоттенхэм",
+    "away": "Мю",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Неймар",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Холанд",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 2,
+        "assists": 1
+      },
+      {
+        "player": "Ди Мария",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мэддисон",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Хёйберг",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Нуньес",
+        "team": "Мю",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Мартинелли",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Фернандеш",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Фекир",
+        "team": "Мю",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-23T18:12:27Z",
+    "home_score": 4,
+    "away_score": 2,
+    "league_code": "eng"
+  },
+  {
+    "season": 3,
+    "day": 6,
+    "home": "Фиорентина",
+    "away": "Ювентус",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Торрес",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Эн-Несри",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Черки",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Трехо",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      }
+    ],
+    "recorded_at": "2026-07-23T18:29:35Z",
+    "home_score": 0,
+    "away_score": 3,
+    "league_code": "ita"
+  },
+  {
+    "season": 3,
+    "day": 6,
+    "home": "Вольфсбург",
+    "away": "Арсенал",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Исак",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Майер",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Арнольд",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Гримальдо",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Давид",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Берарди",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Влашич",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Вендел",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-23T18:52:19Z",
+    "home_score": 3,
+    "away_score": 3,
+    "league_code": "cl",
+    "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 6,
+    "home": "Ювентус",
+    "away": "Жирона",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Эн-Несри",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Костич",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Черки",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Бето",
+        "team": "Жирона",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-23T19:19:21Z",
+    "home_score": 2,
+    "away_score": 2,
+    "league_code": "cl",
+    "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 6,
+    "home": "Арсенал",
+    "away": "Вольфсбург",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Коло Муани",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 4,
+        "assists": 0
+      },
+      {
+        "player": "Давид",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Берарди",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Влашич",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Вендел",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Исак",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Майер",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-23T19:47:37Z",
+    "home_score": 5,
+    "away_score": 2,
+    "league_code": "cl",
+    "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 6,
+    "home": "Зенит",
+    "away": "Мю",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Мунетси",
+        "team": "Зенит",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Барриос",
+        "team": "Зенит",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Мухтар",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мартинелли",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Фернандеш",
+        "team": "Мю",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Гроб",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Милинкович-Савич",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Брозович",
+        "team": "Мю",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Маркиньос",
+        "team": "Мю",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-23T20:09:54Z",
+    "home_score": 1,
+    "away_score": 4,
+    "league_code": "cl",
+    "cl_phase": "knockout"
+  }
+]

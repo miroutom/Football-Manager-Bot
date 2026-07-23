@@ -2566,5 +2566,33 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 6
+  },
+  {
+    "home": "Вольфсбург",
+    "away": "Арсенал",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Ювентус",
+    "away": "Жирона",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Арсенал",
+    "away": "Вольфсбург",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Зенит",
+    "away": "Мю",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
   }
 ]

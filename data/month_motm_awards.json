@@ -63,6 +63,102 @@
         "team": "Мю",
         "position": "ФРВ"
       }
+    },
+    "3": {
+      "rpl": {
+        "player": "Заха",
+        "team": "Зенит",
+        "position": "ЛФА"
+      },
+      "eng": {
+        "player": "Нуньес",
+        "team": "Мю",
+        "position": "ФРВ"
+      },
+      "esp": {
+        "player": "Леау",
+        "team": "Атлетик",
+        "position": "ФРВ"
+      },
+      "ita": {
+        "player": "Бензема",
+        "team": "Милан",
+        "position": "ФРВ"
+      },
+      "ger": {
+        "player": "Кейн",
+        "team": "Бавария",
+        "position": "ФРВ"
+      },
+      "cl": {
+        "player": "Пепе",
+        "team": "Спартак",
+        "position": "ФРВ"
+      }
+    },
+    "4": {
+      "rpl": {
+        "player": "Заха",
+        "team": "Зенит",
+        "position": "ЛФА"
+      },
+      "eng": {
+        "player": "Фекир",
+        "team": "Мю",
+        "position": "ЦАП"
+      },
+      "esp": {
+        "player": "Дибала",
+        "team": "Атлетик",
+        "position": "ЦАП"
+      },
+      "ita": {
+        "player": "Мартинез",
+        "team": "Интер",
+        "position": "ФРВ"
+      },
+      "ger": {
+        "player": "Рёль",
+        "team": "Бавария",
+        "position": "ЦАП"
+      },
+      "cl": {
+        "player": "Балогун",
+        "team": "Цска",
+        "position": "ФРВ"
+      }
+    },
+    "5": {
+      "rpl": {
+        "player": "Заха",
+        "team": "Зенит",
+        "position": "ЛФА"
+      },
+      "eng": {
+        "player": "Габриэль Жезус",
+        "team": "Астон Вилла",
+        "position": "ПФА"
+      },
+      "esp": {
+        "player": "Мората",
+        "team": "Атлетико",
+        "position": "ФРВ"
+      },
+      "ita": {
+        "player": "Мартинез",
+        "team": "Интер",
+        "position": "ФРВ"
+      },
+      "ger": {
+        "player": "Кейн",
+        "team": "Бавария",
+        "position": "ФРВ"
+      },
+      "cl": {
+        "player": "Салтыков",
+        "team": "Крылья Советов",
+        "position": "ЛФА"
+      }
     }
   }
 }

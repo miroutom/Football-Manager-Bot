@@ -2592,6 +2592,64 @@
       "day": 6,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Тоттенхэм",
+      "away": "Мю",
+      "league": "eng",
+      "home_score": 4,
+      "away_score": 2,
+      "day": 6,
+      "entry_type": "play"
+    },
+    {
+      "home": "Фиорентина",
+      "away": "Ювентус",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 3,
+      "day": 6,
+      "entry_type": "play"
+    },
+    {
+      "home": "Вольфсбург",
+      "away": "Арсенал",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 3,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Жирона",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Вольфсбург",
+      "league": "cl",
+      "home_score": 5,
+      "away_score": 2,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Зенит",
+      "away": "Мю",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 4,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }

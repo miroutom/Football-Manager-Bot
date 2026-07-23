@@ -231,7 +231,7 @@
       "team_norm": "тоттенхэм",
       "league_code": "eng",
       "scope": "league",
-      "matches_left": 3,
+      "matches_left": 2,
       "unavailable_from_round": 9
     },
     {
@@ -244,6 +244,16 @@
       "scope": "league",
       "matches_left": 0,
       "unavailable_from_round": 9
+    },
+    {
+      "key": "толои|зенит|cl|cl",
+      "name": "Толои",
+      "name_norm": "толои",
+      "team": "Зенит",
+      "team_norm": "зенит",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 3
     }
   ],
   "yellow_cycle": [
@@ -1125,7 +1135,7 @@
       "team_norm": "арсенал",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "депай|атлетико|esp|league",
@@ -1615,7 +1625,7 @@
       "team_norm": "ювентус",
       "league_code": "cl",
       "scope": "cl",
-      "count": 1
+      "count": 2
     },
     {
       "key": "перейра|реал сосьедад|cl|cl",
@@ -2205,6 +2215,36 @@
       "team_norm": "спартак",
       "league_code": "rpl",
       "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "ван де вен|тоттенхэм|eng|league",
+      "name": "Ван Де Вен",
+      "name_norm": "ван де вен",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "давид|арсенал|cl|cl",
+      "name": "Давид",
+      "name_norm": "давид",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "ито|ювентус|cl|cl",
+      "name": "Ито",
+      "name_norm": "ито",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "league_code": "cl",
+      "scope": "cl",
       "count": 1
     }
   ],
@@ -4788,6 +4828,66 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 79
+    },
+    {
+      "key": "фаджиоли|ювентус|3|6|9",
+      "name": "Фаджиоли",
+      "name_norm": "фаджиоли",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 80
+    },
+    {
+      "key": "лакруа|вольфсбург|3|6|13",
+      "name": "Лакруа",
+      "name_norm": "лакруа",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 82
+    },
+    {
+      "key": "мартинелли|мю|3|6|9",
+      "name": "Мартинелли",
+      "name_norm": "мартинелли",
+      "team": "Мю",
+      "team_norm": "мю",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 80
+    },
+    {
+      "key": "фекир|мю|3|6|13",
+      "name": "Фекир",
+      "name_norm": "фекир",
+      "team": "Мю",
+      "team_norm": "мю",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 84
+    },
+    {
+      "key": "брозович|мю|3|6|9",
+      "name": "Брозович",
+      "name_norm": "брозович",
+      "team": "Мю",
+      "team_norm": "мю",
+      "out_from_month": 6,
+      "return_month": 9,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 84
     }
   ]
 }
