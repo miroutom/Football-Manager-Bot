@@ -2545,5 +2545,12 @@
     "away": "Зенит",
     "tournament": "league",
     "day": 4
+  },
+  {
+    "home": "Бетис",
+    "away": "Атлетик",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
   }
 ]

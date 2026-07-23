@@ -4730,6 +4730,18 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 84
+    },
+    {
+      "key": "ле фе|динамо|3|6|13",
+      "name": "Ле Фе",
+      "name_norm": "ле фе",
+      "team": "Динамо",
+      "team_norm": "динамо",
+      "out_from_month": 6,
+      "return_month": 13,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 77
     }
   ]
 }

@@ -2535,6 +2535,25 @@
       "away_score": 2,
       "day": 6,
       "entry_type": "play"
+    },
+    {
+      "home": "Бетис",
+      "away": "Атлетик",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 4,
+      "day": 6,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Динамо",
+      "away": "Краснодар",
+      "league": "rpl",
+      "home_score": 6,
+      "away_score": 1,
+      "day": 6,
+      "entry_type": "play"
     }
   ]
 }
