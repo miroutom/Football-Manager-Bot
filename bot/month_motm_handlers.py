@@ -29,6 +29,7 @@ _RE_LG = re.compile(r"^mm:lg:\d+:[a-z0-9_]+$")
 _RE_TM = re.compile(r"^mm:tm:\d+:[a-z0-9_]+:\d+$")
 _RE_CAND = re.compile(r"^mm:cand:\d+$")
 _RE_MANUAL = re.compile(r"^mm:manual:\d+:[a-z0-9_]+$")
+_RE_VIEW = re.compile(r"^mm:view:\d+:[a-z0-9_]+$")
 
 
 def _league_title(code: str) -> str:
@@ -80,6 +81,27 @@ def _league_kb(month: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _mode_kb(month: int, league_code: str) -> InlineKeyboardMarkup:
+    """После лиги: кандидаты или ручной выбор."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📊 Посмотреть кандидатов",
+                    callback_data=f"mm:view:{month}:{league_code}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✍️ Выбрать вручную",
+                    callback_data=f"mm:manual:{month}:{league_code}",
+                )
+            ],
+            [InlineKeyboardButton(text="« К лигам", callback_data=f"mm:mo:{month}")],
+        ]
+    )
+
+
 def _teams_kb(month: int, league_code: str) -> InlineKeyboardMarkup:
     teams = teams_ordered_for_goalscorers(league_code)
     rows: list[list[InlineKeyboardButton]] = []
@@ -97,7 +119,12 @@ def _teams_kb(month: int, league_code: str) -> InlineKeyboardMarkup:
     if row:
         rows.append(row)
     rows.append(
-        [InlineKeyboardButton(text="« К лигам", callback_data=f"mm:mo:{month}")]
+        [
+            InlineKeyboardButton(
+                text="« Назад",
+                callback_data=f"mm:lg:{month}:{league_code}",
+            )
+        ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -109,7 +136,7 @@ def _candidates_kb(month: int, league_code: str, cands: list) -> InlineKeyboardM
             [
                 InlineKeyboardButton(
                     text=_cand_btn_label(
-                        f"{i + 1}. {c.player} ({c.team}) {c.goals}+{c.assists} P{c.potm}"
+                        f"{i + 1}. {c.player} · {c.goals}+{c.assists} · P{c.potm}"
                     ),
                     callback_data=f"mm:cand:{i}",
                 )
@@ -118,13 +145,18 @@ def _candidates_kb(month: int, league_code: str, cands: list) -> InlineKeyboardM
     rows.append(
         [
             InlineKeyboardButton(
-                text="✍️ Вручную по клубу",
+                text="✍️ Выбрать вручную",
                 callback_data=f"mm:manual:{month}:{league_code}",
             )
         ]
     )
     rows.append(
-        [InlineKeyboardButton(text="« К лигам", callback_data=f"mm:mo:{month}")]
+        [
+            InlineKeyboardButton(
+                text="« Назад",
+                callback_data=f"mm:lg:{month}:{league_code}",
+            )
+        ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -185,8 +217,12 @@ async def _open_month_motm_menu(message: Message) -> None:
         return
     await message.answer(
         "📆 <b>Игрок месяца (MOTM)</b>\n\n"
-        "Выбери месяц → лигу. Бот покажет кандидатов "
-        "(голы×3 + передачи×2 + POTM×5), либо выбери клуб вручную.\n\n"
+        "Месяц → лига → <b>кандидаты</b> или <b>вручную</b>.\n"
+        "Кандидаты считаются за месяц целиком: "
+        "сумма голов/передач + число POTM "
+        "(<code>гол×3 + пас×2 + POTM×5</code>). "
+        "Работает с м6+, когда есть лог статы.\n"
+        "РПЛ / АПЛ / … / ЛЧ — отдельно.\n\n"
         "/cancel — отмена.",
         reply_markup=_months_keyboard(months),
         parse_mode="HTML",
@@ -258,9 +294,29 @@ async def cb_mm_league(callback: CallbackQuery, state: FSMContext) -> None:
         )
         return
 
+    await state.update_data(mm_month=month, mm_lg=code, mm_cands=None)
+    await callback.message.answer(
+        f"📆 MOTM · м{month} · <b>{_league_title(code)}</b>\n\n"
+        "Как выбираем?",
+        reply_markup=_mode_kb(month, code),
+        parse_mode="HTML",
+    )
+
+
+@month_motm_router.callback_query(F.data.startswith("mm:view:"))
+async def cb_mm_view_cands(callback: CallbackQuery, state: FSMContext) -> None:
+    d = callback.data
+    if not d or not _RE_VIEW.match(d):
+        return
+    await callback.answer()
+    if not callback.message:
+        return
+    parts = d.split(":")
+    month = int(parts[2])
+    code = parts[3]
     from utils.month_motm_candidates import month_motm_candidates
 
-    cands = await asyncio.to_thread(month_motm_candidates, month, code, limit=8)
+    cands = await asyncio.to_thread(month_motm_candidates, month, code, limit=10)
     payload = [
         {
             "player": c.player,
@@ -275,35 +331,46 @@ async def cb_mm_league(callback: CallbackQuery, state: FSMContext) -> None:
     ]
     await state.update_data(mm_month=month, mm_lg=code, mm_cands=payload)
 
-    if cands:
-        lines = [
-            f"📆 MOTM · м{month} · <b>{_league_title(code)}</b>",
-            "Кандидаты: <code>гол×3 + пас×2 + POTM×5</code>",
-            "",
-        ]
-        for i, c in enumerate(cands, 1):
-            lines.append(
-                f"{i}. <b>{c.player}</b> ({c.team}) — "
-                f"{c.goals}+{c.assists}, POTM×{c.potm}, скор {c.score:g}"
-            )
-        lines.append("\nЖми кандидата или «вручную по клубу».")
+    if not cands:
         await callback.message.answer(
-            "\n".join(lines),
-            reply_markup=_candidates_kb(month, code, cands),
+            f"📆 MOTM · м{month} · <b>{_league_title(code)}</b>\n\n"
+            "Пока нет данных за месяц (лог статы/POTM пуст — обычно до м6).\n"
+            "Выбери вручную или дождись матчей с записью статы.",
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text="✍️ Выбрать вручную",
+                            callback_data=f"mm:manual:{month}:{code}",
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text="« Назад",
+                            callback_data=f"mm:lg:{month}:{code}",
+                        )
+                    ],
+                ]
+            ),
             parse_mode="HTML",
         )
         return
 
-    try:
-        kb = _teams_kb(month, code)
-    except Exception as e:
-        logger.exception("mm_teams_kb")
-        await callback.message.answer(f"Ошибка: {e}")
-        return
+    lines = [
+        f"📆 MOTM · м{month} · <b>{_league_title(code)}</b>",
+        "За месяц целиком: голы + передачи + POTM "
+        "(<code>гол×3 + пас×2 + POTM×5</code>).",
+        "",
+    ]
+    for i, c in enumerate(cands, 1):
+        lines.append(
+            f"{i}. <b>{c.player}</b> ({c.team}) — "
+            f"<b>{c.goals}+{c.assists}</b>, POTM×{c.potm}, скор {c.score:g}"
+        )
+    lines.append("\nНажми кандидата, чтобы выдать MOTM.")
     await callback.message.answer(
-        f"📆 MOTM · м{month} · <b>{_league_title(code)}</b>\n"
-        "Пока нет лога статы/POTM за этот месяц — выбери клуб вручную:",
-        reply_markup=kb,
+        "\n".join(lines),
+        reply_markup=_candidates_kb(month, code, cands),
         parse_mode="HTML",
     )
 
