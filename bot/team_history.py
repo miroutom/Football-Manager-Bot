@@ -28,17 +28,17 @@ LEAGUE_TITLE_WEIGHT: dict[str, float] = {
     "rpl": 0.18,
 }
 
-# Очки за лучшую стадию ЛЧ в сезоне (победитель учитывается отдельно титулом).
+# Очки за лучшую стадию ЛЧ в сезоне (путь). Титул даёт ещё CL_TITLE_POINTS сверху.
 CL_STAGE_POINTS: dict[int, float] = {
-    1: 1.0,   # 1/16
-    2: 2.5,   # 1/8
-    3: 5.5,   # 1/4
-    4: 12.0,  # 1/2
-    5: 22.0,  # финал
-    6: 0.0,   # победитель — только через CL_TITLE_POINTS
+    1: 3.0,   # 1/16
+    2: 8.0,   # 1/8
+    3: 16.0,  # 1/4
+    4: 28.0,  # 1/2
+    5: 40.0,  # финал
+    6: 48.0,  # победитель — путь до трофея (титул отдельно)
 }
 
-CL_TITLE_POINTS = 52.0
+CL_TITLE_POINTS = 40.0
 LEAGUE_TITLE_BASE = 20.0
 AWARD_POINTS = {
     "golden_ball": 12.0,
@@ -74,7 +74,19 @@ class ClubLegend:
     assists: int
     matches: int
     potm: int
+    overall: int
     score: float
+
+
+def format_season_list(seasons: list[int]) -> str:
+    """[2, 5] → «2 сезон, 5 сезон»."""
+    if not seasons:
+        return "—"
+    return ", ".join(f"{int(sn)} сезон" for sn in seasons)
+
+
+def format_season_tag(sn: int) -> str:
+    return f"{int(sn)} сезон"
 
 
 @dataclass
@@ -225,12 +237,12 @@ def _aggregate_legends_from_sqlite(db_path: str, team: str, bucket: dict[str, di
                 # SQLite lower() не трогает кириллицу — фильтруем в Python.
                 cur = conn.execute(
                     f"SELECT name, position, goals, assists, matches, "
-                    f"COALESCE(potm, 0), team FROM {tbl} "
+                    f"COALESCE(potm, 0), COALESCE(overall, 0), team FROM {tbl} "
                     f"WHERE team IS NOT NULL AND trim(team) != ''"
                 )
             except sqlite3.OperationalError:
                 continue
-            for name, pos, g, a, m, potm, tm in cur:
+            for name, pos, g, a, m, potm, ovr, tm in cur:
                 if _norm(str(tm or "")) != want:
                     continue
                 nm = (name or "").strip()
@@ -246,12 +258,16 @@ def _aggregate_legends_from_sqlite(db_path: str, team: str, bucket: dict[str, di
                         "assists": 0,
                         "matches": 0,
                         "potm": 0,
+                        "overall": 0,
                     },
                 )
                 row["goals"] += int(g or 0)
                 row["assists"] += int(a or 0)
                 row["matches"] += int(m or 0)
                 row["potm"] += int(potm or 0)
+                ov = int(ovr or 0)
+                if ov > int(row["overall"] or 0):
+                    row["overall"] = ov
                 if (pos or "").strip() and not row["position"]:
                     row["position"] = str(pos).strip().upper()
     finally:
@@ -305,6 +321,7 @@ def club_legends(team: str, *, limit: int = 8) -> list[ClubLegend]:
                 assists=a,
                 matches=m,
                 potm=potm,
+                overall=int(row.get("overall") or 0),
                 score=score,
             )
         )

@@ -190,10 +190,16 @@ def render_prestige_breakdown_png(*, limit: int = 10) -> bytes:
 
 
 def render_club_dossier_png(team: str) -> bytes:
+    from bot.team_history import format_season_list, format_season_tag
+
     d: ClubDossier = build_club_dossier(team)
     p: TeamPrestige = d.prestige
-    legends_h = 36 + max(1, len(d.legends)) * 34
-    h = 520 + legends_h
+
+    awards_block_h = 0
+    if d.awards:
+        awards_block_h = 36 + ((len(d.awards[:6]) + 1) // 2) * 56 + 12
+    legends_h = 52 + max(1, len(d.legends)) * 32
+    h = 560 + awards_block_h + legends_h
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
 
@@ -202,59 +208,64 @@ def render_club_dossier_png(team: str) -> bytes:
     font_b = _pick_font(22, bold=True)
     font_m = _pick_font(18)
     font_sm = _pick_font(15)
+    font_kpi = _pick_font(28, bold=True)
+    font_kpi_sm = _pick_font(20, bold=True)
 
+    # Header centered-ish with crest
     crest = _try_load_crest_rgba(d.team)
     if crest is not None:
-        _paste_crest_natural(im, crest, _PAD + 36, 58, 72)
-    draw.text((_PAD + 90, 24), d.team, font=font_t, fill=_TEXT)
-    draw.text(
-        (_PAD + 90, 78),
-        f"{d.league_title} · престиж {p.score:.0f} · OVR состава {p.roster_ovr:g}",
-        font=font_s,
-        fill=_DIM,
-    )
+        _paste_crest_natural(im, crest, _CANVAS_W // 2 - 160, 52, 64)
+    title = d.team
+    tw = draw.textbbox((0, 0), title, font=font_t)[2]
+    draw.text(((_CANVAS_W - tw) // 2 + 20, 22), title, font=font_t, fill=_TEXT)
+    sub = f"{d.league_title} · престиж {p.score:.0f} · OVR состава {p.roster_ovr:g}"
+    sw = draw.textbbox((0, 0), sub, font=font_s)[2]
+    draw.text(((_CANVAS_W - sw) // 2, 78), sub, font=font_s, fill=_DIM)
 
-    # KPI cards
+    # KPI cards — equal width, centered value
     kpis = [
-        ("Чемп. лиги", str(p.league_titles)),
-        ("ЛЧ", str(p.cl_titles)),
-        ("Лучш. ЛЧ", cl_stage_short(p.best_cl_stage)),
-        ("Награды", str(p.awards)),
+        ("Чемп. лиги", str(p.league_titles), False),
+        ("ЛЧ", str(p.cl_titles), False),
+        ("Лучш. ЛЧ", cl_stage_short(p.best_cl_stage), True),
+        ("Награды", str(p.awards), False),
     ]
-    card_w = 260
-    for i, (lab, val) in enumerate(kpis):
-        x0 = _PAD + i * (card_w + 12)
-        y0 = 120
+    gap = 14
+    card_w = (_CANVAS_W - 2 * _PAD - 3 * gap) // 4
+    y0 = 118
+    for i, (lab, val, small) in enumerate(kpis):
+        x0 = _PAD + i * (card_w + gap)
         draw.rounded_rectangle(
-            [x0, y0, x0 + card_w, y0 + 78],
+            [x0, y0, x0 + card_w, y0 + 86],
             radius=12,
             fill=_CARD,
             outline=_LINE,
         )
-        draw.text((x0 + 16, y0 + 12), lab, font=font_sm, fill=_DIM)
-        draw.text((x0 + 16, y0 + 34), val, font=font_t, fill=_GOLD if i < 2 else _TEXT)
+        lw = draw.textbbox((0, 0), lab, font=font_sm)[2]
+        draw.text((x0 + (card_w - lw) // 2, y0 + 10), lab, font=font_sm, fill=_DIM)
+        fval = font_kpi_sm if small or len(val) > 4 else font_kpi
+        # shrink until fits
+        while draw.textbbox((0, 0), val, font=fval)[2] > card_w - 16 and fval.size > 14:
+            fval = _pick_font(max(14, fval.size - 2), bold=True)
+        vw = draw.textbbox((0, 0), val, font=fval)[2]
+        draw.text(
+            (x0 + (card_w - vw) // 2, y0 + 38),
+            val,
+            font=fval,
+            fill=_GOLD if i < 2 else _TEXT,
+        )
 
-    # Timeline / titles
-    y = 220
+    y = 224
     draw.text((_PAD, y), "Трофеи и путь в ЛЧ", font=font_b, fill=_TEXT)
     y += 34
-    league_txt = (
-        ", ".join(f"с{s}" for s in d.league_titles_by_season)
-        if d.league_titles_by_season
-        else "—"
-    )
-    cl_txt = (
-        ", ".join(f"с{s}" for s in d.cl_titles_by_season)
-        if d.cl_titles_by_season
-        else "—"
-    )
+    league_txt = format_season_list(d.league_titles_by_season)
+    cl_txt = format_season_list(d.cl_titles_by_season)
     draw.text((_PAD, y), f"Чемпионства лиги: {league_txt}", font=font_m, fill=_TEXT)
     y += 28
     draw.text((_PAD, y), f"Победы в ЛЧ: {cl_txt}", font=font_m, fill=_TEXT)
     y += 28
     if d.cl_stages:
         stage_line = " · ".join(
-            f"с{sn} {cl_stage_short(st)}" for sn, st in d.cl_stages
+            f"{format_season_tag(sn)} — {cl_stage_short(st)}" for sn, st in d.cl_stages
         )
     else:
         stage_line = "нет данных плей-офф"
@@ -266,57 +277,93 @@ def render_club_dossier_png(team: str) -> bytes:
     )
     y += 36
 
-    # Prestige mini bars
+    # Prestige bars — full width, centered block
     draw.text((_PAD, y), "Вклад в престиж", font=font_b, fill=_TEXT)
-    y += 30
+    y += 28
     parts = list(p.breakdown.items())
     max_p = max((v for _, v in parts), default=1.0) or 1.0
+    label_w = 100
+    bar_x0 = _PAD + label_w
+    bar_x1 = _CANVAS_W - _PAD - 56
     for lab, val in parts:
         draw.text((_PAD, y), lab, font=font_sm, fill=_DIM)
-        bx0 = _PAD + 110
-        bw = int(420 * (val / max_p)) if max_p else 0
+        bw = int((bar_x1 - bar_x0) * (val / max_p)) if max_p else 0
         draw.rounded_rectangle(
-            [bx0, y + 2, bx0 + max(bw, 2 if val else 0), y + 16],
+            [bar_x0, y + 2, bar_x0 + max(bw, 2 if val else 0), y + 16],
             radius=4,
             fill=_BAR2 if lab.startswith("ЛЧ") else _BAR,
         )
-        draw.text((bx0 + 440, y), f"{val:.0f}", font=font_sm, fill=_TEXT)
+        draw.text((bar_x1 + 10, y), f"{val:.0f}", font=font_sm, fill=_TEXT)
         y += 24
 
-    y += 10
+    y += 12
+    # Awards as cards
     if d.awards:
-        aw = " · ".join(f"{lab} с{sn} ({pl})" for lab, sn, pl in d.awards[:6])
-        draw.text(
-            (_PAD, y),
-            _fit(draw, f"Личные награды: {aw}", font_m, _CANVAS_W - 2 * _PAD),
-            font=font_m,
-            fill=_GOLD,
-        )
-        y += 32
+        draw.text((_PAD, y), "Личные награды", font=font_b, fill=_TEXT)
+        y += 30
+        aw_w = (_CANVAS_W - 2 * _PAD - gap) // 2
+        for i, (lab, sn, pl) in enumerate(d.awards[:6]):
+            col = i % 2
+            row = i // 2
+            x0 = _PAD + col * (aw_w + gap)
+            ay = y + row * 56
+            draw.rounded_rectangle(
+                [x0, ay, x0 + aw_w, ay + 48],
+                radius=10,
+                fill=(42, 36, 22),
+                outline=(120, 96, 48),
+            )
+            draw.text((x0 + 14, ay + 6), lab, font=font_sm, fill=_GOLD)
+            draw.text(
+                (x0 + 14, ay + 24),
+                _fit(draw, f"{format_season_tag(sn)} · {pl}", font_m, aw_w - 28),
+                font=font_m,
+                fill=_TEXT,
+            )
+        y += ((len(d.awards[:6]) + 1) // 2) * 56 + 8
 
     draw.text((_PAD, y), "Легенды клуба (лига + ЛЧ за все сезоны)", font=font_b, fill=_TEXT)
-    y += 30
+    y += 28
+    table_top = y
+    row_h = 32
+    table_h = 40 + max(1, len(d.legends)) * row_h
     draw.rounded_rectangle(
-        [_PAD, y, _CANVAS_W - _PAD, y + 28 + max(1, len(d.legends)) * 34],
+        [_PAD, table_top, _CANVAS_W - _PAD, table_top + table_h],
         radius=12,
         fill=_CARD,
         outline=_LINE,
     )
-    y += 10
+    # columns: # | name | pos | ovr | M | G | A | POTM
+    cols = [
+        (_PAD + 16, "#", 36),
+        (_PAD + 52, "Игрок", 250),
+        (_PAD + 320, "Поз", 50),
+        (_PAD + 390, "OVR", 50),
+        (_PAD + 460, "И", 50),
+        (_PAD + 520, "Г", 50),
+        (_PAD + 580, "А", 50),
+        (_PAD + 640, "POTM", 70),
+    ]
+    hy = table_top + 10
+    for x, lab, _w in cols:
+        draw.text((x, hy), lab, font=font_sm, fill=_DIM)
+    y = hy + 26
+    draw.line([_PAD + 12, y - 4, _CANVAS_W - _PAD - 12, y - 4], fill=_LINE, width=1)
+
     if not d.legends:
-        draw.text((_PAD + 16, y), "Пока мало данных по игрокам клуба.", font=font_m, fill=_DIM)
+        draw.text((_PAD + 16, y + 4), "Пока мало данных по игрокам клуба.", font=font_m, fill=_DIM)
     else:
-        draw.text((_PAD + 16, y), "Игрок · поз · матчи / голы / передачи / POTM", font=font_sm, fill=_DIM)
-        y += 22
         for i, leg in enumerate(d.legends, start=1):
             draw.text((_PAD + 16, y), f"{i:02d}", font=font_m, fill=_GOLD if i <= 3 else _TEXT)
-            draw.text((_PAD + 56, y), _fit(draw, leg.name, font_m, 280), font=font_m, fill=_TEXT)
-            draw.text((_PAD + 360, y), leg.position, font=font_m, fill=_DIM)
-            draw.text((_PAD + 430, y), f"{leg.matches}", font=font_m, fill=_TEXT)
-            draw.text((_PAD + 500, y), f"{leg.goals}", font=font_m, fill=_TEXT)
-            draw.text((_PAD + 560, y), f"{leg.assists}", font=font_m, fill=_TEXT)
-            draw.text((_PAD + 630, y), f"{leg.potm}", font=font_m, fill=_TEXT)
-            y += 34
+            draw.text((_PAD + 52, y), _fit(draw, leg.name, font_m, 250), font=font_m, fill=_TEXT)
+            draw.text((_PAD + 320, y), leg.position, font=font_m, fill=_DIM)
+            ovr_s = str(leg.overall) if leg.overall else "—"
+            draw.text((_PAD + 390, y), ovr_s, font=font_m, fill=_TEXT)
+            draw.text((_PAD + 460, y), f"{leg.matches}", font=font_m, fill=_TEXT)
+            draw.text((_PAD + 520, y), f"{leg.goals}", font=font_m, fill=_TEXT)
+            draw.text((_PAD + 580, y), f"{leg.assists}", font=font_m, fill=_TEXT)
+            draw.text((_PAD + 640, y), f"{leg.potm}", font=font_m, fill=_TEXT)
+            y += row_h
 
     return _to_png(im.convert("RGB"))
 
