@@ -572,6 +572,26 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
                 )
                 if rec:
                     cl_ph = rec.get("cl_phase")
+                    if data.get("stats_schedule_day") is None and rec.get("day") is not None:
+                        data = {**data, "stats_schedule_day": rec.get("day")}
+            # Журнал голов/передач по матчу (для игрока месяца)
+            try:
+                from utils.match_player_stats_log import flush_session_acc_to_log
+
+                await asyncio.to_thread(
+                    flush_session_acc_to_log,
+                    data.get("stats_session_acc") or {},
+                    home=str(h),
+                    away=str(a),
+                    tournament=str(tourn),
+                    day=data.get("stats_schedule_day"),
+                    home_score=data.get("stats_hs"),
+                    away_score=data.get("stats_aws"),
+                    league_code=str(lc) if lc else None,
+                    cl_phase=str(cl_ph) if cl_ph else None,
+                )
+            except Exception:
+                logger.exception("match_player_stats_log")
             from matches_stats_tracking import mark_stats_completed
 
             await asyncio.to_thread(
