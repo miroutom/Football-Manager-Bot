@@ -6,7 +6,7 @@ from bot.team_history import compute_team_prestige, rank_teams_by_prestige
 
 def test_prestige_ranks_big5_above_easy_rpl_titles():
     rows = rank_teams_by_prestige(limit=None)
-    assert len(rows) >= 40
+    assert len(rows) == 40
     names = [r.team for r in rows]
     assert "Интер" in names[:5]
     # Зенит с 2 титулами РПЛ не должен быть в топ-10 силы

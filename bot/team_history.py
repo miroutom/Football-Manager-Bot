@@ -94,22 +94,32 @@ def _norm(s: str) -> str:
     return (s or "").strip().casefold()
 
 
-def _all_club_names() -> set[str]:
+def _current_pool_club_names() -> set[str]:
+    """Актуальный пул сезона: 8 клубов × 5 лиг = 40."""
+    from config.leagues_config import ALL_LEAGUES
+
     names: set[str] = set()
-    for teams in LEAGUE_TEAMS.values():
-        names.update(str(t).strip() for t in teams if str(t).strip())
-    hist = load_history()
-    for rows in (hist.get("league_winners") or {}).values():
-        for row in rows or []:
-            if row and len(row) >= 2 and str(row[1]).strip():
-                names.add(str(row[1]).strip())
-    for row in hist.get("champions_league") or []:
-        if row and len(row) >= 2 and str(row[1]).strip():
-            names.add(str(row[1]).strip())
-    for _sn, mp in hist.get("cl_knockout_stages") or []:
-        if isinstance(mp, dict):
-            names.update(str(t).strip() for t in mp if str(t).strip())
+    for code, cfg in ALL_LEAGUES.items():
+        if code == "cl":
+            continue
+        for t in cfg.get("teams") or []:
+            s = str(t).strip()
+            if s:
+                # В конфиге часто lower; в БД/истории — Title.
+                names.add(s.title() if s == s.lower() else s)
     return names
+
+
+def _all_club_names() -> set[str]:
+    """Для рейтинга силы — только текущие 40 клубов пула."""
+    names = _current_pool_club_names()
+    if names:
+        return names
+    # fallback: расширенный список из LEAGUE_TEAMS
+    out: set[str] = set()
+    for teams in LEAGUE_TEAMS.values():
+        out.update(str(t).strip() for t in teams if str(t).strip())
+    return out
 
 
 def _award_counts_by_team(hist: dict[str, Any]) -> dict[str, tuple[int, float]]:
