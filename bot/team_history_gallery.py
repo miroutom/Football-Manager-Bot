@@ -9,9 +9,12 @@ from PIL import Image, ImageDraw
 from bot.squad_pitch import _paste_crest_natural, _pick_font, _try_load_crest_rgba
 from bot.team_history import (
     ClubLegend,
+    _penalties_pair,
+    _norm as _team_norm,
     compare_clubs,
     club_matches_in_season,
     cl_stage_short,
+    format_match_score_with_pens,
     format_season_tag,
     hall_of_fame_global,
     head_to_head,
@@ -250,25 +253,10 @@ def render_compare_clubs_png(team_a: str, team_b: str) -> bytes:
 
 
 def _match_result_for_team(m: dict, team: str) -> tuple[str, int, int, int]:
-    """(W|D|L, points, gf, ga) с точки зрения клуба."""
-    from bot.team_history import _norm
+    """(W|D|L, points, gf, ga) с точки зрения клуба (учитывает пенальти)."""
+    from bot.team_history import match_result_for_team
 
-    want = _norm(team)
-    home = _norm(str(m.get("home") or ""))
-    away = _norm(str(m.get("away") or ""))
-    hs = int(m.get("home_score") or 0)
-    aws = int(m.get("away_score") or 0)
-    if home == want:
-        gf, ga = hs, aws
-    elif away == want:
-        gf, ga = aws, hs
-    else:
-        return "D", 0, 0, 0
-    if gf > ga:
-        return "W", 3, gf, ga
-    if gf < ga:
-        return "L", 0, gf, ga
-    return "D", 1, gf, ga
+    return match_result_for_team(m, team)
 
 
 def render_h2h_png(team_a: str, team_b: str) -> bytes:
@@ -369,18 +357,27 @@ def render_h2h_png(team_a: str, team_b: str) -> bytes:
     draw.line([chart_left, chart_bot, chart_right, chart_bot], fill=_LINE, width=2)
 
     max_g = 1
-    parsed: list[tuple[dict, str, int, int, str]] = []
+    parsed: list[tuple[dict, str, int, int, str, str]] = []
     for m in show:
         res, _pts, gf, ga = _match_result_for_team(m, ta)
         max_g = max(max_g, gf, ga)
-        parsed.append((m, res, gf, ga, f"{format_season_tag(m.get('_season'))}·м{m.get('day')}"))
-
+        pens = _penalties_pair(m)
+        sc_lab = f"{gf}:{ga}"
+        if pens is not None:
+            ph, pa = pens
+            if _team_norm(str(m.get("home") or "")) == _team_norm(ta):
+                sc_lab = f"{gf}:{ga} п{ph}:{pa}"
+            else:
+                sc_lab = f"{gf}:{ga} п{pa}:{ph}"
+        parsed.append(
+            (m, res, gf, ga, f"{format_season_tag(m.get('_season'))}·м{m.get('day')}", sc_lab)
+        )
     n = max(1, len(parsed))
     slot_w = (chart_right - chart_left) / n
     pair_gap = 4
     bar_w = max(8, min(22, int((slot_w - 16 - pair_gap) / 2)))
 
-    for i, (m, res, gf, ga, lab) in enumerate(parsed):
+    for i, (m, res, gf, ga, lab, sc_lab) in enumerate(parsed):
         cx = chart_left + int(slot_w * (i + 0.5))
         usable = chart_bot - chart_top - 8
         ha = int(usable * (gf / max_g)) if max_g else 0
@@ -395,9 +392,8 @@ def render_h2h_png(team_a: str, team_b: str) -> bytes:
             draw.rounded_rectangle([xb, chart_bot - max(hb, 4), xb + bar_w, chart_bot - 1], radius=4, fill=col_b)
         else:
             draw.rounded_rectangle([xb, chart_bot - 5, xb + bar_w, chart_bot - 1], radius=2, fill=_LINE)
-        sc = f"{gf}:{ga}"
-        scw = draw.textbbox((0, 0), sc, font=font_sm)[2]
-        draw.text((cx - scw // 2, chart_top), sc, font=font_sm, fill=_TEXT)
+        scw = draw.textbbox((0, 0), sc_lab, font=font_sm)[2]
+        draw.text((cx - scw // 2, chart_top), sc_lab, font=font_sm, fill=_GOLD if "п" in sc_lab else _TEXT)
         lw = draw.textbbox((0, 0), lab, font=font_sm)[2]
         draw.text((cx - lw // 2, chart_bot + 6), lab, font=font_sm, fill=_DIM)
 
@@ -407,14 +403,12 @@ def render_h2h_png(team_a: str, team_b: str) -> bytes:
     draw.text((_PAD, y), "Встречи", font=font_b, fill=_TEXT)
     y += 28
     res_col = {"W": win_c, "D": draw_c, "L": lose_c}
-    for m, res, gf, ga, _lab in parsed:
+    for m, res, gf, ga, _lab, _sc in parsed:
         sn = m.get("_season")
         day = m.get("day")
         lg = str(m.get("league") or "")
-        home, away = str(m.get("home") or ""), str(m.get("away") or "")
-        hs, aws = m.get("home_score"), m.get("away_score")
         meta = f"{format_season_tag(sn) if sn else '?'} · м{day} · {lg}"
-        score = f"{home} {hs}:{aws} {away}"
+        score = format_match_score_with_pens(m)
 
         draw.rounded_rectangle([_PAD, y, _CANVAS_W - _PAD, y + 34], radius=8, fill=(24, 34, 52), outline=_LINE)
         chip = res

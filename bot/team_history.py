@@ -500,6 +500,84 @@ def iter_all_match_records() -> list[dict[str, Any]]:
     return out
 
 
+def _penalties_pair(m: dict[str, Any]) -> tuple[int, int] | None:
+    """Голы в серии пенальти ``(home, away)`` или ``None``."""
+    pen = m.get("penalties_by_team")
+    if not isinstance(pen, dict) or not pen:
+        return None
+    home = str(m.get("home") or "").strip()
+    away = str(m.get("away") or "").strip()
+
+    def _get(team: str) -> int | None:
+        if not team:
+            return None
+        if team in pen:
+            try:
+                return int(pen[team])
+            except (TypeError, ValueError):
+                return None
+        want = _norm(team)
+        for k, v in pen.items():
+            if _norm(str(k)) == want:
+                try:
+                    return int(v)
+                except (TypeError, ValueError):
+                    return None
+        return None
+
+    ph, pa = _get(home), _get(away)
+    if ph is None or pa is None:
+        return None
+    return ph, pa
+
+
+def match_result_for_team(m: dict[str, Any], team: str) -> tuple[str, int, int, int]:
+    """
+    ``(W|D|L, points, gf, ga)`` с точки зрения клуба.
+    При ничьей по счёту и ``penalties_by_team`` — победа/поражение по серии.
+    """
+    want = _norm(team)
+    home = _norm(str(m.get("home") or ""))
+    away = _norm(str(m.get("away") or ""))
+    hs = int(m.get("home_score") or 0)
+    aws = int(m.get("away_score") or 0)
+    if home == want:
+        gf, ga = hs, aws
+        side_home = True
+    elif away == want:
+        gf, ga = aws, hs
+        side_home = False
+    else:
+        return "D", 0, 0, 0
+    if gf > ga:
+        return "W", 3, gf, ga
+    if gf < ga:
+        return "L", 0, gf, ga
+    pens = _penalties_pair(m)
+    if pens is not None:
+        ph, pa = pens
+        mine, theirs = (ph, pa) if side_home else (pa, ph)
+        if mine > theirs:
+            return "W", 3, gf, ga
+        if mine < theirs:
+            return "L", 0, gf, ga
+    return "D", 1, gf, ga
+
+
+def format_match_score_with_pens(m: dict[str, Any]) -> str:
+    """``Ливерпуль 2:2 Аталанта (пен. 5:3)``."""
+    home = str(m.get("home") or "")
+    away = str(m.get("away") or "")
+    hs = m.get("home_score")
+    aws = m.get("away_score")
+    line = f"{home} {hs}:{aws} {away}"
+    pens = _penalties_pair(m)
+    if pens is not None:
+        ph, pa = pens
+        line += f" (пен. {ph}:{pa})"
+    return line
+
+
 def head_to_head(team_a: str, team_b: str) -> dict[str, Any]:
     a, b = team_a.strip(), team_b.strip()
     an, bn = _norm(a), _norm(b)
@@ -509,27 +587,16 @@ def head_to_head(team_a: str, team_b: str) -> dict[str, Any]:
         h, aw = _norm(str(m.get("home") or "")), _norm(str(m.get("away") or ""))
         if {h, aw} != {an, bn}:
             continue
-        hs = int(m.get("home_score") or 0)
-        aws = int(m.get("away_score") or 0)
         matches.append(m)
-        if h == an:
-            gf_a += hs
-            ga_a += aws
-            if hs > aws:
-                wa += 1
-            elif hs < aws:
-                wb += 1
-            else:
-                draws += 1
+        res, _pts, gf, ga = match_result_for_team(m, a)
+        gf_a += gf
+        ga_a += ga
+        if res == "W":
+            wa += 1
+        elif res == "L":
+            wb += 1
         else:
-            gf_a += aws
-            ga_a += hs
-            if aws > hs:
-                wa += 1
-            elif aws < hs:
-                wb += 1
-            else:
-                draws += 1
+            draws += 1
     matches.sort(
         key=lambda m: (m.get("_season") or 0, m.get("day") or 0, str(m.get("league") or ""))
     )
