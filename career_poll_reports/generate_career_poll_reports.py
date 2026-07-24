@@ -166,10 +166,90 @@ def _duel_row(d, x, y, w, label, left_v, right_v, accent, kind: str) -> int:
     return y + 24
 
 
+def _player_tours(side: dict) -> list[dict]:
+    if side.get("tours"):
+        return list(side["tours"])
+    # fallback: старые строковые lines
+    out = []
+    for line in side.get("lines") or []:
+        out.append({"comp": line, "stat": "", "apps": ""})
+    return out or [{"comp": "—", "stat": "—", "apps": ""}]
+
+
+TOUR_CARD_H = 50
+TOUR_GAP = 6
+TOUR_ORDER = {"ЛЧ": 0, "ЛЕ": 1, "ЛК": 2, "РПЛ": 3, "Кубок": 4, "Всего": 5, "Лига": 6, "ПФА": 7}
+
+
+def _tour_index(tours: list[dict]) -> dict[str, dict]:
+    return {str(t.get("comp") or ""): t for t in tours}
+
+
+def _aligned_tour_rows(left_t: list[dict], right_t: list[dict]) -> list[tuple[dict | None, dict | None]]:
+    """Если есть общие названия турниров — выравниваем в строки, иначе две независимые колонки."""
+    li, ri = _tour_index(left_t), _tour_index(right_t)
+    common = set(li) & set(ri) - {""}
+    if not common:
+        n = max(len(left_t), len(right_t), 1)
+        rows = []
+        for i in range(n):
+            rows.append((left_t[i] if i < len(left_t) else None, right_t[i] if i < len(right_t) else None))
+        return rows
+
+    names = sorted(set(li) | set(ri), key=lambda c: (TOUR_ORDER.get(c, 40), c))
+    return [(li.get(n), ri.get(n)) for n in names]
+
+
+def tours_block_height(left: dict, right: dict) -> int:
+    n = max(len(_aligned_tour_rows(_player_tours(left), _player_tours(right))), 1)
+    return n * TOUR_CARD_H + max(0, n - 1) * TOUR_GAP
+
+
+def draw_tour_card(d, x, y, w, tour: dict | None, color) -> None:
+    """Мини-карточка турнира: название · матчи · крупно G+A."""
+    if tour is None:
+        round_rect(d, [x, y, x + w, y + TOUR_CARD_H], 7, (244, 240, 232), (220, 210, 195), 1)
+        d.text((x + 14, y + 16), "—", font=font(18, True), fill=(180, 170, 155))
+        return
+
+    round_rect(d, [x, y, x + w, y + TOUR_CARD_H], 7, (250, 246, 238), (210, 198, 180), 1)
+    d.rectangle([x + 1, y + 6, x + 5, y + TOUR_CARD_H - 6], fill=color)
+
+    comp = fit(d, str(tour.get("comp") or "—"), font(12, True), w - 24)
+    d.text((x + 14, y + 7), comp, font=font(12, True), fill=GOLD)
+
+    apps = tour.get("apps")
+    if apps not in (None, ""):
+        apps_s = str(apps)
+        aw = d.textbbox((0, 0), apps_s, font=font(11))[2]
+        d.text((x + w - 12 - aw, y + 8), apps_s, font=font(11), fill=INK_DIM)
+
+    stat = str(tour.get("stat") if tour.get("stat") not in (None, "") else "—")
+    d.text((x + 14, y + 24), fit(d, stat, font(20, True), w - 28), font=font(20, True), fill=color)
+
+
+def draw_tours_compare(d, x, y, w, left, right, accent) -> int:
+    """Две колонки карточек турниров. Возвращает y под блоком."""
+    rows = _aligned_tour_rows(_player_tours(left), _player_tours(right))
+    gap = 14
+    col_w = (w - gap) // 2
+    h = tours_block_height(left, right)
+
+    d.text((x, y), "СТАТА ПО ТУРНИРАМ", font=font(12, True), fill=GOLD)
+    y += 20
+
+    for i, (lt, rt) in enumerate(rows):
+        row_y = y + i * (TOUR_CARD_H + TOUR_GAP)
+        draw_tour_card(d, x, row_y, col_w, lt, accent)
+        draw_tour_card(d, x + col_w + gap, row_y, col_w, rt, RED)
+
+    return y + h + 14
+
+
 def vs_block_height(left: dict, right: dict) -> int:
-    n_lines = max(len(left.get("lines") or []), len(right.get("lines") or []), 1)
-    # pad12 + names32 + ovr68 + tour20 + lines + gap14 + 3×duel68 + bottom12
-    return 12 + 32 + 68 + 20 + n_lines * 22 + 14 + 68 * 3 + 12
+    tours_h = 20 + tours_block_height(left, right) + 14
+    # pad12 + names32 + ovr68 + tours + 3×duel68 + bottom12
+    return 12 + 32 + 68 + tours_h + 68 * 3 + 12
 
 
 def draw_vs(d, x, y, w, left, right, accent) -> int:
@@ -177,9 +257,6 @@ def draw_vs(d, x, y, w, left, right, accent) -> int:
     Сравнение: OVR → стата по турнирам → голы / пасы / Г+П.
     Возвращает y сразу под блоком.
     """
-    left_lines = list(left.get("lines") or [])
-    right_lines = list(right.get("lines") or [])
-    n_lines = max(len(left_lines), len(right_lines), 1)
     h = vs_block_height(left, right)
     round_rect(d, [x, y, x + w, y + h], 8, (255, 252, 246), RULE, 1)
     pad_in = 14
@@ -196,19 +273,7 @@ def draw_vs(d, x, y, w, left, right, accent) -> int:
     cy += 32
 
     cy = _duel_row(d, ix, cy, iw, "РЕЙТИНГ (OVR)", left.get("ovr"), right.get("ovr"), accent, "ovr")
-
-    d.text((ix, cy), "СТАТА ПО ТУРНИРАМ", font=font(12, True), fill=GOLD)
-    cy += 20
-    col_w = iw // 2 - 10
-    for i in range(n_lines):
-        if i < len(left_lines):
-            d.text((ix, cy), fit(d, left_lines[i], font(14), col_w), font=font(14), fill=INK)
-        if i < len(right_lines):
-            t = fit(d, right_lines[i], font(14), col_w)
-            tw = d.textbbox((0, 0), t, font=font(14))[2]
-            d.text((ix + iw - tw, cy), t, font=font(14), fill=INK)
-        cy += 22
-    cy += 14
+    cy = draw_tours_compare(d, ix, cy, iw, left, right, accent)
 
     g_l, a_l = left.get("g"), left.get("a")
     g_r, a_r = right.get("g"), right.get("a")
@@ -230,6 +295,14 @@ def draw_vs(d, x, y, w, left, right, accent) -> int:
     cy = _duel_row(d, ix, cy, iw, "ГОЛЫ + ПАСЫ", ga_l, ga_r, accent, "stat")
 
     return y + h
+
+
+YOU_TOURS = [
+    {"comp": "РПЛ", "stat": "35+17", "apps": "30 игр"},
+    {"comp": "Кубок", "stat": "4+1", "apps": "3 игры"},
+]
+
+YOU_VS = {"name": "Ты", "ovr": "78", "g": 39, "a": 18, "ga": 57, "tours": YOU_TOURS}
 
 
 def render_dossier(data: dict) -> bytes:
@@ -392,21 +465,18 @@ DOSSIERS = [
             "На ПФА сейчас Энрике. Место в основе придётся отбирать, Зенит любит покупать топов.",
         ],
         "vs": (
-            {
-                "name": "Ты",
-                "ovr": "78",
-                "g": 39,
-                "a": 18,
-                "ga": 57,
-                "lines": ["РПЛ  35+17 · 30 игр", "Кубок  4+1 · 3 игры"],
-            },
+            YOU_VS,
             {
                 "name": "Энрике",
                 "ovr": "84",
                 "g": 14,
                 "a": 10,
                 "ga": 24,
-                "lines": ["ЛЧ  2+1", "РПЛ  3+3", "Кубок  9+6"],
+                "tours": [
+                    {"comp": "ЛЧ", "stat": "2+1", "apps": ""},
+                    {"comp": "РПЛ", "stat": "3+3", "apps": ""},
+                    {"comp": "Кубок", "stat": "9+6", "apps": ""},
+                ],
             },
         ),
         "pros": [
@@ -440,21 +510,16 @@ DOSSIERS = [
             "На фланге Ярослав Гладышев (77). Ты уже чуть выше рейтингом и сильно выше по отдаче.",
         ],
         "vs": (
-            {
-                "name": "Ты",
-                "ovr": "78",
-                "g": 39,
-                "a": 18,
-                "ga": 57,
-                "lines": ["РПЛ  35+17 · 30 игр", "Кубок  4+1 · 3 игры"],
-            },
+            YOU_VS,
             {
                 "name": "Гладышев",
                 "ovr": "77",
                 "g": 4,
                 "a": 2,
                 "ga": 6,
-                "lines": ["РПЛ  ~4+2 · ~23 игры"],
+                "tours": [
+                    {"comp": "РПЛ", "stat": "~4+2", "apps": "~23 игры"},
+                ],
             },
         ),
         "pros": [
@@ -488,21 +553,17 @@ DOSSIERS = [
             "Бонгонда (74) и Солари (80): один слабый рейтингом, второй — провальной статой (0+2).",
         ],
         "vs": (
-            {
-                "name": "Ты",
-                "ovr": "78",
-                "g": 39,
-                "a": 18,
-                "ga": 57,
-                "lines": ["РПЛ  35+17 · 30 игр", "Кубок  4+1 · 3 игры"],
-            },
+            YOU_VS,
             {
                 "name": "Солари",
                 "ovr": "80",
                 "g": 0,
                 "a": 2,
                 "ga": 2,
-                "lines": ["Солари  0+2", "Бонгонда 74 · 4+6"],
+                "tours": [
+                    {"comp": "Солари", "stat": "0+2", "apps": "80 OVR"},
+                    {"comp": "Бонгонда", "stat": "4+6", "apps": "74 OVR"},
+                ],
             },
         ),
         "pros": [
@@ -536,21 +597,16 @@ DOSSIERS = [
             "Мантуан (79) рядом по OVR, но 8+4 за 46 — это не твой уровень. Глубина фланга ещё слабее.",
         ],
         "vs": (
-            {
-                "name": "Ты",
-                "ovr": "78",
-                "g": 39,
-                "a": 18,
-                "ga": 57,
-                "lines": ["РПЛ  35+17 · 30 игр", "Кубок  4+1 · 3 игры"],
-            },
+            YOU_VS,
             {
                 "name": "Мантуан",
                 "ovr": "79",
                 "g": 8,
                 "a": 4,
                 "ga": 12,
-                "lines": ["Всего  8+4 · 46 игр"],
+                "tours": [
+                    {"comp": "Всего", "stat": "8+4", "apps": "46 игр"},
+                ],
             },
         ),
         "pros": [
@@ -584,21 +640,16 @@ DOSSIERS = [
             "Конкуренции на ПФА нет. Ты основной. Это и плюс, и потолок.",
         ],
         "vs": (
-            {
-                "name": "Ты",
-                "ovr": "78",
-                "g": 39,
-                "a": 18,
-                "ga": 57,
-                "lines": ["РПЛ  35+17 · 30 игр", "Кубок  4+1 · 3 игры"],
-            },
+            YOU_VS,
             {
                 "name": "Конкурент",
                 "ovr": "—",
                 "g": "—",
                 "a": "—",
                 "ga": "—",
-                "lines": ["Нет конкуренции на ПФА"],
+                "tours": [
+                    {"comp": "ПФА", "stat": "пусто", "apps": "нет конкурента"},
+                ],
             },
         ),
         "pros": [
@@ -633,21 +684,16 @@ DOSSIERS = [
             "Кто на позиции — неизвестно. Гарантий нет. Зато страница карьеры точно новая.",
         ],
         "vs": (
-            {
-                "name": "Ты",
-                "ovr": "78",
-                "g": 39,
-                "a": 18,
-                "ga": 57,
-                "lines": ["РПЛ  35+17 · 30 игр", "Кубок  4+1 · 3 игры"],
-            },
+            YOU_VS,
             {
                 "name": "Конкурент",
                 "ovr": "?",
                 "g": "?",
                 "a": "?",
                 "ga": "?",
-                "lines": ["Стата неизвестна"],
+                "tours": [
+                    {"comp": "Лига", "stat": "?", "apps": "неизвестно"},
+                ],
             },
         ),
         "pros": [
