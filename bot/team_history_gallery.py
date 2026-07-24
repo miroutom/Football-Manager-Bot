@@ -344,32 +344,80 @@ def render_managers_png() -> bytes:
 
 
 def render_prestige_dynamics_png(team: str) -> bytes:
+    from bot.team_history import compute_team_prestige
+
     series = prestige_dynamics(team)
-    h = 520
+    p = compute_team_prestige(team)
+    hist_sum = sum(v for _, v in series)
+    roster = float(p.roster_pts)
+    total = float(p.score)
+
+    h = 620
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
-    y = _title(draw, "Динамика престижа", f"{team} — вклад по сезонам (без OVR состава)")
+    y = _title(
+        draw,
+        "Динамика престижа",
+        f"{team} — вклад трофеев/наград по сезонам (без текущего OVR состава)",
+    )
+    font_sm = _pick_font(15)
+    font_m = _pick_font(17, bold=True)
+    font_b = _pick_font(20, bold=True)
+    font_kpi = _pick_font(24, bold=True)
+
+    # Explain 118 vs 106: total = sum(seasons) + roster OVR
+    cards = [
+        ("Сумма сезонов", f"{hist_sum:.0f}"),
+        ("+ Состав (OVR)", f"{roster:.0f}"),
+        ("= Престиж", f"{total:.0f}"),
+    ]
+    gap = 12
+    card_w = (_CANVAS_W - 2 * _PAD - 2 * gap) // 3
+    for i, (lab, val) in enumerate(cards):
+        x0 = _PAD + i * (card_w + gap)
+        draw.rounded_rectangle([x0, y, x0 + card_w, y + 72], radius=12, fill=_CARD, outline=_LINE)
+        tw = draw.textbbox((0, 0), lab, font=font_sm)[2]
+        draw.text((x0 + (card_w - tw) // 2, y + 10), lab, font=font_sm, fill=_DIM)
+        vw = draw.textbbox((0, 0), val, font=font_kpi)[2]
+        draw.text((x0 + (card_w - vw) // 2, y + 34), val, font=font_kpi, fill=_GOLD if i == 2 else _TEXT)
+    y += 88
+    draw.text(
+        (_PAD, y),
+        "График ниже — только сезонный вклад (титулы / путь ЛЧ / награды). OVR состава добавляется отдельно.",
+        font=font_sm,
+        fill=_DIM,
+    )
+    y += 28
+
     if not series:
         draw.text((_PAD, y), "Нет данных.", font=_pick_font(18), fill=_DIM)
         return _to_png(im.convert("RGB"))
+
     chart_top = y + 10
-    chart_bot = h - 60
+    chart_bot = h - 56
     chart_left = _PAD + 40
     chart_right = _CANVAS_W - _PAD - 20
     max_v = max((v for _, v in series), default=1.0) or 1.0
-    # axes
+    draw.rounded_rectangle(
+        [_PAD, y, _CANVAS_W - _PAD, chart_bot + 40],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+    )
     draw.line([chart_left, chart_bot, chart_right, chart_bot], fill=_LINE, width=2)
     draw.line([chart_left, chart_top, chart_left, chart_bot], fill=_LINE, width=2)
     n = len(series)
     pts = []
     for i, (sn, val) in enumerate(series):
-        x = chart_left + int((chart_right - chart_left) * (i / max(1, n - 1))) if n > 1 else (chart_left + chart_right) // 2
-        yy = chart_bot - int((chart_bot - chart_top - 20) * (val / max_v))
+        x = (
+            chart_left + int((chart_right - chart_left) * (i / max(1, n - 1)))
+            if n > 1
+            else (chart_left + chart_right) // 2
+        )
+        yy = chart_bot - int((chart_bot - chart_top - 20) * (val / max_v)) if max_v else chart_bot
         pts.append((x, yy, sn, val))
     if len(pts) >= 2:
         draw.line([(p[0], p[1]) for p in pts], fill=_BAR2, width=3)
-    font_sm = _pick_font(15)
-    font_m = _pick_font(17, bold=True)
     for x, yy, sn, val in pts:
         draw.ellipse([x - 6, yy - 6, x + 6, yy + 6], fill=_GOLD)
         draw.text((x - 20, chart_bot + 8), format_season_tag(sn), font=font_sm, fill=_DIM)
@@ -507,31 +555,64 @@ def render_season_cover_png(season: int) -> bytes:
 
 def render_hall_of_fame_png(*, limit: int = 20) -> bytes:
     rows = hall_of_fame_global(limit=limit)
-    row_h = 36
-    h = 140 + len(rows) * row_h + 40
+    row_h = 52
+    h = 150 + max(1, len(rows)) * row_h + 50
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
-    y = _title(draw, "Зал славы", "Лучшие игроки карьеры (лига + ЛЧ по всем сезонам)")
-    font_m = _pick_font(17)
+    y = _title(draw, "Зал славы", "Лучшие игроки карьеры · лига + ЛЧ · все сезоны")
+    font_m = _pick_font(18)
+    font_b = _pick_font(18, bold=True)
     font_sm = _pick_font(14)
-    cols = [(_PAD + 16, "#"), (_PAD + 50, "Игрок"), (_PAD + 300, "Клуб"), (_PAD + 480, "Поз"),
-            (_PAD + 540, "OVR"), (_PAD + 610, "И"), (_PAD + 670, "Г"), (_PAD + 730, "А"), (_PAD + 790, "POTM")]
-    for x, lab in cols:
-        draw.text((x, y), lab, font=font_sm, fill=_DIM)
-    y += 24
-    draw.line([_PAD, y, _CANVAS_W - _PAD, y], fill=_LINE)
-    y += 8
+    font_r = _pick_font(20, bold=True)
+    max_score = max((float(leg.score) for leg in rows), default=1.0) or 1.0
+
     for i, leg in enumerate(rows, 1):
         club = getattr(leg, "club", "") or ""
-        draw.text((_PAD + 16, y), f"{i:02d}", font=font_m, fill=_GOLD if i <= 3 else _TEXT)
-        draw.text((_PAD + 50, y), _fit(draw, leg.name, font_m, 230), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 300, y), _fit(draw, club, font_m, 160), font=font_m, fill=_DIM)
-        draw.text((_PAD + 480, y), leg.position, font=font_m, fill=_DIM)
-        draw.text((_PAD + 540, y), str(leg.overall or "—"), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 610, y), str(leg.matches), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 670, y), str(leg.goals), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 730, y), str(leg.assists), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 790, y), str(leg.potm), font=font_m, fill=_TEXT)
+        top = y
+        draw.rounded_rectangle(
+            [_PAD, top, _CANVAS_W - _PAD, top + row_h - 6],
+            radius=12,
+            fill=_CARD,
+            outline=_GOLD if i <= 3 else _LINE,
+            width=2 if i <= 3 else 1,
+        )
+        rank_c = _GOLD if i <= 3 else _TEXT
+        draw.text((_PAD + 14, top + 14), f"{i:02d}", font=font_r, fill=rank_c)
+        if club:
+            crest = _try_load_crest_rgba(club)
+            if crest is not None:
+                _paste_crest_natural(im, crest, _PAD + 70, top + row_h // 2 - 3, 28)
+        draw.text((_PAD + 96, top + 8), _fit(draw, leg.name, font_b, 220), font=font_b, fill=_TEXT)
+        meta = f"{club or '—'} · {leg.position or '—'} · OVR {leg.overall or '—'}"
+        draw.text((_PAD + 96, top + 28), _fit(draw, meta, font_sm, 280), font=font_sm, fill=_DIM)
+
+        # mini bars for G / A / POTM
+        stats = [
+            ("Г", int(leg.goals), (90, 190, 140)),
+            ("А", int(leg.assists), (70, 140, 230)),
+            ("P", int(leg.potm), _GOLD),
+        ]
+        bx = 520
+        for lab, val, col in stats:
+            draw.text((bx, top + 8), lab, font=font_sm, fill=_DIM)
+            bw = int(70 * (val / max(1, max(leg.goals, leg.assists, leg.potm, 1))))
+            draw.rounded_rectangle([bx + 18, top + 10, bx + 18 + max(bw, 2 if val else 0), top + 22], radius=4, fill=col)
+            draw.text((bx + 100, top + 6), str(val), font=font_m, fill=_TEXT)
+            bx += 130
+
+        # score bar
+        sw = int(160 * (float(leg.score) / max_score)) if max_score else 0
+        draw.rounded_rectangle(
+            [_CANVAS_W - _PAD - 180, top + 28, _CANVAS_W - _PAD - 180 + max(sw, 4), top + 40],
+            radius=4,
+            fill=_BAR2,
+        )
+        draw.text(
+            (_CANVAS_W - _PAD - 170, top + 8),
+            f"score {leg.score:.0f} · {leg.matches}и",
+            font=font_sm,
+            fill=_DIM,
+        )
         y += row_h
     return _to_png(im.convert("RGB"))
 
@@ -540,60 +621,214 @@ def render_club_hall_of_fame_png(team: str) -> bytes:
     from bot.team_history import club_legends
 
     rows = club_legends(team, limit=15)
-    row_h = 36
-    h = 140 + len(rows) * row_h + 40
+    row_h = 52
+    h = 170 + max(1, len(rows)) * row_h + 50
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
-    y = _title(draw, f"Зал славы · {team}", "Легенды клуба (лига + ЛЧ)")
-    font_m = _pick_font(17)
+    y = _title(draw, f"Зал славы · {team}", "Легенды клуба · лига + ЛЧ · все сезоны")
+    crest = _try_load_crest_rgba(team)
+    if crest is not None:
+        _paste_crest_natural(im, crest, _CANVAS_W - _PAD - 40, 48, 56)
+
+    font_m = _pick_font(18)
+    font_b = _pick_font(18, bold=True)
     font_sm = _pick_font(14)
-    for x, lab in [
-        (_PAD + 16, "#"), (_PAD + 50, "Игрок"), (_PAD + 340, "Поз"), (_PAD + 410, "OVR"),
-        (_PAD + 480, "И"), (_PAD + 550, "Г"), (_PAD + 620, "А"), (_PAD + 690, "POTM"),
-    ]:
-        draw.text((x, y), lab, font=font_sm, fill=_DIM)
-    y += 24
-    draw.line([_PAD, y, _CANVAS_W - _PAD, y], fill=_LINE)
-    y += 8
+    font_r = _pick_font(20, bold=True)
+    max_g = max((int(leg.goals) for leg in rows), default=1) or 1
+    max_score = max((float(leg.score) for leg in rows), default=1.0) or 1.0
+
     for i, leg in enumerate(rows, 1):
-        draw.text((_PAD + 16, y), f"{i:02d}", font=font_m, fill=_GOLD if i <= 3 else _TEXT)
-        draw.text((_PAD + 50, y), _fit(draw, leg.name, font_m, 270), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 340, y), leg.position, font=font_m, fill=_DIM)
-        draw.text((_PAD + 410, y), str(leg.overall or "—"), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 480, y), str(leg.matches), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 550, y), str(leg.goals), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 620, y), str(leg.assists), font=font_m, fill=_TEXT)
-        draw.text((_PAD + 690, y), str(leg.potm), font=font_m, fill=_TEXT)
+        top = y
+        draw.rounded_rectangle(
+            [_PAD, top, _CANVAS_W - _PAD, top + row_h - 6],
+            radius=12,
+            fill=_CARD,
+            outline=_GOLD if i <= 3 else _LINE,
+            width=2 if i <= 3 else 1,
+        )
+        draw.text((_PAD + 14, top + 14), f"{i:02d}", font=font_r, fill=_GOLD if i <= 3 else _TEXT)
+        draw.text((_PAD + 60, top + 8), _fit(draw, leg.name, font_b, 260), font=font_b, fill=_TEXT)
+        draw.text(
+            (_PAD + 60, top + 28),
+            f"{leg.position or '—'} · OVR {leg.overall or '—'} · {leg.matches} игр",
+            font=font_sm,
+            fill=_DIM,
+        )
+
+        # goals bar (dominant stat)
+        bar_x0 = 420
+        bar_x1 = _CANVAS_W - _PAD - 200
+        bw = int((bar_x1 - bar_x0) * (int(leg.goals) / max_g)) if max_g else 0
+        draw.text((bar_x0, top + 6), "Голы", font=font_sm, fill=_DIM)
+        draw.rounded_rectangle(
+            [bar_x0, top + 26, bar_x0 + max(bw, 3 if leg.goals else 0), top + 38],
+            radius=5,
+            fill=(90, 190, 140),
+        )
+        draw.text((bar_x1 + 8, top + 8), f"{leg.goals}Г", font=font_b, fill=_TEXT)
+        draw.text((bar_x1 + 8, top + 28), f"{leg.assists}А · {leg.potm}P", font=font_sm, fill=_DIM)
+
+        # thin score accent on the right edge
+        sh = int(30 * (float(leg.score) / max_score)) if max_score else 0
+        draw.rounded_rectangle(
+            [_CANVAS_W - _PAD - 10, top + row_h - 10 - max(sh, 4), _CANVAS_W - _PAD - 2, top + row_h - 10],
+            radius=3,
+            fill=_GOLD if i <= 3 else _BAR,
+        )
         y += row_h
     return _to_png(im.convert("RGB"))
 
-
 def render_club_season_matches_png(team: str, season: int) -> bytes:
     rows = club_matches_in_season(team, season)
-    row_h = 32
-    h = 160 + max(1, len(rows)) * row_h + 40
-    im = _gradient_bg(min(h, 2200)).convert("RGBA")
+    font_m = _pick_font(16)
+    font_sm = _pick_font(13)
+    font_b = _pick_font(18, bold=True)
+    font_kpi = _pick_font(26, bold=True)
+
+    if not rows:
+        h = 220
+        im = _gradient_bg(h).convert("RGBA")
+        draw = ImageDraw.Draw(im)
+        y = _title(draw, f"Матчи · {team}", f"{format_season_tag(season)} · нет матчей")
+        draw.text((_PAD, y), "В журналах этого сезона матчей клуба нет.", font=font_m, fill=_DIM)
+        return _to_png(im.convert("RGB"))
+
+    # stats + points by month
+    by_month: dict[int, dict[str, int]] = {}
+    w = d = l = gf_t = ga_t = 0
+    for m in rows:
+        res, pts, gf, ga = _match_result_for_team(m, team)
+        day = int(m.get("day") or 0)
+        slot = by_month.setdefault(day, {"pts": 0, "gf": 0, "ga": 0, "n": 0, "w": 0, "d": 0, "l": 0})
+        slot["pts"] += pts
+        slot["gf"] += gf
+        slot["ga"] += ga
+        slot["n"] += 1
+        if res == "W":
+            w += 1
+            slot["w"] += 1
+        elif res == "D":
+            d += 1
+            slot["d"] += 1
+        else:
+            l += 1
+            slot["l"] += 1
+        gf_t += gf
+        ga_t += ga
+    pts_total = w * 3 + d
+    months = sorted(by_month.keys())
+
+    chart_h = 260
+    show = rows[:40]
+    list_h = 28 + len(show) * 34 + (24 if len(rows) > len(show) else 0)
+    h = 150 + 96 + chart_h + 28 + list_h + 36
+    im = _gradient_bg(min(h, 2800)).convert("RGBA")
     draw = ImageDraw.Draw(im)
     y = _title(
         draw,
         f"Матчи · {team}",
-        f"{format_season_tag(season)} · найдено {len(rows)}",
+        f"{format_season_tag(season)} · {len(rows)} матч. · очки по месяцам",
     )
-    font_m = _pick_font(16)
-    font_sm = _pick_font(13)
-    if not rows:
-        draw.text((_PAD, y), "В журналах этого сезона матчей клуба нет.", font=font_m, fill=_DIM)
-        return _to_png(im.convert("RGB"))
-    # truncate if huge
-    show = rows[:45]
+
+    # KPI strip
+    kpis = [
+        ("В-Н-П", f"{w}-{d}-{l}"),
+        ("Очки", str(pts_total)),
+        ("Голы", f"{gf_t}:{ga_t}"),
+        ("Разн.", f"{gf_t - ga_t:+d}"),
+    ]
+    gap = 12
+    card_w = (_CANVAS_W - 2 * _PAD - 3 * gap) // 4
+    for i, (lab, val) in enumerate(kpis):
+        x0 = _PAD + i * (card_w + gap)
+        draw.rounded_rectangle([x0, y, x0 + card_w, y + 72], radius=12, fill=_CARD, outline=_LINE)
+        tw = draw.textbbox((0, 0), lab, font=font_sm)[2]
+        draw.text((x0 + (card_w - tw) // 2, y + 10), lab, font=font_sm, fill=_DIM)
+        vw = draw.textbbox((0, 0), val, font=font_kpi)[2]
+        draw.text((x0 + (card_w - vw) // 2, y + 32), val, font=font_kpi, fill=_TEXT)
+    y += 88
+
+    # Vertical bars by month (points)
+    chart_top = y + 8
+    chart_bot = chart_top + chart_h - 40
+    chart_left = _PAD + 36
+    chart_right = _CANVAS_W - _PAD - 20
+    draw.rounded_rectangle(
+        [_PAD, y, _CANVAS_W - _PAD, y + chart_h],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+    )
+    draw.text((_PAD + 16, y + 10), "Очки по месяцам", font=font_b, fill=_TEXT)
+    draw.text(
+        (_PAD + 220, y + 12),
+        "столбец = сумма очков (П=3, Н=1) за месяц",
+        font=font_sm,
+        fill=_DIM,
+    )
+
+    max_pts = max((by_month[m]["pts"] for m in months), default=1) or 1
+    n = max(1, len(months))
+    slot_w = (chart_right - chart_left) / n
+    bar_w = max(18, min(56, int(slot_w * 0.55)))
+    draw.line([chart_left, chart_bot, chart_right, chart_bot], fill=_LINE, width=2)
+
+    win_c = (90, 190, 140)
+    draw_c = (200, 180, 90)
+    lose_tone = (70, 110, 180)
+
+    for i, month in enumerate(months):
+        slot = by_month[month]
+        pts = slot["pts"]
+        cx = chart_left + int(slot_w * (i + 0.5))
+        bar_h = int((chart_bot - chart_top - 36) * (pts / max_pts)) if max_pts else 0
+        x0 = cx - bar_w // 2
+        y0 = chart_bot - max(bar_h, 4 if pts > 0 else 0)
+        if slot["w"] >= slot["l"] and slot["w"] > 0:
+            col = win_c
+        elif slot["pts"] > 0:
+            col = draw_c
+        else:
+            col = lose_tone
+        if pts > 0:
+            draw.rounded_rectangle([x0, y0, x0 + bar_w, chart_bot - 1], radius=6, fill=col)
+        else:
+            draw.rounded_rectangle([x0, chart_bot - 6, x0 + bar_w, chart_bot - 1], radius=3, fill=_LINE)
+        lab = f"м{month}"
+        lw = draw.textbbox((0, 0), lab, font=font_sm)[2]
+        draw.text((cx - lw // 2, chart_bot + 8), lab, font=font_sm, fill=_DIM)
+        if pts > 0:
+            ps = str(pts)
+            pw = draw.textbbox((0, 0), ps, font=font_b)[2]
+            draw.text((cx - pw // 2, y0 - 22), ps, font=font_b, fill=_TEXT)
+        ns = f"{slot['n']}и"
+        nw = draw.textbbox((0, 0), ns, font=font_sm)[2]
+        if bar_h >= 28:
+            draw.text((cx - nw // 2, chart_bot - 22), ns, font=font_sm, fill=(20, 28, 40))
+
+    y = y + chart_h + 20
+
+    # Match list with result chips
+    draw.text((_PAD, y), "Все матчи", font=font_b, fill=_TEXT)
+    y += 28
+    res_col = {"W": win_c, "D": draw_c, "L": (220, 110, 110)}
     for m in show:
+        res, _pts, gf, ga = _match_result_for_team(m, team)
         lg = str(m.get("league") or "")
         day = m.get("day")
-        line = f"м{day} · {lg} · {m.get('home')} {m.get('home_score')}:{m.get('away_score')} {m.get('away')}"
+        home = str(m.get("home") or "")
+        away = str(m.get("away") or "")
+        hs = m.get("home_score")
+        aws = m.get("away_score")
+        line = f"м{day} · {lg} · {home} {hs}:{aws} {away}"
         if m.get("cl_phase"):
             line += f" ({m.get('cl_phase')})"
-        draw.text((_PAD, y), _fit(draw, line, font_m, _CANVAS_W - 2 * _PAD), font=font_m, fill=_TEXT)
-        y += row_h
+        chip = res
+        draw.rounded_rectangle([_PAD, y + 2, _PAD + 28, y + 24], radius=6, fill=res_col.get(res, _LINE))
+        cw = draw.textbbox((0, 0), chip, font=font_sm)[2]
+        draw.text((_PAD + (28 - cw) // 2, y + 4), chip, font=font_sm, fill=(16, 22, 34))
+        draw.text((_PAD + 40, y + 4), _fit(draw, line, font_m, _CANVAS_W - _PAD - 50), font=font_m, fill=_TEXT)
+        y += 34
     if len(rows) > len(show):
         draw.text((_PAD, y + 4), f"…ещё {len(rows) - len(show)} матчей", font=font_sm, fill=_DIM)
     return _to_png(im.convert("RGB"))
