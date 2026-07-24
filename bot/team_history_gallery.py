@@ -117,35 +117,184 @@ def render_compare_clubs_png(team_a: str, team_b: str) -> bytes:
     return _to_png(im.convert("RGB"))
 
 
+def _match_result_for_team(m: dict, team: str) -> tuple[str, int, int, int]:
+    """(W|D|L, points, gf, ga) с точки зрения клуба."""
+    from bot.team_history import _norm
+
+    want = _norm(team)
+    home = _norm(str(m.get("home") or ""))
+    away = _norm(str(m.get("away") or ""))
+    hs = int(m.get("home_score") or 0)
+    aws = int(m.get("away_score") or 0)
+    if home == want:
+        gf, ga = hs, aws
+    elif away == want:
+        gf, ga = aws, hs
+    else:
+        return "D", 0, 0, 0
+    if gf > ga:
+        return "W", 3, gf, ga
+    if gf < ga:
+        return "L", 0, gf, ga
+    return "D", 1, gf, ga
+
+
 def render_h2h_png(team_a: str, team_b: str) -> bytes:
     h2h = head_to_head(team_a, team_b)
-    matches = h2h["matches"][-24:]  # last 24
-    row_h = 34
-    h = 200 + max(1, len(matches)) * row_h + 40
-    im = _gradient_bg(h).convert("RGBA")
-    draw = ImageDraw.Draw(im)
-    y = _title(
-        draw,
-        "История противостояния",
-        f"{h2h['team_a']} — {h2h['team_b']} · {h2h['played']} матчей · "
-        f"{h2h['wins_a']}-{h2h['draws']}-{h2h['wins_b']} · голы {h2h['goals_a']}:{h2h['goals_b']}",
-    )
+    ta, tb = str(h2h["team_a"]), str(h2h["team_b"])
+    matches = list(h2h["matches"] or [])
+    show = matches[-20:]  # последние встречи на графике/в списке
+
     font_m = _pick_font(17)
     font_sm = _pick_font(14)
+    font_b = _pick_font(20, bold=True)
+    font_n = _pick_font(28, bold=True)
+    font_kpi = _pick_font(26, bold=True)
+
+    col_a = (70, 140, 230)
+    col_b = (230, 120, 100)
+    win_c = (90, 190, 140)
+    draw_c = (200, 180, 90)
+    lose_c = (220, 110, 110)
+
+    chart_h = 280 if show else 0
+    list_h = 28 + max(1, len(show)) * 40 + 16
+    h = 150 + 130 + 90 + chart_h + 24 + list_h + 40
+    im = _gradient_bg(min(h, 2600)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    y = _title(draw, "История противостояния", f"{ta}  vs  {tb}")
+
+    # Crest duel header
+    mid = _CANVAS_W // 2
+    header_top = y
+    draw.rounded_rectangle(
+        [_PAD, header_top, _CANVAS_W - _PAD, header_top + 110],
+        radius=16,
+        fill=_CARD,
+        outline=_LINE,
+    )
+    crest_a = _try_load_crest_rgba(ta)
+    crest_b = _try_load_crest_rgba(tb)
+    if crest_a is not None:
+        _paste_crest_natural(im, crest_a, _PAD + 70, header_top + 55, 64)
+    if crest_b is not None:
+        _paste_crest_natural(im, crest_b, _CANVAS_W - _PAD - 70, header_top + 55, 64)
+    bw = draw.textbbox((0, 0), tb, font=font_n)[2]
+    draw.text((_PAD + 120, header_top + 28), ta, font=font_n, fill=_TEXT)
+    draw.text((_CANVAS_W - _PAD - 120 - bw, header_top + 28), tb, font=font_n, fill=_TEXT)
+    vs = "VS"
+    vsw = draw.textbbox((0, 0), vs, font=font_b)[2]
+    draw.text((mid - vsw // 2, header_top + 36), vs, font=font_b, fill=_GOLD)
+    sub = f"{h2h['played']} матчей · голы {h2h['goals_a']}:{h2h['goals_b']}"
+    sw = draw.textbbox((0, 0), sub, font=font_sm)[2]
+    draw.text((mid - sw // 2, header_top + 68), sub, font=font_sm, fill=_DIM)
+    y = header_top + 126
+
+    # KPI
+    kpis = [
+        ("Победы", str(h2h["wins_a"]), col_a),
+        ("Ничьи", str(h2h["draws"]), draw_c),
+        ("Победы", str(h2h["wins_b"]), col_b),
+        ("Голы", f"{h2h['goals_a']}:{h2h['goals_b']}", _GOLD),
+    ]
+    gap = 12
+    card_w = (_CANVAS_W - 2 * _PAD - 3 * gap) // 4
+    for i, (lab, val, accent) in enumerate(kpis):
+        x0 = _PAD + i * (card_w + gap)
+        draw.rounded_rectangle([x0, y, x0 + card_w, y + 78], radius=12, fill=_CARD, outline=accent)
+        who = ta if i == 0 else (tb if i == 2 else "")
+        top_lab = f"{lab}" + (f" · {who}" if who else "")
+        top_lab = _fit(draw, top_lab, font_sm, card_w - 16)
+        tw = draw.textbbox((0, 0), top_lab, font=font_sm)[2]
+        draw.text((x0 + (card_w - tw) // 2, y + 10), top_lab, font=font_sm, fill=_DIM)
+        vw = draw.textbbox((0, 0), val, font=font_kpi)[2]
+        draw.text((x0 + (card_w - vw) // 2, y + 36), val, font=font_kpi, fill=_TEXT)
+    y += 94
+
     if not matches:
         draw.text((_PAD, y), "Матчей в журналах не найдено.", font=font_m, fill=_DIM)
         return _to_png(im.convert("RGB"))
-    for m in matches:
+
+    # Vertical bars: goals per meeting (A vs B)
+    draw.rounded_rectangle(
+        [_PAD, y, _CANVAS_W - _PAD, y + chart_h],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+    )
+    draw.text((_PAD + 16, y + 10), "Голы по встречам", font=font_b, fill=_TEXT)
+    lx = _PAD + 320
+    draw.rounded_rectangle([lx, y + 14, lx + 16, y + 30], radius=3, fill=col_a)
+    draw.text((lx + 22, y + 12), _fit(draw, ta, font_sm, 200), font=font_sm, fill=_DIM)
+    lx2 = lx + 240
+    draw.rounded_rectangle([lx2, y + 14, lx2 + 16, y + 30], radius=3, fill=col_b)
+    draw.text((lx2 + 22, y + 12), _fit(draw, tb, font_sm, 200), font=font_sm, fill=_DIM)
+
+    chart_top = y + 44
+    chart_bot = y + chart_h - 36
+    chart_left = _PAD + 28
+    chart_right = _CANVAS_W - _PAD - 28
+    draw.line([chart_left, chart_bot, chart_right, chart_bot], fill=_LINE, width=2)
+
+    max_g = 1
+    parsed: list[tuple[dict, str, int, int, str]] = []
+    for m in show:
+        res, _pts, gf, ga = _match_result_for_team(m, ta)
+        max_g = max(max_g, gf, ga)
+        parsed.append((m, res, gf, ga, f"{format_season_tag(m.get('_season'))}·м{m.get('day')}"))
+
+    n = max(1, len(parsed))
+    slot_w = (chart_right - chart_left) / n
+    pair_gap = 4
+    bar_w = max(8, min(22, int((slot_w - 16 - pair_gap) / 2)))
+
+    for i, (m, res, gf, ga, lab) in enumerate(parsed):
+        cx = chart_left + int(slot_w * (i + 0.5))
+        usable = chart_bot - chart_top - 8
+        ha = int(usable * (gf / max_g)) if max_g else 0
+        hb = int(usable * (ga / max_g)) if max_g else 0
+        xa = cx - pair_gap // 2 - bar_w
+        xb = cx + pair_gap // 2
+        if gf > 0:
+            draw.rounded_rectangle([xa, chart_bot - max(ha, 4), xa + bar_w, chart_bot - 1], radius=4, fill=col_a)
+        else:
+            draw.rounded_rectangle([xa, chart_bot - 5, xa + bar_w, chart_bot - 1], radius=2, fill=_LINE)
+        if ga > 0:
+            draw.rounded_rectangle([xb, chart_bot - max(hb, 4), xb + bar_w, chart_bot - 1], radius=4, fill=col_b)
+        else:
+            draw.rounded_rectangle([xb, chart_bot - 5, xb + bar_w, chart_bot - 1], radius=2, fill=_LINE)
+        sc = f"{gf}:{ga}"
+        scw = draw.textbbox((0, 0), sc, font=font_sm)[2]
+        draw.text((cx - scw // 2, chart_top), sc, font=font_sm, fill=_TEXT)
+        lw = draw.textbbox((0, 0), lab, font=font_sm)[2]
+        draw.text((cx - lw // 2, chart_bot + 6), lab, font=font_sm, fill=_DIM)
+
+    y += chart_h + 18
+
+    # Match list
+    draw.text((_PAD, y), "Встречи", font=font_b, fill=_TEXT)
+    y += 28
+    res_col = {"W": win_c, "D": draw_c, "L": lose_c}
+    for m, res, gf, ga, _lab in parsed:
         sn = m.get("_season")
         day = m.get("day")
         lg = str(m.get("league") or "")
-        home, away = m.get("home"), m.get("away")
+        home, away = str(m.get("home") or ""), str(m.get("away") or "")
         hs, aws = m.get("home_score"), m.get("away_score")
-        left = f"{format_season_tag(sn) if sn else '?'} · м{day} · {lg}"
+        meta = f"{format_season_tag(sn) if sn else '?'} · м{day} · {lg}"
         score = f"{home} {hs}:{aws} {away}"
-        draw.text((_PAD, y), left, font=font_sm, fill=_DIM)
-        draw.text((_PAD + 280, y), _fit(draw, score, font_m, 860), font=font_m, fill=_TEXT)
-        y += row_h
+
+        draw.rounded_rectangle([_PAD, y, _CANVAS_W - _PAD, y + 34], radius=8, fill=(24, 34, 52), outline=_LINE)
+        chip = res
+        draw.rounded_rectangle([_PAD + 8, y + 6, _PAD + 36, y + 28], radius=6, fill=res_col.get(res, _LINE))
+        cw = draw.textbbox((0, 0), chip, font=font_sm)[2]
+        draw.text((_PAD + 8 + (28 - cw) // 2, y + 8), chip, font=font_sm, fill=(16, 22, 34))
+        draw.text((_PAD + 48, y + 8), meta, font=font_sm, fill=_DIM)
+        draw.text((_PAD + 280, y + 7), _fit(draw, score, font_m, 860), font=font_m, fill=_TEXT)
+        y += 40
+
+    if len(matches) > len(show):
+        draw.text((_PAD, y + 2), f"…показаны последние {len(show)} из {len(matches)}", font=font_sm, fill=_DIM)
     return _to_png(im.convert("RGB"))
 
 
