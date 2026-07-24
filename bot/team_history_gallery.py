@@ -751,130 +751,184 @@ def render_season_cover_png(season: int) -> bytes:
     return _to_png(im.convert("RGB"))
 
 
-def render_hall_of_fame_png(*, limit: int = 20) -> bytes:
-    rows = hall_of_fame_global(limit=limit)
-    row_h = 52
-    h = 150 + max(1, len(rows)) * row_h + 50
-    im = _gradient_bg(h).convert("RGBA")
-    draw = ImageDraw.Draw(im)
-    y = _title(draw, "Зал славы", "Лучшие игроки карьеры · лига + ЛЧ · все сезоны")
-    font_m = _pick_font(18)
-    font_b = _pick_font(18, bold=True)
+def _hof_stat_cols() -> list[tuple[str, str]]:
+    """(ключ, заголовок) — порядок колонок зала славы."""
+    return [
+        ("matches", "И"),
+        ("goals", "Г"),
+        ("assists", "А"),
+        ("ga", "Г+А"),
+        ("potm", "POTM"),
+    ]
+
+
+def _hof_row_values(leg: ClubLegend) -> dict[str, int]:
+    g = int(leg.goals or 0)
+    a = int(leg.assists or 0)
+    return {
+        "matches": int(leg.matches or 0),
+        "goals": g,
+        "assists": a,
+        "ga": g + a,
+        "potm": int(leg.potm or 0),
+    }
+
+
+def _render_hof_table(
+    *,
+    title: str,
+    subtitle: str,
+    rows: list[ClubLegend],
+    show_club: bool,
+    crest_team: str | None = None,
+) -> bytes:
+    """Таблица легенд: шапка И / Г / А / Г+А / POTM, без score."""
+    cols = _hof_stat_cols()
+    font_b = _pick_font(20, bold=True)
     font_sm = _pick_font(14)
-    font_r = _pick_font(20, bold=True)
-    max_score = max((float(leg.score) for leg in rows), default=1.0) or 1.0
+    font_r = _pick_font(22, bold=True)
+    font_head = _pick_font(14, bold=True)
+    font_num = _pick_font(19, bold=True)
+
+    row_h = 46
+    head_h = 34
+    n = max(1, len(rows))
+    table_h = head_h + n * row_h + 12
+    extra_crest = 8
+    h = 118 + extra_crest + table_h + 36
+    im = _gradient_bg(min(h, 2800)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    y = _title(draw, title, subtitle)
+
+    if crest_team:
+        crest = _try_load_crest_rgba(crest_team)
+        if crest is not None:
+            _paste_crest_natural(im, crest, _CANVAS_W - _PAD - 36, 48, 52)
+
+    # Column geometry
+    col_w = 92
+    potm_w = 108
+    stats_right = _CANVAS_W - _PAD - 20
+    stats_span = (len(cols) - 1) * col_w + potm_w
+    stats_left = stats_right - stats_span
+    name_x = _PAD + 96
+    name_max = stats_left - name_x - 20
+
+    def _col_center(i: int) -> int:
+        if i < len(cols) - 1:
+            return stats_left + i * col_w + col_w // 2
+        return stats_left + (len(cols) - 1) * col_w + potm_w // 2
+
+    table_top = y
+    table_bot = y + table_h
+    draw.rounded_rectangle(
+        [_PAD, table_top, _CANVAS_W - _PAD, table_bot],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+        width=1,
+    )
+
+    # Header
+    hy = table_top + 4
+    draw.rounded_rectangle(
+        [_PAD + 4, hy, _CANVAS_W - _PAD - 4, hy + head_h],
+        radius=8,
+        fill=(18, 26, 42),
+    )
+    draw.text((_PAD + 18, hy + 8), "#", font=font_head, fill=_DIM)
+    draw.text((name_x, hy + 8), "Игрок", font=font_head, fill=_DIM)
+    for i, (_key, lab) in enumerate(cols):
+        cx = _col_center(i)
+        lw = draw.textbbox((0, 0), lab, font=font_head)[2]
+        draw.text((cx - lw // 2, hy + 8), lab, font=font_head, fill=_GOLD)
+
+    medal = {1: (255, 214, 110), 2: (198, 208, 224), 3: (205, 148, 98)}
+    y = hy + head_h
 
     for i, leg in enumerate(rows, 1):
-        club = getattr(leg, "club", "") or ""
         top = y
-        draw.rounded_rectangle(
-            [_PAD, top, _CANVAS_W - _PAD, top + row_h - 6],
-            radius=12,
-            fill=_CARD,
-            outline=_GOLD if i <= 3 else _LINE,
-            width=2 if i <= 3 else 1,
-        )
-        rank_c = _GOLD if i <= 3 else _TEXT
-        draw.text((_PAD + 14, top + 14), f"{i:02d}", font=font_r, fill=rank_c)
+        club = (getattr(leg, "club", "") or "") if show_club else (crest_team or "")
+        # zebra
+        if i % 2 == 0:
+            draw.rectangle(
+                [_PAD + 4, top, _CANVAS_W - _PAD - 4, top + row_h],
+                fill=(24, 34, 54),
+            )
+        # top-3 left accent
+        if i <= 3:
+            draw.rounded_rectangle(
+                [_PAD + 6, top + 8, _PAD + 10, top + row_h - 8],
+                radius=2,
+                fill=medal[i],
+            )
+
+        rank_c = medal.get(i, _DIM)
+        draw.text((_PAD + 18, top + 11), f"{i:02d}", font=font_r, fill=rank_c)
+
         if club:
             crest = _try_load_crest_rgba(club)
             if crest is not None:
-                _paste_crest_natural(im, crest, _PAD + 70, top + row_h // 2 - 3, 28)
-        draw.text((_PAD + 96, top + 8), _fit(draw, leg.name, font_b, 220), font=font_b, fill=_TEXT)
-        meta = f"{club or '—'} · {leg.position or '—'} · OVR {leg.overall or '—'}"
-        draw.text((_PAD + 96, top + 28), _fit(draw, meta, font_sm, 280), font=font_sm, fill=_DIM)
-
-        # mini bars for G / A / POTM
-        stats = [
-            ("Г", int(leg.goals), (90, 190, 140)),
-            ("А", int(leg.assists), (70, 140, 230)),
-            ("P", int(leg.potm), _GOLD),
-        ]
-        bx = 520
-        for lab, val, col in stats:
-            draw.text((bx, top + 8), lab, font=font_sm, fill=_DIM)
-            bw = int(70 * (val / max(1, max(leg.goals, leg.assists, leg.potm, 1))))
-            draw.rounded_rectangle([bx + 18, top + 10, bx + 18 + max(bw, 2 if val else 0), top + 22], radius=4, fill=col)
-            draw.text((bx + 100, top + 6), str(val), font=font_m, fill=_TEXT)
-            bx += 130
-
-        # score bar
-        sw = int(160 * (float(leg.score) / max_score)) if max_score else 0
-        draw.rounded_rectangle(
-            [_CANVAS_W - _PAD - 180, top + 28, _CANVAS_W - _PAD - 180 + max(sw, 4), top + 40],
-            radius=4,
-            fill=_BAR2,
-        )
+                _paste_crest_natural(im, crest, _PAD + 70, top + row_h // 2, 24)
         draw.text(
-            (_CANVAS_W - _PAD - 170, top + 8),
-            f"score {leg.score:.0f} · {leg.matches}и",
+            (name_x, top + 5),
+            _fit(draw, leg.name, font_b, name_max),
+            font=font_b,
+            fill=_TEXT,
+        )
+        if show_club:
+            meta = f"{club or '—'} · {leg.position or '—'} · {leg.overall or '—'}"
+        else:
+            meta = f"{leg.position or '—'} · OVR {leg.overall or '—'}"
+        draw.text(
+            (name_x, top + 26),
+            _fit(draw, meta, font_sm, name_max),
             font=font_sm,
             fill=_DIM,
         )
+
+        vals = _hof_row_values(leg)
+        for ci, (key, _lab) in enumerate(cols):
+            cx = _col_center(ci)
+            val = str(vals[key])
+            vw = draw.textbbox((0, 0), val, font=font_num)[2]
+            fill = _GOLD if key == "ga" else _TEXT
+            draw.text((cx - vw // 2, top + 12), val, font=font_num, fill=fill)
+
+        # separator (except last)
+        if i < n:
+            draw.line(
+                [_PAD + 16, top + row_h - 1, _CANVAS_W - _PAD - 16, top + row_h - 1],
+                fill=(40, 54, 78),
+                width=1,
+            )
         y += row_h
+
     return _to_png(im.convert("RGB"))
+
+
+def render_hall_of_fame_png(*, limit: int = 20) -> bytes:
+    rows = hall_of_fame_global(limit=limit)
+    return _render_hof_table(
+        title="Зал славы",
+        subtitle="Лучшие игроки карьеры · лига + ЛЧ · все сезоны",
+        rows=rows,
+        show_club=True,
+    )
 
 
 def render_club_hall_of_fame_png(team: str) -> bytes:
     from bot.team_history import club_legends
 
     rows = club_legends(team, limit=15)
-    row_h = 52
-    h = 170 + max(1, len(rows)) * row_h + 50
-    im = _gradient_bg(h).convert("RGBA")
-    draw = ImageDraw.Draw(im)
-    y = _title(draw, f"Зал славы · {team}", "Легенды клуба · лига + ЛЧ · все сезоны")
-    crest = _try_load_crest_rgba(team)
-    if crest is not None:
-        _paste_crest_natural(im, crest, _CANVAS_W - _PAD - 40, 48, 56)
+    return _render_hof_table(
+        title=f"Зал славы · {team}",
+        subtitle="Легенды клуба · лига + ЛЧ · все сезоны",
+        rows=rows,
+        show_club=False,
+        crest_team=team,
+    )
 
-    font_m = _pick_font(18)
-    font_b = _pick_font(18, bold=True)
-    font_sm = _pick_font(14)
-    font_r = _pick_font(20, bold=True)
-    max_g = max((int(leg.goals) for leg in rows), default=1) or 1
-    max_score = max((float(leg.score) for leg in rows), default=1.0) or 1.0
-
-    for i, leg in enumerate(rows, 1):
-        top = y
-        draw.rounded_rectangle(
-            [_PAD, top, _CANVAS_W - _PAD, top + row_h - 6],
-            radius=12,
-            fill=_CARD,
-            outline=_GOLD if i <= 3 else _LINE,
-            width=2 if i <= 3 else 1,
-        )
-        draw.text((_PAD + 14, top + 14), f"{i:02d}", font=font_r, fill=_GOLD if i <= 3 else _TEXT)
-        draw.text((_PAD + 60, top + 8), _fit(draw, leg.name, font_b, 260), font=font_b, fill=_TEXT)
-        draw.text(
-            (_PAD + 60, top + 28),
-            f"{leg.position or '—'} · OVR {leg.overall or '—'} · {leg.matches} игр",
-            font=font_sm,
-            fill=_DIM,
-        )
-
-        # goals bar (dominant stat)
-        bar_x0 = 420
-        bar_x1 = _CANVAS_W - _PAD - 200
-        bw = int((bar_x1 - bar_x0) * (int(leg.goals) / max_g)) if max_g else 0
-        draw.text((bar_x0, top + 6), "Голы", font=font_sm, fill=_DIM)
-        draw.rounded_rectangle(
-            [bar_x0, top + 26, bar_x0 + max(bw, 3 if leg.goals else 0), top + 38],
-            radius=5,
-            fill=(90, 190, 140),
-        )
-        draw.text((bar_x1 + 8, top + 8), f"{leg.goals}Г", font=font_b, fill=_TEXT)
-        draw.text((bar_x1 + 8, top + 28), f"{leg.assists}А · {leg.potm}P", font=font_sm, fill=_DIM)
-
-        # thin score accent on the right edge
-        sh = int(30 * (float(leg.score) / max_score)) if max_score else 0
-        draw.rounded_rectangle(
-            [_CANVAS_W - _PAD - 10, top + row_h - 10 - max(sh, 4), _CANVAS_W - _PAD - 2, top + row_h - 10],
-            radius=3,
-            fill=_GOLD if i <= 3 else _BAR,
-        )
-        y += row_h
-    return _to_png(im.convert("RGB"))
 
 def render_club_season_matches_png(team: str, season: int) -> bytes:
     rows = club_matches_in_season(team, season)
