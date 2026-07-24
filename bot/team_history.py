@@ -463,7 +463,7 @@ def _load_matches_from_path(path: str) -> list[dict[str, Any]]:
 
 
 def iter_all_match_records() -> list[dict[str, Any]]:
-    """Все матчи из журналов с полем ``_season``."""
+    """Все матчи из журналов с полем ``_season`` (только записи со счётом)."""
     seen: set[tuple] = set()
     out: list[dict[str, Any]] = []
     for sn, path in _match_journal_paths():
@@ -472,20 +472,29 @@ def iter_all_match_records() -> list[dict[str, Any]]:
             away = str(m.get("away") or "").strip()
             if not home or not away:
                 continue
+            hs, aws = m.get("home_score"), m.get("away_score")
+            if hs is None or aws is None:
+                continue
+            try:
+                hs_i, aws_i = int(hs), int(aws)
+            except (TypeError, ValueError):
+                continue
             key = (
                 sn,
                 home.casefold(),
                 away.casefold(),
                 m.get("league"),
                 m.get("day"),
-                m.get("home_score"),
-                m.get("away_score"),
+                hs_i,
+                aws_i,
                 m.get("cl_phase"),
             )
             if key in seen:
                 continue
             seen.add(key)
             row = dict(m)
+            row["home_score"] = hs_i
+            row["away_score"] = aws_i
             row["_season"] = sn
             out.append(row)
     return out
