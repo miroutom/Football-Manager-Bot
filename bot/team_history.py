@@ -652,9 +652,9 @@ def club_matches_in_season(team: str, season: int) -> list[dict[str, Any]]:
             or _norm(str(m.get("away") or "")) == want
         )
     ]
-    rows.sort(key=lambda m: (str(m.get("league") or ""), int(m.get("day") or 0)))
+    # хронология сезона: месяц, затем турнир (чтобы лига/ЛЧ одного месяца шли рядом)
+    rows.sort(key=lambda m: (int(m.get("day") or 0), str(m.get("league") or "")))
     return rows
-
 
 def prestige_snapshot_for_season(team: str, season: int, hist: dict[str, Any] | None = None) -> float:
     """Престиж только за вклад сезона N (без текущего OVR состава)."""
