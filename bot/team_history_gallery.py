@@ -76,17 +76,31 @@ def render_compare_clubs_png(team_a: str, team_b: str) -> bytes:
     data = compare_clubs(team_a, team_b)
     pa, pb = data["a"], data["b"]
     h2h = data["h2h"]
-    h = 620
+    col_a = (70, 140, 230)
+    col_b = (230, 120, 100)
+    draw_c = (200, 180, 90)
+
+    h2h_block = 280
+    h = 110 + 210 + 28 + h2h_block + 36
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
     y = _title(draw, "Сравнение клубов", f"{pa.team}  vs  {pb.team}")
     mid = _CANVAS_W // 2
     font_n = _pick_font(28, bold=True)
-    font_m = _pick_font(18)
-    font_b = _pick_font(22, bold=True)
+    font_m = _pick_font(17)
+    font_b = _pick_font(20, bold=True)
+    font_sm = _pick_font(14)
+    font_kpi = _pick_font(26, bold=True)
 
-    for side, p, x0 in ((0, pa, _PAD), (1, pb, mid + 10)):
-        draw.rounded_rectangle([x0, y, x0 + mid - _PAD - 10, y + 200], radius=14, fill=_CARD, outline=_LINE)
+    for p, x0, accent in ((pa, _PAD, col_a), (pb, mid + 10, col_b)):
+        card_w = mid - _PAD - 10
+        draw.rounded_rectangle(
+            [x0, y, x0 + card_w, y + 200],
+            radius=14,
+            fill=_CARD,
+            outline=accent,
+            width=2,
+        )
         crest = _try_load_crest_rgba(p.team)
         if crest is not None:
             _paste_crest_natural(im, crest, x0 + 40, y + 44, 56)
@@ -104,16 +118,134 @@ def render_compare_clubs_png(team_a: str, team_b: str) -> bytes:
 
     y += 220
     draw.text((_PAD, y), "Очные встречи (все журналы)", font=font_b, fill=_TEXT)
-    y += 32
-    draw.rounded_rectangle([_PAD, y, _CANVAS_W - _PAD, y + 90], radius=12, fill=_CARD, outline=_LINE)
-    summary = (
-        f"Игр: {h2h['played']}   "
-        f"{pa.team} побед {h2h['wins_a']}   "
-        f"ничьих {h2h['draws']}   "
-        f"{pb.team} побед {h2h['wins_b']}   "
-        f"голы {h2h['goals_a']}:{h2h['goals_b']}"
+    y += 30
+
+    draw.rounded_rectangle(
+        [_PAD, y, _CANVAS_W - _PAD, y + h2h_block],
+        radius=16,
+        fill=_CARD,
+        outline=_LINE,
     )
-    draw.text((_PAD + 20, y + 30), summary, font=font_m, fill=_TEXT)
+    played = int(h2h["played"] or 0)
+    wa = int(h2h["wins_a"] or 0)
+    wb = int(h2h["wins_b"] or 0)
+    dr = int(h2h["draws"] or 0)
+    ga = int(h2h["goals_a"] or 0)
+    gb = int(h2h["goals_b"] or 0)
+
+    if played <= 0:
+        draw.text(
+            (_PAD + 24, y + 110),
+            "Матчей в журналах не найдено.",
+            font=font_m,
+            fill=_DIM,
+        )
+        return _to_png(im.convert("RGB"))
+
+    # KPI chips
+    kpis = [
+        (f"Победы · {pa.team}", str(wa), col_a),
+        ("Ничьи", str(dr), draw_c),
+        (f"Победы · {pb.team}", str(wb), col_b),
+        ("Голы", f"{ga}:{gb}", _GOLD),
+    ]
+    gap = 10
+    chip_w = (_CANVAS_W - 2 * _PAD - 32 - 3 * gap) // 4
+    chip_y = y + 16
+    for i, (lab, val, accent) in enumerate(kpis):
+        x0 = _PAD + 16 + i * (chip_w + gap)
+        draw.rounded_rectangle(
+            [x0, chip_y, x0 + chip_w, chip_y + 64],
+            radius=10,
+            fill=(22, 32, 50),
+            outline=accent,
+        )
+        top = _fit(draw, lab, font_sm, chip_w - 12)
+        tw = draw.textbbox((0, 0), top, font=font_sm)[2]
+        draw.text((x0 + (chip_w - tw) // 2, chip_y + 8), top, font=font_sm, fill=_DIM)
+        vw = draw.textbbox((0, 0), val, font=font_kpi)[2]
+        draw.text((x0 + (chip_w - vw) // 2, chip_y + 30), val, font=font_kpi, fill=_TEXT)
+
+    # Segmented W–D–L bar
+    bar_y = chip_y + 84
+    draw.text((_PAD + 16, bar_y), f"Результаты · {played} матч(ей)", font=font_sm, fill=_DIM)
+    bar_y += 24
+    bar_x0 = _PAD + 16
+    bar_x1 = _CANVAS_W - _PAD - 16
+    bar_h = 36
+    total_seg = max(played, 1)
+    segs = [
+        (wa, col_a, f"{pa.team} {wa}"),
+        (dr, draw_c, f"ничьи {dr}"),
+        (wb, col_b, f"{pb.team} {wb}"),
+    ]
+    draw.rounded_rectangle(
+        [bar_x0, bar_y, bar_x1, bar_y + bar_h],
+        radius=10,
+        fill=(18, 26, 40),
+        outline=_LINE,
+    )
+    active = [(n, col) for n, col, _lab in segs if n > 0]
+    cursor = float(bar_x0)
+    span = float(bar_x1 - bar_x0)
+    for i, (n, col) in enumerate(active):
+        if i == len(active) - 1:
+            right = float(bar_x1)
+        else:
+            right = cursor + span * (n / total_seg)
+        left_i, right_i = int(cursor), int(right)
+        if right_i > left_i:
+            draw.rectangle([left_i, bar_y + 1, right_i, bar_y + bar_h - 1], fill=col)
+            w = right_i - left_i
+            if w >= 36:
+                label = str(n)
+                lw = draw.textbbox((0, 0), label, font=font_b)[2]
+                draw.text(
+                    (left_i + (w - lw) // 2, bar_y + 6),
+                    label,
+                    font=font_b,
+                    fill=(16, 22, 34),
+                )
+        cursor = right
+
+    # Legend under bar
+    lx = bar_x0
+    for n, col, lab in segs:
+        draw.rounded_rectangle([lx, bar_y + bar_h + 12, lx + 14, bar_y + bar_h + 26], radius=3, fill=col)
+        draw.text(
+            (lx + 20, bar_y + bar_h + 10),
+            _fit(draw, lab, font_sm, 280),
+            font=font_sm,
+            fill=_DIM,
+        )
+        lx += 300
+
+    # Goals duel bars
+    goals_y = bar_y + bar_h + 48
+    draw.text((_PAD + 16, goals_y), "Голы во встречах", font=font_sm, fill=_DIM)
+    goals_y += 22
+    max_g = max(ga, gb, 1)
+    g_bar_x0 = _PAD + 180
+    g_bar_x1 = _CANVAS_W - _PAD - 70
+    g_max_w = g_bar_x1 - g_bar_x0
+    for i, (name, goals, col) in enumerate(
+        ((pa.team, ga, col_a), (pb.team, gb, col_b))
+    ):
+        yy = goals_y + i * 36
+        draw.text(
+            (_PAD + 16, yy + 4),
+            _fit(draw, name, font_m, 150),
+            font=font_m,
+            fill=_TEXT,
+        )
+        bw = int(g_max_w * (goals / max_g)) if max_g else 0
+        draw.rounded_rectangle(
+            [g_bar_x0, yy, g_bar_x0 + max(bw, 4 if goals else 0), yy + 24],
+            radius=8,
+            fill=col if goals else _LINE,
+        )
+        draw.text((g_bar_x1 + 12, yy + 2), str(goals), font=font_b, fill=_TEXT)
+
     return _to_png(im.convert("RGB"))
 
 
