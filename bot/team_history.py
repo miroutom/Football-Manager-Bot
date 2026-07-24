@@ -603,7 +603,7 @@ def manager_side_stats(side: str) -> dict[str, Any]:
     league_titles = sum(p.league_titles for p in prestiges)
     cl_titles = sum(p.cl_titles for p in prestiges)
     awards = sum(p.awards for p in prestiges)
-    top = sorted(prestiges, key=lambda p: -p.score)[:8]
+    ranked = sorted(prestiges, key=lambda p: (-p.score, p.team.casefold()))
     return {
         "side": key,
         "label": "Roman" if key == "roman" else "Lika" if key == "lika" else key,
@@ -612,7 +612,7 @@ def manager_side_stats(side: str) -> dict[str, Any]:
         "league_titles": league_titles,
         "cl_titles": cl_titles,
         "awards": awards,
-        "top_clubs": top,
+        "top_clubs": ranked,  # все клубы менеджера, по убыванию престижа
         "avg_prestige": round(total / max(1, len(prestiges)), 1),
     }
 

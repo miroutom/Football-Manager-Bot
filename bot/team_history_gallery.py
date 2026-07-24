@@ -301,45 +301,111 @@ def render_h2h_png(team_a: str, team_b: str) -> bytes:
 def render_managers_png() -> bytes:
     roman = manager_side_stats("roman")
     lika = manager_side_stats("lika")
-    h = 720
-    im = _gradient_bg(h).convert("RGBA")
+    clubs_r = list(roman["top_clubs"] or [])
+    clubs_l = list(lika["top_clubs"] or [])
+    n_clubs = max(len(clubs_r), len(clubs_l), 1)
+    row_h = 30
+    stats_block = 168
+    chart_h = 150
+    card_h = stats_block + 28 + n_clubs * row_h + 16
+    h = 110 + chart_h + 20 + card_h + 36
+    im = _gradient_bg(min(h, 3200)).convert("RGBA")
     draw = ImageDraw.Draw(im)
-    y = _title(draw, "Менеджеры", "Roman vs Lika — престиж клубов и трофеи")
-    font_n = _pick_font(30, bold=True)
-    font_m = _pick_font(18)
-    font_b = _pick_font(20, bold=True)
+    y = _title(draw, "Менеджеры", "Roman vs Lika — все клубы, престиж и трофеи")
+    font_n = _pick_font(28, bold=True)
+    font_m = _pick_font(16)
+    font_b = _pick_font(18, bold=True)
+    font_sm = _pick_font(13)
+    font_kpi = _pick_font(24, bold=True)
     mid = _CANVAS_W // 2
-    for side, st, col, x0 in (
-        (roman, roman, _ROMAN, _PAD),
-        (lika, lika, _LIKA, mid + 8),
-    ):
+
+    # Comparison bars (total prestige)
+    draw.rounded_rectangle(
+        [_PAD, y, _CANVAS_W - _PAD, y + chart_h],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+    )
+    draw.text((_PAD + 16, y + 10), "Суммарный престиж", font=font_b, fill=_TEXT)
+    max_tot = max(float(roman["prestige_total"]), float(lika["prestige_total"]), 1.0)
+    bar_left = _PAD + 120
+    bar_right = _CANVAS_W - _PAD - 80
+    bar_max_w = bar_right - bar_left
+    for i, (st, col) in enumerate(((roman, _ROMAN), (lika, _LIKA))):
+        yy = y + 48 + i * 44
+        draw.text((_PAD + 16, yy + 4), st["label"], font=font_b, fill=col)
+        bw = int(bar_max_w * (float(st["prestige_total"]) / max_tot))
         draw.rounded_rectangle(
-            [x0, y, x0 + mid - _PAD - 8, y + 520],
+            [bar_left, yy, bar_left + max(bw, 8), yy + 28],
+            radius=8,
+            fill=col,
+        )
+        val = f"{st['prestige_total']:.0f}"
+        draw.text((bar_left + max(bw, 8) + 10, yy + 4), val, font=font_kpi, fill=_TEXT)
+    y += chart_h + 16
+
+    for st, clubs, col, x0 in (
+        (roman, clubs_r, _ROMAN, _PAD),
+        (lika, clubs_l, _LIKA, mid + 8),
+    ):
+        card_w = mid - _PAD - 8
+        draw.rounded_rectangle(
+            [x0, y, x0 + card_w, y + card_h],
             radius=16,
             fill=_CARD,
             outline=col,
             width=2,
         )
-        draw.text((x0 + 20, y + 16), st["label"], font=font_n, fill=col)
-        stats = [
-            f"Суммарный престиж: {st['prestige_total']:.0f}",
-            f"Средний на клуб: {st['avg_prestige']:.0f}",
-            f"Чемп. лиг: {st['league_titles']}",
-            f"Титулы ЛЧ: {st['cl_titles']}",
-            f"Личные награды: {st['awards']}",
+        draw.text((x0 + 16, y + 12), st["label"], font=font_n, fill=col)
+        draw.text(
+            (x0 + 16, y + 48),
+            f"клубов: {len(clubs)} · ср. {st['avg_prestige']:.0f}",
+            font=font_sm,
+            fill=_DIM,
+        )
+        # mini KPIs
+        kpis = [
+            ("Чемп.", str(st["league_titles"])),
+            ("ЛЧ", str(st["cl_titles"])),
+            ("Нагр.", str(st["awards"])),
         ]
-        yy = y + 70
-        for line in stats:
-            draw.text((x0 + 20, yy), line, font=font_m, fill=_TEXT)
-            yy += 28
-        draw.text((x0 + 20, yy + 8), "Топ клубов", font=font_b, fill=_GOLD)
-        yy += 40
-        for i, p in enumerate(st["top_clubs"], 1):
+        kx = x0 + 16
+        for lab, val in kpis:
+            draw.rounded_rectangle([kx, y + 72, kx + 70, y + 118], radius=8, fill=(22, 32, 50), outline=_LINE)
+            tw = draw.textbbox((0, 0), lab, font=font_sm)[2]
+            draw.text((kx + (70 - tw) // 2, y + 76), lab, font=font_sm, fill=_DIM)
+            vw = draw.textbbox((0, 0), val, font=font_b)[2]
+            draw.text((kx + (70 - vw) // 2, y + 94), val, font=font_b, fill=_TEXT)
+            kx += 78
+
+        draw.text((x0 + 16, y + stats_block - 22), "Все клубы", font=font_b, fill=_GOLD)
+        yy = y + stats_block + 4
+        max_score = max((p.score for p in clubs), default=1.0) or 1.0
+        name_w = 200
+        bar_x0 = x0 + 250
+        bar_x1 = x0 + card_w - 56
+        for i, p in enumerate(clubs, 1):
             crest = _try_load_crest_rgba(p.team)
             if crest is not None:
-                _paste_crest_natural(im, crest, x0 + 36, yy + 12, 28)
-            draw.text((x0 + 60, yy), f"{i}. {p.team} — {p.score:.0f}", font=font_m, fill=_TEXT)
-            yy += 36
+                _paste_crest_natural(im, crest, x0 + 28, yy + 12, 22)
+            rank_c = _GOLD if i <= 3 else _DIM
+            draw.text((x0 + 44, yy + 4), f"{i:02d}", font=font_sm, fill=rank_c)
+            draw.text(
+                (x0 + 70, yy + 4),
+                _fit(draw, p.team, font_m, name_w),
+                font=font_m,
+                fill=_TEXT,
+            )
+            bw = int((bar_x1 - bar_x0) * (p.score / max_score)) if max_score else 0
+            if p.score > 0:
+                draw.rounded_rectangle(
+                    [bar_x0, yy + 8, bar_x0 + max(bw, 3), yy + 20],
+                    radius=4,
+                    fill=col,
+                )
+            sc = f"{p.score:.0f}"
+            draw.text((bar_x1 + 6, yy + 4), sc, font=font_sm, fill=_TEXT)
+            yy += row_h
     return _to_png(im.convert("RGB"))
 
 
