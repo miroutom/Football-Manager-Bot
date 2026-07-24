@@ -14,6 +14,7 @@ from bot.team_history import (
     compare_clubs,
     club_matches_in_season,
     cl_stage_short,
+    compute_result_streaks,
     format_match_score_with_pens,
     format_season_tag,
     hall_of_fame_global,
@@ -942,8 +943,10 @@ def render_club_season_matches_png(team: str, season: int) -> bytes:
     # stats + points by month
     by_month: dict[int, dict[str, int]] = {}
     w = d = l = gf_t = ga_t = 0
-    for m in rows:
+    results_chrono: list[str] = []
+    for m in sorted(rows, key=lambda x: (int(x.get("day") or 0), str(x.get("league") or ""))):
         res, pts, gf, ga = _match_result_for_team(m, team)
+        results_chrono.append(res)
         day = int(m.get("day") or 0)
         slot = by_month.setdefault(day, {"pts": 0, "gf": 0, "ga": 0, "n": 0, "w": 0, "d": 0, "l": 0})
         slot["pts"] += pts
@@ -963,11 +966,13 @@ def render_club_season_matches_png(team: str, season: int) -> bytes:
         ga_t += ga
     pts_total = w * 3 + d
     months = sorted(by_month.keys())
+    streaks = compute_result_streaks(results_chrono)
 
     chart_h = 260
     show = rows[:40]
     list_h = 28 + len(show) * 34 + (24 if len(rows) > len(show) else 0)
-    h = 150 + 96 + chart_h + 28 + list_h + 36
+    kpi_block_h = 88 + 84  # основная полоска + серии
+    h = 150 + kpi_block_h + chart_h + 28 + list_h + 36
     im = _gradient_bg(min(h, 2800)).convert("RGBA")
     draw = ImageDraw.Draw(im)
     y = _title(
@@ -976,24 +981,37 @@ def render_club_season_matches_png(team: str, season: int) -> bytes:
         f"{format_season_tag(season)} · {len(rows)} матч. · очки по месяцам",
     )
 
-    # KPI strip
-    kpis = [
-        ("В-Н-П", f"{w}-{d}-{l}"),
-        ("Очки", str(pts_total)),
-        ("Голы", f"{gf_t}:{ga_t}"),
-        ("Разн.", f"{gf_t - ga_t:+d}"),
-    ]
-    gap = 12
-    card_w = (_CANVAS_W - 2 * _PAD - 3 * gap) // 4
-    for i, (lab, val) in enumerate(kpis):
-        x0 = _PAD + i * (card_w + gap)
-        draw.rounded_rectangle([x0, y, x0 + card_w, y + 72], radius=12, fill=_CARD, outline=_LINE)
-        tw = draw.textbbox((0, 0), lab, font=font_sm)[2]
-        draw.text((x0 + (card_w - tw) // 2, y + 10), lab, font=font_sm, fill=_DIM)
-        vw = draw.textbbox((0, 0), val, font=font_kpi)[2]
-        draw.text((x0 + (card_w - vw) // 2, y + 32), val, font=font_kpi, fill=_TEXT)
-    y += 88
+    def _kpi_row(items: list[tuple[str, str]], top: int) -> None:
+        n = len(items)
+        gap = 12
+        card_w = (_CANVAS_W - 2 * _PAD - (n - 1) * gap) // n
+        for i, (lab, val) in enumerate(items):
+            x0 = _PAD + i * (card_w + gap)
+            draw.rounded_rectangle([x0, top, x0 + card_w, top + 72], radius=12, fill=_CARD, outline=_LINE)
+            tw = draw.textbbox((0, 0), lab, font=font_sm)[2]
+            draw.text((x0 + (card_w - tw) // 2, top + 10), lab, font=font_sm, fill=_DIM)
+            vw = draw.textbbox((0, 0), val, font=font_kpi)[2]
+            draw.text((x0 + (card_w - vw) // 2, top + 32), val, font=font_kpi, fill=_TEXT)
 
+    _kpi_row(
+        [
+            ("В-Н-П", f"{w}-{d}-{l}"),
+            ("Очки", str(pts_total)),
+            ("Голы", f"{gf_t}:{ga_t}"),
+            ("Разн.", f"{gf_t - ga_t:+d}"),
+        ],
+        y,
+    )
+    y += 84
+    _kpi_row(
+        [
+            ("Без пор. · макс", str(streaks["unbeaten"])),
+            ("Победы · макс", str(streaks["wins"])),
+            ("Лузы · макс", str(streaks["losses"])),
+        ],
+        y,
+    )
+    y += 88
     # Vertical bars by month (points)
     chart_top = y + 8
     chart_bot = chart_top + chart_h - 40

@@ -564,6 +564,34 @@ def match_result_for_team(m: dict[str, Any], team: str) -> tuple[str, int, int, 
     return "D", 1, gf, ga
 
 
+def compute_result_streaks(results: list[str]) -> dict[str, int]:
+    """
+    Самые длинные серии по хронологической последовательности ``W|D|L``.
+
+    - ``unbeaten`` — без поражений (W и D)
+    - ``wins`` — только победы
+    - ``losses`` — только поражения
+    """
+    best_u = best_w = best_l = 0
+    cur_u = cur_w = cur_l = 0
+    for r in results:
+        if r == "W":
+            cur_w += 1
+            cur_u += 1
+            cur_l = 0
+        elif r == "D":
+            cur_w = 0
+            cur_u += 1
+            cur_l = 0
+        else:
+            cur_w = 0
+            cur_u = 0
+            cur_l += 1
+        best_w = max(best_w, cur_w)
+        best_u = max(best_u, cur_u)
+        best_l = max(best_l, cur_l)
+    return {"unbeaten": best_u, "wins": best_w, "losses": best_l}
+
 def format_match_score_with_pens(m: dict[str, Any]) -> str:
     """``Ливерпуль 2:2 Аталанта (пен. 5:3)``."""
     home = str(m.get("home") or "")
