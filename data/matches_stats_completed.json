@@ -2594,5 +2594,46 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 6
+  },
+  {
+    "home": "Лейпциг",
+    "away": "Фиорентина",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Фиорентина",
+    "away": "Лейпциг",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Астон Вилла",
+    "away": "Хоффенхайм",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Хоффенхайм",
+    "away": "Астон Вилла",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
+  },
+  {
+    "home": "Аталанта",
+    "away": "Наполи",
+    "tournament": "league",
+    "day": 6
+  },
+  {
+    "home": "Аталанта",
+    "away": "Байер",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 6
   }
 ]
