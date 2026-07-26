@@ -2906,6 +2906,10 @@
       "away_score": 3,
       "day": 6,
       "cl_phase": "knockout",
+      "penalties_by_team": {
+        "Аталанта": 4,
+        "Байер": 1
+      },
       "entry_type": "play"
     }
   ]

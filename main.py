@@ -404,10 +404,10 @@ def cl_knockout_aggregate_tie_needs_penalties(
     """Ничья в стыке ЛЧ, где нужна серия пенальти: финал (один матч) или сумма двух матчей."""
     if _normalize_cl_phase(cl_phase) != "knockout":
         return False
-    if home_score != away_score:
-        return False
+    # Финал — один матч: пенальти только при ничьей в основное время.
     if _cl_knockout_is_final_match(home, away):
-        return True
+        return home_score == away_score
+    # Ответный матч стыка: смотрим сумму двух матчей (счёт ответного может быть любым).
     first = find_cl_knockout_first_leg_record(home, away)
     if not first:
         return False
