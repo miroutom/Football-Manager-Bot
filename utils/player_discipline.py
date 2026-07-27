@@ -244,6 +244,8 @@ def find_fixture_round(
 
 
 _SEASON_MONTHS = 10
+# Срок травмы при вводе (N в «имя Nм»): можно > длины сезона — остаток переносится.
+_MAX_INJURY_DURATION_MONTHS = 36
 
 
 def _injury_total_months(inj: dict) -> int:
@@ -780,8 +782,12 @@ def try_apply_discipline_line(
         out_from = int(m3f.group(2))
         nm = int(m3f.group(3))
         raw_type = (m3f.group(4) or "").strip()
-        if not (1 <= out_from <= 10 and 1 <= nm <= 10):
-            return ("Некорректно: месяцы 1–10.", True)
+        if not (1 <= out_from <= _SEASON_MONTHS and 1 <= nm <= _MAX_INJURY_DURATION_MONTHS):
+            return (
+                f"Некорректно: старт месяца 1–{_SEASON_MONTHS}, "
+                f"срок 1–{_MAX_INJURY_DURATION_MONTHS} мес.",
+                True,
+            )
         injury_type = raw_type if raw_type else "травма"
         if len(injury_type) > 80:
             injury_type = injury_type[:80].rstrip()
@@ -802,8 +808,11 @@ def try_apply_discipline_line(
 
         name, nm = m3.group(1).strip(), int(m3.group(2))
         raw_type = (m3.group(3) or "").strip()
-        if nm < 1 or nm > 10:
-            return ("Некорректно: число месяцев 1–10.", True)
+        if nm < 1 or nm > _MAX_INJURY_DURATION_MONTHS:
+            return (
+                f"Некорректно: число месяцев 1–{_MAX_INJURY_DURATION_MONTHS}.",
+                True,
+            )
         injury_type = raw_type if raw_type else "травма"
         if len(injury_type) > 80:
             injury_type = injury_type[:80].rstrip()
@@ -1120,6 +1129,193 @@ def format_discipline_pre_match_notice_html(
     )
 
 
+def list_injury_seasons() -> list[int]:
+    """Сезоны, для которых есть хотя бы одна запись травмы (по убыванию)."""
+    with _lock:
+        st = _load()
+    seasons: set[int] = set()
+    for inj in st.get("injuries", []) or []:
+        sn = inj.get("season")
+        if sn is None:
+            continue
+        try:
+            seasons.add(int(sn))
+        except (TypeError, ValueError):
+            continue
+    return sorted(seasons, reverse=True)
+
+
+def _injury_status_label(
+    inj: dict,
+    *,
+    month: int,
+    season_now: int,
+) -> str:
+    ret = int(inj.get("return_month") or 99)
+    ofm = inj.get("out_from_month")
+    inj_season = inj.get("season")
+    if ofm is None:
+        return "?"
+    if inj_season is None:
+        return "нет сезона"
+    if _injury_blocks_at_month(inj, month, current_season=season_now):
+        return "активна"
+    try:
+        sn = int(inj_season)
+    except (TypeError, ValueError):
+        return "?"
+    if sn < season_now and ret <= _SEASON_MONTHS * (season_now - sn) + month:
+        return "прошла"
+    if sn == season_now and month >= ret:
+        return "прошла"
+    return "позже"
+
+
+def _format_injury_rows_table(
+    injuries: list[dict],
+    *,
+    month: int,
+    season_now: int,
+    title: str,
+) -> list[str]:
+    """Строки таблицы травм для моноширинного отчёта."""
+    chunks: list[str] = [title]
+    chunks.append(
+        "«с»/«до» — месяцы календаря (до может быть >10 при переносе); "
+        "«сез» — сезон старта; статус — относительно текущего месяца."
+    )
+    inj_rows: list[tuple[str, str, str, str, int, int, str, int]] = []
+    for inj in injuries:
+        ret = int(inj.get("return_month") or 99)
+        ofm = inj.get("out_from_month")
+        ofm_s = str(int(ofm)) if ofm is not None else "?"
+        name = str(inj.get("name") or "?").strip()
+        team = str(inj.get("team") or "?").strip()
+        kind = (inj.get("type") or "травма").strip() or "травма"
+        inj_season = inj.get("season")
+        season_s = int(inj_season) if inj_season is not None else 0
+        months = _injury_total_months(inj)
+        st_mark = _injury_status_label(inj, month=month, season_now=season_now)
+        inj_rows.append((team, name, kind, ofm_s, ret, season_s, st_mark, months))
+    if not inj_rows:
+        chunks.append("Записей о травмах нет.")
+        return chunks
+    inj_rows.sort(
+        key=lambda r: (r[0].casefold(), r[1].casefold(), r[5], r[3], r[4])
+    )
+    w_team = max(len("Клуб"), max(len(r[0]) for r in inj_rows))
+    w_name = max(len("Игрок"), max(len(r[1]) for r in inj_rows))
+    head = (
+        f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<10}  "
+        f"сез  с   до   мес  статус"
+    )
+    sep = "-" * len(head)
+    lines = [head, sep]
+    for team, name, kind, ofm_s, ret, season_s, st_mark, months in inj_rows:
+        lines.append(
+            f"{team:<{w_team}}  {name:<{w_name}}  {kind[:10]:<10}  "
+            f"{season_s:<3}  {ofm_s:<3} м{ret:<3} {months:<3}  {st_mark}"
+        )
+    chunks.append(f"Периодов: {len(inj_rows)}.")
+    chunks.extend(lines)
+    return chunks
+
+
+def format_injuries_season_report_text(
+    season: int,
+    *,
+    schedule_month: int | None = None,
+) -> str:
+    """Травмы только за указанный сезон старта периода."""
+    month = get_calendar_month(schedule_month)
+    season_now = _get_active_season_or_default()
+    sn = int(season)
+    with _lock:
+        st = _load()
+    injuries = [
+        inj
+        for inj in (st.get("injuries") or [])
+        if inj.get("season") is not None and int(inj.get("season")) == sn
+    ]
+    chunks: list[str] = [
+        f"Месяц календаря: {month} (текущий сезон {season_now}).",
+        f"Фильтр: травмы, начавшиеся в сезоне {sn}.",
+        "",
+    ]
+    chunks.extend(
+        _format_injury_rows_table(
+            injuries,
+            month=month,
+            season_now=season_now,
+            title=f"── ТРАВМЫ · СЕЗОН {sn} ──",
+        )
+    )
+    return "\n".join(chunks)
+
+
+def format_injury_frequency_report_text(*, limit: int = 25) -> str:
+    """Кто чаще всего травмировался: число периодов и суммарные месяцы."""
+    with _lock:
+        st = _load()
+    # name_norm -> agg
+    agg: dict[str, dict[str, Any]] = {}
+    for inj in st.get("injuries") or []:
+        nn = str(inj.get("name_norm") or _norm(str(inj.get("name") or ""))).strip()
+        if not nn:
+            continue
+        name = str(inj.get("name") or nn).strip()
+        team = str(inj.get("team") or "?").strip()
+        row = agg.get(nn)
+        if row is None:
+            row = {
+                "name": name,
+                "teams": {},
+                "periods": 0,
+                "months": 0,
+            }
+            agg[nn] = row
+        row["periods"] += 1
+        row["months"] += _injury_total_months(inj)
+        if team:
+            row["teams"][team] = int(row["teams"].get(team, 0)) + 1
+        # держим «текущее» отображаемое имя/клуб — самый частый клуб
+    ranked: list[tuple[int, int, str, str]] = []
+    for row in agg.values():
+        teams_map: dict[str, int] = row["teams"]
+        if teams_map:
+            top_team = max(teams_map.items(), key=lambda kv: (kv[1], kv[0]))[0]
+        else:
+            top_team = "?"
+        ranked.append(
+            (int(row["periods"]), int(row["months"]), str(row["name"]), top_team)
+        )
+    ranked.sort(key=lambda r: (-r[0], -r[1], r[2].casefold()))
+    show = ranked[: max(1, int(limit))]
+
+    chunks: list[str] = [
+        "── ЧАЩЕ ВСЕГО ТРАВМИРОВАЛИСЬ ──",
+        "Считаются все периоды в JSON за все сезоны. "
+        "«раз» — число отдельных травм; «мес» — сумма длительностей.",
+        "",
+    ]
+    if not show:
+        chunks.append("Записей о травмах нет.")
+        return "\n".join(chunks)
+
+    w_name = max(len("Игрок"), max(len(r[2]) for r in show))
+    w_team = max(len("Клуб"), max(len(r[3]) for r in show))
+    head = f"{'#':<3}  {'Игрок':<{w_name}}  {'Клуб':<{w_team}}  раз  мес"
+    sep = "-" * len(head)
+    lines = [head, sep]
+    for i, (periods, months, name, team) in enumerate(show, start=1):
+        lines.append(
+            f"{i:<3}  {name:<{w_name}}  {team:<{w_team}}  {periods:<3}  {months}"
+        )
+    chunks.append(f"Игроков в топе: {len(show)} (из {len(ranked)}).")
+    chunks.extend(lines)
+    return "\n".join(chunks)
+
+
 def format_active_injuries_report_text(*, schedule_month: int | None = None) -> str:
     """
     Моноширинный отчёт: травмы, активные дисквалы (после жк/кк), накопление жк к 4-й.
@@ -1133,60 +1329,14 @@ def format_active_injuries_report_text(*, schedule_month: int | None = None) -> 
         st = _load()
 
     chunks: list[str] = [f"Месяц календаря: {month} (сезон {season_now}).", ""]
-
-    # --- травмы ---
-    inj_rows: list[tuple[str, str, str, str, int, int, str]] = []
-    for inj in st.get("injuries", []):
-        ret = int(inj.get("return_month") or 99)
-        ofm = inj.get("out_from_month")
-        ofm_s = str(int(ofm)) if ofm is not None else "?"
-        name = str(inj.get("name") or "?").strip()
-        team = str(inj.get("team") or "?").strip()
-        kind = (inj.get("type") or "травма").strip() or "травма"
-        inj_season = inj.get("season")
-        season_s = int(inj_season) if inj_season is not None else 0
-        if ofm is None:
-            st_mark = "?"
-        elif inj_season is None:
-            st_mark = "нет сезона"
-        elif _injury_blocks_at_month(inj, month, current_season=season_now):
-            st_mark = "активна"
-        elif (
-            int(inj_season) < season_now
-            and ret <= _SEASON_MONTHS * (season_now - int(inj_season)) + month
-        ):
-            st_mark = "прошла"
-        elif int(inj_season) == season_now and month >= ret:
-            st_mark = "прошла"
-        else:
-            st_mark = "позже"
-        inj_rows.append((team, name, kind, ofm_s, ret, season_s, st_mark))
-    chunks.append("── ТРАВМЫ (все периоды в JSON) ──")
-    chunks.append(
-        "Несколько строк на одного игрока — норма (туры вразнобой). "
-        "«с»/«до» — месяцы календаря; «сез» — номер сезона; статус — для текущего месяца."
+    chunks.extend(
+        _format_injury_rows_table(
+            list(st.get("injuries") or []),
+            month=month,
+            season_now=season_now,
+            title="── ТРАВМЫ (все периоды в JSON) ──",
+        )
     )
-    if not inj_rows:
-        chunks.append("Записей о травмах нет.")
-    else:
-        inj_rows.sort(
-            key=lambda r: (r[0].casefold(), r[1].casefold(), r[5], r[3], r[4])
-        )
-        w_team = max(len("Клуб"), max(len(r[0]) for r in inj_rows))
-        w_name = max(len("Игрок"), max(len(r[1]) for r in inj_rows))
-        head = (
-            f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<10}  "
-            f"сез  с   до   статус"
-        )
-        sep = "-" * len(head)
-        lines = [head, sep]
-        for team, name, kind, ofm_s, ret, season_s, st_mark in inj_rows:
-            lines.append(
-                f"{team:<{w_team}}  {name:<{w_name}}  {kind[:10]:<10}  "
-                f"{season_s:<3}  {ofm_s:<3} м{ret:<3} {st_mark}"
-            )
-        chunks.append(f"Периодов: {len(inj_rows)}.")
-        chunks.extend(lines)
 
     chunks.append("")
     chunks.append("── ДИСКВАЛЫ (после жк/кк в матче) ──")

@@ -1,7 +1,11 @@
 from utils.player_discipline import (
+    _MAX_INJURY_DURATION_MONTHS,
     _injury_blocks_at_month,
     _injury_period_key,
+    format_injuries_season_report_text,
+    format_injury_frequency_report_text,
     get_active_injuries_for_team,
+    list_injury_seasons,
 )
 
 
@@ -65,3 +69,51 @@ def test_inter_active_injuries_after_s2_calhanoglu_healed():
         if _injury_blocks_at_month(inj, 1, current_season=3):
             active.append(inj["name"])
     assert active == ["Барелла"]
+
+
+def test_max_injury_duration_allows_long_carryover():
+    assert _MAX_INJURY_DURATION_MONTHS >= 24
+
+
+def test_list_injury_seasons_and_reports(tmp_path, monkeypatch):
+    import utils.player_discipline as pd
+
+    store = tmp_path / "player_discipline.json"
+    store.write_text(
+        """{
+      "version": 1,
+      "suspensions": [],
+      "yellow_cycle": [],
+      "injuries": [
+        {
+          "name": "Эдерсон", "name_norm": "эдерсон",
+          "team": "Сити", "team_norm": "сити",
+          "out_from_month": 1, "return_month": 15,
+          "season": 3, "type": "травма"
+        },
+        {
+          "name": "Эдерсон", "name_norm": "эдерсон",
+          "team": "Сити", "team_norm": "сити",
+          "out_from_month": 2, "return_month": 5,
+          "season": 2, "type": "травма"
+        },
+        {
+          "name": "Барелла", "name_norm": "барелла",
+          "team": "Интер", "team_norm": "интер",
+          "out_from_month": 7, "return_month": 14,
+          "season": 2, "type": "травма"
+        }
+      ]
+    }""",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pd, "_STATE_PATH", store)
+
+    assert list_injury_seasons() == [3, 2]
+    s3 = format_injuries_season_report_text(3)
+    assert "Эдерсон" in s3
+    assert "Барелла" not in s3
+    freq = format_injury_frequency_report_text(limit=10)
+    assert "Эдерсон" in freq
+    # Эдерсон выше Бареллы по числу периодов (2 > 1)
+    assert freq.index("Эдерсон") < freq.index("Барелла")

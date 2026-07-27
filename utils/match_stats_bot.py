@@ -325,9 +325,13 @@ def parse_player_stat_line(text: str) -> ParsedPlayerStatLine:
             continue
         m_inj = _RE_INJ_TOKEN.match(tok)
         if m_inj:
+            from utils.player_discipline import _MAX_INJURY_DURATION_MONTHS
+
             nm = int(m_inj.group(1))
-            if nm < 1 or nm > 10:
-                out.parse_errors.append("Срок травмы: число месяцев 1–10.")
+            if nm < 1 or nm > _MAX_INJURY_DURATION_MONTHS:
+                out.parse_errors.append(
+                    f"Срок травмы: число месяцев 1–{_MAX_INJURY_DURATION_MONTHS}."
+                )
             else:
                 out.injury_months = nm
             i += 1

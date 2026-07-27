@@ -28,6 +28,7 @@ _TEXT_NOT_CMD = F.text & ~F.text.startswith("/")
 
 _RE_INJ_LG = re.compile(r"^inj:lg:([a-z0-9_]+)$")
 _RE_INJ_TM = re.compile(r"^inj:tm:([a-z0-9_]+):(\d+)$")
+_RE_INJ_VIEW_S = re.compile(r"^inj:view:s:(\d+)$")
 
 
 def _league_title(code: str) -> str:
@@ -52,12 +53,49 @@ def _injury_root_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="👁 Травмы · дисквалы · жк",
+                    text="👁 Всё · травмы · дисквалы · жк",
                     callback_data="inj:root:view",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📅 Травмы по сезону",
+                    callback_data="inj:view:seasons",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📊 Чаще всего травмировались",
+                    callback_data="inj:view:freq",
                 ),
             ],
         ]
     )
+
+
+def _injury_season_kb(seasons: list[int]) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                text="← К травмам",
+                callback_data="inj:back:root",
+            )
+        ]
+    ]
+    row: list[InlineKeyboardButton] = []
+    for sn in seasons:
+        row.append(
+            InlineKeyboardButton(
+                text=f"Сезон {sn}",
+                callback_data=f"inj:view:s:{sn}",
+            )
+        )
+        if len(row) == 3:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _injury_league_kb() -> InlineKeyboardMarkup:
@@ -109,18 +147,45 @@ def _injury_teams_kb(league_code: str) -> InlineKeyboardMarkup:
 
 
 async def _send_injury_root(message: Message, state: FSMContext) -> None:
+    from utils.player_discipline import _MAX_INJURY_DURATION_MONTHS
+
     await state.clear()
     await message.answer(
         "🏥 <b>Травмы и дисциплина</b>\n\n"
         "«Ввод травмы» — лига и клуб, затем строка:\n"
         "<code>имя Nм</code> / <code>имя Nм тип</code> — с текущего месяца календаря;\n"
         "<code>имя с3 4м</code> — с 3-го месяца на 4 месяца.\n"
-        "«Травмы · дисквалы · жк» — сводка: активные травмы (месяц календаря), "
-        "дисквалы после жк/кк (сколько матчей в турнире осталось отбыть), "
-        "накопление жк к 4-й в лиге или ЛЧ.\n\n"
+        f"Срок N — от 1 до <b>{_MAX_INJURY_DURATION_MONTHS}</b> мес. "
+        "(если больше 10 — остаток переносится на следующий сезон).\n\n"
+        "«Всё» — полная сводка; «по сезону» — только травмы выбранного сезона; "
+        "«чаще всего» — рейтинг по числу травм.\n\n"
         "Начисление жк и кк — в статистике матча после счёта.",
         parse_mode="HTML",
         reply_markup=_injury_root_kb(),
+    )
+
+
+async def _send_png_report(
+    message: Message,
+    *,
+    body: str,
+    title: str,
+    caption: str,
+    filename_prefix: str,
+) -> None:
+    blobs = await asyncio.to_thread(
+        partial(render_monospace_png_bytes, body, title=title),
+    )
+    if not blobs:
+        await message.answer("Отчёт пуст.")
+        return
+    from bot.handlers import answer_png_pages
+
+    await answer_png_pages(
+        message,
+        blobs,
+        caption,
+        filename_prefix=filename_prefix,
     )
 
 
@@ -142,6 +207,8 @@ async def cb_injury_back_root(callback: CallbackQuery, state: FSMContext) -> Non
 
 @injury_router.callback_query(F.data == "inj:root:enter")
 async def cb_injury_root_enter(callback: CallbackQuery, state: FSMContext) -> None:
+    from utils.player_discipline import _MAX_INJURY_DURATION_MONTHS
+
     await callback.answer()
     if callback.message is None:
         return
@@ -152,6 +219,8 @@ async def cb_injury_root_enter(callback: CallbackQuery, state: FSMContext) -> No
         "Выбери лигу и клуб, затем строку:\n"
         "<code>имя Nм</code> — с текущего месяца календаря на N месяцев;\n"
         "<code>имя сM Nм</code> — с месяца M на N месяцев.\n\n"
+        f"N = 1…{_MAX_INJURY_DURATION_MONTHS}. Пример остатка длинной травмы: "
+        "<code>Эдерсон 14м</code>.\n\n"
         "Новая травма — сразу к рейтингу: 1–2 мес. без изменений; 3–6 мес. −2; "
         "7 мес. −4; 8+ мес. −7.\n\n"
         "Примеры: <code>Брозович с3 1м</code>, <code>Симонс 4м колено</code>\n"
@@ -183,24 +252,86 @@ async def cb_injury_root_view(callback: CallbackQuery, state: FSMContext) -> Non
     await state.clear()
     try:
         body = await asyncio.to_thread(format_active_injuries_report_text)
-        blobs = await asyncio.to_thread(
-            partial(render_monospace_png_bytes, body, title="Травмы и дисциплина"),
+        await _send_png_report(
+            callback.message,
+            body=body,
+            title="Травмы и дисциплина",
+            caption="<b>Травмы и дисциплина</b>",
+            filename_prefix="injuries",
         )
     except Exception as e:
         logger.exception("injury view report")
         await callback.message.answer(f"Не удалось собрать отчёт: {e}")
-        return
-    if not blobs:
-        await callback.message.answer("Отчёт пуст.")
-        return
-    from bot.handlers import answer_png_pages
 
-    await answer_png_pages(
-        callback.message,
-        blobs,
-        "<b>Травмы и дисциплина</b>",
-        filename_prefix="injuries",
+
+@injury_router.callback_query(F.data == "inj:view:seasons")
+async def cb_injury_view_seasons(callback: CallbackQuery, state: FSMContext) -> None:
+    from utils.player_discipline import list_injury_seasons
+
+    await callback.answer()
+    if callback.message is None:
+        return
+    await state.clear()
+    seasons = await asyncio.to_thread(list_injury_seasons)
+    if not seasons:
+        await callback.message.answer(
+            "В журнале травм пока нет сезонов.",
+            reply_markup=_injury_root_kb(),
+        )
+        return
+    await callback.message.answer(
+        "📅 Выбери сезон — покажу только травмы, начавшиеся в нём:",
+        reply_markup=_injury_season_kb(seasons),
     )
+
+
+@injury_router.callback_query(F.data.regexp(_RE_INJ_VIEW_S))
+async def cb_injury_view_season(callback: CallbackQuery, state: FSMContext) -> None:
+    from utils.player_discipline import format_injuries_season_report_text
+
+    m = _RE_INJ_VIEW_S.match(callback.data or "")
+    if not m:
+        await callback.answer()
+        return
+    sn = int(m.group(1))
+    await callback.answer("Готовлю…")
+    if callback.message is None:
+        return
+    await state.clear()
+    try:
+        body = await asyncio.to_thread(format_injuries_season_report_text, sn)
+        await _send_png_report(
+            callback.message,
+            body=body,
+            title=f"Травмы · сезон {sn}",
+            caption=f"<b>Травмы · сезон {sn}</b>",
+            filename_prefix=f"injuries_s{sn}",
+        )
+    except Exception as e:
+        logger.exception("injury season report")
+        await callback.message.answer(f"Не удалось собрать отчёт: {e}")
+
+
+@injury_router.callback_query(F.data == "inj:view:freq")
+async def cb_injury_view_freq(callback: CallbackQuery, state: FSMContext) -> None:
+    from utils.player_discipline import format_injury_frequency_report_text
+
+    await callback.answer("Готовлю…")
+    if callback.message is None:
+        return
+    await state.clear()
+    try:
+        body = await asyncio.to_thread(format_injury_frequency_report_text)
+        await _send_png_report(
+            callback.message,
+            body=body,
+            title="Чаще всего травмировались",
+            caption="<b>Чаще всего травмировались</b>",
+            filename_prefix="injuries_freq",
+        )
+    except Exception as e:
+        logger.exception("injury frequency report")
+        await callback.message.answer(f"Не удалось собрать отчёт: {e}")
 
 
 @injury_router.callback_query(F.data.regexp(_RE_INJ_LG))
@@ -247,7 +378,8 @@ async def cb_injury_team(callback: CallbackQuery, state: FSMContext) -> None:
         await callback.message.answer(
             f"<b>{_league_title(code)}</b> · <b>{team}</b>\n\n"
             "Отправь строку травмы, например:\n"
-            "<code>Брозович с3 1м</code> или <code>Симонс 4м</code>\n\n"
+            "<code>Брозович с3 1м</code>, <code>Симонс 4м</code> "
+            "или <code>Эдерсон 14м</code>\n\n"
             "Можно несколько строк подряд; /cancel — выход.",
             parse_mode="HTML",
         )
