@@ -3088,6 +3088,141 @@
       "day": 7,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Барселона",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 7,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Франкфурт",
+      "away": "Дортмунд",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Аталанта",
+      "away": "Милан",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Ювентус",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Бавария",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 4,
+      "day": 7,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Интер",
+      "league": "cl",
+      "home_score": 4,
+      "away_score": 3,
+      "day": 7,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 4,
+      "away_score": 2,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Милан",
+      "league": "ita",
+      "home_score": 3,
+      "away_score": 3,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Мю",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 5,
+      "day": 7,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Бавария",
+      "away": "Арсенал",
+      "league": "cl",
+      "home_score": 4,
+      "away_score": 1,
+      "day": 7,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Лейпциг",
+      "away": "Ливерпуль",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 7,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Астон Вилла",
+      "away": "Сити",
+      "league": "cl",
+      "home_score": 0,
+      "away_score": 4,
+      "day": 7,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Милан",
+      "league": "cl",
+      "home_score": 5,
+      "away_score": 2,
+      "day": 7,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Дортмунд",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 8,
+      "day": 7,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }

@@ -287,6 +287,17 @@
       "scope": "league",
       "matches_left": 0,
       "unavailable_from_round": 12
+    },
+    {
+      "key": "марез|наполи|ita|league",
+      "name": "Марез",
+      "name_norm": "марез",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "ita",
+      "scope": "league",
+      "matches_left": 3,
+      "unavailable_from_round": 12
     }
   ],
   "yellow_cycle": [
@@ -348,7 +359,7 @@
       "team_norm": "арсенал",
       "league_code": "cl",
       "scope": "cl",
-      "count": 2
+      "count": 3
     },
     {
       "key": "диоманде|краснодар|rpl|league",
@@ -948,7 +959,7 @@
       "team_norm": "бавария",
       "league_code": "cl",
       "scope": "cl",
-      "count": 2
+      "count": 3
     },
     {
       "key": "горетцка|бавария|cl|cl",
@@ -2506,6 +2517,36 @@
       "name_norm": "гакпо",
       "team": "Ньюкасл",
       "team_norm": "ньюкасл",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "дэвис|бавария|cl|cl",
+      "name": "Дэвис",
+      "name_norm": "дэвис",
+      "team": "Бавария",
+      "team_norm": "бавария",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "маркиньос|мю|cl|cl",
+      "name": "Маркиньос",
+      "name_norm": "маркиньос",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "мухтар|мю|cl|cl",
+      "name": "Мухтар",
+      "name_norm": "мухтар",
+      "team": "Мю",
+      "team_norm": "мю",
       "league_code": "cl",
       "scope": "cl",
       "count": 1
@@ -5544,6 +5585,102 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 84
+    },
+    {
+      "key": "симонс|аталанта|3|7|10",
+      "name": "Симонс",
+      "name_norm": "симонс",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "out_from_month": 7,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 83
+    },
+    {
+      "key": "сане|милан|3|7|10",
+      "name": "Сане",
+      "name_norm": "сане",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 7,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 83
+    },
+    {
+      "key": "мартинез|интер|3|7|10",
+      "name": "Мартинез",
+      "name_norm": "мартинез",
+      "team": "Интер",
+      "team_norm": "интер",
+      "out_from_month": 7,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 90
+    },
+    {
+      "key": "эн-несри|ювентус|3|7|10",
+      "name": "Эн-Несри",
+      "name_norm": "эн-несри",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "out_from_month": 7,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 84
+    },
+    {
+      "key": "барелла|интер|3|7|10",
+      "name": "Барелла",
+      "name_norm": "барелла",
+      "team": "Интер",
+      "team_norm": "интер",
+      "out_from_month": 7,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 89
+    },
+    {
+      "key": "гроб|мю|3|7|10",
+      "name": "Гроб",
+      "name_norm": "гроб",
+      "team": "Мю",
+      "team_norm": "мю",
+      "out_from_month": 7,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 79
+    },
+    {
+      "key": "томори|милан|3|7|14",
+      "name": "Томори",
+      "name_norm": "томори",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 7,
+      "return_month": 14,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 79
+    },
+    {
+      "key": "чуквуезе|милан|3|7|10",
+      "name": "Чуквуезе",
+      "name_norm": "чуквуезе",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 7,
+      "return_month": 10,
+      "type": "травма",
+      "season": 3,
+      "overall_before_penalty": 82
     }
   ]
 }
