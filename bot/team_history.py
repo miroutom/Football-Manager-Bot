@@ -748,6 +748,76 @@ def hall_of_fame_global(*, limit: int = 20) -> list[ClubLegend]:
     return rows[: max(1, int(limit))]
 
 
+@dataclass
+class ClubCareerGoals:
+    """Сумма забитых голов клуба по всем сезонам из журналов матчей."""
+
+    team: str
+    league_gf: int
+    cl_gf: int
+
+    @property
+    def total_gf(self) -> int:
+        return int(self.league_gf) + int(self.cl_gf)
+
+
+def club_career_goals(*, pool_only: bool = True) -> list[ClubCareerGoals]:
+    """
+    Голы всех клубов за все сезоны (из журналов ``match_results``).
+
+    - ``league_gf`` — все турниры кроме ``cl``
+    - ``cl_gf`` — Лига чемпионов
+    - ``total_gf`` — лига + ЛЧ
+    """
+    pool = _current_pool_club_names()
+    by_norm: dict[str, dict[str, Any]] = {}
+    for name in pool:
+        by_norm[_norm(name)] = {"team": name, "league_gf": 0, "cl_gf": 0}
+
+    for m in iter_all_match_records():
+        lg = str(m.get("league") or "").strip().lower()
+        is_cl = lg == "cl"
+        hs = int(m.get("home_score") or 0)
+        aws = int(m.get("away_score") or 0)
+        for team_raw, gf in ((m.get("home"), hs), (m.get("away"), aws)):
+            tn = _norm(str(team_raw or ""))
+            if not tn:
+                continue
+            if pool_only and tn not in by_norm:
+                continue
+            row = by_norm.get(tn)
+            if row is None:
+                row = {
+                    "team": str(team_raw or "").strip().title(),
+                    "league_gf": 0,
+                    "cl_gf": 0,
+                }
+                by_norm[tn] = row
+            if is_cl:
+                row["cl_gf"] += gf
+            else:
+                row["league_gf"] += gf
+
+    out = [
+        ClubCareerGoals(
+            team=str(v["team"]),
+            league_gf=int(v["league_gf"]),
+            cl_gf=int(v["cl_gf"]),
+        )
+        for v in by_norm.values()
+    ]
+    out.sort(key=lambda r: (-r.total_gf, -r.league_gf, -r.cl_gf, r.team.casefold()))
+    return out
+
+
+def club_career_goals_for(team: str) -> ClubCareerGoals:
+    want = _norm(team)
+    for row in club_career_goals(pool_only=False):
+        if _norm(row.team) == want:
+            return row
+    display = team.strip().title() if team else "?"
+    return ClubCareerGoals(team=display, league_gf=0, cl_gf=0)
+
 def season_cover_data(season: int) -> dict[str, Any]:
     hist = load_history()
     sn = int(season)

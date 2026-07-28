@@ -12,6 +12,7 @@ from bot.team_history import (
     _penalties_pair,
     _norm as _team_norm,
     compare_clubs,
+    club_career_goals,
     club_matches_in_season,
     cl_stage_short,
     compute_result_streaks,
@@ -923,6 +924,111 @@ def render_club_hall_of_fame_png(team: str) -> bytes:
         show_club=False,
         crest_team=team,
     )
+
+
+def render_club_career_goals_png(*, limit: int | None = None) -> bytes:
+    """Таблица голов всех клубов пула: лига / ЛЧ / всего за все сезоны."""
+    rows = club_career_goals(pool_only=True)
+    if limit is not None:
+        rows = rows[: max(1, int(limit))]
+
+    font_b = _pick_font(20, bold=True)
+    font_sm = _pick_font(14)
+    font_r = _pick_font(22, bold=True)
+    font_head = _pick_font(14, bold=True)
+    font_num = _pick_font(19, bold=True)
+
+    row_h = 44
+    head_h = 34
+    n = max(1, len(rows))
+    table_h = head_h + n * row_h + 12
+    h = 118 + table_h + 36
+    im = _gradient_bg(min(h, 3200)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    y = _title(
+        draw,
+        "Голы клубов",
+        "Все сезоны · забитые мячи · лига / ЛЧ / сумма",
+    )
+
+    cols = [("league_gf", "Лига"), ("cl_gf", "ЛЧ"), ("total_gf", "Всего")]
+    col_w = 120
+    stats_right = _CANVAS_W - _PAD - 24
+    stats_span = len(cols) * col_w
+    stats_left = stats_right - stats_span
+    name_x = _PAD + 96
+    name_max = stats_left - name_x - 16
+
+    def _col_center(i: int) -> int:
+        return stats_left + i * col_w + col_w // 2
+
+    table_top = y
+    table_bot = y + table_h
+    draw.rounded_rectangle(
+        [_PAD, table_top, _CANVAS_W - _PAD, table_bot],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+        width=1,
+    )
+
+    hy = table_top + 4
+    draw.rounded_rectangle(
+        [_PAD + 4, hy, _CANVAS_W - _PAD - 4, hy + head_h],
+        radius=8,
+        fill=(18, 26, 42),
+    )
+    draw.text((_PAD + 18, hy + 8), "#", font=font_head, fill=_DIM)
+    draw.text((name_x, hy + 8), "Клуб", font=font_head, fill=_DIM)
+    for i, (_key, lab) in enumerate(cols):
+        cx = _col_center(i)
+        lw = draw.textbbox((0, 0), lab, font=font_head)[2]
+        draw.text((cx - lw // 2, hy + 8), lab, font=font_head, fill=_GOLD)
+
+    medal = {1: (255, 214, 110), 2: (198, 208, 224), 3: (205, 148, 98)}
+    y = hy + head_h
+
+    for i, row in enumerate(rows, 1):
+        top = y
+        if i % 2 == 0:
+            draw.rectangle(
+                [_PAD + 4, top, _CANVAS_W - _PAD - 4, top + row_h],
+                fill=(24, 34, 54),
+            )
+        if i <= 3:
+            draw.rounded_rectangle(
+                [_PAD + 6, top + 8, _PAD + 10, top + row_h - 8],
+                radius=2,
+                fill=medal[i],
+            )
+
+        rank_c = medal.get(i, _DIM)
+        draw.text((_PAD + 18, top + 10), f"{i:02d}", font=font_r, fill=rank_c)
+
+        crest = _try_load_crest_rgba(row.team)
+        if crest is not None:
+            _paste_crest_natural(im, crest, _PAD + 70, top + row_h // 2, 24)
+        draw.text(
+            (name_x, top + 11),
+            _fit(draw, row.team, font_b, name_max),
+            font=font_b,
+            fill=_TEXT,
+        )
+
+        vals = {
+            "league_gf": row.league_gf,
+            "cl_gf": row.cl_gf,
+            "total_gf": row.total_gf,
+        }
+        for ci, (key, _lab) in enumerate(cols):
+            cx = _col_center(ci)
+            val = str(vals[key])
+            vw = draw.textbbox((0, 0), val, font=font_num)[2]
+            fill = _GOLD if key == "total_gf" else _TEXT
+            draw.text((cx - vw // 2, top + 11), val, font=font_num, fill=fill)
+        y += row_h
+
+    return _to_png(im.convert("RGB"))
 
 
 def render_club_season_matches_png(team: str, season: int) -> bytes:
