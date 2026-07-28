@@ -13,7 +13,7 @@ from bot.history_render import render_award_history_png, render_cl_history_png, 
 from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
 from bot.team_history import format_season_tag, list_history_seasons
 from bot.team_history_gallery import (
-    render_club_career_goals_png,
+    render_club_career_goals_pages,
     render_club_hall_of_fame_png,
     render_club_season_matches_png,
     render_compare_clubs_png,
@@ -322,17 +322,23 @@ async def cb_hist_titles(callback: CallbackQuery) -> None:
 async def cb_hist_club_goals(callback: CallbackQuery) -> None:
     await callback.answer("Готовлю…")
     try:
-        png = await asyncio.to_thread(render_club_career_goals_png)
+        pages = await asyncio.to_thread(render_club_career_goals_pages, page_size=10)
     except Exception as e:
         logger.exception("club goals")
         if callback.message:
             await callback.message.answer(f"Ошибка: {e}")
         return
+    n = len(pages)
+    cap = (
+        "<b>Голы клубов</b> — лига / ЛЧ / всего · все сезоны"
+        if n <= 1
+        else f"<b>Голы клубов</b> — лига / ЛЧ / всего · все сезоны · {n} стр."
+    )
     await _send_png(
         callback,
-        png=png,
+        png=pages,
         filename="history_club_goals.png",
-        caption="<b>Голы клубов</b> — лига / ЛЧ / всего · все сезоны",
+        caption=cap,
     )
 
 

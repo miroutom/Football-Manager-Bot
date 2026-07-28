@@ -926,14 +926,25 @@ def render_club_hall_of_fame_png(team: str) -> bytes:
     )
 
 
-def render_club_career_goals_png(*, limit: int | None = None) -> bytes:
-    """Таблица голов всех клубов пула: лига / ЛЧ / всего за все сезоны."""
-    rows = club_career_goals(pool_only=True)
+def render_club_career_goals_png(
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+) -> bytes:
+    """Таблица голов клубов пула: лига / ЛЧ / всего (опционально страница)."""
+    all_rows = club_career_goals(pool_only=True)
     if limit is not None:
-        rows = rows[: max(1, int(limit))]
+        all_rows = all_rows[: max(1, int(limit))]
+    if page_size is not None:
+        rows = all_rows[offset : offset + int(page_size)]
+        rank0 = offset
+    else:
+        rows = all_rows
+        rank0 = 0
 
     font_b = _pick_font(20, bold=True)
-    font_sm = _pick_font(14)
     font_r = _pick_font(22, bold=True)
     font_head = _pick_font(14, bold=True)
     font_num = _pick_font(19, bold=True)
@@ -945,11 +956,10 @@ def render_club_career_goals_png(*, limit: int | None = None) -> bytes:
     h = 118 + table_h + 36
     im = _gradient_bg(min(h, 3200)).convert("RGBA")
     draw = ImageDraw.Draw(im)
-    y = _title(
-        draw,
-        "Голы клубов",
-        "Все сезоны · забитые мячи · лига / ЛЧ / сумма",
-    )
+    sub = "Все сезоны · забитые мячи · лига / ЛЧ / сумма"
+    if page_label:
+        sub = f"{sub} · стр. {page_label}"
+    y = _title(draw, "Голы клубов", sub)
 
     cols = [("league_gf", "Лига"), ("cl_gf", "ЛЧ"), ("total_gf", "Всего")]
     col_w = 120
@@ -988,22 +998,23 @@ def render_club_career_goals_png(*, limit: int | None = None) -> bytes:
     medal = {1: (255, 214, 110), 2: (198, 208, 224), 3: (205, 148, 98)}
     y = hy + head_h
 
-    for i, row in enumerate(rows, 1):
+    for i, row in enumerate(rows):
+        rank = rank0 + i + 1
         top = y
-        if i % 2 == 0:
+        if i % 2 == 1:
             draw.rectangle(
                 [_PAD + 4, top, _CANVAS_W - _PAD - 4, top + row_h],
                 fill=(24, 34, 54),
             )
-        if i <= 3:
+        if rank <= 3:
             draw.rounded_rectangle(
                 [_PAD + 6, top + 8, _PAD + 10, top + row_h - 8],
                 radius=2,
-                fill=medal[i],
+                fill=medal[rank],
             )
 
-        rank_c = medal.get(i, _DIM)
-        draw.text((_PAD + 18, top + 10), f"{i:02d}", font=font_r, fill=rank_c)
+        rank_c = medal.get(rank, _DIM)
+        draw.text((_PAD + 18, top + 10), f"{rank:02d}", font=font_r, fill=rank_c)
 
         crest = _try_load_crest_rgba(row.team)
         if crest is not None:
@@ -1029,6 +1040,25 @@ def render_club_career_goals_png(*, limit: int | None = None) -> bytes:
         y += row_h
 
     return _to_png(im.convert("RGB"))
+
+
+def render_club_career_goals_pages(*, page_size: int = 10) -> list[bytes]:
+    """Все клубы пула страницами по ``page_size`` (по умолчанию 10 → 4 фото)."""
+    rows = club_career_goals(pool_only=True)
+    total = len(rows)
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (total + page_size - 1) // page_size)
+    pages: list[bytes] = []
+    for p in range(n_pages):
+        off = p * page_size
+        pages.append(
+            render_club_career_goals_png(
+                offset=off,
+                page_size=page_size,
+                page_label=f"{p + 1}/{n_pages}",
+            )
+        )
+    return pages
 
 
 def render_club_season_matches_png(team: str, season: int) -> bytes:
