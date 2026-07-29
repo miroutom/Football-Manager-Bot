@@ -2732,5 +2732,40 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 7
+  },
+  {
+    "home": "Атлетик",
+    "away": "Наполи",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 7
+  },
+  {
+    "home": "Наполи",
+    "away": "Атлетик",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 7
+  },
+  {
+    "home": "Сити",
+    "away": "Аталанта",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 8
+  },
+  {
+    "home": "Аталанта",
+    "away": "Сити",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 8
+  },
+  {
+    "home": "Бавария",
+    "away": "Ювентус",
+    "tournament": "cl",
+    "cl_phase": "knockout",
+    "day": 8
   }
 ]

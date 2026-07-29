@@ -3774,5 +3774,769 @@
     "home_score": 1,
     "away_score": 3,
     "league_code": "esp"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Наполи",
+    "away": "Рома",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Марез",
+        "team": "Наполи",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Бергвис",
+        "team": "Рома",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T16:15:30Z",
+    "home_score": 1,
+    "away_score": 1,
+    "league_code": "ita"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Цска",
+    "away": "Крылья Советов",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Йилдыз",
+        "team": "Крылья Советов",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Фергюсон",
+        "team": "Крылья Советов",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      }
+    ],
+    "recorded_at": "2026-07-29T16:23:26Z",
+    "home_score": 0,
+    "away_score": 4,
+    "league_code": "rpl"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Спартак",
+    "away": "Зенит",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Заха",
+        "team": "Зенит",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Эмболо",
+        "team": "Зенит",
+        "position": "",
+        "goals": 0,
+        "assists": 3
+      },
+      {
+        "player": "Ду Кейрош",
+        "team": "Зенит",
+        "position": "",
+        "goals": 0,
+        "assists": 3
+      },
+      {
+        "player": "Мунетси",
+        "team": "Зенит",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T16:32:19Z",
+    "home_score": 0,
+    "away_score": 6,
+    "league_code": "rpl"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Атлетико",
+    "away": "Барселона",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Обамеянг",
+        "team": "Атлетико",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Тюрам",
+        "team": "Атлетико",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Лева",
+        "team": "Барселона",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Педри",
+        "team": "Барселона",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      }
+    ],
+    "recorded_at": "2026-07-29T16:51:33Z",
+    "home_score": 1,
+    "away_score": 3,
+    "league_code": "esp"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Арсенал",
+    "away": "Ливерпуль",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Смит Роу",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Берарди",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Влашич",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 2,
+        "assists": 2
+      },
+      {
+        "player": "Альмирон",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Мбаппе",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T17:05:12Z",
+    "home_score": 5,
+    "away_score": 1,
+    "league_code": "eng"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Бавария",
+    "away": "Боруссия М",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Кейн",
+        "team": "Бавария",
+        "position": "",
+        "goals": 0,
+        "assists": 5
+      },
+      {
+        "player": "Рёль",
+        "team": "Бавария",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Горетцка",
+        "team": "Бавария",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T17:12:58Z",
+    "home_score": 5,
+    "away_score": 0,
+    "league_code": "ger"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Астон Вилла",
+    "away": "Тоттенхэм",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Жезус",
+        "team": "Астон Вилла",
+        "position": "",
+        "goals": 2,
+        "assists": 4
+      },
+      {
+        "player": "Акпом",
+        "team": "Астон Вилла",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Иско",
+        "team": "Астон Вилла",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T17:24:08Z",
+    "home_score": 6,
+    "away_score": 0,
+    "league_code": "eng"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Сити",
+    "away": "Челси",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Хаверц",
+        "team": "Сити",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Тонали",
+        "team": "Сити",
+        "position": "",
+        "goals": 3,
+        "assists": 2
+      },
+      {
+        "player": "Ковачич",
+        "team": "Сити",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      }
+    ],
+    "recorded_at": "2026-07-29T17:37:11Z",
+    "home_score": 5,
+    "away_score": 0,
+    "league_code": "eng"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Атлетик",
+    "away": "Наполи",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Нико",
+        "team": "Атлетик",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Кулушевски",
+        "team": "Атлетик",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Сака",
+        "team": "Наполи",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Кох",
+        "team": "Наполи",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T17:56:23Z",
+    "home_score": 2,
+    "away_score": 1,
+    "league_code": "cl",
+    "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Наполи",
+    "away": "Атлетик",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Линдстром",
+        "team": "Наполи",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Марез",
+        "team": "Наполи",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Лоботка",
+        "team": "Наполи",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Сака",
+        "team": "Наполи",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Кох",
+        "team": "Наполи",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Зелински",
+        "team": "Наполи",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Родри",
+        "team": "Наполи",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Нико",
+        "team": "Атлетик",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Леау",
+        "team": "Атлетик",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T18:15:12Z",
+    "home_score": 4,
+    "away_score": 1,
+    "league_code": "cl",
+    "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Астон Вилла",
+    "away": "Мю",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Сперцян",
+        "team": "Астон Вилла",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Тилеманс",
+        "team": "Астон Вилла",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мухтар",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Жезус",
+        "team": "Астон Вилла",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-29T18:20:31Z",
+    "home_score": 2,
+    "away_score": 1,
+    "league_code": "eng"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Франкфурт",
+    "away": "Вольфсбург",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Санчо",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Майер",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Виммер",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Исак",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-29T18:23:08Z",
+    "home_score": 0,
+    "away_score": 3,
+    "league_code": "ger"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Бавария",
+    "away": "Вольфсбург",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Стерлинг",
+        "team": "Бавария",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Санчо",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Арнольд",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Горетцка",
+        "team": "Бавария",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-29T18:24:59Z",
+    "home_score": 2,
+    "away_score": 1,
+    "league_code": "ger"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Ливерпуль",
+    "away": "Мю",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Модрич",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Лукаку",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мухтар",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Милинкович-Савич",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Де Лигт",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Тьяго",
+        "team": "Мю",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Маркиньос",
+        "team": "Мю",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Смоллинг",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Олисе",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-29T18:27:58Z",
+    "home_score": 2,
+    "away_score": 3,
+    "league_code": "eng"
+  },
+  {
+    "season": 3,
+    "day": 8,
+    "home": "Сити",
+    "away": "Аталанта",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Барколя",
+        "team": "Сити",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T18:30:12Z",
+    "home_score": 1,
+    "away_score": 0,
+    "league_code": "cl",
+    "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 8,
+    "home": "Аталанта",
+    "away": "Сити",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Хаверц",
+        "team": "Сити",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Тонали",
+        "team": "Сити",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Де Брюйне",
+        "team": "Сити",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-29T18:31:24Z",
+    "home_score": 0,
+    "away_score": 2,
+    "league_code": "cl",
+    "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Аталанта",
+    "away": "Лацио",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Муриэль",
+        "team": "Аталанта",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Буригард",
+        "team": "Аталанта",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Бакайоко",
+        "team": "Аталанта",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Салах",
+        "team": "Лацио",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Гендузи",
+        "team": "Лацио",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Миша",
+        "team": "Лацио",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T18:33:41Z",
+    "home_score": 3,
+    "away_score": 3,
+    "league_code": "ita"
+  },
+  {
+    "season": 3,
+    "day": 8,
+    "home": "Бавария",
+    "away": "Ювентус",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Уналь",
+        "team": "Бавария",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Стерлинг",
+        "team": "Бавария",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Горетцка",
+        "team": "Бавария",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Смолов",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Одегаард",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-29T18:51:41Z",
+    "home_score": 2,
+    "away_score": 2,
+    "league_code": "cl",
+    "cl_phase": "knockout"
   }
 ]
