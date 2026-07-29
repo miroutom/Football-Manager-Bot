@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import sqlite3
 from dataclasses import dataclass, field
+from html import escape as html_escape
 from typing import Any
 
 from utils import season_paths
@@ -261,12 +262,56 @@ def _injury_burden(name: str, team: str | None = None) -> tuple[int, int]:
     return n, months
 
 
+def clamp_ovr_delta_for_team(team: str, current: int, delta: int) -> int:
+    """
+    Ограничение Δ по лиге.
+    РПЛ: максимум +3; пол 75 (при 75 нельзя вниз, при 76 макс −1, …, при 78+ макс −3).
+    Остальные лиги: ±3.
+    """
+    d = int(delta)
+    cur = int(current)
+    try:
+        from player_stats import national_league_code_for_team
+
+        lc = (national_league_code_for_team(team) or "").lower()
+    except Exception:
+        lc = ""
+    if lc == "rpl":
+        lo = max(-3, 75 - cur)
+        hi = 3
+        return max(lo, min(hi, d))
+    return max(-3, min(3, d))
+
+
+def list_club_roster_for_ovr_debug(team: str) -> tuple[str, list[dict[str, Any]]]:
+    """
+    Все игроки клуба для кнопок DEBUG OVR.
+    Возвращает (display_team, roster) — roster: name/position/overall/status, по OVR↓.
+    """
+    display = (team or "").strip()
+    players = _scan_club_players(display)
+    if not players:
+        players = _scan_club_players(display.title())
+        display = display.title()
+    players.sort(
+        key=lambda p: (
+            0 if str(p.get("status") or "") == "start" else (
+                1 if str(p.get("status") or "") == "bench" else 2
+            ),
+            -int(p.get("overall") or 0),
+            str(p.get("name") or "").casefold(),
+        )
+    )
+    return display, players
+
+
 def advise_club_ovr(
     team: str,
     *,
     min_overall: int = 78,
     starters_first: bool = True,
     limit: int = 20,
+    only_name: str | None = None,
 ) -> list[OvrAdviceRow]:
     """DEBUG-советы по OVR для клуба (без записи в БД)."""
     from bot.team_history import club_player_win_influence, iter_all_match_records, match_result_for_team
@@ -278,6 +323,10 @@ def advise_club_ovr(
         # попробовать Title
         players = _scan_club_players(display.title())
         display = display.title()
+
+    want_name = _norm(only_name) if only_name else ""
+    if want_name:
+        players = [p for p in players if _norm(str(p.get("name") or "")) == want_name]
 
     # средний win% клуба
     tw = td = tl = 0
@@ -306,7 +355,7 @@ def advise_club_ovr(
     rows: list[OvrAdviceRow] = []
     for p in players:
         cur = int(p.get("overall") or 0)
-        if cur < int(min_overall):
+        if not want_name and cur < int(min_overall):
             continue
         name = str(p["name"])
         pos = str(p.get("position") or "")
@@ -480,7 +529,24 @@ def advise_club_ovr(
             elif delta == 0:
                 reasons.insert(0, "· плюсы и минусы уравновешены → оставляем OVR")
 
+        delta_raw = int(delta)
+        delta = clamp_ovr_delta_for_team(display, cur, delta_raw)
+        if delta != delta_raw:
+            reasons.insert(
+                0,
+                f"· лимит лиги: Δ {delta_raw:+d} → {delta:+d} "
+                f"(РПЛ: пол 75, макс +3 / вниз не ниже 75)",
+            )
+
         suggested = max(60, min(99, cur + delta))
+        try:
+            from player_stats import national_league_code_for_team
+
+            if (national_league_code_for_team(display) or "").lower() == "rpl":
+                suggested = max(75, suggested)
+                delta = int(suggested) - int(cur)
+        except Exception:
+            pass
         signals["score_raw"] = round(score, 2)
         signals["delta"] = float(delta)
 
@@ -517,7 +583,49 @@ def advise_club_ovr(
         return (st_rank, -abs(r.delta), -r.current, r.name.casefold())
 
     rows.sort(key=sort_key)
+    if want_name:
+        return rows
     return rows[: max(1, int(limit))]
+
+
+def advise_player_ovr(team: str, name: str) -> OvrAdviceRow | None:
+    """DEBUG-совет по одному игроку."""
+    rows = advise_club_ovr(team, min_overall=0, limit=1, only_name=name)
+    return rows[0] if rows else None
+
+
+def format_ovr_advice_player_html(team: str, row: OvrAdviceRow) -> str:
+    """Короткий HTML-отчёт по одному игроку (для Telegram)."""
+    if row.delta > 0:
+        tag = f"ПОДНЯТЬ +{row.delta}"
+    elif row.delta < 0:
+        tag = f"СНИЗИТЬ {row.delta}"
+    else:
+        tag = "ОСТАВИТЬ"
+    lines = [
+        f"🔬 <b>DEBUG OVR</b> · {html_escape(team)}",
+        "<i>Только просмотр — в БД не пишем.</i>",
+        "",
+        f"<b>{html_escape(row.name)}</b> · {html_escape(row.position or '—')} · "
+        f"{html_escape(row.status or '—')}",
+        f"Сейчас <b>{row.current}</b> → <b>{row.suggested}</b>  [{tag}]",
+        "",
+        f"Сезон: {row.season_matches} матч, {row.season_goals}+{row.season_assists}"
+        + (f", CS {row.season_cs}" if row.position in _GK else ""),
+        f"Карьера в клубе: {row.career_matches} матч, G+A {row.career_ga}"
+        + (f", CS {row.career_cs}" if row.position in _GK or row.career_cs else ""),
+        f"Травмы: {row.injury_periods}× / {row.injury_months} мес",
+        f"Влияние: n={row.infl_played}, win {row.infl_win_pct:.0f}%, "
+        f"проп.травм {row.infl_miss}",
+    ]
+    if row.history:
+        chain = " → ".join(str(o) for _, o in row.history)
+        lines.append(f"OVR по сезонам: {html_escape(chain)} (пик {row.peak})")
+    lines.append("")
+    lines.append("<b>Почему:</b>")
+    for reason in row.reasons:
+        lines.append(html_escape(reason))
+    return "\n".join(lines)
 
 
 def format_ovr_advice_report(team: str, rows: list[OvrAdviceRow] | None = None) -> str:
