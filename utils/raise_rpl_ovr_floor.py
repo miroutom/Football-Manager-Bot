@@ -21,7 +21,7 @@ def raise_rpl_overall_floor(
     floor: int = 75,
     dry_run: bool = False,
 ) -> RaiseRplFloorResult:
-    """Все игроки клубов РПЛ с overall &lt; floor → floor (через delta bumps)."""
+    """Все игроки клубов РПЛ с overall < floor → floor (через delta bumps)."""
     res = RaiseRplFloorResult()
     by_team: dict[str, list[str]] = defaultdict(list)
     for team in LEAGUE_TEAMS.get("rpl") or []:
