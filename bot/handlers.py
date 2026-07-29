@@ -1414,6 +1414,27 @@ async def cmd_journal(message: Message) -> None:
         await message.answer(f"Ошибка: {e}")
 
 
+@router.message(Command("ovr_debug"))
+async def cmd_ovr_debug(message: Message) -> None:
+    """DEBUG: предложения overall по клубу (ничего не пишет в БД)."""
+    raw = (message.text or "").strip()
+    parts = raw.split(maxsplit=1)
+    team = parts[1].strip() if len(parts) > 1 and parts[1].strip() else "Мю"
+    try:
+        from utils.ovr_debug_advice import advise_club_ovr, format_ovr_advice_report
+
+        rows = await asyncio.to_thread(advise_club_ovr, team, limit=16)
+        text = format_ovr_advice_report(team, rows)
+        await answer_report_photos(
+            message,
+            text,
+            f"DEBUG OVR · {team} (не применяем)",
+        )
+    except Exception as e:
+        logger.exception("ovr_debug")
+        await message.answer(f"Ошибка: {e}")
+
+
 @router.callback_query(F.data == "menu:schedule")
 async def cb_menu_schedule(callback: CallbackQuery) -> None:
     """Календарь: сначала чемпионат, затем сетка все/ост/сыг × все/сим/игра."""
