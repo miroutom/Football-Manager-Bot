@@ -30,6 +30,16 @@ def test_never_injured_report_has_header():
     text = format_never_injured_report_text(limit=10, min_matches=1)
     assert "НИ РАЗУ НЕ ТРАВМИРОВАЛИСЬ" in text
     assert "Игрок" in text
+    assert "OVR" in text
+    assert "всех сезонов" in text or "все сезоны" in text.lower() or "архивам всех сезонов" in text
+
+
+def test_injury_frequency_shows_ovr_column():
+    from utils.player_discipline import format_injury_frequency_report_text
+
+    text = format_injury_frequency_report_text(limit=10)
+    assert "OVR" in text
+    assert "ЧАЩЕ ВСЕГО" in text
 
 
 def test_inter_calhanoglu_influence_heuristic():

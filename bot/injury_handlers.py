@@ -164,8 +164,7 @@ async def _send_injury_root(message: Message, state: FSMContext) -> None:
         f"Срок N — от 1 до <b>{_MAX_INJURY_DURATION_MONTHS}</b> мес. "
         "(если больше 10 — остаток переносится на следующий сезон).\n\n"
         "«Всё» — полная сводка; «по сезону» — только травмы выбранного сезона; "
-        "«чаще всего» — рейтинг по числу травм; "
-        "«ни разу» — кто играл и не имел записей травм.\n\n"
+        "«чаще всего» / «ни разу» — за все сезоны (с OVR).\n\n"
         "Начисление жк и кк — в статистике матча после счёта.",
         parse_mode="HTML",
         reply_markup=_injury_root_kb(),
@@ -333,7 +332,7 @@ async def cb_injury_view_freq(callback: CallbackQuery, state: FSMContext) -> Non
             callback.message,
             body=body,
             title="Чаще всего травмировались",
-            caption="<b>Чаще всего травмировались</b>",
+            caption="<b>Чаще всего травмировались</b> · все сезоны",
             filename_prefix="injuries_freq",
         )
     except Exception as e:
@@ -355,7 +354,7 @@ async def cb_injury_view_never(callback: CallbackQuery, state: FSMContext) -> No
             callback.message,
             body=body,
             title="Ни разу не травмировались",
-            caption="<b>Ни разу не травмировались</b> · топ по матчам",
+            caption="<b>Ни разу не травмировались</b> · все сезоны · топ по матчам",
             filename_prefix="injuries_never",
         )
     except Exception as e:

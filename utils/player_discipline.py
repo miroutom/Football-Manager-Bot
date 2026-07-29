@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import threading
 from pathlib import Path
@@ -1254,9 +1255,10 @@ def format_injuries_season_report_text(
 
 
 def format_injury_frequency_report_text(*, limit: int = 25) -> str:
-    """Кто чаще всего травмировался: число периодов и суммарные месяцы."""
+    """Кто чаще всего травмировался: число периодов и суммарные месяцы (все сезоны)."""
     with _lock:
         st = _load()
+    career = _career_player_index()
     # name_norm -> agg
     agg: dict[str, dict[str, Any]] = {}
     for inj in st.get("injuries") or []:
@@ -1278,24 +1280,35 @@ def format_injury_frequency_report_text(*, limit: int = 25) -> str:
         row["months"] += _injury_total_months(inj)
         if team:
             row["teams"][team] = int(row["teams"].get(team, 0)) + 1
-        # держим «текущее» отображаемое имя/клуб — самый частый клуб
-    ranked: list[tuple[int, int, str, str]] = []
-    for row in agg.values():
+
+    ranked: list[tuple[int, int, str, str, int]] = []
+    for nn, row in agg.items():
         teams_map: dict[str, int] = row["teams"]
+        info = career.get(nn) or {}
         if teams_map:
             top_team = max(teams_map.items(), key=lambda kv: (kv[1], kv[0]))[0]
         else:
-            top_team = "?"
+            top_team = str(info.get("team") or "?")
+        if info.get("name"):
+            row["name"] = str(info["name"])
+        ovr = int(info.get("overall") or 0)
         ranked.append(
-            (int(row["periods"]), int(row["months"]), str(row["name"]), top_team)
+            (
+                int(row["periods"]),
+                int(row["months"]),
+                str(row["name"]),
+                top_team,
+                ovr,
+            )
         )
-    ranked.sort(key=lambda r: (-r[0], -r[1], r[2].casefold()))
+    ranked.sort(key=lambda r: (-r[0], -r[1], -r[4], r[2].casefold()))
     show = ranked[: max(1, int(limit))]
 
     chunks: list[str] = [
         "── ЧАЩЕ ВСЕГО ТРАВМИРОВАЛИСЬ ──",
-        "Считаются все периоды в JSON за все сезоны. "
-        "«раз» — число отдельных травм; «мес» — сумма длительностей.",
+        "Все периоды травм в JSON за все сезоны. "
+        "«раз» — число травм; «мес» — сумма длительностей; "
+        "OVR — макс. рейтинг по архивам всех сезонов.",
         "",
     ]
     if not show:
@@ -1304,16 +1317,108 @@ def format_injury_frequency_report_text(*, limit: int = 25) -> str:
 
     w_name = max(len("Игрок"), max(len(r[2]) for r in show))
     w_team = max(len("Клуб"), max(len(r[3]) for r in show))
-    head = f"{'#':<3}  {'Игрок':<{w_name}}  {'Клуб':<{w_team}}  раз  мес"
+    head = f"{'#':<3}  {'Игрок':<{w_name}}  {'Клуб':<{w_team}}  OVR  раз  мес"
     sep = "-" * len(head)
     lines = [head, sep]
-    for i, (periods, months, name, team) in enumerate(show, start=1):
+    for i, (periods, months, name, team, ovr) in enumerate(show, start=1):
+        ovr_s = str(ovr) if ovr > 0 else "—"
         lines.append(
-            f"{i:<3}  {name:<{w_name}}  {team:<{w_team}}  {periods:<3}  {months}"
+            f"{i:<3}  {name:<{w_name}}  {team:<{w_team}}  {ovr_s:<3}  {periods:<3}  {months}"
         )
     chunks.append(f"Игроков в топе: {len(show)} (из {len(ranked)}).")
     chunks.extend(lines)
     return "\n".join(chunks)
+
+
+def _career_player_index() -> dict[str, dict[str, Any]]:
+    """
+    Игроки по всем сезонам (архивы league.db + champions_league.db).
+
+    Ключ — ``name_norm``. Матчи суммируются за карьеру; OVR/клуб/позиция —
+    из последнего сезона, где игрок встречался.
+    """
+    import sqlite3
+
+    from utils import season_paths
+    from utils.cumulative_db import list_season_archives_with_db
+
+    seasons = set(list_season_archives_with_db())
+    try:
+        seasons.add(int(season_paths.get_active_season()))
+    except Exception:
+        pass
+
+    # name_norm -> season -> stats that season
+    by_sn: dict[str, dict[int, dict[str, Any]]] = {}
+    for sn in sorted(seasons):
+        base = os.path.join(season_paths.PROJECT_ROOT, "db", f"season_{int(sn)}")
+        for dbn in ("league.db", "champions_league.db"):
+            path = os.path.join(base, dbn)
+            if not os.path.isfile(path):
+                continue
+            conn = sqlite3.connect(path)
+            try:
+                for tbl in ("forwards", "midfielders", "defenders", "goalkeepers"):
+                    try:
+                        cur = conn.execute(
+                            f"SELECT name, team, position, "
+                            f"COALESCE(matches, 0), COALESCE(overall, 0) "
+                            f"FROM {tbl}"
+                        )
+                    except sqlite3.OperationalError:
+                        continue
+                    for name, team, pos, matches, ovr in cur:
+                        nm = (name or "").strip()
+                        if not nm:
+                            continue
+                        key = _norm(nm)
+                        slot = by_sn.setdefault(key, {}).setdefault(
+                            int(sn),
+                            {
+                                "name": nm,
+                                "matches": 0,
+                                "overall": 0,
+                                "team": (team or "?").strip() or "?",
+                                "position": (pos or "").strip().upper(),
+                                "teams": {},
+                            },
+                        )
+                        slot["matches"] += int(matches or 0)
+                        ovri = int(ovr or 0)
+                        if ovri >= int(slot["overall"]):
+                            slot["overall"] = ovri
+                        tm = (team or "").strip()
+                        if tm:
+                            slot["teams"][tm] = int(slot["teams"].get(tm, 0)) + int(
+                                matches or 0
+                            )
+                            # клуб сезона — где больше матчей
+                            top = max(
+                                slot["teams"].items(),
+                                key=lambda kv: (kv[1], kv[0]),
+                            )[0]
+                            slot["team"] = top
+                        if pos and not slot["position"]:
+                            slot["position"] = (pos or "").strip().upper()
+            finally:
+                conn.close()
+
+    out: dict[str, dict[str, Any]] = {}
+    for key, seasons_map in by_sn.items():
+        total_m = sum(int(v["matches"]) for v in seasons_map.values())
+        last_sn = max(seasons_map)
+        last = seasons_map[last_sn]
+        # лучший OVR за карьеру (не обязательно последний)
+        best_ovr = max(int(v["overall"]) for v in seasons_map.values())
+        out[key] = {
+            "name": str(last["name"]),
+            "team": str(last["team"]),
+            "position": str(last.get("position") or ""),
+            "matches": int(total_m),
+            "overall": int(best_ovr),
+            "last_season": int(last_sn),
+        }
+    return out
 
 
 def format_never_injured_report_text(
@@ -1322,9 +1427,9 @@ def format_never_injured_report_text(
     min_matches: int = 1,
 ) -> str:
     """
-    Игроки текущего сезона (лига + ЛЧ), у которых нет ни одной записи травмы в JSON.
+    Игроки за все сезоны (архивы), у которых нет ни одной записи травмы в JSON.
 
-    Сортировка: больше матчей выше (кто больше играл и ни разу не выбывал).
+    Сортировка: больше карьерных матчей выше.
     """
     with _lock:
         st = _load()
@@ -1334,50 +1439,26 @@ def format_never_injured_report_text(
         if nn:
             injured.add(nn)
 
-    from player_stats import (
-        Defender,
-        Forward,
-        Goalkeeper,
-        Midfielder,
-        get_session,
-    )
-
-    # name_norm -> best row (max matches across league+cl)
-    best: dict[str, dict] = {}
-    for tourn in ("league", "cl"):
-        session = get_session(tourn)
-        for cls in (Forward, Midfielder, Defender, Goalkeeper):
-            for p in session.query(cls).all():
-                name = str(getattr(p, "name", "") or "").strip()
-                if not name:
-                    continue
-                nn = _norm(name)
-                if nn in injured:
-                    continue
-                matches = int(getattr(p, "matches", 0) or 0)
-                if matches < int(min_matches):
-                    continue
-                team = str(getattr(p, "team", "") or "?").strip() or "?"
-                pos = str(getattr(p, "position", "") or "").strip().upper()
-                cur = best.get(nn)
-                if cur is None or matches > int(cur["matches"]):
-                    best[nn] = {
-                        "name": name,
-                        "team": team,
-                        "position": pos,
-                        "matches": matches,
-                    }
-
-    ranked = sorted(
-        best.values(),
-        key=lambda r: (-int(r["matches"]), str(r["name"]).casefold()),
+    career = _career_player_index()
+    ranked = [
+        row
+        for key, row in career.items()
+        if key not in injured and int(row.get("matches") or 0) >= int(min_matches)
+    ]
+    ranked.sort(
+        key=lambda r: (
+            -int(r["matches"]),
+            -int(r.get("overall") or 0),
+            str(r["name"]).casefold(),
+        )
     )
     show = ranked[: max(1, int(limit))]
 
     chunks: list[str] = [
         "── НИ РАЗУ НЕ ТРАВМИРОВАЛИСЬ ──",
-        "Нет записей в JSON травм (все сезоны). "
-        f"Топ по матчам текущего сезона (лига+ЛЧ), мин. матчей: {min_matches}.",
+        "Нет записей в JSON травм за все сезоны. "
+        "Матчи и OVR — сумма/макс по архивам всех сезонов (лига+ЛЧ). "
+        f"Мин. матчей: {min_matches}.",
         "",
     ]
     if not show:
@@ -1389,14 +1470,16 @@ def format_never_injured_report_text(
     w_pos = max(len("Поз"), max(len(str(r["position"]) or "—") for r in show))
     head = (
         f"{'#':<3}  {'Игрок':<{w_name}}  {'Клуб':<{w_team}}  "
-        f"{'Поз':<{w_pos}}  матч"
+        f"{'Поз':<{w_pos}}  OVR  матч"
     )
     sep = "-" * len(head)
     lines = [head, sep]
     for i, r in enumerate(show, start=1):
+        ovr = int(r.get("overall") or 0)
+        ovr_s = str(ovr) if ovr > 0 else "—"
         lines.append(
             f"{i:<3}  {r['name']:<{w_name}}  {r['team']:<{w_team}}  "
-            f"{(r['position'] or '—'):<{w_pos}}  {r['matches']}"
+            f"{(r['position'] or '—'):<{w_pos}}  {ovr_s:<3}  {r['matches']}"
         )
     chunks.append(
         f"В топе: {len(show)} (всего без травм с матчами: {len(ranked)}; "
