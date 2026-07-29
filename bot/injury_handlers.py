@@ -69,6 +69,12 @@ def _injury_root_kb() -> InlineKeyboardMarkup:
                     callback_data="inj:view:freq",
                 ),
             ],
+            [
+                InlineKeyboardButton(
+                    text="🛡 Ни разу не травмировались",
+                    callback_data="inj:view:never",
+                ),
+            ],
         ]
     )
 
@@ -158,7 +164,8 @@ async def _send_injury_root(message: Message, state: FSMContext) -> None:
         f"Срок N — от 1 до <b>{_MAX_INJURY_DURATION_MONTHS}</b> мес. "
         "(если больше 10 — остаток переносится на следующий сезон).\n\n"
         "«Всё» — полная сводка; «по сезону» — только травмы выбранного сезона; "
-        "«чаще всего» — рейтинг по числу травм.\n\n"
+        "«чаще всего» — рейтинг по числу травм; "
+        "«ни разу» — кто играл и не имел записей травм.\n\n"
         "Начисление жк и кк — в статистике матча после счёта.",
         parse_mode="HTML",
         reply_markup=_injury_root_kb(),
@@ -331,6 +338,28 @@ async def cb_injury_view_freq(callback: CallbackQuery, state: FSMContext) -> Non
         )
     except Exception as e:
         logger.exception("injury frequency report")
+        await callback.message.answer(f"Не удалось собрать отчёт: {e}")
+
+
+@injury_router.callback_query(F.data == "inj:view:never")
+async def cb_injury_view_never(callback: CallbackQuery, state: FSMContext) -> None:
+    from utils.player_discipline import format_never_injured_report_text
+
+    await callback.answer("Готовлю…")
+    if callback.message is None:
+        return
+    await state.clear()
+    try:
+        body = await asyncio.to_thread(format_never_injured_report_text)
+        await _send_png_report(
+            callback.message,
+            body=body,
+            title="Ни разу не травмировались",
+            caption="<b>Ни разу не травмировались</b> · топ по матчам",
+            filename_prefix="injuries_never",
+        )
+    except Exception as e:
+        logger.exception("never injured report")
         await callback.message.answer(f"Не удалось собрать отчёт: {e}")
 
 

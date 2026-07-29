@@ -1316,6 +1316,96 @@ def format_injury_frequency_report_text(*, limit: int = 25) -> str:
     return "\n".join(chunks)
 
 
+def format_never_injured_report_text(
+    *,
+    limit: int = 50,
+    min_matches: int = 1,
+) -> str:
+    """
+    Игроки текущего сезона (лига + ЛЧ), у которых нет ни одной записи травмы в JSON.
+
+    Сортировка: больше матчей выше (кто больше играл и ни разу не выбывал).
+    """
+    with _lock:
+        st = _load()
+    injured: set[str] = set()
+    for inj in st.get("injuries") or []:
+        nn = str(inj.get("name_norm") or _norm(str(inj.get("name") or ""))).strip()
+        if nn:
+            injured.add(nn)
+
+    from player_stats import (
+        Defender,
+        Forward,
+        Goalkeeper,
+        Midfielder,
+        get_session,
+    )
+
+    # name_norm -> best row (max matches across league+cl)
+    best: dict[str, dict] = {}
+    for tourn in ("league", "cl"):
+        session = get_session(tourn)
+        for cls in (Forward, Midfielder, Defender, Goalkeeper):
+            for p in session.query(cls).all():
+                name = str(getattr(p, "name", "") or "").strip()
+                if not name:
+                    continue
+                nn = _norm(name)
+                if nn in injured:
+                    continue
+                matches = int(getattr(p, "matches", 0) or 0)
+                if matches < int(min_matches):
+                    continue
+                team = str(getattr(p, "team", "") or "?").strip() or "?"
+                pos = str(getattr(p, "position", "") or "").strip().upper()
+                cur = best.get(nn)
+                if cur is None or matches > int(cur["matches"]):
+                    best[nn] = {
+                        "name": name,
+                        "team": team,
+                        "position": pos,
+                        "matches": matches,
+                    }
+
+    ranked = sorted(
+        best.values(),
+        key=lambda r: (-int(r["matches"]), str(r["name"]).casefold()),
+    )
+    show = ranked[: max(1, int(limit))]
+
+    chunks: list[str] = [
+        "── НИ РАЗУ НЕ ТРАВМИРОВАЛИСЬ ──",
+        "Нет записей в JSON травм (все сезоны). "
+        f"Топ по матчам текущего сезона (лига+ЛЧ), мин. матчей: {min_matches}.",
+        "",
+    ]
+    if not show:
+        chunks.append("Таких игроков нет (или все уже имели травму).")
+        return "\n".join(chunks)
+
+    w_name = max(len("Игрок"), max(len(str(r["name"])) for r in show))
+    w_team = max(len("Клуб"), max(len(str(r["team"])) for r in show))
+    w_pos = max(len("Поз"), max(len(str(r["position"]) or "—") for r in show))
+    head = (
+        f"{'#':<3}  {'Игрок':<{w_name}}  {'Клуб':<{w_team}}  "
+        f"{'Поз':<{w_pos}}  матч"
+    )
+    sep = "-" * len(head)
+    lines = [head, sep]
+    for i, r in enumerate(show, start=1):
+        lines.append(
+            f"{i:<3}  {r['name']:<{w_name}}  {r['team']:<{w_team}}  "
+            f"{(r['position'] or '—'):<{w_pos}}  {r['matches']}"
+        )
+    chunks.append(
+        f"В топе: {len(show)} (всего без травм с матчами: {len(ranked)}; "
+        f"с травмой в JSON: {len(injured)})."
+    )
+    chunks.extend(lines)
+    return "\n".join(chunks)
+
+
 def format_active_injuries_report_text(*, schedule_month: int | None = None) -> str:
     """
     Моноширинный отчёт: травмы, активные дисквалы (после жк/кк), накопление жк к 4-й.

@@ -10,9 +10,13 @@ from bot.squad_pitch import _paste_crest_natural, _pick_font, _try_load_crest_rg
 from bot.team_history import (
     ClubDossier,
     TeamPrestige,
+    attack_rating_caption,
     build_club_dossier,
     cl_stage_short,
+    defense_rating_caption,
     prestige_formula_caption,
+    rank_clubs_by_attack,
+    rank_clubs_by_defense,
     rank_teams_by_prestige,
 )
 
@@ -532,3 +536,154 @@ def render_league_titles_chart_png() -> bytes:
             fill=_BAR2,
         )
     return _to_png(im.convert("RGB"))
+
+
+def _render_metric_ranking_png(
+    *,
+    title: str,
+    subtitle: str,
+    rows: list,
+    score_attr: str = "score",
+    meta_fn,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+    global_max_score: float | None = None,
+    foot: str = "",
+) -> bytes:
+    all_rows = list(rows)
+    max_score = float(global_max_score) if global_max_score is not None else (
+        max((float(getattr(r, score_attr)) for r in all_rows), default=1.0) or 1.0
+    )
+    if page_size is not None:
+        page_rows = all_rows[offset : offset + int(page_size)]
+        rank0 = offset
+    else:
+        page_rows = all_rows
+        rank0 = 0
+
+    row_h = 52
+    header_h = 110
+    foot_h = 56 if foot else 36
+    h = header_h + len(page_rows) * row_h + foot_h
+    im = _gradient_bg(h).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    ttl = title
+    if page_label:
+        ttl = f"{title} · {page_label}"
+    y = _draw_title(draw, ttl, subtitle)
+    font_r = _pick_font(22, bold=True)
+    font_n = _pick_font(22, bold=True)
+    font_s = _pick_font(16)
+    bar_x0 = 360
+    bar_x1 = _CANVAS_W - _PAD - 90
+
+    for i, r in enumerate(page_rows):
+        rank = rank0 + i + 1
+        top = y + i * row_h
+        draw.rounded_rectangle(
+            [_PAD, top + 4, _CANVAS_W - _PAD, top + row_h - 4],
+            radius=10,
+            fill=_CARD,
+            outline=_LINE,
+        )
+        rank_col = _GOLD if rank <= 3 else _TEXT
+        draw.text((_PAD + 14, top + 14), f"{rank:02d}", font=font_r, fill=rank_col)
+        crest = _try_load_crest_rgba(r.team)
+        if crest is not None:
+            _paste_crest_natural(im, crest, _PAD + 88, top + row_h // 2, 36)
+        name = _fit(draw, r.team, font_n, 200)
+        draw.text((_PAD + 120, top + 10), name, font=font_n, fill=_TEXT)
+        draw.text((_PAD + 120, top + 34), meta_fn(r), font=font_s, fill=_DIM)
+
+        score = float(getattr(r, score_attr))
+        bw = int((bar_x1 - bar_x0) * (score / max_score)) if max_score else 0
+        draw.rounded_rectangle(
+            [bar_x0, top + 18, bar_x0 + max(bw, 4), top + 36],
+            radius=6,
+            fill=_BAR if rank > 3 else _GOLD,
+        )
+        draw.text((bar_x1 + 10, top + 16), f"{score:.0f}", font=font_r, fill=_TEXT)
+
+    if foot:
+        draw.text((_PAD, h - 36), foot, font=_pick_font(16), fill=_DIM)
+    return _to_png(im.convert("RGB"))
+
+
+def render_attack_rating_png(
+    *,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+    global_max_score: float | None = None,
+) -> bytes:
+    rows = rank_clubs_by_attack(pool_only=True)
+    return _render_metric_ranking_png(
+        title="Рейтинг нападения",
+        subtitle=attack_rating_caption(),
+        rows=rows,
+        meta_fn=lambda r: f"лига {r.league_gf} · ЛЧ {r.cl_gf} · топ50 {r.top50_pts:g}",
+        offset=offset,
+        page_size=page_size,
+        page_label=page_label,
+        global_max_score=global_max_score,
+    )
+
+
+def render_attack_rating_pages(*, page_size: int = 20) -> list[bytes]:
+    rows = rank_clubs_by_attack(pool_only=True)
+    max_score = max((r.score for r in rows), default=1.0) or 1.0
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (len(rows) + page_size - 1) // page_size)
+    pages: list[bytes] = []
+    for p in range(n_pages):
+        pages.append(
+            render_attack_rating_png(
+                offset=p * page_size,
+                page_size=page_size,
+                page_label=f"{p + 1}/{n_pages}",
+                global_max_score=max_score,
+            )
+        )
+    return pages
+
+
+def render_defense_rating_png(
+    *,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+    global_max_score: float | None = None,
+) -> bytes:
+    rows = rank_clubs_by_defense(pool_only=True)
+    return _render_metric_ranking_png(
+        title="Рейтинг защиты",
+        subtitle=defense_rating_caption(),
+        rows=rows,
+        meta_fn=lambda r: (
+            f"пр. {r.league_ga}+{r.cl_ga} · сухие {r.clean_sheets} · "
+            f"разн. {r.goal_diff:+d} · сим П {r.sim_losses}/{r.sim_played}"
+        ),
+        offset=offset,
+        page_size=page_size,
+        page_label=page_label,
+        global_max_score=global_max_score,
+    )
+
+
+def render_defense_rating_pages(*, page_size: int = 20) -> list[bytes]:
+    rows = rank_clubs_by_defense(pool_only=True)
+    max_score = max((r.score for r in rows), default=1.0) or 1.0
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (len(rows) + page_size - 1) // page_size)
+    pages: list[bytes] = []
+    for p in range(n_pages):
+        pages.append(
+            render_defense_rating_png(
+                offset=p * page_size,
+                page_size=page_size,
+                page_label=f"{p + 1}/{n_pages}",
+                global_max_score=max_score,
+            )
+        )
+    return pages

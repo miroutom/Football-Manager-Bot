@@ -13,6 +13,7 @@ from bot.team_history import (
     _norm as _team_norm,
     compare_clubs,
     club_career_goals,
+    club_career_conceded,
     club_matches_in_season,
     cl_stage_short,
     compute_result_streaks,
@@ -1059,6 +1060,255 @@ def render_club_career_goals_pages(*, page_size: int = 10) -> list[bytes]:
             )
         )
     return pages
+
+
+def render_club_career_conceded_png(
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+) -> bytes:
+    """Таблица пропущенных: лига / ЛЧ / всего (меньше — лучше)."""
+    all_rows = club_career_conceded(pool_only=True)
+    if limit is not None:
+        all_rows = all_rows[: max(1, int(limit))]
+    if page_size is not None:
+        rows = all_rows[offset : offset + int(page_size)]
+        rank0 = offset
+    else:
+        rows = all_rows
+        rank0 = 0
+
+    font_b = _pick_font(20, bold=True)
+    font_r = _pick_font(22, bold=True)
+    font_head = _pick_font(14, bold=True)
+    font_num = _pick_font(19, bold=True)
+
+    row_h = 44
+    head_h = 34
+    n = max(1, len(rows))
+    table_h = head_h + n * row_h + 12
+    h = 118 + table_h + 36
+    im = _gradient_bg(min(h, 3200)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    sub = "Все сезоны · пропущенные · лига / ЛЧ / сумма · меньше лучше"
+    if page_label:
+        sub = f"{sub} · стр. {page_label}"
+    y = _title(draw, "Пропущенные клубов", sub)
+
+    cols = [("league_ga", "Лига"), ("cl_ga", "ЛЧ"), ("total_ga", "Всего")]
+    col_w = 120
+    stats_right = _CANVAS_W - _PAD - 24
+    stats_span = len(cols) * col_w
+    stats_left = stats_right - stats_span
+    name_x = _PAD + 96
+    name_max = stats_left - name_x - 16
+
+    def _col_center(i: int) -> int:
+        return stats_left + i * col_w + col_w // 2
+
+    table_top = y
+    table_bot = y + table_h
+    draw.rounded_rectangle(
+        [_PAD, table_top, _CANVAS_W - _PAD, table_bot],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+        width=1,
+    )
+
+    hy = table_top + 4
+    draw.rounded_rectangle(
+        [_PAD + 4, hy, _CANVAS_W - _PAD - 4, hy + head_h],
+        radius=8,
+        fill=(18, 26, 42),
+    )
+    draw.text((_PAD + 18, hy + 8), "#", font=font_head, fill=_DIM)
+    draw.text((name_x, hy + 8), "Клуб", font=font_head, fill=_DIM)
+    for i, (_key, lab) in enumerate(cols):
+        cx = _col_center(i)
+        lw = draw.textbbox((0, 0), lab, font=font_head)[2]
+        draw.text((cx - lw // 2, hy + 8), lab, font=font_head, fill=_GOLD)
+
+    medal = {1: (255, 214, 110), 2: (198, 208, 224), 3: (205, 148, 98)}
+    y = hy + head_h
+
+    for i, row in enumerate(rows):
+        rank = rank0 + i + 1
+        top = y
+        if i % 2 == 1:
+            draw.rectangle(
+                [_PAD + 4, top, _CANVAS_W - _PAD - 4, top + row_h],
+                fill=(24, 34, 54),
+            )
+        if rank <= 3:
+            draw.rounded_rectangle(
+                [_PAD + 6, top + 8, _PAD + 10, top + row_h - 8],
+                radius=2,
+                fill=medal[rank],
+            )
+
+        rank_c = medal.get(rank, _DIM)
+        draw.text((_PAD + 18, top + 10), f"{rank:02d}", font=font_r, fill=rank_c)
+
+        crest = _try_load_crest_rgba(row.team)
+        if crest is not None:
+            _paste_crest_natural(im, crest, _PAD + 70, top + row_h // 2, 24)
+        draw.text(
+            (name_x, top + 11),
+            _fit(draw, row.team, font_b, name_max),
+            font=font_b,
+            fill=_TEXT,
+        )
+
+        vals = {
+            "league_ga": row.league_ga,
+            "cl_ga": row.cl_ga,
+            "total_ga": row.total_ga,
+        }
+        for ci, (key, _lab) in enumerate(cols):
+            cx = _col_center(ci)
+            val = str(vals[key])
+            vw = draw.textbbox((0, 0), val, font=font_num)[2]
+            fill = _GOLD if key == "total_ga" else _TEXT
+            draw.text((cx - vw // 2, top + 11), val, font=font_num, fill=fill)
+        y += row_h
+
+    return _to_png(im.convert("RGB"))
+
+
+def render_club_career_conceded_pages(*, page_size: int = 10) -> list[bytes]:
+    rows = club_career_conceded(pool_only=True)
+    total = len(rows)
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (total + page_size - 1) // page_size)
+    pages: list[bytes] = []
+    for p in range(n_pages):
+        off = p * page_size
+        pages.append(
+            render_club_career_conceded_png(
+                offset=off,
+                page_size=page_size,
+                page_label=f"{p + 1}/{n_pages}",
+            )
+        )
+    return pages
+
+
+def render_club_player_influence_png(team: str, *, min_played: int = 1) -> bytes:
+    """Win% игроков клуба в матчах с зафиксированным составом."""
+    from bot.team_history import club_player_win_influence
+
+    rows = club_player_win_influence(team, min_played=min_played, limit=25)
+    font_b = _pick_font(20, bold=True)
+    font_r = _pick_font(22, bold=True)
+    font_head = _pick_font(14, bold=True)
+    font_num = _pick_font(18, bold=True)
+    font_m = _pick_font(16)
+
+    if not rows:
+        h = 260
+        im = _gradient_bg(h).convert("RGBA")
+        draw = ImageDraw.Draw(im)
+        y = _title(
+            draw,
+            f"Влияние · {team}",
+            f"Мин. {min_played} матча с составом",
+        )
+        draw.text(
+            (_PAD, y + 8),
+            "Пока мало данных: нужны оценки матчей или список «кто играл» в стате.\n"
+            "После новых матчей рейтинг заполнится.",
+            font=font_m,
+            fill=_DIM,
+        )
+        return _to_png(im.convert("RGB"))
+
+    row_h = 42
+    head_h = 34
+    n = len(rows)
+    table_h = head_h + n * row_h + 12
+    h = 130 + table_h + 40
+    im = _gradient_bg(min(h, 3200)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    y = _title(
+        draw,
+        f"Влияние · {team}",
+        f"Win% когда игрок в составе · мин. {min_played} матча",
+    )
+
+    name_x = _PAD + 70
+    cols_x = [
+        (_CANVAS_W - _PAD - 360, "В-Н-П"),
+        (_CANVAS_W - _PAD - 220, "Матч"),
+        (_CANVAS_W - _PAD - 100, "Win%"),
+    ]
+
+    table_top = y
+    table_bot = y + table_h
+    draw.rounded_rectangle(
+        [_PAD, table_top, _CANVAS_W - _PAD, table_bot],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+        width=1,
+    )
+    hy = table_top + 4
+    draw.rounded_rectangle(
+        [_PAD + 4, hy, _CANVAS_W - _PAD - 4, hy + head_h],
+        radius=8,
+        fill=(18, 26, 42),
+    )
+    draw.text((_PAD + 18, hy + 8), "#", font=font_head, fill=_DIM)
+    draw.text((name_x, hy + 8), "Игрок", font=font_head, fill=_DIM)
+    for cx, lab in cols_x:
+        lw = draw.textbbox((0, 0), lab, font=font_head)[2]
+        draw.text((cx - lw // 2, hy + 8), lab, font=font_head, fill=_GOLD)
+
+    medal = {1: (255, 214, 110), 2: (198, 208, 224), 3: (205, 148, 98)}
+    y = hy + head_h
+    for i, row in enumerate(rows):
+        rank = i + 1
+        top = y
+        if i % 2 == 1:
+            draw.rectangle(
+                [_PAD + 4, top, _CANVAS_W - _PAD - 4, top + row_h],
+                fill=(24, 34, 54),
+            )
+        if rank <= 3:
+            draw.rounded_rectangle(
+                [_PAD + 6, top + 8, _PAD + 10, top + row_h - 8],
+                radius=2,
+                fill=medal[rank],
+            )
+        draw.text(
+            (_PAD + 18, top + 10),
+            f"{rank:02d}",
+            font=font_r,
+            fill=medal.get(rank, _DIM),
+        )
+        label = row.player
+        if row.position:
+            label = f"{row.player} · {row.position}"
+        draw.text(
+            (name_x, top + 10),
+            _fit(draw, label, font_b, cols_x[0][0] - name_x - 24),
+            font=font_b,
+            fill=_TEXT,
+        )
+        wdl = f"{row.wins}-{row.draws}-{row.losses}"
+        for cx, val in (
+            (cols_x[0][0], wdl),
+            (cols_x[1][0], str(row.played)),
+            (cols_x[2][0], f"{row.win_pct:.0f}%"),
+        ):
+            vw = draw.textbbox((0, 0), val, font=font_num)[2]
+            fill = _GOLD if cx == cols_x[2][0] else _TEXT
+            draw.text((cx - vw // 2, top + 10), val, font=font_num, fill=fill)
+        y += row_h
+
+    return _to_png(im.convert("RGB"))
 
 
 def render_club_season_matches_png(team: str, season: int) -> bytes:

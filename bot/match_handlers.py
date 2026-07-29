@@ -594,6 +594,23 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
                 )
             except Exception:
                 logger.exception("match_player_stats_log")
+            try:
+                from utils.match_lineup_log import record_lineup_from_played_keys
+
+                await asyncio.to_thread(
+                    record_lineup_from_played_keys,
+                    played_keys=data.get("stats_played_keys"),
+                    home=str(h),
+                    away=str(a),
+                    tournament=str(tourn),
+                    day=data.get("stats_schedule_day"),
+                    home_score=data.get("stats_hs"),
+                    away_score=data.get("stats_aws"),
+                    league_code=str(lc) if lc else None,
+                    cl_phase=str(cl_ph) if cl_ph else None,
+                )
+            except Exception:
+                logger.exception("match_lineup_log")
             from matches_stats_tracking import mark_stats_completed
 
             await asyncio.to_thread(

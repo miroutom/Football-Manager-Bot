@@ -13,8 +13,10 @@ from bot.history_render import render_award_history_png, render_cl_history_png, 
 from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
 from bot.team_history import format_season_tag, list_history_seasons
 from bot.team_history_gallery import (
+    render_club_career_conceded_pages,
     render_club_career_goals_pages,
     render_club_hall_of_fame_png,
+    render_club_player_influence_png,
     render_club_season_matches_png,
     render_compare_clubs_png,
     render_h2h_png,
@@ -25,7 +27,9 @@ from bot.team_history_gallery import (
     render_season_cover_png,
 )
 from bot.team_history_render import (
+    render_attack_rating_pages,
     render_club_dossier_png,
+    render_defense_rating_pages,
     render_league_titles_chart_png,
     render_power_ranking_pages,
     render_prestige_breakdown_pages,
@@ -86,6 +90,10 @@ def history_teams_kb() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="📊 Из чего престиж", callback_data="hist:t:break")],
             [InlineKeyboardButton(text="🏆 Чемпионства (вес лиг)", callback_data="hist:t:titles")],
             [InlineKeyboardButton(text="⚽ Голы клубов", callback_data="hist:t:goals")],
+            [InlineKeyboardButton(text="🛡 Пропущенные", callback_data="hist:t:conceded")],
+            [InlineKeyboardButton(text="⚡ Рейтинг нападения", callback_data="hist:t:attack")],
+            [InlineKeyboardButton(text="🧱 Рейтинг защиты", callback_data="hist:t:defense")],
+            [InlineKeyboardButton(text="🔑 Влияние игрока", callback_data="hist:t:influence")],
             [InlineKeyboardButton(text="📁 Досье клуба", callback_data="hist:t:club")],
             [InlineKeyboardButton(text="« Назад", callback_data="hist:back")],
         ]
@@ -125,6 +133,7 @@ def history_club_actions_kb(league_code: str, idx: int) -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="📁 Досье", callback_data=f"hist:act:dossier:{base}")],
             [InlineKeyboardButton(text="🎖 Зал славы клуба", callback_data=f"hist:act:hof:{base}")],
             [InlineKeyboardButton(text="📈 Динамика престижа", callback_data=f"hist:act:dyn:{base}")],
+            [InlineKeyboardButton(text="🔑 Влияние игрока", callback_data=f"hist:act:infl:{base}")],
             [InlineKeyboardButton(text="📅 Матчи сезона", callback_data=f"hist:act:matches:{base}")],
             [InlineKeyboardButton(text="« Клубы лиги", callback_data=f"hist:tcl:{league_code}")],
         ]
@@ -342,6 +351,116 @@ async def cb_hist_club_goals(callback: CallbackQuery) -> None:
     )
 
 
+@history_router.callback_query(F.data == "hist:t:conceded")
+async def cb_hist_club_conceded(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        pages = await asyncio.to_thread(render_club_career_conceded_pages, page_size=10)
+    except Exception as e:
+        logger.exception("club conceded")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    n = len(pages)
+    cap = (
+        "<b>Пропущенные</b> — меньше лучше · лига / ЛЧ / всего"
+        if n <= 1
+        else f"<b>Пропущенные</b> — меньше лучше · лига / ЛЧ / всего · {n} стр."
+    )
+    await _send_png(
+        callback,
+        png=pages,
+        filename="history_club_conceded.png",
+        caption=cap,
+    )
+
+
+@history_router.callback_query(F.data == "hist:t:attack")
+async def cb_hist_attack(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        pages = await asyncio.to_thread(render_attack_rating_pages, page_size=20)
+    except Exception as e:
+        logger.exception("attack rating")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    n = len(pages)
+    cap = "<b>Рейтинг нападения</b>" if n <= 1 else f"<b>Рейтинг нападения</b> · {n} стр."
+    await _send_png(callback, png=pages, filename="history_attack.png", caption=cap)
+
+
+@history_router.callback_query(F.data == "hist:t:defense")
+async def cb_hist_defense(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        pages = await asyncio.to_thread(render_defense_rating_pages, page_size=20)
+    except Exception as e:
+        logger.exception("defense rating")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    n = len(pages)
+    cap = "<b>Рейтинг защиты</b>" if n <= 1 else f"<b>Рейтинг защиты</b> · {n} стр."
+    await _send_png(callback, png=pages, filename="history_defense.png", caption=cap)
+
+
+@history_router.callback_query(F.data == "hist:t:influence")
+async def cb_hist_influence_pick(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if callback.message:
+        await callback.message.edit_reply_markup(
+            reply_markup=history_league_choice_kb(
+                prefix="hist:inflg:", back="hist:teams"
+            )
+        )
+
+
+@history_router.callback_query(F.data.startswith("hist:inflg:"))
+async def cb_hist_influence_league(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    code = parts[2].strip()
+    await callback.answer()
+    if callback.message:
+        await callback.message.edit_reply_markup(
+            reply_markup=history_club_pick_kb(
+                code, prefix="hist:infc:", back="hist:t:influence"
+            )
+        )
+
+
+@history_router.callback_query(F.data.startswith("hist:infc:"))
+async def cb_hist_influence_club(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 4:
+        await callback.answer()
+        return
+    code, idx_s = parts[2], parts[3]
+    try:
+        idx = int(idx_s)
+        team = _team_by_idx(code, idx)
+    except Exception as e:
+        await callback.answer(str(e), show_alert=True)
+        return
+    await callback.answer("Готовлю…")
+    try:
+        png = await asyncio.to_thread(render_club_player_influence_png, team)
+    except Exception as e:
+        logger.exception("player influence")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    await _send_png(
+        callback,
+        png=png,
+        filename=f"influence_{code}_{idx}.png",
+        caption=f"<b>Влияние игрока</b> · {team}",
+    )
+
+
 @history_router.callback_query(F.data == "hist:t:club")
 async def cb_hist_club_pick_league(callback: CallbackQuery) -> None:
     await callback.answer()
@@ -431,6 +550,10 @@ async def cb_hist_club_act(callback: CallbackQuery) -> None:
             png = await asyncio.to_thread(render_prestige_dynamics_png, team)
             cap = f"<b>{team}</b> — динамика престижа"
             fn = "dyn.png"
+        elif action == "infl":
+            png = await asyncio.to_thread(render_club_player_influence_png, team)
+            cap = f"<b>{team}</b> — влияние игрока (win%)"
+            fn = "influence.png"
         else:
             await callback.answer("Неизвестно", show_alert=True)
             return

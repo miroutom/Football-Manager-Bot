@@ -818,6 +818,414 @@ def club_career_goals_for(team: str) -> ClubCareerGoals:
     display = team.strip().title() if team else "?"
     return ClubCareerGoals(team=display, league_gf=0, cl_gf=0)
 
+
+@dataclass
+class ClubCareerConceded:
+    """Сумма пропущенных голов клуба по всем сезонам из журналов матчей."""
+
+    team: str
+    league_ga: int
+    cl_ga: int
+
+    @property
+    def total_ga(self) -> int:
+        return int(self.league_ga) + int(self.cl_ga)
+
+
+def club_career_conceded(*, pool_only: bool = True) -> list[ClubCareerConceded]:
+    """
+    Пропущенные мячи клубов за все сезоны.
+
+    Сортировка: меньше total_ga выше (лучше оборона).
+    """
+    pool = _current_pool_club_names()
+    by_norm: dict[str, dict[str, Any]] = {}
+    for name in pool:
+        by_norm[_norm(name)] = {"team": name, "league_ga": 0, "cl_ga": 0}
+
+    for m in iter_all_match_records():
+        lg = str(m.get("league") or "").strip().lower()
+        is_cl = lg == "cl"
+        hs = int(m.get("home_score") or 0)
+        aws = int(m.get("away_score") or 0)
+        # home conceded = away scored; away conceded = home scored
+        for team_raw, ga in ((m.get("home"), aws), (m.get("away"), hs)):
+            tn = _norm(str(team_raw or ""))
+            if not tn:
+                continue
+            if pool_only and tn not in by_norm:
+                continue
+            row = by_norm.get(tn)
+            if row is None:
+                row = {
+                    "team": str(team_raw or "").strip().title(),
+                    "league_ga": 0,
+                    "cl_ga": 0,
+                }
+                by_norm[tn] = row
+            if is_cl:
+                row["cl_ga"] += ga
+            else:
+                row["league_ga"] += ga
+
+    out = [
+        ClubCareerConceded(
+            team=str(v["team"]),
+            league_ga=int(v["league_ga"]),
+            cl_ga=int(v["cl_ga"]),
+        )
+        for v in by_norm.values()
+    ]
+    out.sort(key=lambda r: (r.total_ga, r.league_ga, r.cl_ga, r.team.casefold()))
+    return out
+
+
+def _club_goal_diff_maps() -> tuple[dict[str, int], dict[str, int], dict[str, int]]:
+    """``(league_gd, cl_gd, total_gd)`` по ``_norm(team)``."""
+    league: dict[str, int] = {}
+    cl: dict[str, int] = {}
+    for m in iter_all_match_records():
+        lg = str(m.get("league") or "").strip().lower()
+        is_cl = lg == "cl"
+        for team in (m.get("home"), m.get("away")):
+            tn = _norm(str(team or ""))
+            if not tn:
+                continue
+            _res, _pts, gf, ga = match_result_for_team(m, str(team))
+            bucket = cl if is_cl else league
+            bucket[tn] = int(bucket.get(tn, 0)) + (gf - ga)
+    total = {
+        k: int(league.get(k, 0)) + int(cl.get(k, 0))
+        for k in set(league) | set(cl)
+    }
+    return league, cl, total
+
+
+def _club_sim_records() -> dict[str, dict[str, int]]:
+    """Симуляции (оба клуба одного менеджера): wins/draws/losses по клубу."""
+    from config.leagues_config import manager_session_label
+
+    out: dict[str, dict[str, int]] = {}
+    for m in iter_all_match_records():
+        home = str(m.get("home") or "").strip()
+        away = str(m.get("away") or "").strip()
+        if manager_session_label(home, away) != "Симуляция":
+            continue
+        for team in (home, away):
+            tn = _norm(team)
+            slot = out.setdefault(tn, {"w": 0, "d": 0, "l": 0, "played": 0})
+            res, _pts, _gf, _ga = match_result_for_team(m, team)
+            slot["played"] += 1
+            if res == "W":
+                slot["w"] += 1
+            elif res == "D":
+                slot["d"] += 1
+            else:
+                slot["l"] += 1
+    return out
+
+
+def _club_clean_sheets_total() -> dict[str, int]:
+    """Сумма сухих матчей вратарей клуба (лига + ЛЧ, накопительно)."""
+    from utils.stats_history_agg import aggregate_life_clean_sheets
+
+    totals: dict[str, int] = {}
+    for kwargs in (
+        {"league_code": "all", "cl": False},
+        {"league_code": None, "cl": True},
+    ):
+        gk_rows, _df = aggregate_life_clean_sheets(
+            kwargs["league_code"],
+            cl=bool(kwargs["cl"]),
+            merge_by_player=True,
+        )
+        for r in gk_rows:
+            tn = _norm(str(r.get("team") or ""))
+            if not tn:
+                continue
+            totals[tn] = int(totals.get(tn, 0)) + int(r.get("clean_sheets") or 0)
+    return totals
+
+
+def _club_top50_ga_influence() -> dict[str, float]:
+    """
+    Влияние топ-50 G+A (лига+ЛЧ за всё время): очки ``(51-rank)`` клубу игрока.
+    """
+    from utils.stats_history_agg import collect_top100_rows
+
+    _scope, rows, _n, err = collect_top100_rows("allcl", limit=50, sort_key=3)
+    if err:
+        return {}
+    out: dict[str, float] = {}
+    for i, r in enumerate(rows, start=1):
+        tn = _norm(str(r.get("team") or ""))
+        if not tn:
+            continue
+        out[tn] = float(out.get(tn, 0.0)) + float(51 - i)
+    return out
+
+
+def _norm01(value: float, lo: float, hi: float) -> float:
+    if hi <= lo:
+        return 0.0
+    return max(0.0, min(1.0, (value - lo) / (hi - lo)))
+
+
+@dataclass
+class ClubAttackRating:
+    team: str
+    score: float
+    league_gf: int
+    cl_gf: int
+    top50_pts: float
+    breakdown: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass
+class ClubDefenseRating:
+    team: str
+    score: float
+    league_ga: int
+    cl_ga: int
+    clean_sheets: int
+    goal_diff: int
+    sim_losses: int
+    sim_played: int
+    breakdown: dict[str, float] = field(default_factory=dict)
+
+
+def rank_clubs_by_attack(*, pool_only: bool = True) -> list[ClubAttackRating]:
+    """
+    Рейтинг нападения пула.
+
+    Веса (после нормализации 0..1 внутри пула): лиговые голы 40%, голы ЛЧ 35%,
+    влияние топ-50 G+A 25%.
+    """
+    goals = { _norm(r.team): r for r in club_career_goals(pool_only=pool_only) }
+    top50 = _club_top50_ga_influence()
+    teams = list(goals.values())
+    if not teams:
+        return []
+
+    lg_vals = [r.league_gf for r in teams]
+    cl_vals = [r.cl_gf for r in teams]
+    t50_vals = [float(top50.get(_norm(r.team), 0.0)) for r in teams]
+    lg_lo, lg_hi = min(lg_vals), max(lg_vals)
+    cl_lo, cl_hi = min(cl_vals), max(cl_vals)
+    t_lo, t_hi = min(t50_vals), max(t50_vals)
+
+    out: list[ClubAttackRating] = []
+    for r in teams:
+        tn = _norm(r.team)
+        t50 = float(top50.get(tn, 0.0))
+        p_lg = _norm01(float(r.league_gf), float(lg_lo), float(lg_hi))
+        p_cl = _norm01(float(r.cl_gf), float(cl_lo), float(cl_hi))
+        p_t50 = _norm01(t50, float(t_lo), float(t_hi))
+        score = 100.0 * (0.40 * p_lg + 0.35 * p_cl + 0.25 * p_t50)
+        out.append(
+            ClubAttackRating(
+                team=r.team,
+                score=round(score, 2),
+                league_gf=r.league_gf,
+                cl_gf=r.cl_gf,
+                top50_pts=round(t50, 1),
+                breakdown={
+                    "Лига голы": round(40.0 * p_lg, 2),
+                    "ЛЧ голы": round(35.0 * p_cl, 2),
+                    "Топ-50 G+A": round(25.0 * p_t50, 2),
+                },
+            )
+        )
+    out.sort(key=lambda x: (-x.score, -x.league_gf - x.cl_gf, x.team.casefold()))
+    return out
+
+
+def rank_clubs_by_defense(*, pool_only: bool = True) -> list[ClubDefenseRating]:
+    """
+    Рейтинг защиты пула.
+
+    Веса: меньше пропущенных в лиге 25%, в ЛЧ 20%, сухие вратарей 25%,
+    разница мячей 15%, меньше поражений в симуляциях 15%.
+    """
+    conceded = { _norm(r.team): r for r in club_career_conceded(pool_only=pool_only) }
+    _lg_gd, _cl_gd, total_gd = _club_goal_diff_maps()
+    cs_map = _club_clean_sheets_total()
+    sims = _club_sim_records()
+    teams = list(conceded.values())
+    if not teams:
+        return []
+
+    def _sim_loss_rate(tn: str) -> float:
+        s = sims.get(tn) or {}
+        played = int(s.get("played") or 0)
+        if played <= 0:
+            return 0.5  # нейтрально, если симов нет
+        return float(s.get("l") or 0) / float(played)
+
+    lg_ga = [r.league_ga for r in teams]
+    cl_ga = [r.cl_ga for r in teams]
+    cs_vals = [int(cs_map.get(_norm(r.team), 0)) for r in teams]
+    gd_vals = [int(total_gd.get(_norm(r.team), 0)) for r in teams]
+    sim_rates = [_sim_loss_rate(_norm(r.team)) for r in teams]
+
+    # для пропущенных и sim_rate — меньше лучше → инвертируем после norm01
+    lg_lo, lg_hi = min(lg_ga), max(lg_ga)
+    cl_lo, cl_hi = min(cl_ga), max(cl_ga)
+    cs_lo, cs_hi = min(cs_vals), max(cs_vals)
+    gd_lo, gd_hi = min(gd_vals), max(gd_vals)
+    sr_lo, sr_hi = min(sim_rates), max(sim_rates)
+
+    out: list[ClubDefenseRating] = []
+    for r in teams:
+        tn = _norm(r.team)
+        cs = int(cs_map.get(tn, 0))
+        gd = int(total_gd.get(tn, 0))
+        s = sims.get(tn) or {}
+        sim_l = int(s.get("l") or 0)
+        sim_n = int(s.get("played") or 0)
+        sr = _sim_loss_rate(tn)
+
+        p_lg = 1.0 - _norm01(float(r.league_ga), float(lg_lo), float(lg_hi))
+        p_cl = 1.0 - _norm01(float(r.cl_ga), float(cl_lo), float(cl_hi))
+        p_cs = _norm01(float(cs), float(cs_lo), float(cs_hi))
+        p_gd = _norm01(float(gd), float(gd_lo), float(gd_hi))
+        p_sim = 1.0 - _norm01(sr, float(sr_lo), float(sr_hi))
+
+        score = 100.0 * (
+            0.25 * p_lg + 0.20 * p_cl + 0.25 * p_cs + 0.15 * p_gd + 0.15 * p_sim
+        )
+        out.append(
+            ClubDefenseRating(
+                team=r.team,
+                score=round(score, 2),
+                league_ga=r.league_ga,
+                cl_ga=r.cl_ga,
+                clean_sheets=cs,
+                goal_diff=gd,
+                sim_losses=sim_l,
+                sim_played=sim_n,
+                breakdown={
+                    "Лига −пр.": round(25.0 * p_lg, 2),
+                    "ЛЧ −пр.": round(20.0 * p_cl, 2),
+                    "Сухие": round(25.0 * p_cs, 2),
+                    "Разн.": round(15.0 * p_gd, 2),
+                    "Сим −пор.": round(15.0 * p_sim, 2),
+                },
+            )
+        )
+    out.sort(
+        key=lambda x: (
+            -x.score,
+            x.league_ga + x.cl_ga,
+            -x.clean_sheets,
+            x.team.casefold(),
+        )
+    )
+    return out
+
+
+def attack_rating_caption() -> str:
+    return (
+        "Атака = норм. голы лиги (40%) + голы ЛЧ (35%) + "
+        "влияние топ-50 G+A лига+ЛЧ (25%)."
+    )
+
+
+def defense_rating_caption() -> str:
+    return (
+        "Защита = меньше пр. в лиге (25%) и ЛЧ (20%) + сухие вратарей (25%) + "
+        "разница мячей (15%) + меньше поражений в симуляциях (15%)."
+    )
+
+
+@dataclass
+class PlayerWinInfluence:
+    """Win-rate клуба в матчах, где игрок был в составе (лог/оценки)."""
+
+    player: str
+    team: str
+    position: str
+    played: int
+    wins: int
+    draws: int
+    losses: int
+
+    @property
+    def win_pct(self) -> float:
+        if self.played <= 0:
+            return 0.0
+        return 100.0 * self.wins / self.played
+
+
+def club_player_win_influence(
+    team: str,
+    *,
+    min_played: int = 1,
+    limit: int = 25,
+) -> list[PlayerWinInfluence]:
+    """
+    «Эффект Родри»: с кем клуб чаще побеждает (по зафиксированным составам).
+
+    Источники присутствия: ``match_lineup_log`` + оценки матчей
+    (непустой рейтинг = играл).
+    """
+    from utils.match_lineup_log import iter_player_match_presence
+
+    want = _norm(team)
+    display_team = (team or "").strip()
+    agg: dict[str, dict[str, Any]] = {}
+
+    for row in iter_player_match_presence(team=display_team):
+        if _norm(str(row.get("team") or "")) != want:
+            continue
+        pname = str(row.get("player") or "").strip()
+        if not pname:
+            continue
+        key = pname.casefold()
+        slot = agg.setdefault(
+            key,
+            {
+                "player": pname,
+                "position": str(row.get("position") or "").strip().upper(),
+                "w": 0,
+                "d": 0,
+                "l": 0,
+                "n": 0,
+            },
+        )
+        res = str(row.get("result") or "D")
+        slot["n"] += 1
+        if res == "W":
+            slot["w"] += 1
+        elif res == "L":
+            slot["l"] += 1
+        else:
+            slot["d"] += 1
+        if row.get("position") and not slot["position"]:
+            slot["position"] = str(row.get("position") or "").strip().upper()
+
+    out: list[PlayerWinInfluence] = []
+    for slot in agg.values():
+        n = int(slot["n"])
+        if n < int(min_played):
+            continue
+        out.append(
+            PlayerWinInfluence(
+                player=str(slot["player"]),
+                team=display_team,
+                position=str(slot["position"] or ""),
+                played=n,
+                wins=int(slot["w"]),
+                draws=int(slot["d"]),
+                losses=int(slot["l"]),
+            )
+        )
+    out.sort(
+        key=lambda r: (-r.win_pct, -r.wins, -r.played, r.player.casefold())
+    )
+    return out[: max(1, int(limit))]
+
+
 def season_cover_data(season: int) -> dict[str, Any]:
     hist = load_history()
     sn = int(season)

@@ -1,0 +1,1285 @@
+[
+  {
+    "season": 3,
+    "day": 1,
+    "home": "Аталанта",
+    "away": "Фиорентина",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Пашалич",
+        "team": "Аталанта",
+        "position": "ЦП"
+      },
+      {
+        "player": "Лукман",
+        "team": "Аталанта",
+        "position": "ПФА"
+      },
+      {
+        "player": "Миранчук",
+        "team": "Аталанта",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Гайа",
+        "team": "Аталанта",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Муриэль",
+        "team": "Аталанта",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Симонс",
+        "team": "Аталанта",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Хатебур",
+        "team": "Аталанта",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Илич",
+        "team": "Аталанта",
+        "position": "ЦП"
+      },
+      {
+        "player": "Сильва",
+        "team": "Аталанта",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Шевалье",
+        "team": "Аталанта",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Толои",
+        "team": "Аталанта",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Артур",
+        "team": "Фиорентина",
+        "position": "ЦОП"
+      },
+      {
+        "player": "Эллиотт",
+        "team": "Фиорентина",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Гонзалез",
+        "team": "Фиорентина",
+        "position": "ПФА"
+      },
+      {
+        "player": "Малком",
+        "team": "Фиорентина",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Алдервейрельд",
+        "team": "Фиорентина",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Бонавентура",
+        "team": "Фиорентина",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Лопес",
+        "team": "Фиорентина",
+        "position": "ЦП"
+      },
+      {
+        "player": "Нзола",
+        "team": "Фиорентина",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Политано",
+        "team": "Фиорентина",
+        "position": "ПФА"
+      },
+      {
+        "player": "Ибаньес",
+        "team": "Фиорентина",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Барак",
+        "team": "Фиорентина",
+        "position": "ЦП"
+      },
+      {
+        "player": "Бираги",
+        "team": "Фиорентина",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Булка",
+        "team": "Фиорентина",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Соттиль",
+        "team": "Фиорентина",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Додо",
+        "team": "Фиорентина",
+        "position": "ПЗ"
+      }
+    ],
+    "source": "ratings",
+    "home_score": 8,
+    "away_score": 1,
+    "league_code": "ita"
+  },
+  {
+    "season": 3,
+    "day": 1,
+    "home": "Атлетико",
+    "away": "Севилья",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Тюрам",
+        "team": "Атлетико",
+        "position": "ЦП"
+      },
+      {
+        "player": "Обамеянг",
+        "team": "Атлетико",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Алмада",
+        "team": "Атлетико",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Облак",
+        "team": "Атлетико",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Родри",
+        "team": "Атлетико",
+        "position": "ЦОП"
+      },
+      {
+        "player": "Депай",
+        "team": "Атлетико",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Корреа",
+        "team": "Атлетико",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Мората",
+        "team": "Атлетико",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Лемар",
+        "team": "Атлетико",
+        "position": "ЦП"
+      },
+      {
+        "player": "Рейнилдо",
+        "team": "Атлетико",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Савич",
+        "team": "Атлетико",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Льоренте",
+        "team": "Атлетико",
+        "position": "ЦП"
+      },
+      {
+        "player": "Молина",
+        "team": "Атлетико",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Эрмосо",
+        "team": "Атлетико",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Соу",
+        "team": "Севилья",
+        "position": "ЦП"
+      },
+      {
+        "player": "Гонсалвеш",
+        "team": "Севилья",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Нианзу",
+        "team": "Севилья",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Карраско",
+        "team": "Севилья",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Жоелинтон",
+        "team": "Севилья",
+        "position": "ЦП"
+      },
+      {
+        "player": "Рамос",
+        "team": "Севилья",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Льорис",
+        "team": "Севилья",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Навас",
+        "team": "Севилья",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Лукебакио",
+        "team": "Севилья",
+        "position": "ПФА"
+      },
+      {
+        "player": "Гудель",
+        "team": "Севилья",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Педроса",
+        "team": "Севилья",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Ундав",
+        "team": "Севилья",
+        "position": "ЦП"
+      }
+    ],
+    "source": "ratings",
+    "home_score": 4,
+    "away_score": 0,
+    "league_code": "esp"
+  },
+  {
+    "season": 3,
+    "day": 1,
+    "home": "Барселона",
+    "away": "Реал",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Гюндоган",
+        "team": "Барселона",
+        "position": "ЦП"
+      },
+      {
+        "player": "Лева",
+        "team": "Барселона",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Тер Штеген",
+        "team": "Барселона",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Араухо",
+        "team": "Барселона",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Неймар",
+        "team": "Барселона",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Педри",
+        "team": "Барселона",
+        "position": "ЦП"
+      },
+      {
+        "player": "Рафинья",
+        "team": "Барселона",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Де Йонг",
+        "team": "Барселона",
+        "position": "ЦОП"
+      },
+      {
+        "player": "Канселу",
+        "team": "Барселона",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Кунде",
+        "team": "Барселона",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Бальде",
+        "team": "Барселона",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Гави",
+        "team": "Барселона",
+        "position": "ЦП"
+      },
+      {
+        "player": "Талиска",
+        "team": "Реал",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Вальверде",
+        "team": "Реал",
+        "position": "ЦП"
+      },
+      {
+        "player": "Лукаку",
+        "team": "Реал",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Кроос",
+        "team": "Реал",
+        "position": "ЦОП"
+      },
+      {
+        "player": "Маркиньос",
+        "team": "Реал",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Нкунку",
+        "team": "Реал",
+        "position": "ПФА"
+      },
+      {
+        "player": "Алаба",
+        "team": "Реал",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Браим",
+        "team": "Реал",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Дембеле",
+        "team": "Реал",
+        "position": "ПФА"
+      },
+      {
+        "player": "Родриго",
+        "team": "Реал",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Кепа",
+        "team": "Реал",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Гарсия",
+        "team": "Реал",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Карвахаль",
+        "team": "Реал",
+        "position": "ПЗ"
+      }
+    ],
+    "source": "ratings",
+    "home_score": 5,
+    "away_score": 5,
+    "league_code": "esp"
+  },
+  {
+    "season": 3,
+    "day": 1,
+    "home": "Сити",
+    "away": "Наполи",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Аканжи",
+        "team": "Сити",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Самба",
+        "team": "Сити",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Барколя",
+        "team": "Сити",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Де Брюйне",
+        "team": "Сити",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Холанд",
+        "team": "Сити",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Месси",
+        "team": "Сити",
+        "position": "ПФА"
+      },
+      {
+        "player": "Сильва",
+        "team": "Сити",
+        "position": "ЦП"
+      },
+      {
+        "player": "Эдерсон",
+        "team": "Сити",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Диаш",
+        "team": "Сити",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Стоунз",
+        "team": "Сити",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Уокер",
+        "team": "Сити",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Гвардиоль",
+        "team": "Сити",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Рэшфорд",
+        "team": "Сити",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Элмас",
+        "team": "Наполи",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Распадори",
+        "team": "Наполи",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Осимен",
+        "team": "Наполи",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Квара",
+        "team": "Наполи",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Ди Лоренцо",
+        "team": "Наполи",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Мерет",
+        "team": "Наполи",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Сака",
+        "team": "Наполи",
+        "position": "ПФА"
+      },
+      {
+        "player": "Лоботка",
+        "team": "Наполи",
+        "position": "ЦП"
+      },
+      {
+        "player": "Люка Эрнандез",
+        "team": "Наполи",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Невеш",
+        "team": "Наполи",
+        "position": "ЦОП"
+      },
+      {
+        "player": "Ангисса",
+        "team": "Наполи",
+        "position": "ЦОП"
+      },
+      {
+        "player": "Романьоли",
+        "team": "Наполи",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Рахмани",
+        "team": "Наполи",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Руи",
+        "team": "Наполи",
+        "position": "ЛЗ"
+      }
+    ],
+    "source": "ratings",
+    "home_score": 5,
+    "away_score": 3,
+    "league_code": "cl",
+    "cl_phase": "league"
+  },
+  {
+    "season": 3,
+    "day": 1,
+    "home": "Милан",
+    "away": "Лацио",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Томори",
+        "team": "Милан",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Муса",
+        "team": "Милан",
+        "position": "ЦП"
+      },
+      {
+        "player": "Лофтус-Чик",
+        "team": "Милан",
+        "position": "ЦП"
+      },
+      {
+        "player": "Бензема",
+        "team": "Милан",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Вини",
+        "team": "Милан",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Терраччано",
+        "team": "Милан",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Беллингем",
+        "team": "Милан",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Беннасер",
+        "team": "Милан",
+        "position": "ЦП"
+      },
+      {
+        "player": "Хакими",
+        "team": "Милан",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Лапорт",
+        "team": "Милан",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Рейндерс",
+        "team": "Милан",
+        "position": "ЦП"
+      },
+      {
+        "player": "Кьяер",
+        "team": "Милан",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Эрнандез",
+        "team": "Милан",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Байер",
+        "team": "Лацио",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Дзаканьи",
+        "team": "Лацио",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Проведель",
+        "team": "Лацио",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Гендузи",
+        "team": "Лацио",
+        "position": "ЦП"
+      },
+      {
+        "player": "Камада",
+        "team": "Лацио",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Торрес",
+        "team": "Лацио",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Марушич",
+        "team": "Лацио",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Дансо",
+        "team": "Лацио",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Иммобиле",
+        "team": "Лацио",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Лаззари",
+        "team": "Лацио",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Фраттези",
+        "team": "Лацио",
+        "position": "ЦП"
+      },
+      {
+        "player": "Бейси",
+        "team": "Лацио",
+        "position": "ЦЗ"
+      }
+    ],
+    "source": "ratings",
+    "home_score": 2,
+    "away_score": 1,
+    "league_code": "ita"
+  },
+  {
+    "season": 3,
+    "day": 1,
+    "home": "Ливерпуль",
+    "away": "Ньюкасл",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Рабьо",
+        "team": "Ливерпуль",
+        "position": "ЦП"
+      },
+      {
+        "player": "Олисе",
+        "team": "Ливерпуль",
+        "position": "ПФА"
+      },
+      {
+        "player": "Тьяго",
+        "team": "Ливерпуль",
+        "position": "ЦП"
+      },
+      {
+        "player": "Мбаппе",
+        "team": "Ливерпуль",
+        "position": "ПФА"
+      },
+      {
+        "player": "Алиссон",
+        "team": "Ливерпуль",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Конате",
+        "team": "Ливерпуль",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Смоллинг",
+        "team": "Ливерпуль",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Александер-Арнольд",
+        "team": "Ливерпуль",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Жота",
+        "team": "Ливерпуль",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Коке",
+        "team": "Ливерпуль",
+        "position": "ЦП"
+      },
+      {
+        "player": "Робертсон",
+        "team": "Ливерпуль",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Диас",
+        "team": "Ливерпуль",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Собослай",
+        "team": "Ливерпуль",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Гравенберх",
+        "team": "Ливерпуль",
+        "position": "ЦП"
+      },
+      {
+        "player": "Бёрн",
+        "team": "Ньюкасл",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Тюрам",
+        "team": "Ньюкасл",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Прёмель",
+        "team": "Ньюкасл",
+        "position": "ЦП"
+      },
+      {
+        "player": "Кунья",
+        "team": "Ньюкасл",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Ливраменто",
+        "team": "Ньюкасл",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Тонали",
+        "team": "Ньюкасл",
+        "position": "ЦП"
+      },
+      {
+        "player": "Буну",
+        "team": "Ньюкасл",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Трипье",
+        "team": "Ньюкасл",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Исак",
+        "team": "Ньюкасл",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Ботман",
+        "team": "Ньюкасл",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Силва",
+        "team": "Ньюкасл",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Шар",
+        "team": "Ньюкасл",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Уиллок",
+        "team": "Ньюкасл",
+        "position": "ЦП"
+      },
+      {
+        "player": "Перейра",
+        "team": "Ньюкасл",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Аит-Нури",
+        "team": "Ньюкасл",
+        "position": "ЛЗ"
+      }
+    ],
+    "source": "ratings",
+    "home_score": 3,
+    "away_score": 1,
+    "league_code": "eng"
+  },
+  {
+    "season": 3,
+    "day": 1,
+    "home": "Рома",
+    "away": "Интер",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Тадич",
+        "team": "Рома",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Гризманн",
+        "team": "Рома",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Гнабри",
+        "team": "Рома",
+        "position": "ПФА"
+      },
+      {
+        "player": "Манчини",
+        "team": "Рома",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Ван Дейк",
+        "team": "Рома",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Санчес",
+        "team": "Рома",
+        "position": "ЦП"
+      },
+      {
+        "player": "Шаиби",
+        "team": "Рома",
+        "position": "ЛП"
+      },
+      {
+        "player": "Пеллегрини",
+        "team": "Рома",
+        "position": "ЦП"
+      },
+      {
+        "player": "Азмун",
+        "team": "Рома",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Патрисио",
+        "team": "Рома",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Кристанте",
+        "team": "Рома",
+        "position": "ЦП"
+      },
+      {
+        "player": "Отаменди",
+        "team": "Рома",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Спиназолла",
+        "team": "Рома",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Карсдорп",
+        "team": "Рома",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Залевски",
+        "team": "Рома",
+        "position": "ПП"
+      },
+      {
+        "player": "Мане",
+        "team": "Интер",
+        "position": "ЛП"
+      },
+      {
+        "player": "Мартинез",
+        "team": "Интер",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Зоммер",
+        "team": "Интер",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Барелла",
+        "team": "Интер",
+        "position": "ЦП"
+      },
+      {
+        "player": "Берарди",
+        "team": "Интер",
+        "position": "ПП"
+      },
+      {
+        "player": "Чалханоглу",
+        "team": "Интер",
+        "position": "ЦП"
+      },
+      {
+        "player": "Арнаутович",
+        "team": "Интер",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Бастони",
+        "team": "Интер",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Мхитарян",
+        "team": "Интер",
+        "position": "ЛП"
+      },
+      {
+        "player": "Димарко",
+        "team": "Интер",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Кулибали",
+        "team": "Интер",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Думфрис",
+        "team": "Интер",
+        "position": "ПЗ"
+      }
+    ],
+    "source": "ratings",
+    "home_score": 1,
+    "away_score": 3,
+    "league_code": "ita"
+  },
+  {
+    "season": 3,
+    "day": 1,
+    "home": "Ювентус",
+    "away": "Рома",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Инасиу",
+        "team": "Ювентус",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Бремер",
+        "team": "Ювентус",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Костич",
+        "team": "Ювентус",
+        "position": "ПФА"
+      },
+      {
+        "player": "Кьеза",
+        "team": "Ювентус",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Чесны",
+        "team": "Ювентус",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Влашич",
+        "team": "Ювентус",
+        "position": "ЦП"
+      },
+      {
+        "player": "Альба",
+        "team": "Ювентус",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Фаджиоли",
+        "team": "Ювентус",
+        "position": "ЦП"
+      },
+      {
+        "player": "Смолов",
+        "team": "Ювентус",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Коуто",
+        "team": "Ювентус",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Гризманн",
+        "team": "Рома",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Ауар",
+        "team": "Рома",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Ндика",
+        "team": "Рома",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Гнабри",
+        "team": "Рома",
+        "position": "ПФА"
+      },
+      {
+        "player": "Пеллегрини",
+        "team": "Рома",
+        "position": "ЦП"
+      },
+      {
+        "player": "Патрисио",
+        "team": "Рома",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Кристанте",
+        "team": "Рома",
+        "position": "ЦП"
+      },
+      {
+        "player": "Отаменди",
+        "team": "Рома",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Спиназолла",
+        "team": "Рома",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Карсдорп",
+        "team": "Рома",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Залевски",
+        "team": "Рома",
+        "position": "ПП"
+      }
+    ],
+    "source": "ratings",
+    "home_score": 3,
+    "away_score": 2,
+    "league_code": "ita"
+  },
+  {
+    "season": 3,
+    "day": 1,
+    "home": "Наполи",
+    "away": "Лацио",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Элмас",
+        "team": "Наполи",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Бускетс",
+        "team": "Наполи",
+        "position": "ЦОП"
+      },
+      {
+        "player": "Карлос",
+        "team": "Наполи",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Осимен",
+        "team": "Наполи",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Квара",
+        "team": "Наполи",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Ди Лоренцо",
+        "team": "Наполи",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Мерет",
+        "team": "Наполи",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Сака",
+        "team": "Наполи",
+        "position": "ПФА"
+      },
+      {
+        "player": "Лоботка",
+        "team": "Наполи",
+        "position": "ЦП"
+      },
+      {
+        "player": "Люка Эрнандез",
+        "team": "Наполи",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Невеш",
+        "team": "Наполи",
+        "position": "ЦОП"
+      },
+      {
+        "player": "Ангисса",
+        "team": "Наполи",
+        "position": "ЦОП"
+      },
+      {
+        "player": "Романьоли",
+        "team": "Наполи",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Рахмани",
+        "team": "Наполи",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Тель",
+        "team": "Лацио",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Пеллегрини",
+        "team": "Лацио",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Касале",
+        "team": "Лацио",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Проведель",
+        "team": "Лацио",
+        "position": "ВРТ"
+      },
+      {
+        "player": "Гендузи",
+        "team": "Лацио",
+        "position": "ЦП"
+      },
+      {
+        "player": "Камада",
+        "team": "Лацио",
+        "position": "ЦАП"
+      },
+      {
+        "player": "Торрес",
+        "team": "Лацио",
+        "position": "ЛФА"
+      },
+      {
+        "player": "Марушич",
+        "team": "Лацио",
+        "position": "ЛЗ"
+      },
+      {
+        "player": "Дансо",
+        "team": "Лацио",
+        "position": "ЦЗ"
+      },
+      {
+        "player": "Иммобиле",
+        "team": "Лацио",
+        "position": "ФРВ"
+      },
+      {
+        "player": "Лаззари",
+        "team": "Лацио",
+        "position": "ПЗ"
+      },
+      {
+        "player": "Фраттези",
+        "team": "Лацио",
+        "position": "ЦП"
+      },
+      {
+        "player": "Бейси",
+        "team": "Лацио",
+        "position": "ЦЗ"
+      }
+    ],
+    "source": "ratings",
+    "home_score": 3,
+    "away_score": 0,
+    "league_code": "ita"
+  }
+]

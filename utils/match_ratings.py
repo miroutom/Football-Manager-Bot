@@ -115,6 +115,49 @@ def set_side_ratings(match_key: str, side: str, ratings: dict[str, str]) -> None
     clean = {str(k): str(v) if v else "" for k, v in ratings.items()}
     ent[side] = clean
     _save_store(st)
+    try:
+        _sync_lineup_from_rating_entry(str(match_key), ent)
+    except Exception:
+        pass
+
+
+def _sync_lineup_from_rating_entry(match_key: str, ent: dict) -> None:
+    """Пересобрать lineup-лог матча из обеих сторон оценок."""
+    from utils.match_lineup_log import record_match_lineup
+
+    rec = find_journal_record_by_rating_key(match_key)
+    if not rec:
+        return
+    home = str(rec.get("home") or "").strip()
+    away = str(rec.get("away") or "").strip()
+    players: list[dict] = []
+    for side, team in (("home", home), ("away", away)):
+        side_d = ent.get(side) or {}
+        if not isinstance(side_d, dict):
+            continue
+        for key, val in side_d.items():
+            if not val:
+                continue
+            parts = str(key).split("|", 1)
+            name = parts[0].strip().title() if parts else str(key)
+            pos = parts[1].strip().upper() if len(parts) > 1 else ""
+            players.append({"player": name, "team": team, "position": pos})
+    if not players:
+        return
+    lg = str(rec.get("league") or "").strip().lower()
+    tourn = "cl" if lg == "cl" else "league"
+    record_match_lineup(
+        players=players,
+        home=home,
+        away=away,
+        tournament=tourn,
+        day=rec.get("day"),
+        home_score=rec.get("home_score"),
+        away_score=rec.get("away_score"),
+        league_code=lg or None,
+        cl_phase=rec.get("cl_phase"),
+        source="ratings",
+    )
 
 
 def player_row_key(name: str, pos: str) -> str:
