@@ -192,6 +192,7 @@ async def _send_png_report(
         blobs,
         caption,
         filename_prefix=filename_prefix,
+        parse_mode="HTML",
     )
 
 
