@@ -47,6 +47,13 @@ class AddOnlyStats(StatesGroup):
     browsing = State()
 
 
+class CorrectScoreEnter(StatesGroup):
+    """Исправление счёта уже записанного матча из журнала."""
+    pick_match = State()
+    awaiting_score = State()
+    confirm = State()
+
+
 class ClPenalties(StatesGroup):
     """ЛЧ нокаут: ответный матч, ничья по сумме двух матчей — ввод серии пенальти."""
     waiting = State()

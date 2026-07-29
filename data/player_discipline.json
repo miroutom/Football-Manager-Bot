@@ -2571,6 +2571,26 @@
       "league_code": "ita",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "лева|барселона|esp|league",
+      "name": "Лева",
+      "name_norm": "лева",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "лориент|реал сосьедад|esp|league",
+      "name": "Лориент",
+      "name_norm": "лориент",
+      "team": "Реал Сосьедад",
+      "team_norm": "реал сосьедад",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [

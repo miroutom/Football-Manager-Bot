@@ -97,9 +97,13 @@ def main_menu_inline_kb(
                     text="📋 Из календаря",
                     callback_data="play:schedule",
                 ),
-                InlineKeyboardButton(text="📊 Таблица", callback_data="menu:table"),
+                InlineKeyboardButton(
+                    text="🔧 Исправить счёт",
+                    callback_data="play:fix_score",
+                ),
             ],
             [
+                InlineKeyboardButton(text="📊 Таблица", callback_data="menu:table"),
                 InlineKeyboardButton(text="📜 История", callback_data="menu:history"),
             ],
             [

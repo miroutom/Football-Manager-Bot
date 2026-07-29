@@ -3719,5 +3719,60 @@
     "home_score": 3,
     "away_score": 1,
     "league_code": "esp"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Реал Сосьедад",
+    "away": "Барселона",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Палазон",
+        "team": "Барселона",
+        "position": "ЛФА",
+        "goals": 2,
+        "assists": 1
+      },
+      {
+        "player": "Лева",
+        "team": "Барселона",
+        "position": "ФРВ",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Де Йонг",
+        "team": "Барселона",
+        "position": "ЦП",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Педри",
+        "team": "Барселона",
+        "position": "ЦАП",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Хулиан Альварез",
+        "team": "Реал Сосьедад",
+        "position": "ФРВ",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Сангаре",
+        "team": "Реал Сосьедад",
+        "position": "ЦОП",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-29T16:12:52Z",
+    "home_score": 1,
+    "away_score": 3,
+    "league_code": "esp"
   }
 ]

@@ -30,6 +30,7 @@ from bot.menu_content import deliver_help_screen, deliver_main_menu_refresh
 from bot.states import (
     AddOnlyStats,
     ClPenalties,
+    CorrectScoreEnter,
     MatchEnter,
     MatchPerfRatingEnter,
     PostMatch,
@@ -42,6 +43,7 @@ logger = logging.getLogger(__name__)
 match_router = Router()
 
 _SCORE_RE: Final = re.compile(r"^\s*(\d+)\s+(\d+)\s*$")
+_SCORE_FLEX_RE: Final = re.compile(r"^\s*(\d+)\s*[:\-\s]\s*(\d+)\s*$")
 
 # Не перехватывать /help и прочие команды как счёт или имя команды
 _TEXT_NOT_CMD: Final = F.text & ~F.text.startswith("/")
@@ -1514,6 +1516,7 @@ async def cmd_cancel_match_fsm(message: Message, state: FSMContext) -> None:
             "PostMatch",
             "AddOnlyStats",
             "ClPenalties",
+            "CorrectScoreEnter",
             "AwardEnter",
             "MonthMotmEnter",
             "ClDrawEnter",
@@ -3118,4 +3121,212 @@ async def cb_ason_pick(callback: CallbackQuery, state: FSMContext) -> None:
 async def cmd_stats_match(message: Message, state: FSMContext) -> None:
     await _send_ason_stats_intro(message, state)
 
+
+_FIX_SCORE_LIMIT = 20
+
+
+def _fix_score_label(rec: dict, idx: int) -> str:
+    home = str(rec.get("home") or "")
+    away = str(rec.get("away") or "")
+    hs = rec.get("home_score")
+    aws = rec.get("away_score")
+    lg = str(rec.get("league") or "")
+    day = rec.get("day")
+    phase = rec.get("cl_phase")
+    title = _league_title(lg)
+    extra = f" д{day}" if day is not None else ""
+    if lg == "cl" and phase:
+        extra += f"/{phase}"
+    return f"{idx + 1}. {home} {hs}:{aws} {away} ({title}{extra})"
+
+
+def _fix_score_list_kb(rows: list[dict]) -> InlineKeyboardMarkup:
+    buttons: list[list[InlineKeyboardButton]] = []
+    for i, rec in enumerate(rows):
+        label = _fix_score_label(rec, i)
+        if len(label) > 64:
+            label = label[:61] + "…"
+        buttons.append(
+            [InlineKeyboardButton(text=label, callback_data=f"fixsc:pick:{i}")]
+        )
+    buttons.append(
+        [InlineKeyboardButton(text="❌ Отмена", callback_data="fixsc:cancel")]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def _start_fix_score_flow(message: Message, state: FSMContext) -> None:
+    from utils.correct_match_score import list_recent_scored_matches
+
+    rows = await asyncio.to_thread(list_recent_scored_matches, limit=_FIX_SCORE_LIMIT)
+    if not rows:
+        await message.answer("В журнале нет сыгранных матчей со счётом.")
+        return
+    await state.clear()
+    await state.set_state(CorrectScoreEnter.pick_match)
+    await state.update_data(fixsc_rows=rows)
+    await message.answer(
+        "Выбери матч для исправления счёта "
+        f"(последние {len(rows)} из журнала).\n"
+        "Статистика игроков не откатывается — после правки можно внести стату.\n"
+        "/cancel — отмена.",
+        reply_markup=_fix_score_list_kb(rows),
+    )
+
+
+@match_router.callback_query(F.data == "play:fix_score")
+async def cb_fix_score_start(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if callback.message:
+        await _start_fix_score_flow(callback.message, state)
+
+
+@match_router.message(Command("fix_score"))
+async def cmd_fix_score(message: Message, state: FSMContext) -> None:
+    await _start_fix_score_flow(message, state)
+
+
+@match_router.callback_query(F.data == "fixsc:cancel")
+async def cb_fix_score_cancel(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.clear()
+    if callback.message:
+        await callback.message.answer("Исправление счёта отменено.")
+
+
+@match_router.callback_query(F.data.startswith("fixsc:pick:"))
+async def cb_fix_score_pick(callback: CallbackQuery, state: FSMContext) -> None:
+    if await state.get_state() != CorrectScoreEnter.pick_match:
+        await callback.answer("Сначала открой «Исправить счёт».", show_alert=True)
+        return
+    try:
+        idx = int(callback.data.rsplit(":", 1)[-1])
+    except ValueError:
+        await callback.answer("Неверный выбор.", show_alert=True)
+        return
+    data = await state.get_data()
+    rows = data.get("fixsc_rows") or []
+    if idx < 0 or idx >= len(rows):
+        await callback.answer("Матч устарел — открой список заново.", show_alert=True)
+        return
+    rec = rows[idx]
+    await callback.answer()
+    await state.set_state(CorrectScoreEnter.awaiting_score)
+    await state.update_data(
+        fixsc_home=str(rec.get("home") or ""),
+        fixsc_away=str(rec.get("away") or ""),
+        fixsc_league=str(rec.get("league") or ""),
+        fixsc_day=rec.get("day"),
+        fixsc_cl_phase=rec.get("cl_phase"),
+        fixsc_old_hs=int(rec.get("home_score")),
+        fixsc_old_as=int(rec.get("away_score")),
+    )
+    home = html_escape(str(rec.get("home") or ""))
+    away = html_escape(str(rec.get("away") or ""))
+    hs = rec.get("home_score")
+    aws = rec.get("away_score")
+    await callback.message.answer(
+        f"Сейчас: <b>{home} {hs}:{aws} {away}</b>\n"
+        f"Лига: {_league_title(str(rec.get('league') or ''))}"
+        + (f", день {rec.get('day')}" if rec.get("day") is not None else "")
+        + "\n\n"
+        "Введи <b>новый счёт</b> хозяев и гостей, например "
+        "<code>1 3</code> или <code>1:3</code>.\n"
+        "/cancel — отмена.",
+        parse_mode="HTML",
+    )
+
+
+@match_router.message(CorrectScoreEnter.awaiting_score, _TEXT_NOT_CMD)
+async def msg_fix_score_enter(message: Message, state: FSMContext) -> None:
+    text = (message.text or "").strip()
+    m = _SCORE_FLEX_RE.match(text) or _SCORE_RE.match(text)
+    if not m:
+        await message.answer("Нужен счёт вида <code>1 3</code> или <code>1:3</code>.", parse_mode="HTML")
+        return
+    new_hs, new_as = int(m.group(1)), int(m.group(2))
+    data = await state.get_data()
+    home = data.get("fixsc_home")
+    away = data.get("fixsc_away")
+    old_hs = data.get("fixsc_old_hs")
+    old_as = data.get("fixsc_old_as")
+    if home is None or away is None or old_hs is None or old_as is None:
+        await state.clear()
+        await message.answer("Сессия устарела. Открой «Исправить счёт» снова.")
+        return
+    if (new_hs, new_as) == (old_hs, old_as):
+        await message.answer("Это тот же счёт. Введи другой или /cancel.")
+        return
+    await state.update_data(fixsc_new_hs=new_hs, fixsc_new_as=new_as)
+    await state.set_state(CorrectScoreEnter.confirm)
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Подтвердить", callback_data="fixsc:ok"),
+                InlineKeyboardButton(text="❌ Отмена", callback_data="fixsc:cancel"),
+            ]
+        ]
+    )
+    await message.answer(
+        f"<b>{html_escape(str(home))} {old_hs}:{old_as} → {new_hs}:{new_as} "
+        f"{html_escape(str(away))}</b>\n"
+        "Таблица и журнал будут пересчитаны. Стата игроков не трогается.\n"
+        "Подтвердить?",
+        reply_markup=kb,
+        parse_mode="HTML",
+    )
+
+
+@match_router.callback_query(F.data == "fixsc:ok")
+async def cb_fix_score_confirm(callback: CallbackQuery, state: FSMContext) -> None:
+    if await state.get_state() != CorrectScoreEnter.confirm:
+        await callback.answer("Сначала введи новый счёт.", show_alert=True)
+        return
+    data = await state.get_data()
+    home = data.get("fixsc_home")
+    away = data.get("fixsc_away")
+    league = data.get("fixsc_league")
+    new_hs = data.get("fixsc_new_hs")
+    new_as = data.get("fixsc_new_as")
+    old_hs = data.get("fixsc_old_hs")
+    old_as = data.get("fixsc_old_as")
+    if None in (home, away, league, new_hs, new_as, old_hs, old_as):
+        await callback.answer("Сессия устарела.", show_alert=True)
+        await state.clear()
+        return
+    await callback.answer()
+    from utils.correct_match_score import correct_match_score
+
+    ok, msg = await asyncio.to_thread(
+        correct_match_score,
+        str(home),
+        str(away),
+        str(league),
+        int(new_hs),
+        int(new_as),
+        day=data.get("fixsc_day"),
+        cl_phase=data.get("fixsc_cl_phase"),
+        expected_old=(int(old_hs), int(old_as)),
+    )
+    if not ok:
+        await state.clear()
+        if callback.message:
+            await callback.message.answer(f"✗ {msg}")
+        return
+
+    day = data.get("fixsc_day")
+    day_i = int(day) if day is not None else None
+    if callback.message:
+        await _finish_match_and_offer_stats(
+            callback.message,
+            state,
+            ok=True,
+            log=msg,
+            home=str(home),
+            away=str(away),
+            hs=int(new_hs),
+            aws=int(new_as),
+            league_code=str(league),
+            schedule_day=day_i,
+        )
 
