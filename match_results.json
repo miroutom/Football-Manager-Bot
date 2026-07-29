@@ -3223,6 +3223,33 @@
       "day": 7,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Фиорентина",
+      "away": "Рома",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Жирона",
+      "league": "esp",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал Сосьедад",
+      "away": "Барселона",
+      "league": "esp",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 7,
+      "entry_type": "play"
     }
   ]
 }

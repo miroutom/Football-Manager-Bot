@@ -3637,5 +3637,87 @@
     "away_score": 8,
     "league_code": "cl",
     "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Фиорентина",
+    "away": "Рома",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Бергвис",
+        "team": "Рома",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Азмун",
+        "team": "Рома",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Пеллегрини",
+        "team": "Рома",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-29T16:03:16Z",
+    "home_score": 0,
+    "away_score": 2,
+    "league_code": "ita"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Реал",
+    "away": "Жирона",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Кроос",
+        "team": "Реал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Осимен",
+        "team": "Реал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Родриго",
+        "team": "Реал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Дембеле",
+        "team": "Жирона",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Эриксен",
+        "team": "Реал",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-29T16:04:48Z",
+    "home_score": 3,
+    "away_score": 1,
+    "league_code": "esp"
   }
 ]

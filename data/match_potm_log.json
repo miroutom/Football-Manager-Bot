@@ -960,5 +960,33 @@
     "away_score": 8,
     "league_code": "cl",
     "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Фиорентина",
+    "away": "Рома",
+    "tournament": "league",
+    "player": "Азмун",
+    "team": "Рома",
+    "position": "ФРВ",
+    "recorded_at": "2026-07-29T16:03:16Z",
+    "home_score": 0,
+    "away_score": 2,
+    "league_code": "ita"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Реал",
+    "away": "Жирона",
+    "tournament": "league",
+    "player": "Родриго",
+    "team": "Реал",
+    "position": "ЛФА",
+    "recorded_at": "2026-07-29T16:04:48Z",
+    "home_score": 3,
+    "away_score": 1,
+    "league_code": "esp"
   }
 ]

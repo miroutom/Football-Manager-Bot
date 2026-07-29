@@ -298,6 +298,17 @@
       "scope": "league",
       "matches_left": 3,
       "unavailable_from_round": 12
+    },
+    {
+      "key": "начо|реал|esp|league",
+      "name": "Начо",
+      "name_norm": "начо",
+      "team": "Реал",
+      "team_norm": "реал",
+      "league_code": "esp",
+      "scope": "league",
+      "matches_left": 1,
+      "unavailable_from_round": 12
     }
   ],
   "yellow_cycle": [
@@ -2549,6 +2560,16 @@
       "team_norm": "мю",
       "league_code": "cl",
       "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "гонзалез|фиорентина|ita|league",
+      "name": "Гонзалез",
+      "name_norm": "гонзалез",
+      "team": "Фиорентина",
+      "team_norm": "фиорентина",
+      "league_code": "ita",
+      "scope": "league",
       "count": 1
     }
   ],
