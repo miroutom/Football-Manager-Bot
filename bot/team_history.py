@@ -1140,7 +1140,7 @@ def defense_rating_caption() -> str:
 
 @dataclass
 class PlayerWinInfluence:
-    """Win-rate клуба в матчах, где игрок был в составе (лог/оценки)."""
+    """Оценка: клубные матчи, где игрок «считается» в составе."""
 
     player: str
     team: str
@@ -1149,6 +1149,9 @@ class PlayerWinInfluence:
     wins: int
     draws: int
     losses: int
+    missed_injury: int = 0
+    status: str = ""
+    mode: str = "heuristic"  # heuristic | lineup
 
     @property
     def win_pct(self) -> float:
@@ -1157,58 +1160,236 @@ class PlayerWinInfluence:
         return 100.0 * self.wins / self.played
 
 
+def _roster_by_season_for_club(team: str) -> dict[int, dict[str, dict[str, str]]]:
+    """
+    ``{season: {name_norm: {name, position, status}}}`` по архивам + активный сезон.
+    Игрок «в клубе» в сезоне, если есть в league.db или champions_league.db.
+    """
+    from utils.cumulative_db import list_season_archives_with_db
+
+    want = _norm(team)
+    seasons = set(list_season_archives_with_db())
+    try:
+        seasons.add(int(season_paths.get_active_season()))
+    except Exception:
+        pass
+    out: dict[int, dict[str, dict[str, str]]] = {}
+    for sn in sorted(seasons):
+        bucket: dict[str, dict[str, str]] = {}
+        base = os.path.join(season_paths.PROJECT_ROOT, "db", f"season_{int(sn)}")
+        for dbn in ("league.db", "champions_league.db"):
+            path = os.path.join(base, dbn)
+            if not os.path.isfile(path):
+                continue
+            conn = sqlite3.connect(path)
+            try:
+                for tbl in ("forwards", "midfielders", "defenders", "goalkeepers"):
+                    try:
+                        cur = conn.execute(
+                            f"SELECT name, position, COALESCE(status, ''), team "
+                            f"FROM {tbl} WHERE team IS NOT NULL AND trim(team) != ''"
+                        )
+                    except sqlite3.OperationalError:
+                        continue
+                    for name, pos, status, tm in cur:
+                        if _norm(str(tm or "")) != want:
+                            continue
+                        nm = (name or "").strip()
+                        if not nm:
+                            continue
+                        key = nm.casefold()
+                        st = (status or "").strip().lower()
+                        prev = bucket.get(key)
+                        if prev is None:
+                            bucket[key] = {
+                                "name": nm,
+                                "position": (pos or "").strip().upper(),
+                                "status": st,
+                            }
+                        else:
+                            # start важнее bench/reserve
+                            if st == "start" or (
+                                st and prev.get("status") not in ("start",)
+                            ):
+                                if st == "start" or not prev.get("status"):
+                                    prev["status"] = st
+                            if pos and not prev.get("position"):
+                                prev["position"] = (pos or "").strip().upper()
+            finally:
+                conn.close()
+        if bucket:
+            out[int(sn)] = bucket
+    return out
+
+
+def _injuries_for_player_name(name: str) -> list[dict[str, Any]]:
+    from utils.player_discipline import _load, _norm as disc_norm
+
+    want = disc_norm(name)
+    rows = []
+    for inj in (_load().get("injuries") or []):
+        nn = str(inj.get("name_norm") or disc_norm(str(inj.get("name") or ""))).strip()
+        if nn == want:
+            rows.append(inj)
+    return rows
+
+
 def club_player_win_influence(
     team: str,
     *,
-    min_played: int = 1,
+    min_played: int = 10,
     limit: int = 25,
+    starters_only: bool = True,
 ) -> list[PlayerWinInfluence]:
     """
-    «Эффект Родри»: с кем клуб чаще побеждает (по зафиксированным составам).
+    «Эффект Родри» — эвристика по карьере в клубе:
 
-    Источники присутствия: ``match_lineup_log`` + оценки матчей
-    (непустой рейтинг = играл).
+    - берём сезоны, где игрок был в заявке клуба (архивы БД);
+    - если ``starters_only`` — только status=start (в любом из этих сезонов
+      или сейчас);
+    - в каждом матче клуба сезона игрок «играл», если не был в травме
+      (``player_discipline`` + месяц ``day`` журнала);
+    - явный лог состава / оценок, если есть на матч, перекрывает эвристику.
+
+    Так Чалханоглу в Интере: почти все матчи минус 3 месяца травмы в с2.
     """
-    from utils.match_lineup_log import iter_player_match_presence
+    from utils.player_discipline import (
+        _injury_blocks_at_month,
+        get_calendar_month,
+    )
 
-    want = _norm(team)
     display_team = (team or "").strip()
-    agg: dict[str, dict[str, Any]] = {}
+    want = _norm(display_team)
+    if not want:
+        return []
 
-    for row in iter_player_match_presence(team=display_team):
-        if _norm(str(row.get("team") or "")) != want:
+    roster_by_sn = _roster_by_season_for_club(display_team)
+    if not roster_by_sn:
+        return []
+
+    # кандидаты: name_norm -> meta
+    candidates: dict[str, dict[str, Any]] = {}
+    for sn, bucket in roster_by_sn.items():
+        for key, meta in bucket.items():
+            slot = candidates.setdefault(
+                key,
+                {
+                    "name": meta["name"],
+                    "position": meta.get("position") or "",
+                    "statuses": set(),
+                    "seasons": set(),
+                },
+            )
+            slot["seasons"].add(int(sn))
+            st = (meta.get("status") or "").strip().lower()
+            if st:
+                slot["statuses"].add(st)
+            if meta.get("position") and not slot["position"]:
+                slot["position"] = meta["position"]
+
+    if starters_only:
+        candidates = {
+            k: v
+            for k, v in candidates.items()
+            if "start" in (v.get("statuses") or set())
+        }
+
+    # явные присутствия из lineup-лога: (season, home, away, day) -> {name_norm}
+    explicit: dict[tuple, set[str]] = {}
+    try:
+        from utils.match_lineup_log import _load as load_lineups
+
+        for row in load_lineups():
+            home = str(row.get("home") or "")
+            away = str(row.get("away") or "")
+            if _norm(home) != want and _norm(away) != want:
+                continue
+            key = (
+                int(row.get("season") or 0),
+                _norm(home),
+                _norm(away),
+                int(row["day"]) if row.get("day") is not None else -1,
+            )
+            names = explicit.setdefault(key, set())
+            for pl in row.get("players") or []:
+                if _norm(str(pl.get("team") or "")) != want:
+                    continue
+                names.add(str(pl.get("player") or "").strip().casefold())
+    except Exception:
+        explicit = {}
+
+    # injuries cache
+    inj_cache: dict[str, list[dict[str, Any]]] = {}
+
+    agg: dict[str, dict[str, Any]] = {
+        k: {
+            "player": v["name"],
+            "position": v.get("position") or "",
+            "status": "start" if "start" in (v.get("statuses") or set()) else "",
+            "w": 0,
+            "d": 0,
+            "l": 0,
+            "n": 0,
+            "missed": 0,
+            "mode": "heuristic",
+        }
+        for k, v in candidates.items()
+    }
+
+    for m in iter_all_match_records():
+        home = str(m.get("home") or "")
+        away = str(m.get("away") or "")
+        if _norm(home) != want and _norm(away) != want:
             continue
-        pname = str(row.get("player") or "").strip()
-        if not pname:
+        sn = int(m.get("_season") or 0)
+        roster = roster_by_sn.get(sn) or {}
+        if not roster:
             continue
-        key = pname.casefold()
-        slot = agg.setdefault(
-            key,
-            {
-                "player": pname,
-                "position": str(row.get("position") or "").strip().upper(),
-                "w": 0,
-                "d": 0,
-                "l": 0,
-                "n": 0,
-            },
-        )
-        res = str(row.get("result") or "D")
-        slot["n"] += 1
-        if res == "W":
-            slot["w"] += 1
-        elif res == "L":
-            slot["l"] += 1
-        else:
-            slot["d"] += 1
-        if row.get("position") and not slot["position"]:
-            slot["position"] = str(row.get("position") or "").strip().upper()
+        day = m.get("day")
+        month = get_calendar_month(int(day) if day is not None else None)
+        res, _pts, _gf, _ga = match_result_for_team(m, display_team)
+        ex_key = (sn, _norm(home), _norm(away), int(day) if day is not None else -1)
+        ex_names = explicit.get(ex_key)
+
+        for key, meta in roster.items():
+            if key not in agg:
+                continue
+            if starters_only and (meta.get("status") or "").strip().lower() != "start":
+                continue
+            slot = agg[key]
+            # явный состав на матч
+            if ex_names is not None:
+                if key not in ex_names:
+                    continue
+                slot["lineup_n"] = int(slot.get("lineup_n") or 0) + 1
+            else:
+                inj_list = inj_cache.get(key)
+                if inj_list is None:
+                    inj_list = _injuries_for_player_name(str(meta.get("name") or ""))
+                    inj_cache[key] = inj_list
+                blocked = any(
+                    _injury_blocks_at_month(inj, month, current_season=sn)
+                    for inj in inj_list
+                )
+                if blocked:
+                    slot["missed"] += 1
+                    continue
+
+            slot["n"] += 1
+            if res == "W":
+                slot["w"] += 1
+            elif res == "L":
+                slot["l"] += 1
+            else:
+                slot["d"] += 1
 
     out: list[PlayerWinInfluence] = []
     for slot in agg.values():
         n = int(slot["n"])
         if n < int(min_played):
             continue
+        lineup_n = int(slot.get("lineup_n") or 0)
+        mode = "lineup" if lineup_n >= max(1, n // 2) else "heuristic"
         out.append(
             PlayerWinInfluence(
                 player=str(slot["player"]),
@@ -1218,6 +1399,9 @@ def club_player_win_influence(
                 wins=int(slot["w"]),
                 draws=int(slot["d"]),
                 losses=int(slot["l"]),
+                missed_injury=int(slot["missed"]),
+                status=str(slot.get("status") or ""),
+                mode=mode,
             )
         )
     out.sort(

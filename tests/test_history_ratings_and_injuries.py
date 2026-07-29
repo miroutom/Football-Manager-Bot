@@ -30,3 +30,15 @@ def test_never_injured_report_has_header():
     text = format_never_injured_report_text(limit=10, min_matches=1)
     assert "НИ РАЗУ НЕ ТРАВМИРОВАЛИСЬ" in text
     assert "Игрок" in text
+
+
+def test_inter_calhanoglu_influence_heuristic():
+    from bot.team_history import club_player_win_influence
+
+    rows = club_player_win_influence("Интер", min_played=10, limit=40)
+    by_name = {r.player.casefold(): r for r in rows}
+    assert "чалханоглу" in by_name
+    c = by_name["чалханоглу"]
+    assert c.played >= 40
+    assert c.missed_injury >= 1
+    assert c.wins + c.draws + c.losses == c.played

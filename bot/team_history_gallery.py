@@ -1196,8 +1196,8 @@ def render_club_career_conceded_pages(*, page_size: int = 10) -> list[bytes]:
     return pages
 
 
-def render_club_player_influence_png(team: str, *, min_played: int = 1) -> bytes:
-    """Win% игроков клуба в матчах с зафиксированным составом."""
+def render_club_player_influence_png(team: str, *, min_played: int = 10) -> bytes:
+    """Win% стартовых игроков: матчи клуба минус травмы (эвристика)."""
     from bot.team_history import club_player_win_influence
 
     rows = club_player_win_influence(team, min_played=min_played, limit=25)
@@ -1208,18 +1208,17 @@ def render_club_player_influence_png(team: str, *, min_played: int = 1) -> bytes
     font_m = _pick_font(16)
 
     if not rows:
-        h = 260
+        h = 280
         im = _gradient_bg(h).convert("RGBA")
         draw = ImageDraw.Draw(im)
         y = _title(
             draw,
             f"Влияние · {team}",
-            f"Мин. {min_played} матча с составом",
+            f"Старт · матчи клуба − травмы · мин. {min_played}",
         )
         draw.text(
             (_PAD, y + 8),
-            "Пока мало данных: нужны оценки матчей или список «кто играл» в стате.\n"
-            "После новых матчей рейтинг заполнится.",
+            "Нет игроков status=start с достаточным числом матчей в заявке клуба.",
             font=font_m,
             fill=_DIM,
         )
@@ -1229,20 +1228,21 @@ def render_club_player_influence_png(team: str, *, min_played: int = 1) -> bytes
     head_h = 34
     n = len(rows)
     table_h = head_h + n * row_h + 12
-    h = 130 + table_h + 40
+    h = 140 + table_h + 40
     im = _gradient_bg(min(h, 3200)).convert("RGBA")
     draw = ImageDraw.Draw(im)
     y = _title(
         draw,
         f"Влияние · {team}",
-        f"Win% когда игрок в составе · мин. {min_played} матча",
+        f"Старт в заявке · все матчи клуба минус травмы · мин. {min_played}",
     )
 
     name_x = _PAD + 70
     cols_x = [
-        (_CANVAS_W - _PAD - 360, "В-Н-П"),
-        (_CANVAS_W - _PAD - 220, "Матч"),
-        (_CANVAS_W - _PAD - 100, "Win%"),
+        (_CANVAS_W - _PAD - 420, "В-Н-П"),
+        (_CANVAS_W - _PAD - 300, "Матч"),
+        (_CANVAS_W - _PAD - 200, "Травма"),
+        (_CANVAS_W - _PAD - 90, "Win%"),
     ]
 
     table_top = y
@@ -1301,10 +1301,11 @@ def render_club_player_influence_png(team: str, *, min_played: int = 1) -> bytes
         for cx, val in (
             (cols_x[0][0], wdl),
             (cols_x[1][0], str(row.played)),
-            (cols_x[2][0], f"{row.win_pct:.0f}%"),
+            (cols_x[2][0], str(row.missed_injury)),
+            (cols_x[3][0], f"{row.win_pct:.0f}%"),
         ):
             vw = draw.textbbox((0, 0), val, font=font_num)[2]
-            fill = _GOLD if cx == cols_x[2][0] else _TEXT
+            fill = _GOLD if cx == cols_x[3][0] else _TEXT
             draw.text((cx - vw // 2, top + 10), val, font=font_num, fill=fill)
         y += row_h
 
