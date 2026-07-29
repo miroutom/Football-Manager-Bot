@@ -74,15 +74,14 @@ def is_injury_line(text: str) -> bool:
 
 
 def injury_overall_penalty(months: int) -> int:
-    """Штраф к overall при **новой** травме по сроку N месяцев (см. ``_apply_injury``)."""
-    m = int(months)
-    if m <= 2:
-        return 0
-    if m < 7:
-        return -2
-    if m == 7:
-        return -4
-    return -7
+    """
+    Штраф к overall при **новой** травме по сроку N месяцев.
+
+    С сезона 3 (после зимнего ТО) отключён: рейтинги не режем из‑за травм.
+    Раньше: ≤2м → 0; 3–6м → −2; 7м → −4; ≥8м → −7.
+    """
+    _ = int(months)
+    return 0
 
 
 def extract_discipline_player_name(line: str) -> str | None:

@@ -1414,25 +1414,113 @@ async def cmd_journal(message: Message) -> None:
         await message.answer(f"Ошибка: {e}")
 
 
+def _ovr_debug_pick_team_keyboard(league_code: str) -> InlineKeyboardMarkup:
+    """Клуб для DEBUG OVR (только просмотр)."""
+    teams = teams_ordered_for_goalscorers(league_code)
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for idx, team in enumerate(teams):
+        row.append(
+            InlineKeyboardButton(
+                text=_club_btn_label(team),
+                callback_data=f"ovrdbgclub:{league_code}:{idx}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def _send_ovr_debug_club(message: Message, team: str) -> None:
+    from utils.ovr_debug_advice import advise_club_ovr, format_ovr_advice_report
+
+    rows = await asyncio.to_thread(advise_club_ovr, team, limit=16)
+    text = format_ovr_advice_report(team, rows)
+    await answer_report_photos(
+        message,
+        text,
+        f"DEBUG OVR · {team} (не применяем)",
+    )
+
+
 @router.message(Command("ovr_debug"))
 async def cmd_ovr_debug(message: Message) -> None:
     """DEBUG: предложения overall по клубу (ничего не пишет в БД)."""
     raw = (message.text or "").strip()
     parts = raw.split(maxsplit=1)
-    team = parts[1].strip() if len(parts) > 1 and parts[1].strip() else "Мю"
+    arg = parts[1].strip() if len(parts) > 1 and parts[1].strip() else ""
     try:
-        from utils.ovr_debug_advice import advise_club_ovr, format_ovr_advice_report
+        if not arg:
+            await message.answer(
+                "🔬 <b>DEBUG OVR</b> (только просмотр, в БД не пишем)\n\n"
+                "Выберите лигу → клуб, или:\n"
+                "• <code>/ovr_debug Мю</code> — один клуб\n"
+                "• <code>/ovr_debug все</code> — сводка по всем клубам (Δ≠0)",
+                parse_mode=ParseMode.HTML,
+                reply_markup=_league_keyboard("ovrdbglg"),
+            )
+            return
+        if arg.casefold() in {"все", "all", "*"}:
+            from utils.ovr_debug_advice import format_ovr_advice_summary_all_clubs
 
-        rows = await asyncio.to_thread(advise_club_ovr, team, limit=16)
-        text = format_ovr_advice_report(team, rows)
-        await answer_report_photos(
-            message,
-            text,
-            f"DEBUG OVR · {team} (не применяем)",
-        )
+            text = await asyncio.to_thread(format_ovr_advice_summary_all_clubs)
+            await answer_report_photos(
+                message,
+                text,
+                "DEBUG OVR · все клубы (не применяем)",
+            )
+            return
+        await _send_ovr_debug_club(message, arg)
     except Exception as e:
         logger.exception("ovr_debug")
         await message.answer(f"Ошибка: {e}")
+
+
+@router.callback_query(F.data.startswith("ovrdbglg:"))
+async def cb_ovr_debug_league(callback: CallbackQuery) -> None:
+    code = callback.data.split(":", 1)[1]
+    await callback.answer()
+    if callback.message is None:
+        return
+    try:
+        kb = _ovr_debug_pick_team_keyboard(code)
+    except Exception as e:
+        logger.exception("ovr_debug league kb")
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+    await callback.message.answer(
+        f"🔬 DEBUG OVR · {_league_title(code)}\nВыберите клуб (просмотр, без записи):",
+        reply_markup=kb,
+    )
+
+
+@router.callback_query(F.data.startswith("ovrdbgclub:"))
+async def cb_ovr_debug_club(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    _, code, idx_s = parts
+    try:
+        idx = int(idx_s)
+    except ValueError:
+        await callback.answer()
+        return
+    await callback.answer("Считаю…")
+    if callback.message is None:
+        return
+    try:
+        teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
+        if idx < 0 or idx >= len(teams):
+            await callback.message.answer("Клуб не найден.")
+            return
+        await _send_ovr_debug_club(callback.message, teams[idx])
+    except Exception as e:
+        logger.exception("ovr_debug club")
+        await callback.message.answer(f"Ошибка: {e}")
 
 
 @router.callback_query(F.data == "menu:schedule")

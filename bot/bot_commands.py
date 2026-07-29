@@ -32,6 +32,6 @@ async def setup_bot_commands(bot: Bot) -> None:
             BotCommand(command="next", description="Следующий матч по календарю"),
             BotCommand(command="skipped", description="Отложенные матчи (просмотр)"),
             BotCommand(command="journal", description="Журнал сыгранных матчей"),
-            BotCommand(command="ovr_debug", description="DEBUG: совет OVR по клубу (без записи)"),
+            BotCommand(command="ovr_debug", description="DEBUG: OVR по клубу / все (без записи)"),
         ],
     )

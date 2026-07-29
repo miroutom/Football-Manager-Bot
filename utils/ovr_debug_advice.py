@@ -558,3 +558,49 @@ def format_ovr_advice_report(team: str, rows: list[OvrAdviceRow] | None = None) 
             chunks.append(f"  {reason}")
         chunks.append("")
     return "\n".join(chunks).rstrip() + "\n"
+
+
+def format_ovr_advice_summary_all_clubs(
+    *,
+    limit_per_club: int = 14,
+    changes_only: bool = True,
+) -> str:
+    """Краткий обзор DEBUG OVR по всем клубам пула (только просмотр)."""
+    from utils.transfer_advice import all_league_teams
+
+    chunks = [
+        "── DEBUG OVR · все клубы ──",
+        "Только тест: в БД ничего не пишем. Ниже игроки с предлагаемым Δ≠0."
+        if changes_only
+        else "Только тест: в БД ничего не пишем.",
+        "",
+    ]
+    n_clubs = 0
+    n_chg = 0
+    for team in all_league_teams():
+        try:
+            rows = advise_club_ovr(team, limit=limit_per_club)
+        except Exception as e:
+            chunks.append(f"── {team} ── ошибка: {e}")
+            chunks.append("")
+            continue
+        show = [r for r in rows if (not changes_only) or r.delta != 0]
+        if not show:
+            continue
+        n_clubs += 1
+        chunks.append(f"── {team} ──")
+        for r in show:
+            n_chg += 1
+            if r.delta > 0:
+                tag = f"+{r.delta}"
+            elif r.delta < 0:
+                tag = str(r.delta)
+            else:
+                tag = "="
+            chunks.append(
+                f"  {r.name} · {r.position} · {r.status or '—'} · "
+                f"{r.current}→{r.suggested} [{tag}]"
+            )
+        chunks.append("")
+    chunks.append(f"Итого: клубов с правками {n_clubs}, строк {n_chg}.")
+    return "\n".join(chunks).rstrip() + "\n"
