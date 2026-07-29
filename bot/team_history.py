@@ -1140,7 +1140,7 @@ def defense_rating_caption() -> str:
 
 @dataclass
 class PlayerWinInfluence:
-    """Оценка: клубные матчи, где игрок «считается» в составе."""
+    """Оценка влияния игрока на результаты клуба."""
 
     player: str
     team: str
@@ -1152,12 +1152,164 @@ class PlayerWinInfluence:
     missed_injury: int = 0
     status: str = ""
     mode: str = "heuristic"  # heuristic | lineup
+    score: float = 0.0
+    goals: int = 0
+    assists: int = 0
+    clean_sheets: int = 0
+    missed_goals: int = 0  # пропущенные у вратаря (карьера в клубе)
 
     @property
     def win_pct(self) -> float:
         if self.played <= 0:
             return 0.0
         return 100.0 * self.wins / self.played
+
+
+_DEF_POS = frozenset({"ЦЗ", "ЛЦЗ", "ПЦЗ", "ЛЗ", "ПЗ", "ЛФЗ", "ПФЗ", "CB", "LB", "RB"})
+_GK_POS = frozenset({"ВРТ", "ВР", "GK"})
+
+
+def _club_player_career_stats(team: str) -> dict[str, dict[str, Any]]:
+    """Сумма статы игрока в клубе по архивам (лига+ЛЧ, все сезоны)."""
+    from utils.cumulative_db import list_season_archives_with_db
+
+    want = _norm(team)
+    seasons = set(list_season_archives_with_db())
+    try:
+        seasons.add(int(season_paths.get_active_season()))
+    except Exception:
+        pass
+    out: dict[str, dict[str, Any]] = {}
+    for sn in sorted(seasons):
+        base = os.path.join(season_paths.PROJECT_ROOT, "db", f"season_{int(sn)}")
+        for dbn in ("league.db", "champions_league.db"):
+            path = os.path.join(base, dbn)
+            if not os.path.isfile(path):
+                continue
+            conn = sqlite3.connect(path)
+            try:
+                specs = (
+                    ("forwards", False),
+                    ("midfielders", False),
+                    ("defenders", True),
+                    ("goalkeepers", True),
+                )
+                for tbl, is_def_gk in specs:
+                    try:
+                        if tbl == "goalkeepers":
+                            cur = conn.execute(
+                                "SELECT name, team, position, COALESCE(matches,0), "
+                                "0, 0, COALESCE(clean_sheets,0), COALESCE(missed_goals,0) "
+                                f"FROM {tbl}"
+                            )
+                        elif tbl == "defenders":
+                            cur = conn.execute(
+                                "SELECT name, team, position, COALESCE(matches,0), "
+                                "COALESCE(goals,0), COALESCE(assists,0), "
+                                "COALESCE(clean_sheets,0), 0 "
+                                f"FROM {tbl}"
+                            )
+                        else:
+                            cur = conn.execute(
+                                "SELECT name, team, position, COALESCE(matches,0), "
+                                "COALESCE(goals,0), COALESCE(assists,0), 0, 0 "
+                                f"FROM {tbl}"
+                            )
+                    except sqlite3.OperationalError:
+                        continue
+                    for name, tm, pos, m, g, a, cs, mg in cur:
+                        if _norm(str(tm or "")) != want:
+                            continue
+                        nm = (name or "").strip()
+                        if not nm:
+                            continue
+                        key = nm.casefold()
+                        slot = out.setdefault(
+                            key,
+                            {
+                                "name": nm,
+                                "position": (pos or "").strip().upper(),
+                                "matches": 0,
+                                "goals": 0,
+                                "assists": 0,
+                                "clean_sheets": 0,
+                                "missed_goals": 0,
+                            },
+                        )
+                        slot["matches"] += int(m or 0)
+                        slot["goals"] += int(g or 0)
+                        slot["assists"] += int(a or 0)
+                        slot["clean_sheets"] += int(cs or 0)
+                        slot["missed_goals"] += int(mg or 0)
+                        if pos and not slot["position"]:
+                            slot["position"] = (pos or "").strip().upper()
+            finally:
+                conn.close()
+    return out
+
+
+def _influence_stats_raw(pos: str, st: dict[str, Any]) -> float:
+    """Сырой вклад статы (чем выше — лучше). Масштаб примерно 0..~3."""
+    pos_u = (pos or "").strip().upper()
+    db_m = max(1, int(st.get("matches") or 0))
+    if pos_u in _GK_POS:
+        cs = float(st.get("clean_sheets") or 0)
+        mg = float(st.get("missed_goals") or 0)
+        # сухари полезны; пропущенные на матч — штраф
+        return (cs / db_m) * 2.0 - (mg / db_m) * 0.35
+    if pos_u in _DEF_POS:
+        cs = float(st.get("clean_sheets") or 0)
+        ga = float(st.get("goals") or 0) + float(st.get("assists") or 0)
+        return (cs / db_m) * 1.6 + (ga / db_m) * 0.4
+    ga = float(st.get("goals") or 0) + float(st.get("assists") or 0)
+    return (ga / db_m) * 1.2
+
+
+def _score_influence_rows(
+    rows: list[PlayerWinInfluence],
+    *,
+    team_win_rate: float,
+) -> None:
+    """
+    Балл влияния (in-place ``score``).
+
+    Win% сжимается к среднему клуба при малой выборке; сильно весим объём
+    матчей и доступность (меньше травм); стата — небольшой бонус (≤ ~8%).
+    """
+    if not rows:
+        return
+    prior = 20.0
+    twr = max(0.0, min(1.0, float(team_win_rate)))
+    max_played = max(int(r.played) for r in rows) or 1
+
+    raw_stats = [_influence_stats_raw(r.position, {
+        "matches": max(r.played, 1),
+        "goals": r.goals,
+        "assists": r.assists,
+        "clean_sheets": r.clean_sheets,
+        "missed_goals": r.missed_goals,
+    }) for r in rows]
+    # для норм статы используем карьерные матчи из БД если есть — уже в raw
+    s_lo, s_hi = min(raw_stats), max(raw_stats)
+    s_span = (s_hi - s_lo) if s_hi > s_lo else 1.0
+
+    for r, raw_s in zip(rows, raw_stats):
+        n = float(r.played)
+        adj_wr = (float(r.wins) + prior * twr) / (n + prior)
+        # объём: 21 матч << 67
+        volume = n / (n + 28.0)
+        volume *= min(1.0, n / max(25.0, 0.45 * max_played))
+        avail_den = n + float(r.missed_injury)
+        durability = n / avail_den if avail_den > 0 else 0.0
+        stats_n = (raw_s - s_lo) / s_span  # 0..1
+
+        score = 100.0 * (
+            0.50 * adj_wr
+            + 0.28 * volume
+            + 0.14 * durability
+            + 0.08 * max(0.0, stats_n)
+        )
+        r.score = round(score, 2)
 
 
 def _roster_by_season_for_club(team: str) -> dict[int, dict[str, dict[str, str]]]:
@@ -1252,6 +1404,9 @@ def club_player_win_influence(
     - явный лог состава / оценок, если есть на матч, перекрывает эвристику.
 
     Так Чалханоглу в Интере: почти все матчи минус 3 месяца травмы в с2.
+
+    Итоговый рейтинг — не сырой Win%%: сжатие к среднему клуба, объём матчей,
+    доступность (меньше травм), небольшой бонус статы (G+A / сухие−пропущенные).
     """
     from utils.player_discipline import (
         _injury_blocks_at_month,
@@ -1266,6 +1421,8 @@ def club_player_win_influence(
     roster_by_sn = _roster_by_season_for_club(display_team)
     if not roster_by_sn:
         return []
+
+    career_stats = _club_player_career_stats(display_team)
 
     # кандидаты: name_norm -> meta
     candidates: dict[str, dict[str, Any]] = {}
@@ -1336,6 +1493,7 @@ def club_player_win_influence(
         for k, v in candidates.items()
     }
 
+    team_w = team_d = team_l = 0
     for m in iter_all_match_records():
         home = str(m.get("home") or "")
         away = str(m.get("away") or "")
@@ -1348,6 +1506,12 @@ def club_player_win_influence(
         day = m.get("day")
         month = get_calendar_month(int(day) if day is not None else None)
         res, _pts, _gf, _ga = match_result_for_team(m, display_team)
+        if res == "W":
+            team_w += 1
+        elif res == "L":
+            team_l += 1
+        else:
+            team_d += 1
         ex_key = (sn, _norm(home), _norm(away), int(day) if day is not None else -1)
         ex_names = explicit.get(ex_key)
 
@@ -1383,18 +1547,23 @@ def club_player_win_influence(
             else:
                 slot["d"] += 1
 
+    team_n = team_w + team_d + team_l
+    team_wr = (team_w / team_n) if team_n else 0.5
+
     out: list[PlayerWinInfluence] = []
-    for slot in agg.values():
+    for key, slot in agg.items():
         n = int(slot["n"])
         if n < int(min_played):
             continue
         lineup_n = int(slot.get("lineup_n") or 0)
         mode = "lineup" if lineup_n >= max(1, n // 2) else "heuristic"
+        st = career_stats.get(key) or {}
+        pos = str(slot["position"] or st.get("position") or "")
         out.append(
             PlayerWinInfluence(
                 player=str(slot["player"]),
                 team=display_team,
-                position=str(slot["position"] or ""),
+                position=pos,
                 played=n,
                 wins=int(slot["w"]),
                 draws=int(slot["d"]),
@@ -1402,10 +1571,15 @@ def club_player_win_influence(
                 missed_injury=int(slot["missed"]),
                 status=str(slot.get("status") or ""),
                 mode=mode,
+                goals=int(st.get("goals") or 0),
+                assists=int(st.get("assists") or 0),
+                clean_sheets=int(st.get("clean_sheets") or 0),
+                missed_goals=int(st.get("missed_goals") or 0),
             )
         )
+    _score_influence_rows(out, team_win_rate=team_wr)
     out.sort(
-        key=lambda r: (-r.win_pct, -r.wins, -r.played, r.player.casefold())
+        key=lambda r: (-r.score, -r.played, -r.wins, r.player.casefold())
     )
     return out[: max(1, int(limit))]
 

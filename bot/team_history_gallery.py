@@ -1197,7 +1197,7 @@ def render_club_career_conceded_pages(*, page_size: int = 10) -> list[bytes]:
 
 
 def render_club_player_influence_png(team: str, *, min_played: int = 10) -> bytes:
-    """Win% стартовых игроков: матчи клуба минус травмы (эвристика)."""
+    """Балл влияния: Win% (сжатый) + объём + доступность + чуть статы."""
     from bot.team_history import club_player_win_influence
 
     rows = club_player_win_influence(team, min_played=min_played, limit=25)
@@ -1228,21 +1228,22 @@ def render_club_player_influence_png(team: str, *, min_played: int = 10) -> byte
     head_h = 34
     n = len(rows)
     table_h = head_h + n * row_h + 12
-    h = 140 + table_h + 40
+    h = 150 + table_h + 40
     im = _gradient_bg(min(h, 3200)).convert("RGBA")
     draw = ImageDraw.Draw(im)
     y = _title(
         draw,
         f"Влияние · {team}",
-        f"Старт в заявке · все матчи клуба минус травмы · мин. {min_played}",
+        "Балл: Win%↓шум + объём матчей + меньше травм + чуть статы (G+A / сухие)",
     )
 
     name_x = _PAD + 70
     cols_x = [
-        (_CANVAS_W - _PAD - 420, "В-Н-П"),
-        (_CANVAS_W - _PAD - 300, "Матч"),
-        (_CANVAS_W - _PAD - 200, "Травма"),
-        (_CANVAS_W - _PAD - 90, "Win%"),
+        (_CANVAS_W - _PAD - 430, "В-Н-П"),
+        (_CANVAS_W - _PAD - 310, "Матч"),
+        (_CANVAS_W - _PAD - 220, "Травма"),
+        (_CANVAS_W - _PAD - 130, "Win%"),
+        (_CANVAS_W - _PAD - 50, "Балл"),
     ]
 
     table_top = y
@@ -1303,9 +1304,10 @@ def render_club_player_influence_png(team: str, *, min_played: int = 10) -> byte
             (cols_x[1][0], str(row.played)),
             (cols_x[2][0], str(row.missed_injury)),
             (cols_x[3][0], f"{row.win_pct:.0f}%"),
+            (cols_x[4][0], f"{row.score:.0f}"),
         ):
             vw = draw.textbbox((0, 0), val, font=font_num)[2]
-            fill = _GOLD if cx == cols_x[3][0] else _TEXT
+            fill = _GOLD if cx == cols_x[4][0] else _TEXT
             draw.text((cx - vw // 2, top + 10), val, font=font_num, fill=fill)
         y += row_h
 
