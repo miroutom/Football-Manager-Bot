@@ -4,10 +4,13 @@ DEBUG: предложение overall по клубу (не применяет �
 
 Сигналы (каждый даёт небольшой вклад в Δ, итог зажат в ±3):
 - форма текущего сезона (G+A / сухие vs ожидание для позиции и OVR);
+- POTM (все) и MOTM (только с 6-го календарного месяца);
 - карьерная продуктивность в клубе;
 - травмы (месяцы / периоды);
-- win% клуба «когда игрок в старте» vs средний win% клуба;
+- win% клуба «когда игрок в заявке» vs средний win% клуба;
 - траектория OVR по сезонам (пик → сейчас).
+
+Потолок overall — 94; у хайрейтингов положительный score слабее.
 """
 from __future__ import annotations
 
@@ -18,6 +21,9 @@ from html import escape as html_escape
 from typing import Any
 
 from utils import season_paths
+
+OVR_CEILING = 94
+_MOTM_MIN_MONTH = 6
 
 
 def _norm(s: str) -> str:
@@ -53,6 +59,8 @@ class OvrAdviceRow:
     infl_played: int = 0
     infl_win_pct: float = 0.0
     infl_miss: int = 0
+    potm: int = 0
+    motm: int = 0
 
     @property
     def delta(self) -> int:
@@ -81,6 +89,72 @@ def _expected_cs_rate(ovr: int) -> float:
     return max(0.15, min(0.55, 0.28 + 0.015 * (int(ovr) - 80)))
 
 
+def _potm_count(name: str, team: str | None = None) -> int:
+    """Все POTM из журнала матчей (+ запасной max с поля potm в БД сезона)."""
+    from utils.match_potm_log import _load as load_potm_log
+
+    want_n = _norm(name)
+    want_t = _norm(team) if team else ""
+    n = 0
+    for row in load_potm_log():
+        if _norm(str(row.get("player") or "")) != want_n:
+            continue
+        if want_t and _norm(str(row.get("team") or "")) != want_t:
+            continue
+        n += 1
+    return n
+
+
+def _motm_count_from_month(
+    name: str,
+    team: str | None = None,
+    *,
+    min_month: int = _MOTM_MIN_MONTH,
+) -> int:
+    """MOTM из awards JSON: только месяцы ≥ min_month (ранние ставили наугад)."""
+    from utils.month_motm_award import _load as load_motm
+
+    want_n = _norm(name)
+    want_t = _norm(team) if team else ""
+    n = 0
+    for _sk, months in load_motm().items():
+        if not isinstance(months, dict):
+            continue
+        for mo_s, leagues in months.items():
+            try:
+                mo = int(mo_s)
+            except (TypeError, ValueError):
+                continue
+            if mo < int(min_month):
+                continue
+            if not isinstance(leagues, dict):
+                continue
+            for _lc, aw in leagues.items():
+                if not isinstance(aw, dict):
+                    continue
+                if _norm(str(aw.get("player") or "")) != want_n:
+                    continue
+                if want_t and _norm(str(aw.get("team") or "")) != want_t:
+                    continue
+                n += 1
+    return n
+
+
+def _dampen_raise_near_ceiling(cur: int, score: float) -> float:
+    """У хайрейтингов сложнее расти; у потолка (94) — нельзя выше."""
+    if score <= 0:
+        return score
+    room = OVR_CEILING - int(cur)
+    if room <= 0:
+        return 0.0
+    if cur <= 86:
+        return score
+    # 87→94: коэффициент от ~0.95 до ~0.25
+    span = max(1, OVR_CEILING - 86)
+    factor = max(0.25, min(1.0, 0.2 + 0.8 * (room / span)))
+    return score * factor
+
+
 def _scan_club_players(team: str) -> list[dict[str, Any]]:
     """Текущий сезон: игроки клуба из league+cl (берём max ovr / sum stats)."""
     want = _norm(team)
@@ -99,7 +173,8 @@ def _scan_club_players(team: str) -> list[dict[str, Any]]:
                         cur = conn.execute(
                             "SELECT name, team, position, COALESCE(overall,0), "
                             "COALESCE(status,''), COALESCE(matches,0), "
-                            "0, 0, COALESCE(clean_sheets,0), COALESCE(missed_goals,0) "
+                            "0, 0, COALESCE(clean_sheets,0), COALESCE(missed_goals,0), "
+                            "COALESCE(potm,0) "
                             f"FROM {tbl}"
                         )
                     elif tbl == "defenders":
@@ -107,19 +182,20 @@ def _scan_club_players(team: str) -> list[dict[str, Any]]:
                             "SELECT name, team, position, COALESCE(overall,0), "
                             "COALESCE(status,''), COALESCE(matches,0), "
                             "COALESCE(goals,0), COALESCE(assists,0), "
-                            "COALESCE(clean_sheets,0), 0 "
+                            "COALESCE(clean_sheets,0), 0, COALESCE(potm,0) "
                             f"FROM {tbl}"
                         )
                     else:
                         cur = conn.execute(
                             "SELECT name, team, position, COALESCE(overall,0), "
                             "COALESCE(status,''), COALESCE(matches,0), "
-                            "COALESCE(goals,0), COALESCE(assists,0), 0, 0 "
+                            "COALESCE(goals,0), COALESCE(assists,0), 0, 0, "
+                            "COALESCE(potm,0) "
                             f"FROM {tbl}"
                         )
                 except sqlite3.OperationalError:
                     continue
-                for name, tm, pos, ovr, st, m, g, a, cs, mg in cur:
+                for name, tm, pos, ovr, st, m, g, a, cs, mg, potm in cur:
                     if _norm(str(tm or "")) != want:
                         continue
                     nm = (name or "").strip()
@@ -138,6 +214,7 @@ def _scan_club_players(team: str) -> list[dict[str, Any]]:
                             "assists": 0,
                             "clean_sheets": 0,
                             "missed_goals": 0,
+                            "potm": 0,
                         },
                     )
                     slot["matches"] += int(m or 0)
@@ -145,6 +222,7 @@ def _scan_club_players(team: str) -> list[dict[str, Any]]:
                     slot["assists"] += int(a or 0)
                     slot["clean_sheets"] += int(cs or 0)
                     slot["missed_goals"] += int(mg or 0)
+                    slot["potm"] += int(potm or 0)
                     ovri = int(ovr or 0)
                     if ovri >= int(slot["overall"]):
                         slot["overall"] = ovri
@@ -264,7 +342,7 @@ def _injury_burden(name: str, team: str | None = None) -> tuple[int, int]:
 
 def clamp_ovr_delta_for_team(team: str, current: int, delta: int) -> int:
     """
-    Ограничение Δ по лиге.
+    Ограничение Δ по лиге и глобальному потолку ``OVR_CEILING`` (94).
     РПЛ: максимум +3; пол 75 (при 75 нельзя вниз, при 76 макс −1, …, при 78+ макс −3).
     Остальные лиги: ±3.
     """
@@ -279,8 +357,12 @@ def clamp_ovr_delta_for_team(team: str, current: int, delta: int) -> int:
     if lc == "rpl":
         lo = max(-3, 75 - cur)
         hi = 3
-        return max(lo, min(hi, d))
-    return max(-3, min(3, d))
+        d = max(lo, min(hi, d))
+    else:
+        d = max(-3, min(3, d))
+    if d > 0 and cur + d > OVR_CEILING:
+        d = max(0, OVR_CEILING - cur)
+    return d
 
 
 def list_club_roster_for_ovr_debug(team: str) -> tuple[str, list[dict[str, Any]]]:
@@ -374,6 +456,7 @@ def advise_club_ovr(
         signals: dict[str, float] = {}
 
         # 1) форма текущего сезона
+        form = 0.0
         if sm >= 3:
             if pos in _GK:
                 rate = scs / sm
@@ -381,12 +464,14 @@ def advise_club_ovr(
                 form = (rate - exp) / max(0.15, exp)
                 signals["form_cs"] = round(rate, 3)
                 if form > 0.25:
-                    score += 0.9
+                    bump = min(2.0, 0.6 + form * 1.1)
+                    score += bump
                     reasons.append(
-                        f"+ сухие сейчас {scs}/{sm} ({rate:.0%}) выше нормы ~{exp:.0%} для OVR {cur}"
+                        f"+ сухие сейчас {scs}/{sm} ({rate:.0%}) выше нормы ~{exp:.0%} "
+                        f"для OVR {cur} (вклад {bump:+.1f})"
                     )
                 elif form < -0.25:
-                    score -= 0.9
+                    score -= min(1.4, 0.5 + abs(form) * 0.9)
                     reasons.append(
                         f"− сухие сейчас {scs}/{sm} ({rate:.0%}) ниже нормы ~{exp:.0%} для OVR {cur}"
                     )
@@ -399,10 +484,15 @@ def advise_club_ovr(
                 form = (rate - exp) / max(0.15, exp)
                 signals["form_ga"] = round(rate, 3)
                 if form > 0.35:
-                    score += 1.1
+                    # раньше потолок был +1.1 — Мухтар 1.73 vs 0.65 не отличался от «чуть выше»
+                    bump = min(2.4, 0.55 + form * 1.05)
+                    if sm >= 10:
+                        bump += 0.25
+                    score += bump
                     reasons.append(
                         f"+ форма сезона {sg}+{sa} в {sm} матч. "
-                        f"({rate:.2f} G+A/м vs ожид. ~{exp:.2f} для {pos} {cur})"
+                        f"({rate:.2f} G+A/м vs ожид. ~{exp:.2f} для {pos} {cur}; "
+                        f"вклад {bump:+.1f})"
                     )
                 elif form > 0.10:
                     score += 0.5
@@ -426,9 +516,36 @@ def advise_club_ovr(
         else:
             reasons.append(f"· мало матчей в текущем сезоне ({sm}) — форма почти не влияет")
 
+        # 1b) POTM (все) + MOTM (с 6-го месяца)
+        potm_db = int(p.get("potm") or 0)
+        potm_log = _potm_count(name, display)
+        potm_n = max(potm_db, potm_log)
+        motm_n = _motm_count_from_month(name, display, min_month=_MOTM_MIN_MONTH)
+        signals["potm"] = float(potm_n)
+        signals["motm"] = float(motm_n)
+        if potm_n > 0:
+            potm_bump = min(2.2, 0.45 + potm_n * 0.32)
+            score += potm_bump
+            reasons.append(f"+ POTM ×{potm_n} (вклад {potm_bump:+.1f})")
+        else:
+            reasons.append("· POTM в сезоне/логе нет")
+        if motm_n > 0:
+            motm_bump = min(1.6, motm_n * 0.75)
+            score += motm_bump
+            reasons.append(
+                f"+ MOTM ×{motm_n} (только с {_MOTM_MIN_MONTH}-го мес.; вклад {motm_bump:+.1f})"
+            )
+        else:
+            reasons.append(f"· MOTM с {_MOTM_MIN_MONTH}-го месяца нет")
+
+        # скамейка + элитная форма — отдельно ценим
+        if str(p.get("status") or "") == "bench" and form > 0.5 and sm >= 8:
+            score += 0.35
+            reasons.append("+ элитная форма со скамейки")
+
         # 2) карьера в клубе
         cm = int(career.get("matches") or 0)
-        if cm >= 15 and pos not in _GK:
+        if cm >= 10 and pos not in _GK:
             cga = int(career["goals"]) + int(career["assists"])
             crate = cga / cm
             exp_c = _expected_ga_per_match(pos, cur)
@@ -443,7 +560,7 @@ def advise_club_ovr(
                     f"− карьера скромнее нормы: {cga} G+A / {cm} (= {crate:.2f})"
                 )
             signals["career_ga_rate"] = round(crate, 3)
-        elif cm >= 15 and pos in _GK:
+        elif cm >= 10 and pos in _GK:
             crate = int(career["clean_sheets"]) / cm
             exp_c = _expected_cs_rate(cur)
             if crate > exp_c * 1.15:
@@ -513,6 +630,16 @@ def advise_club_ovr(
             chain = " → ".join(str(o) for _, o in hist)
             reasons.append(f"· по сезонам: {chain}")
 
+        # хайрейтинг: положительный score слабее (потолок 94)
+        score_before_ceil = score
+        score = _dampen_raise_near_ceiling(cur, score)
+        if score < score_before_ceil - 0.05:
+            reasons.insert(
+                0,
+                f"· у OVR {cur} рост к потолку {OVR_CEILING} ослаблен "
+                f"({score_before_ceil:.1f} → {score:.1f})",
+            )
+
         # итог
         raw_delta = max(-3.0, min(3.0, score))
         # пороги: не дёргать на 0.3
@@ -534,19 +661,19 @@ def advise_club_ovr(
         if delta != delta_raw:
             reasons.insert(
                 0,
-                f"· лимит лиги: Δ {delta_raw:+d} → {delta:+d} "
-                f"(РПЛ: пол 75, макс +3 / вниз не ниже 75)",
+                f"· лимит: Δ {delta_raw:+d} → {delta:+d} "
+                f"(лига / потолок {OVR_CEILING})",
             )
 
-        suggested = max(60, min(99, cur + delta))
+        suggested = max(60, min(OVR_CEILING, cur + delta))
         try:
             from player_stats import national_league_code_for_team
 
             if (national_league_code_for_team(display) or "").lower() == "rpl":
                 suggested = max(75, suggested)
-                delta = int(suggested) - int(cur)
         except Exception:
             pass
+        delta = int(suggested) - int(cur)
         signals["score_raw"] = round(score, 2)
         signals["delta"] = float(delta)
 
@@ -573,6 +700,8 @@ def advise_club_ovr(
                 infl_played=int(infl.played) if infl else 0,
                 infl_win_pct=float(infl.win_pct) if infl else 0.0,
                 infl_miss=int(infl.missed_injury) if infl else 0,
+                potm=potm_n,
+                motm=motm_n,
             )
         )
 
@@ -612,6 +741,7 @@ def format_ovr_advice_player_html(team: str, row: OvrAdviceRow) -> str:
         "",
         f"Сезон: {row.season_matches} матч, {row.season_goals}+{row.season_assists}"
         + (f", CS {row.season_cs}" if row.position in _GK else ""),
+        f"Награды: POTM {row.potm} · MOTM (с {_MOTM_MIN_MONTH}м) {row.motm}",
         f"Карьера в клубе: {row.career_matches} матч, G+A {row.career_ga}"
         + (f", CS {row.career_cs}" if row.position in _GK or row.career_cs else ""),
         f"Травмы: {row.injury_periods}× / {row.injury_months} мес",

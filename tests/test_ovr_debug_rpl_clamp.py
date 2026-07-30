@@ -16,3 +16,9 @@ def test_clamp_other_league_pm3():
     assert clamp_ovr_delta_for_team("Мю", 85, -5) == -3
     assert clamp_ovr_delta_for_team("Мю", 85, 5) == 3
     assert clamp_ovr_delta_for_team("Мю", 85, -1) == -1
+
+
+def test_clamp_ovr_ceiling_94():
+    assert clamp_ovr_delta_for_team("Сити", 93, 3) == 1
+    assert clamp_ovr_delta_for_team("Сити", 94, 2) == 0
+    assert clamp_ovr_delta_for_team("Сити", 92, 3) == 2
