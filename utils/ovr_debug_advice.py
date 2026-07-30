@@ -11,8 +11,8 @@ DEBUG: предложение overall по клубу (не применяет �
 - траектория OVR по сезонам (пик → сейчас).
 
 Потолок overall — 94.
-Для OVR 90+: обычно оставить / срезать; плюс только если сезон
-близок к эталону Мартинеза с1 (56+8=64 G+A) — с зазором нап/пз и жёсткостью за OVR.
+Для OVR 90+ (нап/пз): обычно оставить или срезать; плюс — только если
+G+A сезона (на темп ~30 матч.) дотягивает до высокой планки.
 """
 from __future__ import annotations
 
@@ -26,13 +26,13 @@ from utils import season_paths
 
 OVR_CEILING = 94
 _MOTM_MIN_MONTH = 6
-# С этого OVR советы в основном «оставить / срезать»; плюс — только эталон Мартинеза.
+# С этого OVR советы в основном «оставить / срезать»; плюс — только сверхвысокая стата.
 ELITE_OVR = 90
-# Эталон: Мартинез с1 — 56+8=64 G+A в ~30 матч. при 87 → +6 до 93.
-_MARTINEZ_S1_GA = 64
-_MARTINEZ_S1_MATCHES = 30
-# Насколько можно отстать от эталона и всё ещё претендовать на +1 при OVR 90:
-_ELITE_PLUS_GAP_FWD = 5   # напы/вингеры: ~59 G+A на «полный» сезон
+# Планка «полный сезон»: 64 G+A на ~30 матч.; выше 90 — жёстче.
+_ELITE_BASE_GA = 64
+_ELITE_FULL_SEASON_MATCHES = 30
+# Сколько можно отстать от 64 и всё ещё претендовать на +1 при OVR 90:
+_ELITE_PLUS_GAP_FWD = 5   # напы/вингеры: ~59 G+A на 30 матч.
 _ELITE_PLUS_GAP_MID = 10  # полузащита: ~54 G+A
 
 
@@ -177,15 +177,15 @@ def _is_elite_mid_pos(pos: str) -> bool:
     )
 
 
-def _elite_martinez_plus(
+def _elite_season_plus(
     pos: str, cur: int, season_ga: int, season_matches: int
 ) -> tuple[int, str]:
     """
-    Плюс для OVR 90+ только от эталона Мартинеза с1 (64 G+A / 30 матч.).
+    Плюс для OVR 90+ (нап/пз): G+A сезона vs планка «полный сезон» (~30 матч.).
 
-    G+A проецируем на полный эталонный сезон, чтобы незакрытый сезон
-    (Кейн 39/17) сравнивался честно. Планка растёт с OVR.
-    Возвращает (0|1|2, текст причины).
+    База планки — 64 G+A (рекордный сезон); нап может отстать на 5, пз на 10;
+    выше 90 планка растёт. Незакрытый сезон: G+A × (30 / сыгранные).
+    Возвращает (0|1|2, короткий текст).
     """
     if cur < ELITE_OVR or season_matches < 10:
         return 0, ""
@@ -194,7 +194,8 @@ def _elite_martinez_plus(
 
     ga = max(0, int(season_ga))
     sm = max(1, int(season_matches))
-    ga_proj = ga * (_MARTINEZ_S1_MATCHES / sm)
+    # незакрытый сезон → темп на ~30 матч.
+    ga_full = ga * (_ELITE_FULL_SEASON_MATCHES / sm)
 
     if _is_elite_attack_pos(pos):
         gap0 = _ELITE_PLUS_GAP_FWD
@@ -203,29 +204,19 @@ def _elite_martinez_plus(
         gap0 = _ELITE_PLUS_GAP_MID
         role = "пз"
 
-    # выше 90 — жёстче (к потолку 94)
     gap = gap0 - 2 * max(0, int(cur) - ELITE_OVR)
-    need_plus1 = _MARTINEZ_S1_GA - gap
-    need_plus2 = _MARTINEZ_S1_GA + max(0, int(cur) - ELITE_OVR)
+    need_plus1 = _ELITE_BASE_GA - gap
+    need_plus2 = _ELITE_BASE_GA + max(0, int(cur) - ELITE_OVR)
 
-    if ga_proj >= need_plus2 and cur + 2 <= OVR_CEILING:
-        return (
-            2,
-            f"+ эталон Мартинеза с1 (64 G+A/30): проекция {ga_proj:.0f} G+A "
-            f"(факт {ga} в {sm}) ≥ {need_plus2:.0f} для {role} {cur} → +2",
-        )
-    if ga_proj >= need_plus1 and cur + 1 <= OVR_CEILING:
-        return (
-            1,
-            f"+ эталон Мартинеза с1 (64 G+A/30): проекция {ga_proj:.0f} G+A "
-            f"(факт {ga} в {sm}) ≥ {need_plus1:.0f} для {role} {cur} → +1",
-        )
+    pace = f"{ga} G+A в {sm} матч. → на 30 матч. ≈ {ga_full:.0f}"
+    if ga_full >= need_plus2 and cur + 2 <= OVR_CEILING:
+        return 2, f"+ сезон топ-уровня ({pace}, планка {role} {cur}: {need_plus2:.0f}) → +2"
+    if ga_full >= need_plus1 and cur + 1 <= OVR_CEILING:
+        return 1, f"+ сильный сезон ({pace}, планка {role} {cur}: {need_plus1:.0f}) → +1"
     return (
         0,
-        f"· эталон Мартинеза: проекция {ga_proj:.0f} G+A (факт {ga}/{sm}) "
-        f"< планки {need_plus1:.0f} для {role} {cur} "
-        f"(нап −{_ELITE_PLUS_GAP_FWD}, пз −{_ELITE_PLUS_GAP_MID} от 64, "
-        f"+жёсткость за OVR)",
+        f"· для плюса при {cur} ({role}) нужно ≈{need_plus1:.0f} G+A на 30 матч.; "
+        f"сейчас {pace} — мало",
     )
 
 
@@ -702,7 +693,7 @@ def advise_club_ovr(
         # 1) форма текущего сезона
         form = 0.0
         elite = cur >= ELITE_OVR
-        martinez_plus = 0
+        season_plus = 0
         if sm >= 3:
             if pos in _GK:
                 rate = scs / sm
@@ -743,34 +734,26 @@ def advise_club_ovr(
                             f"(= {rate:.2f} < ~{exp:.2f}; {matches_note})"
                         )
                 else:
-                    # на уровне / выше нормы по rate — плюс только от эталона Мартинеза
+                    # на уровне / выше нормы по rate — плюс только от планки «полный сезон»
                     if pos not in _GK:
-                        # эталон в «записанных» матчах БД (как 30 у Мартинеза), не в слотах клуба
                         sm_mz = int(sm_db) if int(sm_db) >= 10 else int(sm)
-                        martinez_plus, mz_why = _elite_martinez_plus(
+                        season_plus, mz_why = _elite_season_plus(
                             pos, cur, int(sg) + int(sa), sm_mz
                         )
-                        signals["martinez_ga_proj"] = round(
-                            (sg + sa) * (_MARTINEZ_S1_MATCHES / max(sm_mz, 1)), 1
+                        signals["elite_ga_proj"] = round(
+                            (sg + sa)
+                            * (_ELITE_FULL_SEASON_MATCHES / max(sm_mz, 1)),
+                            1,
                         )
-                        signals["martinez_plus"] = float(martinez_plus)
-                        if martinez_plus > 0:
-                            score += 0.95 * martinez_plus
+                        signals["elite_season_plus"] = float(season_plus)
+                        if mz_why:
+                            if season_plus > 0:
+                                score += 0.95 * season_plus
                             reasons.append(mz_why)
-                        else:
-                            reasons.append(mz_why)
-                    if martinez_plus <= 0:
-                        if pos in _GK:
-                            reasons.append(
-                                f"· OVR {cur}+ : сухие на уровне рейтинга → без плюса "
-                                f"(калибруем вниз при провале; {matches_note})"
-                            )
-                        else:
-                            reasons.append(
-                                f"· OVR {cur}+ : {sg}+{sa} / {sm} (= {rate:.2f}, "
-                                f"норма ~{exp:.2f}) — играет на рейтинг; "
-                                f"плюс только эталон Мартинеза ({matches_note})"
-                            )
+                    elif season_plus <= 0:
+                        reasons.append(
+                            f"· OVR {cur}+ на уровне по сухим — без плюса ({matches_note})"
+                        )
             elif pos in _GK:
                 if form > 0.25:
                     bump = min(2.0, 0.6 + form * 1.1)
@@ -854,31 +837,25 @@ def advise_club_ovr(
                 score += potm_bump
                 reasons.append(f"+ POTM ×{potm_n} (вклад {potm_bump:+.1f})")
             elif elite:
-                reasons.append(
-                    f"· POTM ×{potm_n} — у OVR {cur}+ не повышает рейтинг"
-                )
+                reasons.append(f"· POTM ×{potm_n}")
             else:
                 reasons.append(f"· POTM ×{potm_n}")
         else:
-            reasons.append("· POTM в сезоне/логе нет")
+            reasons.append("· POTM нет")
         if motm_n > 0:
             motm_bump = min(1.6, motm_n * 0.75) * award_scale
             if motm_bump > 0.05:
                 score += motm_bump
                 reasons.append(
-                    f"+ MOTM ×{motm_n} (только с {_MOTM_MIN_MONTH}-го мес.; "
+                    f"+ MOTM ×{motm_n} (с {_MOTM_MIN_MONTH}-го мес.; "
                     f"вклад {motm_bump:+.1f})"
                 )
             elif elite:
-                reasons.append(
-                    f"· MOTM ×{motm_n} — у OVR {cur}+ не повышает рейтинг"
-                )
+                reasons.append(f"· MOTM ×{motm_n} (с {_MOTM_MIN_MONTH}-го мес.)")
             else:
-                reasons.append(
-                    f"· MOTM ×{motm_n} (с {_MOTM_MIN_MONTH}-го мес.)"
-                )
+                reasons.append(f"· MOTM ×{motm_n} (с {_MOTM_MIN_MONTH}-го мес.)")
         else:
-            reasons.append(f"· MOTM с {_MOTM_MIN_MONTH}-го месяца нет")
+            reasons.append(f"· MOTM с {_MOTM_MIN_MONTH}-го мес. нет")
 
         # скамейка + элитная форма — только ниже 90
         if not elite and status == "bench" and form > 0.5 and sm >= 8:
@@ -986,13 +963,8 @@ def advise_club_ovr(
             chain = " → ".join(str(o) for _, o in hist)
             reasons.append(f"· по сезонам: {chain}")
 
-        # 90+: плюс только эталон Мартинеза; остальные плюсы обнуляем
-        if elite and score > 0 and martinez_plus <= 0:
-            reasons.insert(
-                0,
-                f"· OVR≥{ELITE_OVR}: обычные плюсы обнулены — рост только от эталона "
-                f"Мартинеза с1 (64 G+A)",
-            )
+        # 90+: плюс только от планки полного сезона; остальные плюсы обнуляем
+        if elite and score > 0 and season_plus <= 0:
             score = 0.0
 
         # хайрейтинг ниже 90: положительный score слабее у потолка 94
@@ -1015,16 +987,15 @@ def advise_club_ovr(
             delta = -1 if raw_delta > -1.7 else (-2 if raw_delta > -2.5 else -3)
         else:
             delta = 0
-            if elite and form >= -0.12 and sm >= 3:
-                reasons.insert(
-                    0,
-                    f"· OVR≥{ELITE_OVR}: оставляем — играет на свой уровень (плюс не ставим)",
-                )
+            if elite and form >= -0.12 and sm >= 3 and season_plus <= 0:
+                reasons.insert(0, f"· {cur}+ играет на свой уровень → оставляем")
             elif abs(raw_delta) < 0.85 and not any(
                 r.startswith(("+", "−")) for r in reasons if r
             ):
                 reasons.insert(0, "· сигналов мало / они слабые → оставляем OVR")
-            elif delta == 0:
+            elif delta == 0 and not any(
+                "оставляем" in r or "мало" in r for r in reasons[:2]
+            ):
                 reasons.insert(0, "· плюсы и минусы уравновешены → оставляем OVR")
 
         delta_raw = int(delta)
