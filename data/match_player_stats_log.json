@@ -6200,5 +6200,87 @@
     "home_score": 2,
     "away_score": 2,
     "league_code": "ger"
+  },
+  {
+    "season": 3,
+    "day": 10,
+    "home": "Вольфсбург",
+    "away": "Боруссия М",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Санчо",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Майер",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Виммер",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Шешко",
+        "team": "Боруссия М",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Арнольд",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-30T16:40:02Z",
+    "home_score": 3,
+    "away_score": 1,
+    "league_code": "ger"
+  },
+  {
+    "season": 3,
+    "day": 10,
+    "home": "Хоффенхайм",
+    "away": "Франкфурт",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Мартин",
+        "team": "Хоффенхайм",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Мусиаля",
+        "team": "Франкфурт",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Бебу",
+        "team": "Хоффенхайм",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-30T16:41:52Z",
+    "home_score": 2,
+    "away_score": 1,
+    "league_code": "ger"
   }
 ]
