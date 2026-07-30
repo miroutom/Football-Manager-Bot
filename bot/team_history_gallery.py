@@ -1214,11 +1214,11 @@ def render_club_player_influence_png(team: str, *, min_played: int = 10) -> byte
         y = _title(
             draw,
             f"Влияние · {team}",
-            f"Старт · матчи клуба − травмы · мин. {min_played}",
+            f"Основа + скамейка · матчи клуба − травмы · мин. {min_played}",
         )
         draw.text(
             (_PAD, y + 8),
-            "Нет игроков status=start с достаточным числом матчей в заявке клуба.",
+            f"Нет игроков с ≥{min_played} матчами в заявке клуба.",
             font=font_m,
             fill=_DIM,
         )
@@ -1234,7 +1234,7 @@ def render_club_player_influence_png(team: str, *, min_played: int = 10) -> byte
     y = _title(
         draw,
         f"Влияние · {team}",
-        "Балл: Win%↓шум + объём матчей + меньше травм + чуть статы (G+A / сухие)",
+        f"Основа+скамья · ≥{min_played} матч · Win%↓шум + объём + травмы + стата",
     )
 
     name_x = _PAD + 70
@@ -1289,9 +1289,12 @@ def render_club_player_influence_png(team: str, *, min_played: int = 10) -> byte
             font=font_r,
             fill=medal.get(rank, _DIM),
         )
-        label = row.player
+        st_mark = {"start": "", "bench": "ᵇ", "reserve": "ʳ"}.get(
+            (row.status or "").strip().lower(), ""
+        )
+        label = f"{row.player}{st_mark}"
         if row.position:
-            label = f"{row.player} · {row.position}"
+            label = f"{label} · {row.position}"
         draw.text(
             (name_x, top + 10),
             _fit(draw, label, font_b, cols_x[0][0] - name_x - 24),

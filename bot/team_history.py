@@ -1391,19 +1391,18 @@ def club_player_win_influence(
     *,
     min_played: int = 10,
     limit: int = 25,
-    starters_only: bool = True,
+    starters_only: bool = False,
 ) -> list[PlayerWinInfluence]:
     """
     «Эффект Родри» — эвристика по карьере в клубе:
 
     - берём сезоны, где игрок был в заявке клуба (архивы БД);
-    - если ``starters_only`` — только status=start (в любом из этих сезонов
-      или сейчас);
+    - по умолчанию start + скамейка; ``starters_only`` — только основа;
+      чистый ``reserve`` без лога состава в эвристике не копим матчи клуба;
+    - главный фильтр выдачи — ``min_played`` (обычно 10+);
     - в каждом матче клуба сезона игрок «играл», если не был в травме
       (``player_discipline`` + месяц ``day`` журнала);
     - явный лог состава / оценок, если есть на матч, перекрывает эвристику.
-
-    Так Чалханоглу в Интере: почти все матчи минус 3 месяца травмы в с2.
 
     Итоговый рейтинг — не сырой Win%%: сжатие к среднему клуба, объём матчей,
     доступность (меньше травм), небольшой бонус статы (G+A / сухие−пропущенные).
@@ -1478,11 +1477,20 @@ def club_player_win_influence(
     # injuries cache
     inj_cache: dict[str, list[dict[str, Any]]] = {}
 
+    def _best_status(statuses: set[str]) -> str:
+        if "start" in statuses:
+            return "start"
+        if "bench" in statuses:
+            return "bench"
+        if "reserve" in statuses:
+            return "reserve"
+        return ""
+
     agg: dict[str, dict[str, Any]] = {
         k: {
             "player": v["name"],
             "position": v.get("position") or "",
-            "status": "start" if "start" in (v.get("statuses") or set()) else "",
+            "status": _best_status(v.get("statuses") or set()),
             "w": 0,
             "d": 0,
             "l": 0,
@@ -1518,7 +1526,8 @@ def club_player_win_influence(
         for key, meta in roster.items():
             if key not in agg:
                 continue
-            if starters_only and (meta.get("status") or "").strip().lower() != "start":
+            season_st = (meta.get("status") or "").strip().lower()
+            if starters_only and season_st != "start":
                 continue
             slot = agg[key]
             # явный состав на матч
@@ -1527,6 +1536,9 @@ def club_player_win_influence(
                     continue
                 slot["lineup_n"] = int(slot.get("lineup_n") or 0) + 1
             else:
+                # без лога: скамейка ок, чистый reserve не копим все матчи клуба
+                if not starters_only and season_st == "reserve":
+                    continue
                 inj_list = inj_cache.get(key)
                 if inj_list is None:
                     inj_list = _injuries_for_player_name(str(meta.get("name") or ""))
