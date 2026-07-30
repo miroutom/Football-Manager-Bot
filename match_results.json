@@ -3912,6 +3912,33 @@
       "away_score": 0,
       "day": 10,
       "entry_type": "play"
+    },
+    {
+      "home": "Лейпциг",
+      "away": "Байер",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Хоффенхайм",
+      "away": "Вольфсбург",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 0,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Бавария",
+      "away": "Лейпциг",
+      "league": "ger",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 9,
+      "entry_type": "play"
     }
   ]
 }

@@ -6098,5 +6098,107 @@
     "home_score": 1,
     "away_score": 0,
     "league_code": "ger"
+  },
+  {
+    "season": 3,
+    "day": 7,
+    "home": "Лейпциг",
+    "away": "Байер",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Вернер",
+        "team": "Лейпциг",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мариу",
+        "team": "Байер",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Иконе",
+        "team": "Байер",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-30T16:31:38Z",
+    "home_score": 1,
+    "away_score": 2,
+    "league_code": "ger"
+  },
+  {
+    "season": 3,
+    "day": 9,
+    "home": "Хоффенхайм",
+    "away": "Вольфсбург",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Керкес",
+        "team": "Хоффенхайм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Хульманд",
+        "team": "Хоффенхайм",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-30T16:33:08Z",
+    "home_score": 1,
+    "away_score": 0,
+    "league_code": "ger"
+  },
+  {
+    "season": 3,
+    "day": 9,
+    "home": "Бавария",
+    "away": "Лейпциг",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Уналь",
+        "team": "Бавария",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Вернер",
+        "team": "Лейпциг",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Клаудиньо",
+        "team": "Лейпциг",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Стерлинг",
+        "team": "Бавария",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-07-30T16:34:42Z",
+    "home_score": 2,
+    "away_score": 2,
+    "league_code": "ger"
   }
 ]
