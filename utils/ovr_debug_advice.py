@@ -10,7 +10,9 @@ DEBUG: предложение overall по клубу (не применяет �
 - win% клуба «когда игрок в заявке» vs средний win% клуба;
 - траектория OVR по сезонам (пик → сейчас).
 
-Потолок overall — 94; у хайрейтингов положительный score слабее.
+Потолок overall — 94.
+Для OVR 90+: калибровка «на игру» — хорошая/нормальная форма → 0
+(не требуем нереальной статы для плюса), слабая → минус.
 """
 from __future__ import annotations
 
@@ -24,6 +26,8 @@ from utils import season_paths
 
 OVR_CEILING = 94
 _MOTM_MIN_MONTH = 6
+# С этого OVR советы почти только «оставить / срезать», без гонки за +1.
+ELITE_OVR = 90
 
 
 def _norm(s: str) -> str:
@@ -515,15 +519,61 @@ def advise_club_ovr(
 
         # 1) форма текущего сезона
         form = 0.0
+        elite = cur >= ELITE_OVR
         if sm >= 3:
             if pos in _GK:
                 rate = scs / sm
                 exp = _expected_cs_rate(cur)
                 form = (rate - exp) / max(0.15, exp)
                 signals["form_cs"] = round(rate, 3)
+            else:
+                ga = sg + sa
+                rate = ga / sm
+                exp = _expected_ga_per_match(pos, cur)
+                form = (rate - exp) / max(0.15, exp)
+                signals["form_ga"] = round(rate, 3)
+
+            if elite:
+                if form < -0.35:
+                    pen = min(2.2, 1.1 + abs(form) * 0.9)
+                    score -= pen
+                    if pos in _GK:
+                        reasons.append(
+                            f"− OVR {cur}+ не подтверждён сухими {scs}/{sm} "
+                            f"({rate:.0%} vs ~{exp:.0%}; {matches_note}; { -pen:+.1f})"
+                        )
+                    else:
+                        reasons.append(
+                            f"− OVR {cur}+ завышен: {sg}+{sa} / {sm} "
+                            f"(= {rate:.2f}, норма ~{exp:.2f} для {pos} {cur}; "
+                            f"{matches_note}; {-pen:+.1f})"
+                        )
+                elif form < -0.12:
+                    score -= 1.0
+                    if pos in _GK:
+                        reasons.append(
+                            f"− OVR {cur}+ ниже нормы по сухим ({matches_note})"
+                        )
+                    else:
+                        reasons.append(
+                            f"− OVR {cur}+ ниже нормы: {sg}+{sa} / {sm} "
+                            f"(= {rate:.2f} < ~{exp:.2f}; {matches_note})"
+                        )
+                else:
+                    if pos in _GK:
+                        reasons.append(
+                            f"· OVR {cur}+ : сухие на уровне рейтинга → без плюса "
+                            f"(калибруем только вниз при провале; {matches_note})"
+                        )
+                    else:
+                        reasons.append(
+                            f"· OVR {cur}+ : {sg}+{sa} / {sm} (= {rate:.2f}, "
+                            f"норма ~{exp:.2f}) — играет на свой рейтинг → 0 "
+                            f"({matches_note})"
+                        )
+            elif pos in _GK:
                 if form > 0.25:
                     bump = min(2.0, 0.6 + form * 1.1)
-                    # малая выборка не раздувает плюс
                     bump *= min(1.0, sm / 10.0)
                     score += bump
                     reasons.append(
@@ -541,23 +591,11 @@ def advise_club_ovr(
                         f"· сухие {scs}/{sm} около нормы для OVR {cur} ({matches_note})"
                     )
             else:
-                ga = sg + sa
-                rate = ga / sm
-                exp = _expected_ga_per_match(pos, cur)
-                form = (rate - exp) / max(0.15, exp)
-                signals["form_ga"] = round(rate, 3)
                 if form > 0.35:
                     bump = min(2.4, 0.55 + form * 1.05)
                     if sm >= 10:
                         bump += 0.25
                     bump *= min(1.0, sm / 10.0)
-                    # хайрейтинг: абсолютный G+A/м должен быть впечатляющим
-                    if cur >= 88 and rate < exp * 1.15:
-                        bump *= 0.35
-                        reasons.append(
-                            f"· при OVR {cur} {rate:.2f} G+A/м ещё не «вау» "
-                            f"(нужно заметно выше ~{exp:.2f})"
-                        )
                     score += bump
                     reasons.append(
                         f"+ форма сезона {sg}+{sa} в {sm} матч. "
@@ -599,29 +637,46 @@ def advise_club_ovr(
         motm_n = _motm_count_from_month(name, display, min_month=_MOTM_MIN_MONTH)
         signals["potm"] = float(potm_n)
         signals["motm"] = float(motm_n)
-        # награды слабее, если форма сезона уже минус / крошечная выборка в БД у не-основы
+        # 90+: награды только чуть смягчают минус, никогда не поднимают
         award_scale = 1.0
-        if form < -0.10:
+        if elite:
+            award_scale = 0.2 if form < -0.12 else 0.0
+        elif form < -0.10:
             award_scale = 0.35
-        elif status == "start" and cur >= 88 and form < 0.35:
-            award_scale = 0.55
         if potm_n > 0:
             potm_bump = min(2.2, 0.45 + potm_n * 0.32) * award_scale
-            score += potm_bump
-            reasons.append(f"+ POTM ×{potm_n} (вклад {potm_bump:+.1f})")
+            if potm_bump > 0.05:
+                score += potm_bump
+                reasons.append(f"+ POTM ×{potm_n} (вклад {potm_bump:+.1f})")
+            elif elite:
+                reasons.append(
+                    f"· POTM ×{potm_n} — у OVR {cur}+ не повышает рейтинг"
+                )
+            else:
+                reasons.append(f"· POTM ×{potm_n}")
         else:
             reasons.append("· POTM в сезоне/логе нет")
         if motm_n > 0:
             motm_bump = min(1.6, motm_n * 0.75) * award_scale
-            score += motm_bump
-            reasons.append(
-                f"+ MOTM ×{motm_n} (только с {_MOTM_MIN_MONTH}-го мес.; вклад {motm_bump:+.1f})"
-            )
+            if motm_bump > 0.05:
+                score += motm_bump
+                reasons.append(
+                    f"+ MOTM ×{motm_n} (только с {_MOTM_MIN_MONTH}-го мес.; "
+                    f"вклад {motm_bump:+.1f})"
+                )
+            elif elite:
+                reasons.append(
+                    f"· MOTM ×{motm_n} — у OVR {cur}+ не повышает рейтинг"
+                )
+            else:
+                reasons.append(
+                    f"· MOTM ×{motm_n} (с {_MOTM_MIN_MONTH}-го мес.)"
+                )
         else:
             reasons.append(f"· MOTM с {_MOTM_MIN_MONTH}-го месяца нет")
 
-        # скамейка + элитная форма — отдельно ценим (по эффективным матчам БД)
-        if status == "bench" and form > 0.5 and sm >= 8:
+        # скамейка + элитная форма — только ниже 90
+        if not elite and status == "bench" and form > 0.5 and sm >= 8:
             score += 0.35
             reasons.append("+ элитная форма со скамейки")
 
@@ -632,10 +687,15 @@ def advise_club_ovr(
             crate = cga / cm
             exp_c = _expected_ga_per_match(pos, cur)
             if crate > exp_c * 1.25:
-                score += 0.6
-                reasons.append(
-                    f"+ карьера в клубе сильная: {cga} G+A / {cm} (= {crate:.2f})"
-                )
+                if elite:
+                    reasons.append(
+                        f"· карьера сильная ({cga} G+A / {cm}) — у {cur}+ без плюса"
+                    )
+                else:
+                    score += 0.6
+                    reasons.append(
+                        f"+ карьера в клубе сильная: {cga} G+A / {cm} (= {crate:.2f})"
+                    )
             elif crate < exp_c * 0.7:
                 score -= 0.5
                 reasons.append(
@@ -646,8 +706,11 @@ def advise_club_ovr(
             crate = int(career["clean_sheets"]) / cm
             exp_c = _expected_cs_rate(cur)
             if crate > exp_c * 1.15:
-                score += 0.5
-                reasons.append(f"+ карьера сухих {career['clean_sheets']}/{cm}")
+                if elite:
+                    reasons.append(f"· карьера сухих сильная — у {cur}+ без плюса")
+                else:
+                    score += 0.5
+                    reasons.append(f"+ карьера сухих {career['clean_sheets']}/{cm}")
             elif crate < exp_c * 0.75:
                 score -= 0.5
                 reasons.append(f"− карьера сухих слабая {career['clean_sheets']}/{cm}")
@@ -672,11 +735,16 @@ def advise_club_ovr(
             signals["infl_wr"] = round(wr, 3)
             diff = wr - club_wr
             if diff > 0.08:
-                score += 0.7
-                reasons.append(
-                    f"+ при нём клуб чаще побеждает: {infl.win_pct:.0f}% "
-                    f"(клуб в среднем {club_wr*100:.0f}%), n={infl.played}"
-                )
+                if elite:
+                    reasons.append(
+                        f"· win% выше клуба ({infl.win_pct:.0f}%) — у {cur}+ без плюса"
+                    )
+                else:
+                    score += 0.7
+                    reasons.append(
+                        f"+ при нём клуб чаще побеждает: {infl.win_pct:.0f}% "
+                        f"(клуб в среднем {club_wr*100:.0f}%), n={infl.played}"
+                    )
             elif diff < -0.08:
                 score -= 0.7
                 reasons.append(
@@ -695,8 +763,9 @@ def advise_club_ovr(
 
         # 5) траектория
         if peak >= cur + 3:
-            # уже сильно упал — осторожный отскок только если форма плюс
-            if score > 0.4:
+            if elite:
+                reasons.append(f"· история OVR: пик {peak}, сейчас {cur}")
+            elif score > 0.4:
                 score += 0.4
                 reasons.append(
                     f"· был пик {peak}, сейчас {cur}: при хорошей форме возможен +1 отскок"
@@ -712,15 +781,25 @@ def advise_club_ovr(
             chain = " → ".join(str(o) for _, o in hist)
             reasons.append(f"· по сезонам: {chain}")
 
-        # хайрейтинг: положительный score слабее (потолок 94)
-        score_before_ceil = score
-        score = _dampen_raise_near_ceiling(cur, score)
-        if score < score_before_ceil - 0.05:
+        # 90+: финальный предохранитель — рейтинг не повышаем, только режем/оставляем
+        if elite and score > 0:
             reasons.insert(
                 0,
-                f"· у OVR {cur} рост к потолку {OVR_CEILING} ослаблен "
-                f"({score_before_ceil:.1f} → {score:.1f})",
+                f"· OVR≥{ELITE_OVR}: плюсы обнулены — без нереальной статы вверх не идём, "
+                f"цель = рейтинг «как играет»",
             )
+            score = 0.0
+
+        # хайрейтинг ниже 90: положительный score слабее у потолка 94
+        score_before_ceil = score
+        if not elite:
+            score = _dampen_raise_near_ceiling(cur, score)
+            if score < score_before_ceil - 0.05:
+                reasons.insert(
+                    0,
+                    f"· у OVR {cur} рост к потолку {OVR_CEILING} ослаблен "
+                    f"({score_before_ceil:.1f} → {score:.1f})",
+                )
 
         # итог
         raw_delta = max(-3.0, min(3.0, score))
@@ -731,7 +810,12 @@ def advise_club_ovr(
             delta = -1 if raw_delta > -1.7 else (-2 if raw_delta > -2.5 else -3)
         else:
             delta = 0
-            if abs(raw_delta) < 0.85 and not any(
+            if elite and form >= -0.12 and sm >= 3:
+                reasons.insert(
+                    0,
+                    f"· OVR≥{ELITE_OVR}: оставляем — играет на свой уровень (плюс не ставим)",
+                )
+            elif abs(raw_delta) < 0.85 and not any(
                 r.startswith(("+", "−")) for r in reasons if r
             ):
                 reasons.insert(0, "· сигналов мало / они слабые → оставляем OVR")
