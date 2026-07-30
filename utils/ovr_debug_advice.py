@@ -78,21 +78,25 @@ class OvrAdviceRow:
 
 
 def _expected_ga_per_match(pos: str, ovr: int) -> float:
-    """Грубая норма G+A/матч для позиции при данном OVR."""
+    """
+    Норма G+A/матч для позиции при данном OVR (FIFA-темп, не реальный футбол).
+
+    База для ~85; выше OVR — чуть выше планка. Ориентир: у атакующих
+    «около действия за матч» — норма, не сверхрезультат.
+    """
     pos_u = (pos or "").upper()
-    # база для ~85
     if pos_u in _FWD:
-        base = 0.85
-    elif pos_u in ("ЦАП", "ПП", "CAM"):
-        base = 0.70
+        base = 1.15  # было 0.85
+    elif pos_u in ("ЦАП", "ПП", "CAM", "ЛП", "ППА", "LM", "RM"):
+        base = 1.00  # было 0.70
     elif pos_u in ("ЦП", "ЦОП", "CM", "CDM"):
-        base = 0.35
+        base = 0.55  # было 0.35
     elif pos_u in _DEF:
-        base = 0.12
+        base = 0.20  # было 0.12
     else:
-        base = 0.40
+        base = 0.60
     # ±0.04 за пункт OVR от 85
-    return max(0.05, base + 0.04 * (int(ovr) - 85))
+    return max(0.08, base + 0.04 * (int(ovr) - 85))
 
 
 def _expected_cs_rate(ovr: int) -> float:
