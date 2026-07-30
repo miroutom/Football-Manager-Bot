@@ -1398,9 +1398,9 @@ def club_player_win_influence(
 
     - **основа (start)**: матчи клуба сезона минус окна травм (или явный
       лог состава, если есть);
-    - **скамейка / резерв**: эвристика «все матчи клуба» не применяется —
-      берём ``matches`` из БД (карьера в клубе); Win%% без лога ≈ средний
-      клуба (нейтрально); явный лог состава по-прежнему учитывается;
+    - **скамейка и резерв** (одинаково): эвристика «все матчи клуба» не
+      применяется — берём ``matches`` из БД (карьера в клубе); Win%% без
+      лога ≈ средний клуба; явный лог состава по-прежнему учитывается;
     - фильтр выдачи — ``min_played`` (обычно 10+).
 
     Балл: сжатый Win%% + объём + доступность + чуть статы.
@@ -1561,8 +1561,8 @@ def club_player_win_influence(
     team_n = team_w + team_d + team_l
     team_wr = (team_w / team_n) if team_n else 0.5
 
-    def _apply_db_matches_for_bench(slot: dict[str, Any], db_m: int) -> None:
-        """Скамейка/резерв: объём = matches из БД; Win%% из лога или ≈ клуб."""
+    def _apply_db_matches_non_starter(slot: dict[str, Any], db_m: int) -> None:
+        """Скамейка и резерв одинаково: объём = matches из БД; Win%% из лога или ≈ клуб."""
         db_m = max(0, int(db_m))
         lineup_n = int(slot.get("lineup_n") or 0)
         counted = int(slot.get("n") or 0)
@@ -1598,7 +1598,8 @@ def club_player_win_influence(
         st = career_stats.get(key) or {}
         db_m = int(st.get("matches") or 0)
         if not bool(slot.get("ever_start")):
-            _apply_db_matches_for_bench(slot, db_m)
+            # никогда не был start → скамейка или резерв: только БД (+ лог)
+            _apply_db_matches_non_starter(slot, db_m)
 
         n = int(slot["n"])
         if n < int(min_played):

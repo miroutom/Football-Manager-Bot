@@ -1214,7 +1214,7 @@ def render_club_player_influence_png(team: str, *, min_played: int = 10) -> byte
         y = _title(
             draw,
             f"Влияние · {team}",
-            f"Основа: матчи клуба−травмы · скамья/резерв: matches из БД · ≥{min_played}",
+            f"Основа: матчи клуба−травмы · ᵇ/ʳ скамья и резерв: matches БД · ≥{min_played}",
         )
         draw.text(
             (_PAD, y + 8),
@@ -1234,7 +1234,7 @@ def render_club_player_influence_png(team: str, *, min_played: int = 10) -> byte
     y = _title(
         draw,
         f"Влияние · {team}",
-        f"Основа: клуб−травмы · ᵇскамья: matches БД · ≥{min_played} · Win%+объём+стата",
+        f"Основа: клуб−травмы · ᵇскамья/ʳрезерв: matches БД · ≥{min_played} · Win%+объём+стата",
     )
 
     name_x = _PAD + 70

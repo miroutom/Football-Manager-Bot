@@ -552,7 +552,7 @@ async def cb_hist_club_act(callback: CallbackQuery) -> None:
             fn = "dyn.png"
         elif action == "infl":
             png = await asyncio.to_thread(render_club_player_influence_png, team)
-            cap = f"<b>{team}</b> — влияние (основа: эвристика; скамья: матчи БД)"
+            cap = f"<b>{team}</b> — влияние (основа: эвристика; скамья/резерв: матчи БД)"
             fn = "influence.png"
         else:
             await callback.answer("Неизвестно", show_alert=True)

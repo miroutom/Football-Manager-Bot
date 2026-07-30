@@ -86,3 +86,16 @@ def test_bench_influence_uses_db_matches_not_club_fixture_count():
     assert "мухтар" in by
     assert by["мухтар"].played == 11
     assert by["мухтар"].mode == "db"
+
+
+def test_reserve_influence_same_db_logic_as_bench():
+    """Резерв считается так же, как скамейка: matches из БД."""
+    from bot.team_history import club_player_win_influence
+
+    rows = club_player_win_influence("Спартак", min_played=1, limit=80)
+    by = {r.player.casefold(): r for r in rows}
+    # Эдвардс — reserve, в БД 11 матчей
+    assert "эдвардс" in by
+    assert by["эдвардс"].status == "reserve"
+    assert by["эдвардс"].played == 11
+    assert by["эдвардс"].mode == "db"
