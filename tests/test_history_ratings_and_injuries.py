@@ -70,3 +70,19 @@ def test_city_influence_prefers_volume_over_small_sample_winpct():
     # Де Брюйне в верхней половине / топ-5 при 60+ матчах
     ranks = {r.player.casefold(): i for i, r in enumerate(rows)}
     assert ranks["де брюйне"] <= 6
+
+
+def test_bench_influence_uses_db_matches_not_club_fixture_count():
+    """Скамейка: matches из БД, не «все матчи клуба»."""
+    from bot.team_history import club_player_win_influence
+
+    rows = club_player_win_influence("Мю", min_played=1, limit=80)
+    by = {r.player.casefold(): r for r in rows}
+    # Шоу в БД ~2 матча — не должен получить десятки матчей клуба
+    if "шоу" in by:
+        assert by["шоу"].played <= 5
+        assert by["шоу"].mode in ("db", "lineup", "lineup+db")
+    # Мухтар: bench, matches в БД = 11
+    assert "мухтар" in by
+    assert by["мухтар"].played == 11
+    assert by["мухтар"].mode == "db"

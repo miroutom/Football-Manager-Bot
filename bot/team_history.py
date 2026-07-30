@@ -1394,18 +1394,16 @@ def club_player_win_influence(
     starters_only: bool = False,
 ) -> list[PlayerWinInfluence]:
     """
-    «Эффект Родри» — эвристика по карьере в клубе:
+    «Эффект Родри» — влияние игрока на результаты клуба:
 
-    - берём сезоны, где игрок был в заявке клуба (архивы БД);
-    - по умолчанию start + скамейка; ``starters_only`` — только основа;
-      чистый ``reserve`` без лога состава в эвристике не копим матчи клуба;
-    - главный фильтр выдачи — ``min_played`` (обычно 10+);
-    - в каждом матче клуба сезона игрок «играл», если не был в травме
-      (``player_discipline`` + месяц ``day`` журнала);
-    - явный лог состава / оценок, если есть на матч, перекрывает эвристику.
+    - **основа (start)**: матчи клуба сезона минус окна травм (или явный
+      лог состава, если есть);
+    - **скамейка / резерв**: эвристика «все матчи клуба» не применяется —
+      берём ``matches`` из БД (карьера в клубе); Win%% без лога ≈ средний
+      клуба (нейтрально); явный лог состава по-прежнему учитывается;
+    - фильтр выдачи — ``min_played`` (обычно 10+).
 
-    Итоговый рейтинг — не сырой Win%%: сжатие к среднему клуба, объём матчей,
-    доступность (меньше травм), небольшой бонус статы (G+A / сухие−пропущенные).
+    Балл: сжатый Win%% + объём + доступность + чуть статы.
     """
     from utils.player_discipline import (
         _injury_blocks_at_month,
@@ -1497,6 +1495,7 @@ def club_player_win_influence(
             "n": 0,
             "missed": 0,
             "mode": "heuristic",
+            "ever_start": "start" in (v.get("statuses") or set()),
         }
         for k, v in candidates.items()
     }
@@ -1530,14 +1529,14 @@ def club_player_win_influence(
             if starters_only and season_st != "start":
                 continue
             slot = agg[key]
-            # явный состав на матч
+            # явный состав на матч — для всех статусов
             if ex_names is not None:
                 if key not in ex_names:
                     continue
                 slot["lineup_n"] = int(slot.get("lineup_n") or 0) + 1
             else:
-                # без лога: скамейка ок, чистый reserve не копим все матчи клуба
-                if not starters_only and season_st == "reserve":
+                # без лога: «матчи клуба − травмы» только для основы сезона
+                if season_st != "start":
                     continue
                 inj_list = inj_cache.get(key)
                 if inj_list is None:
@@ -1562,14 +1561,52 @@ def club_player_win_influence(
     team_n = team_w + team_d + team_l
     team_wr = (team_w / team_n) if team_n else 0.5
 
+    def _apply_db_matches_for_bench(slot: dict[str, Any], db_m: int) -> None:
+        """Скамейка/резерв: объём = matches из БД; Win%% из лога или ≈ клуб."""
+        db_m = max(0, int(db_m))
+        lineup_n = int(slot.get("lineup_n") or 0)
+        counted = int(slot.get("n") or 0)
+        if db_m <= 0 and lineup_n <= 0 and counted <= 0:
+            slot["n"] = 0
+            return
+        if lineup_n > 0 and counted > 0:
+            tw0 = int(slot["w"])
+            td0 = int(slot["d"])
+            tl0 = int(slot["l"])
+            tot = tw0 + td0 + tl0
+            n_use = db_m if db_m > 0 else tot
+            if tot > 0 and n_use != tot:
+                slot["w"] = int(round(n_use * tw0 / tot))
+                slot["d"] = int(round(n_use * td0 / tot))
+                slot["l"] = max(0, n_use - slot["w"] - slot["d"])
+            slot["n"] = n_use
+            slot["mode"] = "lineup+db" if db_m > 0 else "lineup"
+            return
+        n_use = db_m
+        slot["n"] = n_use
+        if team_n > 0 and n_use > 0:
+            slot["w"] = int(round(n_use * team_w / team_n))
+            slot["d"] = int(round(n_use * team_d / team_n))
+            slot["l"] = max(0, n_use - slot["w"] - slot["d"])
+        else:
+            slot["w"] = slot["d"] = slot["l"] = 0
+        slot["missed"] = 0
+        slot["mode"] = "db"
+
     out: list[PlayerWinInfluence] = []
     for key, slot in agg.items():
+        st = career_stats.get(key) or {}
+        db_m = int(st.get("matches") or 0)
+        if not bool(slot.get("ever_start")):
+            _apply_db_matches_for_bench(slot, db_m)
+
         n = int(slot["n"])
         if n < int(min_played):
             continue
         lineup_n = int(slot.get("lineup_n") or 0)
-        mode = "lineup" if lineup_n >= max(1, n // 2) else "heuristic"
-        st = career_stats.get(key) or {}
+        mode = str(slot.get("mode") or "heuristic")
+        if mode == "heuristic" and lineup_n >= max(1, n // 2):
+            mode = "lineup"
         pos = str(slot["position"] or st.get("position") or "")
         out.append(
             PlayerWinInfluence(
