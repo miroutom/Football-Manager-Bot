@@ -340,6 +340,48 @@ def _injury_burden(name: str, team: str | None = None) -> tuple[int, int]:
     return n, months
 
 
+def _club_fixture_months_this_season(team: str) -> list[int]:
+    """Месяцы календарных матчей клуба в активном сезоне (для доступности основы)."""
+    from bot.team_history import iter_all_match_records
+    from utils.player_discipline import get_calendar_month
+
+    active = int(season_paths.get_active_season())
+    want = _norm(team)
+    months: list[int] = []
+    for m in iter_all_match_records():
+        if int(m.get("_season") or 0) != active:
+            continue
+        if _norm(m.get("home") or "") != want and _norm(m.get("away") or "") != want:
+            continue
+        day = m.get("day")
+        months.append(get_calendar_month(int(day) if day is not None else None))
+    return months
+
+
+def _starter_available_matches(name: str, team: str, fixture_months: list[int]) -> int:
+    """Матчи клуба сезона, в которых основа не был в травме."""
+    from utils.player_discipline import _injury_blocks_at_month, _load, _norm as dnorm
+
+    if not fixture_months:
+        return 0
+    active = int(season_paths.get_active_season())
+    want = dnorm(name)
+    inj_list = [
+        inj
+        for inj in (_load().get("injuries") or [])
+        if dnorm(str(inj.get("name") or "")) == want
+    ]
+    avail = 0
+    for month in fixture_months:
+        blocked = any(
+            _injury_blocks_at_month(inj, month, current_season=active)
+            for inj in inj_list
+        )
+        if not blocked:
+            avail += 1
+    return avail
+
+
 def clamp_ovr_delta_for_team(team: str, current: int, delta: int) -> int:
     """
     Ограничение Δ по лиге и глобальному потолку ``OVR_CEILING`` (94).
@@ -427,6 +469,9 @@ def advise_club_ovr(
     club_n = tw + td + tl
     club_wr = (tw / club_n) if club_n else 0.5
 
+    fixture_months = _club_fixture_months_this_season(display)
+    club_season_fixtures = len(fixture_months)
+
     infl_map = {
         r.player.casefold(): r
         for r in club_player_win_influence(
@@ -441,19 +486,32 @@ def advise_club_ovr(
             continue
         name = str(p["name"])
         pos = str(p.get("position") or "")
+        status = str(p.get("status") or "")
         hist = _ovr_history(display, name)
         peak = max((o for _, o in hist), default=cur)
         career = _career_club_stats(display, name)
         inj_n, inj_m = _injury_burden(name, display)
         infl = infl_map.get(name.casefold())
 
-        sm = int(p.get("matches") or 0)
+        sm_db = int(p.get("matches") or 0)
         sg = int(p.get("goals") or 0)
         sa = int(p.get("assists") or 0)
         scs = int(p.get("clean_sheets") or 0)
+        # основа: знаменатель = матчи клуба минус травмы (не «дыры» в поле matches БД)
+        if status == "start" and club_season_fixtures > 0:
+            sm = _starter_available_matches(name, display, fixture_months)
+            sm = max(sm, 1)
+            matches_note = f"основа: {sm} из {club_season_fixtures} матч. клуба"
+            if sm_db and sm_db != sm:
+                matches_note += f" (в БД matches={sm_db})"
+        else:
+            sm = sm_db
+            matches_note = f"по БД matches={sm}"
         reasons: list[str] = []
         score = 0.0  # вклад в Δ до округления
         signals: dict[str, float] = {}
+        signals["matches_db"] = float(sm_db)
+        signals["matches_eff"] = float(sm)
 
         # 1) форма текущего сезона
         form = 0.0
@@ -465,18 +523,23 @@ def advise_club_ovr(
                 signals["form_cs"] = round(rate, 3)
                 if form > 0.25:
                     bump = min(2.0, 0.6 + form * 1.1)
+                    # малая выборка не раздувает плюс
+                    bump *= min(1.0, sm / 10.0)
                     score += bump
                     reasons.append(
                         f"+ сухие сейчас {scs}/{sm} ({rate:.0%}) выше нормы ~{exp:.0%} "
-                        f"для OVR {cur} (вклад {bump:+.1f})"
+                        f"для OVR {cur} ({matches_note}; вклад {bump:+.1f})"
                     )
                 elif form < -0.25:
                     score -= min(1.4, 0.5 + abs(form) * 0.9)
                     reasons.append(
-                        f"− сухие сейчас {scs}/{sm} ({rate:.0%}) ниже нормы ~{exp:.0%} для OVR {cur}"
+                        f"− сухие сейчас {scs}/{sm} ({rate:.0%}) ниже нормы ~{exp:.0%} "
+                        f"для OVR {cur} ({matches_note})"
                     )
                 else:
-                    reasons.append(f"· сухие {scs}/{sm} около нормы для OVR {cur}")
+                    reasons.append(
+                        f"· сухие {scs}/{sm} около нормы для OVR {cur} ({matches_note})"
+                    )
             else:
                 ga = sg + sa
                 rate = ga / sm
@@ -484,37 +547,50 @@ def advise_club_ovr(
                 form = (rate - exp) / max(0.15, exp)
                 signals["form_ga"] = round(rate, 3)
                 if form > 0.35:
-                    # раньше потолок был +1.1 — Мухтар 1.73 vs 0.65 не отличался от «чуть выше»
                     bump = min(2.4, 0.55 + form * 1.05)
                     if sm >= 10:
                         bump += 0.25
+                    bump *= min(1.0, sm / 10.0)
+                    # хайрейтинг: абсолютный G+A/м должен быть впечатляющим
+                    if cur >= 88 and rate < exp * 1.15:
+                        bump *= 0.35
+                        reasons.append(
+                            f"· при OVR {cur} {rate:.2f} G+A/м ещё не «вау» "
+                            f"(нужно заметно выше ~{exp:.2f})"
+                        )
                     score += bump
                     reasons.append(
                         f"+ форма сезона {sg}+{sa} в {sm} матч. "
                         f"({rate:.2f} G+A/м vs ожид. ~{exp:.2f} для {pos} {cur}; "
-                        f"вклад {bump:+.1f})"
+                        f"{matches_note}; вклад {bump:+.1f})"
                     )
                 elif form > 0.10:
-                    score += 0.5
+                    bump = 0.5 * min(1.0, sm / 10.0)
+                    score += bump
                     reasons.append(
-                        f"+ чуть выше нормы: {sg}+{sa} / {sm} (= {rate:.2f}, ожид. ~{exp:.2f})"
+                        f"+ чуть выше нормы: {sg}+{sa} / {sm} (= {rate:.2f}, "
+                        f"ожид. ~{exp:.2f}; {matches_note})"
                     )
                 elif form < -0.35:
                     score -= 1.0
                     reasons.append(
-                        f"− слабая форма: {sg}+{sa} / {sm} (= {rate:.2f}, ожид. ~{exp:.2f})"
+                        f"− слабая форма: {sg}+{sa} / {sm} (= {rate:.2f}, "
+                        f"ожид. ~{exp:.2f}; {matches_note})"
                     )
                 elif form < -0.10:
                     score -= 0.4
                     reasons.append(
-                        f"− чуть ниже нормы: {sg}+{sa} / {sm} (= {rate:.2f})"
+                        f"− чуть ниже нормы: {sg}+{sa} / {sm} (= {rate:.2f}; {matches_note})"
                     )
                 else:
                     reasons.append(
-                        f"· форма ок: {sg}+{sa} в {sm} матч. (= {rate:.2f} ≈ {exp:.2f})"
+                        f"· форма ок: {sg}+{sa} в {sm} матч. "
+                        f"(= {rate:.2f} ≈ {exp:.2f}; {matches_note})"
                     )
         else:
-            reasons.append(f"· мало матчей в текущем сезоне ({sm}) — форма почти не влияет")
+            reasons.append(
+                f"· мало матчей в текущем сезоне ({sm}; {matches_note}) — форма почти не влияет"
+            )
 
         # 1b) POTM (все) + MOTM (с 6-го месяца)
         potm_db = int(p.get("potm") or 0)
@@ -523,14 +599,20 @@ def advise_club_ovr(
         motm_n = _motm_count_from_month(name, display, min_month=_MOTM_MIN_MONTH)
         signals["potm"] = float(potm_n)
         signals["motm"] = float(motm_n)
+        # награды слабее, если форма сезона уже минус / крошечная выборка в БД у не-основы
+        award_scale = 1.0
+        if form < -0.10:
+            award_scale = 0.35
+        elif status == "start" and cur >= 88 and form < 0.35:
+            award_scale = 0.55
         if potm_n > 0:
-            potm_bump = min(2.2, 0.45 + potm_n * 0.32)
+            potm_bump = min(2.2, 0.45 + potm_n * 0.32) * award_scale
             score += potm_bump
             reasons.append(f"+ POTM ×{potm_n} (вклад {potm_bump:+.1f})")
         else:
             reasons.append("· POTM в сезоне/логе нет")
         if motm_n > 0:
-            motm_bump = min(1.6, motm_n * 0.75)
+            motm_bump = min(1.6, motm_n * 0.75) * award_scale
             score += motm_bump
             reasons.append(
                 f"+ MOTM ×{motm_n} (только с {_MOTM_MIN_MONTH}-го мес.; вклад {motm_bump:+.1f})"
@@ -538,8 +620,8 @@ def advise_club_ovr(
         else:
             reasons.append(f"· MOTM с {_MOTM_MIN_MONTH}-го месяца нет")
 
-        # скамейка + элитная форма — отдельно ценим
-        if str(p.get("status") or "") == "bench" and form > 0.5 and sm >= 8:
+        # скамейка + элитная форма — отдельно ценим (по эффективным матчам БД)
+        if status == "bench" and form > 0.5 and sm >= 8:
             score += 0.35
             reasons.append("+ элитная форма со скамейки")
 
