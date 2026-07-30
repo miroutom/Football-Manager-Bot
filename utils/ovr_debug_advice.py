@@ -159,6 +159,91 @@ def _dampen_raise_near_ceiling(cur: int, score: float) -> float:
     return score * factor
 
 
+def _season_player_totals(name: str) -> dict[str, Any]:
+    """
+    Стата текущего сезона по игроку во всех клубах (лига+ЛЧ).
+
+    Нужно для зимних трансферов: Берарди Интер → Арсенал — не теряем G+A
+    на старом клубе.
+    """
+    want = _norm(name)
+    active = int(season_paths.get_active_season())
+    out: dict[str, Any] = {
+        "matches": 0,
+        "goals": 0,
+        "assists": 0,
+        "clean_sheets": 0,
+        "missed_goals": 0,
+        "potm": 0,
+        "teams": [],
+        "by_team": {},
+    }
+    by_team: dict[str, dict[str, int]] = {}
+    base = os.path.join(season_paths.PROJECT_ROOT, "db", f"season_{active}")
+    for dbn in ("league.db", "champions_league.db"):
+        path = os.path.join(base, dbn)
+        if not os.path.isfile(path):
+            continue
+        conn = sqlite3.connect(path)
+        try:
+            for tbl in ("forwards", "midfielders", "defenders", "goalkeepers"):
+                try:
+                    if tbl == "goalkeepers":
+                        cur = conn.execute(
+                            "SELECT name, team, COALESCE(matches,0), 0, 0, "
+                            "COALESCE(clean_sheets,0), COALESCE(missed_goals,0), "
+                            "COALESCE(potm,0) FROM {tbl}".format(tbl=tbl)
+                        )
+                    elif tbl == "defenders":
+                        cur = conn.execute(
+                            "SELECT name, team, COALESCE(matches,0), "
+                            "COALESCE(goals,0), COALESCE(assists,0), "
+                            "COALESCE(clean_sheets,0), 0, COALESCE(potm,0) "
+                            f"FROM {tbl}"
+                        )
+                    else:
+                        cur = conn.execute(
+                            "SELECT name, team, COALESCE(matches,0), "
+                            "COALESCE(goals,0), COALESCE(assists,0), 0, 0, "
+                            "COALESCE(potm,0) FROM {tbl}".format(tbl=tbl)
+                        )
+                except sqlite3.OperationalError:
+                    continue
+                for nm, tm, m, g, a, cs, mg, potm in cur:
+                    if _norm(str(nm or "")) != want:
+                        continue
+                    team = (tm or "").strip() or "?"
+                    slot = by_team.setdefault(
+                        team,
+                        {
+                            "matches": 0,
+                            "goals": 0,
+                            "assists": 0,
+                            "clean_sheets": 0,
+                            "missed_goals": 0,
+                            "potm": 0,
+                        },
+                    )
+                    slot["matches"] += int(m or 0)
+                    slot["goals"] += int(g or 0)
+                    slot["assists"] += int(a or 0)
+                    slot["clean_sheets"] += int(cs or 0)
+                    slot["missed_goals"] += int(mg or 0)
+                    slot["potm"] += int(potm or 0)
+        finally:
+            conn.close()
+    for team, slot in by_team.items():
+        out["matches"] += slot["matches"]
+        out["goals"] += slot["goals"]
+        out["assists"] += slot["assists"]
+        out["clean_sheets"] += slot["clean_sheets"]
+        out["missed_goals"] += slot["missed_goals"]
+        out["potm"] += slot["potm"]
+    out["by_team"] = by_team
+    out["teams"] = sorted(by_team.keys(), key=lambda t: t.casefold())
+    return out
+
+
 def _scan_club_players(team: str) -> list[dict[str, Any]]:
     """Текущий сезон: игроки клуба из league+cl (берём max ovr / sum stats)."""
     want = _norm(team)
@@ -501,8 +586,24 @@ def advise_club_ovr(
         sg = int(p.get("goals") or 0)
         sa = int(p.get("assists") or 0)
         scs = int(p.get("clean_sheets") or 0)
-        # основа: знаменатель = матчи клуба минус травмы (не «дыры» в поле matches БД)
-        if status == "start" and club_season_fixtures > 0:
+        season_all = _season_player_totals(name)
+        other_teams = [
+            t for t in (season_all.get("teams") or []) if _norm(t) != _norm(display)
+        ]
+        multi_club = bool(other_teams)
+        if multi_club:
+            # зимний трансфер и т.п.: G+A/матчи за весь сезон по всем клубам
+            sg = int(season_all.get("goals") or 0)
+            sa = int(season_all.get("assists") or 0)
+            scs = int(season_all.get("clean_sheets") or 0)
+            sm_db = int(season_all.get("matches") or 0)
+            clubs_lab = " + ".join(season_all.get("teams") or [])
+            sm = max(1, sm_db)
+            matches_note = (
+                f"сезон все клубы ({clubs_lab}): {sm} матч. в БД"
+            )
+        elif status == "start" and club_season_fixtures > 0:
+            # основа: знаменатель = матчи клуба минус травмы (не «дыры» в matches БД)
             sm = _starter_available_matches(name, display, fixture_months)
             sm = max(sm, 1)
             matches_note = f"основа: {sm} из {club_season_fixtures} матч. клуба"
@@ -516,6 +617,17 @@ def advise_club_ovr(
         signals: dict[str, float] = {}
         signals["matches_db"] = float(sm_db)
         signals["matches_eff"] = float(sm)
+        if multi_club:
+            signals["multi_club"] = 1.0
+            reasons.append(
+                f"· стата сезона склеена по клубам: "
+                + ", ".join(
+                    f"{t} {int((season_all['by_team'][t]).get('goals') or 0)}+"
+                    f"{int((season_all['by_team'][t]).get('assists') or 0)}"
+                    f"/{int((season_all['by_team'][t]).get('matches') or 0)}"
+                    for t in (season_all.get("teams") or [])
+                )
+            )
 
         # 1) форма текущего сезона
         form = 0.0
@@ -632,9 +744,14 @@ def advise_club_ovr(
 
         # 1b) POTM (все) + MOTM (с 6-го месяца)
         potm_db = int(p.get("potm") or 0)
-        potm_log = _potm_count(name, display)
+        if multi_club:
+            potm_db = max(potm_db, int(season_all.get("potm") or 0))
+        # лог: по всем клубам, если сезон с трансфером
+        potm_log = _potm_count(name, None if multi_club else display)
         potm_n = max(potm_db, potm_log)
-        motm_n = _motm_count_from_month(name, display, min_month=_MOTM_MIN_MONTH)
+        motm_n = _motm_count_from_month(
+            name, None if multi_club else display, min_month=_MOTM_MIN_MONTH
+        )
         signals["potm"] = float(potm_n)
         signals["motm"] = float(motm_n)
         # 90+: награды только чуть смягчают минус, никогда не поднимают
