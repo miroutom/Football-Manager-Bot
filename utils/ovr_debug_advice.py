@@ -11,8 +11,9 @@ DEBUG: предложение overall по клубу (не применяет �
 - траектория OVR по сезонам (пик → сейчас).
 
 Потолок overall — 94.
-Для OVR 90+ (нап/пз): обычно оставить или срезать; плюс — только если
-G+A сезона (на темп ~30 матч.) дотягивает до высокой планки.
+Модель: по темпу сезона оцениваем «играет на N», совет — подвинуть
+текущий OVR к N (регрессия при малой выборке, ±3, потолок; у 90+ вверх
+только от планки полного сезона).
 """
 from __future__ import annotations
 
@@ -26,7 +27,7 @@ from utils import season_paths
 
 OVR_CEILING = 94
 _MOTM_MIN_MONTH = 6
-# С этого OVR советы в основном «оставить / срезать»; плюс — только сверхвысокая стата.
+# С этого OVR вверх только от планки полного сезона; вниз — по «играет на N».
 ELITE_OVR = 90
 # Планка «полный сезон»: 64 G+A на ~30 матч.; выше 90 — жёстче.
 _ELITE_BASE_GA = 64
@@ -56,6 +57,8 @@ class OvrAdviceRow:
     history: list[tuple[int, int]]  # (season, ovr)
     reasons: list[str] = field(default_factory=list)
     signals: dict[str, float] = field(default_factory=dict)
+    # «играет на» — оценка уровня по темпу (до лимитов Δ)
+    plays_at: float | None = None
     # context
     season_matches: int = 0
     season_goals: int = 0
@@ -77,30 +80,49 @@ class OvrAdviceRow:
         return int(self.suggested) - int(self.current)
 
 
-def _expected_ga_per_match(pos: str, ovr: int) -> float:
-    """
-    Норма G+A/матч для позиции при данном OVR (FIFA-темп, не реальный футбол).
+# Наклон: сколько G+A/м ≈ +1 OVR (FIFA; чуть положе, чтобы инверсия «темп→OVR» была здравой)
+_GA_PER_OVR = 0.06
 
-    База для ~85; выше OVR — чуть выше планка. Ориентир: у атакующих
-    «около действия за матч» — норма, не сверхрезультат.
-    """
+
+def _ga_base_for_pos(pos: str) -> float:
+    """База G+A/матч при OVR 85."""
     pos_u = (pos or "").upper()
     if pos_u in _FWD:
-        base = 1.15  # было 0.85
-    elif pos_u in ("ЦАП", "ПП", "CAM", "ЛП", "ППА", "LM", "RM"):
-        base = 1.00  # было 0.70
-    elif pos_u in ("ЦП", "ЦОП", "CM", "CDM"):
-        base = 0.55  # было 0.35
-    elif pos_u in _DEF:
-        base = 0.20  # было 0.12
-    else:
-        base = 0.60
-    # ±0.04 за пункт OVR от 85
-    return max(0.08, base + 0.04 * (int(ovr) - 85))
+        return 1.15
+    if pos_u in ("ЦАП", "ПП", "CAM", "ЛП", "ППА", "LM", "RM"):
+        return 1.00
+    if pos_u in ("ЦП", "ЦОП", "CM", "CDM"):
+        return 0.55
+    if pos_u in _DEF:
+        return 0.20
+    return 0.60
+
+
+def _expected_ga_per_match(pos: str, ovr: int) -> float:
+    """
+    Норма G+A/матч для позиции при данном OVR (FIFA-темп).
+
+    База для ~85; +``_GA_PER_OVR`` за пункт OVR. Ориентир: у атакующих
+    «около действия за матч» — норма, не сверхрезультат.
+    """
+    return max(0.08, _ga_base_for_pos(pos) + _GA_PER_OVR * (int(ovr) - 85))
+
+
+def _implied_ovr_from_ga_rate(pos: str, rate: float) -> float:
+    """Инверсия нормы: какой OVR соответствует темпу G+A/матч."""
+    base = _ga_base_for_pos(pos)
+    raw = 85.0 + (float(rate) - base) / _GA_PER_OVR
+    return max(60.0, min(float(OVR_CEILING + 3), raw))
 
 
 def _expected_cs_rate(ovr: int) -> float:
     return max(0.15, min(0.55, 0.28 + 0.015 * (int(ovr) - 80)))
+
+
+def _implied_ovr_from_cs_rate(rate: float) -> float:
+    """Инверсия нормы сухих → OVR."""
+    raw = 80.0 + (float(rate) - 0.28) / 0.015
+    return max(60.0, min(float(OVR_CEILING + 3), raw))
 
 
 def _potm_count(name: str, team: str | None = None) -> int:
@@ -154,21 +176,6 @@ def _motm_count_from_month(
     return n
 
 
-def _dampen_raise_near_ceiling(cur: int, score: float) -> float:
-    """У хайрейтингов сложнее расти; у потолка (94) — нельзя выше."""
-    if score <= 0:
-        return score
-    room = OVR_CEILING - int(cur)
-    if room <= 0:
-        return 0.0
-    if cur <= 86:
-        return score
-    # 87→94: коэффициент от ~0.95 до ~0.25
-    span = max(1, OVR_CEILING - 86)
-    factor = max(0.25, min(1.0, 0.2 + 0.8 * (room / span)))
-    return score * factor
-
-
 def _is_elite_attack_pos(pos: str) -> bool:
     pos_u = (pos or "").upper()
     return pos_u in _FWD or pos_u in ("ЛФА", "ПФА", "LW", "RW", "ST", "CF")
@@ -214,12 +221,12 @@ def _elite_season_plus(
 
     pace = f"{ga} G+A в {sm} матч. → на 30 матч. ≈ {ga_full:.0f}"
     if ga_full >= need_plus2 and cur + 2 <= OVR_CEILING:
-        return 2, f"+ сезон топ-уровня ({pace}, планка {role} {cur}: {need_plus2:.0f}) → +2"
+        return 2, f"· планка роста +2 ({pace}, нужно ≥{need_plus2:.0f} для {role} {cur})"
     if ga_full >= need_plus1 and cur + 1 <= OVR_CEILING:
-        return 1, f"+ сильный сезон ({pace}, планка {role} {cur}: {need_plus1:.0f}) → +1"
+        return 1, f"· планка роста +1 ({pace}, нужно ≥{need_plus1:.0f} для {role} {cur})"
     return (
         0,
-        f"· для плюса при {cur} ({role}) нужно ≈{need_plus1:.0f} G+A на 30 матч.; "
+        f"· для роста с {cur} ({role}) нужно ≈{need_plus1:.0f} G+A на 30 матч.; "
         f"сейчас {pace} — мало",
     )
 
@@ -678,7 +685,6 @@ def advise_club_ovr(
             sm = sm_db
             matches_note = f"по БД matches={sm}"
         reasons: list[str] = []
-        score = 0.0  # вклад в Δ до округления
         signals: dict[str, float] = {}
         signals["matches_db"] = float(sm_db)
         signals["matches_eff"] = float(sm)
@@ -694,134 +700,56 @@ def advise_club_ovr(
                 )
             )
 
-        # 1) форма текущего сезона
-        form = 0.0
         elite = cur >= ELITE_OVR
         season_plus = 0
+        plays_at = float(cur)
+        rate = 0.0
+        form = 0.0  # (rate-exp)/exp — только для мягких порогов наград
+
+        # 1) Темп сезона → «играет на N»
         if sm >= 3:
             if pos in _GK:
                 rate = scs / sm
-                exp = _expected_cs_rate(cur)
-                form = (rate - exp) / max(0.15, exp)
+                raw_imp = _implied_ovr_from_cs_rate(rate)
+                exp_cur = _expected_cs_rate(cur)
+                form = (rate - exp_cur) / max(0.15, exp_cur)
                 signals["form_cs"] = round(rate, 3)
+                reasons.append(
+                    f"· сухие {scs}/{sm} ({rate:.0%}) → сырой уровень ~{raw_imp:.0f} "
+                    f"(норма для {cur}: ~{exp_cur:.0%}; {matches_note})"
+                )
             else:
                 ga = sg + sa
                 rate = ga / sm
-                exp = _expected_ga_per_match(pos, cur)
-                form = (rate - exp) / max(0.15, exp)
+                raw_imp = _implied_ovr_from_ga_rate(pos, rate)
+                exp_cur = _expected_ga_per_match(pos, cur)
+                form = (rate - exp_cur) / max(0.15, exp_cur)
                 signals["form_ga"] = round(rate, 3)
-
-            if elite:
-                if form < -0.35:
-                    pen = min(2.2, 1.1 + abs(form) * 0.9)
-                    score -= pen
-                    if pos in _GK:
-                        reasons.append(
-                            f"− OVR {cur}+ не подтверждён сухими {scs}/{sm} "
-                            f"({rate:.0%} vs ~{exp:.0%}; {matches_note}; { -pen:+.1f})"
-                        )
-                    else:
-                        reasons.append(
-                            f"− OVR {cur}+ завышен: {sg}+{sa} / {sm} "
-                            f"(= {rate:.2f}, норма ~{exp:.2f} для {pos} {cur}; "
-                            f"{matches_note}; {-pen:+.1f})"
-                        )
-                elif form < -0.12:
-                    score -= 1.0
-                    if pos in _GK:
-                        reasons.append(
-                            f"− OVR {cur}+ ниже нормы по сухим ({matches_note})"
-                        )
-                    else:
-                        reasons.append(
-                            f"− OVR {cur}+ ниже нормы: {sg}+{sa} / {sm} "
-                            f"(= {rate:.2f} < ~{exp:.2f}; {matches_note})"
-                        )
-                else:
-                    # на уровне / выше нормы по rate — плюс только от планки «полный сезон»
-                    if pos not in _GK:
-                        sm_mz = int(sm_db) if int(sm_db) >= 10 else int(sm)
-                        season_plus, mz_why = _elite_season_plus(
-                            pos, cur, int(sg) + int(sa), sm_mz
-                        )
-                        signals["elite_ga_proj"] = round(
-                            (sg + sa)
-                            * (_ELITE_FULL_SEASON_MATCHES / max(sm_mz, 1)),
-                            1,
-                        )
-                        signals["elite_season_plus"] = float(season_plus)
-                        if mz_why:
-                            if season_plus > 0:
-                                score += 0.95 * season_plus
-                            reasons.append(mz_why)
-                    elif season_plus <= 0:
-                        reasons.append(
-                            f"· OVR {cur}+ на уровне по сухим — без плюса ({matches_note})"
-                        )
-            elif pos in _GK:
-                if form > 0.25:
-                    bump = min(2.0, 0.6 + form * 1.1)
-                    bump *= min(1.0, sm / 10.0)
-                    score += bump
-                    reasons.append(
-                        f"+ сухие сейчас {scs}/{sm} ({rate:.0%}) выше нормы ~{exp:.0%} "
-                        f"для OVR {cur} ({matches_note}; вклад {bump:+.1f})"
-                    )
-                elif form < -0.25:
-                    score -= min(1.4, 0.5 + abs(form) * 0.9)
-                    reasons.append(
-                        f"− сухие сейчас {scs}/{sm} ({rate:.0%}) ниже нормы ~{exp:.0%} "
-                        f"для OVR {cur} ({matches_note})"
-                    )
-                else:
-                    reasons.append(
-                        f"· сухие {scs}/{sm} около нормы для OVR {cur} ({matches_note})"
-                    )
-            else:
-                if form > 0.35:
-                    bump = min(2.4, 0.55 + form * 1.05)
-                    if sm >= 10:
-                        bump += 0.25
-                    bump *= min(1.0, sm / 10.0)
-                    score += bump
-                    reasons.append(
-                        f"+ форма сезона {sg}+{sa} в {sm} матч. "
-                        f"({rate:.2f} G+A/м vs ожид. ~{exp:.2f} для {pos} {cur}; "
-                        f"{matches_note}; вклад {bump:+.1f})"
-                    )
-                elif form > 0.10:
-                    bump = 0.5 * min(1.0, sm / 10.0)
-                    score += bump
-                    reasons.append(
-                        f"+ чуть выше нормы: {sg}+{sa} / {sm} (= {rate:.2f}, "
-                        f"ожид. ~{exp:.2f}; {matches_note})"
-                    )
-                elif form < -0.35:
-                    score -= 1.0
-                    reasons.append(
-                        f"− слабая форма: {sg}+{sa} / {sm} (= {rate:.2f}, "
-                        f"ожид. ~{exp:.2f}; {matches_note})"
-                    )
-                elif form < -0.10:
-                    score -= 0.4
-                    reasons.append(
-                        f"− чуть ниже нормы: {sg}+{sa} / {sm} (= {rate:.2f}; {matches_note})"
-                    )
-                else:
-                    reasons.append(
-                        f"· форма ок: {sg}+{sa} в {sm} матч. "
-                        f"(= {rate:.2f} ≈ {exp:.2f}; {matches_note})"
-                    )
+                reasons.append(
+                    f"· {sg}+{sa} в {sm} матч. (= {rate:.2f} G+A/м) → "
+                    f"сырой уровень ~{raw_imp:.0f} "
+                    f"(норма для {pos} {cur}: ~{exp_cur:.2f}; {matches_note})"
+                )
+            # регрессия к текущему при малой выборке (полная уверенность с ~12 матч.)
+            conf = min(1.0, sm / 12.0)
+            plays_at = conf * raw_imp + (1.0 - conf) * float(cur)
+            signals["implied_raw"] = round(raw_imp, 2)
+            signals["form_conf"] = round(conf, 2)
+            if conf < 0.99:
+                reasons.append(
+                    f"· вес сезона {conf:.0%} (мало матчей) → тянем к текущему {cur} "
+                    f"→ ~{plays_at:.0f}"
+                )
         else:
             reasons.append(
-                f"· мало матчей в текущем сезоне ({sm}; {matches_note}) — форма почти не влияет"
+                f"· мало матчей в текущем сезоне ({sm}; {matches_note}) — "
+                f"ориентир ≈ текущий {cur}"
             )
 
-        # 1b) POTM (все) + MOTM (с 6-го месяца)
+        # 1b) POTM / MOTM — лёгкий сдвиг «играет на»
         potm_db = int(p.get("potm") or 0)
         if multi_club:
             potm_db = max(potm_db, int(season_all.get("potm") or 0))
-        # лог: по всем клубам, если сезон с трансфером
         potm_log = _potm_count(name, None if multi_club else display)
         potm_n = max(potm_db, potm_log)
         motm_n = _motm_count_from_month(
@@ -829,189 +757,154 @@ def advise_club_ovr(
         )
         signals["potm"] = float(potm_n)
         signals["motm"] = float(motm_n)
-        # 90+: награды только чуть смягчают минус, никогда не поднимают
-        award_scale = 1.0
-        if elite:
-            award_scale = 0.2 if form < -0.12 else 0.0
-        elif form < -0.10:
-            award_scale = 0.35
-        if potm_n > 0:
-            potm_bump = min(2.2, 0.45 + potm_n * 0.32) * award_scale
-            if potm_bump > 0.05:
-                score += potm_bump
-                reasons.append(f"+ POTM ×{potm_n} (вклад {potm_bump:+.1f})")
-            elif elite:
-                reasons.append(f"· POTM ×{potm_n}")
-            else:
-                reasons.append(f"· POTM ×{potm_n}")
+        award_shift = 0.0
+        if not elite or form < -0.12:
+            # у 90+ награды не поднимают «уровень», только чуть смягчают просадку
+            if potm_n > 0:
+                award_shift += min(1.2, 0.25 + potm_n * 0.18)
+            if motm_n > 0:
+                award_shift += min(0.8, motm_n * 0.35)
+            if elite:
+                award_shift *= 0.35
+        if award_shift > 0.05:
+            plays_at += award_shift
+            reasons.append(
+                f"· награды: POTM ×{potm_n}, MOTM ×{motm_n} "
+                f"(с {_MOTM_MIN_MONTH}м) → уровень {award_shift:+.1f}"
+            )
         else:
-            reasons.append("· POTM нет")
-        if motm_n > 0:
-            motm_bump = min(1.6, motm_n * 0.75) * award_scale
-            if motm_bump > 0.05:
-                score += motm_bump
-                reasons.append(
-                    f"+ MOTM ×{motm_n} (с {_MOTM_MIN_MONTH}-го мес.; "
-                    f"вклад {motm_bump:+.1f})"
-                )
-            elif elite:
-                reasons.append(f"· MOTM ×{motm_n} (с {_MOTM_MIN_MONTH}-го мес.)")
-            else:
-                reasons.append(f"· MOTM ×{motm_n} (с {_MOTM_MIN_MONTH}-го мес.)")
-        else:
-            reasons.append(f"· MOTM с {_MOTM_MIN_MONTH}-го мес. нет")
+            reasons.append(
+                f"· POTM ×{potm_n} · MOTM ×{motm_n} (с {_MOTM_MIN_MONTH}м)"
+                + (" — у 90+ не поднимают уровень" if elite and (potm_n or motm_n) else "")
+            )
 
-        # скамейка + элитная форма — только ниже 90
-        if not elite and status == "bench" and form > 0.5 and sm >= 8:
-            score += 0.35
-            reasons.append("+ элитная форма со скамейки")
+        if not elite and status == "bench" and sm >= 8 and plays_at >= cur + 1.5:
+            plays_at += 0.3
+            reasons.append("· сильный темп со скамейки → чуть выше")
 
-        # 2) карьера в клубе
+        # 2) карьера в клубе — мягкий якорь
         cm = int(career.get("matches") or 0)
-        if cm >= 10 and pos not in _GK:
-            cga = int(career["goals"]) + int(career["assists"])
-            crate = cga / cm
-            exp_c = _expected_ga_per_match(pos, cur)
-            if crate > exp_c * 1.25:
-                if elite:
-                    reasons.append(
-                        f"· карьера сильная ({cga} G+A / {cm}) — у {cur}+ без плюса"
-                    )
-                else:
-                    score += 0.6
-                    reasons.append(
-                        f"+ карьера в клубе сильная: {cga} G+A / {cm} (= {crate:.2f})"
-                    )
-            elif crate < exp_c * 0.7:
-                score -= 0.5
-                reasons.append(
-                    f"− карьера скромнее нормы: {cga} G+A / {cm} (= {crate:.2f})"
-                )
-            signals["career_ga_rate"] = round(crate, 3)
-        elif cm >= 10 and pos in _GK:
-            crate = int(career["clean_sheets"]) / cm
-            exp_c = _expected_cs_rate(cur)
-            if crate > exp_c * 1.15:
-                if elite:
-                    reasons.append(f"· карьера сухих сильная — у {cur}+ без плюса")
-                else:
-                    score += 0.5
-                    reasons.append(f"+ карьера сухих {career['clean_sheets']}/{cm}")
-            elif crate < exp_c * 0.75:
-                score -= 0.5
-                reasons.append(f"− карьера сухих слабая {career['clean_sheets']}/{cm}")
+        if cm >= 15:
+            if pos not in _GK:
+                cga = int(career["goals"]) + int(career["assists"])
+                crate = cga / cm
+                career_imp = _implied_ovr_from_ga_rate(pos, crate)
+                signals["career_ga_rate"] = round(crate, 3)
+            else:
+                crate = int(career["clean_sheets"]) / cm
+                career_imp = _implied_ovr_from_cs_rate(crate)
+            # 20% якорь к карьерному уровню
+            before = plays_at
+            plays_at = 0.8 * plays_at + 0.2 * career_imp
+            reasons.append(
+                f"· карьера в клубе ({cm} матч.) ≈ уровень {career_imp:.0f} "
+                f"→ подмешиваем ({before:.0f} → {plays_at:.0f})"
+            )
 
         # 3) травмы
         signals["injury_months"] = float(inj_m)
         if inj_m >= 8:
-            score -= 1.2
-            reasons.append(f"− много травм: {inj_n} период(ов), {inj_m} мес. суммарно")
+            plays_at -= 1.2
+            reasons.append(f"· много травм: {inj_n}× / {inj_m} мес. → уровень −1.2")
         elif inj_m >= 4:
-            score -= 0.7
-            reasons.append(f"− травмы: {inj_n}×, {inj_m} мес. (давление на OVR)")
+            plays_at -= 0.7
+            reasons.append(f"· травмы: {inj_n}× / {inj_m} мес. → уровень −0.7")
         elif inj_m >= 1:
-            score -= 0.25
+            plays_at -= 0.25
             reasons.append(f"· были травмы: {inj_n}× / {inj_m} мес.")
         else:
             reasons.append("· травм в JSON нет")
 
-        # 4) результаты клуба при нём
+        # 4) win% при нём
         if infl and infl.played >= 20:
             wr = infl.win_pct / 100.0
             signals["infl_wr"] = round(wr, 3)
             diff = wr - club_wr
-            if diff > 0.08:
-                if elite:
-                    reasons.append(
-                        f"· win% выше клуба ({infl.win_pct:.0f}%) — у {cur}+ без плюса"
-                    )
-                else:
-                    score += 0.7
-                    reasons.append(
-                        f"+ при нём клуб чаще побеждает: {infl.win_pct:.0f}% "
-                        f"(клуб в среднем {club_wr*100:.0f}%), n={infl.played}"
-                    )
-            elif diff < -0.08:
-                score -= 0.7
+            if diff > 0.08 and not elite:
+                plays_at += 0.5
                 reasons.append(
-                    f"− при нём win% ниже клуба: {infl.win_pct:.0f}% "
-                    f"vs {club_wr*100:.0f}% (n={infl.played}, травма-проп. {infl.missed_injury})"
+                    f"· при нём win% выше клуба: {infl.win_pct:.0f}% "
+                    f"vs {club_wr*100:.0f}% (n={infl.played}) → +0.5"
+                )
+            elif diff < -0.08:
+                plays_at -= 0.5
+                reasons.append(
+                    f"· при нём win% ниже клуба: {infl.win_pct:.0f}% "
+                    f"vs {club_wr*100:.0f}% (n={infl.played}) → −0.5"
                 )
             else:
                 reasons.append(
                     f"· win% при нём ≈ клуб: {infl.win_pct:.0f}% (n={infl.played})"
                 )
             if infl.missed_injury >= 12:
-                score -= 0.4
+                plays_at -= 0.4
                 reasons.append(
-                    f"− много матчей клуба без него из‑за травм ({infl.missed_injury})"
+                    f"· много матчей клуба без него из‑за травм ({infl.missed_injury})"
                 )
 
-        # 5) траектория
-        if peak >= cur + 3:
-            if elite:
-                reasons.append(f"· история OVR: пик {peak}, сейчас {cur}")
-            elif score > 0.4:
-                score += 0.4
-                reasons.append(
-                    f"· был пик {peak}, сейчас {cur}: при хорошей форме возможен +1 отскок"
-                )
-            else:
-                score -= 0.3
-                reasons.append(
-                    f"− OVR уже просел с пика {peak}→{cur}; без формы вверх не тянем"
-                )
-        elif peak > cur:
-            reasons.append(f"· история OVR: пик {peak}, сейчас {cur}")
+        # 5) траектория (информация + лёгкий якорь к пику ниже 90)
         if hist:
             chain = " → ".join(str(o) for _, o in hist)
             reasons.append(f"· по сезонам: {chain}")
+        if peak > cur:
+            reasons.append(f"· история OVR: пик {peak}, сейчас {cur}")
+            if not elite and peak >= cur + 3 and plays_at > cur:
+                plays_at += 0.3
+                reasons.append("· был заметный пик — при хорошем темпе чуть легче отскок")
 
-        # 90+: плюс только от планки полного сезона; остальные плюсы обнуляем
-        if elite and score > 0 and season_plus <= 0:
-            score = 0.0
+        # оценка «играет на» до лимитов роста 90+
+        plays_at_shown = plays_at
+        signals["plays_at"] = round(plays_at_shown, 2)
+        target_level = plays_at
 
-        # хайрейтинг ниже 90: положительный score слабее у потолка 94
-        score_before_ceil = score
-        if not elite:
-            score = _dampen_raise_near_ceiling(cur, score)
-            if score < score_before_ceil - 0.05:
-                reasons.insert(
-                    0,
-                    f"· у OVR {cur} рост к потолку {OVR_CEILING} ослаблен "
-                    f"({score_before_ceil:.1f} → {score:.1f})",
-                )
+        # 90+: вверх только на величину планки полного сезона; вниз — по темпу
+        if elite and pos not in _GK and sm >= 3:
+            sm_mz = int(sm_db) if int(sm_db) >= 10 else int(sm)
+            season_plus, mz_why = _elite_season_plus(
+                pos, cur, int(sg) + int(sa), sm_mz
+            )
+            signals["elite_ga_proj"] = round(
+                (sg + sa) * (_ELITE_FULL_SEASON_MATCHES / max(sm_mz, 1)), 1
+            )
+            signals["elite_season_plus"] = float(season_plus)
+            if mz_why:
+                reasons.append(mz_why)
+            if target_level > cur + 0.35:
+                if season_plus > 0:
+                    cap = float(cur + season_plus)
+                    if target_level > cap:
+                        reasons.append(
+                            f"· по темпу ~{plays_at_shown:.0f}, но с {cur}+ рост ограничен "
+                            f"планкой → цель не выше {cur + season_plus}"
+                        )
+                        target_level = cap
+                else:
+                    reasons.append(
+                        f"· по темпу ~{plays_at_shown:.0f}, но с {cur}+ рост только от "
+                        f"планки полного сезона → потолок роста = {cur}"
+                    )
+                    target_level = min(target_level, float(cur))
 
-        # итог
-        raw_delta = max(-3.0, min(3.0, score))
-        # пороги: не дёргать на 0.3
-        if raw_delta >= 0.85:
-            delta = 1 if raw_delta < 1.7 else (2 if raw_delta < 2.5 else 3)
-        elif raw_delta <= -0.85:
-            delta = -1 if raw_delta > -1.7 else (-2 if raw_delta > -2.5 else -3)
-        else:
-            delta = 0
-            if elite and form >= -0.12 and sm >= 3 and season_plus <= 0:
-                reasons.insert(0, f"· {cur}+ играет на свой уровень → оставляем")
-            elif abs(raw_delta) < 0.85 and not any(
-                r.startswith(("+", "−")) for r in reasons if r
-            ):
-                reasons.insert(0, "· сигналов мало / они слабые → оставляем OVR")
-            elif delta == 0 and not any(
-                "оставляем" in r or "мало" in r for r in reasons[:2]
-            ):
-                reasons.insert(0, "· плюсы и минусы уравновешены → оставляем OVR")
+        signals["target_level"] = round(target_level, 2)
 
-        delta_raw = int(delta)
+        # совет: двигаем текущий к целевому уровню, ±3 / потолок / РПЛ
+        target = int(round(target_level))
+        target = max(60, min(OVR_CEILING, target))
+        # у хайрейтинга ниже 90 рост к потолку осторожнее
+        if not elite and target > cur:
+            room = OVR_CEILING - cur
+            if cur >= 87 and room <= 4:
+                target = min(target, cur + max(1, min(2, room)))
+        delta_raw = target - cur
         delta = clamp_ovr_delta_for_team(display, cur, delta_raw)
         if delta != delta_raw:
             reasons.insert(
                 0,
-                f"· лимит: Δ {delta_raw:+d} → {delta:+d} "
-                f"(лига / потолок {OVR_CEILING})",
+                f"· лимит: цель {target} (Δ {delta_raw:+d}) → {cur + delta} "
+                f"(±3 / лига / потолок {OVR_CEILING})",
             )
 
-        suggested = max(60, min(OVR_CEILING, cur + delta))
+        suggested = cur + delta
         try:
             from player_stats import national_league_code_for_team
 
@@ -1020,8 +913,24 @@ def advise_club_ovr(
         except Exception:
             pass
         delta = int(suggested) - int(cur)
-        signals["score_raw"] = round(score, 2)
         signals["delta"] = float(delta)
+
+        if abs(plays_at_shown - cur) < 0.45 and delta == 0:
+            reasons.insert(
+                0, f"· играет на ~{plays_at_shown:.0f} ≈ сейчас {cur} → оставляем"
+            )
+        elif delta == 0 and abs(plays_at_shown - cur) >= 0.45:
+            reasons.insert(
+                0,
+                f"· играет на ~{plays_at_shown:.0f}, сейчас {cur} — совет без сдвига "
+                f"(лимиты / правила 90+)",
+            )
+        else:
+            reasons.insert(
+                0,
+                f"· играет на ~{plays_at_shown:.0f} → совет {suggested} "
+                f"(сейчас {cur}, {delta:+d})",
+            )
 
         rows.append(
             OvrAdviceRow(
@@ -1034,6 +943,7 @@ def advise_club_ovr(
                 history=hist,
                 reasons=reasons,
                 signals=signals,
+                plays_at=round(plays_at_shown, 1),
                 season_matches=sm,
                 season_goals=sg,
                 season_assists=sa,
@@ -1077,13 +987,19 @@ def format_ovr_advice_player_html(team: str, row: OvrAdviceRow) -> str:
         tag = f"СНИЗИТЬ {row.delta}"
     else:
         tag = "ОСТАВИТЬ"
+    plays = (
+        f"~{row.plays_at:.0f}"
+        if row.plays_at is not None
+        else "—"
+    )
     lines = [
         f"🔬 <b>DEBUG OVR</b> · {html_escape(team)}",
         "<i>Только просмотр — в БД не пишем.</i>",
         "",
         f"<b>{html_escape(row.name)}</b> · {html_escape(row.position or '—')} · "
         f"{html_escape(row.status or '—')}",
-        f"Сейчас <b>{row.current}</b> → <b>{row.suggested}</b>  [{tag}]",
+        f"Сейчас <b>{row.current}</b> · играет на <b>{plays}</b> → "
+        f"совет <b>{row.suggested}</b>  [{tag}]",
         "",
         f"Сезон: {row.season_matches} матч, {row.season_goals}+{row.season_assists}"
         + (f", CS {row.season_cs}" if row.position in _GK else ""),
@@ -1108,8 +1024,8 @@ def format_ovr_advice_report(team: str, rows: list[OvrAdviceRow] | None = None) 
     rows = rows if rows is not None else advise_club_ovr(team)
     chunks = [
         f"── DEBUG OVR · {team} ──",
-        "Только тест: в БД ничего не пишем. Δ зажата ±3.",
-        "Сигналы: форма сезона · карьера · травмы · win% при игроке · траектория OVR.",
+        "Только тест: в БД ничего не пишем. Модель: играет на N → совет (±3).",
+        "Сигналы: темп сезона · карьера · травмы · win% · траектория OVR.",
         "",
     ]
     if not rows:
@@ -1126,7 +1042,10 @@ def format_ovr_advice_report(team: str, rows: list[OvrAdviceRow] | None = None) 
             tag = "ОСТАВИТЬ"
         st = r.status or "—"
         chunks.append(
-            f"■ {r.name} · {r.position} · {st} · сейчас {r.current}  [{tag}]  {arrow}"
+            f"■ {r.name} · {r.position} · {st} · сейчас {r.current} · "
+            f"играет на ~{r.plays_at:.0f}  [{tag}]  → {r.suggested}"
+            if r.plays_at is not None
+            else f"■ {r.name} · {r.position} · {st} · сейчас {r.current}  [{tag}]  {arrow}"
         )
         chunks.append(
             f"  сезон: {r.season_matches} матч, {r.season_goals}+{r.season_assists}"

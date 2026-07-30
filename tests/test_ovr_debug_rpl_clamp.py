@@ -36,3 +36,11 @@ def test_elite_ovr_season_plus_benchmark():
     r = advise_player_ovr("Сити", "Де Брюйне")
     assert r is not None and r.current >= 90
     assert r.delta <= 0
+
+
+def test_implied_ovr_roundtrip_ga():
+    from utils.ovr_debug_advice import _expected_ga_per_match, _implied_ovr_from_ga_rate
+
+    for pos, ovr in (("ФРВ", 90), ("ПП", 88), ("ЦП", 82)):
+        rate = _expected_ga_per_match(pos, ovr)
+        assert abs(_implied_ovr_from_ga_rate(pos, rate) - ovr) < 0.05
