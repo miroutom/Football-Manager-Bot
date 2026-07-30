@@ -101,6 +101,8 @@ class ClubDossier:
     cl_stages: list[tuple[int, int]]  # (season, stage)
     legends: list[ClubLegend]
     awards: list[tuple[str, int, str]]  # (kind_label, season, player)
+    # Особые кубки: (grade gold|platinum, scope league|cl, season)
+    special_cups: list[tuple[str, str, int]] = field(default_factory=list)
 
 
 def _norm(s: str) -> str:
@@ -373,6 +375,19 @@ def build_club_dossier(team: str) -> ClubDossier:
             awards.append((lab, int(row[0]), str(row[1])))
     awards.sort(key=lambda x: (-x[1], x[0]))
 
+    special: list[tuple[str, str, int]] = []
+    for sn in league_seasons:
+        grade = campaign_special_cup(
+            team_s, sn, competition="league", league_code=lc or None
+        )
+        if grade:
+            special.append((grade, "league", int(sn)))
+    for sn in cl_seasons:
+        grade = campaign_special_cup(team_s, sn, competition="cl")
+        if grade:
+            special.append((grade, "cl", int(sn)))
+    special.sort(key=lambda x: (-x[2], 0 if x[0] == "platinum" else 1, x[1]))
+
     return ClubDossier(
         team=team_s,
         league_code=lc,
@@ -383,6 +398,7 @@ def build_club_dossier(team: str) -> ClubDossier:
         cl_stages=stages,
         legends=club_legends(team_s, limit=8),
         awards=awards,
+        special_cups=special,
     )
 
 
@@ -562,6 +578,104 @@ def match_result_for_team(m: dict[str, Any], team: str) -> tuple[str, int, int, 
         if mine < theirs:
             return "L", 0, gf, ga
     return "D", 1, gf, ga
+
+
+_NATIONAL_LEAGUE_CODES = frozenset({"rpl", "eng", "esp", "ita", "ger"})
+_CL_LEAGUE_CODES = frozenset({"cl", "champions"})
+
+
+def _match_in_competition(
+    m: dict[str, Any],
+    *,
+    competition: str,
+    league_code: str | None = None,
+) -> bool:
+    """
+    competition: ``league`` — нац. лига; ``cl`` — вся ЛЧ (группа/лига + плей-офф).
+    """
+    lg = str(m.get("league") or "").strip().lower()
+    if competition == "cl":
+        if lg in _CL_LEAGUE_CODES:
+            return True
+        # legacy: фаза ЛЧ без кода лиги
+        ph = str(m.get("cl_phase") or "").strip().lower()
+        return bool(ph)
+    # national league
+    if lg in _CL_LEAGUE_CODES:
+        return False
+    want = (league_code or "").strip().lower()
+    if want:
+        return lg == want
+    return lg in _NATIONAL_LEAGUE_CODES
+
+
+def campaign_wdl(
+    team: str,
+    season: int,
+    *,
+    competition: str,
+    league_code: str | None = None,
+) -> tuple[int, int, int, int]:
+    """``(wins, draws, losses, n)`` по кампании сезона (лига или вся ЛЧ)."""
+    w = d = l = 0
+    for m in club_matches_in_season(team, season):
+        if not _match_in_competition(
+            m, competition=competition, league_code=league_code
+        ):
+            continue
+        res, _, _, _ = match_result_for_team(m, team)
+        if res == "W":
+            w += 1
+        elif res == "D":
+            d += 1
+        else:
+            l += 1
+    return w, d, l, w + d + l
+
+
+def campaign_special_cup(
+    team: str,
+    season: int,
+    *,
+    competition: str,
+    league_code: str | None = None,
+    min_matches: int | None = None,
+) -> str | None:
+    """
+    Особый кубок чемпионской кампании:
+    - ``platinum`` — без ничьих и поражений (все победы);
+    - ``gold`` — без поражений (ничьи допустимы).
+
+    Только если есть достаточно матчей. Для ЛЧ учитываются группа/лига + нокаут.
+    """
+    if min_matches is None:
+        min_matches = 6 if competition == "cl" else 8
+    w, d, l, n = campaign_wdl(
+        team, season, competition=competition, league_code=league_code
+    )
+    if n < int(min_matches):
+        return None
+    if l == 0 and d == 0 and w > 0:
+        return "platinum"
+    if l == 0 and (w + d) > 0:
+        return "gold"
+    return None
+
+
+def special_cups_for_champion(
+    team: str,
+    season: int,
+    *,
+    competition: str,
+    league_code: str | None = None,
+) -> str | None:
+    """Алиас для истории чемпионов (лига / ЛЧ)."""
+    return campaign_special_cup(
+        team,
+        season,
+        competition=competition,
+        league_code=league_code,
+    )
 
 
 def compute_result_streaks(results: list[str]) -> dict[str, int]:

@@ -299,8 +299,11 @@ def render_club_dossier_png(team: str) -> bytes:
     awards_block_h = 0
     if d.awards:
         awards_block_h = 36 + ((len(d.awards[:6]) + 1) // 2) * 56 + 12
+    special_h = 0
+    if d.special_cups:
+        special_h = 36 + ((len(d.special_cups) + 1) // 2) * 72 + 16
     legends_h = 52 + max(1, len(d.legends)) * 32
-    h = 560 + awards_block_h + legends_h
+    h = 560 + awards_block_h + special_h + legends_h
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
 
@@ -374,6 +377,44 @@ def render_club_dossier_png(team: str) -> bytes:
         fill=_TEXT,
     )
     y += 36
+
+    # Особые кубки: золото / платина
+    if d.special_cups:
+        from bot.history_render import _paste_special_cup_badge, _special_cup_meta
+
+        draw.text((_PAD, y), "Особые кубки", font=font_b, fill=_TEXT)
+        y += 30
+        card_w2 = (_CANVAS_W - 2 * _PAD - gap) // 2
+        for i, (grade, scope, sn) in enumerate(d.special_cups):
+            col = i % 2
+            row = i // 2
+            x0 = _PAD + col * (card_w2 + gap)
+            ay = y + row * 72
+            _, glow_rgb, cap_rgb, label = _special_cup_meta(grade)
+            draw.rounded_rectangle(
+                [x0, ay, x0 + card_w2, ay + 64],
+                radius=12,
+                fill=(36, 34, 42) if grade == "platinum" else (42, 36, 22),
+                outline=cap_rgb,
+                width=2,
+            )
+            _paste_special_cup_badge(
+                im, grade, x0 + 36, ay + 32, max_h=52
+            )
+            scope_lab = "ЛЧ" if scope == "cl" else "Лига"
+            draw.text(
+                (x0 + 70, ay + 12),
+                f"{label} · {scope_lab}",
+                font=font_sm,
+                fill=cap_rgb,
+            )
+            draw.text(
+                (x0 + 70, ay + 34),
+                format_season_tag(sn),
+                font=font_m,
+                fill=_TEXT,
+            )
+        y += ((len(d.special_cups) + 1) // 2) * 72 + 12
 
     # Prestige bars — full width, centered block
     draw.text((_PAD, y), "Вклад в престиж", font=font_b, fill=_TEXT)

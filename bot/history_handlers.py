@@ -239,7 +239,15 @@ async def cb_hist_league(callback: CallbackQuery) -> None:
         if callback.message:
             await callback.message.answer(f"Ошибка: {e}")
         return
-    await _send_png(callback, png=png, filename=f"history_{code}.png", caption=f"<b>{title}</b> — чемпионы")
+    await _send_png(
+        callback,
+        png=png,
+        filename=f"history_{code}.png",
+        caption=(
+            f"<b>{title}</b> — чемпионы\n"
+            f"<i>Золотой кубок — без поражений · Платиновый — без ничьих и поражений</i>"
+        ),
+    )
 
 
 @history_router.callback_query(F.data == "hist:cl")
@@ -252,7 +260,16 @@ async def cb_hist_cl(callback: CallbackQuery) -> None:
         if callback.message:
             await callback.message.answer(f"Ошибка: {e}")
         return
-    await _send_png(callback, png=png, filename="history_cl.png", caption="<b>ЛЧ</b> — победители")
+    await _send_png(
+        callback,
+        png=png,
+        filename="history_cl.png",
+        caption=(
+            "<b>ЛЧ</b> — победители\n"
+            "<i>Учитываются группа/лига и плей-офф · "
+            "Золото — без поражений · Платина — только победы</i>"
+        ),
+    )
 
 
 @history_router.callback_query(F.data.startswith("hist:a:"))

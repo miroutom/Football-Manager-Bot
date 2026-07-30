@@ -487,38 +487,140 @@ def _paste_trophy_thumb(
     im.alpha_composite(t, (int(cx - w // 2), int(cy - h // 2)))
 
 
+def _special_cup_meta(grade: str) -> tuple[str, tuple[int, int, int], tuple[int, int, int], str]:
+    """filename, glow RGB, caption RGB, short label."""
+    if grade == "platinum":
+        return (
+            "cup_platinum.png",
+            (180, 210, 240),
+            (220, 235, 255),
+            "Платина",
+        )
+    return (
+        "cup_gold.png",
+        (255, 200, 60),
+        (255, 220, 110),
+        "Золото",
+    )
+
+
+def _draw_radial_glow(
+    im: Image.Image,
+    cx: int,
+    cy: int,
+    radius: int,
+    rgb: tuple[int, int, int],
+    *,
+    peak_alpha: int = 110,
+) -> None:
+    """Мягкое сияние под кубком / вокруг эмблемы."""
+    if radius < 6:
+        return
+    size = radius * 2 + 2
+    glow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    r, g, b = rgb
+    for i in range(radius, 0, -1):
+        t = i / radius
+        a = int(peak_alpha * (1.0 - t) ** 1.6)
+        if a <= 0:
+            continue
+        gd.ellipse(
+            [radius - i, radius - i, radius + i, radius + i],
+            fill=(r, g, b, a),
+        )
+    im.alpha_composite(glow, (int(cx - radius), int(cy - radius)))
+
+
+def _paste_special_cup_badge(
+    im: Image.Image,
+    grade: str,
+    cx: int,
+    cy: int,
+    *,
+    max_h: int = 44,
+) -> None:
+    """Золотой / платиновый кубок с сиянием."""
+    filename, glow_rgb, _cap, _lab = _special_cup_meta(grade)
+    tro = _try_load_trophy_rgba(filename)
+    if tro is None:
+        return
+    _draw_radial_glow(im, cx, cy, max(18, max_h // 2 + 8), glow_rgb, peak_alpha=130)
+    _paste_trophy_thumb(im, tro, cx, cy, max_h)
+
+
 # ═══════════════════════════════════════════════════════════════════
 #  Сетка клубов (Лиги + ЛЧ) — 10 колонок
 # ═══════════════════════════════════════════════════════════════════
 
 def _render_club_grid_png(
-    *, title: str, subtitle: str | None,
-    rows: list[tuple[int, str | None]], use_cl_background: bool,
+    *,
+    title: str,
+    subtitle: str | None,
+    rows: list[tuple[int, str | None]],
+    use_cl_background: bool,
+    competition: str = "league",
+    league_code: str | None = None,
 ) -> bytes:
+    from bot.team_history import campaign_special_cup
+
     ordered = list(reversed(rows))
     n = len(ordered)
     if n == 0:
         ordered = [(get_active_season(), None)]
         n = 1
 
+    # precompute special cups for champions
+    grades: list[str | None] = []
+    for season, team in ordered:
+        if not team:
+            grades.append(None)
+            continue
+        grades.append(
+            campaign_special_cup(
+                team,
+                int(season),
+                competition=competition,
+                league_code=league_code,
+            )
+        )
+
     cols = _COLS_CLUB
     inner_w = _CANVAS_W - 2 * _PAD
     cell_w = inner_w // cols
-    crest_max = min(56, int(cell_w * 0.62))
-    cap_font = _pick_font(15, bold=True)
+    crest_max = min(52, int(cell_w * 0.55))
+    cup_h = min(40, int(crest_max * 0.85))
+    cap_font = _pick_font(14, bold=True)
+    badge_font = _pick_font(11, bold=True)
+    legend_font = _pick_font(13)
 
     _tmp = Image.new("RGB", (20, 20))
     _td = ImageDraw.Draw(_tmp)
     _cb = _td.textbbox((0, 0), "Сезон 9", font=cap_font)
     _cap_h = _cb[3] - _cb[1]
+    _bb = _td.textbbox((0, 0), "Платина", font=badge_font)
+    _badge_h = _bb[3] - _bb[1]
 
-    pad_v = 8
-    gap = 6
-    row_gap = 12
-    cell_h = pad_v + crest_max + gap + _cap_h + pad_v + row_gap
+    pad_v = 10
+    gap = 4
+    row_gap = 14
+    # crest + optional cup row + caption + optional badge
+    cell_h = (
+        pad_v
+        + crest_max
+        + 4
+        + cup_h
+        + gap
+        + _cap_h
+        + 2
+        + _badge_h
+        + pad_v
+        + row_gap
+    )
     n_rows = (n + cols - 1) // cols
     header_bottom = _measure_header_bottom(title, subtitle)
-    final_h = header_bottom + n_rows * cell_h + _PAD
+    legend_h = 36
+    final_h = header_bottom + n_rows * cell_h + legend_h + _PAD
 
     if use_cl_background:
         im = _background_cl_rgb(_CANVAS_W, final_h).convert("RGBA")
@@ -528,21 +630,76 @@ def _render_club_grid_png(
     draw = ImageDraw.Draw(im)
     _draw_header(draw, _CANVAS_W, title, subtitle)
 
-    for idx, (season, team) in enumerate(ordered):
+    for idx, ((season, team), grade) in enumerate(zip(ordered, grades)):
         col = idx % cols
         row = idx // cols
         x0 = _PAD + col * cell_w
         y0 = header_bottom + row * cell_h
         cx = x0 + cell_w // 2
         cy_crest = y0 + pad_v + crest_max // 2
+
+        if grade:
+            _, glow_rgb, cap_rgb, label = _special_cup_meta(grade)
+            # кольцо-сияние за эмблемой
+            _draw_radial_glow(
+                im, cx, cy_crest, crest_max // 2 + 14, glow_rgb, peak_alpha=90
+            )
+            # тонкая рамка
+            ring = crest_max // 2 + 4
+            draw.ellipse(
+                [cx - ring, cy_crest - ring, cx + ring, cy_crest + ring],
+                outline=cap_rgb + (180,),
+                width=2,
+            )
+
         _paste_crest_cell(im, team, cx, cy_crest, crest_max, draw)
+
+        cy_cup = y0 + pad_v + crest_max + 4 + cup_h // 2
+        if grade:
+            _paste_special_cup_badge(im, grade, cx, cy_cup, max_h=cup_h)
+        else:
+            # пустое место той же высоты — сетка ровная
+            pass
+
         cap = f"Сезон {season}"
         cb = draw.textbbox((0, 0), cap, font=cap_font)
         cw = cb[2] - cb[0]
+        cap_y = y0 + pad_v + crest_max + 4 + cup_h + gap
         draw.text(
-            (cx - cw // 2, y0 + pad_v + crest_max + gap),
-            cap, fill=_TEXT, font=cap_font,
+            (cx - cw // 2, cap_y),
+            cap,
+            fill=_TEXT,
+            font=cap_font,
         )
+        if grade:
+            _, _, cap_rgb, label = _special_cup_meta(grade)
+            bb = draw.textbbox((0, 0), label, font=badge_font)
+            bw = bb[2] - bb[0]
+            draw.text(
+                (cx - bw // 2, cap_y + _cap_h + 2),
+                label,
+                fill=cap_rgb,
+                font=badge_font,
+            )
+
+    # легенда внизу
+    legend_y = header_bottom + n_rows * cell_h + 4
+    leg = (
+        "Золотой кубок — чемпион без поражений  ·  "
+        "Платиновый — чемпион без ничьих и поражений"
+    )
+    if competition == "cl":
+        leg = (
+            "ЛЧ: группа/лига + плей-офф  ·  "
+            "Золото — без поражений  ·  Платина — только победы"
+        )
+    lb = draw.textbbox((0, 0), leg, font=legend_font)
+    draw.text(
+        ((_CANVAS_W - (lb[2] - lb[0])) // 2, legend_y),
+        leg,
+        fill=_TEXT_DIM,
+        font=legend_font,
+    )
 
     buf = BytesIO()
     im.convert("RGB").save(buf, format="PNG", optimize=True)
@@ -553,8 +710,12 @@ def render_league_history_png(league_code: str, league_title: str) -> bytes:
     mx = get_active_season()
     rows = timeline_league(league_code, mx)
     return _render_club_grid_png(
-        title=league_title, subtitle="Чемпионы по сезонам",
-        rows=rows, use_cl_background=False,
+        title=league_title,
+        subtitle="Чемпионы по сезонам · золото / платина за идеальный путь",
+        rows=rows,
+        use_cl_background=False,
+        competition="league",
+        league_code=league_code,
     )
 
 
@@ -562,8 +723,12 @@ def render_cl_history_png() -> bytes:
     mx = get_active_season()
     rows = timeline_cl(mx)
     return _render_club_grid_png(
-        title="Лига чемпионов", subtitle="Победители по сезонам",
-        rows=rows, use_cl_background=True,
+        title="Лига чемпионов",
+        subtitle="Победители · золото / платина за кампанию без поражений",
+        rows=rows,
+        use_cl_background=True,
+        competition="cl",
+        league_code=None,
     )
 
 
