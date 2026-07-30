@@ -2767,5 +2767,11 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 8
+  },
+  {
+    "home": "Ливерпуль",
+    "away": "Тоттенхэм",
+    "tournament": "league",
+    "day": 8
   }
 ]

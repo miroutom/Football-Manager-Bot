@@ -274,7 +274,7 @@
       "team_norm": "сити",
       "league_code": "eng",
       "scope": "league",
-      "matches_left": 2,
+      "matches_left": 0,
       "unavailable_from_round": 11
     },
     {
@@ -296,7 +296,7 @@
       "team_norm": "наполи",
       "league_code": "ita",
       "scope": "league",
-      "matches_left": 2,
+      "matches_left": 0,
       "unavailable_from_round": 12
     },
     {
@@ -307,7 +307,7 @@
       "team_norm": "реал",
       "league_code": "esp",
       "scope": "league",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 12
     },
     {
@@ -319,6 +319,50 @@
       "league_code": "cl",
       "scope": "cl",
       "matches_left": 1
+    },
+    {
+      "key": "тилеманс|астон вилла|eng|league",
+      "name": "Тилеманс",
+      "name_norm": "тилеманс",
+      "team": "Астон Вилла",
+      "team_norm": "астон вилла",
+      "league_code": "eng",
+      "scope": "league",
+      "matches_left": 0,
+      "unavailable_from_round": 14
+    },
+    {
+      "key": "торрес|астон вилла|eng|league",
+      "name": "Торрес",
+      "name_norm": "торрес",
+      "team": "Астон Вилла",
+      "team_norm": "астон вилла",
+      "league_code": "eng",
+      "scope": "league",
+      "matches_left": 1,
+      "unavailable_from_round": 15
+    },
+    {
+      "key": "вахи|аталанта|ita|league",
+      "name": "Вахи",
+      "name_norm": "вахи",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "league_code": "ita",
+      "scope": "league",
+      "matches_left": 3,
+      "unavailable_from_round": 15
+    },
+    {
+      "key": "кох|наполи|ita|league",
+      "name": "Кох",
+      "name_norm": "кох",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "ita",
+      "scope": "league",
+      "matches_left": 1,
+      "unavailable_from_round": 15
     }
   ],
   "yellow_cycle": [
@@ -460,7 +504,7 @@
       "team_norm": "ньюкасл",
       "league_code": "eng",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "шар|ньюкасл|eng|league",
@@ -520,7 +564,7 @@
       "team_norm": "мю",
       "league_code": "eng",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "джан|дортмунд|ger|league",
@@ -1150,7 +1194,7 @@
       "team_norm": "мю",
       "league_code": "eng",
       "scope": "league",
-      "count": 2
+      "count": 3
     },
     {
       "key": "торрес|астон вилла|eng|league",
@@ -1160,7 +1204,7 @@
       "team_norm": "астон вилла",
       "league_code": "eng",
       "scope": "league",
-      "count": 3
+      "count": 0
     },
     {
       "key": "бальде|барселона|esp|league",
@@ -1320,7 +1364,7 @@
       "team_norm": "астон вилла",
       "league_code": "eng",
       "scope": "league",
-      "count": 3
+      "count": 1
     },
     {
       "key": "патрик|спартак|cl|cl",
@@ -1920,7 +1964,7 @@
       "team_norm": "ливерпуль",
       "league_code": "eng",
       "scope": "league",
-      "count": 1
+      "count": 3
     },
     {
       "key": "диас|ливерпуль|eng|league",
@@ -2130,7 +2174,7 @@
       "team_norm": "астон вилла",
       "league_code": "eng",
       "scope": "league",
-      "count": 1
+      "count": 2
     },
     {
       "key": "адейеми|дортмунд|ger|league",
@@ -2649,6 +2693,96 @@
       "team": "Лацио",
       "team_norm": "лацио",
       "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "де брюйне|сити|eng|league",
+      "name": "Де Брюйне",
+      "name_norm": "де брюйне",
+      "team": "Сити",
+      "team_norm": "сити",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 2
+    },
+    {
+      "key": "бентанкур|тоттенхэм|eng|league",
+      "name": "Бентанкур",
+      "name_norm": "бентанкур",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "тимбер|арсенал|eng|league",
+      "name": "Тимбер",
+      "name_norm": "тимбер",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "кокчу|арсенал|eng|league",
+      "name": "Кокчу",
+      "name_norm": "кокчу",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "маласия|мю|eng|league",
+      "name": "Маласия",
+      "name_norm": "маласия",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "мартинелли|мю|eng|league",
+      "name": "Мартинелли",
+      "name_norm": "мартинелли",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "данжума|челси|eng|league",
+      "name": "Данжума",
+      "name_norm": "данжума",
+      "team": "Челси",
+      "team_norm": "челси",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 2
+    },
+    {
+      "key": "влашич|арсенал|eng|league",
+      "name": "Влашич",
+      "name_norm": "влашич",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 2
+    },
+    {
+      "key": "гюндоган|ньюкасл|eng|league",
+      "name": "Гюндоган",
+      "name_norm": "гюндоган",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "league_code": "eng",
       "scope": "league",
       "count": 1
     }

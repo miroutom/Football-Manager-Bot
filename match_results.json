@@ -3417,6 +3417,501 @@
       "day": 8,
       "cl_phase": "knockout",
       "entry_type": "play"
+    },
+    {
+      "home": "Динамо",
+      "away": "Урал",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Локомотив",
+      "away": "Краснодар",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Краснодар",
+      "away": "Зенит",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Локомотив",
+      "away": "Динамо",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Цска",
+      "away": "Спартак",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Краснодар",
+      "away": "Спартак",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Цска",
+      "away": "Динамо",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Краснодар",
+      "away": "Крылья Советов",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Крылья Советов",
+      "away": "Динамо",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Цска",
+      "away": "Локомотив",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Зенит",
+      "away": "Урал",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Урал",
+      "away": "Крылья Советов",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Урал",
+      "away": "Спартак",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Зенит",
+      "away": "Динамо",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Зенит",
+      "away": "Локомотив",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Цска",
+      "away": "Краснодар",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Тоттенхэм",
+      "league": "eng",
+      "home_score": 4,
+      "away_score": 1,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Ньюкасл",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Арсенал",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ливерпуль",
+      "away": "Астон Вилла",
+      "league": "eng",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ньюкасл",
+      "away": "Тоттенхэм",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Челси",
+      "league": "eng",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Астон Вилла",
+      "league": "eng",
+      "home_score": 0,
+      "away_score": 1,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Ливерпуль",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ньюкасл",
+      "away": "Астон Вилла",
+      "league": "eng",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Челси",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Арсенал",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Ньюкасл",
+      "league": "eng",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ливерпуль",
+      "away": "Тоттенхэм",
+      "league": "eng",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Тоттенхэм",
+      "away": "Челси",
+      "league": "eng",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Боруссия М",
+      "away": "Хоффенхайм",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Лейпциг",
+      "away": "Хоффенхайм",
+      "league": "ger",
+      "home_score": 3,
+      "away_score": 0,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Лацио",
+      "league": "ita",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Аталанта",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Рома",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 3,
+      "away_score": 0,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетико",
+      "away": "Жирона",
+      "league": "esp",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Лейпциг",
+      "away": "Боруссия М",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Хоффенхайм",
+      "league": "ger",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Севилья",
+      "league": "esp",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Лацио",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 1,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Байер",
+      "away": "Вольфсбург",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Бавария",
+      "away": "Франкфурт",
+      "league": "ger",
+      "home_score": 4,
+      "away_score": 1,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 3,
+      "away_score": 0,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Бетис",
+      "away": "Жирона",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Боруссия М",
+      "league": "ger",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Аталанта",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 0,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Барселона",
+      "away": "Севилья",
+      "league": "esp",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Байер",
+      "away": "Франкфурт",
+      "league": "ger",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Лейпциг",
+      "league": "ger",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Атлетико",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Ювентус",
+      "league": "ita",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Барселона",
+      "away": "Атлетик",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 0,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Наполи",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Бавария",
+      "away": "Байер",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 0,
+      "day": 10,
+      "entry_type": "play"
     }
   ]
 }
