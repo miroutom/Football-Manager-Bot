@@ -29,12 +29,19 @@ OVR_CEILING = 94
 _MOTM_MIN_MONTH = 6
 # С этого OVR вверх только от планки полного сезона; вниз — по «играет на N».
 ELITE_OVR = 90
-# Планка «полный сезон»: 64 G+A на ~30 матч.; выше 90 — жёстче.
+# Эталон полного сезона: 56+8=64 G+A ≈ OVR 93 (нап).
+# Пз / опорники — ниже планка G+A на тот же OVR.
 _ELITE_BASE_GA = 64
+_ELITE_ANCHOR_OVR = 93
 _ELITE_FULL_SEASON_MATCHES = 30
-# Сколько можно отстать от 64 и всё ещё претендовать на +1 при OVR 90:
-_ELITE_PLUS_GAP_FWD = 5   # напы/вингеры: ~59 G+A на 30 матч.
-_ELITE_PLUS_GAP_MID = 10  # полузащита: ~54 G+A
+# Сколько G+A на «полные 30» ≈ ±1 OVR вокруг эталона
+_GA_FULL_PER_OVR = 4.0
+# Насколько пз/опоры отстают от нап при том же OVR 93:
+_ELITE_PLUS_GAP_FWD = 5   # рост с 90: нап ~59
+_ELITE_PLUS_GAP_MID = 10  # рост с 90: пз ~54
+_REF_GAP_ATT_MID = 10     # ЦАП/ПП при 93: 54 G+A / 30
+_REF_GAP_CM = 20          # ЦП/ЦОП при 93: 44
+_REF_GAP_DEF = 44         # защита при 93: 20
 
 
 def _norm(s: str) -> str:
@@ -80,39 +87,65 @@ class OvrAdviceRow:
         return int(self.suggested) - int(self.current)
 
 
-# Наклон: сколько G+A/м ≈ +1 OVR (FIFA; чуть положе, чтобы инверсия «темп→OVR» была здравой)
-_GA_PER_OVR = 0.06
+# Наклон старой per-match формулы больше не главный — «играет на N»
+# якорится на эталон 64 G+A / 30 ≈ 93 (нап).
 
 
-def _ga_base_for_pos(pos: str) -> float:
-    """База G+A/матч при OVR 85."""
+def _is_elite_attack_pos(pos: str) -> bool:
     pos_u = (pos or "").upper()
-    if pos_u in _FWD:
-        return 1.15
-    if pos_u in ("ЦАП", "ПП", "CAM", "ЛП", "ППА", "LM", "RM"):
-        return 1.00
-    if pos_u in ("ЦП", "ЦОП", "CM", "CDM"):
-        return 0.55
-    if pos_u in _DEF:
-        return 0.20
-    return 0.60
+    return pos_u in _FWD or pos_u in ("ЛФА", "ПФА", "LW", "RW", "ST", "CF")
+
+
+def _is_elite_mid_pos(pos: str) -> bool:
+    pos_u = (pos or "").upper()
+    return pos_u in (
+        "ЦАП", "ПП", "ЦП", "ЦОП", "CAM", "CM", "CDM", "LM", "RM", "ЛП", "ППА"
+    )
+
+
+def _ref_ga_full_for_pos(pos: str) -> float:
+    """G+A на ~30 матч., соответствующий OVR ``_ELITE_ANCHOR_OVR`` (93)."""
+    if _is_elite_attack_pos(pos):
+        return float(_ELITE_BASE_GA)
+    if _is_elite_mid_pos(pos) and (pos or "").upper() in (
+        "ЦАП", "ПП", "CAM", "ЛП", "ППА", "LM", "RM"
+    ):
+        return float(_ELITE_BASE_GA - _REF_GAP_ATT_MID)
+    if _is_elite_mid_pos(pos):
+        return float(_ELITE_BASE_GA - _REF_GAP_CM)
+    if (pos or "").upper() in _DEF:
+        return float(_ELITE_BASE_GA - _REF_GAP_DEF)
+    return float(_ELITE_BASE_GA - _REF_GAP_ATT_MID)
+
+
+def _ga_proj_full(ga: float, matches: int) -> float:
+    """Пересчёт G+A на длину эталонного сезона (~30)."""
+    sm = max(1, int(matches))
+    return float(ga) * (_ELITE_FULL_SEASON_MATCHES / sm)
 
 
 def _expected_ga_per_match(pos: str, ovr: int) -> float:
     """
-    Норма G+A/матч для позиции при данном OVR (FIFA-темп).
+    Норма G+A/матч для позиции при данном OVR.
 
-    База для ~85; +``_GA_PER_OVR`` за пункт OVR. Ориентир: у атакующих
-    «около действия за матч» — норма, не сверхрезультат.
+    Якорь: нап 64 G+A / 30 ≈ 93; пз на −10 G+A к якорю; ±4 G+A ≈ ±1 OVR.
     """
-    return max(0.08, _ga_base_for_pos(pos) + _GA_PER_OVR * (int(ovr) - 85))
+    ref = _ref_ga_full_for_pos(pos)
+    ga_full = ref + _GA_FULL_PER_OVR * (int(ovr) - _ELITE_ANCHOR_OVR)
+    return max(0.08, ga_full / _ELITE_FULL_SEASON_MATCHES)
+
+
+def _implied_ovr_from_season_ga(pos: str, ga: float, matches: int) -> float:
+    """Какой OVR соответствует сезонной стате (эталон 64→93 для нап)."""
+    ga_full = _ga_proj_full(ga, matches)
+    ref = _ref_ga_full_for_pos(pos)
+    raw = _ELITE_ANCHOR_OVR + (ga_full - ref) / _GA_FULL_PER_OVR
+    return max(60.0, min(float(OVR_CEILING + 3), raw))
 
 
 def _implied_ovr_from_ga_rate(pos: str, rate: float) -> float:
-    """Инверсия нормы: какой OVR соответствует темпу G+A/матч."""
-    base = _ga_base_for_pos(pos)
-    raw = 85.0 + (float(rate) - base) / _GA_PER_OVR
-    return max(60.0, min(float(OVR_CEILING + 3), raw))
+    """Удобная обёртка: темп за матч → OVR (через проекцию на 30)."""
+    return _implied_ovr_from_season_ga(pos, float(rate) * _ELITE_FULL_SEASON_MATCHES, _ELITE_FULL_SEASON_MATCHES)
 
 
 def _expected_cs_rate(ovr: int) -> float:
@@ -174,18 +207,6 @@ def _motm_count_from_month(
                     continue
                 n += 1
     return n
-
-
-def _is_elite_attack_pos(pos: str) -> bool:
-    pos_u = (pos or "").upper()
-    return pos_u in _FWD or pos_u in ("ЛФА", "ПФА", "LW", "RW", "ST", "CF")
-
-
-def _is_elite_mid_pos(pos: str) -> bool:
-    pos_u = (pos or "").upper()
-    return pos_u in (
-        "ЦАП", "ПП", "ЦП", "ЦОП", "CAM", "CM", "CDM", "LM", "RM", "ЛП", "ППА"
-    )
 
 
 def _elite_season_plus(
@@ -700,38 +721,51 @@ def advise_club_ovr(
                 )
             )
 
+        # Для G+A→OVR всегда знаменатель = матчи со статой в БД (не фикстуры клуба).
+        # Иначе 9+16 / 22 фикстур вместо /15 в БД занижает темп (КДБ и т.п.).
+        sm_rate = max(1, int(sm_db)) if int(sm_db) > 0 else max(1, int(sm))
+
         elite = cur >= ELITE_OVR
         season_plus = 0
         plays_at = float(cur)
         rate = 0.0
         form = 0.0  # (rate-exp)/exp — только для мягких порогов наград
 
-        # 1) Темп сезона → «играет на N»
-        if sm >= 3:
+        # 1) Темп сезона → «играет на N» (якорь: 64 G+A/30 ≈ 93 нап)
+        if sm_rate >= 3:
             if pos in _GK:
-                rate = scs / sm
+                rate = scs / sm_rate
                 raw_imp = _implied_ovr_from_cs_rate(rate)
                 exp_cur = _expected_cs_rate(cur)
                 form = (rate - exp_cur) / max(0.15, exp_cur)
                 signals["form_cs"] = round(rate, 3)
                 reasons.append(
-                    f"· сухие {scs}/{sm} ({rate:.0%}) → сырой уровень ~{raw_imp:.0f} "
+                    f"· сухие {scs}/{sm_rate} ({rate:.0%}) → сырой уровень ~{raw_imp:.0f} "
                     f"(норма для {cur}: ~{exp_cur:.0%}; {matches_note})"
                 )
             else:
                 ga = sg + sa
-                rate = ga / sm
-                raw_imp = _implied_ovr_from_ga_rate(pos, rate)
+                rate = ga / sm_rate
+                ga_full = _ga_proj_full(ga, sm_rate)
+                raw_imp = _implied_ovr_from_season_ga(pos, ga, sm_rate)
                 exp_cur = _expected_ga_per_match(pos, cur)
+                ref93 = _ref_ga_full_for_pos(pos)
                 form = (rate - exp_cur) / max(0.15, exp_cur)
                 signals["form_ga"] = round(rate, 3)
+                signals["ga_proj_30"] = round(ga_full, 1)
                 reasons.append(
-                    f"· {sg}+{sa} в {sm} матч. (= {rate:.2f} G+A/м) → "
-                    f"сырой уровень ~{raw_imp:.0f} "
-                    f"(норма для {pos} {cur}: ~{exp_cur:.2f}; {matches_note})"
+                    f"· {sg}+{sa} в {sm_rate} матч. (= {rate:.2f} G+A/м) → "
+                    f"на 30 матч. ≈ {ga_full:.0f} G+A "
+                    f"(эталон {_ELITE_ANCHOR_OVR} для позиции: {ref93:.0f}) "
+                    f"→ уровень ~{raw_imp:.0f}"
                 )
+                if int(sm) != int(sm_rate):
+                    reasons.append(
+                        f"· темп по матчам со статой ({sm_rate}), не по фикстурам клуба "
+                        f"({sm}; {matches_note})"
+                    )
             # регрессия к текущему при малой выборке (полная уверенность с ~12 матч.)
-            conf = min(1.0, sm / 12.0)
+            conf = min(1.0, sm_rate / 12.0)
             plays_at = conf * raw_imp + (1.0 - conf) * float(cur)
             signals["implied_raw"] = round(raw_imp, 2)
             signals["form_conf"] = round(conf, 2)
@@ -742,7 +776,7 @@ def advise_club_ovr(
                 )
         else:
             reasons.append(
-                f"· мало матчей в текущем сезоне ({sm}; {matches_note}) — "
+                f"· мало матчей в текущем сезоне ({sm_rate}; {matches_note}) — "
                 f"ориентир ≈ текущий {cur}"
             )
 
@@ -944,7 +978,7 @@ def advise_club_ovr(
                 reasons=reasons,
                 signals=signals,
                 plays_at=round(plays_at_shown, 1),
-                season_matches=sm,
+                season_matches=sm_rate if pos not in _GK else sm,
                 season_goals=sg,
                 season_assists=sa,
                 season_cs=scs,

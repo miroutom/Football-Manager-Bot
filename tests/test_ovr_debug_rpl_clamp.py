@@ -41,6 +41,15 @@ def test_elite_ovr_season_plus_benchmark():
 def test_implied_ovr_roundtrip_ga():
     from utils.ovr_debug_advice import _expected_ga_per_match, _implied_ovr_from_ga_rate
 
-    for pos, ovr in (("ФРВ", 90), ("ПП", 88), ("ЦП", 82)):
+    for pos, ovr in (("ФРВ", 90), ("ПП", 88), ("ЦП", 88), ("ФРВ", 93)):
         rate = _expected_ga_per_match(pos, ovr)
         assert abs(_implied_ovr_from_ga_rate(pos, rate) - ovr) < 0.05
+
+
+def test_martinez_anchor_64_is_93_fwd():
+    from utils.ovr_debug_advice import _implied_ovr_from_season_ga
+
+    # 56+8 в ~30 матч. → 93
+    assert abs(_implied_ovr_from_season_ga("ФРВ", 64, 30) - 93) < 0.05
+    # пз на −10 G+A к тому же якорю
+    assert abs(_implied_ovr_from_season_ga("ЦАП", 54, 30) - 93) < 0.05
