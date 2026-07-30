@@ -9,7 +9,12 @@ from typing import Any
 from aiogram import F, Router
 from aiogram.types import BufferedInputFile, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
-from bot.history_render import render_award_history_png, render_cl_history_png, render_league_history_png
+from bot.history_render import (
+    render_award_history_png,
+    render_cl_history_png,
+    render_league_history_png,
+    render_special_cups_history_png,
+)
 from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
 from bot.team_history import format_season_tag, list_history_seasons
 from bot.team_history_gallery import (
@@ -55,6 +60,9 @@ def history_root_kb() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(text="🏠 Лига", callback_data="hist:pick_league"),
             InlineKeyboardButton(text="⭐ ЛЧ", callback_data="hist:cl"),
+        ],
+        [
+            InlineKeyboardButton(text="🏆 Особые кубки", callback_data="hist:special_cups"),
         ],
         [
             InlineKeyboardButton(text="⚽ ЗМ", callback_data="hist:a:golden_ball"),
@@ -243,10 +251,7 @@ async def cb_hist_league(callback: CallbackQuery) -> None:
         callback,
         png=png,
         filename=f"history_{code}.png",
-        caption=(
-            f"<b>{title}</b> — чемпионы\n"
-            f"<i>Золотой кубок — без поражений · Платиновый — без ничьих и поражений</i>"
-        ),
+        caption=f"<b>{title}</b> — чемпионы",
     )
 
 
@@ -264,11 +269,25 @@ async def cb_hist_cl(callback: CallbackQuery) -> None:
         callback,
         png=png,
         filename="history_cl.png",
-        caption=(
-            "<b>ЛЧ</b> — победители\n"
-            "<i>Учитываются группа/лига и плей-офф · "
-            "Золото — без поражений · Платина — только победы</i>"
-        ),
+        caption="<b>ЛЧ</b> — победители",
+    )
+
+
+@history_router.callback_query(F.data == "hist:special_cups")
+async def cb_hist_special_cups(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        png = await asyncio.to_thread(render_special_cups_history_png)
+    except Exception as e:
+        logger.exception("render_special_cups_history")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    await _send_png(
+        callback,
+        png=png,
+        filename="history_special_cups.png",
+        caption="<b>Особые кубки</b>",
     )
 
 

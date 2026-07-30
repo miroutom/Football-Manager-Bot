@@ -33,4 +33,19 @@ def test_cl_history_png_renders():
 
     png = render_cl_history_png()
     assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert len(png) > 5_000
+
+
+def test_special_cups_history_collects_all():
+    from bot.history_render import (
+        collect_special_cup_history_entries,
+        render_special_cups_history_png,
+    )
+
+    entries = collect_special_cup_history_entries()
+    # минимум два золота ЛЧ
+    assert any(e[1] == "Интер" and e[0] == 1 and e[3] == "ЛЧ" for e in entries)
+    assert any(e[1] == "Ливерпуль" and e[0] == 2 and e[3] == "ЛЧ" for e in entries)
+    png = render_special_cups_history_png()
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
     assert len(png) > 10_000
