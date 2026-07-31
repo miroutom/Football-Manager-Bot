@@ -76,6 +76,14 @@ def nicknames_path() -> str:
     return _PATH
 
 
+def _normalize_nickname(nickname: str) -> str:
+    """«муани» → «Муани» (первая буква заглавная)."""
+    s = (nickname or "").strip()
+    if not s:
+        return ""
+    return s.capitalize()
+
+
 def load_nicknames() -> dict[str, Any]:
     if not os.path.isfile(_PATH):
         return {"version": 1, "by_person_id": {}, "notes": "nickname → person_id"}
@@ -216,7 +224,7 @@ def set_nickname(
 
     data = load_nicknames()
     mp = data.setdefault("by_person_id", {})
-    nick = (nickname or "").strip()
+    nick = _normalize_nickname(nickname)
     keys = {str(p) for p in targets if p > 0}
     if not nick:
         for k in keys:

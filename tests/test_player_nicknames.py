@@ -26,7 +26,7 @@ def test_nickname_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setattr("utils.player_nicknames._PATH", str(path))
     set_nickname(42, "муани")
     data = load_nicknames()
-    assert data["by_person_id"]["42"] == "муани"
+    assert data["by_person_id"]["42"] == "Муани"
     assert resolve_person_id_by_nickname("муани") == 42
     assert resolve_person_id_by_nickname("МУАНИ") == 42
     set_nickname(42, "")
@@ -41,9 +41,9 @@ def test_set_nickname_writes_also_ids(tmp_path, monkeypatch):
         lambda **kwargs: [4707, 4708],
     )
     set_nickname(4707, "димария", name="Ди Мария", team="Тоттенхэм")
-    assert get_nickname(4707) == "димария"
-    assert get_nickname(4708) == "димария"
-    assert get_nickname_for_player(person_id=4708, name="Ди Мария") == "димария"
+    assert get_nickname(4707) == "Димария"
+    assert get_nickname(4708) == "Димария"
+    assert get_nickname_for_player(person_id=4708, name="Ди Мария") == "Димария"
     assert nickname_matches_person(
         "димария", person_id=4708, name="Ди Мария", team="Тоттенхэм"
     )
