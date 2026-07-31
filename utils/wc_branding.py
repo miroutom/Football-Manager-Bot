@@ -143,6 +143,25 @@ def ensure_branding(
     return dict(rec)
 
 
+def is_wc_start_announced(season: int | None = None) -> bool:
+    rec = get_branding(season)
+    return bool(rec and rec.get("wc_started_announced"))
+
+
+def mark_wc_start_announced(season: int | None = None) -> None:
+    n = int(season if season is not None else season_paths.get_active_season())
+    data = load_branding()
+    by = data.setdefault("by_season", {})
+    key = str(n)
+    rec = by.get(key)
+    if not isinstance(rec, dict):
+        rec = dict(ensure_branding(n))
+    rec["wc_started_announced"] = True
+    rec.setdefault("season", n)
+    by[key] = rec
+    save_branding(data)
+
+
 def migrate_branding_styles() -> None:
     """Старые стили / год → новые стили с кубком; сброс кэша только при изменении."""
     from bot.wc_logo import _LEGACY_STYLE, clear_logo_cache

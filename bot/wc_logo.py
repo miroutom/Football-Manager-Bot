@@ -29,9 +29,9 @@ from utils.wc_branding import LOGO_STYLES, ensure_branding
 logger = logging.getLogger(__name__)
 
 _CACHE_DIR = os.path.join(season_paths.PROJECT_ROOT, "assets", "cache", "wc_logos")
-_TROPHY = os.path.join(
-    season_paths.PROJECT_ROOT, "assets", "history", "trophies", "cup_gold.png"
-)
+_TROPHY_DIR = os.path.join(season_paths.PROJECT_ROOT, "assets", "history", "trophies")
+_TROPHY_FIFA = os.path.join(_TROPHY_DIR, "world_cup_fifa.png")
+_TROPHY_FALLBACK = os.path.join(_TROPHY_DIR, "cup_gold.png")
 
 _W, _H = 720, 720
 
@@ -83,11 +83,18 @@ def _palette(host: str) -> tuple[tuple[int, int, int], ...]:
     )
 
 
+def _trophy_path() -> str:
+    if os.path.isfile(_TROPHY_FIFA):
+        return _TROPHY_FIFA
+    return _TROPHY_FALLBACK
+
+
 def _load_trophy(max_h: int) -> Image.Image | None:
-    if not os.path.isfile(_TROPHY):
+    path = _trophy_path()
+    if not os.path.isfile(path):
         return None
     try:
-        im = Image.open(_TROPHY).convert("RGBA")
+        im = Image.open(path).convert("RGBA")
     except OSError:
         return None
     # обрезать пустые края альфы — кубок крупнее и чётче

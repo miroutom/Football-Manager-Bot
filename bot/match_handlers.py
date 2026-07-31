@@ -108,6 +108,7 @@ async def _finish_match_and_offer_stats(
     league_code: str,
     schedule_day: int | None = None,
     log_html_lines: list[str] | None = None,
+    cl_phase: str | None = None,
 ) -> None:
     """После записи матча — опционально предложить статистику (если INPUT_PLAYER_STATS в main)."""
     from main import INPUT_PLAYER_STATS
@@ -122,6 +123,17 @@ async def _finish_match_and_offer_stats(
     await message.answer(
         f"✓ Записано.\n{body}" if body else "✓ Записано.",
         parse_mode="HTML",
+    )
+
+    from bot.wc_announcement import maybe_announce_world_cup_started
+
+    await maybe_announce_world_cup_started(
+        message,
+        ok=ok,
+        home=home,
+        away=away,
+        league_code=league_code,
+        cl_phase=cl_phase,
     )
 
     # Даже если «Да» не нажмут / сессия сорвётся — матч доступен в «Стата без матча».
@@ -227,6 +239,7 @@ async def _record_match_or_request_penalties(
         league_code=league_code,
         schedule_day=round_num,
         log_html_lines=log_html_lines,
+        cl_phase=cl_ph,
     )
 
 
@@ -2499,6 +2512,7 @@ async def on_cl_penalties_series(message: Message, state: FSMContext) -> None:
         league_code=data["pen_league"],
         schedule_day=data.get("pen_round"),
         log_html_lines=log_html_lines,
+        cl_phase=data.get("pen_cl_ph"),
     )
 
 
@@ -3345,5 +3359,6 @@ async def cb_fix_score_confirm(callback: CallbackQuery, state: FSMContext) -> No
             aws=int(new_as),
             league_code=str(league),
             schedule_day=day_i,
+            cl_phase=data.get("fixsc_cl_phase"),
         )
 
