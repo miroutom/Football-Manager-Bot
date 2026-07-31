@@ -2287,9 +2287,9 @@ async def cb_tgslife_pick_league(callback: CallbackQuery) -> None:
 async def cb_menu_squad_league(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Состав клуба на поле (условная 4-3-3): фамилия и число "
-        "(overall из БД; если нет — средний рейтинг за матчи). "
-        "Выберите лигу, затем клуб:",
+        "Схема на поле: клуб или сборная ЧМ.\n"
+        "Фамилия и overall (из БД / заявки вызовов).\n"
+        "Выберите лигу / ЧМ, затем команду:",
         reply_markup=_league_keyboard("squadlg"),
     )
 
@@ -2304,8 +2304,9 @@ async def cb_squad_pick_league(callback: CallbackQuery) -> None:
         logger.exception("squad_league_kb")
         await callback.message.answer(f"Ошибка: {e}")
         return
+    pick = "сборную" if (code or "").lower() in ("wc", "world_cup") else "клуб"
     await callback.message.answer(
-        f"{_league_title(code)} — выберите клуб:",
+        f"{_league_title(code)} — выберите {pick}:",
         reply_markup=kb,
     )
 
@@ -2327,7 +2328,12 @@ async def cb_sqclub_team(callback: CallbackQuery) -> None:
         png = await asyncio.to_thread(render_team_squad_pitch_png_bytes, code, idx)
         teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
         team_name = teams[idx]
-        cap = f"Состав · {_league_title(code)} · {team_name}"
+        is_wc = (code or "").lower() in ("wc", "world_cup")
+        cap = (
+            f"Схема · ЧМ · {team_name}"
+            if is_wc
+            else f"Состав · {_league_title(code)} · {team_name}"
+        )
         await callback.message.answer_photo(
             BufferedInputFile(
                 png,

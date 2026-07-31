@@ -41,6 +41,9 @@ def _wc_home_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="👤 Менеджеры", callback_data="wc:mgr"),
             ],
             [
+                InlineKeyboardButton(text="⚽ Схемы сборных", callback_data="squadlg:wc"),
+            ],
+            [
                 InlineKeyboardButton(text="ℹ️ Формат", callback_data="wc:rules"),
             ],
             [InlineKeyboardButton(text="✖️ Закрыть", callback_data="wc:close")],

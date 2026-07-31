@@ -443,6 +443,10 @@ def _assign_roster_ranks_from_db(players: list[_Pl]) -> None:
 
 
 def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
+    t = (tournament or "").strip().lower()
+    if t in ("wc", "world_cup"):
+        return _load_wc_nation_squad_players(team)
+
     from utils.player_transfer import _filter_team
 
     team_db = _team_name_as_in_db(team)
@@ -497,6 +501,55 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
     else:
         _assign_roster_ranks_from_db(out)
     return out
+
+
+def _load_wc_nation_squad_players(nation: str) -> list[_Pl]:
+    """Заявка сборной из ``world_cup_squads.json`` (вызовы)."""
+    from utils.wc_callups import resolve_nation_name, squad_for_nation
+
+    canon = resolve_nation_name(nation) or (nation or "").strip()
+    out: list[_Pl] = []
+    for i, raw in enumerate(squad_for_nation(canon)):
+        name = (raw.get("name") or "").strip()
+        if not name:
+            continue
+        pos = (raw.get("position") or "").strip()
+        ov = int(raw.get("overall") or 0)
+        st = raw.get("status")
+        if st is not None:
+            st = str(st).strip().lower() or None
+            if st not in ("start", "bench", "reserve"):
+                st = None
+        slot = raw.get("lineup_slot")
+        if slot is not None:
+            slot = str(slot).strip().upper() or None
+        out.append(
+            _Pl(
+                name=name,
+                position=pos,
+                overall=ov,
+                tags=_position_tags(pos),
+                score=_player_score(ov),
+                # на схеме сборной мини-флаги у футболок не нужны
+                nation=None,
+                status=st,
+                roster_rank=i,
+                lineup_slot=slot,
+            )
+        )
+    return out
+
+
+def _kit_for_nation(nation: str) -> KitSpec:
+    """Цвета формы сборной из упрощённой палитры флага (если есть)."""
+    trip = _flag_v3_trip(_nation_to_flagcdn_code(nation))
+    if trip is None:
+        return kit_for_team(nation)
+    primary, secondary, tertiary = trip
+    # однотонные флаги → без полос
+    if primary == secondary:
+        return KitSpec(primary, tertiary=tertiary if tertiary != primary else None)
+    return KitSpec(primary, secondary, tertiary)
 
 
 def _player_fits_slot(p: _Pl, slot: SquadSlot) -> bool:
@@ -1348,11 +1401,19 @@ def _draw_pitch_base(im: Image.Image, draw: ImageDraw.ImageDraw) -> None:
 
 def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     team_db = _team_name_as_in_db(team)
-    headline_sub = label_for_squad_caption(team_db)
+    is_wc = (tournament or "").strip().lower() in ("wc", "world_cup")
+    if is_wc:
+        from utils.wc_callups import resolve_nation_name
+
+        team_db = resolve_nation_name(team) or team_db
+        headline_sub = "ЧМ · сборная"
+    else:
+        headline_sub = label_for_squad_caption(team_db)
     players = load_team_squad_players(team, tournament)
     w = _CANVAS_W
 
-    if not players:
+    # Для клубов без игроков — короткая заглушка; для ЧМ рисуем пустое поле + флаг.
+    if not players and not is_wc:
         h = 420
         im = Image.new("RGB", (w, h), _PAGE_BG)
         draw = ImageDraw.Draw(im)
@@ -1381,7 +1442,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         im.save(out, format="PNG", optimize=True)
         return out.getvalue()
 
-    slot_map, bench = _assign_slots(players, team_db)
+    slot_map, bench = _assign_slots(players, team_db) if players else ({}, [])
     on_field_names = { _player_name_key(p.name) for p in slot_map.values() if p is not None }
     bench = [p for p in bench if _player_name_key(p.name) not in on_field_names]
     slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
@@ -1422,7 +1483,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     sb_title = _pick_font(17, bold=True)
     sb_row = _pick_font(14, bold=False)
 
-    kit = kit_for_team(team_db)
+    kit = _kit_for_nation(team_db) if is_wc else kit_for_team(team_db)
     title_font = _pick_font(32, bold=True)
     sub_font = _pick_font(17, bold=False)
     name_font = _pick_font(19, bold=True)
@@ -1430,31 +1491,40 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     pos_font = _pick_font(11, bold=False)
     crest_font = _pick_font(22, bold=True)
 
-    try:
-        from utils.player_discipline import get_active_injuries_for_team
-
-        _injuries = get_active_injuries_for_team(team_db)
-    except Exception:
-        logger.exception("Состав: не удалось получить активные травмы для %s", team_db)
-        _injuries = []
     injuries_by_name: dict[str, int] = {}
-    for inj in _injuries:
-        nn = _player_name_key(str(inj.get("name") or ""))
-        if not nn:
-            continue
-        tm = int(inj.get("total_months") or 0)
-        prev = injuries_by_name.get(nn, 0)
-        if tm > prev:
-            injuries_by_name[nn] = tm
+    if not is_wc:
+        try:
+            from utils.player_discipline import get_active_injuries_for_team
+
+            _injuries = get_active_injuries_for_team(team_db)
+        except Exception:
+            logger.exception("Состав: не удалось получить активные травмы для %s", team_db)
+            _injuries = []
+        for inj in _injuries:
+            nn = _player_name_key(str(inj.get("name") or ""))
+            if not nn:
+                continue
+            tm = int(inj.get("total_months") or 0)
+            prev = injuries_by_name.get(nn, 0)
+            if tm > prev:
+                injuries_by_name[nn] = tm
 
     crest_cx = int(px1)
     crest_cy = int(py0 + 56)
     crest_max = 78
-    crest_img = _try_load_crest_rgba(team_db)
-    if crest_img is not None:
-        _paste_crest_natural(im, crest_img, crest_cx, crest_cy, crest_max)
+    if is_wc:
+        fcode = _nation_to_flagcdn_code(team_db)
+        flag_img = load_flag_png(fcode) if fcode else None
+        if flag_img is not None:
+            _paste_crest_natural(im, flag_img.convert("RGBA"), crest_cx, crest_cy, crest_max)
+        else:
+            _draw_crest_placeholder(draw, crest_cx, crest_cy, team_db, kit, crest_font)
     else:
-        _draw_crest_placeholder(draw, crest_cx, crest_cy, team_db, kit, crest_font)
+        crest_img = _try_load_crest_rgba(team_db)
+        if crest_img is not None:
+            _paste_crest_natural(im, crest_img, crest_cx, crest_cy, crest_max)
+        else:
+            _draw_crest_placeholder(draw, crest_cx, crest_cy, team_db, kit, crest_font)
 
     shirt_bw = 48
     for slot in slots:
@@ -1467,9 +1537,10 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
             ix, iy = int(cx), int(cy)
             shirt_cy = iy - 14
             x0, y0, x1, y1 = _draw_shirt(draw, ix, shirt_cy, kit, is_gk)
-            flag_x = int(ix - shirt_bw // 2 - 8 - _FLAG_W)
-            flag_y = int(shirt_cy - _FLAG_H // 2)
-            _paste_or_draw_flag(im, draw, flag_x, flag_y, pl.nation)
+            if not is_wc:
+                flag_x = int(ix - shirt_bw // 2 - 8 - _FLAG_W)
+                flag_y = int(shirt_cy - _FLAG_H // 2)
+                _paste_or_draw_flag(im, draw, flag_x, flag_y, pl.nation)
             score_txt = _display_score(pl.overall)
             bb_r = draw.textbbox((0, 0), score_txt, font=rating_font)
             rh = bb_r[3] - bb_r[1]
@@ -1495,7 +1566,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         row_font=sb_row,
     )
 
-    title = team
+    title = team_db if is_wc else team
     draw.text(
         (w // 2, 22),
         title,
@@ -1506,7 +1577,8 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         stroke_fill=(15, 23, 42),
     )
     avg_frag = _starting_xi_avg_fragment(slot_map)
-    sub_parts = [p for p in (headline_sub, avg_frag) if p]
+    empty_note = "заявка пуста · вызовы в /wc" if (is_wc and not players) else None
+    sub_parts = [p for p in (headline_sub, avg_frag, empty_note) if p]
     if sub_parts:
         draw.text(
             (w // 2, 60),

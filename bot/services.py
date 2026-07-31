@@ -21,7 +21,12 @@ LEAGUE_LABELS: tuple[tuple[str, str], ...] = (
 
 
 def tournament_db_for_league(league_code: str) -> str:
-    return "cl" if league_code == "cl" else "league"
+    code = (league_code or "").strip().lower()
+    if code == "cl":
+        return "cl"
+    if code in ("wc", "world_cup"):
+        return "wc"
+    return "league"
 
 
 def tournament_for_goalscorers_scope(scope: str) -> str:
@@ -236,14 +241,31 @@ def teams_ordered_for_goalscorers(league_code: str) -> list[str]:
     import teams as teams_mod
     from config.leagues_config import ALL_LEAGUES
 
-    if league_code == "cl":
+    code = (league_code or "").strip().lower()
+    if code == "cl":
         return sorted(teams_mod.teams_champ_league.keys())
-    if league_code not in ALL_LEAGUES:
+    if code in ("wc", "world_cup"):
+        from utils.world_cup import load_wc_config
+        from utils.wc_tournament import groups_drawn, load_tournament
+        from utils.world_cup_format import GROUP_IDS
+
+        if groups_drawn():
+            names: list[str] = []
+            groups = load_tournament().get("groups") or {}
+            for gid in GROUP_IDS:
+                for t in groups.get(gid) or []:
+                    s = str(t).strip()
+                    if s:
+                        names.append(s)
+            if names:
+                return names
+        return [str(n).strip() for n in (load_wc_config().get("nations") or []) if str(n).strip()]
+    if code not in ALL_LEAGUES:
         raise ValueError(f"Неизвестная лига: {league_code}")
     # Кнопки должны показывать только актуальный пул текущего сезона (8 клубов в нац. лигах).
     current_pool = {
         str(x).strip().title()
-        for x in (ALL_LEAGUES[league_code].get("teams") or [])
+        for x in (ALL_LEAGUES[code].get("teams") or [])
         if str(x).strip()
     }
     if not current_pool:
@@ -255,7 +277,7 @@ def teams_ordered_for_goalscorers(league_code: str) -> list[str]:
         "ger": teams_mod.teams_germany,
         "ita": teams_mod.teams_italy,
     }
-    teams_dict = teams_map.get(league_code) or {}
+    teams_dict = teams_map.get(code) or {}
     return sorted([t for t in teams_dict.keys() if t in current_pool], key=lambda s: s.casefold())
 
 
