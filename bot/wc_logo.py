@@ -2,9 +2,7 @@
 """
 Уникальный логотип ЧМ под страну-хозяйку.
 
-Стили вдохновлены разнообразием официальных логотипов (год крупно, кубок,
-лента, лица, мяч+волна, вспышка, круг, стек) — генеративные, без копирования
-офип. активов FIFA.
+Все стили: крупный кубок + цвета флага + «WORLD CUP» + хост + сезон.
 """
 from __future__ import annotations
 
@@ -15,7 +13,7 @@ import random
 from typing import Any
 
 try:
-    from PIL import Image, ImageDraw
+    from PIL import Image, ImageDraw, ImageFilter
 except ImportError as e:
     raise ImportError("Нужен пакет Pillow: pip install pillow") from e
 
@@ -36,6 +34,18 @@ _TROPHY = os.path.join(
 )
 
 _W, _H = 720, 720
+
+# старые абстрактные стили → читаемые с кубком
+_LEGACY_STYLE = {
+    "big_year": "trophy_center",
+    "horizontal": "trophy_side",
+    "ribbon": "trophy_rings",
+    "faces": "trophy_bands",
+    "swoosh": "trophy_center",
+    "burst": "trophy_side",
+    "circle": "trophy_rings",
+    "stack": "trophy_bands",
+}
 
 
 def clear_logo_cache(season: int | None = None) -> None:
@@ -65,7 +75,6 @@ def _palette(host: str) -> tuple[tuple[int, int, int], ...]:
     trip = _flag_v3_trip(_nation_to_flagcdn_code(host))
     if trip:
         return trip
-    # fallback от хеша имени
     h = abs(hash(host.casefold()))
     return (
         ((h >> 0) & 255, (h >> 8) & 255, (h >> 16) & 255),
@@ -81,6 +90,10 @@ def _load_trophy(max_h: int) -> Image.Image | None:
         im = Image.open(_TROPHY).convert("RGBA")
     except OSError:
         return None
+    # обрезать пустые края альфы — кубок крупнее и чётче
+    bbox = im.getbbox()
+    if bbox:
+        im = im.crop(bbox)
     tw, th = im.size
     scale = max_h / max(th, 1)
     nw, nh = max(1, int(tw * scale)), max(1, int(th * scale))
@@ -103,308 +116,193 @@ def _flag_badge(host: str, size: int = 56) -> Image.Image | None:
     scale = min(size / max(tw, 1), size / max(th, 1))
     nw, nh = max(1, int(tw * scale)), max(1, int(th * scale))
     work = work.resize((nw, nh), Image.Resampling.LANCZOS)
-    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    canvas.paste(work, ((size - nw) // 2, (size - nh) // 2), work)
+    canvas = Image.new("RGBA", (size + 8, size + 8), (0, 0, 0, 0))
+    # лёгкая рамка
+    d = ImageDraw.Draw(canvas)
+    d.rounded_rectangle(
+        [0, 0, size + 7, size + 7], radius=6, fill=(20, 24, 32), outline=(220, 220, 230), width=2
+    )
+    canvas.paste(work, (4 + (size - nw) // 2, 4 + (size - nh) // 2), work)
     return canvas
 
 
-def _contrast_text(bg: tuple[int, int, int]) -> tuple[int, int, int]:
-    lum = 0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]
-    return (18, 18, 22) if lum > 150 else (245, 245, 248)
-
-
-def _fill_bg(im: Image.Image, colors: tuple[tuple[int, int, int], ...], dark: bool) -> None:
+def _fill_dark(im: Image.Image, colors: tuple[tuple[int, int, int], ...]) -> None:
     draw = ImageDraw.Draw(im)
-    if dark:
-        draw.rectangle([0, 0, _W, _H], fill=(8, 10, 14))
-        # мягкий градиент акцента
-        c0 = colors[0]
-        for y in range(_H):
-            t = y / max(_H - 1, 1)
-            a = int(18 + 40 * (1 - abs(t - 0.45) * 1.6))
-            a = max(0, min(70, a))
-            overlay = Image.new("RGBA", (_W, 1), (*c0, a))
-            im.paste(overlay, (0, y), overlay)
-    else:
-        draw.rectangle([0, 0, _W, _H], fill=(248, 248, 250))
-        c0 = colors[0]
-        band = Image.new("RGBA", (_W, _H // 3), (*c0, 36))
-        im.paste(band, (0, 0), band)
+    draw.rectangle([0, 0, _W, _H], fill=(12, 14, 20))
+    # вертикальные мягкие полосы цветов флага слева
+    band_w = 14
+    for i, col in enumerate(colors[:3]):
+        x0 = 0 + i * band_w
+        overlay = Image.new("RGBA", (band_w, _H), (*col, 160))
+        im.paste(overlay, (x0, 0), overlay)
+    # лёгкое свечение в центре под кубком
+    glow = Image.new("RGBA", (_W, _H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    c0 = colors[0]
+    for r, a in ((220, 40), (160, 55), (100, 70)):
+        gd.ellipse(
+            [_W // 2 - r, _H // 2 - 40 - r, _W // 2 + r, _H // 2 - 40 + r],
+            fill=(*c0, a),
+        )
+    glow = glow.filter(ImageFilter.GaussianBlur(28))
+    im.alpha_composite(glow)
 
 
-def _draw_host_year(
+def _fill_light(im: Image.Image, colors: tuple[tuple[int, int, int], ...]) -> None:
+    draw = ImageDraw.Draw(im)
+    draw.rectangle([0, 0, _W, _H], fill=(245, 246, 250))
+    for i, col in enumerate(colors[:3]):
+        overlay = Image.new("RGBA", (_W, 18), (*col, 220))
+        im.paste(overlay, (0, 24 + i * 18), overlay)
+
+
+def _caption_block(
     draw: ImageDraw.ImageDraw,
     *,
     host: str,
-    year: int,
-    y: int,
+    season: int,
     fill: tuple[int, int, int],
-    center_x: int = _W // 2,
+    y: int,
 ) -> None:
-    host_font = _pick_font(42, bold=True)
-    year_font = _pick_font(28, bold=True)
-    draw.text((center_x, y), host.upper(), fill=fill, font=host_font, anchor="mt")
-    draw.text((center_x, y + 52), str(year), fill=fill, font=year_font, anchor="mt")
-
-
-def _style_big_year(
-    im: Image.Image,
-    draw: ImageDraw.ImageDraw,
-    *,
-    host: str,
-    year: int,
-    colors: tuple[tuple[int, int, int], ...],
-    rng: random.Random,
-) -> None:
-    _fill_bg(im, colors, dark=True)
-    yy = str(year)[-2:]
-    # крупные цифры года цветами флага
-    font = _pick_font(280, bold=True)
-    c_main, c_sec = colors[0], colors[1] if len(colors) > 1 else (255, 255, 255)
-    draw.text((_W // 2 - 8, _H // 2 - 40), yy[0], fill=c_main, font=font, anchor="mm")
-    draw.text((_W // 2 + 8, _H // 2 + 40), yy[1] if len(yy) > 1 else "0", fill=c_sec, font=font, anchor="mm")
-    trophy = _load_trophy(340)
-    if trophy:
-        _paste_c(im, trophy, _W // 2, _H // 2 - 10)
-    caption = _pick_font(22, bold=True)
-    draw.text((_W // 2, 56), "WORLD CUP", fill=(240, 240, 245), font=caption, anchor="mt")
-    _draw_host_year(draw, host=host, year=year, y=_H - 130, fill=(240, 240, 245))
-    badge = _flag_badge(host, 64)
-    if badge:
-        _paste_c(im, badge, _W // 2, _H - 40)
-
-
-def _style_horizontal(
-    im: Image.Image,
-    draw: ImageDraw.ImageDraw,
-    *,
-    host: str,
-    year: int,
-    colors: tuple[tuple[int, int, int], ...],
-    rng: random.Random,
-) -> None:
-    _fill_bg(im, colors, dark=False)
-    accent = colors[0]
-    draw.rectangle([0, 0, 18, _H], fill=accent)
-    if len(colors) > 1:
-        draw.rectangle([18, 0, 30, _H], fill=colors[1])
-    if len(colors) > 2:
-        draw.rectangle([30, 0, 40, _H], fill=colors[2])
-    trophy = _load_trophy(420)
-    if trophy:
-        _paste_c(im, trophy, 170, _H // 2)
-    text_fill = (20, 40, 90)
-    draw.text((420, 200), "WORLD CUP", fill=text_fill, font=_pick_font(28, bold=True), anchor="lt")
-    draw.text((420, 250), str(year), fill=text_fill, font=_pick_font(72, bold=True), anchor="lt")
-    draw.text((420, 340), host.upper(), fill=accent, font=_pick_font(28, bold=True), anchor="lt")
-    badge = _flag_badge(host, 72)
-    if badge:
-        im.paste(badge, (420, 400), badge)
-
-
-def _style_ribbon(
-    im: Image.Image,
-    draw: ImageDraw.ImageDraw,
-    *,
-    host: str,
-    year: int,
-    colors: tuple[tuple[int, int, int], ...],
-    rng: random.Random,
-) -> None:
-    _fill_bg(im, colors, dark=True)
-    # лента-∞ из дуг
-    cx, cy = _W // 2, _H // 2 - 40
-    for i, col in enumerate(colors):
-        offset = i * 10
-        bbox1 = [cx - 180 + offset, cy - 90 + offset, cx + 20, cy + 90 - offset]
-        bbox2 = [cx - 20, cy - 90 + offset, cx + 180 - offset, cy + 90 - offset]
-        draw.arc(bbox1, 200, 340, fill=col, width=22)
-        draw.arc(bbox2, 20, 160, fill=col, width=22)
-    # узор на нижней дуге
-    for _ in range(18):
-        ang = rng.uniform(0, math.pi)
-        r = rng.randint(40, 120)
-        x = int(cx + math.cos(ang) * r)
-        y = int(cy + 40 + math.sin(ang) * 35)
-        draw.ellipse([x - 4, y - 4, x + 4, y + 4], fill=colors[0])
-    draw.text((_W // 2, _H - 160), "WORLD CUP", fill=colors[0], font=_pick_font(26, bold=True), anchor="mt")
     draw.text(
-        (_W // 2, _H - 110),
-        f"{host} {year}",
-        fill=(245, 245, 248),
+        (_W // 2, y),
+        "WORLD CUP",
+        fill=fill,
+        font=_pick_font(26, bold=True),
+        anchor="mt",
+    )
+    draw.text(
+        (_W // 2, y + 40),
+        f"{host} · сезон {int(season)}",
+        fill=fill,
         font=_pick_font(36, bold=True),
         anchor="mt",
     )
 
 
-def _style_faces(
+def _style_trophy_center(
     im: Image.Image,
     draw: ImageDraw.ImageDraw,
     *,
     host: str,
-    year: int,
+    season: int,
     colors: tuple[tuple[int, int, int], ...],
     rng: random.Random,
 ) -> None:
-    _fill_bg(im, colors, dark=True)
-    faces = [
-        (260, 300, 160, colors[0]),
-        (460, 310, 150, colors[1] if len(colors) > 1 else (80, 180, 90)),
-        (360, 200, 90, colors[2] if len(colors) > 2 else (240, 140, 40)),
-    ]
-    for cx, cy, r, col in faces:
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=col)
-        # улыбка
-        draw.arc([cx - r // 2, cy - r // 6, cx + r // 2, cy + r // 2], 20, 160, fill=(20, 20, 24), width=6)
-        draw.ellipse([cx - r // 3 - 6, cy - r // 4 - 6, cx - r // 3 + 6, cy - r // 4 + 6], fill=(20, 20, 24))
-        draw.ellipse([cx + r // 3 - 6, cy - r // 4 - 6, cx + r // 3 + 6, cy - r // 4 + 6], fill=(20, 20, 24))
-    # дуги флага
-    draw.arc([80, 180, 280, 480], 200, 320, fill=colors[0], width=10)
+    _fill_dark(im, colors)
+    trophy = _load_trophy(420)
+    if trophy:
+        _paste_c(im, trophy, _W // 2, _H // 2 - 30)
+    else:
+        draw.ellipse([_W // 2 - 80, 180, _W // 2 + 80, 340], fill=(212, 175, 55))
+    _caption_block(draw, host=host, season=season, fill=(245, 245, 248), y=_H - 150)
+    badge = _flag_badge(host, 56)
+    if badge:
+        _paste_c(im, badge, _W // 2, _H - 48)
+
+
+def _style_trophy_side(
+    im: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    *,
+    host: str,
+    season: int,
+    colors: tuple[tuple[int, int, int], ...],
+    rng: random.Random,
+) -> None:
+    _fill_light(im, colors)
+    accent = colors[0]
+    draw.rectangle([0, 0, 28, _H], fill=accent)
     if len(colors) > 1:
-        draw.arc([90, 190, 270, 470], 200, 320, fill=colors[1], width=8)
-    trophy = _load_trophy(110)
+        draw.rectangle([28, 0, 40, _H], fill=colors[1])
+    trophy = _load_trophy(460)
     if trophy:
-        _paste_c(im, trophy, _W // 2, 430)
-    draw.text((_W // 2, 520), "WORLD CUP", fill=(200, 210, 230), font=_pick_font(22, bold=True), anchor="mt")
-    draw.text((_W // 2, 560), host.upper(), fill=colors[0], font=_pick_font(40, bold=True), anchor="mt")
-    draw.text((_W // 2, 620), str(year), fill=colors[0], font=_pick_font(32, bold=True), anchor="mt")
+        _paste_c(im, trophy, 200, _H // 2 + 10)
+    text_fill = (20, 28, 48)
+    draw.text((400, 210), "WORLD CUP", fill=text_fill, font=_pick_font(28, bold=True), anchor="lt")
+    draw.text(
+        (400, 260),
+        f"сезон {int(season)}",
+        fill=text_fill,
+        font=_pick_font(52, bold=True),
+        anchor="lt",
+    )
+    draw.text((400, 340), host, fill=accent, font=_pick_font(34, bold=True), anchor="lt")
+    badge = _flag_badge(host, 64)
+    if badge:
+        im.paste(badge, (400, 400), badge)
 
 
-def _style_swoosh(
+def _style_trophy_rings(
     im: Image.Image,
     draw: ImageDraw.ImageDraw,
     *,
     host: str,
-    year: int,
+    season: int,
     colors: tuple[tuple[int, int, int], ...],
     rng: random.Random,
 ) -> None:
-    _fill_bg(im, colors, dark=False)
-    # мяч из сегментов цветов флага
-    cx, cy, r = _W // 2, 250, 110
-    for i in range(8):
-        col = colors[i % len(colors)]
-        a0, a1 = i * 45, (i + 1) * 45
-        draw.pieslice([cx - r, cy - r, cx + r, cy + r], a0, a1, fill=col)
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(30, 40, 70), width=4)
-    # волна-горизонт
-    pts = []
-    base_y = 380
-    for x in range(40, _W - 40, 8):
-        yy = base_y + int(28 * math.sin(x / 55.0 + rng.random() * 0.2))
-        pts.append((x, yy))
-    if len(pts) >= 2:
-        draw.line(pts, fill=colors[0], width=28)
-    text_fill = (20, 40, 90)
-    yy2 = str(year)[-2:]
-    draw.text((_W // 2, 450), f"{host.upper()} {yy2}", fill=text_fill, font=_pick_font(48, bold=True), anchor="mt")
-    draw.line([160, 520, _W - 160, 520], fill=colors[0], width=3)
-    draw.text((_W // 2, 540), "WORLD CUP", fill=(30, 30, 36), font=_pick_font(26, bold=True), anchor="mt")
-
-
-def _style_burst(
-    im: Image.Image,
-    draw: ImageDraw.ImageDraw,
-    *,
-    host: str,
-    year: int,
-    colors: tuple[tuple[int, int, int], ...],
-    rng: random.Random,
-) -> None:
-    _fill_bg(im, colors, dark=False)
-    cx, cy = _W // 2 + 40, 300
-    # лучи
-    for i in range(16):
-        ang = i * (math.pi * 2 / 16) + rng.uniform(-0.05, 0.05)
-        r0, r1 = 40, rng.randint(160, 260)
-        col = colors[i % len(colors)]
-        x0, y0 = cx + math.cos(ang) * r0, cy + math.sin(ang) * r0
-        x1, y1 = cx + math.cos(ang) * r1, cy + math.sin(ang) * r1
-        draw.line([(x0, y0), (x1, y1)], fill=col, width=18)
-    # силуэт «удар» — простая фигура
-    body = [
-        (cx - 30, cy - 80),
-        (cx + 10, cy - 20),
-        (cx + 70, cy - 90),
-        (cx + 40, cy + 10),
-        (cx + 20, cy + 100),
-        (cx - 10, cy + 40),
-        (cx - 50, cy + 110),
-        (cx - 40, cy + 20),
-    ]
-    draw.polygon(body, fill=(20, 20, 24))
-    draw.ellipse([cx + 50, cy - 120, cx + 100, cy - 70], fill=colors[0], outline=(20, 20, 24), width=3)
-    draw.rounded_rectangle([40, 520, 420, 640], radius=18, fill=(12, 40, 90))
-    draw.text((60, 545), "WORLD CUP", fill=(255, 255, 255), font=_pick_font(28, bold=True), anchor="lt")
-    draw.text((60, 585), f"{host.upper()} {year}", fill=colors[0], font=_pick_font(24, bold=True), anchor="lt")
-
-
-def _style_circle(
-    im: Image.Image,
-    draw: ImageDraw.ImageDraw,
-    *,
-    host: str,
-    year: int,
-    colors: tuple[tuple[int, int, int], ...],
-    rng: random.Random,
-) -> None:
-    _fill_bg(im, colors, dark=True)
-    cx, cy, r = _W // 2, _H // 2 - 40, 210
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(250, 250, 252))
-    # дуги по краю
-    for i, col in enumerate(colors):
-        a0 = i * 120 - 30
-        draw.arc([cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8], a0, a0 + 100, fill=col, width=16)
-    trophy = _load_trophy(260)
+    _fill_dark(im, colors)
+    cx, cy, r = _W // 2, _H // 2 - 50, 230
+    # кольца цветов флага
+    for i, col in enumerate(colors[:3]):
+        rr = r + 18 - i * 14
+        draw.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], outline=col, width=10)
+    draw.ellipse([cx - r + 30, cy - r + 30, cx + r - 30, cy + r - 30], fill=(18, 22, 30))
+    trophy = _load_trophy(320)
     if trophy:
-        _paste_c(im, trophy, cx, cy + 10)
-    else:
-        draw.ellipse([cx - 40, cy - 80, cx + 40, cy], fill=colors[0])
-        draw.rectangle([cx - 18, cy, cx + 18, cy + 90], fill=colors[1] if len(colors) > 1 else colors[0])
-    gold = (212, 175, 55)
-    draw.text((_W // 2, _H - 150), str(year), fill=gold, font=_pick_font(48, bold=True), anchor="mt")
-    draw.text((_W // 2, _H - 95), "WORLD CUP", fill=gold, font=_pick_font(22, bold=True), anchor="mt")
-    # хосты разными цветами если составное имя
-    parts = host.upper().split()
-    if len(parts) >= 2 and len(colors) >= 2:
-        draw.text((_W // 2 - 80, _H - 50), parts[0], fill=colors[0], font=_pick_font(28, bold=True), anchor="mt")
-        draw.text((_W // 2 + 80, _H - 50), parts[-1], fill=colors[1], font=_pick_font(28, bold=True), anchor="mt")
-    else:
-        draw.text((_W // 2, _H - 50), host.upper(), fill=colors[0], font=_pick_font(28, bold=True), anchor="mt")
+        _paste_c(im, trophy, cx, cy + 8)
+    _caption_block(draw, host=host, season=season, fill=(245, 245, 248), y=_H - 140)
+    badge = _flag_badge(host, 52)
+    if badge:
+        _paste_c(im, badge, _W // 2, _H - 42)
 
 
-def _style_stack(
+def _style_trophy_bands(
     im: Image.Image,
     draw: ImageDraw.ImageDraw,
     *,
     host: str,
-    year: int,
+    season: int,
     colors: tuple[tuple[int, int, int], ...],
     rng: random.Random,
 ) -> None:
-    """Стек цветных полос флага + кубок + год."""
-    _fill_bg(im, colors, dark=True)
-    band_h = 70
-    y0 = 120
-    for i, col in enumerate(colors):
-        draw.rectangle([80, y0 + i * band_h, _W - 80, y0 + (i + 1) * band_h], fill=col)
-    trophy = _load_trophy(300)
+    _fill_dark(im, colors)
+    # широкие горизонтальные полосы флага за кубком
+    band_h = 88
+    y0 = 160
+    for i, col in enumerate(colors[:3]):
+        draw.rectangle([70, y0 + i * band_h, _W - 70, y0 + (i + 1) * band_h - 6], fill=col)
+    # полупрозрачная подложка под кубок
+    panel = Image.new("RGBA", (_W, _H), (0, 0, 0, 0))
+    pd = ImageDraw.Draw(panel)
+    pd.rounded_rectangle([210, 120, 510, 520], radius=24, fill=(8, 10, 14, 170))
+    im.alpha_composite(panel)
+    trophy = _load_trophy(360)
     if trophy:
-        _paste_c(im, trophy, _W // 2, 380)
-    draw.text((_W // 2, 40), "WORLD CUP", fill=(240, 240, 245), font=_pick_font(24, bold=True), anchor="mt")
-    _draw_host_year(draw, host=host, year=year, y=_H - 120, fill=(240, 240, 245))
+        _paste_c(im, trophy, _W // 2, 320)
+    _caption_block(draw, host=host, season=season, fill=(245, 245, 248), y=_H - 140)
+    badge = _flag_badge(host, 52)
+    if badge:
+        _paste_c(im, badge, _W // 2, _H - 42)
 
 
 _STYLE_FN = {
-    "big_year": _style_big_year,
-    "horizontal": _style_horizontal,
-    "ribbon": _style_ribbon,
-    "faces": _style_faces,
-    "swoosh": _style_swoosh,
-    "burst": _style_burst,
-    "circle": _style_circle,
-    "stack": _style_stack,
+    "trophy_center": _style_trophy_center,
+    "trophy_side": _style_trophy_side,
+    "trophy_rings": _style_trophy_rings,
+    "trophy_bands": _style_trophy_bands,
 }
+
+
+def _resolve_style(raw: str) -> str:
+    s = (raw or "").strip()
+    if s in _STYLE_FN:
+        return s
+    mapped = _LEGACY_STYLE.get(s)
+    if mapped in _STYLE_FN:
+        return mapped
+    return LOGO_STYLES[0]
 
 
 def render_wc_logo_png_bytes(
@@ -423,19 +321,16 @@ def render_wc_logo_png_bytes(
             return f.read()
 
     host = str(brand.get("host") or "Host")
-    year = int(brand.get("display_year") or 2026)
-    style = str(brand.get("style") or "big_year")
-    if style not in _STYLE_FN:
-        style = LOGO_STYLES[0]
+    season_n = int(brand.get("season") or n)
+    style = _resolve_style(str(brand.get("style") or LOGO_STYLES[0]))
     seed = int(brand.get("seed") or (n * 17 + 3))
     rng = random.Random(seed)
     colors = _palette(host)
 
     im = Image.new("RGBA", (_W, _H), (0, 0, 0, 255))
     draw = ImageDraw.Draw(im)
-    _STYLE_FN[style](im, draw, host=host, year=year, colors=colors, rng=rng)
+    _STYLE_FN[style](im, draw, host=host, season=season_n, colors=colors, rng=rng)
 
-    # лёгкий виньет
     rgb = im.convert("RGB")
     out = __import__("io").BytesIO()
     rgb.save(out, format="PNG", optimize=True)

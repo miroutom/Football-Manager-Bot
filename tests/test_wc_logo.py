@@ -1,16 +1,9 @@
 # -*- coding: utf-8 -*-
 from utils.wc_branding import (
     LOGO_STYLES,
-    display_year_for_season,
     ensure_branding,
     get_branding,
 )
-
-
-def test_display_year_mapping():
-    assert display_year_for_season(4) == 2022
-    assert display_year_for_season(8) == 2026
-    assert display_year_for_season(12) == 2030
 
 
 def test_ensure_branding_stable(tmp_path, monkeypatch):
@@ -20,11 +13,13 @@ def test_ensure_branding_stable(tmp_path, monkeypatch):
         "utils.wc_branding._host_pool",
         lambda: ["Япония", "Бразилия", "Франция", "Германия"],
     )
+    monkeypatch.setattr("utils.wc_branding.migrate_branding_styles", lambda: None)
     a = ensure_branding(4)
     b = ensure_branding(4)
     assert a["host"] == b["host"]
     assert a["style"] in LOGO_STYLES
-    assert a["display_year"] == 2022
+    assert a["season"] == 4
+    assert get_branding(4)["seed"] == a["seed"]
     c = ensure_branding(4, force=True)
     assert get_branding(4)["seed"] == c["seed"]
 
@@ -38,6 +33,7 @@ def test_wc_logo_png_smoke(tmp_path, monkeypatch):
         "utils.wc_branding._host_pool",
         lambda: ["Япония", "Бразилия", "Франция"],
     )
+    monkeypatch.setattr("utils.wc_branding.migrate_branding_styles", lambda: None)
     monkeypatch.setattr("bot.wc_logo._CACHE_DIR", str(cache))
     from bot.wc_logo import render_wc_logo_png_bytes
 
@@ -46,8 +42,14 @@ def test_wc_logo_png_smoke(tmp_path, monkeypatch):
             "host": "Япония",
             "style": style,
             "seed": 42,
-            "display_year": 2026,
-            "season": 8,
+            "season": 4,
         }
-        png = render_wc_logo_png_bytes(8, branding=brand, use_cache=False)
+        png = render_wc_logo_png_bytes(4, branding=brand, use_cache=False)
         assert png[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_legacy_style_maps_to_trophy():
+    from bot.wc_logo import _resolve_style
+
+    assert _resolve_style("ribbon") == "trophy_rings"
+    assert _resolve_style("trophy_center") == "trophy_center"

@@ -71,9 +71,9 @@ def _branding_line(season: int) -> str:
 
         b = ensure_branding(season)
         host = html_escape(str(b.get("host") or "?"))
-        year = int(b.get("display_year") or 0)
+        sn = int(b.get("season") or season)
         style = html_escape(str(b.get("style") or ""))
-        return f"Хост логотипа: <b>{host}</b> · {year} · стиль <code>{style}</code>"
+        return f"Хост логотипа: <b>{host}</b> · сезон {sn} · стиль <code>{style}</code>"
     except Exception:
         return ""
 
@@ -91,9 +91,9 @@ async def _send_wc_logo(message, *, season: int, reroll: bool = False) -> None:
         render_wc_logo_png_bytes, season, branding=brand, use_cache=not reroll
     )
     host = brand.get("host") or "?"
-    year = brand.get("display_year") or ""
+    sn = brand.get("season") or season
     style = brand.get("style") or ""
-    cap = f"🎨 ЧМ · {host} {year} · {style}"
+    cap = f"🎨 ЧМ · {host} · сезон {sn} · {style}"
     await message.answer_photo(
         BufferedInputFile(png, filename=f"wc_logo_{season}_{time.time_ns()}.png"),
         caption=cap,

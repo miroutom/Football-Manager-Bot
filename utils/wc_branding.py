@@ -9,9 +9,9 @@
       "by_season": {
         "4": {
           "host": "Япония",
-          "style": "ribbon",
+          "style": "trophy_rings",
           "seed": 40127,
-          "display_year": 2022
+          "season": 4
         }
       }
     }
@@ -29,27 +29,17 @@ from utils.world_cup_format import flatten_nations
 
 _PATH = os.path.join(season_paths.PROJECT_ROOT, "data", "wc_branding.json")
 
-# Стили генератора логотипа (см. bot/wc_logo.py)
+# Стили генератора логотипа (см. bot/wc_logo.py) — все с кубком
 LOGO_STYLES: tuple[str, ...] = (
-    "big_year",
-    "horizontal",
-    "ribbon",
-    "faces",
-    "swoosh",
-    "burst",
-    "circle",
-    "stack",
+    "trophy_center",
+    "trophy_side",
+    "trophy_rings",
+    "trophy_bands",
 )
 
 
 def branding_path() -> str:
     return _PATH
-
-
-def display_year_for_season(season: int) -> int:
-    """Календарный год «как у FIFA»: сезон 4 → 2022, 8 → 2026, 12 → 2030…"""
-    n = int(season)
-    return 2022 + ((max(n, 4) - 4) // 4) * 4
 
 
 def load_branding() -> dict[str, Any]:
@@ -104,6 +94,7 @@ def ensure_branding(
     ``force=True`` — новый рандомный хост (или явный ``host``) и стиль.
     """
     n = int(season if season is not None else season_paths.get_active_season())
+    migrate_branding_styles()
     data = load_branding()
     by = data.setdefault("by_season", {})
     key = str(n)
@@ -137,7 +128,6 @@ def ensure_branding(
         "host": chosen,
         "style": style,
         "seed": seed,
-        "display_year": display_year_for_season(n),
         "season": n,
         "is_wc_season": is_world_cup_season(n),
     }
@@ -151,3 +141,39 @@ def ensure_branding(
     except Exception:
         pass
     return dict(rec)
+
+
+def migrate_branding_styles() -> None:
+    """Старые стили / год → новые стили с кубком; сброс кэша только при изменении."""
+    from bot.wc_logo import _LEGACY_STYLE, clear_logo_cache
+
+    data = load_branding()
+    by = data.get("by_season") or {}
+    changed = False
+    touched: list[int] = []
+    for key, rec in list(by.items()):
+        if not isinstance(rec, dict):
+            continue
+        before = dict(rec)
+        st = str(rec.get("style") or "")
+        if st in _LEGACY_STYLE:
+            rec["style"] = _LEGACY_STYLE[st]
+        elif st not in LOGO_STYLES:
+            rec["style"] = LOGO_STYLES[0]
+        rec["season"] = int(rec.get("season") or key)
+        rec.pop("display_year", None)
+        if rec != before:
+            changed = True
+            try:
+                touched.append(int(key))
+            except (TypeError, ValueError):
+                pass
+        by[key] = rec
+    if changed:
+        data["by_season"] = by
+        save_branding(data)
+        for n in touched:
+            try:
+                clear_logo_cache(n)
+            except Exception:
+                pass

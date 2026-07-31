@@ -4,9 +4,8 @@
   "by_season": {
     "4": {
       "host": "Япония",
-      "style": "ribbon",
+      "style": "trophy_rings",
       "seed": 1635141905,
-      "display_year": 2022,
       "season": 4,
       "is_wc_season": true
     }
