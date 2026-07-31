@@ -344,12 +344,24 @@ def _draw_tie_two_lines(
     fill_name_row2: tuple[int, int, int],
     fill_score: tuple[int, int, int],
     pen_color: tuple[int, int, int],
+    im: Image.Image | None = None,
+    crest_size: int = 16,
 ) -> None:
     def one_line(y: int, row: tuple[str, str], fill_name: tuple[int, int, int]) -> None:
         name, score_full = row
-        max_name_w = inner_right - inner_left - 52
+        x_name = inner_left
+        if im is not None and name and not str(name).startswith("победитель") and not str(name).startswith("—"):
+            try:
+                from bot.report_gfx import paste_crest
+
+                cy = y + 7
+                paste_crest(im, draw, team=name, cx=inner_left + crest_size // 2, cy=cy, size=crest_size)
+                x_name = inner_left + crest_size + 4
+            except Exception:
+                x_name = inner_left
+        max_name_w = inner_right - x_name - 52
         tn = _truncate(draw, name, name_font, max_name_w)
-        draw.text((inner_left, y), tn, font=name_font, fill=fill_name)
+        draw.text((x_name, y), tn, font=name_font, fill=fill_name)
 
         score_main = score_full
         pen_suf = ""
@@ -514,6 +526,7 @@ def render_cl_bracket_infographic_png_bytes(
             fill_name_row2=TEXT_MAIN,
             fill_score=TEXT_MAIN,
             pen_color=PEN_CLR,
+            im=im,
         )
 
     for i in range(8):
@@ -545,6 +558,7 @@ def render_cl_bracket_infographic_png_bytes(
             fill_name_row2=f2,
             fill_score=TEXT_MAIN,
             pen_color=PEN_CLR,
+            im=im,
         )
 
     for j in range(4):
@@ -581,6 +595,7 @@ def render_cl_bracket_infographic_png_bytes(
             fill_name_row2=f2,
             fill_score=TEXT_MAIN,
             pen_color=PEN_CLR,
+            im=im,
         )
 
     for j in range(2):
@@ -617,6 +632,7 @@ def render_cl_bracket_infographic_png_bytes(
             fill_name_row2=f2,
             fill_score=TEXT_MAIN,
             pen_color=PEN_CLR,
+            im=im,
         )
 
     mx_f = (x4_right + x5_left) // 2

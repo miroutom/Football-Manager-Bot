@@ -251,24 +251,37 @@ async def cb_injury_back_lg(callback: CallbackQuery, state: FSMContext) -> None:
 
 @injury_router.callback_query(F.data == "inj:root:view")
 async def cb_injury_root_view(callback: CallbackQuery, state: FSMContext) -> None:
-    from utils.player_discipline import format_active_injuries_report_text
-
     await callback.answer("Готовлю…")
     if callback.message is None:
         return
     await state.clear()
     try:
-        body = await asyncio.to_thread(format_active_injuries_report_text)
-        await _send_png_report(
+        from bot.player_board_infographic import render_injuries_infographic_png_pages
+        from bot.handlers import answer_png_pages
+
+        blobs = await asyncio.to_thread(render_injuries_infographic_png_pages)
+        await answer_png_pages(
             callback.message,
-            body=body,
-            title="Травмы и дисциплина",
-            caption="<b>Травмы и дисциплина</b>",
+            blobs,
+            "<b>Травмы и дисциплина</b>",
             filename_prefix="injuries",
+            parse_mode="HTML",
         )
     except Exception as e:
         logger.exception("injury view report")
-        await callback.message.answer(f"Не удалось собрать отчёт: {e}")
+        from utils.player_discipline import format_active_injuries_report_text
+
+        try:
+            body = await asyncio.to_thread(format_active_injuries_report_text)
+            await _send_png_report(
+                callback.message,
+                body=body,
+                title="Травмы и дисциплина",
+                caption="<b>Травмы и дисциплина</b>",
+                filename_prefix="injuries",
+            )
+        except Exception as e2:
+            await callback.message.answer(f"Не удалось собрать отчёт: {e2}")
 
 
 @injury_router.callback_query(F.data == "inj:view:seasons")
