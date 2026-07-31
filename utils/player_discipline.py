@@ -13,7 +13,7 @@
 - травма: «имя Nм» / «имя Nm» — только **2** или **4** месяца;
   «имя сM Nм» / «имя @M Nm» — с месяца M на 2 или 4 месяца.
   У **полевых** две «жизни»: первая травма — остаётся в клубе; вторая — ``left_team=True``.
-  Вратари (ВРТ) не улетают автоматически. Рейтинг не меняется.
+  У **вратарей** пять «жизней»: уходит после пятой травмы. Рейтинг не меняется.
 - дисквал: в JSON ``unavailable_from_round`` — с какого тура чемпионата бан действует (null = как раньше).
   Нац. лига: туров 1–14; если бан «после» 14-го — ``unavailable_from_round=1`` (перенос на
   следующий сезон; при ``clear_discipline_for_new_season`` активные дисквалы сохраняются,
@@ -294,11 +294,17 @@ _SEASON_MONTHS = 10
 _ALLOWED_INJURY_MONTHS = frozenset({2, 4})
 _MAX_INJURY_DURATION_MONTHS = max(_ALLOWED_INJURY_MONTHS)
 _GK_POSITIONS = frozenset({"ВРТ", "ВР", "GK"})
+_FIELD_INJURY_LIVES = 2
+_GK_INJURY_LIVES = 5
 
 
 def _is_field_player(player: Any) -> bool:
     pos = (getattr(player, "position", None) or "").strip().upper()
     return pos not in _GK_POSITIONS
+
+
+def _injury_life_limit(player: Any) -> int:
+    return _FIELD_INJURY_LIVES if _is_field_player(player) else _GK_INJURY_LIVES
 
 
 def _validate_injury_duration(nmonths: int) -> str | None:
@@ -1184,9 +1190,10 @@ def _apply_injury(
         periods_count = len(_injuries_for_player(st, player.name, team))
         _save(st)
     leave_note = ""
-    if added and _is_field_player(player) and periods_count >= 2:
+    life_limit = _injury_life_limit(player)
+    if added and periods_count >= life_limit:
         if _mark_player_left_team_in_dbs(player.name, team):
-            leave_note = " Игрок ушёл из клуба (2-я травма)."
+            leave_note = f" Игрок ушёл из клуба ({periods_count}-я травма)."
     rating_note = ""
     if added:
         delta = injury_overall_penalty(nmonths)
