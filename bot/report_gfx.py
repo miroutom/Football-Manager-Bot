@@ -98,6 +98,34 @@ INJURY_THEME = LeagueTheme(
 
 def theme_for_league(code: str | None) -> LeagueTheme:
     c = (code or "").strip().lower()
+    if c in ("wc", "world_cup"):
+        try:
+            from bot.wc_logo import theme_colors_for_wc
+            from utils import season_paths
+
+            cols = theme_colors_for_wc(season_paths.get_active_season())
+            c0 = cols[0]
+            c1 = cols[1] if len(cols) > 1 else (250, 210, 80)
+            # тёмный фон, акцент — цвет хоста
+            header = (
+                max(8, c0[0] // 3),
+                max(12, c0[1] // 3),
+                max(16, c0[2] // 3),
+            )
+            return LeagueTheme(
+                "wc",
+                "ЧМ",
+                (8, 16, 22),
+                header,
+                (14, 28, 36),
+                (18, 36, 44),
+                c1 if c1 != (255, 255, 255) else c0,
+                (245, 250, 245),
+                (160, 190, 180),
+                c0,
+            )
+        except Exception:
+            pass
     return _LEAGUE_THEMES.get(c, _DEFAULT_THEME)
 
 

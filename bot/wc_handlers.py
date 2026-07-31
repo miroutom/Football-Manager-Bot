@@ -42,12 +42,62 @@ def _wc_home_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(text="⚽ Схемы сборных", callback_data="squadlg:wc"),
+                InlineKeyboardButton(text="🎨 Логотип", callback_data="wc:logo"),
             ],
             [
                 InlineKeyboardButton(text="ℹ️ Формат", callback_data="wc:rules"),
             ],
             [InlineKeyboardButton(text="✖️ Закрыть", callback_data="wc:close")],
         ]
+    )
+
+
+def _logo_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🎲 Другой хост / стиль", callback_data="wc:logo:reroll"
+                )
+            ],
+            _back_home_row(),
+        ]
+    )
+
+
+def _branding_line(season: int) -> str:
+    try:
+        from utils.wc_branding import ensure_branding
+
+        b = ensure_branding(season)
+        host = html_escape(str(b.get("host") or "?"))
+        year = int(b.get("display_year") or 0)
+        style = html_escape(str(b.get("style") or ""))
+        return f"Хост логотипа: <b>{host}</b> · {year} · стиль <code>{style}</code>"
+    except Exception:
+        return ""
+
+
+async def _send_wc_logo(message, *, season: int, reroll: bool = False) -> None:
+    import time
+
+    from aiogram.types import BufferedInputFile
+
+    from bot.wc_logo import render_wc_logo_png_bytes
+    from utils.wc_branding import ensure_branding
+
+    brand = await asyncio.to_thread(ensure_branding, season, force=reroll)
+    png = await asyncio.to_thread(
+        render_wc_logo_png_bytes, season, branding=brand, use_cache=not reroll
+    )
+    host = brand.get("host") or "?"
+    year = brand.get("display_year") or ""
+    style = brand.get("style") or ""
+    cap = f"🎨 ЧМ · {host} {year} · {style}"
+    await message.answer_photo(
+        BufferedInputFile(png, filename=f"wc_logo_{season}_{time.time_ns()}.png"),
+        caption=cap,
+        reply_markup=_logo_kb(),
     )
 
 
@@ -77,6 +127,9 @@ async def cmd_wc(message: Message, state: FSMContext) -> None:
             f"Сейчас сезон {sn} — турнир в сезоне <b>{next_world_cup_season(sn)}</b>.\n"
             f"Меню доступно для подготовки (жеребьёвка / вызовы)."
         )
+    brand = _branding_line(sn)
+    if brand:
+        head = head + "\n" + brand
     await message.answer(head + "\n\nВыберите:", reply_markup=_wc_home_kb(), parse_mode="HTML")
 
 
@@ -95,6 +148,9 @@ async def cb_menu_wc(callback: CallbackQuery, state: FSMContext) -> None:
             f"🌍 <b>ЧМ</b> (подготовка)\n"
             f"Турнир — сезон <b>{next_world_cup_season(sn)}</b>."
         )
+    brand = _branding_line(sn)
+    if brand:
+        head = head + "\n" + brand
     await _edit(callback, head + "\n\nВыберите:", _wc_home_kb())
 
 
@@ -102,7 +158,41 @@ async def cb_menu_wc(callback: CallbackQuery, state: FSMContext) -> None:
 async def cb_wc_home(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     await state.clear()
-    await _edit(callback, "🌍 <b>ЧМ</b>\n\nВыберите:", _wc_home_kb())
+    from utils import season_paths
+
+    sn = season_paths.get_active_season()
+    brand = _branding_line(sn)
+    text = "🌍 <b>ЧМ</b>"
+    if brand:
+        text += "\n" + brand
+    text += "\n\nВыберите:"
+    await _edit(callback, text, _wc_home_kb())
+
+
+@wc_router.callback_query(F.data == "wc:logo")
+async def cb_wc_logo(callback: CallbackQuery) -> None:
+    await callback.answer("Рисую логотип…")
+    from utils import season_paths
+
+    try:
+        await _send_wc_logo(callback.message, season=season_paths.get_active_season())
+    except Exception as e:
+        logger.exception("wc logo")
+        await callback.message.answer(f"Не удалось нарисовать логотип: {e}")
+
+
+@wc_router.callback_query(F.data == "wc:logo:reroll")
+async def cb_wc_logo_reroll(callback: CallbackQuery) -> None:
+    await callback.answer("Новый хост…")
+    from utils import season_paths
+
+    try:
+        await _send_wc_logo(
+            callback.message, season=season_paths.get_active_season(), reroll=True
+        )
+    except Exception as e:
+        logger.exception("wc logo reroll")
+        await callback.message.answer(f"Не удалось: {e}")
 
 
 @wc_router.callback_query(F.data == "wc:close")

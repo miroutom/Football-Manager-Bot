@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "notes": "Хост + стиль логотипа по сезону ЧМ (ensure_branding при первом открытии).",
+  "by_season": {
+    "4": {
+      "host": "Япония",
+      "style": "ribbon",
+      "seed": 1635141905,
+      "display_year": 2022,
+      "season": 4,
+      "is_wc_season": true
+    }
+  }
+}
