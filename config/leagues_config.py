@@ -130,7 +130,7 @@ def manager_side_for_team(team_display: str) -> str | None:
         for c in clubs:
             if _norm_club_token(c) == n:
                 return side
-    # сборные ЧМ (список пришлёте позже)
+    # сборные ЧМ
     try:
         from utils.wc_tournament import load_tournament
 

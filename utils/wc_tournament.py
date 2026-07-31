@@ -112,15 +112,68 @@ def run_group_draw(*, seed: int | None = None, force: bool = False) -> dict[str,
 
 
 def set_manager_nations(manager: str, nations: list[str]) -> dict[str, Any]:
-    """Заглушка под будущий список Roman/Lika → сборные."""
+    """Roman / Lika → списки сборных ЧМ."""
     key = (manager or "").strip()
     if key not in ("Roman", "Lika"):
         raise ValueError("manager: Roman или Lika")
     data = load_tournament()
     mgr = data.setdefault("managers", {"Roman": [], "Lika": []})
     mgr[key] = [str(n).strip() for n in nations if str(n).strip()]
+    data["notes"] = "Менеджеры: Roman / Lika — по 24 сборные."
     save_tournament(data)
     return data
+
+
+def managers_html(data: dict[str, Any] | None = None) -> str:
+    """Текст меню менеджеров с разбивкой по конфедерациям."""
+    from html import escape as html_escape
+
+    from utils.world_cup import nations_by_confederation
+
+    data = data or load_tournament()
+    mgr = data.get("managers") or {}
+    by_conf = nations_by_confederation()
+    # nation → conf
+    nat_conf: dict[str, str] = {}
+    for conf, teams in by_conf.items():
+        for t in teams or []:
+            nat_conf[str(t).strip().casefold()] = str(conf)
+
+    conf_order = list(by_conf.keys()) or [
+        "Европа",
+        "Азия",
+        "Африка",
+        "Сев. Америка",
+        "Юж. Америка",
+    ]
+
+    lines = ["<b>Менеджеры ЧМ</b>", ""]
+    for key in ("Roman", "Lika"):
+        nations = [str(x).strip() for x in (mgr.get(key) or []) if str(x).strip()]
+        lines.append(f"<b>{key}</b> — {len(nations)} сборных")
+        if not nations:
+            lines.append("· пока пусто")
+            lines.append("")
+            continue
+        buckets: dict[str, list[str]] = {c: [] for c in conf_order}
+        other: list[str] = []
+        for n in nations:
+            conf = nat_conf.get(n.casefold())
+            if conf and conf in buckets:
+                buckets[conf].append(n)
+            else:
+                other.append(n)
+        for conf in conf_order:
+            chunk = buckets.get(conf) or []
+            if not chunk:
+                continue
+            lines.append(f"<i>{html_escape(conf)}</i>")
+            for t in chunk:
+                lines.append(f"· {html_escape(t)}")
+        for t in other:
+            lines.append(f"· {html_escape(t)}")
+        lines.append("")
+    return "\n".join(lines).rstrip()
 
 
 def groups_html(data: dict[str, Any] | None = None) -> str:

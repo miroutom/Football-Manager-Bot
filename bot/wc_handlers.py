@@ -218,25 +218,13 @@ async def cb_wc_rules(callback: CallbackQuery) -> None:
 @wc_router.callback_query(F.data == "wc:mgr")
 async def cb_wc_mgr(callback: CallbackQuery) -> None:
     await callback.answer()
-    from utils.wc_tournament import load_tournament
+    from utils.wc_tournament import managers_html
 
-    data = load_tournament()
-    mgr = data.get("managers") or {}
-    roman = mgr.get("Roman") or []
-    lika = mgr.get("Lika") or []
-    lines = [
-        "<b>Менеджеры ЧМ</b>",
-        "",
-        "Список Roman / Lika → сборные пришлёте позже.",
-        "",
-        f"<b>Roman</b>: {len(roman)} сборных"
-        + (("\n· " + "\n· ".join(html_escape(str(x)) for x in roman)) if roman else " — пока пусто"),
-        "",
-        f"<b>Lika</b>: {len(lika)} сборных"
-        + (("\n· " + "\n· ".join(html_escape(str(x)) for x in lika)) if lika else " — пока пусто"),
-    ]
+    text = managers_html()
+    if len(text) > 3900:
+        text = text[:3900] + "\n…"
     kb = InlineKeyboardMarkup(inline_keyboard=[_back_home_row()])
-    await _edit(callback, "\n".join(lines), kb)
+    await _edit(callback, text, kb)
 
 
 @wc_router.callback_query(F.data == "wc:draw")
