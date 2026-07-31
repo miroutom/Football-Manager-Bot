@@ -87,8 +87,17 @@ def compare_head_to_head(team1, team2, teams_dict):
 
 
 def get_sorted_teams(teams):
-    """Сортировка: очки -> разница -> личные встречи -> победы -> забитые"""
+    """Сортировка: очки → разница → личные встречи → победы → забитые.
+
+    Пока никто не сыграл (все ``matches == 0``) — по алфавиту.
+    """
     from functools import cmp_to_key
+
+    if not teams:
+        return []
+
+    if all(int(getattr(t, "matches", 0) or 0) == 0 for t in teams.values()):
+        return sorted(teams.items(), key=lambda item: str(item[0]).casefold())
 
     def compare_teams(item1, item2):
         name1, team1 = item1
@@ -110,6 +119,10 @@ def get_sorted_teams(teams):
         if team1.scored != team2.scored:
             return team2.scored - team1.scored
 
+        if name1.casefold() < name2.casefold():
+            return -1
+        if name1.casefold() > name2.casefold():
+            return 1
         return 0
 
     return sorted(teams.items(), key=cmp_to_key(compare_teams))
