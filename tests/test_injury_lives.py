@@ -53,3 +53,30 @@ def test_field_player_leaves_on_second_injury(monkeypatch, tmp_path):
         fake_sess,
     )
     assert left_calls == ["Тестов"]
+
+
+def test_close_stale_carryover_injuries(monkeypatch, tmp_path):
+    import utils.player_discipline as pd
+
+    store = tmp_path / "player_discipline.json"
+    store.write_text(
+        """{
+      "version": 1,
+      "suspensions": [],
+      "yellow_cycle": [],
+      "injuries": [{
+        "name": "Кейн", "name_norm": "кейн", "team": "Бавария", "team_norm": "бавария",
+        "out_from_month": 8, "return_month": 15, "season": 3, "type": "травма",
+        "key": "кейн|бавария|3|8|15"
+      }]
+    }""",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pd, "_STATE_PATH", store)
+    monkeypatch.setattr(pd, "_get_active_season_or_default", lambda: 4)
+
+    n = pd.close_stale_carryover_injuries(season_now=4, month=1)
+    assert n == 1
+    row = pd._load()["injuries"][0]
+    assert row["return_month"] == 11
+    assert not pd._injury_blocks_at_month(row, 1, current_season=4)

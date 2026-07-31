@@ -329,6 +329,56 @@ def _mark_player_left_team_in_dbs(player_name: str, team: str) -> bool:
     return changed
 
 
+def close_stale_carryover_injuries(
+    *,
+    season_now: int | None = None,
+    month: int | None = None,
+    last_injured_month: int = _SEASON_MONTHS,
+) -> int:
+    """
+    Закрыть «висящие» травмы прошлого сезона: если период всё ещё активен
+    в новом сезоне, обрезать ``return_month`` до конца ``last_injured_month``
+    сезона старта (по умолчанию 10-й → выход с 11-го).
+    """
+    season_now = int(season_now if season_now is not None else _get_active_season_or_default())
+    month = int(month if month is not None else get_calendar_month(None))
+    return_after = int(last_injured_month) + 1
+    fixed = 0
+    with _lock:
+        st = _load()
+        for row in st.get("injuries") or []:
+            if not isinstance(row, dict):
+                continue
+            if _injury_status_label(row, month=month, season_now=season_now) != "активна":
+                continue
+            try:
+                inj_season = int(row.get("season") or season_now)
+            except (TypeError, ValueError):
+                continue
+            if inj_season >= season_now:
+                continue
+            try:
+                ofm = int(row.get("out_from_month") or 1)
+            except (TypeError, ValueError):
+                ofm = 1
+            new_ret = max(ofm + 1, return_after)
+            old_ret = int(row.get("return_month") or 0)
+            if old_ret <= new_ret:
+                continue
+            row["return_month"] = new_ret
+            row["key"] = _injury_period_key(
+                str(row.get("name") or ""),
+                str(row.get("team") or ""),
+                ofm,
+                new_ret,
+                inj_season,
+            )
+            fixed += 1
+        if fixed:
+            _save(st)
+    return fixed
+
+
 def _injury_total_months(inj: dict) -> int:
     """Полная длительность периода (в месяцах) — для выбора иконки и подписи."""
     ofm = inj.get("out_from_month")
