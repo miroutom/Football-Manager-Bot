@@ -28,11 +28,13 @@ def _default_data() -> dict[str, Any]:
             "ger": [],
         },
         "champions_league": [],
+        "world_cup": [],
         "cl_knockout_stages": [],
         "golden_ball": [],
         "golden_boot": [],
         "golden_glove": [],
         "golden_boy": [],
+        "world_cup_best": [],
     }
 
 
@@ -55,11 +57,13 @@ def load_history() -> dict[str, Any]:
                 out["league_winners"][code] = lw[code]
     for key in (
         "champions_league",
+        "world_cup",
         "cl_knockout_stages",
         "golden_ball",
         "golden_boot",
         "golden_glove",
         "golden_boy",
+        "world_cup_best",
     ):
         v = raw.get(key)
         if isinstance(v, list):
@@ -108,6 +112,18 @@ def record_tournament_winners_from_finalize(ended_season: int, trophies_log: dic
     cl_rows = data.setdefault("champions_league", [])
     if isinstance(cl_rows, list) and team_cl:
         _upsert_season_row(cl_rows, ended_season, [ended_season, team_cl])
+
+    wc_block = trophies_log.get("wc_winner")
+    team_wc = None
+    if isinstance(wc_block, dict):
+        team_wc = wc_block.get("team")
+    if team_wc:
+        from utils.world_cup import is_world_cup_season
+
+        if is_world_cup_season(ended_season):
+            wc_rows = data.setdefault("world_cup", [])
+            if isinstance(wc_rows, list):
+                _upsert_season_row(wc_rows, ended_season, [ended_season, team_wc])
 
     save_history(data)
 
@@ -160,6 +176,8 @@ _AWARD_KIND_KEYS = {
     "golden_glove": "golden_glove",
     "boy": "golden_boy",
     "golden_boy": "golden_boy",
+    "wc_best": "world_cup_best",
+    "world_cup_best": "world_cup_best",
 }
 
 
@@ -230,6 +248,42 @@ def timeline_cl(max_season: int) -> list[tuple[int, str | None]]:
     by_s = _rows_by_season(raw)
     out: list[tuple[int, str | None]] = []
     for s in range(1, int(max_season) + 1):
+        row = by_s.get(s)
+        if not row:
+            out.append((s, None))
+            continue
+        team = row[1]
+        if team is None or (isinstance(team, str) and not team.strip()):
+            out.append((s, None))
+        else:
+            out.append((s, str(team).strip()))
+    return out
+
+
+def timeline_wc(max_season: int) -> list[tuple[int, str | None]]:
+    """Только сезоны ЧМ (4, 8, 12…); ``None`` — ещё нет чемпиона."""
+    from utils.world_cup import list_world_cup_seasons_up_to
+
+    data = load_history()
+    raw = data.get("world_cup") or []
+    by_s = _rows_by_season(raw)
+    out: list[tuple[int, str | None]] = []
+    seasons = list_world_cup_seasons_up_to(max_season)
+    # если активный сезон ещё не WC, всё равно показать ближайший слот с «?»
+    if not seasons and int(max_season) >= 4:
+        from utils.world_cup import next_world_cup_season
+
+        seasons = [next_world_cup_season(max_season)]
+    elif int(max_season) >= 4:
+        from utils.world_cup import is_world_cup_season, next_world_cup_season
+
+        nxt = next_world_cup_season(max_season)
+        if is_world_cup_season(max_season) and max_season not in seasons:
+            seasons.append(int(max_season))
+        elif nxt not in seasons and nxt <= int(max_season):
+            seasons.append(nxt)
+        seasons = sorted(set(seasons))
+    for s in seasons:
         row = by_s.get(s)
         if not row:
             out.append((s, None))

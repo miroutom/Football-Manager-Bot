@@ -424,6 +424,14 @@ def finalize_season() -> dict[str, Any]:
         _clone_db_zero_stats(l_arch, os.path.join(nxt, season_paths.SEASON_LEAGUE_NAME))
         _clone_db_zero_stats(c_arch, os.path.join(nxt, season_paths.SEASON_CL_NAME))
         _clone_db_zero_stats(o_arch, os.path.join(nxt, season_paths.SEASON_COMMON_NAME))
+        try:
+            from utils.world_cup import ensure_world_cup_db, is_world_cup_season
+
+            if is_world_cup_season(next_n):
+                ensure_world_cup_db(next_n)
+                log["world_cup_db"] = season_paths.get_wc_db_path_for_season(next_n)
+        except Exception as e:
+            log["world_cup_db_error"] = str(e)
         p_snap = os.path.join(arch, "pickle")
         src_pick = p_snap if os.path.isdir(p_snap) else root_pickle
         if os.path.isdir(src_pick):
@@ -451,6 +459,14 @@ def finalize_season() -> dict[str, Any]:
         _clone_db_zero_stats(l_arch, os.path.join(next_dir, season_paths.SEASON_LEAGUE_NAME))
         _clone_db_zero_stats(c_arch, os.path.join(next_dir, season_paths.SEASON_CL_NAME))
         _clone_db_zero_stats(o_arch, os.path.join(next_dir, season_paths.SEASON_COMMON_NAME))
+        try:
+            from utils.world_cup import ensure_world_cup_db, is_world_cup_season
+
+            if is_world_cup_season(nxt):
+                ensure_world_cup_db(nxt)
+                log["world_cup_db"] = season_paths.get_wc_db_path_for_season(nxt)
+        except Exception as e:
+            log["world_cup_db_error"] = str(e)
         pcur = os.path.join(cur_dir, "pickle")
         pnew = os.path.join(next_dir, "pickle")
         if os.path.isdir(pcur):

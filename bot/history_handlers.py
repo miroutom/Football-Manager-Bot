@@ -14,6 +14,7 @@ from bot.history_render import (
     render_cl_history_png,
     render_league_history_png,
     render_special_cups_history_png,
+    render_wc_history_png,
 )
 from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
 from bot.team_history import format_season_tag, list_history_seasons
@@ -52,6 +53,7 @@ _AWARD_CAPTION = {
     "golden_boot": "Золотая бутса",
     "golden_glove": "Золотая перчатка",
     "golden_boy": "Golden Boy",
+    "world_cup_best": "Лучший игрок ЧМ",
 }
 
 
@@ -62,6 +64,7 @@ def history_root_kb() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="⭐ ЛЧ", callback_data="hist:cl"),
         ],
         [
+            InlineKeyboardButton(text="🌍 ЧМ", callback_data="hist:wc"),
             InlineKeyboardButton(text="🏆 Особые кубки", callback_data="hist:special_cups"),
         ],
         [
@@ -71,6 +74,9 @@ def history_root_kb() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(text="🧤 Перчатка", callback_data="hist:a:golden_glove"),
             InlineKeyboardButton(text="🌟 Golden Boy", callback_data="hist:a:golden_boy"),
+        ],
+        [
+            InlineKeyboardButton(text="🌍 Лучший ЧМ", callback_data="hist:a:world_cup_best"),
         ],
         [
             InlineKeyboardButton(text="🏟 Клубы", callback_data="hist:teams"),
@@ -270,6 +276,24 @@ async def cb_hist_cl(callback: CallbackQuery) -> None:
         png=png,
         filename="history_cl.png",
         caption="<b>ЛЧ</b> — победители",
+    )
+
+
+@history_router.callback_query(F.data == "hist:wc")
+async def cb_hist_wc(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        png = await asyncio.to_thread(render_wc_history_png)
+    except Exception as e:
+        logger.exception("render_wc_history")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    await _send_png(
+        callback,
+        png=png,
+        filename="history_wc.png",
+        caption="<b>Чемпионат мира</b>",
     )
 
 

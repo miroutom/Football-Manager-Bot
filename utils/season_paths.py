@@ -30,6 +30,7 @@ _STATE_FILE = os.path.join(_DB, "season_state.json")
 SEASON_LEAGUE_NAME = "league.db"
 SEASON_CL_NAME = "champions_league.db"
 SEASON_COMMON_NAME = "common.db"
+SEASON_WC_NAME = "world_cup.db"
 
 # Legacy-имена (текущий репо)
 LEGACY_LEAGUE = "league_synced.db"
@@ -98,6 +99,24 @@ def get_common_db_path() -> str:
     return os.path.join(_DB, _season_subdir(), SEASON_COMMON_NAME)
 
 
+def get_wc_db_path_for_season(season_num: int) -> str:
+    """Путь к ``world_cup.db`` сезона (файл может ещё не существовать)."""
+    return os.path.join(season_archive_directory(int(season_num)), SEASON_WC_NAME)
+
+
+def get_wc_db_path() -> str | None:
+    """
+    БД ЧМ активного сезона, если сезон чемпионатный (4/8/12…).
+    Иначе ``None``.
+    """
+    from utils.world_cup import is_world_cup_season
+
+    n = get_active_season()
+    if not is_world_cup_season(n):
+        return None
+    return get_wc_db_path_for_season(n)
+
+
 def write_state(data: dict[str, Any]) -> None:
     os.makedirs(_DB, exist_ok=True)
     with open(_STATE_FILE, "w", encoding="utf-8") as f:
@@ -151,6 +170,9 @@ def iter_player_roster_db_paths(
     ):
         if os.path.isfile(path):
             out.append((label, path))
+    wc = get_wc_db_path()
+    if wc and os.path.isfile(wc):
+        out.append(("wc", wc))
     if include_synced:
         for label, path in (
             ("sync_league", get_cumulative_league_db_path()),
@@ -169,6 +191,7 @@ def iter_player_roster_db_paths(
                 ("league", SEASON_LEAGUE_NAME),
                 ("cl", SEASON_CL_NAME),
                 ("common", SEASON_COMMON_NAME),
+                ("wc", SEASON_WC_NAME),
             ):
                 p = os.path.join(d, fname)
                 if os.path.isfile(p):

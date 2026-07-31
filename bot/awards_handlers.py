@@ -108,11 +108,24 @@ def _teams_kb(kind: str, league_code: str) -> InlineKeyboardMarkup:
 
 
 async def _open_award_menu_msg(message: Message) -> None:
+    wc_note = ""
+    try:
+        from utils.world_cup import is_world_cup_season
+
+        if is_world_cup_season():
+            wc_note = (
+                "\n\n🌍 <b>Сезон ЧМ:</b> ЗМ / бутса / перчатка / Golden Boy вручаем "
+                "<b>после</b> чемпионата мира (месяц 11). "
+                "Отдельная награда — лучший игрок ЧМ (история → Лучший ЧМ)."
+            )
+    except Exception:
+        pass
     await message.answer(
         "🏅 <b>Награда сезона</b>\n\n"
         "Выбери награду, лигу и клуб, затем введи <b>имя игрока</b> как в базе.\n"
         "Одна награда этого вида на сезон: +1 пишется в <b>одну</b> БД (сначала ищем в нац. лиге, "
-        "если нет строки — в БД ЛЧ). В <code>common.db</code> для сводки дубли не суммируются.\n\n"
+        "если нет строки — в БД ЛЧ). В <code>common.db</code> для сводки дубли не суммируются."
+        f"{wc_note}\n\n"
         "/cancel — отмена.",
         reply_markup=_kinds_keyboard(),
         parse_mode="HTML",

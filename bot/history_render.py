@@ -20,7 +20,7 @@ try:
 except ImportError as e:
     raise ImportError("Нужен пакет Pillow: pip install pillow") from e
 
-from bot.season_history_store import timeline_award, timeline_cl, timeline_league
+from bot.season_history_store import timeline_award, timeline_cl, timeline_league, timeline_wc
 from bot.squad_pitch import (
     _FLAG_H,
     _FLAG_W,
@@ -245,6 +245,21 @@ def _background_league_rgb(w: int, h: int) -> Image.Image:
     im = Image.new("RGB", (w, h), (12, 16, 36))
     _fill_vertical_gradient_rgb(im, (22, 28, 58), (8, 12, 28))
     return im
+
+
+def _background_wc_rgb(w: int, h: int) -> Image.Image:
+    """Тёмный изумрудно-золотой фон для ЧМ (без серых пояснений)."""
+    im = Image.new("RGB", (w, h), (8, 28, 22))
+    _fill_vertical_gradient_rgb(im, (18, 48, 36), (6, 14, 18))
+    # лёгкая золотая «полоса» сверху
+    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    od = ImageDraw.Draw(overlay)
+    for i in range(80):
+        a = int(28 * (1 - i / 80))
+        od.rectangle([0, i, w, i + 1], fill=(255, 210, 90, a))
+    im = im.convert("RGBA")
+    im.alpha_composite(overlay)
+    return im.convert("RGB")
 
 
 def _background_award_rgb(w: int, h: int) -> Image.Image:
@@ -636,6 +651,129 @@ def render_cl_history_png() -> bytes:
     )
 
 
+def render_wc_history_png(
+    *,
+    rows: list[tuple[int, str | None]] | None = None,
+    preview_demo: bool = False,
+) -> bytes:
+    """
+    История чемпионов мира.
+
+    ``preview_demo=True`` — демо-слоты (сезоны 4/8/12), не пишет в JSON.
+    """
+    mx = get_active_season()
+    if rows is None:
+        if preview_demo:
+            rows = [
+                (4, "Аргентина"),
+                (8, None),
+                (12, None),
+            ]
+        else:
+            rows = timeline_wc(mx)
+            if not rows:
+                rows = [(4, None)]
+
+    ordered = list(reversed(rows))
+    n = max(1, len(ordered))
+    cols = min(6, max(3, n))
+    inner_w = _CANVAS_W - 2 * _PAD
+    cell_w = inner_w // cols
+    crest_max = min(72, int(cell_w * 0.62))
+    cap_font = _pick_font(15, bold=True)
+    name_font = _pick_font(14, bold=True)
+
+    _tmp = Image.new("RGB", (20, 20))
+    _td = ImageDraw.Draw(_tmp)
+    _cap_h = _td.textbbox((0, 0), "Сезон 12", font=cap_font)[3]
+    _cap_h -= _td.textbbox((0, 0), "Сезон 12", font=cap_font)[1]
+    _name_h = _td.textbbox((0, 0), "Аргентина", font=name_font)[3]
+    _name_h -= _td.textbbox((0, 0), "Аргентина", font=name_font)[1]
+
+    pad_v = 14
+    gap = 6
+    row_gap = 18
+    cell_h = pad_v + crest_max + gap + _cap_h + 4 + _name_h + pad_v + row_gap
+    n_rows = (n + cols - 1) // cols
+    title = "Чемпионат мира"
+    header_bottom = _measure_header_bottom(title, None)
+    final_h = header_bottom + n_rows * cell_h + _PAD
+
+    im = _background_wc_rgb(_CANVAS_W, final_h).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    _draw_header(draw, _CANVAS_W, title, None)
+
+    # лёгкий watermark золотого кубка, если есть
+    tro = _try_load_trophy_rgba("cup_gold.png")
+    if tro is not None:
+        _scatter_watermark_trophies(im, tro, alpha=14)
+
+    gold = (255, 220, 120)
+    for idx, (season, nation) in enumerate(ordered):
+        col = idx % cols
+        row = idx // cols
+        x0 = _PAD + col * cell_w
+        y0 = header_bottom + row * cell_h
+        cx = x0 + cell_w // 2
+        cy = y0 + pad_v + crest_max // 2
+
+        # золотое кольцо
+        ring = crest_max // 2 + 6
+        _draw_radial_glow(im, cx, cy, ring + 8, (255, 200, 80), peak_alpha=70)
+        draw.ellipse(
+            [cx - ring, cy - ring, cx + ring, cy + ring],
+            outline=(*gold, 210),
+            width=3,
+        )
+        # эмблема клуба не подходит — круг с инициалами нации / «?»
+        disc = Image.new("RGBA", (crest_max, crest_max), (0, 0, 0, 0))
+        dd = ImageDraw.Draw(disc)
+        dd.ellipse([2, 2, crest_max - 3, crest_max - 3], fill=(20, 48, 38, 240))
+        label = "?"
+        if nation:
+            parts = str(nation).strip().split()
+            if len(parts) == 1:
+                label = parts[0][:2].upper()
+            else:
+                label = (parts[0][:1] + parts[-1][:1]).upper()
+        lf = _pick_font(max(18, crest_max // 3), bold=True)
+        lb = dd.textbbox((0, 0), label, font=lf)
+        dd.text(
+            ((crest_max - (lb[2] - lb[0])) // 2, (crest_max - (lb[3] - lb[1])) // 2 - 2),
+            label,
+            fill=gold,
+            font=lf,
+        )
+        im.alpha_composite(disc, (cx - crest_max // 2, cy - crest_max // 2))
+
+        cap = f"Сезон {season}"
+        cb = draw.textbbox((0, 0), cap, font=cap_font)
+        draw.text(
+            (cx - (cb[2] - cb[0]) // 2, y0 + pad_v + crest_max + gap),
+            cap,
+            fill=_TEXT,
+            font=cap_font,
+        )
+        name = (nation or "—").strip() or "—"
+        # укоротить длинные названия
+        while draw.textbbox((0, 0), name, font=name_font)[2] > cell_w - 8 and len(name) > 4:
+            name = name[:-2] + "…"
+        nb = draw.textbbox((0, 0), name, font=name_font)
+        draw.text(
+            (
+                cx - (nb[2] - nb[0]) // 2,
+                y0 + pad_v + crest_max + gap + _cap_h + 4,
+            ),
+            name,
+            fill=gold if nation else _TEXT_DIM,
+            font=name_font,
+        )
+
+    buf = BytesIO()
+    im.convert("RGB").save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
+
+
 def collect_special_cup_history_entries(
     max_season: int | None = None,
 ) -> list[tuple[int, str, str, str]]:
@@ -802,6 +940,7 @@ _AWARD_META = {
     "golden_boot": ("Золотая бутса", "golden_boot"),
     "golden_glove": ("Золотая перчатка", "golden_glove"),
     "golden_boy": ("Golden Boy", "golden_boy"),
+    "world_cup_best": ("Лучший игрок ЧМ", "cup_gold"),
 }
 
 

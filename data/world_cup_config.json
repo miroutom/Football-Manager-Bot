@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "notes": "Сборные пока не заданы — список наций и вызовы заполним отдельно. Каркас ЧМ с сезона 4, каждые 4 сезона, месяц 11 после финала ЛЧ.",
+  "nations": [],
+  "format": {
+    "groups": true,
+    "knockout": true,
+    "calendar_month": 11,
+    "after": "cl_final"
+  },
+  "awards_after_wc": true
+}

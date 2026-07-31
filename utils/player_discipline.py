@@ -165,12 +165,21 @@ def infer_current_calendar_month() -> int:
 def get_calendar_month(schedule_day: int | None) -> int:
     """Текущий «месяц» календаря.
 
-    Если передан валидный ``schedule_day`` (1..10) — он и возвращается.
-    Иначе — ``infer_current_calendar_month()``: ``max(day)`` среди сыгранных
-    в ``match_results.json``. Единого «бумажного» файла больше нет.
+    Обычный сезон: дни 1..10. В сезонах ЧМ допускается день 11 (турнир после ЛЧ).
+    Если день не передан — ``infer_current_calendar_month()``.
     """
-    if schedule_day is not None and 1 <= int(schedule_day) <= 10:
-        return int(schedule_day)
+    if schedule_day is not None:
+        d = int(schedule_day)
+        max_m = 10
+        try:
+            from utils.world_cup import is_world_cup_season
+
+            if is_world_cup_season():
+                max_m = 11
+        except Exception:
+            pass
+        if 1 <= d <= max_m:
+            return d
     return infer_current_calendar_month()
 
 
