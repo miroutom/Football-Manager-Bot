@@ -41,6 +41,12 @@ class ClDrawEnter(StatesGroup):
     r2_picking = State()
 
 
+class WcEnter(StatesGroup):
+    """ЧМ: вызовы в сборные (выбор нации / игрока)."""
+    callup_nation = State()
+    callup_players = State()
+
+
 class AddOnlyStats(StatesGroup):
     """Статистика по уже сыгранному матчу (выбор из календаря, без ввода счёта)."""
     cl_phase = State()

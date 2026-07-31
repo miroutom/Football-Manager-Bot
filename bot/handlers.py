@@ -193,7 +193,7 @@ def _league_keyboard(prefix: str) -> InlineKeyboardMarkup:
 
 def _national_league_labels() -> tuple[tuple[str, str], ...]:
     """Пять нац. лиг (без ЛЧ) — для «Стата по клубам»."""
-    return tuple((code, label) for code, label in LEAGUE_LABELS if code != "cl")
+    return tuple((code, label) for code, label in LEAGUE_LABELS if code not in ("cl", "wc"))
 
 
 def _goalscorers_league_cb(season_key: str, code: str) -> str:

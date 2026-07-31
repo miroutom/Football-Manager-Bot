@@ -120,6 +120,7 @@ def _norm_club_token(s: str) -> str:
 def manager_side_for_team(team_display: str) -> str | None:
     """
     К какому менеджеру относится клуб (Roman / Lika), по ``MANAGER_TEAMS``.
+    Для сборных ЧМ — по ``data/wc_tournament.json`` → managers (Roman/Lika).
     Имя как в расписании или в конфиге — без учёта регистра.
     """
     n = _norm_club_token(team_display)
@@ -129,6 +130,17 @@ def manager_side_for_team(team_display: str) -> str | None:
         for c in clubs:
             if _norm_club_token(c) == n:
                 return side
+    # сборные ЧМ (список пришлёте позже)
+    try:
+        from utils.wc_tournament import load_tournament
+
+        mgr = (load_tournament().get("managers") or {})
+        for side_key, label in (("Roman", "roman"), ("Lika", "lika")):
+            for nation in mgr.get(side_key) or []:
+                if _norm_club_token(str(nation)) == n:
+                    return label
+    except Exception:
+        pass
     return None
 
 

@@ -117,11 +117,32 @@ def load_or_generate_mixed_schedule():
 
 def get_teams_by_league(league_code):
     """Получить словарь команд по коду лиги"""
+    code = (league_code or "").strip().lower()
     m = {
         'rpl': teams_rpl, 'eng': teams_eng, 'esp': teams_spain,
         'ger': teams_germany, 'ita': teams_italy, 'cl': teams_champ_league,
     }
-    return m.get(league_code)
+    if code in m:
+        return m[code]
+    if code in ("wc", "world_cup"):
+        # для обхода календаря достаточно truthy map имён сборных
+        try:
+            from utils.world_cup import load_wc_config
+            from utils.wc_tournament import load_tournament
+
+            names: set[str] = set()
+            for n in load_wc_config().get("nations") or []:
+                if n:
+                    names.add(str(n).strip().title())
+            groups = (load_tournament().get("groups") or {})
+            for teams in groups.values():
+                for t in teams or []:
+                    if t:
+                        names.add(str(t).strip().title())
+            return {n: True for n in names} if names else {"_wc": True}
+        except Exception:
+            return {"_wc": True}
+    return None
 
 
 def find_next_match_in_schedule(mixed_schedule, session_kind=None):

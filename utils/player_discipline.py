@@ -43,6 +43,7 @@ _LEAGUE_DISPLAY: dict[str, str] = {
     "ger": "Бундеслига",
     "ita": "Серия А",
     "cl": "ЛЧ",
+    "wc": "ЧМ",
 }
 
 
@@ -157,7 +158,15 @@ def infer_current_calendar_month() -> int:
             di = int(d)
         except (TypeError, ValueError):
             continue
-        if 1 <= di <= 10 and di > best:
+        max_m = 10
+        try:
+            from utils.world_cup import is_world_cup_season
+
+            if is_world_cup_season():
+                max_m = 11
+        except Exception:
+            pass
+        if 1 <= di <= max_m and di > best:
             best = di
     return best or 1
 

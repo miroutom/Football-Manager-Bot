@@ -59,6 +59,7 @@ def main_menu_inline_kb(
     *,
     show_end_season: bool = False,
     cl_draw_action: str | None = None,
+    show_wc: bool = False,
 ) -> InlineKeyboardMarkup:
     """Главное меню (inline). «Завершить сезон» — только когда в календаре не осталось матчей."""
     rows: list[list[InlineKeyboardButton]] = []
@@ -77,6 +78,15 @@ def main_menu_inline_kb(
                 InlineKeyboardButton(
                     text="🎟 Жребий 1/8 ЛЧ",
                     callback_data="menu:cl_draw",
+                ),
+            ]
+        )
+    if show_wc:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="🌍 ЧМ",
+                    callback_data="menu:wc",
                 ),
             ]
         )
@@ -191,6 +201,7 @@ async def send_main_menu_screen(
     """Два сообщения: нижняя reply-клавиатура и inline-меню (один reply_markup на сообщение)."""
     from bot.season_tools import can_finish_season
     from utils.cl_draw import cl_draw_menu_action
+    from utils.world_cup import is_world_cup_season
 
     body = intro_text if intro_text is not None else _MENU_REPLY_ONLY_BODY
     await message.answer(
@@ -203,6 +214,8 @@ async def send_main_menu_screen(
     await message.answer(
         inline_title,
         reply_markup=main_menu_inline_kb(
-            show_end_season=end_ok, cl_draw_action=draw
+            show_end_season=end_ok,
+            cl_draw_action=draw,
+            show_wc=is_world_cup_season(),
         ),
     )

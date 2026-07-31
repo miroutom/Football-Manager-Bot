@@ -16,6 +16,7 @@ LEAGUE_LABELS: tuple[tuple[str, str], ...] = (
     ("ita", "Серия А"),
     ("ger", "Бундеслига"),
     ("cl", "ЛЧ"),
+    ("wc", "ЧМ"),
 )
 
 
