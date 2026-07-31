@@ -7265,5 +7265,47 @@
     "away_score": 2,
     "league_code": "cl",
     "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 10,
+    "home": "Лейпциг",
+    "away": "Сити",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Клаудиньо",
+        "team": "Лейпциг",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Инсинье",
+        "team": "Лейпциг",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Хаверц",
+        "team": "Сити",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Де Брюйне",
+        "team": "Сити",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-07-31T12:37:44Z",
+    "home_score": 1,
+    "away_score": 1,
+    "league_code": "cl",
+    "cl_phase": "knockout"
   }
 ]

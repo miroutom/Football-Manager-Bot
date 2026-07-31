@@ -2122,5 +2122,20 @@
     "away_score": 2,
     "league_code": "cl",
     "cl_phase": "knockout"
+  },
+  {
+    "season": 3,
+    "day": 10,
+    "home": "Лейпциг",
+    "away": "Сити",
+    "tournament": "cl",
+    "player": "Де Брюйне",
+    "team": "Сити",
+    "position": "ЦАП",
+    "recorded_at": "2026-07-31T12:37:44Z",
+    "home_score": 1,
+    "away_score": 1,
+    "league_code": "cl",
+    "cl_phase": "knockout"
   }
 ]

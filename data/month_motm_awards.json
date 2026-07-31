@@ -277,6 +277,33 @@
         "team": "Сити",
         "position": "ФРВ"
       }
+    },
+    "10": {
+      "ita": {
+        "player": "Вини",
+        "team": "Ювентус",
+        "position": "ЛФА"
+      },
+      "esp": {
+        "player": "Гави",
+        "team": "Барселона",
+        "position": "ЦП"
+      },
+      "eng": {
+        "player": "Кунья",
+        "team": "Ньюкасл",
+        "position": "ЦАП"
+      },
+      "cl": {
+        "player": "Де Брюйне",
+        "team": "Сити",
+        "position": "ЦАП"
+      },
+      "ger": {
+        "player": "Адейеми",
+        "team": "Дортмунд",
+        "position": "ПФА"
+      }
     }
   }
 }
