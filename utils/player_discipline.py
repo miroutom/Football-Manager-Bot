@@ -18,6 +18,9 @@
   **Новый** период (не дубликат с тем же с/до): сразу к overall — 1–2 мес. 0; 3–6 мес. −2;
   7 мес. −4; 8+ мес. −7 (лига + ЛЧ + common + cumulative).
 - дисквал: в JSON ``unavailable_from_round`` — с какого тура чемпионата бан действует (null = как раньше).
+  Нац. лига: туров 1–14; если бан «после» 14-го — ``unavailable_from_round=1`` (перенос на
+  следующий сезон; при ``clear_discipline_for_new_season`` активные дисквалы сохраняются,
+  цикл жк сгорает — см. ``docs/stats_display_rules.md``).
 """
 from __future__ import annotations
 
@@ -793,8 +796,11 @@ def _ban_from_round_after_card(
     )
     if rnd is None:
         return None
-    # следующий матч команды; может быть 15, если карточка в 14-м (сезон кончен)
-    return max(1, int(rnd) + 1)
+    nxt = max(1, int(rnd) + 1)
+    # нац. лига: после 14-го тура следующего матча нет → бан с 1-го тура след. сезона
+    if lc in ("rpl", "eng", "esp", "ger", "ita") and nxt > 14:
+        return 1
+    return nxt
 
 
 def try_apply_discipline_line(
@@ -1006,11 +1012,13 @@ def _apply_red_card(
         rebuild_common_database()
     except Exception:
         pass
-    ufr_note = (
-        f" Бан с тура {unavailable_from_round}."
-        if unavailable_from_round is not None
-        else ""
-    )
+    if unavailable_from_round is None:
+        ufr_note = ""
+    elif int(unavailable_from_round) == 1:
+        # после 14-го тура нац. лиги — перенос на старт следующего сезона
+        ufr_note = " Бан с 1-го тура следующего сезона (перенос)."
+    else:
+        ufr_note = f" Бан с тура {unavailable_from_round}."
     return (
         f"✓ {kind_label}: {player.name} — +{matches} к дискв., кк в БД +1.{ufr_note}",
         True,
@@ -1725,17 +1733,28 @@ def clear_discipline_for_new_season() -> dict[str, int]:
     """
     Начало нового сезона: обнулить циклы жк к 4-й; активные дисквалы и травмы оставить.
 
+    У перенесённых дисквалов ``unavailable_from_round`` сбрасывается на 1 (или оставляется
+    1…14), чтобы бан «с 15-го» прошлого сезона действовал с 1-го тура нового.
     ``yellow_cards`` / ``red_cards`` в SQLite не трогаются (см. ``finalize_season``).
     """
     with _lock:
         st = _load()
         ycleared = len(st.get("yellow_cycle", []))
         st["yellow_cycle"] = []
-        susp = [
-            r
-            for r in st.get("suspensions", [])
-            if int(r.get("matches_left") or 0) > 0
-        ]
+        susp = []
+        for r in st.get("suspensions", []):
+            if int(r.get("matches_left") or 0) <= 0:
+                continue
+            ufr = r.get("unavailable_from_round")
+            if ufr is not None:
+                try:
+                    u = int(ufr)
+                except (TypeError, ValueError):
+                    u = 1
+                # прошлый сезон / «после 14» → с первого тура нового
+                if u < 1 or u > 14:
+                    r["unavailable_from_round"] = 1
+            susp.append(r)
         kept_s = len(susp)
         st["suspensions"] = susp
         inj = len(st.get("injuries", []))
