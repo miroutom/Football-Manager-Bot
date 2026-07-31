@@ -92,13 +92,15 @@ async def cb_players_pos_show(callback: CallbackQuery) -> None:
     if not callback.message:
         return
     try:
-        from bot.handlers import answer_report_photos
+        from bot.handlers import answer_png_pages
+        from bot.player_board_infographic import render_players_by_position_png_pages
 
-        text = await asyncio.to_thread(format_position_list, pos)
-        await answer_report_photos(
+        blobs = await asyncio.to_thread(render_players_by_position_png_pages, pos)
+        await answer_png_pages(
             callback.message,
-            text,
+            blobs,
             f"Игроки · {pos} · сезон {get_active_season()}",
+            filename_prefix=f"ppos_{pos}",
         )
     except Exception as e:
         logger.exception("players_by_position")

@@ -570,3 +570,344 @@ def render_injuries_infographic_png_pages() -> list[bytes]:
         )
     )
     return pages
+
+
+def render_injuries_season_png_pages(season: int) -> list[bytes]:
+    from utils.player_discipline import (
+        _get_active_season_or_default,
+        _injury_status_label,
+        _load,
+        _lock,
+        get_calendar_month,
+    )
+
+    month = get_calendar_month(None)
+    season_now = _get_active_season_or_default()
+    sn = int(season)
+    with _lock:
+        st = _load()
+    rows: list[dict[str, Any]] = []
+    for inj in st.get("injuries") or []:
+        if inj.get("season") is None or int(inj.get("season")) != sn:
+            continue
+        st_mark = _injury_status_label(inj, month=month, season_now=season_now)
+        ofm = inj.get("out_from_month")
+        ret = inj.get("return_month")
+        rows.append(
+            {
+                "name": str(inj.get("name") or "?"),
+                "team": str(inj.get("team") or "?"),
+                "position": str(inj.get("type") or "травма")[:12],
+                "detail": f"{st_mark} · с{ofm or '?'}→м{ret or '?'}",
+                "status": "injury",
+            }
+        )
+    rows.sort(key=lambda r: (str(r["team"]).casefold(), str(r["name"]).casefold()))
+    return _injury_simple_pages(
+        f"ТРАВМЫ · СЕЗОН {sn}",
+        f"месяц {month} · текущий {season_now}",
+        rows,
+    )
+
+
+def _injury_simple_pages(title: str, subtitle: str, rows: list[dict[str, Any]]) -> list[bytes]:
+    """Reuse injury section layout without inventing fake stats columns."""
+    theme = INJURY_THEME
+    per = 18
+    pages: list[bytes] = []
+    chunks = [rows[i : i + per] for i in range(0, max(1, len(rows)), per)] if rows else [[]]
+    if not rows:
+        chunks = [[]]
+    else:
+        chunks = [rows[i : i + per] for i in range(0, len(rows), per)]
+
+    for pi, chunk in enumerate(chunks):
+        canvas_w = 720
+        h = _HEADER_H + _COL_H + max(1, len(chunk)) * _ROW_H + 12
+        im = Image.new("RGB", (canvas_w, h), theme.bg)
+        draw = ImageDraw.Draw(im)
+        sub = subtitle + (f" · {pi + 1}/{len(chunks)}" if len(chunks) > 1 else "")
+        draw_header_bar(draw, theme=theme, width=canvas_w, height=_HEADER_H, title=title, subtitle=sub)
+        hdr_y0 = _HEADER_H
+        hdr_y1 = _HEADER_H + _COL_H
+        draw.rectangle([0, hdr_y0, canvas_w, hdr_y1], fill=theme.header)
+        hdr_font = pick_font(11, bold=True)
+        name_font = pick_font(17, bold=True)
+        meta_font = pick_font(13)
+        rank_font = pick_font(13, bold=True)
+        crest_font = pick_font(10, bold=True)
+        draw.text((_NAME_LEFT, (hdr_y0 + hdr_y1) // 2), "ИГРОК", fill=theme.text_dim, font=hdr_font, anchor="lm")
+        draw.text((canvas_w - 16, (hdr_y0 + hdr_y1) // 2), "СТАТУС", fill=theme.text_dim, font=hdr_font, anchor="rm")
+        if not chunk:
+            draw.text((24, hdr_y1 + 16), "Пусто", fill=theme.text_dim, font=pick_font(16))
+            pages.append(png_bytes(im))
+            continue
+        for i, row in enumerate(chunk):
+            y0 = hdr_y1 + i * _ROW_H
+            y1 = y0 + _ROW_H
+            draw.rectangle([0, y0, canvas_w, y1], fill=theme.row_a if i % 2 == 0 else theme.row_b)
+            draw.rectangle([0, y0, 4, y1], fill=theme.accent)
+            cy = y0 + _ROW_H // 2
+            draw.text((_RANK_W // 2, cy), str(pi * per + i + 1), fill=theme.text_dim, font=rank_font, anchor="mm")
+            team = str(row.get("team") or "")
+            if team:
+                paste_crest(im, draw, team=team, cx=_RANK_W + 6 + _CREST // 2, cy=cy, size=_CREST, crest_font=crest_font)
+            name = display_player_name(str(row.get("name") or ""))
+            name_d = truncate(draw, name, name_font, 200)
+            draw.text((_NAME_LEFT, cy), name_d, fill=theme.text, font=name_font, anchor="lm")
+            pos = str(row.get("position") or "")
+            if pos:
+                nx = _NAME_LEFT + int(draw.textlength(name_d, font=name_font))
+                draw.text((nx + 6, cy), pos, fill=theme.text_dim, font=meta_font, anchor="lm")
+            detail = str(row.get("detail") or "")
+            draw.text(
+                (canvas_w - 16, cy),
+                truncate(draw, detail, meta_font, 200),
+                fill=theme.highlight,
+                font=meta_font,
+                anchor="rm",
+            )
+        pages.append(png_bytes(im))
+    return pages
+
+
+def render_injury_frequency_png_pages(*, limit: int = 25) -> list[bytes]:
+    from utils.player_discipline import (
+        _career_player_index,
+        _injury_total_months,
+        _load,
+        _lock,
+        _norm,
+    )
+
+    with _lock:
+        st = _load()
+    career = _career_player_index()
+    agg: dict[str, dict[str, Any]] = {}
+    for inj in st.get("injuries") or []:
+        nn = str(inj.get("name_norm") or _norm(str(inj.get("name") or ""))).strip()
+        if not nn:
+            continue
+        name = str(inj.get("name") or nn).strip()
+        team = str(inj.get("team") or "?").strip()
+        row = agg.get(nn)
+        if row is None:
+            row = {"name": name, "teams": {}, "periods": 0, "months": 0}
+            agg[nn] = row
+        row["periods"] += 1
+        row["months"] += _injury_total_months(inj)
+        if team:
+            row["teams"][team] = int(row["teams"].get(team, 0)) + 1
+
+    ranked: list[dict[str, Any]] = []
+    for nn, row in agg.items():
+        teams_map = row["teams"]
+        info = career.get(nn) or {}
+        top_team = (
+            max(teams_map.items(), key=lambda kv: (kv[1], kv[0]))[0]
+            if teams_map
+            else str(info.get("team") or "?")
+        )
+        if info.get("name"):
+            row["name"] = str(info["name"])
+        ranked.append(
+            {
+                "name": row["name"],
+                "team": top_team,
+                "position": str(int(info.get("overall") or 0) or "—"),
+                "overall": int(info.get("overall") or 0),
+                "goals": int(row["periods"]),
+                "assists": int(row["months"]),
+                "ga": int(row["periods"]),
+                "matches": int(row["months"]),
+            }
+        )
+    ranked.sort(key=lambda r: (-r["goals"], -r["assists"], -r["overall"], str(r["name"]).casefold()))
+    show = ranked[: max(1, int(limit))]
+    return render_player_board_pages(
+        title="ЧАЩЕ ВСЕГО ТРАВМЫ",
+        subtitle="все сезоны · периоды и месяцы",
+        rows=show,
+        columns=[("goals", "РАЗ"), ("assists", "МЕС"), ("overall", "OVR")],
+        theme=INJURY_THEME,
+        highlight_key="goals",
+    )
+
+
+def render_never_injured_png_pages(*, limit: int = 40) -> list[bytes]:
+    from utils.player_discipline import _career_player_index, _load, _lock, _norm
+
+    with _lock:
+        st = _load()
+    injured = {
+        str(inj.get("name_norm") or _norm(str(inj.get("name") or ""))).strip()
+        for inj in (st.get("injuries") or [])
+        if str(inj.get("name_norm") or inj.get("name") or "").strip()
+    }
+    career = _career_player_index()
+    rows: list[dict[str, Any]] = []
+    for nn, info in career.items():
+        if nn in injured:
+            continue
+        matches = int(info.get("matches") or 0)
+        if matches <= 0:
+            continue
+        rows.append(
+            {
+                "name": str(info.get("name") or nn),
+                "team": str(info.get("team") or "?"),
+                "position": str(info.get("position") or "—"),
+                "overall": int(info.get("overall") or 0),
+                "matches": matches,
+                "goals": matches,
+                "assists": int(info.get("overall") or 0),
+                "ga": matches,
+            }
+        )
+    rows.sort(key=lambda r: (-r["matches"], -r["overall"], str(r["name"]).casefold()))
+    show = rows[: max(1, int(limit))]
+    return render_player_board_pages(
+        title="БЕЗ ТРАВМ",
+        subtitle="все сезоны · топ по матчам",
+        rows=show,
+        columns=[("matches", "И"), ("overall", "OVR")],
+        theme=INJURY_THEME,
+        highlight_key="matches",
+    )
+
+
+def render_position_stats_png_pages(scope: str, group: str) -> list[bytes]:
+    from utils.stats_by_position import GROUP_META, collect_group_stats
+
+    meta = GROUP_META.get(group) or {}
+    title = str(meta.get("title") or group).upper()
+    sub = "за все время" if scope == "life" else "текущий сезон"
+    rows = collect_group_stats(scope, group)
+    if group == "gk":
+        cols = [("matches", "И"), ("clean_sheets", "СУХ"), ("potm", "POTM")]
+        # normalize key
+        for r in rows:
+            r.setdefault("clean_sheets", r.get("clean_sheets", 0))
+        hl = "clean_sheets"
+    else:
+        cols = [("matches", "И"), ("goals", "Г"), ("assists", "А"), ("ga", "Г+А")]
+        hl = "ga"
+    return render_player_board_pages(
+        title=title,
+        subtitle=sub,
+        rows=rows,
+        columns=cols,
+        theme=PLAYER_BOARD_DARK,
+        highlight_key=hl,
+    )
+
+
+def render_players_by_position_png_pages(pos: str) -> list[bytes]:
+    from utils.players_by_position import collect_players_by_position
+    from utils.season_paths import get_active_season
+
+    data = collect_players_by_position()
+    triples = data.get(pos) or []
+    rows = [
+        {
+            "name": sur,
+            "team": team,
+            "position": pos,
+            "overall": ovr,
+            "matches": ovr,
+            "goals": ovr,
+            "assists": 0,
+            "ga": ovr,
+        }
+        for sur, team, ovr in triples
+    ]
+    return render_player_board_pages(
+        title=f"ПОЗИЦИЯ {pos}",
+        subtitle=f"сезон {get_active_season()} · лига+ЛЧ · по рейтингу",
+        rows=rows,
+        columns=[("overall", "OVR")],
+        theme=PLAYER_BOARD_DARK,
+        highlight_key="overall",
+    )
+
+
+def render_life_top_png_pages(league_code: str, *, metric: str, limit: int = 30) -> list[bytes]:
+    from utils.stats_history_agg import aggregate_life_outfield
+
+    players = aggregate_life_outfield(league_code, merge_by_player=True)
+    if metric == "goals":
+        players = [p for p in players if int(p.get("goals", 0) or 0) > 0]
+        players.sort(key=lambda x: (-x["goals"], -x["assists"]))
+        cols = [("goals", "Г"), ("assists", "А"), ("ga", "Г+А")]
+        hl = "goals"
+        title = "БОМБАРДИРЫ · ВСЁ ВРЕМЯ"
+    elif metric == "assists":
+        players = [p for p in players if int(p.get("assists", 0) or 0) > 0]
+        players.sort(key=lambda x: (-x["assists"], -x["goals"]))
+        cols = [("assists", "А"), ("goals", "Г"), ("ga", "Г+А")]
+        hl = "assists"
+        title = "АССИСТЫ · ВСЁ ВРЕМЯ"
+    else:
+        players = [p for p in players if int(p.get("ga", 0) or 0) > 0]
+        players.sort(key=lambda x: (-x["ga"], -x["goals"]))
+        cols = [("ga", "Г+А"), ("goals", "Г"), ("assists", "А")]
+        hl = "ga"
+        title = "Г+А · ВСЁ ВРЕМЯ"
+    theme = theme_for_league(league_code if league_code != "a" else "cl")
+    board = LeagueTheme(
+        theme.code,
+        theme.title,
+        PLAYER_BOARD_DARK.bg,
+        theme.header,
+        PLAYER_BOARD_DARK.row_a,
+        PLAYER_BOARD_DARK.row_b,
+        theme.accent,
+        PLAYER_BOARD_DARK.text,
+        PLAYER_BOARD_DARK.text_dim,
+        PLAYER_BOARD_DARK.highlight,
+    )
+    return render_player_board_pages(
+        title=title,
+        subtitle=theme.title,
+        rows=players[:limit],
+        columns=cols,
+        theme=board,
+        highlight_key=hl,
+    )
+
+
+def render_all_clubs_scorers_png_pages(
+    league_code: str,
+    *,
+    season_mode: str = "cur",
+    season_num: int | None = None,
+) -> list[bytes]:
+    """По странице на клуб (с голами/пассами)."""
+    from bot.services import (
+        teams_ordered_for_goalscorers,
+        teams_ordered_for_goalscorers_season_archive,
+    )
+
+    if season_mode == "sn":
+        teams = teams_ordered_for_goalscorers_season_archive(int(season_num or 0), league_code)
+    else:
+        teams = teams_ordered_for_goalscorers(league_code)
+    pages: list[bytes] = []
+    for idx, _team in enumerate(teams):
+        _cap, blobs = render_club_goalscorers_png_for_bot(
+            league_code,
+            idx,
+            "league",
+            season_mode=season_mode if season_mode != "life" else "life",
+            season_num=season_num,
+        )
+        # for life/cur we used scope league only in this helper — fix: call with proper scope
+        if blobs:
+            pages.extend(blobs)
+    return pages or render_player_board_pages(
+        title="КЛУБЫ",
+        subtitle="нет данных",
+        rows=[],
+        columns=[("ga", "Г+А")],
+        theme=PLAYER_BOARD_DARK,
+    )

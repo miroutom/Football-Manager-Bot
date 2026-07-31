@@ -319,17 +319,30 @@ async def cb_injury_view_season(callback: CallbackQuery, state: FSMContext) -> N
         return
     await state.clear()
     try:
-        body = await asyncio.to_thread(format_injuries_season_report_text, sn)
-        await _send_png_report(
+        from bot.player_board_infographic import render_injuries_season_png_pages
+        from bot.handlers import answer_png_pages
+
+        blobs = await asyncio.to_thread(render_injuries_season_png_pages, sn)
+        await answer_png_pages(
             callback.message,
-            body=body,
-            title=f"Травмы · сезон {sn}",
-            caption=f"<b>Травмы · сезон {sn}</b>",
+            blobs,
+            f"<b>Травмы · сезон {sn}</b>",
             filename_prefix=f"injuries_s{sn}",
+            parse_mode="HTML",
         )
     except Exception as e:
         logger.exception("injury season report")
-        await callback.message.answer(f"Не удалось собрать отчёт: {e}")
+        try:
+            body = await asyncio.to_thread(format_injuries_season_report_text, sn)
+            await _send_png_report(
+                callback.message,
+                body=body,
+                title=f"Травмы · сезон {sn}",
+                caption=f"<b>Травмы · сезон {sn}</b>",
+                filename_prefix=f"injuries_s{sn}",
+            )
+        except Exception as e2:
+            await callback.message.answer(f"Не удалось собрать отчёт: {e2}")
 
 
 @injury_router.callback_query(F.data == "inj:view:freq")
@@ -341,17 +354,30 @@ async def cb_injury_view_freq(callback: CallbackQuery, state: FSMContext) -> Non
         return
     await state.clear()
     try:
-        body = await asyncio.to_thread(format_injury_frequency_report_text)
-        await _send_png_report(
+        from bot.player_board_infographic import render_injury_frequency_png_pages
+        from bot.handlers import answer_png_pages
+
+        blobs = await asyncio.to_thread(render_injury_frequency_png_pages)
+        await answer_png_pages(
             callback.message,
-            body=body,
-            title="Чаще всего травмировались",
-            caption="<b>Чаще всего травмировались</b> · все сезоны",
+            blobs,
+            "<b>Чаще всего травмировались</b>",
             filename_prefix="injuries_freq",
+            parse_mode="HTML",
         )
     except Exception as e:
         logger.exception("injury frequency report")
-        await callback.message.answer(f"Не удалось собрать отчёт: {e}")
+        try:
+            body = await asyncio.to_thread(format_injury_frequency_report_text)
+            await _send_png_report(
+                callback.message,
+                body=body,
+                title="Чаще всего травмировались",
+                caption="<b>Чаще всего травмировались</b> · все сезоны",
+                filename_prefix="injuries_freq",
+            )
+        except Exception as e2:
+            await callback.message.answer(f"Не удалось собрать отчёт: {e2}")
 
 
 @injury_router.callback_query(F.data == "inj:view:never")
@@ -363,17 +389,30 @@ async def cb_injury_view_never(callback: CallbackQuery, state: FSMContext) -> No
         return
     await state.clear()
     try:
-        body = await asyncio.to_thread(format_never_injured_report_text)
-        await _send_png_report(
+        from bot.player_board_infographic import render_never_injured_png_pages
+        from bot.handlers import answer_png_pages
+
+        blobs = await asyncio.to_thread(render_never_injured_png_pages)
+        await answer_png_pages(
             callback.message,
-            body=body,
-            title="Ни разу не травмировались",
-            caption="<b>Ни разу не травмировались</b> · все сезоны · топ по матчам",
+            blobs,
+            "<b>Ни разу не травмировались</b>",
             filename_prefix="injuries_never",
+            parse_mode="HTML",
         )
     except Exception as e:
         logger.exception("never injured report")
-        await callback.message.answer(f"Не удалось собрать отчёт: {e}")
+        try:
+            body = await asyncio.to_thread(format_never_injured_report_text)
+            await _send_png_report(
+                callback.message,
+                body=body,
+                title="Ни разу не травмировались",
+                caption="<b>Ни разу не травмировались</b>",
+                filename_prefix="injuries_never",
+            )
+        except Exception as e2:
+            await callback.message.answer(f"Не удалось собрать отчёт: {e2}")
 
 
 @injury_router.callback_query(F.data.regexp(_RE_INJ_LG))

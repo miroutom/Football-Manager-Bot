@@ -115,14 +115,16 @@ async def cb_stats_pos_run(callback: CallbackQuery) -> None:
     if not callback.message:
         return
     try:
-        from bot.handlers import answer_report_photos
+        from bot.handlers import answer_png_pages
+        from bot.player_board_infographic import render_position_stats_png_pages
 
-        text = await asyncio.to_thread(format_group_stats, scope, group)
         meta = GROUP_META[group]
-        await answer_report_photos(
+        blobs = await asyncio.to_thread(render_position_stats_png_pages, scope, group)
+        await answer_png_pages(
             callback.message,
-            text,
+            blobs,
             f"Стата · {meta['title']} · {_scope_title(scope)}",
+            filename_prefix=f"stats_pos_{group}",
         )
     except Exception as e:
         logger.exception("stats_by_position")

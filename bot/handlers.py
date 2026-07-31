@@ -982,11 +982,17 @@ async def cb_menu_ga(callback: CallbackQuery) -> None:
 async def cb_menu_status(callback: CallbackQuery) -> None:
     await callback.answer()
     try:
-        text = await asyncio.to_thread(render_full_status_text)
-        await answer_report_photos(callback.message, text, "Статус месяца")
+        from bot.ops_infographic import render_status_infographic_png_bytes
+
+        blobs = await asyncio.to_thread(render_status_infographic_png_bytes)
+        await answer_png_pages(callback.message, blobs, "Статус сезона", filename_prefix="status")
     except Exception as e:
         logger.exception("status")
-        await callback.message.answer(f"Ошибка статуса: {e}")
+        try:
+            text = await asyncio.to_thread(render_full_status_text)
+            await answer_report_photos(callback.message, text, "Статус месяца")
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка статуса: {e2}")
 
 
 @router.callback_query(F.data == "menu:bracket")
@@ -1137,11 +1143,30 @@ async def cb_ga(callback: CallbackQuery) -> None:
 async def cb_menu_next(callback: CallbackQuery) -> None:
     await callback.answer()
     try:
-        text = await asyncio.to_thread(render_next_match_text)
-        await callback.message.answer(to_pre_html(text), parse_mode=ParseMode.HTML)
+        from bot.ops_infographic import render_next_match_infographic_png_bytes
+
+        blobs = await asyncio.to_thread(render_next_match_infographic_png_bytes)
+        await answer_png_pages(callback.message, blobs, "Следующий матч", filename_prefix="next")
     except Exception as e:
         logger.exception("next")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(render_next_match_text)
+            await callback.message.answer(to_pre_html(text), parse_mode=ParseMode.HTML)
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
+
+
+@router.message(Command("next"))
+async def cmd_next(message: Message) -> None:
+    try:
+        from bot.ops_infographic import render_next_match_infographic_png_bytes
+
+        blobs = await asyncio.to_thread(render_next_match_infographic_png_bytes)
+        await answer_png_pages(message, blobs, "Следующий матч", filename_prefix="next")
+    except Exception as e:
+        logger.exception("next")
+        text = await asyncio.to_thread(render_next_match_text)
+        await message.answer(to_pre_html(text), parse_mode=ParseMode.HTML)
 
 
 @router.callback_query(F.data == "menu:stats_history")
@@ -1381,22 +1406,34 @@ async def cb_stats_history_run(callback: CallbackQuery) -> None:
 async def cb_menu_skipped(callback: CallbackQuery) -> None:
     await callback.answer()
     try:
-        text = await asyncio.to_thread(render_skipped_matches_text)
-        await answer_report_photos(callback.message, text, "Пропущенные матчи")
+        from bot.ops_infographic import render_skipped_infographic
+
+        blobs = await asyncio.to_thread(render_skipped_infographic)
+        await answer_png_pages(callback.message, blobs, "Пропущенные матчи", filename_prefix="skipped")
     except Exception as e:
         logger.exception("skipped")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(render_skipped_matches_text)
+            await answer_report_photos(callback.message, text, "Пропущенные матчи")
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
 
 
 @router.callback_query(F.data == "menu:journal")
 async def cb_menu_journal(callback: CallbackQuery) -> None:
     await callback.answer()
     try:
-        text = await asyncio.to_thread(render_journal_report, 120)
-        await answer_report_photos(callback.message, text, "Журнал сыгранных (хвост)")
+        from bot.ops_infographic import render_journal_infographic
+
+        blobs = await asyncio.to_thread(render_journal_infographic, 120)
+        await answer_png_pages(callback.message, blobs, "Журнал", filename_prefix="journal")
     except Exception as e:
         logger.exception("journal")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(render_journal_report, 120)
+            await answer_report_photos(callback.message, text, "Журнал сыгранных (хвост)")
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
 
 
 @router.message(Command("table"))
@@ -1434,37 +1471,49 @@ async def cmd_bracket(message: Message) -> None:
 @router.message(Command("status"))
 async def cmd_status(message: Message) -> None:
     try:
-        text = await asyncio.to_thread(render_full_status_text)
-        await answer_report_photos(message, text, "Статус месяца")
+        from bot.ops_infographic import render_status_infographic_png_bytes
+
+        blobs = await asyncio.to_thread(render_status_infographic_png_bytes)
+        await answer_png_pages(message, blobs, "Статус сезона", filename_prefix="status")
     except Exception as e:
         logger.exception("status")
-        await message.answer(f"Ошибка: {e}")
-
-
-@router.message(Command("next"))
-async def cmd_next(message: Message) -> None:
-    text = await asyncio.to_thread(render_next_match_text)
-    await message.answer(to_pre_html(text), parse_mode=ParseMode.HTML)
+        try:
+            text = await asyncio.to_thread(render_full_status_text)
+            await answer_report_photos(message, text, "Статус месяца")
+        except Exception as e2:
+            await message.answer(f"Ошибка: {e2}")
 
 
 @router.message(Command("skipped"))
 async def cmd_skipped(message: Message) -> None:
     try:
-        text = await asyncio.to_thread(render_skipped_matches_text)
-        await answer_report_photos(message, text, "Пропущенные матчи")
+        from bot.ops_infographic import render_skipped_infographic
+
+        blobs = await asyncio.to_thread(render_skipped_infographic)
+        await answer_png_pages(message, blobs, "Пропущенные матчи", filename_prefix="skipped")
     except Exception as e:
         logger.exception("skipped")
-        await message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(render_skipped_matches_text)
+            await answer_report_photos(message, text, "Пропущенные матчи")
+        except Exception as e2:
+            await message.answer(f"Ошибка: {e2}")
 
 
 @router.message(Command("journal"))
 async def cmd_journal(message: Message) -> None:
     try:
-        text = await asyncio.to_thread(render_journal_report, 120)
-        await answer_report_photos(message, text, "Журнал сыгранных (хвост)")
+        from bot.ops_infographic import render_journal_infographic
+
+        blobs = await asyncio.to_thread(render_journal_infographic, 120)
+        await answer_png_pages(message, blobs, "Журнал", filename_prefix="journal")
     except Exception as e:
         logger.exception("journal")
-        await message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(render_journal_report, 120)
+            await answer_report_photos(message, text, "Журнал сыгранных (хвост)")
+        except Exception as e2:
+            await message.answer(f"Ошибка: {e2}")
 
 
 _OVRDBG_PAGE = 12
@@ -1855,8 +1904,10 @@ async def cb_sch_mixed_matrix(callback: CallbackQuery) -> None:
     lc = None if lg == "all" else lg
     await callback.answer("Генерация…")
     try:
-        text = await asyncio.to_thread(
-            render_schedule_mixed,
+        from bot.ops_infographic import render_schedule_infographic
+
+        blobs = await asyncio.to_thread(
+            render_schedule_infographic,
             lc,
             mf_map[mfk],
             sk_map[skk],
@@ -1866,10 +1917,16 @@ async def cb_sch_mixed_matrix(callback: CallbackQuery) -> None:
             f"Календарь · {_league_title(lg) if lg != 'all' else 'все чемпионаты'} · "
             f"{mf_map[mfk]} · {sk_label}"
         )
-        await answer_report_photos(callback.message, text, cap)
+        await answer_png_pages(callback.message, blobs, cap, filename_prefix="schedule")
     except Exception as e:
         logger.exception("sch:mx")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(
+                render_schedule_mixed, lc, mf_map[mfk], sk_map[skk]
+            )
+            await answer_report_photos(callback.message, text, "Календарь")
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
 
 
 @router.callback_query(F.data.startswith("sch:in2:"))
@@ -1886,20 +1943,29 @@ async def cb_sch_intrinsic_filtered(callback: CallbackQuery) -> None:
         return
     await callback.answer("Генерация…")
     try:
-        text = await asyncio.to_thread(
-            render_schedule_intrinsic_rounds,
+        from bot.ops_infographic import render_schedule_infographic
+
+        blobs = await asyncio.to_thread(
+            render_schedule_infographic,
             lg,
             mf_map[mfk],
             sk_map[skk],
         )
-        await answer_report_photos(
+        await answer_png_pages(
             callback.message,
-            text,
+            blobs,
             f"Туры · {_league_title(lg)}",
+            filename_prefix="schedule_rounds",
         )
     except Exception as e:
         logger.exception("sch:in2")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(
+                render_schedule_intrinsic_rounds, lg, mf_map[mfk], sk_map[skk]
+            )
+            await answer_report_photos(callback.message, text, f"Туры · {_league_title(lg)}")
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
 
 
 @router.callback_query(F.data.startswith("sch:mix:"))
@@ -1924,17 +1990,30 @@ async def cb_sch_intrinsic(callback: CallbackQuery) -> None:
         return
     await callback.answer("Генерация…")
     try:
-        text = await asyncio.to_thread(
-            render_schedule_intrinsic_rounds, lg_code, mf_map[fk]
+        from bot.ops_infographic import render_schedule_infographic
+
+        blobs = await asyncio.to_thread(
+            render_schedule_infographic, lg_code, mf_map[fk], None
         )
-        await answer_report_photos(
+        await answer_png_pages(
             callback.message,
-            text,
+            blobs,
             f"Туры · {_league_title(lg_code)}",
+            filename_prefix="schedule_rounds",
         )
     except Exception as e:
         logger.exception("sch:in")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(
+                render_schedule_intrinsic_rounds, lg_code, mf_map[fk]
+            )
+            await answer_report_photos(
+                callback.message,
+                text,
+                f"Туры · {_league_title(lg_code)}",
+            )
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
 
 
 @router.callback_query(F.data == "menu:top100")
@@ -2053,22 +2132,34 @@ async def cb_tcp_tops(callback: CallbackQuery) -> None:
     _, kind, code = parts
     await callback.answer()
     try:
-        if kind == "g":
-            text = await asyncio.to_thread(render_top_scorers_common, code)
-            title = f"Бомбардиры · {_league_title(code)} · всё время"
-        elif kind == "a":
-            text = await asyncio.to_thread(render_top_assists_common, code)
-            title = f"Ассисты · {_league_title(code)} · всё время"
-        elif kind == "ga":
-            text = await asyncio.to_thread(render_top_ga_common, code)
-            title = f"Г+А · {_league_title(code)} · всё время"
-        else:
+        from bot.player_board_infographic import render_life_top_png_pages
+
+        metric = {"g": "goals", "a": "assists", "ga": "ga"}.get(kind)
+        if not metric:
             await callback.message.answer("Неизвестный тип топа.")
             return
-        await answer_report_photos(callback.message, text, title)
+        title = {
+            "goals": f"Бомбардиры · {_league_title(code)} · всё время",
+            "assists": f"Ассисты · {_league_title(code)} · всё время",
+            "ga": f"Г+А · {_league_title(code)} · всё время",
+        }[metric]
+        blobs = await asyncio.to_thread(render_life_top_png_pages, code, metric=metric)
+        await answer_png_pages(callback.message, blobs, title, filename_prefix="life_top")
     except Exception as e:
         logger.exception("tcp")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            if kind == "g":
+                text = await asyncio.to_thread(render_top_scorers_common, code)
+                title = f"Бомбардиры · {_league_title(code)} · всё время"
+            elif kind == "a":
+                text = await asyncio.to_thread(render_top_assists_common, code)
+                title = f"Ассисты · {_league_title(code)} · всё время"
+            else:
+                text = await asyncio.to_thread(render_top_ga_common, code)
+                title = f"Г+А · {_league_title(code)} · всё время"
+            await answer_report_photos(callback.message, text, title)
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
 
 
 @router.callback_query(F.data == "menu:tgs_league")
@@ -2609,15 +2700,22 @@ async def cb_tgs_all_clubs(callback: CallbackQuery) -> None:
     code = callback.data.split(":", 1)[1]
     await callback.answer("Считаю…")
     try:
-        text = await asyncio.to_thread(render_team_goalscorers_league, code)
-        await answer_report_photos(
+        from bot.player_board_infographic import render_all_clubs_scorers_png_pages
+
+        blobs = await asyncio.to_thread(render_all_clubs_scorers_png_pages, code, season_mode="cur")
+        await answer_png_pages(
             callback.message,
-            text,
+            blobs,
             f"Стата по клубам · {_league_title(code)} · все клубы",
+            filename_prefix="clubs_all",
         )
     except Exception as e:
         logger.exception("tgsall")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(render_team_goalscorers_league, code)
+            await answer_report_photos(callback.message, text, "Стата по клубам")
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
 
 
 @router.callback_query(F.data.startswith("tgsalllife:"))
@@ -2625,15 +2723,22 @@ async def cb_tgsalllife_all_clubs(callback: CallbackQuery) -> None:
     code = callback.data.split(":", 1)[1]
     await callback.answer("Считаю…")
     try:
-        text = await asyncio.to_thread(render_team_goalscorers_all_time_league, code)
-        await answer_report_photos(
+        from bot.player_board_infographic import render_all_clubs_scorers_png_pages
+
+        blobs = await asyncio.to_thread(render_all_clubs_scorers_png_pages, code, season_mode="life")
+        await answer_png_pages(
             callback.message,
-            text,
-            f"Стата по клубам · за все время · {_league_title(code)} · все клубы",
+            blobs,
+            f"Стата по клубам · за все время · {_league_title(code)}",
+            filename_prefix="clubs_life",
         )
     except Exception as e:
         logger.exception("tgsalllife")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(render_team_goalscorers_all_time_league, code)
+            await answer_report_photos(callback.message, text, "Стата по клубам")
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
 
 
 @router.callback_query(F.data.startswith("tgclubsn:"))
@@ -2658,14 +2763,23 @@ async def cb_tgsallsn_archived_all(callback: CallbackQuery) -> None:
     code = parts[2]
     await callback.answer("Считаю…")
     try:
-        text = await asyncio.to_thread(
-            render_archived_season_team_goalscorers_league, sn, code
+        from bot.player_board_infographic import render_all_clubs_scorers_png_pages
+
+        blobs = await asyncio.to_thread(
+            render_all_clubs_scorers_png_pages, code, season_mode="sn", season_num=sn
         )
-        await answer_report_photos(
+        await answer_png_pages(
             callback.message,
-            text,
-            f"Стата по клубам · сезон {sn} · {_league_title(code)} · все клубы",
+            blobs,
+            f"Стата по клубам · сезон {sn} · {_league_title(code)}",
+            filename_prefix=f"clubs_s{sn}",
         )
     except Exception as e:
         logger.exception("tgsallsn")
-        await callback.message.answer(f"Ошибка: {e}")
+        try:
+            text = await asyncio.to_thread(
+                render_archived_season_team_goalscorers_league, sn, code
+            )
+            await answer_report_photos(callback.message, text, f"Стата · сезон {sn}")
+        except Exception as e2:
+            await callback.message.answer(f"Ошибка: {e2}")
