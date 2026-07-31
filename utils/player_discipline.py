@@ -198,16 +198,26 @@ def find_fixture_round(
     league_code: str,
     *,
     cl_phase: str | None = None,
+    for_team: str | None = None,
 ) -> int | None:
     """
-    Номер тура для дисциплины: нац. лиги — следующий тур **хозяев** (1–14,
-    по журналу ``match_results``); ЛЧ — тур из полного календаря ``schedule.py``.
+    Номер тура слота.
+
+    Нац. лиги: по умолчанию следующий тур **хозяев** (подписи кнопок).
+    Если задан ``for_team`` — тур **этой** команды для данного матча
+    (для дискв.: у хозяев и гостей номера могут отличаться).
+    ЛЧ — тур из полного календаря ``schedule.py``.
     """
     lc = (league_code or "").strip().lower()
     if lc in ("rpl", "eng", "esp", "ger", "ita"):
-        from utils.calendar_slot_labels import home_display_tour
+        from utils.calendar_slot_labels import (
+            home_display_round,
+            team_round_for_fixture,
+        )
 
-        return home_display_tour(home, lc)
+        if for_team:
+            return team_round_for_fixture(for_team, home, away, lc)
+        return home_display_round(home, lc)
     if lc != "cl":
         return None
     from table.schedule import get_schedule
@@ -564,6 +574,9 @@ def check_player_eligible(
     tournament: str,
     schedule_month: int,
     fixture_round: int | None = None,
+    fixture_home: str | None = None,
+    fixture_away: str | None = None,
+    cl_phase: str | None = None,
 ) -> tuple[bool, str | None]:
     """
     Можно ли вписать матчевую стату (голы и т.д.). Возвращает (ok, сообщение при запрете).
@@ -585,8 +598,22 @@ def check_player_eligible(
             f"🚫 {name} — травма с {ofm} мес., выход с {ret} ({kind})",
         )
 
+    rnd = fixture_round
+    if fixture_home and fixture_away and lc not in ("cl",):
+        rnd = find_fixture_round(
+            fixture_home,
+            fixture_away,
+            lc,
+            cl_phase=cl_phase,
+            for_team=team,
+        )
+    elif fixture_home and fixture_away and rnd is None:
+        rnd = find_fixture_round(
+            fixture_home, fixture_away, lc, cl_phase=cl_phase
+        )
+
     row = _find_susp(st, name, team, lc, scope)
-    if row and _suspension_blocks_at_round(row, fixture_round):
+    if row and _suspension_blocks_at_round(row, rnd):
         m = int(row["matches_left"])
         w = "матч" if m == 1 else "матча" if 2 <= m <= 4 else "матчей"
         ufr = row.get("unavailable_from_round")
@@ -603,6 +630,7 @@ def register_match_played_for_discipline(
     tournament: str,
     *,
     susp_snapshot_before_stats: dict[str, int] | None = None,
+    cl_phase: str | None = None,
 ) -> None:
     """
     После ввода статистики по матчу: −1 матч дискв. у игроков команд home/away в этом турнире.
@@ -610,6 +638,9 @@ def register_match_played_for_discipline(
     Если передан ``susp_snapshot_before_stats`` (снимок до начала ввода строк матча в боте),
     уменьшаем только те ключи, что уже были в снимке — новые дисквалы за этот матч не трогаем.
     Если ``None``, поведение как раньше: все активные дисквалы по матчу −1 (для совместимости).
+
+    Списание только если бан уже действует на этот матч **для команды игрока**
+    (``unavailable_from_round``).
     """
     scope = "cl" if tournament == "cl" else "league"
     lc = "cl" if scope == "cl" else league_code
@@ -630,6 +661,12 @@ def register_match_played_for_discipline(
             if left <= 0:
                 continue
             if susp_snapshot_before_stats is not None and str(key) not in susp_snapshot_before_stats:
+                continue
+            team_name = str(row.get("team") or "")
+            team_rnd = find_fixture_round(
+                home, away, lc, cl_phase=cl_phase, for_team=team_name or None
+            )
+            if not _suspension_blocks_at_round(row, team_rnd):
                 continue
             row["matches_left"] = left - 1
             changed = True
@@ -740,15 +777,24 @@ def _ban_from_round_after_card(
     fixture_away: str | None,
     league_code: str,
     cl_phase: str | None,
+    player_team: str | None = None,
 ) -> int | None:
+    """Бан со следующего матча **команды игрока** после текущего слота."""
     if not fixture_home or not fixture_away:
         return None
+    lc = (league_code or "").strip().lower()
+    team = (player_team or "").strip() or None
     rnd = find_fixture_round(
-        fixture_home, fixture_away, league_code, cl_phase=cl_phase
+        fixture_home,
+        fixture_away,
+        league_code,
+        cl_phase=cl_phase,
+        for_team=team if team and lc in ("rpl", "eng", "esp", "ger", "ita") else None,
     )
     if rnd is None:
         return None
-    return int(rnd) + 1
+    # следующий матч команды; может быть 15, если карточка в 14-м (сезон кончен)
+    return max(1, int(rnd) + 1)
 
 
 def try_apply_discipline_line(
@@ -775,6 +821,7 @@ def try_apply_discipline_line(
         fixture_away=fixture_away,
         league_code=lc,
         cl_phase=cl_phase,
+        player_team=current_team,
     )
     # порядок: 2жк, травма (с M), травма (Nм), жк, кк
     m2 = _RE_2Y.match(raw) or _RE_2Y_GLUE.match(raw)
@@ -1082,13 +1129,17 @@ def format_discipline_pre_match_notice_html(
     season_now = _get_active_season_or_default()
     scope = "cl" if league_code == "cl" else "league"
     lc = "cl" if scope == "cl" else league_code
-    if fixture_round is None:
-        fixture_round = find_fixture_round(home, away, lc, cl_phase=cl_phase)
 
     with _lock:
         st = _load()
 
     def _team_block(team_label: str, team_norm: str) -> str | None:
+        # тур слота для этой команды (не всегда тур хозяев)
+        team_rnd = find_fixture_round(
+            home, away, lc, cl_phase=cl_phase, for_team=team_label
+        )
+        if team_rnd is None:
+            team_rnd = fixture_round
         lines: list[str] = []
         for inj in st.get("injuries", []):
             if inj.get("team_norm") != team_norm:
@@ -1114,7 +1165,7 @@ def format_discipline_pre_match_notice_html(
                 continue
             if row.get("scope") != scope or row.get("league_code") != lc:
                 continue
-            if not _suspension_blocks_at_round(row, fixture_round):
+            if not _suspension_blocks_at_round(row, team_rnd):
                 continue
             left = int(row.get("matches_left") or 0)
             nm = esc(str(row.get("name", "?")))
@@ -1122,7 +1173,7 @@ def format_discipline_pre_match_notice_html(
             ufr = row.get("unavailable_from_round")
             ufr_txt = f", с тура <b>{int(ufr)}</b>" if ufr is not None else ""
             rnd_txt = (
-                f" (тур слота <b>{fixture_round}</b>)" if fixture_round is not None else ""
+                f" (тур слота <b>{team_rnd}</b>)" if team_rnd is not None else ""
             )
             lines.append(
                 f"• {nm} — дискв. <b>{left}</b> {w}{ufr_txt}{rnd_txt} ({esc(lc)})"

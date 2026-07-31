@@ -190,8 +190,14 @@ def render_match_list_png_pages(
             left_meta = f"{lg_lab}"
             if day is not None:
                 left_meta += f" · м{day}"
-            if row.get("meta"):
-                left_meta += f" · {row['meta']}"
+            meta = str(row.get("meta") or "").strip()
+            if meta:
+                # короткие подписи — иначе «Симуляция» обрезается
+                if meta == "Симуляция":
+                    meta = "сим"
+                elif meta == "Игра":
+                    meta = "игра"
+                left_meta += f" · {meta}"
             draw.text((12, cy), left_meta, fill=theme.text_dim, font=meta_f, anchor="lm")
 
             home = str(row.get("home") or "?")

@@ -603,11 +603,13 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
             lc = infer_league_code_for_stats(match_for_cs[0], match_for_cs[1], tournament)
         msched = get_calendar_month(schedule_day)
         fixture_round = None
+        fixture_home = fixture_away = None
         if match_for_cs and len(match_for_cs) >= 2 and lc:
             from utils.player_discipline import find_fixture_round
 
+            fixture_home, fixture_away = match_for_cs[0], match_for_cs[1]
             fixture_round = find_fixture_round(
-                match_for_cs[0], match_for_cs[1], lc
+                fixture_home, fixture_away, lc, for_team=team
             )
         if lc:
             el, msg = check_player_eligible(
@@ -617,6 +619,8 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
                 tournament=tournament,
                 schedule_month=msched,
                 fixture_round=fixture_round,
+                fixture_home=fixture_home,
+                fixture_away=fixture_away,
             )
             if not el:
                 print(f"  {msg}")
