@@ -300,14 +300,25 @@ def lookup_canonical_person_id_by_team(
 
 def ensure_row_person_id(row, *, notes: str = "", persist: bool = True) -> int:
     """
-    Вернуть ``person_id`` строки; если NULL — выделить и записать в row.
-    ``persist=False`` — только выделить id (для kwargs до insert).
+    Вернуть ``person_id`` строки; если NULL — найти канон или выделить новый.
+
+    Сначала ``lookup_canonical_person_id`` (архивы / другие БД), чтобы лига и ЛЧ
+    не получали разные id на одного человека.
     """
     existing = row_person_id(row)
     if existing is not None:
         return existing
     nm = (getattr(row, "name", None) or "").strip()
     tm = (getattr(row, "team", None) or "").strip()
+    pos = (getattr(row, "position", None) or "").strip()
+    if nm:
+        canon = lookup_canonical_person_id(nm, pos, team=tm or None)
+        if canon is None and tm:
+            canon = lookup_canonical_person_id(nm, pos, team=None)
+        if canon is not None:
+            if persist:
+                row.person_id = int(canon)
+            return int(canon)
     hint = (notes or "").strip() or f"{nm} · {tm}".strip(" ·")
     pid = allocate_person_id(notes=hint)
     if persist:

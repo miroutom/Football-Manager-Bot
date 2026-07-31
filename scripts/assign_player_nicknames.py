@@ -161,14 +161,17 @@ def _format_line(row: dict, *, idx: int, total: int) -> str:
     from utils.player_nicknames import get_nickname_for_player
 
     pids = row.get("person_ids") or [row.get("person_id")]
-    pids_s = ",".join(str(p) for p in pids if p is not None)
+    uniq = sorted({int(p) for p in pids if p is not None})
     nick = get_nickname_for_player(
         person_id=row.get("person_id"), name=row["name"], team=row["team"]
     )
     nick_s = f"  (nick={nick})" if nick else ""
     reasons = "|".join(row.get("reasons") or [])
     head = f"{row['name']} {row['team']} {row['position']} {row['overall']}"
-    extra = f"pids={pids_s}" if len(pids) > 1 else f"pid={pids_s or '—'}"
+    if len(uniq) > 1:
+        extra = f"⚠ pids={','.join(map(str, uniq))} (нужен unify_person_ids)"
+    else:
+        extra = f"pid={uniq[0] if uniq else '—'}"
     return (
         f"[{idx}/{total}] {head}{nick_s}\n"
         f"         {extra} · {reasons}"
