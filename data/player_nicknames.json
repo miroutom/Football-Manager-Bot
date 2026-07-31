@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "notes": "nickname → person_id (ключ by_person_id: person_id → nickname)",
+  "by_person_id": {}
+}

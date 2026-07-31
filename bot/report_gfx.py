@@ -156,6 +156,20 @@ def paste_crest(
     )
 
 
+def kit_accent_stripe(
+    draw: ImageDraw.ImageDraw,
+    *,
+    team: str,
+    x0: int,
+    y0: int,
+    y1: int,
+    width: int = 4,
+) -> None:
+    """Узкая полоска цвета клуба слева от строки таблицы."""
+    kit = kit_for_team(_team_name_as_in_db(team))
+    draw.rectangle([x0, y0, x0 + max(1, width), y1], fill=kit.primary)
+
+
 def display_player_name(full_name: str) -> str:
     from utils.player_names import _name_parts
 
@@ -203,14 +217,76 @@ def _is_dark(rgb: tuple[int, int, int]) -> bool:
     return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) < 140
 
 
-def kit_accent_stripe(
+def paste_nation_flag(
+    im: Image.Image,
     draw: ImageDraw.ImageDraw,
     *,
-    team: str,
-    x0: int,
-    y0: int,
-    y1: int,
-    width: int = 5,
+    nation: str,
+    cx: int,
+    cy: int,
+    size: int = 34,
 ) -> None:
-    kit = kit_for_team(_team_name_as_in_db(team))
-    draw.rectangle([x0, y0, x0 + width, y1], fill=kit.primary)
+    """Флаг сборной (flagcdn) по центру (cx, cy); fallback — круг с инициалами."""
+    from bot.squad_pitch import (
+        _crest_initials,
+        _nation_to_flagcdn_code,
+        _team_name_as_in_db,
+    )
+    from utils.squad_graphics_assets import load_flag_png
+
+    nat = (nation or "").strip()
+    fcode = _nation_to_flagcdn_code(nat)
+    fimg = load_flag_png(fcode) if fcode else None
+    if fimg is not None:
+        work = fimg.convert("RGBA")
+        # вписать в квадрат size×size
+        tw, th = work.size
+        scale = min(size / max(tw, 1), size / max(th, 1))
+        nw, nh = max(1, int(tw * scale)), max(1, int(th * scale))
+        work = work.resize((nw, nh), Image.Resampling.LANCZOS)
+        x0 = cx - nw // 2
+        y0 = cy - nh // 2
+        im.paste(work, (x0, y0), work)
+        return
+    # fallback
+    from squad_kit_palette import kit_for_team
+
+    team_db = _team_name_as_in_db(nat)
+    kit = kit_for_team(team_db)
+    r = size // 2
+    draw.ellipse(
+        [cx - r, cy - r, cx + r, cy + r],
+        fill=kit.primary,
+        outline=(200, 210, 230),
+        width=1,
+    )
+    font = pick_font(max(9, size // 3), bold=True)
+    draw.text((cx, cy), _crest_initials(team_db or nat or "?"), fill=(255, 255, 255), font=font, anchor="mm")
+
+
+def paste_row_emblem(
+    im: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    *,
+    label: str,
+    cx: int,
+    cy: int,
+    size: int = 34,
+    mode: str = "club",
+    crest_font: ImageFont.ImageFont | None = None,
+    light_placeholder: bool = False,
+) -> None:
+    """``mode``: ``club`` (эмблема клуба) или ``nation`` (флаг сборной)."""
+    if (mode or "club").strip().lower() in ("nation", "flag", "wc", "national"):
+        paste_nation_flag(im, draw, nation=label, cx=cx, cy=cy, size=size)
+        return
+    paste_crest(
+        im,
+        draw,
+        team=label,
+        cx=cx,
+        cy=cy,
+        size=size,
+        crest_font=crest_font,
+        light_placeholder=light_placeholder,
+    )

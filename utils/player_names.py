@@ -103,6 +103,21 @@ def player_matches_query(row: Any, query: str) -> bool:
     if qn in (full, fn_n, sn_n, short, short_nd):
         return True
 
+    # nickname по person_id
+    try:
+        from utils.person_registry import row_person_id
+        from utils.player_nicknames import get_nickname, resolve_person_id_by_nickname
+
+        pid = row_person_id(row)
+        nick = get_nickname(pid)
+        if nick and _norm_cmp(nick) == qn:
+            return True
+        resolved = resolve_person_id_by_nickname(q_raw)
+        if resolved is not None and pid is not None and int(resolved) == int(pid):
+            return True
+    except Exception:
+        pass
+
     init, sn_q = _parse_initial_surname_query(q_raw)
     if init is not None and sn_q:
         return bool(fn) and fn[0:1].casefold() == init and sn_n == sn_q

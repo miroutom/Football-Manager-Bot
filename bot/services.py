@@ -48,9 +48,34 @@ ARCHIVE_PICKLE_BY_LEAGUE: dict[str, str] = {
 def render_standings(league_code: str, season_num: int | None = None) -> str:
     """
     Таблица лиги. ``season_num`` — архив ``db/season_n``; ``None`` — текущий сезон (pickle + журнал).
+
+    Аварийный текстовый вид; основной UX — PNG (`standings_infographic`).
     """
     import os
     import pickle
+
+    code = (league_code or "").strip().lower()
+    if code in ("wc", "world_cup"):
+        from bot.standings_infographic import collect_wc_group_standings
+
+        data = collect_wc_group_standings(season_num)
+        lines = [str(data.get("title") or "ЧМ")]
+        if data.get("note"):
+            lines.append(str(data["note"]))
+        for g in data.get("groups") or []:
+            lines.append("")
+            lines.append(str(g.get("title") or g.get("id") or ""))
+            for i, r in enumerate(g.get("rows") or [], 1):
+                diff = r["diff"]
+                diff_s = f"+{diff}" if diff > 0 else str(diff)
+                lines.append(
+                    f"{i:2}. {r['name']:<22} "
+                    f"{r['matches']:2} {r['wins']:2} {r['draws']:2} {r['losses']:2} "
+                    f"{r['scored']:2}:{r['missed']:<2} {diff_s:>3}  {r['points']:2}"
+                )
+        if not (data.get("groups") or []):
+            lines.append("Нет групп / жеребьёвка не проведена.")
+        return "\n".join(lines)
 
     from main import LEAGUES, show_table
     from utils import season_paths
