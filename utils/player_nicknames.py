@@ -102,6 +102,64 @@ def save_nicknames(data: dict[str, Any]) -> None:
     os.replace(tmp, _PATH)
 
 
+def sibling_person_ids(
+    *,
+    name: str,
+    team: str | None = None,
+    person_id: int | None = None,
+) -> list[int]:
+    """
+    Все ``person_id`` того же игрока в активных league/cl БД.
+
+    Один человек иногда получает разные id в лиге и ЛЧ (например Ди Мария
+    4707 / 4708) — для nickname считаем их одним.
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from data.defender import Defender
+    from data.forward import Forward
+    from data.goalkeeper import Goalkeeper
+    from data.midfielder import Midfielder
+    from utils import season_paths
+    from utils.person_registry import row_person_id
+    from utils.player_transfer import _norm_cmp
+
+    want_name = _norm_cmp(name)
+    want_team = _norm_cmp(team) if team else None
+    found: set[int] = set()
+    if person_id is not None:
+        try:
+            found.add(int(person_id))
+        except (TypeError, ValueError):
+            pass
+    if not want_name:
+        return sorted(found)
+
+    classes = (Forward, Midfielder, Defender, Goalkeeper)
+    for path in (season_paths.get_league_db_path(), season_paths.get_cl_db_path()):
+        if not path or not os.path.isfile(path):
+            continue
+        eng = create_engine(f"sqlite:///{path}")
+        Session = sessionmaker(bind=eng)
+        try:
+            with Session() as session:
+                for Cls in classes:
+                    for r in session.query(Cls).all():
+                        if _norm_cmp(getattr(r, "name", None) or "") != want_name:
+                            continue
+                        if want_team is not None and _norm_cmp(
+                            getattr(r, "team", None) or ""
+                        ) != want_team:
+                            continue
+                        pid = row_person_id(r)
+                        if pid is not None:
+                            found.add(int(pid))
+        finally:
+            eng.dispose()
+    return sorted(found)
+
+
 def get_nickname(person_id: int | None) -> str | None:
     if person_id is None:
         return None
@@ -111,29 +169,70 @@ def get_nickname(person_id: int | None) -> str | None:
     return s or None
 
 
-def set_nickname(person_id: int, nickname: str) -> str:
-    """Записать nickname; пустая строка — удалить. Возвращает сохранённое значение."""
+def get_nickname_for_player(
+    *,
+    person_id: int | None = None,
+    name: str | None = None,
+    team: str | None = None,
+) -> str | None:
+    """Ник по pid или любому «брату» (лига/ЛЧ с разными person_id)."""
+    direct = get_nickname(person_id)
+    if direct:
+        return direct
+    if not name:
+        return None
+    mp = load_nicknames().get("by_person_id") or {}
+    for pid in sibling_person_ids(name=name, team=team, person_id=person_id):
+        v = mp.get(str(pid))
+        s = (str(v).strip() if v is not None else "")
+        if s:
+            return s
+    return None
+
+
+def set_nickname(
+    person_id: int,
+    nickname: str,
+    *,
+    also_person_ids: list[int] | None = None,
+    name: str | None = None,
+    team: str | None = None,
+) -> str:
+    """
+    Записать nickname; пустая строка — удалить.
+    Пишет на все связанные person_id (лига+ЛЧ), чтобы ник работал везде.
+    """
     pid = int(person_id)
     if pid <= 0:
         raise ValueError("person_id must be positive")
+    targets = {pid}
+    for x in also_person_ids or []:
+        try:
+            targets.add(int(x))
+        except (TypeError, ValueError):
+            pass
+    if name:
+        targets.update(sibling_person_ids(name=name, team=team, person_id=pid))
+
     data = load_nicknames()
     mp = data.setdefault("by_person_id", {})
     nick = (nickname or "").strip()
-    key = str(pid)
+    keys = {str(p) for p in targets if p > 0}
     if not nick:
-        mp.pop(key, None)
+        for k in keys:
+            mp.pop(k, None)
         save_nicknames(data)
         return ""
-    # уникальность: один nickname — один person_id
     want = nick.casefold()
     for other_id, other_nick in list(mp.items()):
-        if other_id == key:
+        if other_id in keys:
             continue
         if str(other_nick).strip().casefold() == want:
             raise ValueError(
                 f"Никнейм «{nick}» уже занят person_id={other_id}"
             )
-    mp[key] = nick
+    for k in keys:
+        mp[k] = nick
     save_nicknames(data)
     return nick
 
@@ -149,6 +248,33 @@ def resolve_person_id_by_nickname(nickname: str) -> int | None:
             except (TypeError, ValueError):
                 return None
     return None
+
+
+def nickname_matches_person(
+    query: str,
+    *,
+    person_id: int | None,
+    name: str | None = None,
+    team: str | None = None,
+) -> bool:
+    """Совпадение ввода с nickname с учётом дублей person_id лига/ЛЧ."""
+    q = (query or "").strip()
+    if not q:
+        return False
+    qn = q.casefold()
+    nick = get_nickname_for_player(person_id=person_id, name=name, team=team)
+    if nick and nick.casefold() == qn:
+        return True
+    resolved = resolve_person_id_by_nickname(q)
+    if resolved is None or person_id is None:
+        return False
+    if int(resolved) == int(person_id):
+        return True
+    if name:
+        sibs = set(sibling_person_ids(name=name, team=team, person_id=person_id))
+        if int(resolved) in sibs:
+            return True
+    return False
 
 
 def complex_name_reasons(full_name: str) -> list[str]:

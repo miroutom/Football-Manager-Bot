@@ -4,6 +4,7 @@
 Интерактивно задать nickname игрокам со сложными фамилиями.
 
 Никнейм привязывается к ``person_id`` → ``data/player_nicknames.json``.
+Один человек с разными id в лиге и ЛЧ показывается один раз; ник пишется на все id.
 
 Показываются игроки с:
   · дефисом / апострофом в имени;
@@ -13,15 +14,14 @@
 
 Пример строки::
 
-  [3/41] pid=128 · Коло Муани · Арсенал · ПФА · 86 · дефис|составное
-  nickname (Enter=пропуск, q=выход): муани
+  [3/41] Коло Муани Арсенал ПФА 86
+           pid=128 · дефис|составное
 
 Запуск из корня::
 
   python3 scripts/assign_player_nicknames.py
-  python3 scripts/assign_player_nicknames.py --redo          # снова показать уже с ником
-  python3 scripts/assign_player_nicknames.py --list-only     # только список, без ввода
-  python3 scripts/assign_player_nicknames.py --min-len 8     # порог длины фамилии
+  python3 scripts/assign_player_nicknames.py --redo
+  python3 scripts/assign_player_nicknames.py --list-only
 """
 from __future__ import annotations
 
@@ -32,6 +32,12 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+
+
+def _norm_key(name: str, team: str) -> tuple[str, str]:
+    from utils.player_transfer import _norm_cmp
+
+    return _norm_cmp(name), _norm_cmp(team)
 
 
 def _collect_candidates(
@@ -48,12 +54,11 @@ def _collect_candidates(
     from utils.person_registry import row_person_id
     from utils.player_nicknames import (
         complex_name_reasons,
-        get_nickname,
+        get_nickname_for_player,
         is_complex_player_name,
     )
     import utils.player_nicknames as pn
 
-    # временно подкрутить порог длины
     prev = pn._LONG_SURNAME_CHARS
     pn._LONG_SURNAME_CHARS = int(min_len)
 
@@ -62,7 +67,8 @@ def _collect_candidates(
         ("league", season_paths.get_league_db_path()),
         ("cl", season_paths.get_cl_db_path()),
     ]
-    best: dict[int, dict] = {}
+    # ключ: (name, team) → один кандидат, несколько person_id
+    by_player: dict[tuple[str, str], dict] = {}
     no_pid: list[dict] = []
 
     try:
@@ -85,29 +91,61 @@ def _collect_candidates(
                             ovr = int(getattr(r, "overall", 0) or 0)
                             reasons = complex_name_reasons(name)
                             pid = row_person_id(r)
-                            row = {
-                                "person_id": pid,
-                                "name": name,
-                                "team": team,
-                                "position": pos,
-                                "overall": ovr,
-                                "db": db_label,
-                                "reasons": reasons,
-                            }
                             if pid is None:
-                                no_pid.append(row)
+                                no_pid.append(
+                                    {
+                                        "person_id": None,
+                                        "name": name,
+                                        "team": team,
+                                        "position": pos,
+                                        "overall": ovr,
+                                        "db": db_label,
+                                        "reasons": reasons,
+                                    }
+                                )
                                 continue
-                            prev_row = best.get(pid)
-                            if prev_row is None or ovr > int(prev_row.get("overall") or 0):
-                                best[pid] = row
+                            key = _norm_key(name, team)
+                            cur = by_player.get(key)
+                            if cur is None:
+                                by_player[key] = {
+                                    "person_id": int(pid),
+                                    "person_ids": {int(pid)},
+                                    "name": name,
+                                    "team": team,
+                                    "position": pos,
+                                    "overall": ovr,
+                                    "db": db_label,
+                                    "reasons": reasons,
+                                }
+                                continue
+                            cur["person_ids"].add(int(pid))
+                            # канон — минимальный person_id
+                            cur["person_id"] = min(cur["person_ids"])
+                            if ovr > int(cur.get("overall") or 0):
+                                cur["overall"] = ovr
+                                cur["position"] = pos
+                                cur["name"] = name
+                                cur["team"] = team
             finally:
                 eng.dispose()
     finally:
         pn._LONG_SURNAME_CHARS = prev
 
-    rows = list(best.values())
+    rows: list[dict] = []
+    for cur in by_player.values():
+        pids = sorted(cur["person_ids"])
+        cur["person_ids"] = pids
+        cur["person_id"] = pids[0]
+        rows.append(cur)
+
     if not include_named:
-        rows = [r for r in rows if not get_nickname(r["person_id"])]
+        rows = [
+            r
+            for r in rows
+            if not get_nickname_for_player(
+                person_id=r["person_id"], name=r["name"], team=r["team"]
+            )
+        ]
     rows.sort(
         key=lambda r: (
             str(r["name"]).casefold(),
@@ -120,20 +158,20 @@ def _collect_candidates(
 
 
 def _format_line(row: dict, *, idx: int, total: int) -> str:
-    """Основная строка как при заполнении статы: Имя Клуб Поз OVR."""
-    pid = row.get("person_id")
-    nick = ""
-    if pid:
-        from utils.player_nicknames import get_nickname
+    from utils.player_nicknames import get_nickname_for_player
 
-        n = get_nickname(pid)
-        if n:
-            nick = f"  (nick={n})"
+    pids = row.get("person_ids") or [row.get("person_id")]
+    pids_s = ",".join(str(p) for p in pids if p is not None)
+    nick = get_nickname_for_player(
+        person_id=row.get("person_id"), name=row["name"], team=row["team"]
+    )
+    nick_s = f"  (nick={nick})" if nick else ""
     reasons = "|".join(row.get("reasons") or [])
     head = f"{row['name']} {row['team']} {row['position']} {row['overall']}"
+    extra = f"pids={pids_s}" if len(pids) > 1 else f"pid={pids_s or '—'}"
     return (
-        f"[{idx}/{total}] {head}{nick}\n"
-        f"         pid={pid if pid is not None else '—'} · {reasons}"
+        f"[{idx}/{total}] {head}{nick_s}\n"
+        f"         {extra} · {reasons}"
     )
 
 
@@ -157,7 +195,15 @@ def main() -> int:
         default=1,
         help="начать с N-го кандидата (1-based)",
     )
+    ap.add_argument(
+        "--sync-siblings",
+        action="store_true",
+        help="скопировать уже заданные ники на все person_id-дубли (лига/ЛЧ)",
+    )
     args = ap.parse_args()
+
+    if args.sync_siblings:
+        return _sync_siblings()
 
     rows, no_pid = _collect_candidates(min_len=args.min_len, include_named=args.redo)
     print(
@@ -184,18 +230,20 @@ def main() -> int:
         print(f"\nФайл: {nicknames_path()}")
         return 0
 
-    from utils.player_nicknames import get_nickname, nicknames_path, set_nickname
+    from utils.player_nicknames import get_nickname_for_player, nicknames_path, set_nickname
 
     start = max(1, int(args.start)) - 1
     total = len(rows)
     print(f"Файл: {nicknames_path()}")
-    print("Enter — пропуск · q — выход · nickname — сохранить\n")
+    print("Enter — пропуск · q — выход · nickname — сохранить на все id игрока\n")
 
     i = start
     while i < total:
         r = rows[i]
         print(_format_line(r, idx=i + 1, total=total))
-        existing = get_nickname(r["person_id"])
+        existing = get_nickname_for_player(
+            person_id=r["person_id"], name=r["name"], team=r["team"]
+        )
         prompt = "nickname"
         if existing:
             prompt += f" [сейчас: {existing}]"
@@ -213,14 +261,93 @@ def main() -> int:
             i += 1
             continue
         try:
-            saved = set_nickname(int(r["person_id"]), s)
-            print(f"  ✓ pid={r['person_id']} → «{saved}»")
+            saved = set_nickname(
+                int(r["person_id"]),
+                s,
+                also_person_ids=list(r.get("person_ids") or []),
+                name=r["name"],
+                team=r["team"],
+            )
+            pids = r.get("person_ids") or [r["person_id"]]
+            print(f"  ✓ {pids} → «{saved}»")
         except ValueError as e:
             print(f"  ✗ {e}")
             continue
         i += 1
 
     print("Готово.")
+    return 0
+
+
+def _sync_siblings() -> int:
+    """Проставить уже сохранённые ники на все связанные person_id."""
+    from utils.player_nicknames import (
+        get_nickname,
+        load_nicknames,
+        set_nickname,
+        sibling_person_ids,
+    )
+    from utils.player_transfer import _norm_cmp
+
+    # собрать name/team по pid из БД
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from data.defender import Defender
+    from data.forward import Forward
+    from data.goalkeeper import Goalkeeper
+    from data.midfielder import Midfielder
+    from utils import season_paths
+    from utils.person_registry import row_person_id
+
+    pid_meta: dict[int, tuple[str, str]] = {}
+    classes = (Forward, Midfielder, Defender, Goalkeeper)
+    for path in (season_paths.get_league_db_path(), season_paths.get_cl_db_path()):
+        if not path or not os.path.isfile(path):
+            continue
+        eng = create_engine(f"sqlite:///{path}")
+        Session = sessionmaker(bind=eng)
+        try:
+            with Session() as session:
+                for Cls in classes:
+                    for r in session.query(Cls).all():
+                        pid = row_person_id(r)
+                        if pid is None:
+                            continue
+                        name = (getattr(r, "name", None) or "").strip()
+                        team = (getattr(r, "team", None) or "").strip()
+                        if name:
+                            pid_meta[int(pid)] = (name, team)
+        finally:
+            eng.dispose()
+
+    mp = load_nicknames().get("by_person_id") or {}
+    synced = 0
+    seen_names: set[tuple[str, str]] = set()
+    for pid_s, nick in list(mp.items()):
+        nick_s = str(nick).strip()
+        if not nick_s:
+            continue
+        try:
+            pid = int(pid_s)
+        except (TypeError, ValueError):
+            continue
+        meta = pid_meta.get(pid)
+        if not meta:
+            continue
+        name, team = meta
+        key = (_norm_cmp(name), _norm_cmp(team))
+        if key in seen_names:
+            continue
+        seen_names.add(key)
+        sibs = sibling_person_ids(name=name, team=team, person_id=pid)
+        before = {p for p in sibs if get_nickname(p)}
+        set_nickname(pid, nick_s, also_person_ids=sibs, name=name, team=team)
+        after = {p for p in sibs if get_nickname(p) == nick_s}
+        if after - before:
+            synced += 1
+            print(f"  {name} ({team}): {sorted(sibs)} → «{nick_s}»")
+    print(f"Синхронизировано групп: {synced}")
     return 0
 
 
