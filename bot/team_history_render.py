@@ -12,11 +12,15 @@ from bot.team_history import (
     TeamPrestige,
     attack_rating_caption,
     build_club_dossier,
+    build_nation_dossier,
     cl_stage_short,
     defense_rating_caption,
+    is_nation_name,
+    nation_prestige_formula_caption,
     prestige_formula_caption,
     rank_clubs_by_attack,
     rank_clubs_by_defense,
+    rank_nations_by_prestige,
     rank_teams_by_prestige,
 )
 
@@ -291,9 +295,11 @@ def render_prestige_breakdown_pages(*, page_size: int = 10) -> list[bytes]:
 
 
 def render_club_dossier_png(team: str) -> bytes:
+    from bot.report_gfx import paste_nation_flag
     from bot.team_history import format_season_list, format_season_tag
 
-    d: ClubDossier = build_club_dossier(team)
+    is_nat = is_nation_name(team)
+    d: ClubDossier = build_nation_dossier(team) if is_nat else build_club_dossier(team)
     p: TeamPrestige = d.prestige
 
     awards_block_h = 0
@@ -315,21 +321,33 @@ def render_club_dossier_png(team: str) -> bytes:
     font_kpi = _pick_font(28, bold=True)
     font_kpi_sm = _pick_font(20, bold=True)
 
-    # Header: crest + title
-    crest = _try_load_crest_rgba(d.team)
-    if crest is not None:
-        _paste_crest_natural(im, crest, _PAD + 36, 52, 64)
+    # Header: crest / flag + title
+    if is_nat:
+        paste_nation_flag(im, draw, nation=d.team, cx=_PAD + 36, cy=52, size=64)
+    else:
+        crest = _try_load_crest_rgba(d.team)
+        if crest is not None:
+            _paste_crest_natural(im, crest, _PAD + 36, 52, 64)
     draw.text((_PAD + 90, 22), d.team, font=font_t, fill=_TEXT)
-    sub = f"{d.league_title} · престиж {p.score:.0f} · OVR состава {p.roster_ovr:g}"
+    ovr_lab = "заявки" if is_nat else "состава"
+    sub = f"{d.league_title} · престиж {p.score:.0f} · OVR {ovr_lab} {p.roster_ovr:g}"
     draw.text((_PAD + 90, 78), sub, font=font_s, fill=_DIM)
 
     # KPI cards — equal width, centered labels/values
-    kpis = [
-        ("Чемп. лиги", str(p.league_titles), False),
-        ("Кубки ЛЧ", str(p.cl_titles), False),
-        ("Пик ЛЧ", cl_stage_short(p.best_cl_stage), True),
-        ("Награды", str(p.awards), False),
-    ]
+    if is_nat:
+        kpis = [
+            ("Чемп. ЧМ", str(p.league_titles), False),
+            ("Лучший ЧМ", str(p.awards), False),
+            ("OVR", f"{p.roster_ovr:g}", True),
+            ("Престиж", f"{p.score:.0f}", False),
+        ]
+    else:
+        kpis = [
+            ("Чемп. лиги", str(p.league_titles), False),
+            ("Кубки ЛЧ", str(p.cl_titles), False),
+            ("Пик ЛЧ", cl_stage_short(p.best_cl_stage), True),
+            ("Награды", str(p.awards), False),
+        ]
     gap = 14
     card_w = (_CANVAS_W - 2 * _PAD - 3 * gap) // 4
     y0 = 118
@@ -356,27 +374,34 @@ def render_club_dossier_png(team: str) -> bytes:
         )
 
     y = 224
-    draw.text((_PAD, y), "Трофеи и путь в ЛЧ", font=font_b, fill=_TEXT)
-    y += 34
-    league_txt = format_season_list(d.league_titles_by_season)
-    cl_txt = format_season_list(d.cl_titles_by_season)
-    draw.text((_PAD, y), f"Чемпионства лиги: {league_txt}", font=font_m, fill=_TEXT)
-    y += 28
-    draw.text((_PAD, y), f"Победы в ЛЧ: {cl_txt}", font=font_m, fill=_TEXT)
-    y += 28
-    if d.cl_stages:
-        stage_line = " · ".join(
-            f"{format_season_tag(sn)} — {cl_stage_short(st)}" for sn, st in d.cl_stages
-        )
+    if is_nat:
+        draw.text((_PAD, y), "Трофеи ЧМ", font=font_b, fill=_TEXT)
+        y += 34
+        league_txt = format_season_list(d.league_titles_by_season)
+        draw.text((_PAD, y), f"Чемпионства мира: {league_txt}", font=font_m, fill=_TEXT)
+        y += 36
     else:
-        stage_line = "нет данных плей-офф"
-    draw.text(
-        (_PAD, y),
-        _fit(draw, f"Стадии ЛЧ: {stage_line}", font_m, _CANVAS_W - 2 * _PAD),
-        font=font_m,
-        fill=_TEXT,
-    )
-    y += 36
+        draw.text((_PAD, y), "Трофеи и путь в ЛЧ", font=font_b, fill=_TEXT)
+        y += 34
+        league_txt = format_season_list(d.league_titles_by_season)
+        cl_txt = format_season_list(d.cl_titles_by_season)
+        draw.text((_PAD, y), f"Чемпионства лиги: {league_txt}", font=font_m, fill=_TEXT)
+        y += 28
+        draw.text((_PAD, y), f"Победы в ЛЧ: {cl_txt}", font=font_m, fill=_TEXT)
+        y += 28
+        if d.cl_stages:
+            stage_line = " · ".join(
+                f"{format_season_tag(sn)} — {cl_stage_short(st)}" for sn, st in d.cl_stages
+            )
+        else:
+            stage_line = "нет данных плей-офф"
+        draw.text(
+            (_PAD, y),
+            _fit(draw, f"Стадии ЛЧ: {stage_line}", font_m, _CANVAS_W - 2 * _PAD),
+            font=font_m,
+            fill=_TEXT,
+        )
+        y += 36
 
     # Особые кубки: золото / платина
     if d.special_cups:
@@ -461,7 +486,12 @@ def render_club_dossier_png(team: str) -> bytes:
             )
         y += ((len(d.awards[:6]) + 1) // 2) * 56 + 8
 
-    draw.text((_PAD, y), "Легенды клуба (лига + ЛЧ за все сезоны)", font=font_b, fill=_TEXT)
+    legends_title = (
+        "Легенды сборной (ЧМ за все сезоны)"
+        if is_nat
+        else "Легенды клуба (лига + ЛЧ за все сезоны)"
+    )
+    draw.text((_PAD, y), legends_title, font=font_b, fill=_TEXT)
     y += 28
     table_top = y
     row_h = 32
@@ -490,7 +520,12 @@ def render_club_dossier_png(team: str) -> bytes:
     draw.line([_PAD + 12, y - 4, _CANVAS_W - _PAD - 12, y - 4], fill=_LINE, width=1)
 
     if not d.legends:
-        draw.text((_PAD + 16, y + 4), "Пока мало данных по игрокам клуба.", font=font_m, fill=_DIM)
+        empty_msg = (
+            "Пока мало данных по игрокам сборной."
+            if is_nat
+            else "Пока мало данных по игрокам клуба."
+        )
+        draw.text((_PAD + 16, y + 4), empty_msg, font=font_m, fill=_DIM)
     else:
         for i, leg in enumerate(d.legends, start=1):
             draw.text((_PAD + 16, y), f"{i:02d}", font=font_m, fill=_GOLD if i <= 3 else _TEXT)
@@ -728,3 +763,262 @@ def render_defense_rating_pages(*, page_size: int = 20) -> list[bytes]:
             )
         )
     return pages
+
+
+def render_nation_power_ranking_png(
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+    global_max_score: float | None = None,
+) -> bytes:
+    from bot.report_gfx import paste_nation_flag
+
+    all_rows = rank_nations_by_prestige(limit=limit)
+    max_score = float(global_max_score) if global_max_score is not None else (
+        max((r.score for r in all_rows), default=1.0) or 1.0
+    )
+    if page_size is not None:
+        rows = all_rows[offset : offset + int(page_size)]
+        rank0 = offset
+    else:
+        rows = all_rows
+        rank0 = 0
+
+    row_h = 52
+    header_h = 110
+    foot_h = 56
+    h = header_h + max(1, len(rows)) * row_h + foot_h
+    im = _gradient_bg(h).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    title = "Рейтинг силы сборных"
+    if page_label:
+        title = f"{title} · {page_label}"
+    y = _draw_title(draw, title, nation_prestige_formula_caption())
+    font_r = _pick_font(22, bold=True)
+    font_n = _pick_font(22, bold=True)
+    font_s = _pick_font(16)
+    bar_x0 = 360
+    bar_x1 = _CANVAS_W - _PAD - 90
+
+    if not rows:
+        draw.text((_PAD, y + 20), "Нет сборных в конфиге ЧМ.", font=font_s, fill=_DIM)
+        return _to_png(im.convert("RGB"))
+
+    for i, r in enumerate(rows):
+        rank = rank0 + i + 1
+        top = y + i * row_h
+        draw.rounded_rectangle(
+            [_PAD, top + 4, _CANVAS_W - _PAD, top + row_h - 4],
+            radius=10,
+            fill=_CARD,
+            outline=_LINE,
+        )
+        rank_col = _GOLD if rank <= 3 else _TEXT
+        draw.text((_PAD + 14, top + 14), f"{rank:02d}", font=font_r, fill=rank_col)
+        paste_nation_flag(im, draw, nation=r.team, cx=_PAD + 88, cy=top + row_h // 2, size=36)
+        name = _fit(draw, r.team, font_n, 200)
+        draw.text((_PAD + 120, top + 10), name, font=font_n, fill=_TEXT)
+        meta = f"ЧМ · OVR {r.roster_ovr:g} · титулы {r.league_titles}"
+        draw.text((_PAD + 120, top + 34), meta, font=font_s, fill=_DIM)
+
+        bw = int((bar_x1 - bar_x0) * (r.score / max_score)) if max_score else 0
+        draw.rounded_rectangle(
+            [bar_x0, top + 18, bar_x0 + max(bw, 4 if r.score > 0 else 0), top + 36],
+            radius=6,
+            fill=_BAR if rank > 3 else _GOLD,
+        )
+        draw.text((bar_x1 + 10, top + 16), f"{r.score:.0f}", font=font_r, fill=_TEXT)
+
+    foot = _pick_font(16)
+    draw.text(
+        (_PAD, h - 36),
+        "Титул чемпиона мира весит больше, чем чемпионство нац. лиги.",
+        font=foot,
+        fill=_DIM,
+    )
+    return _to_png(im.convert("RGB"))
+
+
+def render_nation_power_ranking_pages(*, page_size: int = 16) -> list[bytes]:
+    rows = rank_nations_by_prestige(limit=None)
+    max_score = max((r.score for r in rows), default=1.0) or 1.0
+    pages: list[bytes] = []
+    total = len(rows)
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (total + page_size - 1) // page_size) if total else 1
+    for p in range(n_pages):
+        off = p * page_size
+        pages.append(
+            render_nation_power_ranking_png(
+                limit=None,
+                offset=off,
+                page_size=page_size,
+                page_label=f"{p + 1}/{n_pages}",
+                global_max_score=max_score,
+            )
+        )
+    return pages
+
+
+def render_nation_prestige_breakdown_png(
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+    global_max_score: float | None = None,
+) -> bytes:
+    from bot.report_gfx import paste_nation_flag
+
+    all_rows = rank_nations_by_prestige(limit=limit)
+    max_score = float(global_max_score) if global_max_score is not None else (
+        max((r.score for r in all_rows), default=1.0) or 1.0
+    )
+    if page_size is not None:
+        rows = all_rows[offset : offset + int(page_size)]
+        rank0 = offset
+    else:
+        rows = all_rows
+        rank0 = 0
+
+    keys = ["ЧМ титул", "Состав", "Лучший ЧМ"]
+    colors = [(255, 190, 70), (180, 140, 230), (230, 120, 120)]
+    row_h = 58
+    header_h = 120
+    legend_h = 48
+    h = header_h + max(1, len(rows)) * row_h + legend_h + 40
+    im = _gradient_bg(h).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    title = "Из чего складывается престиж сборных"
+    if page_label:
+        title = f"{title} · {page_label}"
+    y = _draw_title(draw, title, "Стек-бар: титул ЧМ / состав / лучший игрок турнира")
+    font_l = _pick_font(16)
+    lx = _PAD
+    for lab, col in zip(keys, colors):
+        draw.rounded_rectangle([lx, y, lx + 16, y + 16], radius=3, fill=col)
+        draw.text((lx + 22, y - 1), lab, font=font_l, fill=_DIM)
+        lx += 22 + draw.textbbox((0, 0), lab, font=font_l)[2] + 18
+    y += 28
+
+    font_r = _pick_font(20, bold=True)
+    font_n = _pick_font(22, bold=True)
+    font_s = _pick_font(15)
+    name_x = _PAD + 78
+    bar_x0 = 390
+    bar_x1 = _CANVAS_W - _PAD - 78
+    name_max_w = bar_x0 - name_x - 16
+
+    for i, r in enumerate(rows):
+        rank = rank0 + i + 1
+        top = y + i * row_h
+        draw.rounded_rectangle(
+            [_PAD, top + 4, _CANVAS_W - _PAD, top + row_h - 4],
+            radius=10,
+            fill=_CARD,
+            outline=_LINE,
+        )
+        draw.text(
+            (_PAD + 10, top + 16),
+            f"{rank:02d}",
+            font=font_r,
+            fill=_GOLD if rank <= 3 else _TEXT,
+        )
+        paste_nation_flag(im, draw, nation=r.team, cx=_PAD + 52, cy=top + row_h // 2, size=34)
+        draw.text(
+            (name_x, top + 16),
+            _fit(draw, r.team, font_n, name_max_w),
+            font=font_n,
+            fill=_TEXT,
+        )
+
+        x = bar_x0
+        parts = [float(r.breakdown.get(k, 0.0)) for k in keys]
+        for val, col in zip(parts, colors):
+            if val <= 0:
+                continue
+            w = max(3, int((bar_x1 - bar_x0) * (val / max_score)))
+            draw.rectangle([x, top + 20, x + w, top + 38], fill=col)
+            x += w
+        draw.text((bar_x1 + 10, top + 16), f"{r.score:.0f}", font=font_n, fill=_TEXT)
+        tiny = f"титулы {r.league_titles} · лучший {r.awards} · OVR {r.roster_ovr:g}"
+        draw.text((name_x, top + 38), _fit(draw, tiny, font_s, name_max_w), font=font_s, fill=_DIM)
+
+    return _to_png(im.convert("RGB"))
+
+
+def render_nation_prestige_breakdown_pages(*, page_size: int = 12) -> list[bytes]:
+    rows = rank_nations_by_prestige(limit=None)
+    max_score = max((r.score for r in rows), default=1.0) or 1.0
+    pages: list[bytes] = []
+    total = len(rows)
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (total + page_size - 1) // page_size) if total else 1
+    for p in range(n_pages):
+        off = p * page_size
+        pages.append(
+            render_nation_prestige_breakdown_png(
+                limit=None,
+                offset=off,
+                page_size=page_size,
+                page_label=f"{p + 1}/{n_pages}",
+                global_max_score=max_score,
+            )
+        )
+    return pages
+
+
+def render_wc_titles_chart_png() -> bytes:
+    """Чемпионства мира по сборным."""
+    from bot.report_gfx import paste_nation_flag
+    from bot.season_history_store import load_history
+
+    hist = load_history()
+    raw: dict[str, int] = {}
+    for row in hist.get("world_cup") or []:
+        if not row or len(row) < 2:
+            continue
+        team = str(row[1]).strip()
+        if team:
+            raw[team] = raw.get(team, 0) + 1
+
+    items = sorted(raw.items(), key=lambda x: (-x[1], x[0].casefold()))
+    if not items:
+        items = []
+    row_h = 52
+    h = 130 + max(1, len(items)) * row_h + 50
+    im = _gradient_bg(h).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    y = _draw_title(
+        draw,
+        "Чемпионства мира",
+        "Победители ЧМ по сезонам (из истории)",
+    )
+    font_n = _pick_font(22, bold=True)
+    font_s = _pick_font(16)
+    if not items:
+        draw.text((_PAD, y + 20), "Пока нет чемпионов мира в истории.", font=font_s, fill=_DIM)
+        return _to_png(im.convert("RGB"))
+
+    max_t = max((v for _, v in items), default=1) or 1
+    for i, (team, n) in enumerate(items):
+        top = y + i * row_h
+        draw.rounded_rectangle(
+            [_PAD, top + 4, _CANVAS_W - _PAD, top + row_h - 4],
+            radius=10,
+            fill=_CARD,
+            outline=_LINE,
+        )
+        paste_nation_flag(im, draw, nation=team, cx=_PAD + 30, cy=top + row_h // 2, size=34)
+        draw.text((_PAD + 56, top + 14), team, font=font_n, fill=_TEXT)
+        draw.text((_PAD + 56, top + 34), f"титулов: {n}", font=font_s, fill=_DIM)
+        bx0 = 520
+        bw = int(520 * (n / max_t))
+        draw.rounded_rectangle(
+            [bx0, top + 18, bx0 + max(bw, 4), top + 36],
+            radius=6,
+            fill=_GOLD,
+        )
+    return _to_png(im.convert("RGB"))

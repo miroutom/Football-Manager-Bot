@@ -7,7 +7,7 @@ import logging
 from typing import Any
 
 from aiogram import F, Router
-from aiogram.types import BufferedInputFile, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
 from bot.history_render import (
     render_award_history_png,
@@ -29,6 +29,7 @@ from bot.team_history_gallery import (
     render_hall_of_fame_png,
     render_heatmap_png,
     render_managers_png,
+    render_nation_career_goals_pages,
     render_prestige_dynamics_png,
     render_season_cover_png,
 )
@@ -37,8 +38,11 @@ from bot.team_history_render import (
     render_club_dossier_png,
     render_defense_rating_pages,
     render_league_titles_chart_png,
+    render_nation_power_ranking_pages,
+    render_nation_prestige_breakdown_pages,
     render_power_ranking_pages,
     render_prestige_breakdown_pages,
+    render_wc_titles_chart_png,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,10 +84,13 @@ def history_root_kb() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="🏟 Клубы", callback_data="hist:teams"),
-            InlineKeyboardButton(text="🎖 Зал славы", callback_data="hist:hof"),
+            InlineKeyboardButton(text="🌍 Сборные", callback_data="hist:nations"),
         ],
         [
+            InlineKeyboardButton(text="🎖 Зал славы", callback_data="hist:hof"),
             InlineKeyboardButton(text="⚔ Сравнить", callback_data="hist:cmp"),
+        ],
+        [
             InlineKeyboardButton(text="🗺 H2H", callback_data="hist:h2h"),
         ],
         [
@@ -114,15 +121,56 @@ def history_teams_kb() -> InlineKeyboardMarkup:
     )
 
 
-def history_league_choice_kb(*, prefix: str, back: str) -> InlineKeyboardMarkup:
+def history_nations_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="💪 Рейтинг силы", callback_data="hist:n:power")],
+            [InlineKeyboardButton(text="📊 Из чего престиж", callback_data="hist:n:break")],
+            [InlineKeyboardButton(text="🏆 Чемпионства ЧМ", callback_data="hist:n:titles")],
+            [InlineKeyboardButton(text="⚽ Голы сборных", callback_data="hist:n:goals")],
+            [InlineKeyboardButton(text="📁 Досье сборной", callback_data="hist:n:dossier")],
+            [InlineKeyboardButton(text="« Назад", callback_data="hist:back")],
+        ]
+    )
+
+
+def history_league_choice_kb(
+    *,
+    prefix: str,
+    back: str,
+    kind: str = "club",
+) -> InlineKeyboardMarkup:
+    """
+    ``kind``: ``club`` — только нац. лиги; ``nation`` — только ЧМ; ``both`` — лиги + ЧМ.
+    """
     buttons: list[InlineKeyboardButton] = []
+    allow = (kind or "club").strip().lower()
     for code, label in LEAGUE_LABELS:
-        if code in ("cl", "wc"):
+        if code == "cl":
             continue
-        buttons.append(InlineKeyboardButton(text=label, callback_data=f"{prefix}{code}"))
+        if code == "wc":
+            if allow in ("both", "nation"):
+                buttons.append(
+                    InlineKeyboardButton(text="🌍 ЧМ · сборные", callback_data=f"{prefix}wc")
+                )
+            continue
+        if allow in ("both", "club"):
+            buttons.append(InlineKeyboardButton(text=label, callback_data=f"{prefix}{code}"))
     rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
     rows.append([InlineKeyboardButton(text="« Назад", callback_data=back)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def history_nation_actions_kb(idx: int) -> InlineKeyboardMarkup:
+    base = f"wc:{idx}"
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📁 Досье", callback_data=f"hist:act:dossier:{base}")],
+            [InlineKeyboardButton(text="📈 Динамика престижа", callback_data=f"hist:act:dyn:{base}")],
+            [InlineKeyboardButton(text="📅 Матчи сезона", callback_data=f"hist:act:matches:{base}")],
+            [InlineKeyboardButton(text="« Сборные", callback_data="hist:n:dossier")],
+        ]
+    )
 
 
 def history_club_pick_kb(league_code: str, *, prefix: str, back: str) -> InlineKeyboardMarkup:
@@ -208,7 +256,7 @@ async def cb_menu_history(callback: CallbackQuery) -> None:
         return
     await callback.message.answer(
         "<b>История</b>\n\n"
-        "Чемпионы, награды, клубы, сравнение, H2H, менеджеры, теплокарта, обложки сезонов.",
+        "Чемпионы, награды, клубы, сборные, сравнение, H2H, менеджеры, теплокарта, обложки сезонов.",
         reply_markup=history_root_kb(),
         parse_mode="HTML",
     )
@@ -226,6 +274,120 @@ async def cb_hist_teams(callback: CallbackQuery) -> None:
     await callback.answer()
     if callback.message:
         await callback.message.edit_reply_markup(reply_markup=history_teams_kb())
+
+
+@history_router.callback_query(F.data == "hist:nations")
+async def cb_hist_nations(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if callback.message:
+        await callback.message.edit_reply_markup(reply_markup=history_nations_kb())
+
+
+@history_router.callback_query(F.data == "hist:n:power")
+async def cb_hist_nation_power(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        pages = await asyncio.to_thread(render_nation_power_ranking_pages, page_size=16)
+    except Exception as e:
+        logger.exception("nation power")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    n = len(pages)
+    cap = (
+        "<b>Рейтинг силы сборных</b>"
+        if n <= 1
+        else f"<b>Рейтинг силы сборных</b> · {n} стр."
+    )
+    await _send_png(callback, png=pages, filename="history_nation_power.png", caption=cap)
+
+
+@history_router.callback_query(F.data == "hist:n:break")
+async def cb_hist_nation_break(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        pages = await asyncio.to_thread(render_nation_prestige_breakdown_pages, page_size=12)
+    except Exception as e:
+        logger.exception("nation break")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    n = len(pages)
+    cap = (
+        "<b>Из чего престиж сборных</b>"
+        if n <= 1
+        else f"<b>Из чего престиж сборных</b> · {n} стр."
+    )
+    await _send_png(callback, png=pages, filename="history_nation_break.png", caption=cap)
+
+
+@history_router.callback_query(F.data == "hist:n:titles")
+async def cb_hist_nation_titles(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        png = await asyncio.to_thread(render_wc_titles_chart_png)
+    except Exception as e:
+        logger.exception("nation titles")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    await _send_png(
+        callback, png=png, filename="history_wc_titles.png", caption="<b>Чемпионства мира</b>"
+    )
+
+
+@history_router.callback_query(F.data == "hist:n:goals")
+async def cb_hist_nation_goals(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        pages = await asyncio.to_thread(render_nation_career_goals_pages, page_size=16)
+    except Exception as e:
+        logger.exception("nation goals")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    n = len(pages)
+    cap = (
+        "<b>Голы сборных · ЧМ</b>"
+        if n <= 1
+        else f"<b>Голы сборных · ЧМ</b> · {n} стр."
+    )
+    await _send_png(callback, png=pages, filename="history_nation_goals.png", caption=cap)
+
+
+@history_router.callback_query(F.data == "hist:n:dossier")
+async def cb_hist_nation_dossier_pick(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if callback.message:
+        await callback.message.answer(
+            "Выбери <b>сборную</b>:",
+            reply_markup=history_club_pick_kb(
+                "wc", prefix="hist:tn:", back="hist:nations"
+            ),
+            parse_mode="HTML",
+        )
+
+
+@history_router.callback_query(F.data.startswith("hist:tn:"))
+async def cb_hist_nation_actions(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 4:
+        await callback.answer()
+        return
+    code, idx_s = parts[2], parts[3]
+    try:
+        idx = int(idx_s)
+        team = _team_by_idx(code, idx)
+    except Exception:
+        await callback.answer("Сборная не найдена", show_alert=True)
+        return
+    await callback.answer()
+    if callback.message:
+        await callback.message.answer(
+            f"<b>{team}</b> — что показать?",
+            reply_markup=history_nation_actions_kb(idx),
+            parse_mode="HTML",
+        )
 
 
 @history_router.callback_query(F.data == "hist:pick_league")
@@ -348,15 +510,9 @@ async def cb_hist_power(callback: CallbackQuery) -> None:
         if callback.message:
             await callback.message.answer(f"Ошибка: {e}")
         return
-    if not callback.message:
-        return
     n = len(pages)
-    for i, png in enumerate(pages, start=1):
-        await callback.message.answer_photo(
-            photo=BufferedInputFile(png, filename=f"history_power_{i}.png"),
-            caption=f"<b>Рейтинг силы</b> · стр. {i}/{n}",
-            parse_mode="HTML",
-        )
+    cap = "<b>Рейтинг силы</b>" if n <= 1 else f"<b>Рейтинг силы</b> · {n} стр."
+    await _send_png(callback, png=pages, filename="history_power.png", caption=cap)
 
 
 @history_router.callback_query(F.data == "hist:t:break")
@@ -735,14 +891,21 @@ def _start_two_pick(callback: CallbackQuery, mode: str) -> None:
     _pending_two[_uid(callback)] = {"mode": mode, "a": None}
 
 
+def _side_kind(league_code: str) -> str:
+    return "nation" if (league_code or "").strip().lower() in ("wc", "world_cup") else "club"
+
+
 @history_router.callback_query(F.data == "hist:cmp")
 async def cb_hist_cmp(callback: CallbackQuery) -> None:
     _start_two_pick(callback, "cmp")
     await callback.answer()
     if callback.message:
         await callback.message.answer(
-            "Сравнение: выбери <b>первый</b> клуб — лига:",
-            reply_markup=history_league_choice_kb(prefix="hist:2l:", back="hist:back"),
+            "Сравнение: выбери <b>первую</b> сторону (клуб или сборную).\n"
+            "<i>Смешивать клуб и сборную нельзя.</i>",
+            reply_markup=history_league_choice_kb(
+                prefix="hist:2l:", back="hist:back", kind="both"
+            ),
             parse_mode="HTML",
         )
 
@@ -753,8 +916,11 @@ async def cb_hist_h2h(callback: CallbackQuery) -> None:
     await callback.answer()
     if callback.message:
         await callback.message.answer(
-            "Противостояние: выбери <b>первый</b> клуб — лига:",
-            reply_markup=history_league_choice_kb(prefix="hist:2l:", back="hist:back"),
+            "Противостояние: выбери <b>первую</b> сторону (клуб или сборную).\n"
+            "<i>Смешивать клуб и сборную нельзя.</i>",
+            reply_markup=history_league_choice_kb(
+                prefix="hist:2l:", back="hist:back", kind="both"
+            ),
             parse_mode="HTML",
         )
 
@@ -770,11 +936,22 @@ async def cb_hist_two_league(callback: CallbackQuery) -> None:
     if not st:
         await callback.answer("Сначала выбери Сравнить или H2H", show_alert=True)
         return
+    # второй выбор — только тот же тип (клуб/сборная)
+    if st.get("a") is not None:
+        want = st.get("kind") or _side_kind(str(st["a"][0]))
+        got = _side_kind(code)
+        if want != got:
+            await callback.answer(
+                "Нужна та же категория: клуб–клуб или сборная–сборная",
+                show_alert=True,
+            )
+            return
     await callback.answer()
-    which = "первый" if st.get("a") is None else "второй"
+    which = "первую" if st.get("a") is None else "вторую"
+    label = "сборную" if _side_kind(code) == "nation" else "клуб"
     if callback.message:
         await callback.message.answer(
-            f"Выбери <b>{which}</b> клуб:",
+            f"Выбери <b>{which}</b> {label}:",
             reply_markup=history_club_pick_kb(
                 code, prefix="hist:2t:", back="hist:cmp" if st["mode"] == "cmp" else "hist:h2h"
             ),
@@ -798,21 +975,33 @@ async def cb_hist_two_team(callback: CallbackQuery) -> None:
         idx = int(idx_s)
         team = _team_by_idx(code, idx)
     except Exception:
-        await callback.answer("Клуб не найден", show_alert=True)
+        await callback.answer("Команда не найдена", show_alert=True)
         return
 
+    kind = _side_kind(code)
     if st.get("a") is None:
         st["a"] = (code, idx, team)
+        st["kind"] = kind
         await callback.answer()
         if callback.message:
+            lab = "сборная" if kind == "nation" else "клуб"
             await callback.message.answer(
-                f"Первый клуб: <b>{team}</b>\nТеперь <b>второй</b> — лига:",
-                reply_markup=history_league_choice_kb(prefix="hist:2l:", back="hist:back"),
+                f"Первая сторона ({lab}): <b>{team}</b>\n"
+                f"Теперь <b>вторая</b> — только {'сборная' if kind == 'nation' else 'клуб'}:",
+                reply_markup=history_league_choice_kb(
+                    prefix="hist:2l:", back="hist:back", kind=kind
+                ),
                 parse_mode="HTML",
             )
         return
 
     a = st["a"]
+    if (st.get("kind") or _side_kind(str(a[0]))) != kind:
+        await callback.answer(
+            "Нельзя сравнивать клуб и сборную — выбери ту же категорию",
+            show_alert=True,
+        )
+        return
     team_a = a[2]
     team_b = team
     mode = st["mode"]
@@ -828,7 +1017,7 @@ async def cb_hist_two_team(callback: CallbackQuery) -> None:
             cap = f"<b>H2H</b>: {team_a} — {team_b}"
             fn = "h2h.png"
     except Exception as e:
-        logger.exception("two club")
+        logger.exception("two side")
         if callback.message:
             await callback.message.answer(f"Ошибка: {e}")
         return

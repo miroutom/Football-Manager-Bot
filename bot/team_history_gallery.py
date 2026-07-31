@@ -21,9 +21,11 @@ from bot.team_history import (
     format_season_tag,
     hall_of_fame_global,
     head_to_head,
+    is_nation_name,
     league_winners_heatmap,
     list_history_seasons,
     manager_side_stats,
+    nation_career_goals,
     prestige_dynamics,
     season_cover_data,
 )
@@ -78,10 +80,31 @@ def _title(draw, title: str, subtitle: str, y0: int = 18) -> int:
     return y + draw.textbbox((0, 0), subtitle, font=fs)[3] + 16
 
 
+def _paste_side_mark(
+    im: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    name: str,
+    cx: int,
+    cy: int,
+    size: int,
+    *,
+    nation: bool,
+) -> None:
+    if nation:
+        from bot.report_gfx import paste_nation_flag
+
+        paste_nation_flag(im, draw, nation=name, cx=cx, cy=cy, size=size)
+        return
+    crest = _try_load_crest_rgba(name)
+    if crest is not None:
+        _paste_crest_natural(im, crest, cx, cy, size)
+
+
 def render_compare_clubs_png(team_a: str, team_b: str) -> bytes:
     data = compare_clubs(team_a, team_b)
     pa, pb = data["a"], data["b"]
     h2h = data["h2h"]
+    is_nat = data.get("kind") == "nation" or is_nation_name(pa.team)
     col_a = (70, 140, 230)
     col_b = (230, 120, 100)
     draw_c = (200, 180, 90)
@@ -90,7 +113,8 @@ def render_compare_clubs_png(team_a: str, team_b: str) -> bytes:
     h = 110 + 210 + 28 + h2h_block + 36
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
-    y = _title(draw, "Сравнение клубов", f"{pa.team}  vs  {pb.team}")
+    title = "Сравнение сборных" if is_nat else "Сравнение клубов"
+    y = _title(draw, title, f"{pa.team}  vs  {pb.team}")
     mid = _CANVAS_W // 2
     font_n = _pick_font(28, bold=True)
     font_m = _pick_font(17)
@@ -107,16 +131,22 @@ def render_compare_clubs_png(team_a: str, team_b: str) -> bytes:
             outline=accent,
             width=2,
         )
-        crest = _try_load_crest_rgba(p.team)
-        if crest is not None:
-            _paste_crest_natural(im, crest, x0 + 40, y + 44, 56)
+        _paste_side_mark(im, draw, p.team, x0 + 40, y + 44, 56, nation=is_nat)
         draw.text((x0 + 80, y + 18), p.team, font=font_n, fill=_TEXT)
-        lines = [
-            f"Престиж: {p.score:.0f}",
-            f"Чемп. лиги: {p.league_titles}",
-            f"ЛЧ: {p.cl_titles} · пик {cl_stage_short(p.best_cl_stage)}",
-            f"OVR: {p.roster_ovr:g} · награды: {p.awards}",
-        ]
+        if is_nat:
+            lines = [
+                f"Престиж: {p.score:.0f}",
+                f"Чемп. ЧМ: {p.league_titles}",
+                f"Лучший игрок ЧМ: {p.awards}",
+                f"OVR заявки: {p.roster_ovr:g}",
+            ]
+        else:
+            lines = [
+                f"Престиж: {p.score:.0f}",
+                f"Чемп. лиги: {p.league_titles}",
+                f"ЛЧ: {p.cl_titles} · пик {cl_stage_short(p.best_cl_stage)}",
+                f"OVR: {p.roster_ovr:g} · награды: {p.awards}",
+            ]
         yy = y + 80
         for line in lines:
             draw.text((x0 + 20, yy), line, font=font_m, fill=_DIM if "OVR" in line else _TEXT)
@@ -263,8 +293,11 @@ def _match_result_for_team(m: dict, team: str) -> tuple[str, int, int, int]:
 
 
 def render_h2h_png(team_a: str, team_b: str) -> bytes:
+    if is_nation_name(team_a) != is_nation_name(team_b):
+        raise ValueError("H2H только клуб–клуб или сборная–сборная")
     h2h = head_to_head(team_a, team_b)
     ta, tb = str(h2h["team_a"]), str(h2h["team_b"])
+    is_nat = is_nation_name(ta)
     matches = list(h2h["matches"] or [])
     show = matches[-20:]  # последние встречи на графике/в списке
 
@@ -287,7 +320,7 @@ def render_h2h_png(team_a: str, team_b: str) -> bytes:
     draw = ImageDraw.Draw(im)
     y = _title(draw, "История противостояния", f"{ta}  vs  {tb}")
 
-    # Crest duel header
+    # Crest / flag duel header
     mid = _CANVAS_W // 2
     header_top = y
     draw.rounded_rectangle(
@@ -296,12 +329,10 @@ def render_h2h_png(team_a: str, team_b: str) -> bytes:
         fill=_CARD,
         outline=_LINE,
     )
-    crest_a = _try_load_crest_rgba(ta)
-    crest_b = _try_load_crest_rgba(tb)
-    if crest_a is not None:
-        _paste_crest_natural(im, crest_a, _PAD + 70, header_top + 55, 64)
-    if crest_b is not None:
-        _paste_crest_natural(im, crest_b, _CANVAS_W - _PAD - 70, header_top + 55, 64)
+    _paste_side_mark(im, draw, ta, _PAD + 70, header_top + 55, 64, nation=is_nat)
+    _paste_side_mark(
+        im, draw, tb, _CANVAS_W - _PAD - 70, header_top + 55, 64, nation=is_nat
+    )
     bw = draw.textbbox((0, 0), tb, font=font_n)[2]
     draw.text((_PAD + 120, header_top + 28), ta, font=font_n, fill=_TEXT)
     draw.text((_CANVAS_W - _PAD - 120 - bw, header_top + 28), tb, font=font_n, fill=_TEXT)
@@ -1054,6 +1085,117 @@ def render_club_career_goals_pages(*, page_size: int = 10) -> list[bytes]:
         off = p * page_size
         pages.append(
             render_club_career_goals_png(
+                offset=off,
+                page_size=page_size,
+                page_label=f"{p + 1}/{n_pages}",
+            )
+        )
+    return pages
+
+
+def render_nation_career_goals_png(
+    *,
+    offset: int = 0,
+    page_size: int | None = None,
+    page_label: str | None = None,
+) -> bytes:
+    """Голы сборных только в матчах ЧМ."""
+    from bot.report_gfx import paste_nation_flag
+
+    all_rows = nation_career_goals()
+    if page_size is not None:
+        rows = all_rows[offset : offset + int(page_size)]
+        rank0 = offset
+    else:
+        rows = all_rows
+        rank0 = 0
+
+    font_b = _pick_font(20, bold=True)
+    font_r = _pick_font(22, bold=True)
+    font_head = _pick_font(14, bold=True)
+    font_num = _pick_font(19, bold=True)
+
+    row_h = 44
+    head_h = 34
+    n = max(1, len(rows))
+    table_h = head_h + n * row_h + 12
+    h = 118 + table_h + 36
+    im = _gradient_bg(min(h, 3200)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    title = "Голы сборных · ЧМ"
+    if page_label:
+        title = f"{title} · {page_label}"
+    y = _title(draw, title, "Сумма голов во всех матчах Чемпионата мира")
+    name_x = _PAD + 100
+    name_max = 520
+    goals_x = _CANVAS_W - _PAD - 80
+
+    table_top = y
+    draw.rounded_rectangle(
+        [_PAD, table_top, _CANVAS_W - _PAD, table_top + table_h],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+        width=1,
+    )
+    hy = table_top + 4
+    draw.rounded_rectangle(
+        [_PAD + 4, hy, _CANVAS_W - _PAD - 4, hy + head_h],
+        radius=8,
+        fill=(18, 26, 42),
+    )
+    draw.text((_PAD + 18, hy + 8), "#", font=font_head, fill=_DIM)
+    draw.text((name_x, hy + 8), "Сборная", font=font_head, fill=_DIM)
+    gw = draw.textbbox((0, 0), "Голы", font=font_head)[2]
+    draw.text((goals_x - gw // 2, hy + 8), "Голы", font=font_head, fill=_GOLD)
+
+    medal = {1: (255, 214, 110), 2: (198, 208, 224), 3: (205, 148, 98)}
+    y = hy + head_h
+    if not rows:
+        draw.text((_PAD + 18, y + 12), "Матчей ЧМ в журналах пока нет.", font=font_b, fill=_DIM)
+        return _to_png(im.convert("RGB"))
+
+    for i, row in enumerate(rows):
+        rank = rank0 + i + 1
+        top = y
+        if i % 2 == 1:
+            draw.rectangle(
+                [_PAD + 4, top, _CANVAS_W - _PAD - 4, top + row_h],
+                fill=(24, 34, 54),
+            )
+        if rank <= 3:
+            draw.rounded_rectangle(
+                [_PAD + 6, top + 8, _PAD + 10, top + row_h - 8],
+                radius=2,
+                fill=medal[rank],
+            )
+        rank_c = medal.get(rank, _DIM)
+        draw.text((_PAD + 18, top + 10), f"{rank:02d}", font=font_r, fill=rank_c)
+        paste_nation_flag(im, draw, nation=row.team, cx=_PAD + 70, cy=top + row_h // 2, size=24)
+        draw.text(
+            (name_x, top + 11),
+            _fit(draw, row.team, font_b, name_max),
+            font=font_b,
+            fill=_TEXT,
+        )
+        val = str(row.total_gf)
+        vw = draw.textbbox((0, 0), val, font=font_num)[2]
+        draw.text((goals_x - vw // 2, top + 11), val, font=font_num, fill=_GOLD)
+        y += row_h
+
+    return _to_png(im.convert("RGB"))
+
+
+def render_nation_career_goals_pages(*, page_size: int = 16) -> list[bytes]:
+    rows = nation_career_goals()
+    total = len(rows)
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (total + page_size - 1) // page_size) if total else 1
+    pages: list[bytes] = []
+    for p in range(n_pages):
+        off = p * page_size
+        pages.append(
+            render_nation_career_goals_png(
                 offset=off,
                 page_size=page_size,
                 page_label=f"{p + 1}/{n_pages}",

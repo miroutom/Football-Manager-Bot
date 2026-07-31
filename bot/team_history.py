@@ -41,6 +41,9 @@ CL_STAGE_POINTS: dict[int, float] = {
 
 CL_TITLE_POINTS = 40.0
 LEAGUE_TITLE_BASE = 20.0
+# Титул ЧМ реже ЛЧ — выше вес; «Лучший игрок ЧМ» идёт в престиж сборной.
+WC_TITLE_POINTS = 55.0
+WC_BEST_POINTS = 10.0
 AWARD_POINTS = {
     "golden_ball": 12.0,
     "golden_boot": 7.0,
@@ -411,8 +414,261 @@ def prestige_formula_caption() -> str:
     )
 
 
+def nation_prestige_formula_caption() -> str:
+    return (
+        "Престиж сборной = титулы ЧМ + сила заявки + «Лучший игрок ЧМ». "
+        f"Титул ЧМ = {WC_TITLE_POINTS:.0f}, лучший игрок = {WC_BEST_POINTS:.0f}."
+    )
+
+
 def cl_stage_short(stage: int) -> str:
     return CL_STAGE_LABEL_RU.get(int(stage), cl_stage_label_ru(stage))
+
+
+def _all_nation_names() -> list[str]:
+    """Канонические имена сборных из конфига ЧМ."""
+    try:
+        from utils.world_cup import load_wc_config, nations_by_confederation
+        from utils.world_cup_format import flatten_nations
+
+        names = [str(n).strip() for n in (load_wc_config().get("nations") or []) if str(n).strip()]
+        if names:
+            return names
+        return [str(n).strip() for n in flatten_nations(nations_by_confederation()) if str(n).strip()]
+    except Exception:
+        return []
+
+
+def is_nation_name(name: str) -> bool:
+    """True, если название — сборная из пула ЧМ (не клуб)."""
+    want = _norm(name)
+    if not want:
+        return False
+    try:
+        from utils.wc_callups import resolve_nation_name
+
+        if resolve_nation_name(name):
+            return True
+    except Exception:
+        pass
+    return any(_norm(n) == want for n in _all_nation_names())
+
+
+def get_nation_strength(nation: str) -> float:
+    """Средний overall заявки ЧМ; fallback — топ игроков лиги с этой nation."""
+    try:
+        from utils.wc_callups import club_players_for_nation, squad_for_nation
+
+        roster = squad_for_nation(nation)
+        ovrs = [int(p.get("overall") or 0) for p in roster if int(p.get("overall") or 0) > 0]
+        if not ovrs:
+            players = club_players_for_nation(nation, limit=26)
+            ovrs = [int(p.get("overall") or 0) for p in players if int(p.get("overall") or 0) > 0]
+        if not ovrs:
+            return 70.0
+        return sum(ovrs) / len(ovrs)
+    except Exception:
+        return 70.0
+
+
+def compute_nation_prestige(nation: str, hist: dict[str, Any] | None = None) -> TeamPrestige:
+    hist = hist or load_history()
+    try:
+        from utils.wc_callups import resolve_nation_name
+
+        nation_s = resolve_nation_name(nation) or (nation or "").strip()
+    except Exception:
+        nation_s = (nation or "").strip()
+    want = _norm(nation_s)
+
+    wc_titles = 0
+    for row in hist.get("world_cup") or []:
+        if row and len(row) >= 2 and _norm(str(row[1])) == want:
+            wc_titles += 1
+    wc_title_pts = wc_titles * WC_TITLE_POINTS
+
+    awards_n = 0
+    award_pts = 0.0
+    for row in hist.get("world_cup_best") or []:
+        if not row or len(row) < 3:
+            continue
+        if _norm(str(row[2])) != want:
+            continue
+        awards_n += 1
+        award_pts += WC_BEST_POINTS
+
+    ovr = float(get_nation_strength(nation_s))
+    roster_pts = max(0.0, ovr - 75.0) * 1.6
+    score = wc_title_pts + roster_pts + award_pts
+    return TeamPrestige(
+        team=nation_s,
+        league_code="wc",
+        score=round(score, 2),
+        league_title_pts=round(wc_title_pts, 2),
+        cl_title_pts=0.0,
+        cl_stage_pts=0.0,
+        roster_pts=round(roster_pts, 2),
+        award_pts=round(award_pts, 2),
+        league_titles=wc_titles,
+        cl_titles=0,
+        best_cl_stage=0,
+        roster_ovr=round(ovr, 1),
+        awards=awards_n,
+        breakdown={
+            "ЧМ титул": round(wc_title_pts, 2),
+            "Состав": round(roster_pts, 2),
+            "Лучший ЧМ": round(award_pts, 2),
+        },
+    )
+
+
+def rank_nations_by_prestige(*, limit: int | None = None) -> list[TeamPrestige]:
+    hist = load_history()
+    rows = [compute_nation_prestige(t, hist) for t in _all_nation_names()]
+    rows.sort(key=lambda r: (-r.score, r.team.casefold()))
+    if limit is not None:
+        return rows[: max(1, int(limit))]
+    return rows
+
+
+def nation_legends(nation: str, *, limit: int = 8) -> list[ClubLegend]:
+    """Лучшие игроки сборной по сумме статы в world_cup.db архивов + текущего сезона."""
+    bucket: dict[str, dict[str, Any]] = {}
+    seen_paths: set[str] = set()
+
+    def _add(path: str) -> None:
+        ap = os.path.abspath(path) if path else ""
+        if not ap or ap in seen_paths:
+            return
+        seen_paths.add(ap)
+        _aggregate_legends_from_sqlite(ap, nation, bucket)
+
+    for sn in list_season_archives_with_db():
+        _add(season_paths.get_wc_db_path_for_season(int(sn)))
+    try:
+        cur = season_paths.get_wc_db_path()
+        if cur:
+            _add(cur)
+    except Exception:
+        pass
+
+    legends: list[ClubLegend] = []
+    for row in bucket.values():
+        g = int(row["goals"])
+        a = int(row["assists"])
+        m = int(row["matches"])
+        potm = int(row["potm"])
+        if g + a + m + potm <= 0:
+            continue
+        score = g * 3.0 + a * 2.0 + potm * 4.0 + m * 0.15
+        legends.append(
+            ClubLegend(
+                name=str(row["name"]),
+                position=str(row["position"] or "?"),
+                goals=g,
+                assists=a,
+                matches=m,
+                potm=potm,
+                overall=int(row.get("overall") or 0),
+                score=score,
+            )
+        )
+    legends.sort(key=lambda x: (-x.score, -x.goals, x.name.casefold()))
+    return legends[: max(1, int(limit))]
+
+
+def build_nation_dossier(nation: str) -> ClubDossier:
+    hist = load_history()
+    try:
+        from utils.wc_callups import resolve_nation_name
+
+        nation_s = resolve_nation_name(nation) or (nation or "").strip()
+    except Exception:
+        nation_s = (nation or "").strip()
+    want = _norm(nation_s)
+    prestige = compute_nation_prestige(nation_s, hist)
+
+    wc_seasons: list[int] = []
+    for row in hist.get("world_cup") or []:
+        if row and len(row) >= 2 and _norm(str(row[1])) == want:
+            wc_seasons.append(int(row[0]))
+
+    awards: list[tuple[str, int, str]] = []
+    for row in hist.get("world_cup_best") or []:
+        if not row or len(row) < 3:
+            continue
+        if _norm(str(row[2])) != want:
+            continue
+        awards.append(("Лучший ЧМ", int(row[0]), str(row[1])))
+    awards.sort(key=lambda x: (-x[1], x[0]))
+
+    return ClubDossier(
+        team=nation_s,
+        league_code="wc",
+        league_title="Сборная",
+        prestige=prestige,
+        league_titles_by_season=sorted(wc_seasons),
+        cl_titles_by_season=[],
+        cl_stages=[],
+        legends=nation_legends(nation_s, limit=8),
+        awards=awards,
+        special_cups=[],
+    )
+
+
+def nation_prestige_snapshot_for_season(
+    nation: str, season: int, hist: dict[str, Any] | None = None
+) -> float:
+    hist = hist or load_history()
+    want = _norm(nation)
+    sn = int(season)
+    score = 0.0
+    for row in hist.get("world_cup") or []:
+        if row and len(row) >= 2 and int(row[0]) == sn and _norm(str(row[1])) == want:
+            score += WC_TITLE_POINTS
+    for row in hist.get("world_cup_best") or []:
+        if row and len(row) >= 3 and int(row[0]) == sn and _norm(str(row[2])) == want:
+            score += WC_BEST_POINTS
+    return round(score, 2)
+
+
+def nation_career_goals() -> list[ClubCareerGoals]:
+    """Голы сборных только в матчах ЧМ (``league=wc``)."""
+    pool = _all_nation_names()
+    by_norm: dict[str, dict[str, Any]] = {}
+    for name in pool:
+        by_norm[_norm(name)] = {"team": name, "league_gf": 0, "cl_gf": 0}
+
+    for m in iter_all_match_records():
+        lg = str(m.get("league") or "").strip().lower()
+        if lg not in ("wc", "world_cup"):
+            continue
+        hs = int(m.get("home_score") or 0)
+        aws = int(m.get("away_score") or 0)
+        for team_raw, gf in ((m.get("home"), hs), (m.get("away"), aws)):
+            tn = _norm(str(team_raw or ""))
+            if not tn:
+                continue
+            row = by_norm.get(tn)
+            if row is None:
+                row = {
+                    "team": str(team_raw or "").strip(),
+                    "league_gf": 0,
+                    "cl_gf": 0,
+                }
+                by_norm[tn] = row
+            row["league_gf"] += gf
+
+    out = [
+        ClubCareerGoals(
+            team=str(v["team"]),
+            league_gf=int(v["league_gf"]),
+            cl_gf=0,
+        )
+        for v in by_norm.values()
+    ]
+    out.sort(key=lambda r: (-r.total_gf, r.team.casefold()))
+    return out
 
 
 # ─── Доп. аналитика: H2H, матчи сезона, менеджеры, динамика ─────────
@@ -428,9 +684,12 @@ def list_history_seasons() -> list[int]:
     for row in hist.get("champions_league") or []:
         if row:
             seasons.add(int(row[0]))
+    for row in hist.get("world_cup") or []:
+        if row:
+            seasons.add(int(row[0]))
     for sn, _mp in hist.get("cl_knockout_stages") or []:
         seasons.add(int(sn))
-    for kind in AWARD_POINTS:
+    for kind in (*AWARD_POINTS, "world_cup_best"):
         for row in hist.get(kind) or []:
             if row:
                 seasons.add(int(row[0]))
@@ -798,16 +1057,40 @@ def prestige_snapshot_for_season(team: str, season: int, hist: dict[str, Any] | 
 
 
 def prestige_dynamics(team: str) -> list[tuple[int, float]]:
+    if is_nation_name(team):
+        return [
+            (sn, nation_prestige_snapshot_for_season(team, sn)) for sn in list_history_seasons()
+        ]
     return [(sn, prestige_snapshot_for_season(team, sn)) for sn in list_history_seasons()]
 
 
 def compare_clubs(team_a: str, team_b: str) -> dict[str, Any]:
-    pa = compute_team_prestige(team_a)
-    pb = compute_team_prestige(team_b)
-    da = build_club_dossier(team_a)
-    db = build_club_dossier(team_b)
+    """Сравнение двух клубов или двух сборных. Смешанные пары запрещены."""
+    a_nat = is_nation_name(team_a)
+    b_nat = is_nation_name(team_b)
+    if a_nat != b_nat:
+        raise ValueError(
+            "Сравнивать можно только клуб с клубом или сборную со сборной"
+        )
+    if a_nat:
+        pa = compute_nation_prestige(team_a)
+        pb = compute_nation_prestige(team_b)
+        da = build_nation_dossier(team_a)
+        db = build_nation_dossier(team_b)
+    else:
+        pa = compute_team_prestige(team_a)
+        pb = compute_team_prestige(team_b)
+        da = build_club_dossier(team_a)
+        db = build_club_dossier(team_b)
     h2h = head_to_head(team_a, team_b)
-    return {"a": pa, "b": pb, "dossier_a": da, "dossier_b": db, "h2h": h2h}
+    return {
+        "a": pa,
+        "b": pb,
+        "dossier_a": da,
+        "dossier_b": db,
+        "h2h": h2h,
+        "kind": "nation" if a_nat else "club",
+    }
 
 
 def manager_side_stats(side: str) -> dict[str, Any]:
