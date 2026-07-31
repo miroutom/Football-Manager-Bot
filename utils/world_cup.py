@@ -50,19 +50,27 @@ def list_world_cup_seasons_up_to(max_season: int | None = None) -> list[int]:
 
 def default_config() -> dict[str, Any]:
     return {
-        "version": 1,
+        "version": 2,
         "notes": (
-            "Сборные пока не заданы — список наций и состав вызовов "
-            "заполним отдельно. Пока каркас ЧМ + история + превью."
+            "Предварительный список сборных · формат FIFA WC 2026 "
+            "(12 групп × 4, 8 лучших третьих → 1/16)."
         ),
+        "nations_by_confederation": {},
         "nations": [],
         "format": {
-            "groups": True,
-            "knockout": True,
+            "model": "fifa_wc_2026",
+            "teams": 48,
+            "groups": 12,
+            "group_size": 4,
+            "group_matches": "single_rr",
+            "qualify_per_group": 2,
+            "best_thirds": 8,
+            "knockout": ["r32", "r16", "qf", "sf", "third", "final"],
             "calendar_month": WC_CALENDAR_MONTH,
             "after": "cl_final",
         },
         "awards_after_wc": True,
+        "awards_manual": True,
     }
 
 
@@ -77,7 +85,70 @@ def load_wc_config() -> dict[str, Any]:
     out = default_config()
     if isinstance(raw, dict):
         out.update(raw)
+        # плоский список для удобства
+        by_conf = out.get("nations_by_confederation") or {}
+        if isinstance(by_conf, dict) and by_conf:
+            from utils.world_cup_format import flatten_nations
+
+            out["nations"] = flatten_nations(by_conf)
     return out
+
+
+def nations_by_confederation() -> dict[str, list[str]]:
+    cfg = load_wc_config()
+    raw = cfg.get("nations_by_confederation") or {}
+    if isinstance(raw, dict):
+        return {str(k): list(v) for k, v in raw.items() if isinstance(v, list)}
+    return {}
+
+
+def wc_final_played(season: int | None = None) -> bool:
+    """Финал ЧМ сыгран? (по журналу матчей сезона, phase/final или cl_phase)."""
+    n = int(season if season is not None else season_paths.get_active_season())
+    if not is_world_cup_season(n):
+        return True  # не WC-сезон — ограничение не действует
+    try:
+        from bot.team_history import iter_all_match_records
+    except Exception:
+        return False
+    for m in iter_all_match_records():
+        if int(m.get("_season") or 0) != n:
+            continue
+        lg = str(m.get("league") or "").strip().lower()
+        if lg not in ("wc", "world_cup"):
+            continue
+        phase = str(m.get("wc_phase") or m.get("cl_phase") or m.get("phase") or "").lower()
+        if phase in ("final", "финал"):
+            # есть счёт
+            if m.get("home_score") is not None and m.get("away_score") is not None:
+                return True
+    # также смотрим чемпиона в истории
+    try:
+        from bot.season_history_store import load_history
+
+        for row in load_history().get("world_cup") or []:
+            if row and int(row[0]) == n and row[1]:
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def awards_unlocked_for_season(season: int | None = None) -> tuple[bool, str]:
+    """
+    В WC-сезоне выбор ЗМ/бутсы/… доступен только после финала ЧМ.
+    Автовыдачи нет — только ручной выбор в /awards.
+    """
+    n = int(season if season is not None else season_paths.get_active_season())
+    if not is_world_cup_season(n):
+        return True, ""
+    if wc_final_played(n):
+        return True, ""
+    return (
+        False,
+        "Сезон ЧМ: сначала сыграйте финал чемпионата мира (месяц 11), "
+        "потом выбирайте ЗМ / бутсу / перчатку / Golden Boy.",
+    )
 
 
 def save_wc_config(data: dict[str, Any]) -> None:

@@ -38,6 +38,13 @@ def main() -> int:
         load_wc_config,
         load_wc_squads,
         next_world_cup_season,
+        nations_by_confederation,
+    )
+    from utils.world_cup_format import (
+        all_group_fixtures,
+        draw_groups,
+        format_rules_ru,
+        validate_nation_count,
     )
     from bot.history_render import render_wc_history_png
 
@@ -45,11 +52,26 @@ def main() -> int:
     print(f"active_season = {active}")
     print(f"is_wc_season  = {is_world_cup_season(active)}")
     print(f"next WC       = {next_world_cup_season(active)}")
+    print()
+    print(format_rules_ru())
+    print()
+
+    by = nations_by_confederation()
+    ok, msg = validate_nation_count(by)
+    print(f"nations       = {msg}")
+    for conf, teams in by.items():
+        print(f"  {conf}: {len(teams)}")
 
     cfg = load_wc_config()
-    print(f"config notes  = {cfg.get('notes', '')[:80]}")
+    print(f"config notes  = {(cfg.get('notes') or '')[:90]}")
     squads = load_wc_squads()
-    print(f"squad nations = {list((squads.get('teams') or {}).keys()) or '(пусто — сообщите список)'}")
+    print(f"squad nations = {list((squads.get('teams') or {}).keys()) or '(пусто — вызовы позже)'}")
+
+    if ok:
+        groups = draw_groups(by, seed=4)
+        fx = all_group_fixtures(groups)
+        print(f"demo draw     = группа A: {', '.join(groups['A'])}")
+        print(f"group matches = {len(fx)} (ожидаем 72)")
 
     wc_path = ensure_world_cup_db(4 if is_world_cup_season(4) else next_world_cup_season())
     print(f"world_cup.db  = {wc_path}")
@@ -61,7 +83,7 @@ def main() -> int:
     print(f"PNG           = {args.output} ({len(png)} bytes)")
     print()
     print("В боте: История → 🌍 ЧМ")
-    print("Сборные пока пусты — формат заявок: data/world_cup_squads.json")
+    print("Награды сезона: ручной выбор после финала ЧМ (без автовыдачи)")
     return 0
 
 

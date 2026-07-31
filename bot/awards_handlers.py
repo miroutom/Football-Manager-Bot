@@ -109,17 +109,23 @@ def _teams_kb(kind: str, league_code: str) -> InlineKeyboardMarkup:
 
 async def _open_award_menu_msg(message: Message) -> None:
     wc_note = ""
+    locked = False
     try:
-        from utils.world_cup import is_world_cup_season
+        from utils.world_cup import awards_unlocked_for_season, is_world_cup_season
 
         if is_world_cup_season():
-            wc_note = (
-                "\n\n🌍 <b>Сезон ЧМ:</b> ЗМ / бутса / перчатка / Golden Boy вручаем "
-                "<b>после</b> чемпионата мира (месяц 11). "
-                "Отдельная награда — лучший игрок ЧМ (история → Лучший ЧМ)."
-            )
+            ok, why = awards_unlocked_for_season()
+            if ok:
+                wc_note = (
+                    "\n\n🌍 <b>Сезон ЧМ:</b> финал сыгран — можно выбирать "
+                    "ЗМ / бутсу / перчатку / Golden Boy вручную (автовыдачи нет)."
+                )
+            else:
+                locked = True
+                wc_note = f"\n\n🌍 <b>Сезон ЧМ:</b> {why}"
     except Exception:
         pass
+    kb = None if locked else _kinds_keyboard()
     await message.answer(
         "🏅 <b>Награда сезона</b>\n\n"
         "Выбери награду, лигу и клуб, затем введи <b>имя игрока</b> как в базе.\n"
@@ -127,7 +133,7 @@ async def _open_award_menu_msg(message: Message) -> None:
         "если нет строки — в БД ЛЧ). В <code>common.db</code> для сводки дубли не суммируются."
         f"{wc_note}\n\n"
         "/cancel — отмена.",
-        reply_markup=_kinds_keyboard(),
+        reply_markup=kb,
         parse_mode="HTML",
     )
 
@@ -157,6 +163,15 @@ async def cb_award_kind(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     if callback.message is None or not callback.data:
         return
+    try:
+        from utils.world_cup import awards_unlocked_for_season
+
+        ok, why = awards_unlocked_for_season()
+        if not ok:
+            await callback.message.answer(why)
+            return
+    except Exception:
+        pass
     kind = callback.data.rsplit(":", 1)[-1]
     await state.update_data(aw_kind=kind)
     label = _KIND_LABELS.get(kind, kind)
