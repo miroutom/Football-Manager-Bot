@@ -179,9 +179,11 @@ async def send_cl_bracket(message: Message) -> None:
 
 
 def _league_keyboard(prefix: str) -> InlineKeyboardMarkup:
+    from utils.world_cup import is_world_cup_season
+
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
-    for code, label in LEAGUE_LABELS:
+    for code, label in _leagues_for_ui(include_wc=is_world_cup_season()):
         row.append(InlineKeyboardButton(text=label, callback_data=f"{prefix}:{code}"))
         if len(row) == 3:
             rows.append(row)
@@ -517,10 +519,13 @@ def _table_season_kb() -> InlineKeyboardMarkup:
 
 
 def _league_keyboard_for_table(season_key: str) -> InlineKeyboardMarkup:
-    """Таблица: tbl:<season_key>:<league_code> (season_key = cur или номер)."""
+    """Таблица: tbl:<season_key>:<league_code> (season_key = cur или номер).
+
+    ЧМ в списке только для сезонов ЧМ (4, потом 8, 12…).
+    """
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
-    for code, label in LEAGUE_LABELS:
+    for code, label in _leagues_for_ui(include_wc=_season_key_is_wc(season_key)):
         row.append(
             InlineKeyboardButton(
                 text=label,
@@ -760,8 +765,30 @@ def _stats_history_season_metric_kb(season_num: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def _leagues_for_ui(*, include_wc: bool) -> tuple[tuple[str, str], ...]:
+    """Лиги для кнопок; ЧМ — только в сезонах 4/8/12…"""
+    if include_wc:
+        return LEAGUE_LABELS
+    return tuple((c, lab) for c, lab in LEAGUE_LABELS if c != "wc")
+
+
+def _season_key_is_wc(season_key: str) -> bool:
+    from utils.world_cup import is_world_cup_season
+    from utils import season_paths
+
+    sk = (season_key or "").strip().lower()
+    if sk in ("", "cur"):
+        return is_world_cup_season()
+    try:
+        return is_world_cup_season(int(sk))
+    except ValueError:
+        return False
+
+
 def _schedule_league_pick_kb() -> InlineKeyboardMarkup:
     """Шаг 1 календаря: чемпионат или все."""
+    from utils.world_cup import is_world_cup_season
+
     rows: list[list[InlineKeyboardButton]] = [
         [
             InlineKeyboardButton(
@@ -771,7 +798,7 @@ def _schedule_league_pick_kb() -> InlineKeyboardMarkup:
         ],
     ]
     row: list[InlineKeyboardButton] = []
-    for code, label in LEAGUE_LABELS:
+    for code, label in _leagues_for_ui(include_wc=is_world_cup_season()):
         row.append(InlineKeyboardButton(text=label, callback_data=f"sch:pick:{code}"))
         if len(row) == 3:
             rows.append(row)

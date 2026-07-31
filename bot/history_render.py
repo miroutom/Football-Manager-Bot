@@ -659,15 +659,18 @@ def render_wc_history_png(
     """
     История чемпионов мира.
 
-    ``preview_demo=True`` — демо-слоты (сезоны 4/8/12), не пишет в JSON.
+    ``preview_demo=True`` — демо только для текущего слота ЧМ (сезон 4 сейчас),
+    без будущих 8/12; в JSON не пишет.
     """
     mx = get_active_season()
     if rows is None:
         if preview_demo:
+            from utils.world_cup import list_world_cup_seasons_up_to, next_world_cup_season
+
+            wc_now = list_world_cup_seasons_up_to(mx) or [next_world_cup_season(mx)]
+            # только уже наступившие слоты ЧМ; чемпион — демо в первом
             rows = [
-                (4, "Аргентина"),
-                (8, None),
-                (12, None),
+                (s, "Аргентина" if i == 0 else None) for i, s in enumerate(wc_now)
             ]
         else:
             rows = timeline_wc(mx)
@@ -676,7 +679,7 @@ def render_wc_history_png(
 
     ordered = list(reversed(rows))
     n = max(1, len(ordered))
-    cols = min(6, max(3, n))
+    cols = min(6, max(1, n))
     inner_w = _CANVAS_W - 2 * _PAD
     cell_w = inner_w // cols
     crest_max = min(72, int(cell_w * 0.62))

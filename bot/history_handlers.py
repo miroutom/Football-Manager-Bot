@@ -117,7 +117,7 @@ def history_teams_kb() -> InlineKeyboardMarkup:
 def history_league_choice_kb(*, prefix: str, back: str) -> InlineKeyboardMarkup:
     buttons: list[InlineKeyboardButton] = []
     for code, label in LEAGUE_LABELS:
-        if code == "cl":
+        if code in ("cl", "wc"):
             continue
         buttons.append(InlineKeyboardButton(text=label, callback_data=f"{prefix}{code}"))
     rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
