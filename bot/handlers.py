@@ -806,7 +806,8 @@ def _schedule_mixed_slice_kb(league_key: str) -> InlineKeyboardMarkup:
     rows.append(
         [InlineKeyboardButton(text="← К выбору чемпионата", callback_data="sch:back:lg")]
     )
-    if league_key != "all":
+    # официальные туры — для нац. лиг / ЛЧ; у ЧМ слоты только в смешанном месяце 11
+    if league_key not in ("all", "wc"):
         rows.append(
             [
                 InlineKeyboardButton(
@@ -1864,7 +1865,7 @@ async def cb_sch_pick_league(callback: CallbackQuery) -> None:
         await callback.answer()
         return
     lg = parts[2].strip().lower()
-    valid = {"all", "rpl", "eng", "esp", "ita", "ger", "cl"}
+    valid = {"all", "rpl", "eng", "esp", "ita", "ger", "cl", "wc"}
     if lg not in valid:
         await callback.answer("Неизвестный выбор.", show_alert=True)
         return
@@ -1872,8 +1873,23 @@ async def cb_sch_pick_league(callback: CallbackQuery) -> None:
     if callback.message is None:
         return
     title = "все чемпионаты" if lg == "all" else _league_title(lg)
+    note = ""
+    if lg == "wc":
+        try:
+            from utils.wc_tournament import groups_drawn
+            from utils.world_cup import is_world_cup_season
+
+            if not is_world_cup_season():
+                note = "\n\n⚠ Сейчас не сезон ЧМ — слотов в календаре может не быть."
+            elif not groups_drawn():
+                note = (
+                    "\n\n⚠ Жеребьёвка групп ещё не проведена — "
+                    "сначала «🌍 ЧМ» → жеребьёвка, иначе календарь ЧМ пустой."
+                )
+        except Exception:
+            pass
     await callback.message.answer(
-        f"Матч-дни ({title}): выберите срез.",
+        f"Матч-дни ({title}): выберите срез.{note}",
         reply_markup=_schedule_mixed_slice_kb(lg),
     )
 
@@ -1902,6 +1918,22 @@ async def cb_sch_mixed_matrix(callback: CallbackQuery) -> None:
         await callback.answer("Ошибка кнопки.", show_alert=True)
         return
     lc = None if lg == "all" else lg
+    if lg == "wc":
+        try:
+            from utils.wc_tournament import groups_drawn
+            from utils.wc_schedule import ensure_wc_group_stage_in_schedule
+            from utils.world_cup import is_world_cup_season
+
+            if is_world_cup_season() and groups_drawn():
+                await asyncio.to_thread(ensure_wc_group_stage_in_schedule)
+            elif is_world_cup_season() and not groups_drawn():
+                await callback.answer(
+                    "Сначала жеребьёвка групп ЧМ (меню 🌍 ЧМ).",
+                    show_alert=True,
+                )
+                return
+        except Exception:
+            logger.exception("sch:mx wc ensure")
     await callback.answer("Генерация…")
     try:
         from bot.ops_infographic import render_schedule_infographic
