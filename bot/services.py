@@ -439,9 +439,8 @@ def render_archived_season_team_goalscorers_league(
 def render_team_goalscorers_all_time_single(
     league_code: str, team_index: int, scope: str = "league"
 ) -> str:
-    """Статистика клуба за все сезоны (synced БД)."""
-    import os
-
+    """Статистика клуба за все сезоны (сумма архивов, пока игрок был в клубе)."""
+    from bot.player_board_infographic import collect_club_scorer_rows_all_time
     from player_stats import format_team_goalscorers_table_str
 
     teams = teams_ordered_for_goalscorers(league_code)
@@ -449,51 +448,32 @@ def render_team_goalscorers_all_time_single(
         raise IndexError("Некорректный выбор команды")
     team = teams[team_index]
     tournament = tournament_for_goalscorers_scope(scope)
-    p = _cumulative_db_path_for_goalscorers_scope(scope)
-    if not os.path.isfile(p):
-        scope_lab = {"league": "лига", "cl": "ЛЧ", "common": "лига+ЛЧ"}.get(
-            tournament, tournament
-        )
-        return (
-            f"Нет накопительной БД ({scope_lab}): {p}. "
-            "Завершите хотя бы один сезон или пересоберите synced."
-        )
-    e, S_factory = _goalscorers_session_from_path(p)
-    sess = S_factory()
-    try:
-        return format_team_goalscorers_table_str(
-            team,
-            tournament,
-            None,
-            session=sess,
-            title_suffix="за все время",
-        )
-    finally:
-        sess.close()
-        e.dispose()
+    rows = collect_club_scorer_rows_all_time(team, tournament=tournament)
+    return format_team_goalscorers_table_str(
+        team,
+        tournament,
+        None,
+        title_suffix="за все время",
+        precomputed_rows=rows,
+    )
 
 
 def render_team_goalscorers_all_time_league(league_code: str) -> str:
-    """Статистика всех клубов лиги за все сезоны."""
-    import os
-
+    """Статистика всех клубов лиги за все сезоны (по архивам, stint в клубе)."""
+    from bot.player_board_infographic import collect_club_scorer_rows_all_time
     from player_stats import format_team_goalscorers_league_report
 
     tournament = tournament_db_for_league(league_code)
-    p = _cumulative_db_path_for_goalscorers_scope(tournament)
-    if not os.path.isfile(p):
-        return f"Нет накопительной БД: {p}."
-    e, S_factory = _goalscorers_session_from_path(p)
-    sess = S_factory()
-    try:
-        return format_team_goalscorers_league_report(
-            league_code,
-            session=sess,
-            title_suffix="за все время",
-        )
-    finally:
-        sess.close()
-        e.dispose()
+    teams = teams_ordered_for_goalscorers(league_code)
+    precomputed = {
+        t: collect_club_scorer_rows_all_time(t, tournament=tournament) for t in teams
+    }
+    return format_team_goalscorers_league_report(
+        league_code,
+        title_suffix="за все время",
+        teams_order=teams,
+        precomputed_by_team=precomputed,
+    )
 
 
 def _cumulative_db_path_for_goalscorers_scope(scope: str) -> str:

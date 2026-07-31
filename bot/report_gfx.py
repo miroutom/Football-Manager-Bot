@@ -224,6 +224,7 @@ def draw_header_bar(
     height: int,
     title: str,
     subtitle: str | None = None,
+    title_x: int = 18,
 ) -> None:
     draw.rectangle([0, 0, width, height], fill=theme.header)
     draw.rectangle([0, height - 4, width, height], fill=theme.accent)
@@ -231,11 +232,12 @@ def draw_header_bar(
     sub_font = pick_font(14)
     title_fill = (255, 255, 255) if _is_dark(theme.header) else theme.text
     dim = (190, 200, 220) if _is_dark(theme.header) else theme.text_dim
-    draw.text((18, 14 if subtitle else 22), title, fill=title_fill, font=title_font)
+    x0 = max(8, int(title_x))
+    draw.text((x0, 14 if subtitle else 22), title, fill=title_fill, font=title_font)
     if subtitle:
         draw.text(
-            (18, 50),
-            truncate(draw, subtitle, sub_font, width - 36),
+            (x0, 50),
+            truncate(draw, subtitle, sub_font, width - x0 - 18),
             fill=dim,
             font=sub_font,
         )

@@ -2202,6 +2202,7 @@ def show_team_goalscorers_table(
     *,
     session=None,
     title_suffix: str = "",
+    precomputed_rows: Optional[list] = None,
 ) -> None:
     """
     Игроки команды с голом или передачей: И (матчи в БД), Г, А, Г+А по убыванию Г+А.
@@ -2210,32 +2211,52 @@ def show_team_goalscorers_table(
 
     Если передан ``session`` (архивный sqlite), он используется вместо ``get_session``;
     вызывающий код закрывает сессию и движок.
+    ``precomputed_rows`` — готовые строки (например stint «за все время»), без запроса к БД.
     """
     team = _team_name_as_in_db(team)
-    if session is None:
-        session = get_session(tournament)
     rows = []
-    for PlayerClass in (Forward, Midfielder, Defender):
-        for p in session.query(PlayerClass).filter_by(team=team).all():
-            g = int(p.goals or 0)
-            a = int(p.assists or 0)
+    if precomputed_rows is not None:
+        for r in precomputed_rows:
+            g = int(r.get("goals", r.get("g", 0)) or 0)
+            a = int(r.get("assists", r.get("a", 0)) or 0)
             if g <= 0 and a <= 0:
                 continue
-            ga = int(getattr(p, "ga", None) or (g + a))
-            from utils.player_names import player_display_name
-
             rows.append(
                 {
-                    "name": player_display_name(p),
-                    "pos": p.position,
-                    "matches": int(p.matches or 0),
+                    "name": str(r.get("name") or ""),
+                    "pos": str(r.get("position") or r.get("pos") or ""),
+                    "matches": int(r.get("matches") or 0),
                     "g": g,
                     "a": a,
-                    "ga": ga,
-                    "potm": int(getattr(p, "potm", 0) or 0),
-                    "motm": int(getattr(p, "motm", 0) or 0),
+                    "ga": int(r.get("ga") or (g + a)),
+                    "potm": int(r.get("potm", 0) or 0),
+                    "motm": int(r.get("motm", 0) or 0),
                 }
             )
+    else:
+        if session is None:
+            session = get_session(tournament)
+        for PlayerClass in (Forward, Midfielder, Defender):
+            for p in session.query(PlayerClass).filter_by(team=team).all():
+                g = int(p.goals or 0)
+                a = int(p.assists or 0)
+                if g <= 0 and a <= 0:
+                    continue
+                ga = int(getattr(p, "ga", None) or (g + a))
+                from utils.player_names import player_display_name
+
+                rows.append(
+                    {
+                        "name": player_display_name(p),
+                        "pos": p.position,
+                        "matches": int(p.matches or 0),
+                        "g": g,
+                        "a": a,
+                        "ga": ga,
+                        "potm": int(getattr(p, "potm", 0) or 0),
+                        "motm": int(getattr(p, "motm", 0) or 0),
+                    }
+                )
     rows.sort(key=lambda x: (-x["ga"], -x["g"], x["name"].lower()))
 
     width = 74
@@ -2324,6 +2345,7 @@ def format_team_goalscorers_table_str(
     *,
     session=None,
     title_suffix: str = "",
+    precomputed_rows: Optional[list] = None,
 ) -> str:
     """Текст блока «голеадоры команды» — как show_team_goalscorers_table, для бота."""
     import contextlib
@@ -2337,6 +2359,7 @@ def format_team_goalscorers_table_str(
             standings_dict,
             session=session,
             title_suffix=title_suffix,
+            precomputed_rows=precomputed_rows,
         )
     return buf.getvalue()
 
@@ -2347,6 +2370,7 @@ def format_team_goalscorers_league_report(
     session=None,
     title_suffix: str = "",
     teams_order: Optional[list[str]] = None,
+    precomputed_by_team: Optional[dict] = None,
 ) -> str:
     """Все команды лиги подряд — как пункт «b»→4 в консоли."""
     tournament = "cl" if league_code == "cl" else "league"
@@ -2379,6 +2403,9 @@ def format_team_goalscorers_league_report(
         "=" * 60 + "\n",
     ]
     for team in teams:
+        prec = None
+        if precomputed_by_team is not None:
+            prec = precomputed_by_team.get(team)
         parts.append(
             format_team_goalscorers_table_str(
                 team,
@@ -2386,6 +2413,7 @@ def format_team_goalscorers_league_report(
                 standings,
                 session=session,
                 title_suffix=title_suffix,
+                precomputed_rows=prec,
             )
         )
     return "".join(parts)

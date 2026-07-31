@@ -19,6 +19,7 @@ from bot.report_gfx import (
     display_player_name,
     draw_header_bar,
     paste_crest,
+    paste_nation_flag,
     pick_font,
     png_bytes,
     theme_for_league,
@@ -111,31 +112,133 @@ def collect_club_scorer_rows(
     from utils.player_names import player_display_name
 
     team_db = _team_name_as_in_db(team)
-    own_session = session is None
-    if own_session:
+    if session is None:
         session = get_session(tournament)
     rows: list[dict[str, Any]] = []
-    try:
-        for Cls in (Forward, Midfielder, Defender):
-            for p in session.query(Cls).filter_by(team=team_db).all():
-                g = int(p.goals or 0)
-                a = int(p.assists or 0)
-                if g <= 0 and a <= 0:
-                    continue
-                rows.append(
-                    {
-                        "name": player_display_name(p),
-                        "team": team_db,
-                        "position": p.position,
-                        "overall": int(getattr(p, "overall", 0) or 0),
-                        "matches": int(p.matches or 0),
-                        "goals": g,
-                        "assists": a,
-                        "ga": int(getattr(p, "ga", None) or (g + a)),
-                    }
-                )
-    finally:
-        pass
+    for Cls in (Forward, Midfielder, Defender):
+        for p in session.query(Cls).filter_by(team=team_db).all():
+            g = int(p.goals or 0)
+            a = int(p.assists or 0)
+            if g <= 0 and a <= 0:
+                continue
+            rows.append(
+                {
+                    "name": player_display_name(p),
+                    "team": team_db,
+                    "position": p.position,
+                    "overall": int(getattr(p, "overall", 0) or 0),
+                    "matches": int(p.matches or 0),
+                    "goals": g,
+                    "assists": a,
+                    "ga": int(getattr(p, "ga", None) or (g + a)),
+                    "nation": (getattr(p, "nation", None) or "") or "",
+                }
+            )
+    rows.sort(key=lambda x: (-x["ga"], -x["goals"], str(x["name"]).casefold()))
+    return rows
+
+
+def collect_club_scorer_rows_all_time(
+    team: str,
+    *,
+    tournament: str = "league",
+) -> list[dict[str, Any]]:
+    """
+    Стата игроков **в этом клубе** по всем архивам сезонов.
+
+    Не использует ``*_synced.db`` (там карьера схлопывается в текущий клуб).
+    Ключ строки: person_id+позиция или имя+позиция.
+    """
+    import os
+
+    from data.defender import Defender
+    from data.forward import Forward
+    from data.midfielder import Midfielder
+    from player_stats import _team_name_as_in_db
+    from utils.cumulative_db import list_season_archives_with_db
+    from utils.person_registry import row_person_id
+    from utils.player_names import player_display_name, player_stats_identity_token
+    from utils import season_paths
+
+    team_db = _team_name_as_in_db(team)
+    team_cf = team_db.casefold()
+    sc = (tournament or "league").strip().lower()
+    if sc in ("cl", "champ_league"):
+        db_name = season_paths.SEASON_CL_NAME
+    elif sc in ("common", "merged", "all", "liga_cl", "lgcl"):
+        db_name = season_paths.SEASON_COMMON_NAME
+    else:
+        db_name = season_paths.SEASON_LEAGUE_NAME
+
+    # key -> agg
+    agg: dict[tuple, dict[str, Any]] = {}
+    for sn in list_season_archives_with_db():
+        path = os.path.join(
+            season_paths.season_archive_directory(sn), db_name
+        )
+        if not os.path.isfile(path):
+            continue
+        from bot.services import _goalscorers_session_from_path
+
+        eng, S = _goalscorers_session_from_path(path)
+        sess = S()
+        try:
+            for Cls in (Forward, Midfielder, Defender):
+                for p in sess.query(Cls).all():
+                    if (getattr(p, "team", None) or "").strip().casefold() != team_cf:
+                        continue
+                    g = int(p.goals or 0)
+                    a = int(p.assists or 0)
+                    m = int(p.matches or 0)
+                    if g <= 0 and a <= 0 and m <= 0:
+                        continue
+                    pos = (p.position or "").strip().upper()
+                    pid = row_person_id(p)
+                    if pid is not None:
+                        key: tuple = ("pid", int(pid), pos)
+                    else:
+                        key = (
+                            "name",
+                            player_stats_identity_token(p).casefold(),
+                            pos,
+                        )
+                    cur = agg.get(key)
+                    if cur is None:
+                        cur = {
+                            "name": player_display_name(p),
+                            "team": team_db,
+                            "position": pos,
+                            "overall": int(getattr(p, "overall", 0) or 0),
+                            "matches": 0,
+                            "goals": 0,
+                            "assists": 0,
+                            "ga": 0,
+                            "nation": (getattr(p, "nation", None) or "") or "",
+                            "_season": sn,
+                        }
+                        agg[key] = cur
+                    cur["matches"] += m
+                    cur["goals"] += g
+                    cur["assists"] += a
+                    cur["ga"] += int(getattr(p, "ga", None) or (g + a))
+                    # актуальные имя/нация/рейтинг — из более позднего сезона в клубе
+                    if sn >= int(cur.get("_season") or 0):
+                        cur["name"] = player_display_name(p)
+                        cur["overall"] = int(getattr(p, "overall", 0) or 0)
+                        nat = (getattr(p, "nation", None) or "") or ""
+                        if nat:
+                            cur["nation"] = nat
+                        cur["_season"] = sn
+        finally:
+            sess.close()
+            eng.dispose()
+
+    rows = []
+    for cur in agg.values():
+        if int(cur["goals"]) <= 0 and int(cur["assists"]) <= 0:
+            continue
+        cur.pop("_season", None)
+        rows.append(cur)
     rows.sort(key=lambda x: (-x["ga"], -x["goals"], str(x["name"]).casefold()))
     return rows
 
@@ -149,18 +252,53 @@ def render_player_board_pages(
     theme: LeagueTheme | None = None,
     highlight_key: str | None = None,
     show_team_crest: bool = True,
+    header_crest_team: str | None = None,
+    row_emblem: str = "team",
     rows_per_page: int = _ROWS_PER_PAGE,
 ) -> list[bytes]:
     """
     columns: list of (key, label), e.g. [("goals","Г"), ("assists","А"), ("ga","Г+А")]
+
+    ``row_emblem``: ``team`` (эмблема клуба в строке), ``nation`` (флаг), ``none``.
+    ``header_crest_team`` — эмблема слева в шапке рядом с названием.
     """
     theme = theme or PLAYER_BOARD_DARK
+    emblem = (row_emblem or "team").strip().lower()
+    if emblem not in ("team", "nation", "none"):
+        emblem = "team"
+    if not show_team_crest and emblem == "team":
+        emblem = "none"
+
+    header_crest_size = 52
+    title_x = 18
+    if header_crest_team:
+        title_x = 18 + header_crest_size + 14
+
+    def _draw_header(im, draw, width: int, sub: str | None) -> None:
+        draw_header_bar(
+            draw,
+            theme=theme,
+            width=width,
+            height=_HEADER_H,
+            title=title,
+            subtitle=sub,
+            title_x=title_x,
+        )
+        if header_crest_team:
+            paste_crest(
+                im,
+                draw,
+                team=header_crest_team,
+                cx=18 + header_crest_size // 2,
+                cy=_HEADER_H // 2 - 2,
+                size=header_crest_size,
+                crest_font=pick_font(12, bold=True),
+            )
+
     if not rows:
         im = Image.new("RGB", (720, 160), theme.bg)
         draw = ImageDraw.Draw(im)
-        draw_header_bar(
-            draw, theme=theme, width=720, height=_HEADER_H, title=title, subtitle=subtitle
-        )
+        _draw_header(im, draw, 720, subtitle)
         draw.text((24, 110), "Нет данных", fill=theme.text_dim, font=pick_font(18))
         return [png_bytes(im)]
 
@@ -178,9 +316,7 @@ def render_player_board_pages(
         sub = subtitle or ""
         if total_pages > 1:
             sub = (sub + " · " if sub else "") + f"стр. {page_i + 1}/{total_pages}"
-        draw_header_bar(
-            draw, theme=theme, width=canvas_w, height=_HEADER_H, title=title, subtitle=sub or None
-        )
+        _draw_header(im, draw, canvas_w, sub or None)
 
         hdr_y0 = _HEADER_H
         hdr_y1 = _HEADER_H + _COL_H
@@ -219,17 +355,25 @@ def render_player_board_pages(
                 font=rank_font,
                 anchor="mm",
             )
-            team = str(row.get("team") or "")
-            if show_team_crest and team:
-                paste_crest(
-                    im,
-                    draw,
-                    team=team,
-                    cx=_RANK_W + 6 + _CREST // 2,
-                    cy=cy,
-                    size=_CREST,
-                    crest_font=crest_font,
-                )
+            emblem_cx = _RANK_W + 6 + _CREST // 2
+            if emblem == "team":
+                team = str(row.get("team") or "")
+                if team:
+                    paste_crest(
+                        im,
+                        draw,
+                        team=team,
+                        cx=emblem_cx,
+                        cy=cy,
+                        size=_CREST,
+                        crest_font=crest_font,
+                    )
+            elif emblem == "nation":
+                nation = str(row.get("nation") or "").strip()
+                if nation:
+                    paste_nation_flag(
+                        im, draw, nation=nation, cx=emblem_cx, cy=cy, size=_CREST
+                    )
             name = display_player_name(str(row.get("name") or ""))
             pos = str(row.get("position") or row.get("pos") or "").strip().upper() or "—"
             meta = f"  {pos}"
@@ -324,7 +468,9 @@ def render_club_scorers_png_pages(
         ],
         theme=board,
         highlight_key="ga",
-        show_team_crest=True,
+        show_team_crest=False,
+        header_crest_team=team,
+        row_emblem="nation",
     )
 
 
@@ -343,7 +489,6 @@ def render_club_goalscorers_png_for_bot(
     """
     from bot.services import (
         _archived_season_db_path_for_goalscorers,
-        _cumulative_db_path_for_goalscorers_scope,
         _goalscorers_session_from_path,
         teams_ordered_for_goalscorers,
         teams_ordered_for_goalscorers_season_archive,
@@ -359,20 +504,9 @@ def render_club_goalscorers_png_for_bot(
         rows = collect_club_scorer_rows(team, tournament=tournament)
         title = f"{scope_lab} · текущий сезон"
     elif season_mode == "life":
-        import os
-
         teams = teams_ordered_for_goalscorers(league_code)
         team = teams[team_index]
-        p = _cumulative_db_path_for_goalscorers_scope(scope)
-        if not os.path.isfile(p):
-            return f"Нет БД: {p}", []
-        e, S = _goalscorers_session_from_path(p)
-        sess = S()
-        try:
-            rows = collect_club_scorer_rows(team, tournament=tournament, session=sess)
-        finally:
-            sess.close()
-            e.dispose()
+        rows = collect_club_scorer_rows_all_time(team, tournament=tournament)
         title = f"{scope_lab} · за все время"
     else:
         import os
