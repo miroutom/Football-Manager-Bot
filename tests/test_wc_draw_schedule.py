@@ -40,6 +40,22 @@ def test_draw_fifa_conf_limits():
             assert confs.count(c) <= 1, (gid, confs)
 
 
+def test_draw_manager_balance_2_and_2():
+    from utils.wc_tournament import load_tournament, manager_of_map
+    from utils.world_cup_format import groups_manager_balance
+
+    by = nations_by_confederation()
+    mgr = manager_of_map(load_tournament())
+    assert len(mgr) == 48
+    groups = draw_groups_fifa(by, seed=2026, manager_of=mgr)
+    ok, bad = groups_manager_balance(groups, mgr)
+    assert ok, bad
+    for teams in groups.values():
+        sides = [mgr[t] for t in teams]
+        assert sides.count("Roman") == 2
+        assert sides.count("Lika") == 2
+
+
 def test_group_stage_72_lines():
     by = nations_by_confederation()
     groups = draw_groups_fifa(by, seed=7)

@@ -177,26 +177,80 @@ def _can_place_in_group(
     return group_confs.count(conf) < lim
 
 
+def _can_place_manager(group_sides: list[str], side: str | None) -> bool:
+    """В группе не больше 2 сборных одного менеджера (Roman / Lika)."""
+    if not side:
+        return True
+    return group_sides.count(side) < 2
+
+
+def normalize_manager_of(
+    manager_of: dict[str, str] | None,
+) -> dict[str, str]:
+    """team.casefold() → ``Roman`` | ``Lika``."""
+    if not manager_of:
+        return {}
+    out: dict[str, str] = {}
+    for k, v in manager_of.items():
+        side = str(v or "").strip()
+        if side not in ("Roman", "Lika"):
+            continue
+        name = str(k or "").strip()
+        if name:
+            out[name.casefold()] = side
+    return out
+
+
+def groups_manager_balance(
+    groups: dict[str, list[str]],
+    manager_of: dict[str, str] | None,
+) -> tuple[bool, list[str]]:
+    """
+    Проверка: в каждой группе ровно 2 Roman и 2 Lika.
+    Без карты менеджеров — (True, []).
+    """
+    mp = normalize_manager_of(manager_of)
+    if not mp:
+        return True, []
+    bad: list[str] = []
+    for gid in GROUP_IDS:
+        teams = groups.get(gid) or []
+        sides = [mp.get(str(t).strip().casefold()) for t in teams]
+        n_r = sides.count("Roman")
+        n_l = sides.count("Lika")
+        if n_r != 2 or n_l != 2 or any(s is None for s in sides):
+            miss = [t for t, s in zip(teams, sides) if s is None]
+            bad.append(
+                f"Группа {gid}: Roman={n_r} Lika={n_l}"
+                + (f" · без менеджера: {', '.join(miss)}" if miss else "")
+            )
+    return (not bad), bad
+
+
 def draw_groups_fifa(
     nations_by_conf: dict[str, list[str]],
     *,
     seed: int | None = None,
-    max_attempts: int = 4000,
+    max_attempts: int = 8000,
+    manager_of: dict[str, str] | None = None,
 ) -> dict[str, list[str]]:
     """
     Жеребьёвка как у FIFA WC 2026 (упрощённо):
 
     - 4 корзины × 12;
     - из каждой корзины по одной команде в каждую группу;
-    - лимит конфедераций в группе (UEFA до 3, остальные до 1).
+    - лимит конфедераций в группе (UEFA до 3, остальные до 1);
+    - опционально: в группе ровно 2 Roman и 2 Lika (``manager_of``).
     """
     pots = build_fifa_pots(nations_by_conf)
     rng = random.Random(seed)
-    last_err = "не удалось соблюсти гео-ограничения"
+    mgr = normalize_manager_of(manager_of)
+    last_err = "не удалось соблюсти ограничения"
 
     for _ in range(max_attempts):
         groups: dict[str, list[str]] = {g: [] for g in GROUP_IDS}
         confs: dict[str, list[str]] = {g: [] for g in GROUP_IDS}
+        sides: dict[str, list[str]] = {g: [] for g in GROUP_IDS}
         ok = True
         for pot in pots:
             bag = pot[:]
@@ -204,10 +258,13 @@ def draw_groups_fifa(
             free = list(GROUP_IDS)
             rng.shuffle(free)
             for team, conf in bag:
+                side = mgr.get(str(team).strip().casefold()) if mgr else None
                 eligible = [
                     g
                     for g in free
-                    if _can_place_in_group(confs[g], conf) and len(groups[g]) < GROUP_SIZE
+                    if _can_place_in_group(confs[g], conf)
+                    and _can_place_manager(sides[g], side)
+                    and len(groups[g]) < GROUP_SIZE
                 ]
                 if not eligible:
                     ok = False
@@ -215,12 +272,18 @@ def draw_groups_fifa(
                 g = eligible[0]
                 groups[g].append(team)
                 confs[g].append(conf)
+                if side:
+                    sides[g].append(side)
                 free.remove(g)
             if not ok:
                 break
-        if ok and all(len(groups[g]) == GROUP_SIZE for g in GROUP_IDS):
+        if not ok or not all(len(groups[g]) == GROUP_SIZE for g in GROUP_IDS):
+            last_err = "гео / менеджеры не сошлись"
+            continue
+        bal_ok, _ = groups_manager_balance(groups, mgr)
+        if bal_ok:
             return groups
-        last_err = "гео-ограничения не сошлись"
+        last_err = "баланс Roman/Lika 2+2 не сошёлся"
     raise RuntimeError(f"Жеребьёвка ЧМ: {last_err} (seed={seed})")
 
 
@@ -228,9 +291,12 @@ def draw_groups(
     nations_by_conf: dict[str, list[str]],
     *,
     seed: int | None = None,
+    manager_of: dict[str, str] | None = None,
 ) -> dict[str, list[str]]:
-    """Жеребьёвка групп (FIFA-корзины + гео-лимиты)."""
-    return draw_groups_fifa(nations_by_conf, seed=seed)
+    """Жеребьёвка групп (FIFA-корзины + гео-лимиты + опц. баланс менеджеров)."""
+    return draw_groups_fifa(
+        nations_by_conf, seed=seed, manager_of=manager_of
+    )
 
 
 def group_fixtures(group_teams: list[str]) -> list[tuple[str, str, int]]:

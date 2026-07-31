@@ -266,7 +266,8 @@ async def cb_wc_draw(callback: CallbackQuery) -> None:
     await _edit(
         callback,
         "<b>Жеребьёвка групп ЧМ</b>\n\n"
-        "4 корзины × 12, лимиты конфедераций в группе.\n"
+        "4 корзины × 12, лимиты конфедераций,\n"
+        "в каждой группе <b>2 Roman + 2 Lika</b>.\n"
         "После жеребьёвки матчи группы пишутся в месяц <b>11</b>.",
         kb,
     )
@@ -276,7 +277,8 @@ async def cb_wc_draw(callback: CallbackQuery) -> None:
 async def cb_wc_draw_run(callback: CallbackQuery) -> None:
     force = callback.data == "wc:draw:force"
     await callback.answer("Жеребьёвка…")
-    from utils.wc_tournament import run_group_draw
+    from utils.wc_tournament import manager_of_map, run_group_draw
+    from utils.world_cup_format import groups_manager_balance
 
     try:
         data = await asyncio.to_thread(run_group_draw, force=force)
@@ -285,9 +287,12 @@ async def cb_wc_draw_run(callback: CallbackQuery) -> None:
         kb = InlineKeyboardMarkup(inline_keyboard=[_back_home_row()])
         await _edit(callback, f"Ошибка жеребьёвки: {html_escape(str(e))}", kb)
         return
+    bal_ok, _ = groups_manager_balance(data.get("groups") or {}, manager_of_map(data))
+    bal = "✓ баланс 2+2 Roman/Lika" if bal_ok else "⚠ проверьте баланс менеджеров"
     text = (
         f"✅ <b>Жеребьёвка готова</b>\n"
-        f"Сезон {data.get('season')} · seed={data.get('draw_seed')}\n\n"
+        f"Сезон {data.get('season')} · seed={data.get('draw_seed')}\n"
+        f"{bal}\n\n"
         f"Откройте группы или проверьте месяц 11."
     )
     kb = InlineKeyboardMarkup(
@@ -303,8 +308,19 @@ async def cb_wc_draw_run(callback: CallbackQuery) -> None:
 @wc_router.callback_query(F.data.startswith("wc:groups:"))
 async def cb_wc_groups(callback: CallbackQuery) -> None:
     await callback.answer()
-    from utils.wc_tournament import groups_drawn, groups_html, load_tournament
+    from utils.wc_tournament import (
+        ensure_manager_balanced_groups,
+        groups_drawn,
+        groups_html,
+        load_tournament,
+    )
     from utils.world_cup_format import GROUP_IDS as GIDS
+
+    # если баланс 2+2 нарушен — пережеребить автоматически
+    try:
+        await asyncio.to_thread(ensure_manager_balanced_groups)
+    except Exception:
+        logger.exception("wc ensure manager balance")
 
     suffix = callback.data.split(":")[-1]
     if suffix == "all":

@@ -17,6 +17,7 @@ from utils.world_cup_format import (
     all_group_fixtures,
     draw_groups_fifa,
     format_rules_ru,
+    groups_manager_balance,
     validate_nation_count,
 )
 
@@ -76,10 +77,25 @@ def groups_drawn() -> bool:
     return all(len(groups.get(g) or []) == 4 for g in GROUP_IDS)
 
 
+def manager_of_map(data: dict[str, Any] | None = None) -> dict[str, str]:
+    """Сборка → Roman|Lika из ``managers`` турнира."""
+    data = data or load_tournament()
+    mgr = data.get("managers") or {}
+    out: dict[str, str] = {}
+    for side in ("Roman", "Lika"):
+        for n in mgr.get(side) or []:
+            name = str(n).strip()
+            if name:
+                out[name] = side
+    return out
+
+
 def run_group_draw(*, seed: int | None = None, force: bool = False) -> dict[str, Any]:
     """
     Жеребьёвка групп. Пишет ``wc_tournament.json``.
     ``force=True`` — пережеребить даже если уже было.
+
+    С менеджерами Roman/Lika — в каждой группе ровно 2+2.
     """
     if not is_world_cup_season():
         raise RuntimeError("Жеребьёвка ЧМ доступна только в сезоне ЧМ (4/8/12…).")
@@ -89,19 +105,42 @@ def run_group_draw(*, seed: int | None = None, force: bool = False) -> dict[str,
         raise ValueError(msg)
     data = load_tournament()
     if data.get("drawn") and groups_drawn() and not force:
-        return data
+        # уже есть — проверить баланс; если кривой — пережеребить
+        mgr = manager_of_map(data)
+        bal_ok, _ = groups_manager_balance(data.get("groups") or {}, mgr)
+        if bal_ok or not mgr:
+            return data
+        force = True
     season = season_paths.get_active_season()
-    use_seed = int(seed) if seed is not None else int(season) * 10007 + 48
-    groups = draw_groups_fifa(by, seed=use_seed)
+    base_seed = int(seed) if seed is not None else int(season) * 10007 + 48
+    mgr = manager_of_map(data)
+    groups = None
+    use_seed = base_seed
+    last_err: Exception | None = None
+    for attempt in range(40):
+        use_seed = base_seed + attempt * 9973
+        try:
+            groups = draw_groups_fifa(by, seed=use_seed, manager_of=mgr or None)
+            bal_ok, bad = groups_manager_balance(groups, mgr)
+            if bal_ok or not mgr:
+                break
+            last_err = RuntimeError("; ".join(bad))
+            groups = None
+        except Exception as e:
+            last_err = e
+            groups = None
+    if groups is None:
+        raise RuntimeError(
+            f"Жеребьёвка ЧМ с балансом 2+2 не удалась: {last_err}"
+        )
     data["season"] = season
     data["drawn"] = True
     data["draw_seed"] = use_seed
     data["groups"] = groups
     data["format_rules"] = format_rules_ru()
-    # сохранить менеджеров, если уже были
     data.setdefault("managers", {"Roman": [], "Lika": []})
+    data["manager_balance"] = "2+2"
     save_tournament(data)
-    # сразу пробуем дописать месяц 11
     try:
         from utils.wc_schedule import ensure_wc_group_stage_in_schedule
 
@@ -109,6 +148,23 @@ def run_group_draw(*, seed: int | None = None, force: bool = False) -> dict[str,
     except Exception:
         pass
     return data
+
+
+def ensure_manager_balanced_groups(*, force_redraw: bool = False) -> dict[str, Any]:
+    """
+    Если группы уже есть, но баланс Roman/Lika ≠ 2+2 — пережеребить.
+    ``force_redraw=True`` — всегда новая жеребьёвка.
+    """
+    data = load_tournament()
+    mgr = manager_of_map(data)
+    if force_redraw:
+        return run_group_draw(force=True)
+    if not groups_drawn():
+        return data
+    bal_ok, bad = groups_manager_balance(data.get("groups") or {}, mgr)
+    if bal_ok or not mgr:
+        return data
+    return run_group_draw(force=True)
 
 
 def set_manager_nations(manager: str, nations: list[str]) -> dict[str, Any]:
@@ -180,12 +236,24 @@ def groups_html(data: dict[str, Any] | None = None) -> str:
     data = data or load_tournament()
     if not data.get("drawn"):
         return "<b>ЧМ</b>\n\nЖеребьёвка ещё не проведена."
+    mgr = manager_of_map(data)
+    mgr_cf = {k.casefold(): v for k, v in mgr.items()}
     lines = ["<b>ЧМ · группы</b>", f"Сезон {data.get('season')}", ""]
+    bal_ok, bad = groups_manager_balance(data.get("groups") or {}, mgr)
+    if mgr:
+        if bal_ok:
+            lines.append("✓ в каждой группе 2 Roman + 2 Lika")
+        else:
+            lines.append("⚠ баланс менеджеров нарушен:")
+            lines.extend(f"· {x}" for x in bad)
+        lines.append("")
     for g in GROUP_IDS:
         teams = data.get("groups", {}).get(g) or []
         lines.append(f"<b>Группа {g}</b>")
         for t in teams:
-            lines.append(f"· {t}")
+            side = mgr_cf.get(str(t).strip().casefold())
+            mark = " · R" if side == "Roman" else (" · L" if side == "Lika" else "")
+            lines.append(f"· {t}{mark}")
         lines.append("")
     return "\n".join(lines).rstrip()
 
