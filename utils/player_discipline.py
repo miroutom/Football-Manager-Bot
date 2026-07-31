@@ -10,13 +10,10 @@
 Учёт «после матча»: при закрытии ввода статистики матча списание «−1 матч» к отбыванию дисквала
 применяется только к банам, которые **уже были** до начала этой сессии ввода; новые баны за текущий
 матч в этот же «−1» не попадают (см. ``register_match_played_for_discipline`` + снимок в боте).
-- травма: «имя Nм» / «имя Nm» / «имя Nм тип» — срок с текущего месяца календаря;
-  «имя сM Nм» / «имя @M Nм» — с месяца M календаря на N месяцев (тип после месяцев опционально).
-  В JSON травмы — **список периодов** на игрока (несколько строк: м1→м4, потом м4→м10).
-  Поля периода: ``key``, ``out_from_month``, ``return_month``, ``type``, ``season``
-  (номер сезона, когда начался период; без ``season`` запись не блокирует игру).
-  **Новый** период (не дубликат с тем же с/до): сразу к overall — 1–2 мес. 0; 3–6 мес. −2;
-  7 мес. −4; 8+ мес. −7 (лига + ЛЧ + common + cumulative).
+- травма: «имя Nм» / «имя Nm» — только **2** или **4** месяца;
+  «имя сM Nм» / «имя @M Nm» — с месяца M на 2 или 4 месяца.
+  У **полевых** две «жизни»: первая травма — остаётся в клубе; вторая — ``left_team=True``.
+  Вратари (ВРТ) не улетают автоматически. Рейтинг не меняется.
 - дисквал: в JSON ``unavailable_from_round`` — с какого тура чемпионата бан действует (null = как раньше).
   Нац. лига: туров 1–14; если бан «после» 14-го — ``unavailable_from_round=1`` (перенос на
   следующий сезон; при ``clear_discipline_for_new_season`` активные дисквалы сохраняются,
@@ -75,6 +72,24 @@ def is_injury_line(text: str) -> bool:
     """Строка травмы: «имя Nм» или «имя сM Nм»."""
     t = (text or "").strip()
     return bool(_RE_INJ_FROM.match(t) or _RE_INJ.match(t))
+
+
+def is_card_line(text: str) -> bool:
+    """Строка жк/кк: «имя жк», «имя кк», «имя 2жк»."""
+    t = (text or "").strip()
+    return bool(
+        _RE_2Y.match(t) or _RE_2Y_GLUE.match(t) or _RE_Y.match(t) or _RE_R.match(t)
+    )
+
+
+def format_calendar_month_label(month: int | None) -> str:
+    """«6 месяц» вместо «с6» / «м6»."""
+    if month is None:
+        return "—"
+    try:
+        return f"{int(month)} месяц"
+    except (TypeError, ValueError):
+        return "—"
 
 
 def injury_overall_penalty(months: int) -> int:
@@ -275,8 +290,43 @@ def find_fixture_round(
 
 
 _SEASON_MONTHS = 10
-# Срок травмы при вводе (N в «имя Nм»): можно > длины сезона — остаток переносится.
-_MAX_INJURY_DURATION_MONTHS = 36
+# Допустимые сроки травмы (месяцы).
+_ALLOWED_INJURY_MONTHS = frozenset({2, 4})
+_MAX_INJURY_DURATION_MONTHS = max(_ALLOWED_INJURY_MONTHS)
+_GK_POSITIONS = frozenset({"ВРТ", "ВР", "GK"})
+
+
+def _is_field_player(player: Any) -> bool:
+    pos = (getattr(player, "position", None) or "").strip().upper()
+    return pos not in _GK_POSITIONS
+
+
+def _validate_injury_duration(nmonths: int) -> str | None:
+    if int(nmonths) not in _ALLOWED_INJURY_MONTHS:
+        return "Травма только на 2 или 4 месяца: <code>имя 2м</code> или <code>имя 4м</code>."
+    return None
+
+
+def _mark_player_left_team_in_dbs(player_name: str, team: str) -> bool:
+    """``left_team=True`` в league + ЛЧ для игрока клуба."""
+    from player_stats import find_player_by_name, get_session
+    from utils.player_transfer import mark_player_left_team
+
+    changed = False
+    for tourn in ("league", "cl"):
+        sess = get_session(tourn)
+        try:
+            pl, _ = find_player_by_name(sess, player_name, team)
+            if pl is None or bool(getattr(pl, "left_team", False)):
+                continue
+            mark_player_left_team(pl)
+            sess.commit()
+            changed = True
+        except Exception:
+            sess.rollback()
+        finally:
+            sess.close()
+    return changed
 
 
 def _injury_total_months(inj: dict) -> int:
@@ -856,9 +906,12 @@ def try_apply_discipline_line(
         if not (1 <= out_from <= _SEASON_MONTHS and 1 <= nm <= _MAX_INJURY_DURATION_MONTHS):
             return (
                 f"Некорректно: старт месяца 1–{_SEASON_MONTHS}, "
-                f"срок 1–{_MAX_INJURY_DURATION_MONTHS} мес.",
+                f"срок 2 или 4 мес.",
                 True,
             )
+        err = _validate_injury_duration(nm)
+        if err:
+            return (err, True)
         injury_type = raw_type if raw_type else "травма"
         if len(injury_type) > 80:
             injury_type = injury_type[:80].rstrip()
@@ -881,9 +934,12 @@ def try_apply_discipline_line(
         raw_type = (m3.group(3) or "").strip()
         if nm < 1 or nm > _MAX_INJURY_DURATION_MONTHS:
             return (
-                f"Некорректно: число месяцев 1–{_MAX_INJURY_DURATION_MONTHS}.",
+                "Некорректно: травма только на 2 или 4 месяца.",
                 True,
             )
+        err = _validate_injury_duration(nm)
+        if err:
+            return (err, True)
         injury_type = raw_type if raw_type else "травма"
         if len(injury_type) > 80:
             injury_type = injury_type[:80].rstrip()
@@ -1075,7 +1131,12 @@ def _apply_injury(
                 player.name, team, cur, ret, season_now
             )
             added = False
+        periods_count = len(_injuries_for_player(st, player.name, team))
         _save(st)
+    leave_note = ""
+    if added and _is_field_player(player) and periods_count >= 2:
+        if _mark_player_left_team_in_dbs(player.name, team):
+            leave_note = " Игрок ушёл из клуба (2-я травма)."
     rating_note = ""
     if added:
         delta = injury_overall_penalty(nmonths)
@@ -1111,8 +1172,9 @@ def _apply_injury(
             f" Переход на следующий сезон: ~{in_this} мес. в этом, ~{in_next} мес. в следующем."
         )
     return (
-        f"✓ Травма ({tk}): {player.name} — с {cur} мес., выход с {ret} "
-        f"(срок {nmonths} мес.).{carry}{rating_note} {note}",
+        f"✓ Травма ({tk}): {player.name} — с {format_calendar_month_label(cur)}, "
+        f"выход с {format_calendar_month_label(ret)} "
+        f"(срок {nmonths} мес.).{carry}{rating_note}{leave_note} {note}",
         True,
     )
 
@@ -1258,40 +1320,37 @@ def _format_injury_rows_table(
     """Строки таблицы травм для моноширинного отчёта."""
     chunks: list[str] = [title]
     chunks.append(
-        "«с»/«до» — месяцы календаря (до может быть >10 при переносе); "
-        "«сез» — сезон старта; статус — относительно текущего месяца."
+        "«начало»/«конец» — месяцы календаря; статус — относительно текущего месяца."
     )
-    inj_rows: list[tuple[str, str, str, str, int, int, str, int]] = []
+    inj_rows: list[tuple[str, str, str, str, str, str]] = []
     for inj in injuries:
         ret = int(inj.get("return_month") or 99)
         ofm = inj.get("out_from_month")
-        ofm_s = str(int(ofm)) if ofm is not None else "?"
         name = str(inj.get("name") or "?").strip()
         team = str(inj.get("team") or "?").strip()
         kind = (inj.get("type") or "травма").strip() or "травма"
-        inj_season = inj.get("season")
-        season_s = int(inj_season) if inj_season is not None else 0
-        months = _injury_total_months(inj)
         st_mark = _injury_status_label(inj, month=month, season_now=season_now)
-        inj_rows.append((team, name, kind, ofm_s, ret, season_s, st_mark, months))
+        start_s = format_calendar_month_label(int(ofm) if ofm is not None else None)
+        end_s = format_calendar_month_label(ret if ret != 99 else None)
+        inj_rows.append((team, name, kind, st_mark, start_s, end_s))
     if not inj_rows:
         chunks.append("Записей о травмах нет.")
         return chunks
     inj_rows.sort(
-        key=lambda r: (r[0].casefold(), r[1].casefold(), r[5], r[3], r[4])
+        key=lambda r: (r[0].casefold(), r[1].casefold(), r[4], r[5])
     )
     w_team = max(len("Клуб"), max(len(r[0]) for r in inj_rows))
     w_name = max(len("Игрок"), max(len(r[1]) for r in inj_rows))
     head = (
-        f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<10}  "
-        f"сез  с   до   мес  статус"
+        f"{'Клуб':<{w_team}}  {'Игрок':<{w_name}}  {'Тип':<8}  "
+        f"{'Статус':<8}  {'Начало':<10}  {'Конец'}"
     )
     sep = "-" * len(head)
     lines = [head, sep]
-    for team, name, kind, ofm_s, ret, season_s, st_mark, months in inj_rows:
+    for team, name, kind, st_mark, start_s, end_s in inj_rows:
         lines.append(
-            f"{team:<{w_team}}  {name:<{w_name}}  {kind[:10]:<10}  "
-            f"{season_s:<3}  {ofm_s:<3} м{ret:<3} {months:<3}  {st_mark}"
+            f"{team:<{w_team}}  {name:<{w_name}}  {kind[:8]:<8}  "
+            f"{st_mark:<8}  {start_s:<10}  {end_s}"
         )
     chunks.append(f"Периодов: {len(inj_rows)}.")
     chunks.extend(lines)

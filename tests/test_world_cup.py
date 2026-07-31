@@ -36,3 +36,13 @@ def test_timeline_wc_slot():
 
     rows = timeline_wc(4)
     assert any(s == 4 for s, _ in rows)
+    assert all(s % 4 == 0 for s, _ in rows)
+
+
+def test_timeline_award_wc_best_only_wc_seasons():
+    from bot.season_history_store import timeline_award
+
+    rows = timeline_award("world_cup_best", 4)
+    seasons = [s for s, *_ in rows]
+    assert seasons == [4]
+    assert all(s % 4 == 0 for s in seasons)

@@ -71,8 +71,13 @@ def test_inter_active_injuries_after_s2_calhanoglu_healed():
     assert active == ["Барелла"]
 
 
-def test_max_injury_duration_allows_long_carryover():
-    assert _MAX_INJURY_DURATION_MONTHS >= 24
+def test_max_injury_duration_only_2_or_4():
+    from utils.player_discipline import _ALLOWED_INJURY_MONTHS, _validate_injury_duration
+
+    assert _ALLOWED_INJURY_MONTHS == frozenset({2, 4})
+    assert _validate_injury_duration(2) is None
+    assert _validate_injury_duration(4) is None
+    assert _validate_injury_duration(3) is not None
 
 
 def test_list_injury_seasons_and_reports(tmp_path, monkeypatch):

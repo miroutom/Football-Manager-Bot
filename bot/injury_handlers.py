@@ -50,11 +50,19 @@ def _injury_root_kb() -> InlineKeyboardMarkup:
                     text="✏️ Ввод травмы",
                     callback_data="inj:root:enter",
                 ),
+                InlineKeyboardButton(
+                    text="🟨 Ввод жк/кк",
+                    callback_data="inj:root:card",
+                ),
             ],
             [
                 InlineKeyboardButton(
-                    text="👁 Всё · травмы · дисквалы · жк",
-                    callback_data="inj:root:view",
+                    text="🏥 Травмы",
+                    callback_data="inj:root:view_inj",
+                ),
+                InlineKeyboardButton(
+                    text="🟥 Дисквалификации",
+                    callback_data="inj:root:view_susp",
                 ),
             ],
             [
@@ -153,19 +161,17 @@ def _injury_teams_kb(league_code: str) -> InlineKeyboardMarkup:
 
 
 async def _send_injury_root(message: Message, state: FSMContext) -> None:
-    from utils.player_discipline import _MAX_INJURY_DURATION_MONTHS
-
     await state.clear()
     await message.answer(
         "🏥 <b>Травмы и дисциплина</b>\n\n"
-        "«Ввод травмы» — лига и клуб, затем строка:\n"
-        "<code>имя Nм</code> / <code>имя Nм тип</code> — с текущего месяца календаря;\n"
+        "<b>Ввод травмы</b> — лига и клуб, затем строка:\n"
+        "<code>имя 2м</code> / <code>имя 4м</code> — с текущего месяца;\n"
         "<code>имя с3 4м</code> — с 3-го месяца на 4 месяца.\n"
-        f"Срок N — от 1 до <b>{_MAX_INJURY_DURATION_MONTHS}</b> мес. "
-        "(если больше 10 — остаток переносится на следующий сезон).\n\n"
-        "«Всё» — полная сводка; «по сезону» — только травмы выбранного сезона; "
-        "«чаще всего» / «ни разу» — за все сезоны (с OVR).\n\n"
-        "Начисление жк и кк — в статистике матча после счёта.",
+        "Только <b>2</b> или <b>4</b> месяца. У полевых две «жизни»: "
+        "первая травма — остаётся в клубе, вторая — уходит.\n\n"
+        "<b>Ввод жк/кк</b> — тот же выбор клуба, строки:\n"
+        "<code>имя жк</code>, <code>имя 2жк</code>, <code>имя кк</code>.\n\n"
+        "«Травмы» / «Дисквалификации» — отдельные сводки.",
         parse_mode="HTML",
         reply_markup=_injury_root_kb(),
     )
@@ -214,24 +220,41 @@ async def cb_injury_back_root(callback: CallbackQuery, state: FSMContext) -> Non
 
 @injury_router.callback_query(F.data == "inj:root:enter")
 async def cb_injury_root_enter(callback: CallbackQuery, state: FSMContext) -> None:
-    from utils.player_discipline import _MAX_INJURY_DURATION_MONTHS
-
     await callback.answer()
     if callback.message is None:
         return
     await state.clear()
+    await state.update_data(discipline_mode="injury")
     await state.set_state(InjuryEnter.pick_lg)
     await callback.message.answer(
         "✏️ <b>Ввод травмы</b>\n\n"
         "Выбери лигу и клуб, затем строку:\n"
-        "<code>имя Nм</code> — с текущего месяца календаря на N месяцев;\n"
-        "<code>имя сM Nм</code> — с месяца M на N месяцев.\n\n"
-        f"N = 1…{_MAX_INJURY_DURATION_MONTHS}. Пример остатка длинной травмы: "
-        "<code>Эдерсон 14м</code>.\n\n"
-        "Новая травма — сразу к рейтингу: 1–2 мес. без изменений; 3–6 мес. −2; "
-        "7 мес. −4; 8+ мес. −7.\n\n"
-        "Примеры: <code>Брозович с3 1м</code>, <code>Симонс 4м колено</code>\n"
+        "<code>имя 2м</code> / <code>имя 4м</code> — с текущего месяца;\n"
+        "<code>имя сM 2м</code> / <code>имя сM 4м</code> — с месяца M.\n\n"
+        "Только 2 или 4 месяца. Полевые: 1-я травма — в клубе, 2-я — уход.\n"
+        "Рейтинг не меняется.\n\n"
+        "Примеры: <code>Брозович с3 2м</code>, <code>Симонс 4м</code>\n"
         "/cancel — отмена.",
+        parse_mode="HTML",
+        reply_markup=_injury_league_kb(),
+    )
+
+
+@injury_router.callback_query(F.data == "inj:root:card")
+async def cb_injury_root_card(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if callback.message is None:
+        return
+    await state.clear()
+    await state.update_data(discipline_mode="card")
+    await state.set_state(InjuryEnter.pick_lg)
+    await callback.message.answer(
+        "🟨 <b>Ввод жк/кк</b>\n\n"
+        "Выбери лигу и клуб, затем строку:\n"
+        "<code>имя жк</code> — жёлтая карточка;\n"
+        "<code>имя 2жк</code> — вторая жёлтая (кк, 1 матч);\n"
+        "<code>имя кк</code> — прямая красная (3 матча).\n\n"
+        "Можно несколько строк подряд; /cancel — выход.",
         parse_mode="HTML",
         reply_markup=_injury_league_kb(),
     )
@@ -249,26 +272,26 @@ async def cb_injury_back_lg(callback: CallbackQuery, state: FSMContext) -> None:
     )
 
 
-@injury_router.callback_query(F.data == "inj:root:view")
-async def cb_injury_root_view(callback: CallbackQuery, state: FSMContext) -> None:
+@injury_router.callback_query(F.data == "inj:root:view_inj")
+async def cb_injury_root_view_inj(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer("Готовлю…")
     if callback.message is None:
         return
     await state.clear()
     try:
-        from bot.player_board_infographic import render_injuries_infographic_png_pages
+        from bot.player_board_infographic import render_active_injuries_png_pages
         from bot.handlers import answer_png_pages
 
-        blobs = await asyncio.to_thread(render_injuries_infographic_png_pages)
+        blobs = await asyncio.to_thread(render_active_injuries_png_pages)
         await answer_png_pages(
             callback.message,
             blobs,
-            "<b>Травмы и дисциплина</b>",
+            "<b>Травмы</b>",
             filename_prefix="injuries",
             parse_mode="HTML",
         )
     except Exception as e:
-        logger.exception("injury view report")
+        logger.exception("injury view")
         from utils.player_discipline import format_active_injuries_report_text
 
         try:
@@ -276,12 +299,41 @@ async def cb_injury_root_view(callback: CallbackQuery, state: FSMContext) -> Non
             await _send_png_report(
                 callback.message,
                 body=body,
-                title="Травмы и дисциплина",
-                caption="<b>Травмы и дисциплина</b>",
+                title="Травмы",
+                caption="<b>Травмы</b>",
                 filename_prefix="injuries",
             )
         except Exception as e2:
             await callback.message.answer(f"Не удалось собрать отчёт: {e2}")
+
+
+@injury_router.callback_query(F.data == "inj:root:view_susp")
+async def cb_injury_root_view_susp(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer("Готовлю…")
+    if callback.message is None:
+        return
+    await state.clear()
+    try:
+        from bot.player_board_infographic import render_active_suspensions_png_pages
+        from bot.handlers import answer_png_pages
+
+        blobs = await asyncio.to_thread(render_active_suspensions_png_pages)
+        await answer_png_pages(
+            callback.message,
+            blobs,
+            "<b>Дисквалификации</b>",
+            filename_prefix="suspensions",
+            parse_mode="HTML",
+        )
+    except Exception as e:
+        logger.exception("suspension view")
+        await callback.message.answer(f"Не удалось собрать отчёт: {e}")
+
+
+@injury_router.callback_query(F.data == "inj:root:view")
+async def cb_injury_root_view(callback: CallbackQuery, state: FSMContext) -> None:
+    """Старый callback — перенаправляем на травмы."""
+    await cb_injury_root_view_inj(callback, state)
 
 
 @injury_router.callback_query(F.data == "inj:view:seasons")
@@ -453,23 +505,34 @@ async def cb_injury_team(callback: CallbackQuery, state: FSMContext) -> None:
             await callback.message.answer(f"Ошибка клуба: {e}")
         return
     tourn = "cl" if code == "cl" else "league"
-    await state.update_data(injury_team=team, injury_lg=code, injury_tournament=tourn)
+    mode = (await state.get_data()).get("discipline_mode") or "injury"
+    await state.update_data(
+        injury_team=team, injury_lg=code, injury_tournament=tourn, discipline_mode=mode
+    )
     await state.set_state(InjuryEnter.wait_line)
     if callback.message:
-        await callback.message.answer(
-            f"<b>{_league_title(code)}</b> · <b>{team}</b>\n\n"
-            "Отправь строку травмы, например:\n"
-            "<code>Брозович с3 1м</code>, <code>Симонс 4м</code> "
-            "или <code>Эдерсон 14м</code>\n\n"
-            "Можно несколько строк подряд; /cancel — выход.",
-            parse_mode="HTML",
-        )
+        if mode == "card":
+            hint = (
+                f"<b>{_league_title(code)}</b> · <b>{team}</b>\n\n"
+                "Строки жк/кк, например:\n"
+                "<code>Брозович жк</code>, <code>Кейн 2жк</code>, <code>Родри кк</code>\n\n"
+                "Можно несколько строк; /cancel — выход."
+            )
+        else:
+            hint = (
+                f"<b>{_league_title(code)}</b> · <b>{team}</b>\n\n"
+                "Строка травмы, например:\n"
+                "<code>Брозович с3 2м</code>, <code>Симонс 4м</code>\n\n"
+                "Только 2 или 4 месяца; /cancel — выход."
+            )
+        await callback.message.answer(hint, parse_mode="HTML")
 
 
 @injury_router.message(InjuryEnter.wait_line, _TEXT_NOT_CMD)
 async def on_injury_line(message: Message, state: FSMContext) -> None:
     from utils.player_discipline import (
         get_calendar_month,
+        is_card_line,
         is_injury_line,
         try_apply_discipline_line,
     )
@@ -478,16 +541,24 @@ async def on_injury_line(message: Message, state: FSMContext) -> None:
     team = (data.get("injury_team") or "").strip()
     lc = (data.get("injury_lg") or "").strip()
     tourn = data.get("injury_tournament") or "league"
+    mode = data.get("discipline_mode") or "injury"
     if not team or not lc:
         await state.clear()
         await message.answer("Сессия сброшена. Начни с меню → травмы.")
         return
 
     raw = (message.text or "").strip()
-    if not is_injury_line(raw):
+    if mode == "card":
+        if not is_card_line(raw):
+            await message.answer(
+                "Здесь только жк/кк: <code>имя жк</code>, <code>имя 2жк</code>, <code>имя кк</code>.",
+                parse_mode="HTML",
+            )
+            return
+    elif not is_injury_line(raw):
         await message.answer(
-            "Здесь только травмы: <code>имя Nм</code>, <code>имя сM Nм</code> или с типом. "
-            "Жёлтые и красные карточки — в статистике матча после счёта.",
+            "Здесь только травмы: <code>имя 2м</code> или <code>имя 4м</code> "
+            "(или <code>имя сM 2м</code> / <code>имя сM 4м</code>).",
             parse_mode="HTML",
         )
         return

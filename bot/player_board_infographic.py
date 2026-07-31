@@ -535,13 +535,14 @@ def render_club_goalscorers_png_for_bot(
     return f"Стата · {team} · {title}", pages
 
 
-def collect_injury_board_sections() -> dict[str, Any]:
-    """Секции для инфографики травм/дисквала (как в ``format_active_injuries_report_text``)."""
+def collect_all_injury_rows(*, active_only: bool = False) -> dict[str, Any]:
+    """Все периоды травм для таблицы (игрок · статус · начало · конец)."""
     from utils.player_discipline import (
         _get_active_season_or_default,
         _injury_status_label,
         _load,
         _lock,
+        format_calendar_month_label,
         get_calendar_month,
     )
 
@@ -550,160 +551,274 @@ def collect_injury_board_sections() -> dict[str, Any]:
     with _lock:
         st = _load()
 
-    injuries: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for inj in st.get("injuries") or []:
         if not isinstance(inj, dict):
             continue
-        name = str(inj.get("name") or "?").strip()
-        team = str(inj.get("team") or "?").strip()
-        kind = (inj.get("type") or "травма").strip() or "травма"
+        st_mark = _injury_status_label(inj, month=month, season_now=season_now)
+        if active_only and st_mark != "активна":
+            continue
         ofm = inj.get("out_from_month")
         ret = inj.get("return_month")
-        st_mark = _injury_status_label(inj, month=month, season_now=season_now)
-        if st_mark != "активна":
-            continue
-        injuries.append(
+        status = "активна" if st_mark == "активна" else "прошла" if st_mark == "прошла" else "—"
+        rows.append(
             {
-                "name": name,
-                "team": team,
-                "position": kind[:12],
-                "detail": f"{st_mark} · с{ofm or '?'}→м{ret or '?'}",
-                "status": "injury",
+                "name": str(inj.get("name") or "?").strip(),
+                "team": str(inj.get("team") or "?").strip(),
+                "status_label": status,
+                "start_label": format_calendar_month_label(
+                    int(ofm) if ofm is not None else None
+                ),
+                "end_label": format_calendar_month_label(
+                    int(ret) if ret is not None else None
+                ),
             }
         )
-    injuries.sort(key=lambda r: (str(r["team"]).casefold(), str(r["name"]).casefold()))
+    rows.sort(key=lambda r: (str(r["team"]).casefold(), str(r["name"]).casefold()))
+    return {"month": month, "season": season_now, "rows": rows}
 
-    susp: list[dict[str, Any]] = []
+
+def collect_suspension_rows() -> dict[str, Any]:
+    """Активные дисквалы."""
+    from utils.player_discipline import (
+        _get_active_season_or_default,
+        _load,
+        _lock,
+        _tournament_label,
+        get_calendar_month,
+    )
+
+    month = get_calendar_month(None)
+    season_now = _get_active_season_or_default()
+    with _lock:
+        st = _load()
+
+    rows: list[dict[str, Any]] = []
     for row in st.get("suspensions") or []:
         left = int(row.get("matches_left") or 0)
         if left <= 0:
             continue
-        from utils.player_discipline import _tournament_label
-
         lab = _tournament_label(str(row.get("league_code") or ""), str(row.get("scope") or ""))
-        susp.append(
+        ufr = row.get("unavailable_from_round")
+        rows.append(
             {
                 "name": str(row.get("name") or "?"),
                 "team": str(row.get("team") or "?"),
-                "position": lab,
-                "detail": f"ост. {left}",
+                "tournament": lab,
                 "matches_left": left,
-                "status": "susp",
+                "from_round": int(ufr) if ufr is not None else None,
             }
         )
-    susp.sort(key=lambda r: (str(r["position"]).casefold(), str(r["team"]).casefold()))
+    rows.sort(key=lambda r: (str(r["tournament"]).casefold(), str(r["team"]).casefold()))
+    return {"month": month, "season": season_now, "rows": rows}
 
+
+def _render_injury_table_pages(
+    *,
+    title: str,
+    subtitle: str,
+    rows: list[dict[str, Any]],
+    per_page: int = 18,
+) -> list[bytes]:
+    """Таблица: игрок · статус · начало · конец."""
+    theme = INJURY_THEME
+    canvas_w = 900
+    pages: list[bytes] = []
+    chunks = [rows[i : i + per_page] for i in range(0, max(1, len(rows)), per_page)] if rows else [[]]
+
+    col_status = 380
+    col_start = 530
+    col_end = 680
+
+    for pi, chunk in enumerate(chunks):
+        h = _HEADER_H + _COL_H + max(1, len(chunk)) * _ROW_H + 12
+        im = Image.new("RGB", (canvas_w, h), theme.bg)
+        draw = ImageDraw.Draw(im)
+        sub = subtitle + (f" · {pi + 1}/{len(chunks)}" if len(chunks) > 1 else "")
+        draw_header_bar(draw, theme=theme, width=canvas_w, height=_HEADER_H, title=title, subtitle=sub)
+        hdr_y0 = _HEADER_H
+        hdr_y1 = _HEADER_H + _COL_H
+        draw.rectangle([0, hdr_y0, canvas_w, hdr_y1], fill=theme.header)
+        hdr_font = pick_font(11, bold=True)
+        name_font = pick_font(17, bold=True)
+        cell_font = pick_font(14)
+        rank_font = pick_font(13, bold=True)
+        crest_font = pick_font(10, bold=True)
+        hy = (hdr_y0 + hdr_y1) // 2
+        draw.text((_NAME_LEFT, hy), "ИГРОК", fill=theme.text_dim, font=hdr_font, anchor="lm")
+        draw.text((col_status, hy), "СТАТУС", fill=theme.text_dim, font=hdr_font, anchor="mm")
+        draw.text((col_start, hy), "НАЧАЛО", fill=theme.text_dim, font=hdr_font, anchor="mm")
+        draw.text((col_end, hy), "КОНЕЦ", fill=theme.text_dim, font=hdr_font, anchor="mm")
+
+        if not chunk:
+            draw.text((24, hdr_y1 + 16), "Пусто", fill=theme.text_dim, font=pick_font(16))
+            pages.append(png_bytes(im))
+            continue
+
+        for i, row in enumerate(chunk):
+            y0 = hdr_y1 + i * _ROW_H
+            y1 = y0 + _ROW_H
+            draw.rectangle([0, y0, canvas_w, y1], fill=theme.row_a if i % 2 == 0 else theme.row_b)
+            draw.rectangle([0, y0, 4, y1], fill=theme.accent)
+            cy = y0 + _ROW_H // 2
+            draw.text((_RANK_W // 2, cy), str(pi * per_page + i + 1), fill=theme.text_dim, font=rank_font, anchor="mm")
+            team = str(row.get("team") or "")
+            if team:
+                paste_crest(
+                    im, draw, team=team, cx=_RANK_W + 6 + _CREST // 2, cy=cy,
+                    size=_CREST, crest_font=crest_font,
+                )
+            name = display_player_name(str(row.get("name") or ""))
+            draw.text(
+                (_NAME_LEFT, cy),
+                truncate(draw, name, name_font, col_status - _NAME_LEFT - 12),
+                fill=theme.text,
+                font=name_font,
+                anchor="lm",
+            )
+            st_lab = str(row.get("status_label") or "—")
+            st_color = theme.accent if st_lab == "активна" else theme.text_dim
+            draw.text((col_status, cy), st_lab, fill=st_color, font=cell_font, anchor="mm")
+            draw.text(
+                (col_start, cy),
+                truncate(draw, str(row.get("start_label") or "—"), cell_font, 100),
+                fill=theme.text,
+                font=cell_font,
+                anchor="mm",
+            )
+            draw.text(
+                (col_end, cy),
+                truncate(draw, str(row.get("end_label") or "—"), cell_font, 100),
+                fill=theme.text,
+                font=cell_font,
+                anchor="mm",
+            )
+        pages.append(png_bytes(im))
+    return pages
+
+
+def render_active_injuries_png_pages(*, active_only: bool = False) -> list[bytes]:
+    data = collect_all_injury_rows(active_only=active_only)
+    month, season = data["month"], data["season"]
+    return _render_injury_table_pages(
+        title="ТРАВМЫ",
+        subtitle=f"месяц {month} · сезон {season}",
+        rows=data["rows"],
+    )
+
+
+def render_active_suspensions_png_pages() -> list[bytes]:
+    """Активные дисквалы — отдельная инфографика."""
+    data = collect_suspension_rows()
+    theme = INJURY_THEME
+    rows = data["rows"]
+    canvas_w = 820
+    per = 18
+    pages: list[bytes] = []
+    chunks = [rows[i : i + per] for i in range(0, max(1, len(rows)), per)] if rows else [[]]
+
+    col_tour = 360
+    col_left = 560
+    col_from = 700
+
+    for pi, chunk in enumerate(chunks):
+        h = _HEADER_H + _COL_H + max(1, len(chunk)) * _ROW_H + 12
+        im = Image.new("RGB", (canvas_w, h), theme.bg)
+        draw = ImageDraw.Draw(im)
+        sub = f"месяц {data['month']} · сезон {data['season']}"
+        if len(chunks) > 1:
+            sub += f" · {pi + 1}/{len(chunks)}"
+        draw_header_bar(draw, theme=theme, width=canvas_w, height=_HEADER_H, title="ДИСКВАЛИФИКАЦИИ", subtitle=sub)
+        hdr_y0 = _HEADER_H
+        hdr_y1 = _HEADER_H + _COL_H
+        draw.rectangle([0, hdr_y0, canvas_w, hdr_y1], fill=theme.header)
+        hdr_font = pick_font(11, bold=True)
+        name_font = pick_font(17, bold=True)
+        cell_font = pick_font(14)
+        rank_font = pick_font(13, bold=True)
+        crest_font = pick_font(10, bold=True)
+        hy = (hdr_y0 + hdr_y1) // 2
+        draw.text((_NAME_LEFT, hy), "ИГРОК", fill=theme.text_dim, font=hdr_font, anchor="lm")
+        draw.text((col_tour, hy), "ТУРНИР", fill=theme.text_dim, font=hdr_font, anchor="mm")
+        draw.text((col_from, hy), "С ТУРА", fill=theme.text_dim, font=hdr_font, anchor="mm")
+        draw.text((col_left, hy), "ОСТАЛОСЬ", fill=theme.text_dim, font=hdr_font, anchor="mm")
+
+        if not chunk:
+            draw.text((24, hdr_y1 + 16), "Пусто", fill=theme.text_dim, font=pick_font(16))
+            pages.append(png_bytes(im))
+            continue
+
+        for i, row in enumerate(chunk):
+            y0 = hdr_y1 + i * _ROW_H
+            y1 = y0 + _ROW_H
+            draw.rectangle([0, y0, canvas_w, y1], fill=theme.row_a if i % 2 == 0 else theme.row_b)
+            draw.rectangle([0, y0, 4, y1], fill=theme.highlight)
+            cy = y0 + _ROW_H // 2
+            draw.text((_RANK_W // 2, cy), str(pi * per + i + 1), fill=theme.text_dim, font=rank_font, anchor="mm")
+            team = str(row.get("team") or "")
+            if team:
+                paste_crest(
+                    im, draw, team=team, cx=_RANK_W + 6 + _CREST // 2, cy=cy,
+                    size=_CREST, crest_font=crest_font,
+                )
+            name = display_player_name(str(row.get("name") or ""))
+            draw.text(
+                (_NAME_LEFT, cy),
+                truncate(draw, name, name_font, col_tour - _NAME_LEFT - 12),
+                fill=theme.text,
+                font=name_font,
+                anchor="lm",
+            )
+            draw.text((col_tour, cy), str(row.get("tournament") or "—"), fill=theme.text_dim, font=cell_font, anchor="mm")
+            fr = row.get("from_round")
+            draw.text((col_from, cy), str(fr) if fr is not None else "—", fill=theme.text, font=cell_font, anchor="mm")
+            draw.text(
+                (col_left, cy),
+                str(row.get("matches_left") or 0),
+                fill=theme.highlight,
+                font=cell_font,
+                anchor="mm",
+            )
+        pages.append(png_bytes(im))
+    return pages
+
+
+def collect_injury_board_sections() -> dict[str, Any]:
+    """Устаревший сборщик — для обратной совместимости."""
+    inj_data = collect_all_injury_rows(active_only=True)
+    susp_data = collect_suspension_rows()
+    injuries = [
+        {
+            "name": r["name"],
+            "team": r["team"],
+            "position": "",
+            "detail": f"{r['status_label']} · {r['start_label']} — {r['end_label']}",
+            "status": "injury",
+        }
+        for r in inj_data["rows"]
+    ]
+    susp = [
+        {
+            "name": r["name"],
+            "team": r["team"],
+            "position": r["tournament"],
+            "detail": f"ост. {r['matches_left']}",
+            "matches_left": r["matches_left"],
+            "status": "susp",
+        }
+        for r in susp_data["rows"]
+    ]
     return {
-        "month": month,
-        "season": season_now,
+        "month": inj_data["month"],
+        "season": inj_data["season"],
         "injuries": injuries,
         "suspensions": susp,
     }
 
 
 def render_injuries_infographic_png_pages() -> list[bytes]:
-    """Активные травмы + дисквалы — две секции (могут быть на нескольких страницах)."""
-    data = collect_injury_board_sections()
-    theme = INJURY_THEME
-    pages: list[bytes] = []
-
-    def _section_page(
-        title: str,
-        subtitle: str,
-        rows: list[dict[str, Any]],
-        detail_key: str = "detail",
-    ) -> bytes:
-        canvas_w = 720
-        h = _HEADER_H + _COL_H + max(1, len(rows)) * _ROW_H + 12
-        im = Image.new("RGB", (canvas_w, h), theme.bg)
-        draw = ImageDraw.Draw(im)
-        draw_header_bar(
-            draw, theme=theme, width=canvas_w, height=_HEADER_H, title=title, subtitle=subtitle
-        )
-        hdr_y0 = _HEADER_H
-        hdr_y1 = _HEADER_H + _COL_H
-        draw.rectangle([0, hdr_y0, canvas_w, hdr_y1], fill=theme.header)
-        hdr_font = pick_font(11, bold=True)
-        name_font = pick_font(17, bold=True)
-        meta_font = pick_font(13)
-        rank_font = pick_font(13, bold=True)
-        crest_font = pick_font(10, bold=True)
-        draw.text((_NAME_LEFT, (hdr_y0 + hdr_y1) // 2), "ИГРОК", fill=theme.text_dim, font=hdr_font, anchor="lm")
-        draw.text((canvas_w - 16, (hdr_y0 + hdr_y1) // 2), "СТАТУС", fill=theme.text_dim, font=hdr_font, anchor="rm")
-
-        if not rows:
-            draw.text(
-                (24, hdr_y1 + 16),
-                "Пусто",
-                fill=theme.text_dim,
-                font=pick_font(16),
-            )
-            return png_bytes(im)
-
-        for i, row in enumerate(rows):
-            y0 = hdr_y1 + i * _ROW_H
-            y1 = y0 + _ROW_H
-            bg = theme.row_a if i % 2 == 0 else theme.row_b
-            draw.rectangle([0, y0, canvas_w, y1], fill=bg)
-            # accent for injury vs susp
-            accent = theme.accent if row.get("status") == "injury" else theme.highlight
-            draw.rectangle([0, y0, 4, y1], fill=accent)
-            cy = y0 + _ROW_H // 2
-            draw.text((_RANK_W // 2, cy), str(i + 1), fill=theme.text_dim, font=rank_font, anchor="mm")
-            team = str(row.get("team") or "")
-            if team:
-                paste_crest(
-                    im, draw, team=team, cx=_RANK_W + 6 + _CREST // 2, cy=cy, size=_CREST, crest_font=crest_font
-                )
-            name = display_player_name(str(row.get("name") or ""))
-            pos = str(row.get("position") or "")
-            name_d = truncate(draw, name, name_font, 200)
-            draw.text((_NAME_LEFT, cy), name_d, fill=theme.text, font=name_font, anchor="lm")
-            nx = _NAME_LEFT + int(draw.textlength(name_d, font=name_font))
-            if pos:
-                draw.text((nx + 6, cy), pos, fill=theme.text_dim, font=meta_font, anchor="lm")
-            detail = str(row.get(detail_key) or "")
-            draw.text(
-                (canvas_w - 16, cy),
-                truncate(draw, detail, meta_font, 160),
-                fill=theme.highlight if row.get("status") != "injury" else theme.accent,
-                font=meta_font,
-                anchor="rm",
-            )
-        return png_bytes(im)
-
-    month = data["month"]
-    season = data["season"]
-    inj = data["injuries"]
-    # paginate injuries
-    per = 18
-    if not inj:
-        pages.append(
-            _section_page(
-                "ТРАВМЫ",
-                f"месяц {month} · сезон {season}",
-                [],
-            )
-        )
-    else:
-        for pi in range(0, len(inj), per):
-            chunk = inj[pi : pi + per]
-            pages.append(
-                _section_page(
-                    "ТРАВМЫ",
-                    f"месяц {month} · сезон {season}"
-                    + (f" · {pi // per + 1}" if len(inj) > per else ""),
-                    chunk,
-                )
-            )
-    pages.append(
-        _section_page(
-            "ДИСКВАЛЫ",
-            f"месяц {month} · сезон {season}",
-            data["suspensions"],
-        )
-    )
-    return pages
+    """Обратная совместимость: травмы + дисквалы подряд."""
+    return render_active_injuries_png_pages() + render_active_suspensions_png_pages()
 
 
 def render_injuries_season_png_pages(season: int) -> list[bytes]:
@@ -712,6 +827,7 @@ def render_injuries_season_png_pages(season: int) -> list[bytes]:
         _injury_status_label,
         _load,
         _lock,
+        format_calendar_month_label,
         get_calendar_month,
     )
 
@@ -727,20 +843,25 @@ def render_injuries_season_png_pages(season: int) -> list[bytes]:
         st_mark = _injury_status_label(inj, month=month, season_now=season_now)
         ofm = inj.get("out_from_month")
         ret = inj.get("return_month")
+        status = "активна" if st_mark == "активна" else "прошла" if st_mark == "прошла" else "—"
         rows.append(
             {
                 "name": str(inj.get("name") or "?"),
                 "team": str(inj.get("team") or "?"),
-                "position": str(inj.get("type") or "травма")[:12],
-                "detail": f"{st_mark} · с{ofm or '?'}→м{ret or '?'}",
-                "status": "injury",
+                "status_label": status,
+                "start_label": format_calendar_month_label(
+                    int(ofm) if ofm is not None else None
+                ),
+                "end_label": format_calendar_month_label(
+                    int(ret) if ret is not None else None
+                ),
             }
         )
     rows.sort(key=lambda r: (str(r["team"]).casefold(), str(r["name"]).casefold()))
-    return _injury_simple_pages(
-        f"ТРАВМЫ · СЕЗОН {sn}",
-        f"месяц {month} · текущий {season_now}",
-        rows,
+    return _render_injury_table_pages(
+        title=f"ТРАВМЫ · СЕЗОН {sn}",
+        subtitle=f"месяц {month} · текущий {season_now}",
+        rows=rows,
     )
 
 

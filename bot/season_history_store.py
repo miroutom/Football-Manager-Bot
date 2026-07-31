@@ -298,14 +298,25 @@ def timeline_wc(max_season: int) -> list[tuple[int, str | None]]:
 
 def timeline_award(kind: str, max_season: int) -> list[tuple[int, str | None, str | None, str | None]]:
     """
-    kind: golden_ball | golden_boot | golden_glove | golden_boy
+    kind: golden_ball | golden_boot | golden_glove | golden_boy | world_cup_best
     Возвращает (сезон, игрок, клуб, slug_фото_без_расширения).
+    Для ``world_cup_best`` — только сезоны ЧМ (4, 8, 12…).
     """
     data = load_history()
     raw = data.get(kind) or []
     by_s = _rows_by_season(raw)
     out: list[tuple[int, str | None, str | None, str | None]] = []
-    for s in range(1, int(max_season) + 1):
+    if kind == "world_cup_best":
+        from utils.world_cup import list_world_cup_seasons_up_to
+
+        season_list = list_world_cup_seasons_up_to(int(max_season))
+        if not season_list and int(max_season) >= 4:
+            from utils.world_cup import next_world_cup_season
+
+            season_list = [next_world_cup_season(int(max_season))]
+    else:
+        season_list = list(range(1, int(max_season) + 1))
+    for s in season_list:
         row = by_s.get(s)
         if not row:
             out.append((s, None, None, None))
