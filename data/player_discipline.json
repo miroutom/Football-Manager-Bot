@@ -318,7 +318,7 @@
       "team_norm": "ювентус",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "тилеманс|астон вилла|eng|league",
@@ -350,7 +350,7 @@
       "team_norm": "аталанта",
       "league_code": "ita",
       "scope": "league",
-      "matches_left": 3,
+      "matches_left": 2,
       "unavailable_from_round": 15
     },
     {
@@ -361,8 +361,29 @@
       "team_norm": "наполи",
       "league_code": "ita",
       "scope": "league",
-      "matches_left": 1,
+      "matches_left": 0,
       "unavailable_from_round": 15
+    },
+    {
+      "key": "тюрам|атлетико|esp|league",
+      "name": "Тюрам",
+      "name_norm": "тюрам",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "league_code": "esp",
+      "scope": "league",
+      "matches_left": 2,
+      "unavailable_from_round": 15
+    },
+    {
+      "key": "шлоттербек|дортмунд|cl|cl",
+      "name": "Шлоттербек",
+      "name_norm": "шлоттербек",
+      "team": "Дортмунд",
+      "team_norm": "дортмунд",
+      "league_code": "cl",
+      "scope": "cl",
+      "matches_left": 3
     }
   ],
   "yellow_cycle": [
@@ -2784,6 +2805,26 @@
       "team_norm": "ньюкасл",
       "league_code": "eng",
       "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "брентвейт|мю|cl|cl",
+      "name": "Брентвейт",
+      "name_norm": "брентвейт",
+      "team": "Мю",
+      "team_norm": "мю",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "симакан|лейпциг|cl|cl",
+      "name": "Симакан",
+      "name_norm": "симакан",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "league_code": "cl",
+      "scope": "cl",
       "count": 1
     }
   ],
@@ -6024,6 +6065,72 @@
       "type": "травма",
       "season": 3,
       "overall_before_penalty": 84
+    },
+    {
+      "key": "рахмани|наполи|3|8|11",
+      "name": "Рахмани",
+      "name_norm": "рахмани",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "out_from_month": 8,
+      "return_month": 11,
+      "type": "травма",
+      "season": 3
+    },
+    {
+      "key": "опенда|лейпциг|3|8|11",
+      "name": "Опенда",
+      "name_norm": "опенда",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "out_from_month": 8,
+      "return_month": 11,
+      "type": "травма",
+      "season": 3
+    },
+    {
+      "key": "сака|наполи|3|8|11",
+      "name": "Сака",
+      "name_norm": "сака",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "out_from_month": 8,
+      "return_month": 11,
+      "type": "травма",
+      "season": 3
+    },
+    {
+      "key": "карлос|наполи|3|8|11",
+      "name": "Карлос",
+      "name_norm": "карлос",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "out_from_month": 8,
+      "return_month": 11,
+      "type": "травма",
+      "season": 3
+    },
+    {
+      "key": "вернер|лейпциг|3|9|12",
+      "name": "Вернер",
+      "name_norm": "вернер",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "out_from_month": 9,
+      "return_month": 12,
+      "type": "травма",
+      "season": 3
+    },
+    {
+      "key": "политано|наполи|3|9|16",
+      "name": "Политано",
+      "name_norm": "политано",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "out_from_month": 9,
+      "return_month": 16,
+      "type": "травма",
+      "season": 3
     }
   ]
 }

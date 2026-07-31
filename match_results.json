@@ -3957,6 +3957,221 @@
       "away_score": 1,
       "day": 10,
       "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Севилья",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал Сосьедад",
+      "away": "Жирона",
+      "league": "esp",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Барселона",
+      "away": "Бетис",
+      "league": "esp",
+      "home_score": 4,
+      "away_score": 1,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Реал Сосьедад",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 8,
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетико",
+      "away": "Реал Сосьедад",
+      "league": "esp",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Атлетико",
+      "league": "esp",
+      "home_score": 4,
+      "away_score": 1,
+      "day": 7,
+      "entry_type": "play"
+    },
+    {
+      "home": "Жирона",
+      "away": "Севилья",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 0,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Реал",
+      "away": "Атлетик",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Бетис",
+      "away": "Реал Сосьедад",
+      "league": "esp",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Лацио",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Рома",
+      "away": "Лацио",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 0,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Рома",
+      "away": "Аталанта",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Бавария",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 8,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Лейпциг",
+      "away": "Мю",
+      "league": "cl",
+      "home_score": 4,
+      "away_score": 3,
+      "day": 8,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Наполи",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 8,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Лейпциг",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 8,
+      "cl_phase": "knockout",
+      "penalties_by_team": {
+        "Мю": 6,
+        "Лейпциг": 7
+      },
+      "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Дортмунд",
+      "league": "cl",
+      "home_score": 5,
+      "away_score": 4,
+      "day": 8,
+      "cl_phase": "knockout",
+      "penalties_by_team": {
+        "Наполи": 4,
+        "Дортмунд": 3
+      },
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Наполи",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 2,
+      "day": 9,
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Бавария",
+      "league": "cl",
+      "home_score": 4,
+      "away_score": 3,
+      "day": 9,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Лейпциг",
+      "away": "Наполи",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 9,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Бавария",
+      "away": "Сити",
+      "league": "cl",
+      "home_score": 6,
+      "away_score": 6,
+      "day": 9,
+      "cl_phase": "knockout",
+      "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Лейпциг",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 9,
+      "cl_phase": "knockout",
+      "entry_type": "play"
     }
   ]
 }

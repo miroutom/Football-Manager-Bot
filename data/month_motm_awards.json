@@ -191,6 +191,92 @@
         "team": "Астон Вилла",
         "position": "ПФА"
       }
+    },
+    "7": {
+      "rpl": {
+        "player": "Распадори",
+        "team": "Спартак",
+        "position": "ФРВ"
+      },
+      "eng": {
+        "player": "Габриэль Жезус",
+        "team": "Астон Вилла",
+        "position": "ПФА"
+      },
+      "esp": {
+        "player": "Дибала",
+        "team": "Атлетик",
+        "position": "ЦАП"
+      },
+      "ita": {
+        "player": "Смолов",
+        "team": "Ювентус",
+        "position": "ФРВ"
+      },
+      "ger": {
+        "player": "Кейн",
+        "team": "Бавария",
+        "position": "ФРВ"
+      },
+      "cl": {
+        "player": "Кейн",
+        "team": "Бавария",
+        "position": "ФРВ"
+      }
+    },
+    "8": {
+      "eng": {
+        "player": "Мухтар",
+        "team": "Мю",
+        "position": "ФРВ"
+      },
+      "esp": {
+        "player": "Бето",
+        "team": "Жирона",
+        "position": "ФРВ"
+      },
+      "ita": {
+        "player": "Фати",
+        "team": "Наполи",
+        "position": "ФРВ"
+      },
+      "ger": {
+        "player": "Виммер",
+        "team": "Вольфсбург",
+        "position": "ПФА"
+      },
+      "cl": {
+        "player": "Мухтар",
+        "team": "Мю",
+        "position": "ФРВ"
+      }
+    },
+    "9": {
+      "eng": {
+        "player": "Фернандеш",
+        "team": "Мю",
+        "position": "ЦАП"
+      },
+      "esp": {
+        "player": "Сангаре",
+        "team": "Реал Сосьедад",
+        "position": "ЦОП"
+      },
+      "ita": {
+        "player": "Вини",
+        "team": "Ювентус",
+        "position": "ЛФА"
+      },
+      "ger": {
+        "player": "Уналь",
+        "team": "Бавария",
+        "position": "ФРВ"
+      },
+      "cl": {
+        "player": "Хаверц",
+        "team": "Сити",
+        "position": "ФРВ"
+      }
     }
   }
 }
