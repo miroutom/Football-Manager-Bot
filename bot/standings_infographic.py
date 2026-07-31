@@ -211,10 +211,9 @@ def collect_wc_group_standings(season_num: int | None = None) -> dict[str, Any]:
                 "rows": rows,
             }
         )
-    note = "групповой этап · флаги сборных"
     return {
         "title": title,
-        "note": note,
+        "note": None,
         "drawn": True,
         "groups": out_groups,
     }
@@ -241,7 +240,6 @@ def render_standings_infographic_png_bytes(
         title=title,
         rows=rows,
         note=note,
-        season_num=season_num,
         theme=theme,
         mode=mode,
     )
@@ -266,7 +264,7 @@ def render_wc_group_standings_png_pages(
             width=640,
             height=_HEADER_H,
             title=title,
-            subtitle=note or "нет данных",
+            subtitle=note,
         )
         draw.text((24, 110), "Нет групп", fill=theme.text_dim, font=pick_font(18))
         return [png_bytes(im)]
@@ -277,9 +275,8 @@ def render_wc_group_standings_png_pages(
         chunk = groups[page_i : page_i + _WC_GROUPS_PER_PAGE]
         page_no = page_i // _WC_GROUPS_PER_PAGE + 1
         page_count = (n + _WC_GROUPS_PER_PAGE - 1) // _WC_GROUPS_PER_PAGE
-        sub = note or ""
-        if page_count > 1:
-            sub = (sub + " · " if sub else "") + f"стр. {page_no}/{page_count}"
+        # номер страницы — только если страниц несколько
+        sub = f"стр. {page_no}/{page_count}" if page_count > 1 else None
         pages.append(
             _render_wc_groups_page(
                 title=title,
@@ -452,7 +449,6 @@ def _render_single_table_png(
     title: str,
     rows: list[dict[str, Any]],
     note: str | None,
-    season_num: int | None,
     theme,
     mode: str,
 ) -> list[bytes]:
@@ -473,23 +469,14 @@ def _render_single_table_png(
     im = Image.new("RGB", (canvas_w, h), theme.bg)
     draw = ImageDraw.Draw(im)
 
-    sub = note
-    if season_num is None and not note:
-        sub = "текущий сезон"
-    elif season_num is not None and note:
-        sub = note
-    elif season_num is not None:
-        sub = f"архив · сезон {season_num}"
-    if mode in ("nation", "flag", "wc", "national"):
-        sub = (sub + " · " if sub else "") + "флаги сборных"
-
+    # Без служебных «архив / текущий / флаги» — только содержательная note (напр. ЛЧ)
     draw_header_bar(
         draw,
         theme=theme,
         width=canvas_w,
         height=_HEADER_H,
         title=title,
-        subtitle=sub,
+        subtitle=note,
     )
 
     hdr_y0 = _HEADER_H

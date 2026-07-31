@@ -83,8 +83,8 @@ def render_status_infographic_png_bytes() -> list[bytes]:
         theme=theme,
         width=w,
         height=_HEADER_H,
-        title="СТАТУС СЕЗОНА",
-        subtitle=f"сезон {season}",
+        title=f"СТАТУС · сезон {season}",
+        subtitle=None,
     )
 
     # KPI cards

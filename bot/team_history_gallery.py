@@ -908,7 +908,7 @@ def render_hall_of_fame_png(*, limit: int = 20) -> bytes:
     rows = hall_of_fame_global(limit=limit)
     return _render_hof_table(
         title="Зал славы",
-        subtitle="Лучшие игроки карьеры · лига + ЛЧ · все сезоны",
+        subtitle=None,
         rows=rows,
         show_club=True,
     )
@@ -920,7 +920,7 @@ def render_club_hall_of_fame_png(team: str) -> bytes:
     rows = club_legends(team, limit=15)
     return _render_hof_table(
         title=f"Зал славы · {team}",
-        subtitle="Легенды клуба · лига + ЛЧ · все сезоны",
+        subtitle=None,
         rows=rows,
         show_club=False,
         crest_team=team,

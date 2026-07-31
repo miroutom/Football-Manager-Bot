@@ -726,7 +726,7 @@ def render_injury_frequency_png_pages(*, limit: int = 25) -> list[bytes]:
     show = ranked[: max(1, int(limit))]
     return render_player_board_pages(
         title="ЧАЩЕ ВСЕГО ТРАВМЫ",
-        subtitle="все сезоны · периоды и месяцы",
+        subtitle=None,
         rows=show,
         columns=[("goals", "РАЗ"), ("assists", "МЕС"), ("overall", "OVR")],
         theme=INJURY_THEME,
@@ -768,7 +768,7 @@ def render_never_injured_png_pages(*, limit: int = 40) -> list[bytes]:
     show = rows[: max(1, int(limit))]
     return render_player_board_pages(
         title="БЕЗ ТРАВМ",
-        subtitle="все сезоны · топ по матчам",
+        subtitle=None,
         rows=show,
         columns=[("matches", "И"), ("overall", "OVR")],
         theme=INJURY_THEME,
@@ -780,8 +780,8 @@ def render_position_stats_png_pages(scope: str, group: str) -> list[bytes]:
     from utils.stats_by_position import GROUP_META, collect_group_stats
 
     meta = GROUP_META.get(group) or {}
-    title = str(meta.get("title") or group).upper()
-    sub = "за все время" if scope == "life" else "текущий сезон"
+    base = str(meta.get("title") or group).upper()
+    title = f"{base} · всё время" if scope == "life" else base
     rows = collect_group_stats(scope, group)
     if group == "gk":
         cols = [("matches", "И"), ("clean_sheets", "СУХ"), ("potm", "POTM")]
@@ -794,7 +794,7 @@ def render_position_stats_png_pages(scope: str, group: str) -> list[bytes]:
         hl = "ga"
     return render_player_board_pages(
         title=title,
-        subtitle=sub,
+        subtitle=None,
         rows=rows,
         columns=cols,
         theme=PLAYER_BOARD_DARK,
@@ -822,8 +822,8 @@ def render_players_by_position_png_pages(pos: str) -> list[bytes]:
         for sur, team, ovr in triples
     ]
     return render_player_board_pages(
-        title=f"ПОЗИЦИЯ {pos}",
-        subtitle=f"сезон {get_active_season()} · лига+ЛЧ · по рейтингу",
+        title=f"ПОЗИЦИЯ {pos} · сезон {get_active_season()}",
+        subtitle=None,
         rows=rows,
         columns=[("overall", "OVR")],
         theme=PLAYER_BOARD_DARK,
