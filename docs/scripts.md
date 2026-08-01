@@ -43,6 +43,13 @@ python3 scripts/apply_ratings_xlsx.py рейтинги.xlsx --dry-run --aliases 
 
 Частичное применение (пропустить ERR): `--apply --ignore-errors`.
 
+Только проблемные строки (две сводки в конце):
+
+```bash
+python3 scripts/apply_ratings_xlsx.py рейтинги.xlsx --dry-run --errors-only
+python3 scripts/apply_ratings_xlsx.py рейтинги.xlsx --dry-run --errors-only --report /tmp/ratings_errors.txt
+```
+
 ## Трансферы и составы
 
 - `apply_bulk_squad_declarations.py`

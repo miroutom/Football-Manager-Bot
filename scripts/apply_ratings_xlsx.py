@@ -447,12 +447,70 @@ def _apply_remove(rp: ResolvedPlayer) -> tuple[list[str], list[str]]:
     return ok, err
 
 
+def _action_label(rp: ResolvedPlayer) -> str:
+    if rp.kind == "set":
+        return str(rp.new_overall)
+    if rp.kind == "remove":
+        return "убираем"
+    return "тж"
+
+
+def _error_detail(rp: ResolvedPlayer) -> str:
+    return f"[{rp.side}] {rp.xlsx_name} ({_action_label(rp)}): {rp.error}"
+
+
+def _dedupe_errors(items: list[ResolvedPlayer]) -> list[ResolvedPlayer]:
+    seen: set[tuple[str, str]] = set()
+    out: list[ResolvedPlayer] = []
+    for rp in items:
+        key = (rp.xlsx_name.casefold(), rp.error)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(rp)
+    return out
+
+
+def _print_error_sections(
+    ambiguous: list[ResolvedPlayer],
+    not_found: list[ResolvedPlayer],
+) -> None:
+    not_found_u = _dedupe_errors(not_found)
+    ambiguous_u = _dedupe_errors(ambiguous)
+
+    if not_found_u:
+        print(f"\n{'=' * 60}")
+        print(f"НЕ НАЙДЕНО ({len(not_found_u)})")
+        print("=" * 60)
+        for rp in sorted(not_found_u, key=lambda x: (x.xlsx_name.casefold(), x.side)):
+            print(f"  · {_error_detail(rp)}")
+
+    if ambiguous_u:
+        print(f"\n{'=' * 60}")
+        print(f"НЕОДНОЗНАЧНО / НЕПОНЯТНО ({len(ambiguous_u)})")
+        print("=" * 60)
+        for rp in sorted(ambiguous_u, key=lambda x: (x.xlsx_name.casefold(), x.side)):
+            print(f"  · {_error_detail(rp)}")
+            if rp.league_hits or rp.cl_hits:
+                for h in (rp.league_hits or rp.cl_hits)[:6]:
+                    r = h.row
+                    print(
+                        f"      ? {r.team} · {player_display_name(r)} · "
+                        f"{r.position} · ovr={r.overall}"
+                    )
+                extra = len(rp.league_hits or rp.cl_hits) - 6
+                if extra > 0:
+                    print(f"      … ещё {extra}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Overall / FA из xlsx рейтинги")
     ap.add_argument("xlsx", help="Путь к рейтинги.xlsx")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--aliases", help="JSON: {\"Торрес\": {\"team\": \"Аталанта\"}, ...}")
+    ap.add_argument("--errors-only", action="store_true", help="Только проблемные строки + сводка")
+    ap.add_argument("--report", help="Записать проблемные строки в .txt")
     ap.add_argument("--ignore-errors", action="store_true", help="При --apply пропустить ERR строки")
     args = ap.parse_args()
     if args.dry_run == args.apply:
@@ -495,7 +553,8 @@ def main() -> None:
             n_rm += 1
 
         line = _preview_line(rp)
-        print(line)
+        if not args.errors_only:
+            print(line)
         if rp.error:
             n_err += 1
             if rp.error.startswith("не найден"):
@@ -509,10 +568,28 @@ def main() -> None:
         f"\nИтого: ok={n_ok}, err={n_err} "
         f"(set={n_set}, remove={n_rm}, тж={n_tj})"
     )
+    _print_error_sections(ambiguous, not_found)
+
+    if args.report:
+        rep_path = os.path.expanduser(args.report)
+        lines: list[str] = []
+        nf = _dedupe_errors(not_found)
+        amb = _dedupe_errors(ambiguous)
+        if nf:
+            lines.append(f"НЕ НАЙДЕНО ({len(nf)})")
+            lines.extend(f"  · {_error_detail(rp)}" for rp in sorted(nf, key=lambda x: x.xlsx_name))
+            lines.append("")
+        if amb:
+            lines.append(f"НЕОДНОЗНАЧНО ({len(amb)})")
+            lines.extend(f"  · {_error_detail(rp)}" for rp in sorted(amb, key=lambda x: x.xlsx_name))
+        with open(rep_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        print(f"\nОтчёт: {rep_path}")
+
     if ambiguous:
-        print(f"\n⚠ Неоднозначно / нужно уточнить: {len(ambiguous)}")
+        print(f"\n⚠ Неоднозначно: {len(_dedupe_errors(ambiguous))} уникальных")
     if not_found:
-        print(f"⚠ Не найдено: {len(not_found)}")
+        print(f"⚠ Не найдено: {len(_dedupe_errors(not_found))} уникальных")
 
     if args.dry_run:
         if ambiguous or not_found:
