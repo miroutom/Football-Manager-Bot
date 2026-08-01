@@ -85,7 +85,19 @@ DEFAULT_ALIASES: dict[str, dict[str, str]] = {
     "Пепе": {"team": "Бетис", "contains": "Пепе", "position": "ЦЗ"},
     "Перейра": {"team": "Реал Сосьедад", "contains": "Перейра"},
     "Санчес": {"team": "Барселона", "contains": "Санчес"},
-    "Сильва": {"team": "Челси", "contains": "Сильва", "position": "ЦЗ"},
+    "Сильва": {
+        "by_overall": {
+            "88": {"team": "Сити", "contains": "Сильва", "position": "ЦП"},
+            "87": {"team": "Сити", "contains": "Сильва", "position": "ЦП"},
+            "86": {"team": "Сити", "contains": "Сильва", "position": "ЦП"},
+            "85": {"team": "Сити", "contains": "Сильва", "position": "ЦП"},
+            "84": {"team": "Сити", "contains": "Сильва", "position": "ЦП"},
+            "83": {"team": "Челси", "contains": "Сильва", "position": "ЦЗ"},
+            "82": {"team": "Челси", "contains": "Сильва", "position": "ЦЗ"},
+            "81": {"team": "Челси", "contains": "Сильва", "position": "ЦЗ"},
+            "80": {"team": "Аталанта", "exact_name": "Антониу Сильва", "position": "ЦЗ"},
+        }
+    },
     "Тимбер": {"team": "Арсенал", "contains": "Тимбер"},
     "Торрес": {"team": "Аталанта", "contains": "Торрес"},
     "Траоре": {"team": "Атлетик", "contains": "Траоре"},

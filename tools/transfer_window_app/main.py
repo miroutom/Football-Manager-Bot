@@ -1079,6 +1079,12 @@ class Handler(BaseHTTPRequestHandler):
             )
         if path == "/api/coaches":
             return self._send_json({"ok": True, "coaches": _load_coaches_list()})
+        if path == "/api/player-profiles":
+            from player_profiles import load_profiles
+
+            return self._send_json(
+                {"ok": True, "profiles": load_profiles(_data_dir())}
+            )
         if path == "/api/paths":
             return self._send_json(
                 {
@@ -1154,6 +1160,35 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path == "/api/player-profiles":
+            data = self._read_json()
+            from player_profiles import load_profiles, merge_profile, save_profiles
+
+            profiles = load_profiles(_data_dir())
+            raw = data.get("profiles")
+            if isinstance(raw, dict):
+                profiles = {str(k): dict(v) for k, v in raw.items() if isinstance(v, dict)}
+            else:
+                pid = data.get("person_id")
+                try:
+                    person_id = int(pid) if pid is not None else 0
+                except (TypeError, ValueError):
+                    person_id = 0
+                if person_id > 0:
+                    ovr = data.get("overall")
+                    try:
+                        overall = int(ovr) if ovr is not None else None
+                    except (TypeError, ValueError):
+                        overall = None
+                    profiles = merge_profile(
+                        profiles,
+                        person_id,
+                        name=str(data.get("name") or "") or None,
+                        position=str(data.get("position") or "") or None,
+                        overall=overall,
+                    )
+            save_profiles(_data_dir(), profiles)
+            return self._send_json({"ok": True, "profiles": profiles})
         if parsed.path == "/api/save":
             data = self._read_json()
             payload = build_state_payload(data)

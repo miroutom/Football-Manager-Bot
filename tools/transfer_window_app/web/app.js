@@ -51,6 +51,7 @@ let positionsCatalog = [
   "ЛФА", "ПФА", "ФРВ", "ЦФД", "ЛФД", "ПФД",
 ];
 let coachesCatalog = [];
+let playerProfiles = {};
 
 const SQUAD_TARGET = 32;
 const SQUAD_START_TARGET = 11;
@@ -643,11 +644,12 @@ function reconcileWithFreshRosters(rosters) {
 
         const fresh = byId.get(p.id);
         if (!fresh) continue;
-        if (fresh.overall != null && Number(p.overall) !== Number(fresh.overall)) {
+        const prof = playerProfiles[playerProfileKey(p)];
+        if (!prof?.overall && fresh.overall != null && Number(p.overall) !== Number(fresh.overall)) {
           p.overall = fresh.overall;
           ovr += 1;
         }
-        if (fresh.position && p.position !== fresh.position) p.position = fresh.position;
+        if (!prof?.position && fresh.position && p.position !== fresh.position) p.position = fresh.position;
         copyInjuryFields(fresh, p);
       }
     }
@@ -870,25 +872,80 @@ function isPlayerInNationalSquad(p, squadKeys) {
   return false;
 }
 
-function syncNationalPoolPlayer(oldId, patch) {
-  if (!nationalPools?.nations) return;
-  const loc = findPlayerGlobally(oldId);
-  const personId = patch.person_id ?? loc?.player?.person_id;
-  const name = patch.name ?? loc?.player?.name;
-  const nmKey = String(name || "").trim().toLowerCase();
-  for (const block of nationalPools.nations) {
-    for (const p of block.players || []) {
-      const sameId = oldId && p.id === oldId;
-      const samePid = personId && p.person_id === personId;
-      const sameName = nmKey && String(p.name || "").trim().toLowerCase() === nmKey;
-      if (!sameId && !samePid && !sameName) continue;
-      if (patch.id) p.id = patch.id;
-      if (patch.name) p.name = patch.name;
-      if (patch.position) p.position = patch.position;
-      if (patch.overall != null) p.overall = patch.overall;
-      if (patch.person_id != null) p.person_id = patch.person_id;
-    }
+function syncNationalPoolPlayer(_oldId, _patch) {
+  /* Пул сборной — только из БД (/api/national-pools). Не мутируем из заявки. */
+}
+
+function playerProfileKey(p) {
+  const pid = Number(p?.person_id);
+  if (Number.isFinite(pid) && pid > 0) return String(pid);
+  return "";
+}
+
+function propagatePlayerProfileEdit(playerId, patch) {
+  const loc = findPlayerGlobally(playerId);
+  const pid = playerProfileKey(loc?.player);
+  if (!pid) return;
+  const cur = { ...(playerProfiles[pid] || {}) };
+  if (patch.name != null) cur.name = String(patch.name).trim();
+  if (patch.position != null) cur.position = String(patch.position).trim().toUpperCase();
+  if (patch.overall != null) cur.overall = Number(patch.overall);
+  playerProfiles[pid] = cur;
+  applyPlayerProfilesEverywhere();
+  persistPlayerProfiles();
+}
+
+async function persistPlayerProfiles() {
+  try {
+    await fetch("/api/player-profiles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profiles: playerProfiles }),
+    });
+  } catch (_) {
+    /* offline */
   }
+}
+
+async function loadPlayerProfiles() {
+  try {
+    const res = await fetch("/api/player-profiles");
+    const j = await res.json();
+    if (res.ok && j.profiles && typeof j.profiles === "object") {
+      playerProfiles = j.profiles;
+    }
+  } catch (_) {
+    playerProfiles = {};
+  }
+}
+
+function patchPlayerFromProfile(p) {
+  if (!p?.person_id) return p;
+  const prof = playerProfiles[playerProfileKey(p)];
+  if (!prof) return p;
+  const out = { ...p };
+  if (prof.name) out.name = prof.name;
+  if (prof.position) out.position = prof.position;
+  if (prof.overall != null) out.overall = Number(prof.overall);
+  const home = baselineHome[p.id] || (String(p.id || "").split("|")[0] || "");
+  if (home && out.name && out.position) {
+    out.id = playerIdFor(home === FA_TEAM ? FA_TEAM : home, out.name, out.position);
+  }
+  return out;
+}
+
+function applyPlayerProfilesEverywhere() {
+  for (const team of teams) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (let i = 0; i < (team[zone] || []).length; i++) {
+        const p = team[zone][i];
+        if (!p?.id) continue;
+        team[zone][i] = patchPlayerFromProfile(p);
+      }
+    }
+    recomputeAvgStart(team);
+  }
+  freeAgents = freeAgents.map((p) => patchPlayerFromProfile(p));
 }
 
 function nationNamesMatch(a, b) {
@@ -2175,6 +2232,7 @@ function syncPlayerOverall(id, value) {
     if (p.id === id) p.overall = value;
   }
   syncNationalPoolPlayer(id, { overall: value });
+  propagatePlayerProfileEdit(id, { overall: value });
 }
 
 function playerIdFor(teamName, name, position) {
@@ -2220,6 +2278,7 @@ function rekeyPlayer(oldId, teamName, name, position) {
     delete removedFromSquad[oldId];
   }
   syncNationalPoolPlayer(oldId, { id: newId, name: nm, position: pos, person_id: personId });
+  propagatePlayerProfileEdit(oldId, { name: nm, position: pos });
   return newId;
 }
 
@@ -2503,9 +2562,6 @@ function movePlayer(src, destTeamName, destZone, destIndex) {
     placePlayer(destTeam, destZone, destIndex, moving);
     syncNationalPoolPlayer(oldPoolId, {
       id: moving.id,
-      name: moving.name,
-      position: moving.position,
-      overall: moving.overall,
       person_id: moving.person_id,
     });
     if (displaced) {
@@ -3084,6 +3140,7 @@ async function loadData() {
   } else {
     await loadCoachesCatalog();
   }
+  await loadPlayerProfiles();
   if (cfg.windows) {
     Object.entries(cfg.windows).forEach(([k, v]) => {
       if (v && v.label) windowLabels[k] = v.label;
@@ -3218,6 +3275,13 @@ async function switchMode(nextMode) {
   localStorage.setItem("tw_mode", currentMode);
   nationalPools = null;
   await loadData();
+  if (isNationsMode()) {
+    try {
+      await loadNationalPoolsFromApi();
+    } catch (_) {
+      /* optional */
+    }
+  }
 }
 
 async function switchWindow(next) {
