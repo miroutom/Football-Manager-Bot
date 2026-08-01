@@ -11,6 +11,12 @@
 
 Пропускает игрока, если в активном сезоне уже есть строка с тем же ``person_id``
 или тем же полным именем (без учёта регистра) в заявке (``left_team=False``).
+
+Переименования (Ареоля → Ареола): ``skip:likely_rename`` — тот же клуб+позиция,
+похожее имя (``--rename-min-ratio``, default 0.80).
+
+  python3 scripts/import_removed_players_to_fa.py --renames-only
+  python3 scripts/import_removed_players_to_fa.py --include-renames --apply
 """
 from __future__ import annotations
 
@@ -19,6 +25,7 @@ import json
 import os
 import sys
 from dataclasses import asdict, dataclass, field
+from difflib import SequenceMatcher
 from typing import Any
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,8 +35,10 @@ if ROOT not in sys.path:
 from utils import season_paths
 from utils.free_agents_db import add_free_agent_player, get_free_agents_db_path, list_free_agents
 from utils.player_names import player_name_identity_token
-from utils.player_transfer import normalize_player_name_for_db
+from utils.player_transfer import _norm_cmp, normalize_player_name_for_db
 from utils.roster_manual import FREE_AGENT_TEAM
+
+_RENAME_MIN_RATIO_DEFAULT = 0.80
 
 _TABLES = ("forwards", "midfielders", "defenders", "goalkeepers")
 
@@ -67,6 +76,65 @@ class Candidate:
     active_pids: list[int] = field(default_factory=list)
     active_teams: list[str] = field(default_factory=list)
     archive_pids: list[int] = field(default_factory=list)
+    rename_to: str | None = None
+    rename_ratio: float | None = None
+    rename_team: str | None = None
+
+
+def _name_similarity(a: str, b: str) -> float:
+    na = normalize_player_name_for_db(a).casefold()
+    nb = normalize_player_name_for_db(b).casefold()
+    if not na or not nb:
+        return 0.0
+    if na == nb:
+        return 1.0
+    return SequenceMatcher(None, na, nb).ratio()
+
+
+def _team_norm(team: str) -> str:
+    return _norm_cmp((team or "").strip())
+
+
+def _index_by_team_pos(players: list[PlayerSnap]) -> dict[tuple[str, str], list[PlayerSnap]]:
+    out: dict[tuple[str, str], list[PlayerSnap]] = {}
+    for p in players:
+        tn = _team_norm(p.team)
+        if not tn:
+            continue
+        out.setdefault((tn, p.pos_u), []).append(p)
+    return out
+
+
+def _find_likely_rename(
+    canon: PlayerSnap,
+    active: dict[str, Any],
+    *,
+    min_ratio: float,
+) -> tuple[PlayerSnap, float] | None:
+    """Похожее имя в том же клубе и позиции (переименование, не уход)."""
+    team = _team_norm(canon.team)
+    if not team:
+        return None
+
+    pools: list[PlayerSnap] = []
+    pools.extend(active["by_team_pos"].get((team, canon.pos_u), []))
+    # иногда клуб только в left_team (старое имя сняли, новое в заявке)
+    pools.extend(active["left_by_team_pos"].get((team, canon.pos_u), []))
+
+    best: tuple[PlayerSnap, float] | None = None
+    for p in pools:
+        if p.name_cf == canon.name_cf:
+            continue
+        ratio = _name_similarity(canon.name, p.name)
+        if ratio < min_ratio and not (
+            ratio >= max(0.70, min_ratio - 0.12)
+            and canon.overall > 0
+            and p.overall == canon.overall
+        ):
+            continue
+        if best is None or ratio > best[1]:
+            best = (p, ratio)
+    return best
 
 
 def _load_db_rows(path: str, *, season: int | None, source: str) -> list[PlayerSnap]:
@@ -207,8 +275,10 @@ def _active_index() -> dict[str, Any]:
         "by_pid": by_pid,
         "by_name": by_name,
         "by_token": by_token,
+        "by_team_pos": _index_by_team_pos(roster),
         "left_by_name": left_by_name,
         "left_by_pid": left_by_pid,
+        "left_by_team_pos": _index_by_team_pos(left_only),
         "fa_keys": fa_keys,
     }
 
@@ -249,6 +319,8 @@ def classify_candidates(
     seasons: list[int],
     *,
     match_name_token: bool = False,
+    rename_min_ratio: float = _RENAME_MIN_RATIO_DEFAULT,
+    detect_renames: bool = True,
 ) -> list[Candidate]:
     active = _active_index()
     groups = _archive_candidates(seasons)
@@ -322,6 +394,25 @@ def classify_candidates(
             )
             continue
 
+        if detect_renames:
+            ren = _find_likely_rename(canon, active, min_ratio=rename_min_ratio)
+            if ren is not None:
+                tgt, ratio = ren
+                out.append(
+                    Candidate(
+                        snap=canon,
+                        action="skip",
+                        reason="likely_rename",
+                        active_pids=[tgt.person_id] if tgt.person_id else [],
+                        active_teams=[f"{tgt.team} · {tgt.pos_u}"],
+                        archive_pids=archive_pids,
+                        rename_to=tgt.name,
+                        rename_ratio=round(ratio, 3),
+                        rename_team=tgt.team,
+                    )
+                )
+                continue
+
         out.append(
             Candidate(
                 snap=canon,
@@ -348,6 +439,7 @@ def _print_report(cands: list[Candidate], *, limit: int) -> None:
     adds = [c for c in cands if c.action == "add"]
     skips_roster = [c for c in cands if c.reason.startswith("active_roster")]
     skips_left = [c for c in cands if c.reason == "active_left_team_only"]
+    skips_rename = [c for c in cands if c.reason == "likely_rename"]
 
     print(f"\nБудет добавлено в FA: {len(adds)}")
     for c in adds[:limit]:
@@ -379,6 +471,20 @@ def _print_report(cands: list[Candidate], *, limit: int) -> None:
             print(f"  ~ {s.name} · {s.pos_u} · {', '.join(c.active_teams[:2])}")
         if len(skips_left) > 15:
             print(f"  … ещё {len(skips_left) - 15}")
+
+    if skips_rename:
+        print(f"\nПропуск — похоже переименование (тот же клуб+поз): {len(skips_rename)}")
+        for c in skips_rename[:limit]:
+            s = c.snap
+            ar = ", ".join(str(x) for x in c.archive_pids) or "—"
+            ap = ", ".join(str(x) for x in c.active_pids) or "—"
+            print(
+                f"  ~ {s.name} → {c.rename_to} · {s.pos_u} · "
+                f"sim {c.rename_ratio:.2f} · {c.rename_team or s.team} · "
+                f"архив pid {ar} · S4 pid {ap}"
+            )
+        if len(skips_rename) > limit:
+            print(f"  … ещё {len(skips_rename) - limit}")
 
 
 def _apply_candidates(cands: list[Candidate]) -> dict[str, int]:
@@ -427,10 +533,41 @@ def main() -> None:
         action="store_true",
         help="Дополнительно матчить по фамилии (осторожно с омонимами)",
     )
+    ap.add_argument(
+        "--rename-min-ratio",
+        type=float,
+        default=_RENAME_MIN_RATIO_DEFAULT,
+        help="Порог похожести имён для likely_rename (default: 0.80)",
+    )
+    ap.add_argument(
+        "--no-rename-check",
+        action="store_true",
+        help="Не отсеивать переименования",
+    )
+    ap.add_argument(
+        "--renames-only",
+        action="store_true",
+        help="Показать только likely_rename",
+    )
+    ap.add_argument(
+        "--include-renames",
+        action="store_true",
+        help="При --apply не пропускать likely_rename",
+    )
     args = ap.parse_args()
 
     seasons = [int(x.strip()) for x in args.seasons.split(",") if x.strip()]
-    cands = classify_candidates(seasons, match_name_token=args.match_name_token)
+    cands = classify_candidates(
+        seasons,
+        match_name_token=args.match_name_token,
+        rename_min_ratio=args.rename_min_ratio,
+        detect_renames=not args.no_rename_check,
+    )
+    if args.include_renames:
+        for c in cands:
+            if c.reason == "likely_rename":
+                c.action = "add"
+                c.reason = "missing_from_active"
 
     payload = {
         "active_season": season_paths.get_active_season(),
@@ -462,7 +599,24 @@ def main() -> None:
         print(f"JSON → {args.output}")
 
     if not args.json:
-        _print_report(cands, limit=args.limit)
+        if args.renames_only:
+            renames = [c for c in cands if c.reason == "likely_rename"]
+            print(f"Активный сезон: {season_paths.get_active_season()}")
+            print(f"likely_rename: {len(renames)} (порог {args.rename_min_ratio})")
+            print("—" * 60)
+            for c in renames[: args.limit]:
+                s = c.snap
+                ar = ", ".join(str(x) for x in c.archive_pids) or "—"
+                ap = ", ".join(str(x) for x in c.active_pids) or "—"
+                print(
+                    f"  ~ {s.name} → {c.rename_to} · {s.pos_u} · "
+                    f"sim {c.rename_ratio:.2f} · {c.rename_team or s.team} · "
+                    f"архив pid {ar} · S4 pid {ap}"
+                )
+            if len(renames) > args.limit:
+                print(f"  … ещё {len(renames) - args.limit}")
+        else:
+            _print_report(cands, limit=args.limit)
         if not args.apply:
             print("\n(dry-run — для записи добавь --apply)")
 
