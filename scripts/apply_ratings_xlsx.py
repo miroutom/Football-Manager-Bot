@@ -66,6 +66,33 @@ DEFAULT_ALIASES: dict[str, dict[str, str]] = {
     "Соланке": {"team": "Арсенал", "contains": "Солан"},
     "Сотиль": {"team": "Фиорентина", "contains": "Соттил"},
     "Терш": {"team": "Барселона", "contains": "Штеген"},
+    # однофамильцы — клуб из xlsx-уточнений
+    "Альварез": {"team": "Интер", "contains": "Альварез", "position": "ЦЗ"},
+    "Витинья": {"team": "Бетис", "contains": "Витинья"},
+    "Гарсия": {"team": "Байер", "contains": "Ливай"},
+    "Данжума": {"team": "Челси", "contains": "Данжума"},
+    "Камара": {"team": "Севилья", "contains": "Камара"},
+    "Мартинез": {"team": "Интер", "contains": "Мартинез", "position": "ФРВ"},
+    "Миранчук": {"team": "Аталанта", "contains": "Миранчук"},
+    "Муньоз": {"team": "Реал Сосьедад", "contains": "Муньоз"},
+    "Навас": {"team": "Франкфурт", "contains": "Навас"},
+    "Нкунку": {"team": "Реал", "contains": "Нкунку"},
+    "Нмеча": {"team": "Франкфурт", "contains": "Нмеча"},
+    "Нуньес": {"team": "Мю", "contains": "Нуньес"},
+    "Паласиос": {"team": "Байер", "contains": "Паласиос"},
+    "Пеллегрини": {"team": "Лацио", "contains": "Пеллегрини"},
+    "Пепе": {"team": "Бетис", "contains": "Пепе", "position": "ЦЗ"},
+    "Перейра": {"team": "Реал Сосьедад", "contains": "Перейра"},
+    "Санчес": {"team": "Барселона", "contains": "Санчес"},
+    "Сильва": {"team": "Челси", "contains": "Сильва", "position": "ЦЗ"},
+    "Тимбер": {"team": "Арсенал", "contains": "Тимбер"},
+    "Торрес": {"team": "Аталанта", "contains": "Торрес"},
+    "Траоре": {"team": "Атлетик", "contains": "Траоре"},
+    "Тюрам": {"team": "Атлетико", "contains": "Тюрам"},
+    "Фофана": {"team": "Челси", "contains": "Фофана", "position": "ЦЗ"},
+    "Энрике": {"team": "Бетис", "contains": "Энрике"},
+    "Эрнандез": {"team": "Милан", "contains": "Эрнандез"},
+    "Эррера": {"team": "Жирона", "contains": "Эррера"},
 }
 
 
@@ -84,20 +111,23 @@ def _load_aliases(path: str | None) -> dict[str, dict[str, str]]:
     return out
 
 
+def _alias_matches_row(alias: dict[str, str], row: Any) -> bool:
+    team_hint = _norm_cmp(alias.get("team") or "")
+    contains = (alias.get("contains") or "").casefold()
+    pos_hint = _norm_cmp(alias.get("position") or "")
+    if team_hint and _norm_cmp(getattr(row, "team", "") or "") != team_hint:
+        return False
+    if contains and contains not in (getattr(row, "name", "") or "").casefold():
+        return False
+    if pos_hint and _norm_cmp(getattr(row, "position", "") or "") != pos_hint:
+        return False
+    return True
+
+
 def _filter_by_alias(hits: list[DbHit], alias: dict[str, str] | None) -> list[DbHit]:
     if not alias or not hits:
         return hits
-    team_hint = _norm_cmp(alias.get("team") or "")
-    contains = (alias.get("contains") or "").casefold()
-    out: list[DbHit] = []
-    for h in hits:
-        r = h.row
-        if team_hint and _norm_cmp(getattr(r, "team", "") or "") != team_hint:
-            continue
-        if contains and contains not in (getattr(r, "name", "") or "").casefold():
-            continue
-        out.append(h)
-    return out
+    return [h for h in hits if _alias_matches_row(alias, h.row)]
 
 
 @dataclass
@@ -211,15 +241,11 @@ def _build_index(session, *, db_label: str) -> PlayerIndex:
 
 def _find_hits(index: PlayerIndex, query: str, alias: dict[str, str] | None = None) -> list[DbHit]:
     if alias and alias.get("contains"):
-        frag = alias["contains"].casefold()
-        team_hint = _norm_cmp(alias.get("team") or "")
         out: list[DbHit] = []
         seen: set[tuple[str, int]] = set()
         for h in index.all_hits:
             r = h.row
-            if team_hint and _norm_cmp(getattr(r, "team", "") or "") != team_hint:
-                continue
-            if frag not in (getattr(r, "name", "") or "").casefold():
+            if not _alias_matches_row(alias, r):
                 continue
             key = (h.table, int(getattr(r, "id", 0) or 0))
             if key in seen:
@@ -288,6 +314,70 @@ def _person_key(row: Any) -> tuple[str, str, str]:
         _norm_cmp(getattr(row, "position", "") or ""),
     )
 
+
+def _run_db_prep(sleague) -> list[str]:
+    """Починка известных дыр перед импортом рейтингов (flush, без commit)."""
+    from data.defender import Defender
+    from data.midfielder import Midfielder
+
+    notes: list[str] = []
+
+    for Cls in _ALL_PLAYER:
+        for r in list(sleague.query(Cls).all()):
+            team = (getattr(r, "team", "") or "").strip()
+            name = (getattr(r, "name", "") or "").casefold()
+            if _norm_cmp(team) == _norm_cmp("Нидерланды") and "данжума" in name:
+                notes.append(
+                    f"DELETE placeholder: {team} · {r.name} · {r.position} "
+                    f"ovr={r.overall} id={r.id}"
+                )
+                sleague.delete(r)
+
+    wrong_cm = None
+    for r in sleague.query(Midfielder).all():
+        if _norm_cmp(r.team) != _norm_cmp("Челси"):
+            continue
+        if "фофана" in (r.name or "").casefold() and _norm_cmp(r.position) == _norm_cmp("ЦП"):
+            wrong_cm = r
+            break
+
+    cb_row = None
+    for r in sleague.query(Defender).all():
+        if _norm_cmp(r.team) != _norm_cmp("Челси"):
+            continue
+        nm = (r.name or "").casefold()
+        if "фофана" in nm and _norm_cmp(r.position) == _norm_cmp("ЦЗ"):
+            cb_row = r
+            break
+
+    if wrong_cm is not None:
+        notes.append(
+            f"DELETE wrong Chelsea CM: {wrong_cm.name} · {wrong_cm.position} id={wrong_cm.id}"
+        )
+        sleague.delete(wrong_cm)
+
+    if cb_row is None:
+        notes.append("ADD Челси · Фофана · ЦЗ · ovr=79 (Wesley, из squads)")
+        row = Defender(
+            name="Фофана",
+            team="Челси",
+            position="ЦЗ",
+            overall=79,
+            nation="Франция",
+            status="start",
+            left_team=False,
+        )
+        sleague.add(row)
+        try:
+            from utils.person_registry import ensure_row_person_id
+
+            ensure_row_person_id(row, persist=True)
+        except Exception:
+            pass
+
+    if notes:
+        sleague.flush()
+    return notes
 
 def resolve_entry(
     entry: XlsxEntry,
@@ -547,6 +637,12 @@ def main() -> None:
 
     sleague = session_league
     scl = session_cl
+    prep = _run_db_prep(sleague)
+    if prep:
+        print("Подготовка БД" + (" (откат при dry-run)" if args.dry_run else "") + ":")
+        for line in prep:
+            print(f"  · {line}")
+        print()
     aliases = _load_aliases(args.aliases)
     idx_l = _build_index(sleague, db_label="league")
     idx_c = _build_index(scl, db_label="cl")
@@ -604,6 +700,8 @@ def main() -> None:
         print(f"⚠ Не найдено: {len(_dedupe_errors(not_found))} уникальных")
 
     if args.dry_run:
+        sleague.rollback()
+        scl.rollback()
         if ambiguous or not_found:
             print("\n(dry-run) Исправьте совпадения в xlsx или добавьте алиасы, затем --apply")
         else:
