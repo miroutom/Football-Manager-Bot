@@ -19,6 +19,7 @@ const FA_TEAM = "Free Agent";
 let freeAgents = [];
 let undoStack = [];
 let removedFromSquad = {};
+let rostersSeason = null;
 let leaguesCatalog = [];
 let positionsCatalog = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
@@ -36,6 +37,42 @@ function pushUndo() {
 function updateUndoBtn() {
   const btn = document.getElementById("btn-undo");
   if (btn) btn.disabled = undoStack.length === 0;
+}
+
+function loadFreshFromRosters(rosters, msg) {
+  baselineHome = { ...(rosters.baseline_home || {}) };
+  syncFreeAgentsFromRosters(rosters);
+  teams = JSON.parse(JSON.stringify(rosters.teams || []));
+  freeAgents = (rosters.free_agents || []).map((p) => ({ ...p, status: p.status || "bench" }));
+  initFaBaseline(freeAgents);
+  removedFromSquad = {};
+  undoStack = [];
+  updateUndoBtn();
+  dedupeGlobally(teams);
+  applyInjuryFlags(teams);
+  ensureExtraReserveSlots(teams);
+  dirty = false;
+  renderAll();
+  if (msg) setStatus(msg);
+}
+
+function resetToDbRosters() {
+  const ok = window.confirm(
+    "Сбросить все изменения и загрузить составы из rosters.json?\n" +
+      "Текущие несохранённые трансферы будут потеряны."
+  );
+  if (!ok) return;
+  fetch("/api/rosters")
+    .then((r) => r.json())
+    .then(async (rosters) => {
+      rostersSeason = rosters.season ?? rostersSeason;
+      loadFreshFromRosters(
+        rosters,
+        `сброс → сезон ${rosters.season || "?"} (${windowLabels[currentWindow]})`
+      );
+      await saveState();
+    })
+    .catch((e) => setStatus("ошибка сброса: " + e.message));
 }
 
 function undoLast() {
@@ -1150,6 +1187,7 @@ function renderAll() {
 function currentState() {
   return {
     window: currentWindow,
+    season: rostersSeason,
     baseline_home: baselineHome,
     teams,
     free_agents: freeAgents,
@@ -1187,6 +1225,7 @@ async function loadData() {
   ]);
   const cfg = await cfgRes.json();
   const rosters = await rostersRes.json();
+  rostersSeason = rosters.season ?? null;
   leaguesCatalog = Array.isArray(cfg.leagues) ? cfg.leagues : (rosters.leagues || []);
   if (Array.isArray(cfg.positions)) positionsCatalog = cfg.positions;
   if (cfg.windows) {
@@ -1209,12 +1248,36 @@ async function loadData() {
 
   const freshBaseline = { ...(rosters.baseline_home || {}) };
   syncFreeAgentsFromRosters(rosters);
-  Object.assign(freshBaseline, baselineHome);
+  for (const pid of Object.keys(freshBaseline)) {
+    if (!(pid in baselineHome) || baselineHome[pid] === undefined) {
+      baselineHome[pid] = freshBaseline[pid];
+    }
+  }
 
   const stateRes = await fetch(`/api/state?window=${encodeURIComponent(currentWindow)}`);
   if (stateRes.ok) {
     const saved = await stateRes.json();
-    baselineHome = { ...freshBaseline, ...(saved.baseline_home || {}) };
+    const savedSeason = saved.season != null ? Number(saved.season) : null;
+    const curSeason = rostersSeason != null ? Number(rostersSeason) : null;
+    if (savedSeason != null && curSeason != null && savedSeason !== curSeason) {
+      loadFreshFromRosters(
+        rosters,
+        `сезон ${curSeason}: старый сейв (${savedSeason}) сброшен — 0/${maxOut} OUT`
+      );
+      await saveState();
+      return;
+    }
+    if (savedSeason == null && curSeason != null) {
+      loadFreshFromRosters(
+        rosters,
+        `сезон ${curSeason}: устаревший сейв сброшен (не было метки сезона)`
+      );
+      await saveState();
+      return;
+    }
+    baselineHome = saved.baseline_home && Object.keys(saved.baseline_home).length
+      ? { ...saved.baseline_home }
+      : freshBaseline;
     teams = migrateSavedState(saved, rosters);
     if (Array.isArray(saved.free_agents) && saved.free_agents.length) {
       freeAgents = saved.free_agents.map((p) => ({ ...p }));
@@ -1240,20 +1303,14 @@ async function loadData() {
   }
 
   baselineHome = freshBaseline;
-  teams = JSON.parse(JSON.stringify(rosters.teams || []));
-  dedupeGlobally(teams);
-  applyInjuryFlags(teams);
-  ensureExtraReserveSlots(teams);
-  undoStack = [];
-  updateUndoBtn();
-  dirty = false;
-  const injN = Number(rosters.injured_count) || Object.keys(injuryById).length;
-  setStatus(
+  loadFreshFromRosters(
+    rosters,
     `сезон ${rosters.season || "?"} — исходные составы (${windowLabels[currentWindow]})` +
-      (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "") +
+      (Number(rosters.injured_count) || Object.keys(injuryById).length
+        ? ` · травм: ${Number(rosters.injured_count) || Object.keys(injuryById).length}`
+        : "") +
       (freeAgents.length ? ` · FA: ${freeAgents.length}` : "")
   );
-  renderAll();
 }
 
 async function switchWindow(next) {
@@ -1328,6 +1385,9 @@ document.getElementById("modal-close")?.addEventListener("click", () => closeMod
 document.getElementById("modal-cancel")?.addEventListener("click", () => closeModal("modal-overlay"));
 document.getElementById("modal-fa-close")?.addEventListener("click", () => closeModal("modal-fa-overlay"));
 document.getElementById("modal-fa-cancel")?.addEventListener("click", () => closeModal("modal-fa-overlay"));
+document.getElementById("btn-reset-rosters")?.addEventListener("click", () => {
+  resetToDbRosters();
+});
 document.getElementById("btn-import-squads")?.addEventListener("click", () => {
   document.getElementById("import-squads-file")?.click();
 });

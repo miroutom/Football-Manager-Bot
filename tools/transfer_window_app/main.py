@@ -202,9 +202,14 @@ def _merge_squads_from_bot_export(
                 index[p["id"]] = p
                 index[key] = p
         for ent in entries:
-            name = (ent.get("name") or "").strip()
-            pos = (ent.get("position") or "").strip().upper()
-            ovr = int(ent.get("overall") or 0)
+            if isinstance(ent, dict):
+                name = (ent.get("name") or "").strip()
+                pos = (ent.get("position") or "").strip().upper()
+                ovr = int(ent.get("overall") or 0)
+            else:
+                name = (ent[0] or "").strip()
+                pos = (ent[1] or "").strip().upper()
+                ovr = int(ent[3] or 0) if len(ent) > 3 and ent[3] is not None else 0
             if not name:
                 continue
             pid = f"{team_name}|{name}|{pos}"
@@ -319,9 +324,11 @@ def build_state_payload(data: dict) -> dict:
     teams = data.get("teams") or []
     free_agents = data.get("free_agents") or []
     removed_from_squad = data.get("removed_from_squad") or {}
+    season = data.get("season")
     window = _normalize_window(data.get("window"))
     state = {
         "window": window,
+        "season": season,
         "baseline_home": baseline_home,
         "teams": teams,
         "free_agents": free_agents,
