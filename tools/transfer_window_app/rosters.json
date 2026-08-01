@@ -1,6 +1,6 @@
 {
   "season": 4,
-  "exported_at": 1785607470,
+  "exported_at": 1785613373,
   "injury_as_of_month": 6,
   "injured_count": 0,
   "squad_rules": {
@@ -7636,6 +7636,14 @@
           "injured": false
         },
         {
+          "id": "Бетис|Пепе|ЦЗ",
+          "name": "Пепе",
+          "position": "ЦЗ",
+          "overall": 81,
+          "slot": null,
+          "injured": false
+        },
+        {
           "id": "Бетис|Максимино|ВРТ",
           "name": "Максимино",
           "position": "ВРТ",
@@ -7647,14 +7655,6 @@
           "id": "Бетис|Миранда|ЛЗ",
           "name": "Миранда",
           "position": "ЛЗ",
-          "overall": 77,
-          "slot": null,
-          "injured": false
-        },
-        {
-          "id": "Бетис|Пепе|ЦЗ",
-          "name": "Пепе",
-          "position": "ЦЗ",
           "overall": 77,
           "slot": null,
           "injured": false
@@ -7732,9 +7732,9 @@
         "Бетис|Эль Шарави|ЛФА",
         "Бетис|Феликс|ФРВ",
         "Бетис|Алмейда|ЦП",
+        "Бетис|Пепе|ЦЗ",
         "Бетис|Максимино|ВРТ",
         "Бетис|Миранда|ЛЗ",
-        "Бетис|Пепе|ЦЗ",
         "Бетис|Виффер|ЦП",
         "Бетис|Актюркоглу|ЛФА",
         "Бетис|Браганса|ЦП"
@@ -12374,9 +12374,9 @@
     "Бетис|Эль Шарави|ЛФА": "Бетис",
     "Бетис|Феликс|ФРВ": "Бетис",
     "Бетис|Алмейда|ЦП": "Бетис",
+    "Бетис|Пепе|ЦЗ": "Бетис",
     "Бетис|Максимино|ВРТ": "Бетис",
     "Бетис|Миранда|ЛЗ": "Бетис",
-    "Бетис|Пепе|ЦЗ": "Бетис",
     "Бетис|Виффер|ЦП": "Бетис",
     "Бетис|Актюркоглу|ЛФА": "Бетис",
     "Бетис|Браганса|ЦП": "Бетис",
@@ -13296,7 +13296,8 @@
       "overall": 86,
       "nation": "Камерун",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Головин|ЦП",
@@ -13306,7 +13307,8 @@
       "overall": 85,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Навас|ВРТ",
@@ -13316,7 +13318,8 @@
       "overall": 85,
       "nation": "коста-рика",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гинтер|ЦЗ",
@@ -13326,7 +13329,8 @@
       "overall": 84,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Де Поль|ЦП",
@@ -13336,7 +13340,8 @@
       "overall": 84,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Диаби|ПФА",
@@ -13346,7 +13351,8 @@
       "overall": 84,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Майер|ЦП",
@@ -13356,7 +13362,8 @@
       "overall": 84,
       "nation": "Хорватия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Облак|ВРТ",
@@ -13366,7 +13373,8 @@
       "overall": 84,
       "nation": "Словения",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Стоунз|ЦЗ",
@@ -13376,7 +13384,8 @@
       "overall": 84,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Алексис Санчес|ФРВ",
@@ -13386,7 +13395,8 @@
       "overall": 83,
       "nation": "Чили",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Аллер|ФРВ",
@@ -13396,7 +13406,8 @@
       "overall": 83,
       "nation": "Кот-д'Ивуар",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Влахович|ФРВ",
@@ -13406,7 +13417,8 @@
       "overall": 83,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гонзалез|ПФА",
@@ -13416,7 +13428,8 @@
       "overall": 83,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джеко|ФРВ",
@@ -13426,7 +13439,8 @@
       "overall": 83,
       "nation": "Босния",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Жерар Морено|ФРВ",
@@ -13436,7 +13450,8 @@
       "overall": 83,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Иглесиас|ФРВ",
@@ -13446,7 +13461,8 @@
       "overall": 83,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ляказет|ФРВ",
@@ -13456,7 +13472,8 @@
       "overall": 83,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Грифо|ЛФА",
@@ -13466,7 +13483,8 @@
       "overall": 82,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Диа|ФРВ",
@@ -13476,7 +13494,8 @@
       "overall": 82,
       "nation": "сенегал",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Жиру|ФРВ",
@@ -13486,7 +13505,8 @@
       "overall": 82,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мак Аллистер|ЦП",
@@ -13496,7 +13516,8 @@
       "overall": 82,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Митома|ЛФА",
@@ -13506,7 +13527,8 @@
       "overall": 82,
       "nation": "Япония",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тадич|ЛФА",
@@ -13516,7 +13538,8 @@
       "overall": 82,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Уилсон|ФРВ",
@@ -13526,7 +13549,8 @@
       "overall": 82,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Чуквуезе|ПФА",
@@ -13536,7 +13560,8 @@
       "overall": 82,
       "nation": "нигерия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Алдервейрельд|ЦЗ",
@@ -13546,7 +13571,8 @@
       "overall": 81,
       "nation": "Бельгия",
       "nickname": "Алдер",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Алмада|ЦАП",
@@ -13556,7 +13582,8 @@
       "overall": 81,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Альбиоль|ЦЗ",
@@ -13566,7 +13593,8 @@
       "overall": 81,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Альмирон|ПФА",
@@ -13576,7 +13604,8 @@
       "overall": 81,
       "nation": "парагвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Барнс|ЛФА",
@@ -13586,7 +13615,8 @@
       "overall": 81,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бето|ФРВ",
@@ -13596,7 +13626,8 @@
       "overall": 81,
       "nation": "Португалия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бовен|ПФА",
@@ -13606,7 +13637,8 @@
       "overall": 81,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Запата|ФРВ",
@@ -13616,7 +13648,8 @@
       "overall": 81,
       "nation": "Колумбия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Капу|ЦЗ",
@@ -13626,7 +13659,8 @@
       "overall": 81,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Карвальо|ЦОП",
@@ -13636,7 +13670,8 @@
       "overall": 81,
       "nation": "Португалия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Макс Лопес|ЦП",
@@ -13646,7 +13681,8 @@
       "overall": 81,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Маунт|ЦП",
@@ -13656,7 +13692,8 @@
       "overall": 81,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Милик|ФРВ",
@@ -13666,7 +13703,8 @@
       "overall": 81,
       "nation": "Польша",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Скхири|ЦОП",
@@ -13676,7 +13714,8 @@
       "overall": 81,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Терье|ЛФА",
@@ -13686,7 +13725,8 @@
       "overall": 81,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Абрахам|ФРВ",
@@ -13696,7 +13736,8 @@
       "overall": 80,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бенсебаини|ЛЗ",
@@ -13706,7 +13747,8 @@
       "overall": 80,
       "nation": "Алжир",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Беренгер|ЛП",
@@ -13716,7 +13758,8 @@
       "overall": 80,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Браво|ВРТ",
@@ -13726,7 +13769,8 @@
       "overall": 80,
       "nation": "Чили",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Буендиа|ФРВ",
@@ -13736,7 +13780,8 @@
       "overall": 80,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бёрн|ЦЗ",
@@ -13746,7 +13791,8 @@
       "overall": 80,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ванакен|ЦП",
@@ -13756,7 +13802,8 @@
       "overall": 80,
       "nation": "нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гудель|ЦЗ",
@@ -13766,7 +13813,8 @@
       "overall": 80,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Де Рун|ЦОП",
@@ -13776,7 +13824,8 @@
       "overall": 80,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джордан|ЦП",
@@ -13786,7 +13835,8 @@
       "overall": 80,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дуглас Луис|ЦП",
@@ -13796,7 +13846,8 @@
       "overall": 80,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Коклен|ЦП",
@@ -13806,7 +13857,8 @@
       "overall": 80,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Корона|ПФА",
@@ -13816,7 +13868,8 @@
       "overall": 80,
       "nation": "мексика",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кубо|ПФА",
@@ -13826,7 +13879,8 @@
       "overall": 80,
       "nation": "Япония",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ламела|ПФА",
@@ -13836,7 +13890,8 @@
       "overall": 80,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Линделёф|ЦЗ",
@@ -13846,7 +13901,8 @@
       "overall": 80,
       "nation": "Швеция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Омлин|ВРТ",
@@ -13856,7 +13912,8 @@
       "overall": 80,
       "nation": "Швейцария",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ромеу|ЦОП",
@@ -13866,7 +13923,8 @@
       "overall": 80,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Саванье|ЦАП",
@@ -13876,7 +13934,8 @@
       "overall": 80,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сусо|ПФА",
@@ -13886,7 +13945,8 @@
       "overall": 80,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фойт|ПЗ",
@@ -13896,7 +13956,8 @@
       "overall": 80,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эдвардс|ПФА",
@@ -13906,7 +13967,8 @@
       "overall": 80,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Агуэрд|ЦЗ",
@@ -13916,7 +13978,8 @@
       "overall": 79,
       "nation": "Марокко",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Айозе|ЛФА",
@@ -13926,7 +13989,8 @@
       "overall": 79,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Акинфеев|ВРТ",
@@ -13936,7 +14000,8 @@
       "overall": 79,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Аспиликуэта|ПЗ",
@@ -13946,7 +14011,8 @@
       "overall": 79,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Аугусто|ЛП",
@@ -13956,7 +14022,8 @@
       "overall": 79,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Берчиче|ЛЗ",
@@ -13966,7 +14033,8 @@
       "overall": 79,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бонавентура|ЦАП",
@@ -13976,7 +14044,8 @@
       "overall": 79,
       "nation": "Италия",
       "nickname": "Бон",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Витсель|ЦЗ",
@@ -13986,7 +14055,8 @@
       "overall": 79,
       "nation": "Бельгия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Грегориш|ФРВ",
@@ -13996,7 +14066,8 @@
       "overall": 79,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гюнтер|ЛЗ",
@@ -14006,7 +14077,8 @@
       "overall": 79,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Давид Лопес|ЦЗ",
@@ -14016,7 +14088,8 @@
       "overall": 79,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Димитриевски|ВРТ",
@@ -14026,7 +14099,8 @@
       "overall": 79,
       "nation": "Северная Македония",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дисаси|ЦЗ",
@@ -14036,7 +14110,8 @@
       "overall": 79,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Зума|ЦЗ",
@@ -14046,7 +14121,8 @@
       "overall": 79,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кампль|ЦП",
@@ -14056,7 +14132,8 @@
       "overall": 79,
       "nation": "Словения",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Карнесекки|ВРТ",
@@ -14066,7 +14143,8 @@
       "overall": 79,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кастелланос|ФРВ",
@@ -14076,7 +14154,8 @@
       "overall": 79,
       "nation": "аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лайнхарт|ЦЗ",
@@ -14086,7 +14165,8 @@
       "overall": 79,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Макгинн|ЦП",
@@ -14096,7 +14176,8 @@
       "overall": 79,
       "nation": "Шотландия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Макгуайр|ЦЗ",
@@ -14106,7 +14187,8 @@
       "overall": 79,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мактоминей|ЦОП",
@@ -14116,7 +14198,8 @@
       "overall": 79,
       "nation": "Шотландия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Марч|ЦП",
@@ -14126,7 +14209,8 @@
       "overall": 79,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Моралес|ФРВ",
@@ -14136,7 +14220,8 @@
       "overall": 79,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ндиди|ЦОП",
@@ -14146,7 +14231,8 @@
       "overall": 79,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пино|ПФА",
@@ -14156,7 +14242,8 @@
       "overall": 79,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ришарлисон|ФРВ",
@@ -14166,7 +14253,8 @@
       "overall": 79,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ромариньо|ФРВ",
@@ -14176,7 +14264,8 @@
       "overall": 79,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Себаллос|ЦП",
@@ -14186,7 +14275,8 @@
       "overall": 79,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сорлот|ФРВ",
@@ -14196,7 +14286,8 @@
       "overall": 79,
       "nation": "Норвегия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фофана|ЦЗ",
@@ -14206,7 +14297,8 @@
       "overall": 79,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Черны|ПФА",
@@ -14216,7 +14308,8 @@
       "overall": 79,
       "nation": "Чехия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Антонио|ФРВ",
@@ -14226,7 +14319,8 @@
       "overall": 78,
       "nation": "Ямайка",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Артур|ЦП",
@@ -14236,7 +14330,8 @@
       "overall": 78,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бартра|ЦЗ",
@@ -14246,7 +14341,8 @@
       "overall": 78,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Белотти|ФРВ",
@@ -14256,7 +14352,8 @@
       "overall": 78,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бериша|ФРВ",
@@ -14266,7 +14363,8 @@
       "overall": 78,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Булка|ВРТ",
@@ -14276,7 +14374,8 @@
       "overall": 78,
       "nation": "Польша",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вельтман|ПЗ",
@@ -14286,7 +14385,8 @@
       "overall": 78,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Весга|ЦП",
@@ -14296,7 +14396,8 @@
       "overall": 78,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вульф|ПЗ",
@@ -14306,7 +14407,8 @@
       "overall": 78,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джексон|ФРВ",
@@ -14316,7 +14418,8 @@
       "overall": 78,
       "nation": "Сенегал",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Доан|ПФА",
@@ -14326,7 +14429,8 @@
       "overall": 78,
       "nation": "Япония",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Калабрия|ПЗ",
@@ -14336,7 +14440,8 @@
       "overall": 78,
       "nation": "италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кастровилль|ЦП",
@@ -14346,7 +14451,8 @@
       "overall": 78,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Колашинац|ЦЗ",
@@ -14356,7 +14462,8 @@
       "overall": 78,
       "nation": "Босния",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Комесанья|ЦЗ",
@@ -14366,7 +14473,8 @@
       "overall": 78,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Круз|ЦП",
@@ -14376,7 +14484,8 @@
       "overall": 78,
       "nation": "уругвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Крунич|ЦП",
@@ -14386,7 +14495,8 @@
       "overall": 78,
       "nation": "Босния",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лаймер|ЦП",
@@ -14396,7 +14506,8 @@
       "overall": 78,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лонгстаф|ЦП",
@@ -14406,7 +14517,8 @@
       "overall": 78,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мотинг|ФРВ",
@@ -14416,7 +14528,8 @@
       "overall": 78,
       "nation": "Камерун",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Озкан|ЦОП",
@@ -14426,7 +14539,8 @@
       "overall": 78,
       "nation": "Турция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Оливера|ЛЗ",
@@ -14436,7 +14550,8 @@
       "overall": 78,
       "nation": "Уругвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Паласиос|ЦОП",
@@ -14446,7 +14561,8 @@
       "overall": 78,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Педраза|ЛЗ",
@@ -14456,7 +14572,8 @@
       "overall": 78,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Педро|ПФА",
@@ -14466,7 +14583,8 @@
       "overall": 78,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пессина|ЦАП",
@@ -14476,7 +14594,8 @@
       "overall": 78,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Регилон|ЛЗ",
@@ -14486,7 +14605,8 @@
       "overall": 78,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Роде|ЦОП",
@@ -14496,7 +14616,8 @@
       "overall": 78,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Роял|ПЗ",
@@ -14506,7 +14627,8 @@
       "overall": 78,
       "nation": "бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Санабрия|ЦАП",
@@ -14516,7 +14638,8 @@
       "overall": 78,
       "nation": "Парагвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сенси|ЦП",
@@ -14526,7 +14649,8 @@
       "overall": 78,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Скамакка|ФРВ",
@@ -14536,7 +14660,8 @@
       "overall": 78,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Соттил|ЛФА",
@@ -14546,7 +14671,8 @@
       "overall": 78,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Авонийи|ФРВ",
@@ -14556,7 +14682,8 @@
       "overall": 77,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Адарабьо|ЦЗ",
@@ -14566,7 +14693,8 @@
       "overall": 77,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Амири|ЦАП",
@@ -14576,7 +14704,8 @@
       "overall": 77,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Баде|ЦЗ",
@@ -14586,7 +14715,8 @@
       "overall": 77,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Баллиу|ПЗ",
@@ -14596,7 +14726,8 @@
       "overall": 77,
       "nation": "Албания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Барроу|ФРВ",
@@ -14606,7 +14737,8 @@
       "overall": 77,
       "nation": "гамбия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бельерин|ПЗ",
@@ -14616,7 +14748,8 @@
       "overall": 77,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вандерсон|ПЗ",
@@ -14626,7 +14759,8 @@
       "overall": 77,
       "nation": "бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вегхорст|ФРВ",
@@ -14636,7 +14770,8 @@
       "overall": 77,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вечино|ЦОП",
@@ -14646,7 +14781,8 @@
       "overall": 77,
       "nation": "Уругвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Виейра|ЦАП",
@@ -14656,7 +14792,8 @@
       "overall": 77,
       "nation": "Португалия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Виллиан|ЛП",
@@ -14666,7 +14803,8 @@
       "overall": 77,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Винд|ФРВ",
@@ -14676,7 +14814,8 @@
       "overall": 77,
       "nation": "Дания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Висса|ЛФА",
@@ -14686,7 +14825,8 @@
       "overall": 77,
       "nation": "д.р. конго",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Герхардт|ЦП",
@@ -14696,7 +14836,8 @@
       "overall": 77,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гиль|ЛФА",
@@ -14706,7 +14847,8 @@
       "overall": 77,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дайер|ЦЗ",
@@ -14716,7 +14858,8 @@
       "overall": 77,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Де Фрутос|ЛФА",
@@ -14726,7 +14869,8 @@
       "overall": 77,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джене|ЦЗ",
@@ -14736,7 +14880,8 @@
       "overall": 77,
       "nation": "Того",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джимсити|ЦЗ",
@@ -14746,7 +14891,8 @@
       "overall": 77,
       "nation": "Албания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джонс|ЦП",
@@ -14756,7 +14902,8 @@
       "overall": 77,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Йович|ФРВ",
@@ -14766,7 +14913,8 @@
       "overall": 77,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Калверт-Льюин|ФРВ",
@@ -14776,7 +14924,8 @@
       "overall": 77,
       "nation": "",
       "nickname": "Льюин",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Калулу|ЦЗ",
@@ -14786,7 +14935,8 @@
       "overall": 77,
       "nation": "франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кастанье|ПЗ",
@@ -14796,7 +14946,8 @@
       "overall": 77,
       "nation": "Бельгия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Катальди|ЦОП",
@@ -14806,7 +14957,8 @@
       "overall": 77,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кинтеро|ЦАП",
@@ -14816,7 +14968,8 @@
       "overall": 77,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Конан|ЛЗ",
@@ -14826,7 +14979,8 @@
       "overall": 77,
       "nation": "кот-д'ивуар",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кордоба|ЦФД",
@@ -14836,7 +14990,8 @@
       "overall": 77,
       "nation": "Колумбия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Крамер|ЦП",
@@ -14846,7 +15001,8 @@
       "overall": 77,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Куаме|ФРВ",
@@ -14856,7 +15012,8 @@
       "overall": 77,
       "nation": "Кот-д'Ивуар",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Куарта|ЦЗ",
@@ -14866,7 +15023,8 @@
       "overall": 77,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лежене|ЦЗ",
@@ -14876,7 +15034,8 @@
       "overall": 77,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ленглет|ЦЗ",
@@ -14886,7 +15045,8 @@
       "overall": 77,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ливай Гарсия|ФРВ",
@@ -14896,7 +15056,8 @@
       "overall": 77,
       "nation": "Тринидад и Тобаго",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лльоренте|ЦЗ",
@@ -14906,7 +15067,8 @@
       "overall": 77,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лозано|ЛФА",
@@ -14916,7 +15078,8 @@
       "overall": 77,
       "nation": "Мексика",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Луиз Энрике|ЛФА",
@@ -14926,7 +15089,8 @@
       "overall": 77,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лукич|ЦП",
@@ -14936,7 +15100,8 @@
       "overall": 77,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Милнер|ЦП",
@@ -14946,7 +15111,8 @@
       "overall": 77,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мина|ЦЗ",
@@ -14956,7 +15122,8 @@
       "overall": 77,
       "nation": "Колумбия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мир|ФРВ",
@@ -14966,7 +15133,8 @@
       "overall": 77,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Науфф|ПФА",
@@ -14976,7 +15144,8 @@
       "overall": 77,
       "nation": "германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нельсон|ЦЗ",
@@ -14986,7 +15155,8 @@
       "overall": 77,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нуньез|ЦЗ",
@@ -14996,7 +15166,8 @@
       "overall": 77,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Паредес|ЦП",
@@ -15006,7 +15177,8 @@
       "overall": 77,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Паульсен|ФРВ",
@@ -15016,7 +15188,8 @@
       "overall": 77,
       "nation": "Дания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пош|ПЗ",
@@ -15026,7 +15199,8 @@
       "overall": 77,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сабали|ПЗ",
@@ -15036,7 +15210,8 @@
       "overall": 77,
       "nation": "Сенегал",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Скипп|ЦОП",
@@ -15046,7 +15221,8 @@
       "overall": 77,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сотока|ФРВ",
@@ -15056,7 +15232,8 @@
       "overall": 77,
       "nation": "франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Стуани|ФРВ",
@@ -15066,7 +15243,8 @@
       "overall": 77,
       "nation": "Уругвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сугавару|ПЗ",
@@ -15076,7 +15254,8 @@
       "overall": 77,
       "nation": "япония",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сёюнджю|ЦЗ",
@@ -15086,7 +15265,8 @@
       "overall": 77,
       "nation": "Турция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тапсоба|ЦЗ",
@@ -15096,7 +15276,8 @@
       "overall": 77,
       "nation": "буркина-фасо",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тригерос|ЦП",
@@ -15106,7 +15287,8 @@
       "overall": 77,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хложек|ФРВ",
@@ -15116,7 +15298,8 @@
       "overall": 77,
       "nation": "Чехия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Холс|ЦЗ",
@@ -15126,7 +15309,8 @@
       "overall": 77,
       "nation": "Чехия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Цимикас|ЛЗ",
@@ -15136,7 +15320,8 @@
       "overall": 77,
       "nation": "греция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Янузай|ПФА",
@@ -15146,7 +15331,8 @@
       "overall": 77,
       "nation": "Бельгия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Айвоби|ПП",
@@ -15156,7 +15342,8 @@
       "overall": 76,
       "nation": "Нигерия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Аридане|ЦЗ",
@@ -15166,7 +15353,8 @@
       "overall": 76,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ауар|ЦАП",
@@ -15176,7 +15364,8 @@
       "overall": 76,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Баэна|ЦП",
@@ -15186,7 +15375,8 @@
       "overall": 76,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бельтран|ФРВ",
@@ -15196,7 +15386,8 @@
       "overall": 76,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бонифасе|ФРВ",
@@ -15206,7 +15397,8 @@
       "overall": 76,
       "nation": "Нигерия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Брайда|ЛЗ",
@@ -15216,7 +15408,8 @@
       "overall": 76,
       "nation": "аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Брекало|ФРВ",
@@ -15226,7 +15419,8 @@
       "overall": 76,
       "nation": "Хорватия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Брукс|ЦЗ",
@@ -15236,7 +15430,8 @@
       "overall": 76,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бултер|ПФА",
@@ -15246,7 +15441,8 @@
       "overall": 76,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Буфаль|ФРВ",
@@ -15256,7 +15452,8 @@
       "overall": 76,
       "nation": "Марокко",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Валентин|ЦОП",
@@ -15266,7 +15463,8 @@
       "overall": 76,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Виллиан Жозе|ФРВ",
@@ -15276,7 +15474,8 @@
       "overall": 76,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вёбер|ЦЗ",
@@ -15286,7 +15485,8 @@
       "overall": 76,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гатти|ЦЗ",
@@ -15296,7 +15496,8 @@
       "overall": 76,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Голлини|ВРТ",
@@ -15306,7 +15507,8 @@
       "overall": 76,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гриллич|ЦОП",
@@ -15316,7 +15518,8 @@
       "overall": 76,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гуардадо|ЦОП",
@@ -15326,7 +15529,8 @@
       "overall": 76,
       "nation": "Мексика",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Де Кетеларе|ЦАП",
@@ -15336,7 +15540,8 @@
       "overall": 76,
       "nation": "Бельгия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Де Шильо|ПЗ",
@@ -15346,7 +15551,8 @@
       "overall": 76,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Десподов|ПФА",
@@ -15356,7 +15562,8 @@
       "overall": 76,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джало|ЦЗ",
@@ -15366,7 +15573,8 @@
       "overall": 76,
       "nation": "Португалия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дзюба|ФРВ",
@@ -15376,7 +15584,8 @@
       "overall": 76,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дорли|ЦП",
@@ -15386,7 +15595,8 @@
       "overall": 76,
       "nation": "либерия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Зубер|ФРВ",
@@ -15396,7 +15606,8 @@
       "overall": 76,
       "nation": "швейцария",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кеан|ФРВ",
@@ -15406,7 +15617,8 @@
       "overall": 76,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кин|ФРВ",
@@ -15416,7 +15628,8 @@
       "overall": 76,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Клаассен|ЦП",
@@ -15426,7 +15639,8 @@
       "overall": 76,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кордова|ПП",
@@ -15436,7 +15650,8 @@
       "overall": 76,
       "nation": "Ямайка",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Косуну|ЦЗ",
@@ -15446,7 +15661,8 @@
       "overall": 76,
       "nation": "Кот-д'Ивуар",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кухта|ФРВ",
@@ -15456,7 +15672,8 @@
       "overall": 76,
       "nation": "чехия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лаллана|ЦП",
@@ -15466,7 +15683,8 @@
       "overall": 76,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лофтус-Чик|ЦП",
@@ -15476,7 +15694,8 @@
       "overall": 76,
       "nation": "англия",
       "nickname": "Лофтус",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Маккенни|ЦП",
@@ -15486,7 +15705,8 @@
       "overall": 76,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Манди|ЦЗ",
@@ -15496,7 +15716,8 @@
       "overall": 76,
       "nation": "Алжир",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мандрагора|ЦП",
@@ -15506,7 +15727,8 @@
       "overall": 76,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Менье|ПЗ",
@@ -15516,7 +15738,8 @@
       "overall": 76,
       "nation": "Бельгия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Минамино|ФРВ",
@@ -15526,7 +15749,8 @@
       "overall": 76,
       "nation": "Япония",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мёрфи|ПФА",
@@ -15536,7 +15760,8 @@
       "overall": 76,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нетц|ЛЗ",
@@ -15546,7 +15771,8 @@
       "overall": 76,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нубель|ВРТ",
@@ -15556,7 +15782,8 @@
       "overall": 76,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Оздоев|ЦП",
@@ -15566,7 +15793,8 @@
       "overall": 76,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пеццелла|ЦЗ",
@@ -15576,7 +15804,8 @@
       "overall": 76,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Побега|ЦП",
@@ -15586,7 +15815,8 @@
       "overall": 76,
       "nation": "италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Рейна|ПФА",
@@ -15596,7 +15826,8 @@
       "overall": 76,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Рид|ЦП",
@@ -15606,7 +15837,8 @@
       "overall": 76,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Робинсон|ЛЗ",
@@ -15616,7 +15848,8 @@
       "overall": 76,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Руйбаль|ПЗ",
@@ -15626,7 +15859,8 @@
       "overall": 76,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Саллаи|ПП",
@@ -15636,7 +15870,8 @@
       "overall": 76,
       "nation": "Венгрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Таргетт|ЛЗ",
@@ -15646,7 +15881,8 @@
       "overall": 76,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Телло|ЛФА",
@@ -15656,7 +15892,8 @@
       "overall": 76,
       "nation": "испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тете|ПЗ",
@@ -15666,7 +15903,8 @@
       "overall": 76,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Уэлбек|ФРВ",
@@ -15676,7 +15914,8 @@
       "overall": 76,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фогт|ЦЗ",
@@ -15686,7 +15925,8 @@
       "overall": 76,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хименез|ФРВ",
@@ -15696,7 +15936,8 @@
       "overall": 76,
       "nation": "Мексика",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хюсай|ПЗ",
@@ -15706,7 +15947,8 @@
       "overall": 76,
       "nation": "Албания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хёйлунд|ФРВ",
@@ -15716,7 +15958,8 @@
       "overall": 76,
       "nation": "Дания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хёфлер|ЦП",
@@ -15726,7 +15969,8 @@
       "overall": 76,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Чалоба|ЦЗ",
@@ -15736,7 +15980,8 @@
       "overall": 76,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Челик|ПЗ",
@@ -15746,7 +15991,8 @@
       "overall": 76,
       "nation": "Турция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Акпогума|ЦЗ",
@@ -15756,7 +16002,8 @@
       "overall": 75,
       "nation": "Нигерия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Аларио|ФРВ",
@@ -15766,7 +16013,8 @@
       "overall": 75,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Андерсон|ПФА",
@@ -15776,7 +16024,8 @@
       "overall": 75,
       "nation": "бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Антон|ЦЗ",
@@ -15786,7 +16035,8 @@
       "overall": 75,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Барренечеа|ЛФА",
@@ -15796,7 +16046,8 @@
       "overall": 75,
       "nation": "Испания",
       "nickname": "Бар",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бонгонда|ЛФА",
@@ -15806,7 +16057,8 @@
       "overall": 75,
       "nation": "ДР Конго",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вербругген|ВРТ",
@@ -15816,7 +16068,8 @@
       "overall": 75,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Винисиус|ФРВ",
@@ -15826,7 +16079,8 @@
       "overall": 75,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Виска|ПФА",
@@ -15836,7 +16090,8 @@
       "overall": 75,
       "nation": "Босния и Герцеговна",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Галларно|ЛЗ",
@@ -15846,7 +16101,8 @@
       "overall": 75,
       "nation": "мексика",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гейгер|ЦОП",
@@ -15856,7 +16112,8 @@
       "overall": 75,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гомес|ЦЗ",
@@ -15866,7 +16123,8 @@
       "overall": 75,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Грбич|ВРТ",
@@ -15876,7 +16134,8 @@
       "overall": 75,
       "nation": "Хорватия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гутиеррез|ЛЗ",
@@ -15886,7 +16145,8 @@
       "overall": 75,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Демме|ЦОП",
@@ -15896,7 +16156,8 @@
       "overall": 75,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дендонкер|ЦП",
@@ -15906,7 +16167,8 @@
       "overall": 75,
       "nation": "Бельгия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ежов|ПФА",
@@ -15916,7 +16178,8 @@
       "overall": 75,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Жезус|ЦЗ",
@@ -15926,7 +16189,8 @@
       "overall": 75,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Иван Мартин|ЦП",
@@ -15936,7 +16200,8 @@
       "overall": 75,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кадерабек|ПЗ",
@@ -15946,7 +16211,8 @@
       "overall": 75,
       "nation": "Чехия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Камелло|ФРВ",
@@ -15956,7 +16222,8 @@
       "overall": 75,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Коваленко|ЦАП",
@@ -15966,7 +16233,8 @@
       "overall": 75,
       "nation": "Украина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Коварь|ВРТ",
@@ -15976,7 +16244,8 @@
       "overall": 75,
       "nation": "Чехия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Койта|ФРВ",
@@ -15986,7 +16255,8 @@
       "overall": 75,
       "nation": "мали",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Краньо|ВРТ",
@@ -15996,7 +16266,8 @@
       "overall": 75,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кублер|ПЗ",
@@ -16006,7 +16277,8 @@
       "overall": 75,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кумбулла|ЦЗ",
@@ -16016,7 +16288,8 @@
       "overall": 75,
       "nation": "Албания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лайнер|ПЗ",
@@ -16026,7 +16299,8 @@
       "overall": 75,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ласель|ЦЗ",
@@ -16036,7 +16310,8 @@
       "overall": 75,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Маурис|ЦП",
@@ -16046,7 +16321,8 @@
       "overall": 75,
       "nation": "франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нкетиа|ФРВ",
@@ -16056,7 +16332,8 @@
       "overall": 75,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Паломино|ЦЗ",
@@ -16066,7 +16343,8 @@
       "overall": 75,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Порту|ПФА",
@@ -16076,7 +16354,8 @@
       "overall": 75,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Промес|ЛФА",
@@ -16086,7 +16365,8 @@
       "overall": 75,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Радонич|ЛФА",
@@ -16096,7 +16376,8 @@
       "overall": 75,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Рачич|ЦП",
@@ -16106,7 +16387,8 @@
       "overall": 75,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Родак|ВРТ",
@@ -16116,7 +16398,8 @@
       "overall": 75,
       "nation": "Словакия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Родригез|ЛЗ",
@@ -16126,7 +16409,8 @@
       "overall": 75,
       "nation": "Швейцария",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Рока|ЦОП",
@@ -16136,7 +16420,8 @@
       "overall": 75,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Садик|ФРВ",
@@ -16146,7 +16431,8 @@
       "overall": 75,
       "nation": "Нигерия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сазонов|ЦЗ",
@@ -16156,7 +16442,8 @@
       "overall": 75,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Самассеку|ЦОП",
@@ -16166,7 +16453,8 @@
       "overall": 75,
       "nation": "Мали",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сессеньон|ЛЗ",
@@ -16176,7 +16464,8 @@
       "overall": 75,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Скалли|ПЗ",
@@ -16186,7 +16475,8 @@
       "overall": 75,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Скальвини|ЦЗ",
@@ -16196,7 +16486,8 @@
       "overall": 75,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Соланко|ФРВ",
@@ -16206,7 +16497,8 @@
       "overall": 75,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Стах|ЦП",
@@ -16216,7 +16508,8 @@
       "overall": 75,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Стеффен|ВРТ",
@@ -16226,7 +16519,8 @@
       "overall": 75,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Суарез|ПФА",
@@ -16236,7 +16530,8 @@
       "overall": 75,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сулейманов|ФРВ",
@@ -16246,7 +16541,8 @@
       "overall": 75,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сумаре|ЦОП",
@@ -16256,7 +16552,8 @@
       "overall": 75,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тамезе|ЦП",
@@ -16266,7 +16563,8 @@
       "overall": 75,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тиау|ЦЗ",
@@ -16276,7 +16574,8 @@
       "overall": 75,
       "nation": "сенегал",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тиллман|ЦАП",
@@ -16286,7 +16585,8 @@
       "overall": 75,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фалькао|ФРВ",
@@ -16296,7 +16596,8 @@
       "overall": 75,
       "nation": "Колумбия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Флоренци|ПЗ",
@@ -16306,7 +16607,8 @@
       "overall": 75,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Чомерт|ЦЗ",
@@ -16316,7 +16618,8 @@
       "overall": 75,
       "nation": "",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Шаиби|ЛФА",
@@ -16326,7 +16629,8 @@
       "overall": 75,
       "nation": "Алжир",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эггештейн|ЦОП",
@@ -16336,7 +16640,8 @@
       "overall": 75,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эдуард|ФРВ",
@@ -16346,7 +16651,8 @@
       "overall": 75,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Элнени|ЦП",
@@ -16356,7 +16662,8 @@
       "overall": 75,
       "nation": "Египет",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Энрике|ЦОП",
@@ -16366,7 +16673,8 @@
       "overall": 75,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эрик Гарсия|ЦЗ",
@@ -16376,7 +16684,8 @@
       "overall": 75,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Аслани|ЦП",
@@ -16386,7 +16695,8 @@
       "overall": 74,
       "nation": "Албания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Байрами|ЦАП",
@@ -16396,7 +16706,8 @@
       "overall": 74,
       "nation": "Албания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Баккер|ЛЗ",
@@ -16406,7 +16717,8 @@
       "overall": 74,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Башич|ЦП",
@@ -16416,7 +16728,8 @@
       "overall": 74,
       "nation": "Хорватия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бебе|ЦАП",
@@ -16426,7 +16739,8 @@
       "overall": 74,
       "nation": "Кабо-Верде",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Биссек|ЦЗ",
@@ -16436,7 +16750,8 @@
       "overall": 74,
       "nation": "Швейцария",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бренет|ПЗ",
@@ -16446,7 +16761,8 @@
       "overall": 74,
       "nation": "нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вилья|ЛП",
@@ -16456,7 +16772,8 @@
       "overall": 74,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гаттони|ЦЗ",
@@ -16466,7 +16783,8 @@
       "overall": 74,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гомез|ЛЗ",
@@ -16476,7 +16794,8 @@
       "overall": 74,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Диуф|ЦП",
@@ -16486,7 +16805,8 @@
       "overall": 74,
       "nation": "франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дункан|ЦП",
@@ -16496,7 +16816,8 @@
       "overall": 74,
       "nation": "Гана",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Загаду|ЦЗ",
@@ -16506,7 +16827,8 @@
       "overall": 74,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Зесигер|ЦЗ",
@@ -16516,7 +16838,8 @@
       "overall": 74,
       "nation": "Швейцария",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Исаксен|ПФА",
@@ -16526,7 +16849,8 @@
       "overall": 74,
       "nation": "дания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Исидор|ФРВ",
@@ -16536,7 +16860,8 @@
       "overall": 74,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Йенц|ЦЗ",
@@ -16546,7 +16871,8 @@
       "overall": 74,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Карденас|ВРТ",
@@ -16556,7 +16882,8 @@
       "overall": 74,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Керни|ЦП",
@@ -16566,7 +16893,8 @@
       "overall": 74,
       "nation": "Шотландия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кивиор|ЦЗ",
@@ -16576,7 +16904,8 @@
       "overall": 74,
       "nation": "Польша",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Козза|ЛЗ",
@@ -16586,7 +16915,8 @@
       "overall": 74,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Комличенко|ФРВ",
@@ -16596,7 +16926,8 @@
       "overall": 74,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Линетти|ЦП",
@@ -16606,7 +16937,8 @@
       "overall": 74,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лунин|ВРТ",
@@ -16616,7 +16948,8 @@
       "overall": 74,
       "nation": "Украина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Микаутадзе|ФРВ",
@@ -16626,7 +16959,8 @@
       "overall": 74,
       "nation": "грузия",
       "nickname": "Мика",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Миттельштадт|ЛЗ",
@@ -16636,7 +16970,8 @@
       "overall": 74,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Модер|ЦП",
@@ -16646,7 +16981,8 @@
       "overall": 74,
       "nation": "Польша",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Муса|ЦП",
@@ -16656,7 +16992,8 @@
       "overall": 74,
       "nation": "сша",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Педерсен|ПЗ",
@@ -16666,7 +17003,8 @@
       "overall": 74,
       "nation": "Норвегия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пеллегрини|ЛЗ",
@@ -16676,7 +17014,8 @@
       "overall": 74,
       "nation": "аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пинамонти|ФРВ",
@@ -16686,7 +17025,8 @@
       "overall": 74,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ренч|ПЗ",
@@ -16696,7 +17036,8 @@
       "overall": 74,
       "nation": "нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Руальт|ЦЗ",
@@ -16706,7 +17047,8 @@
       "overall": 74,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сергеев|ФРВ",
@@ -16716,7 +17058,8 @@
       "overall": 74,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сисс|ЦОП",
@@ -16726,7 +17069,8 @@
       "overall": 74,
       "nation": "Сенегал",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тейлор|ЦП",
@@ -16736,7 +17080,8 @@
       "overall": 74,
       "nation": "нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Телла|ЛФА",
@@ -16746,7 +17091,8 @@
       "overall": 74,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Терратс|ЦП",
@@ -16756,7 +17102,8 @@
       "overall": 74,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Томаш|ФРВ",
@@ -16766,7 +17113,8 @@
       "overall": 74,
       "nation": "Португалия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ульрих|ВРТ",
@@ -16776,7 +17124,8 @@
       "overall": 74,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фемения|ПЗ",
@@ -16786,7 +17135,8 @@
       "overall": 74,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Филипп|ФРВ",
@@ -16796,7 +17146,8 @@
       "overall": 74,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фридрих|ЦЗ",
@@ -16806,7 +17157,8 @@
       "overall": 74,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фюнрих|ЦАП",
@@ -16816,7 +17168,8 @@
       "overall": 74,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хёлер|ФРВ",
@@ -16826,7 +17179,8 @@
       "overall": 74,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Чамберс|ЦЗ",
@@ -16836,7 +17190,8 @@
       "overall": 74,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эрлич|ЦЗ",
@@ -16846,7 +17201,8 @@
       "overall": 74,
       "nation": "Хорватия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Якич|ЦОП",
@@ -16856,7 +17212,8 @@
       "overall": 74,
       "nation": "Хорватия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Агиррезабала|ВРТ",
@@ -16866,7 +17223,8 @@
       "overall": 73,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Батши|ПФА",
@@ -16876,7 +17234,8 @@
       "overall": 73,
       "nation": "россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Белланова|ПЗ",
@@ -16886,7 +17245,8 @@
       "overall": 73,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вагноман|ПЗ",
@@ -16896,7 +17256,8 @@
       "overall": 73,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Валери|ПЗ",
@@ -16906,7 +17267,8 @@
       "overall": 73,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вильялибре|ФРВ",
@@ -16916,7 +17278,8 @@
       "overall": 73,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Винья|ЛЗ",
@@ -16926,7 +17289,8 @@
       "overall": 73,
       "nation": "Уругвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вранкс|ЦП",
@@ -16936,7 +17300,8 @@
       "overall": 73,
       "nation": "Бельгия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гульде|ЦЗ",
@@ -16946,7 +17311,8 @@
       "overall": 73,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Давила|ФРВ",
@@ -16956,7 +17322,8 @@
       "overall": 73,
       "nation": "Чили",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дамметт|ЦЗ",
@@ -16966,7 +17333,8 @@
       "overall": 73,
       "nation": "Уэльс",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дефрель|ФРВ",
@@ -16976,7 +17344,8 @@
       "overall": 73,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джиджи|ЦЗ",
@@ -16986,7 +17355,8 @@
       "overall": 73,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дилросун|ПФА",
@@ -16996,7 +17366,8 @@
       "overall": 73,
       "nation": "нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Зима|ЦЗ",
@@ -17006,7 +17377,8 @@
       "overall": 73,
       "nation": "Польша",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кажусте|ЦОП",
@@ -17016,7 +17388,8 @@
       "overall": 73,
       "nation": "Швеция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Каразор|ЦП",
@@ -17026,7 +17399,8 @@
       "overall": 73,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Карамо|ФРВ",
@@ -17036,7 +17410,8 @@
       "overall": 73,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Келлехер|ВРТ",
@@ -17046,7 +17421,8 @@
       "overall": 73,
       "nation": "Ирландия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Крафт|ПЗ",
@@ -17056,7 +17432,8 @@
       "overall": 73,
       "nation": "Швеция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Куэнка|ЦЗ",
@@ -17066,7 +17443,8 @@
       "overall": 73,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лантратов|ВРТ",
@@ -17076,7 +17454,8 @@
       "overall": 73,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ленц|ЛЗ",
@@ -17086,7 +17465,8 @@
       "overall": 73,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мариано|ФРВ",
@@ -17096,7 +17476,8 @@
       "overall": 73,
       "nation": "Доминиканская Республика",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мостовой|ПФА",
@@ -17106,7 +17487,8 @@
       "overall": 73,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нианзу|ЦЗ",
@@ -17116,7 +17498,8 @@
       "overall": 73,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Остигард|ЦЗ",
@@ -17126,7 +17509,8 @@
       "overall": 73,
       "nation": "Норвегия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пенья|ВРТ",
@@ -17136,7 +17520,8 @@
       "overall": 73,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Перван|ВРТ",
@@ -17146,7 +17531,8 @@
       "overall": 73,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Перез|ЦП",
@@ -17156,7 +17542,8 @@
       "overall": 73,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Помазун|ВРТ",
@@ -17166,7 +17553,8 @@
       "overall": 73,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Рим|ЦЗ",
@@ -17176,7 +17564,8 @@
       "overall": 73,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Рожерио|ЛЗ",
@@ -17186,7 +17575,8 @@
       "overall": 73,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сепе|ВРТ",
@@ -17196,7 +17586,8 @@
       "overall": 73,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Стиллер|ЦП",
@@ -17206,7 +17597,8 @@
       "overall": 73,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сутормин|ЦП",
@@ -17216,7 +17608,8 @@
       "overall": 73,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тормена|ЦЗ",
@@ -17226,7 +17619,8 @@
       "overall": 73,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Торстведт|ЦОП",
@@ -17236,7 +17630,8 @@
       "overall": 73,
       "nation": "Норвегия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хато|ЦЗ",
@@ -17246,7 +17641,8 @@
       "overall": 73,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хуан Карлос|ВРТ",
@@ -17256,7 +17652,8 @@
       "overall": 73,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эззалзули|ЛП",
@@ -17266,7 +17663,8 @@
       "overall": 73,
       "nation": "Марокко",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эспиноза|ЦЗ",
@@ -17276,7 +17674,8 @@
       "overall": 73,
       "nation": "Колумбия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Абнер|ЛЗ",
@@ -17286,7 +17685,8 @@
       "overall": 72,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Адриан|ВРТ",
@@ -17296,7 +17696,8 @@
       "overall": 72,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Альварес Мартинез|ФРВ",
@@ -17306,7 +17707,8 @@
       "overall": 72,
       "nation": "Уругвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ахметов|ЦП",
@@ -17316,7 +17718,8 @@
       "overall": 72,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бажетич|ЦОП",
@@ -17326,7 +17729,8 @@
       "overall": 72,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Байрамян|ЛФА",
@@ -17336,7 +17740,8 @@
       "overall": 72,
       "nation": "Армения",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Балло|ЛЗ",
@@ -17346,7 +17751,8 @@
       "overall": 72,
       "nation": "Сенегал",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Болокка|ЦП",
@@ -17356,7 +17762,8 @@
       "overall": 72,
       "nation": "Камерун",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вити|ЦЗ",
@@ -17366,7 +17773,8 @@
       "overall": 72,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Войвода|ЛП",
@@ -17376,7 +17784,8 @@
       "overall": 72,
       "nation": "Косово",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гилмор|ЦП",
@@ -17386,7 +17795,8 @@
       "overall": 72,
       "nation": "Шотландия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гладышев|ЛФА",
@@ -17396,7 +17806,8 @@
       "overall": 72,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Глебов|ЦОП",
@@ -17406,7 +17817,8 @@
       "overall": 72,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кариус|ВРТ",
@@ -17416,7 +17828,8 @@
       "overall": 72,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Круговой|ПЗ",
@@ -17426,7 +17839,8 @@
       "overall": 72,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лазаро|ПЗ",
@@ -17436,7 +17850,8 @@
       "overall": 72,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лаксальт|ПЗ",
@@ -17446,7 +17861,8 @@
       "overall": 72,
       "nation": "Уругвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Левелинг|ФРВ",
@@ -17456,7 +17872,8 @@
       "overall": 72,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лещук|ВРТ",
@@ -17466,7 +17883,8 @@
       "overall": 72,
       "nation": "Украина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Меркеланц|ЛФА",
@@ -17476,7 +17894,8 @@
       "overall": 72,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мозес|ЛЗ",
@@ -17486,7 +17905,8 @@
       "overall": 72,
       "nation": "Нигерия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мориба|ЦП",
@@ -17496,7 +17916,8 @@
       "overall": 72,
       "nation": "Гвинея",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Натан|ЦЗ",
@@ -17506,7 +17927,8 @@
       "overall": 72,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нсоки|ЦЗ",
@@ -17516,7 +17938,8 @@
       "overall": 72,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Обианг|ЦОП",
@@ -17526,7 +17949,8 @@
       "overall": 72,
       "nation": "Экваториальная Гвинея",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Перец|ВРТ",
@@ -17536,7 +17960,8 @@
       "overall": 72,
       "nation": "Израиль",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пинсольо|ВРТ",
@@ -17546,7 +17971,8 @@
       "overall": 72,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Позо|ПЗ",
@@ -17556,7 +17982,8 @@
       "overall": 72,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Поттер|ЛФА",
@@ -17566,7 +17993,8 @@
       "overall": 72,
       "nation": "англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Раньери|ЦЗ",
@@ -17576,7 +18004,8 @@
       "overall": 72,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Родригао|ПЗ",
@@ -17586,7 +18015,8 @@
       "overall": 72,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Силдилла|ПЗ",
@@ -17596,7 +18026,8 @@
       "overall": 72,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Толян|ПЗ",
@@ -17606,7 +18037,8 @@
       "overall": 72,
       "nation": "Армения",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Умяров|ЦП",
@@ -17616,7 +18048,8 @@
       "overall": 72,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Уткин|ЦАП",
@@ -17626,7 +18059,8 @@
       "overall": 72,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Феррари|ЦЗ",
@@ -17636,7 +18070,8 @@
       "overall": 72,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фосу-Менса|ПЗ",
@@ -17646,7 +18081,8 @@
       "overall": 72,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хак|ЛП",
@@ -17656,7 +18092,8 @@
       "overall": 72,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Харагучи|ЦАП",
@@ -17666,7 +18103,8 @@
       "overall": 72,
       "nation": "Япония",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хасебе|ЦЗ",
@@ -17676,7 +18114,8 @@
       "overall": 72,
       "nation": "Япония",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Холм|ПЗ",
@@ -17686,7 +18125,8 @@
       "overall": 72,
       "nation": "Норвегия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Худяков|ЛЗ",
@@ -17696,7 +18136,8 @@
       "overall": 72,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Чо|ФРВ",
@@ -17706,7 +18147,8 @@
       "overall": 72,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ён|ЦАП",
@@ -17716,7 +18158,8 @@
       "overall": 72,
       "nation": "Южная Корея",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Арутюнян|ЦП",
@@ -17726,7 +18169,8 @@
       "overall": 71,
       "nation": "Армения",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Баньяк|ЦП",
@@ -17736,7 +18180,8 @@
       "overall": 71,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Брелоу|ВРТ",
@@ -17746,7 +18191,8 @@
       "overall": 71,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ван Хек|ЦЗ",
@@ -17756,7 +18202,8 @@
       "overall": 71,
       "nation": "Нидерланды",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Васютин|ВРТ",
@@ -17766,7 +18213,8 @@
       "overall": 71,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Витоло|ЛП",
@@ -17776,7 +18224,8 @@
       "overall": 71,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гаэтано|ЦП",
@@ -17786,7 +18235,8 @@
       "overall": 71,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гилерме|ВРТ",
@@ -17796,7 +18246,8 @@
       "overall": 71,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джон|ЛЗ",
@@ -17806,7 +18257,8 @@
       "overall": 71,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дзаноли|ПЗ",
@@ -17816,7 +18268,8 @@
       "overall": 71,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дюпин|ВРТ",
@@ -17826,7 +18279,8 @@
       "overall": 71,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Илинг|ЛП",
@@ -17836,7 +18290,8 @@
       "overall": 71,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ионов|ПФА",
@@ -17846,7 +18301,8 @@
       "overall": 71,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кейтель|ЦОП",
@@ -17856,7 +18312,8 @@
       "overall": 71,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ленини|ЦП",
@@ -17866,7 +18323,8 @@
       "overall": 71,
       "nation": "Уругвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Магкеев|ЦП",
@@ -17876,7 +18334,8 @@
       "overall": 71,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Майсторович|ЦЗ",
@@ -17886,7 +18345,8 @@
       "overall": 71,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Милло|ЦАП",
@@ -17896,7 +18356,8 @@
       "overall": 71,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Миранте|ВРТ",
@@ -17906,7 +18367,8 @@
       "overall": 71,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мори|ПЗ",
@@ -17916,7 +18378,8 @@
       "overall": 71,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мохеби|ЛФА",
@@ -17926,7 +18389,8 @@
       "overall": 71,
       "nation": "Иран",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нганкам|ПФА",
@@ -17936,7 +18400,8 @@
       "overall": 71,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нтека|ФРВ",
@@ -17946,7 +18411,8 @@
       "overall": 71,
       "nation": "Франция",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Олусегун|ФРВ",
@@ -17956,7 +18422,8 @@
       "overall": 71,
       "nation": "Нигерия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пачеко|ЦЗ",
@@ -17966,7 +18433,8 @@
       "overall": 71,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Прохин|ЦЗ",
@@ -17976,7 +18444,8 @@
       "overall": 71,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Руан|ЦЗ",
@@ -17986,7 +18455,8 @@
       "overall": 71,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Руджери|ЛЗ",
@@ -17996,7 +18466,8 @@
       "overall": 71,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Смолчич|ЦЗ",
@@ -18006,7 +18477,8 @@
       "overall": 71,
       "nation": "Хорватия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Соппи|ПЗ",
@@ -18016,7 +18488,8 @@
       "overall": 71,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Стиль|ВРТ",
@@ -18026,7 +18499,8 @@
       "overall": 71,
       "nation": "Англия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Туре|ФРВ",
@@ -18036,7 +18510,8 @@
       "overall": 71,
       "nation": "Кот-д'Ивуар",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фамье|ФРВ",
@@ -18046,7 +18521,8 @@
       "overall": 71,
       "nation": "Гана",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фассон|ЦЗ",
@@ -18056,7 +18532,8 @@
       "overall": 71,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хауге|ЛП",
@@ -18066,7 +18543,8 @@
       "overall": 71,
       "nation": "Норвегия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хуанпе|ЦЗ",
@@ -18076,7 +18554,8 @@
       "overall": 71,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Чаварриа|ЛЗ",
@@ -18086,7 +18565,8 @@
       "overall": 71,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эль Ямик|ЦЗ",
@@ -18096,7 +18576,8 @@
       "overall": 71,
       "nation": "марокко",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Янтшке|ЦЗ",
@@ -18106,7 +18587,8 @@
       "overall": 71,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Адаму|ФРВ",
@@ -18116,7 +18598,8 @@
       "overall": 70,
       "nation": "Австрия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Атуболу|ВРТ",
@@ -18126,7 +18609,8 @@
       "overall": 70,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ашурматов|ЦЗ",
@@ -18136,7 +18620,8 @@
       "overall": 70,
       "nation": "Узбекистан",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Аюпов|ЦП",
@@ -18146,7 +18631,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бикфалви|ЦАП",
@@ -18156,7 +18642,8 @@
       "overall": 70,
       "nation": "Румыния",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Витюгов|ЦП",
@@ -18166,7 +18653,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вуячич|ЦЗ",
@@ -18176,7 +18664,8 @@
       "overall": 70,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Голенков|ФРВ",
@@ -18186,7 +18675,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Даку|ЦФД",
@@ -18196,7 +18686,8 @@
       "overall": 70,
       "nation": "Албания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Евтич|ЦП",
@@ -18206,7 +18697,8 @@
       "overall": 70,
       "nation": "Швейцария",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Жустван|ЦАП",
@@ -18216,7 +18708,8 @@
       "overall": 70,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кабутов|ПЗ",
@@ -18226,7 +18719,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Коста|ВРТ",
@@ -18236,7 +18730,8 @@
       "overall": 70,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лисакович|ФРВ",
@@ -18246,7 +18741,8 @@
       "overall": 70,
       "nation": "Беларусь",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лукин|ЦЗ",
@@ -18256,7 +18752,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Марадишвили|ЦП",
@@ -18266,7 +18763,8 @@
       "overall": 70,
       "nation": "Грузия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мелехин|ЦЗ",
@@ -18276,7 +18774,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мумин|ЦЗ",
@@ -18286,7 +18785,8 @@
       "overall": 70,
       "nation": "Гана",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ненахов|ПЗ",
@@ -18296,7 +18796,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Овсянников|ВРТ",
@@ -18306,7 +18807,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Осипенко|ЦЗ",
@@ -18316,7 +18818,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Паршивлюк|ПЗ",
@@ -18326,7 +18829,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Песьяков|ВРТ",
@@ -18336,7 +18840,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Петров|ПЗ",
@@ -18346,7 +18851,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ренан|ЦЗ",
@@ -18356,7 +18862,8 @@
       "overall": 70,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Рыбчинский|ПП",
@@ -18366,7 +18873,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сарвели|ФРВ",
@@ -18376,7 +18884,8 @@
       "overall": 70,
       "nation": "Грузия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Семеньо|ФРВ",
@@ -18386,7 +18895,8 @@
       "overall": 70,
       "nation": "гана",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Стензель|ПЗ",
@@ -18396,7 +18906,8 @@
       "overall": 70,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Стержиу|ЦЗ",
@@ -18406,7 +18917,8 @@
       "overall": 70,
       "nation": "Швейцария",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Топпе|ЦАП",
@@ -18416,7 +18928,8 @@
       "overall": 70,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Торре|ЦАП",
@@ -18426,7 +18939,8 @@
       "overall": 70,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Угальде|ФРВ",
@@ -18436,7 +18950,8 @@
       "overall": 70,
       "nation": "коста-рика",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Упхофф|ВРТ",
@@ -18446,7 +18961,8 @@
       "overall": 70,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Фалл|ЦЗ",
@@ -18456,7 +18972,8 @@
       "overall": 70,
       "nation": "Сенегал",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Филипенко|ЦЗ",
@@ -18466,7 +18983,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Форк|ВРТ",
@@ -18476,7 +18994,8 @@
       "overall": 70,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Чендлер|ПП",
@@ -18486,7 +19005,8 @@
       "overall": 70,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Чумич|ЛФА",
@@ -18496,7 +19016,8 @@
       "overall": 70,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Щетинин|ЦАП",
@@ -18506,7 +19027,8 @@
       "overall": 70,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Энсисо|ЛФА",
@@ -18516,7 +19038,8 @@
       "overall": 70,
       "nation": "Парагвай",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вайсхаупт|ЛП",
@@ -18526,7 +19049,8 @@
       "overall": 69,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Грицаенко|ЦЗ",
@@ -18536,7 +19060,8 @@
       "overall": 69,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дремгич|ЦЗ",
@@ -18546,7 +19071,8 @@
       "overall": 69,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Иву|ЦП",
@@ -18556,7 +19082,8 @@
       "overall": 69,
       "nation": "Армения",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Карпицкий|ЦЗ",
@@ -18566,7 +19093,8 @@
       "overall": 69,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кебе|ЦП",
@@ -18576,7 +19104,8 @@
       "overall": 69,
       "nation": "Мали",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Миронов|ЦОП",
@@ -18586,7 +19115,8 @@
       "overall": 69,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мулаттьери|ФРВ",
@@ -18596,7 +19126,8 @@
       "overall": 69,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Муниз|ФРВ",
@@ -18606,7 +19137,8 @@
       "overall": 69,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Набабкин|ПЗ",
@@ -18616,7 +19148,8 @@
       "overall": 69,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Нартей|ЦП",
@@ -18626,7 +19159,8 @@
       "overall": 69,
       "nation": "Дания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ноласкоаин|ЦОП",
@@ -18636,7 +19170,8 @@
       "overall": 69,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пеголо|ВРТ",
@@ -18646,7 +19181,8 @@
       "overall": 69,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ратиу|ПЗ",
@@ -18656,7 +19192,8 @@
       "overall": 69,
       "nation": "Румыния",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сорокин|ЦЗ",
@@ -18666,7 +19203,8 @@
       "overall": 69,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Терентьев|ПЗ",
@@ -18676,7 +19214,8 @@
       "overall": 69,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хубулов|ЦП",
@@ -18686,7 +19225,8 @@
       "overall": 69,
       "nation": "Грузия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Чернов|ЛЗ",
@@ -18696,7 +19236,8 @@
       "overall": 69,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Шеттине|ФРВ",
@@ -18706,7 +19247,8 @@
       "overall": 69,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эктов|ПЗ",
@@ -18716,7 +19258,8 @@
       "overall": 69,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Акбашев|ЦП",
@@ -18726,7 +19269,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Алтимира|ЦОП",
@@ -18736,7 +19280,8 @@
       "overall": 68,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Апшацев|ПЗ",
@@ -18746,7 +19291,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вада|ЦП",
@@ -18756,7 +19302,8 @@
       "overall": 68,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вахания|ЛЗ",
@@ -18766,7 +19313,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Влут|ПЗ",
@@ -18776,7 +19324,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Денисов|ПЗ",
@@ -18786,7 +19335,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Зотов|ЦП",
@@ -18796,7 +19346,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Итало|ПЗ",
@@ -18806,7 +19357,8 @@
       "overall": 68,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Лангович|ПЗ",
@@ -18816,7 +19368,8 @@
       "overall": 68,
       "nation": "Сербия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Литвинов|ПЗ",
@@ -18826,7 +19379,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мартин|ЦЗ",
@@ -18836,7 +19390,8 @@
       "overall": 68,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Мартынович|ЦЗ",
@@ -18846,7 +19401,8 @@
       "overall": 68,
       "nation": "Беларусь",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Массимо|ПП",
@@ -18856,7 +19412,8 @@
       "overall": 68,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Митай|ЛЗ",
@@ -18866,7 +19423,8 @@
       "overall": 68,
       "nation": "Албания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Морозов|ЦЗ",
@@ -18876,7 +19434,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Пеллегри|ФРВ",
@@ -18886,7 +19445,8 @@
       "overall": 68,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Попа|ВРТ",
@@ -18896,7 +19456,8 @@
       "overall": 68,
       "nation": "Румыния",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сиссе|ЦП",
@@ -18906,7 +19467,8 @@
       "overall": 68,
       "nation": "Гвинея",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Солис|ЦП",
@@ -18916,7 +19478,8 @@
       "overall": 68,
       "nation": "Колумбия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Турриентес|ЦП",
@@ -18926,7 +19489,8 @@
       "overall": 68,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Цыпченко|ФРВ",
@@ -18936,7 +19500,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Шмаков|ЦП",
@@ -18946,7 +19511,8 @@
       "overall": 68,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ааронсон|ЦАП",
@@ -18956,7 +19522,8 @@
       "overall": 67,
       "nation": "США",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Аларкон|ФРВ",
@@ -18966,7 +19533,8 @@
       "overall": 67,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Дзортеа|ПЗ",
@@ -18976,7 +19544,8 @@
       "overall": 67,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кобнан|ПФА",
@@ -18986,7 +19555,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Комаров|ЦП",
@@ -18996,7 +19566,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Коновалов|ЦОП",
@@ -19006,7 +19577,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кулаков|ПЗ",
@@ -19016,7 +19588,8 @@
       "overall": 67,
       "nation": "Украина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Кутицкий|ЦП",
@@ -19026,7 +19599,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Оласагасти|ЦП",
@@ -19036,7 +19610,8 @@
       "overall": 67,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Рыбус|ЛЗ",
@@ -19046,7 +19621,8 @@
       "overall": 67,
       "nation": "Польша",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Рядно|ЛЗ",
@@ -19056,7 +19632,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сармиенто|ПФА",
@@ -19066,7 +19643,8 @@
       "overall": 67,
       "nation": "Аргентина",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Соколов|ЦАП",
@@ -19076,7 +19654,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сунгатулин|ЦП",
@@ -19086,7 +19665,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тороп|ВРТ",
@@ -19096,7 +19676,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Трилли|ПЗ",
@@ -19106,7 +19687,8 @@
       "overall": 67,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Тугарев|ЛФА",
@@ -19116,7 +19698,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Шитов|ФРВ",
@@ -19126,7 +19709,8 @@
       "overall": 67,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Иванов|ЦП",
@@ -19136,7 +19720,8 @@
       "overall": 66,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ломб|ВРТ",
@@ -19146,7 +19731,8 @@
       "overall": 66,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Медведев|ВРТ",
@@ -19156,7 +19742,8 @@
       "overall": 66,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хромов|ЦАП",
@@ -19166,7 +19753,8 @@
       "overall": 66,
       "nation": "Россия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гарридо|ЦП",
@@ -19176,7 +19764,8 @@
       "overall": 65,
       "nation": "Испания",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сек|ФРВ",
@@ -19186,7 +19775,8 @@
       "overall": 65,
       "nation": "Сенегал",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эглофф|ЦАП",
@@ -19196,7 +19786,8 @@
       "overall": 65,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Андре Андерсон|ФРВ",
@@ -19206,7 +19797,8 @@
       "overall": 64,
       "nation": "Бразилия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Джемелло|ВРТ",
@@ -19216,7 +19808,8 @@
       "overall": 64,
       "nation": "Италия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Крациг|ЛЗ",
@@ -19226,7 +19819,8 @@
       "overall": 61,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Денк|ЦЗ",
@@ -19236,7 +19830,8 @@
       "overall": 60,
       "nation": "Германия",
       "nickname": "",
-      "status": "bench"
+      "status": "bench",
+      "fired": false
     }
   ]
 }

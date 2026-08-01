@@ -82,7 +82,14 @@ DEFAULT_ALIASES: dict[str, dict[str, str]] = {
     "Нуньес": {"team": "Мю", "contains": "Нуньес"},
     "Паласиос": {"team": "Байер", "contains": "Паласиос"},
     "Пеллегрини": {"team": "Лацио", "contains": "Пеллегрини"},
-    "Пепе": {"team": "Бетис", "contains": "Пепе", "position": "ЦЗ"},
+    "Пепе": {
+        "by_overall": {
+            "81": {"team": "Бетис", "contains": "Пепе", "position": "ЦЗ"},
+            "80": {"team": "Спартак", "contains": "Пепе", "position": "ФРВ"},
+            "83": {"team": "Спартак", "contains": "Пепе", "position": "ФРВ"},
+            "77": {"team": "Спартак", "contains": "Пепе", "position": "ФРВ"},
+        }
+    },
     "Перейра": {"team": "Реал Сосьедад", "contains": "Перейра"},
     "Санчес": {"team": "Барселона", "contains": "Санчес"},
     "Сильва": {
