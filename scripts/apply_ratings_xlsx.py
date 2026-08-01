@@ -97,7 +97,9 @@ DEFAULT_ALIASES: dict[str, dict[str, str]] = {
         }
     },
     "Энрике": {"team": "Бетис", "contains": "Энрике"},
-    "Эрнандез": {"team": "Милан", "contains": "Эрнандез"},
+    "Эрнандез": {"team": "Милан", "exact_name": "Эрнандез"},
+    "Люка Эрнандез": {"team": "Наполи", "contains": "Люка"},
+    "Люка": {"team": "Наполи", "contains": "Люка Эрнандез"},
     "Эррера": {"team": "Жирона", "contains": "Эррера"},
 }
 
@@ -140,6 +142,9 @@ def _alias_matches_row(alias: dict[str, str], row: Any) -> bool:
     if contains and contains not in (getattr(row, "name", "") or "").casefold():
         return False
     if pos_hint and _norm_cmp(getattr(row, "position", "") or "") != pos_hint:
+        return False
+    exact = alias.get("exact_name")
+    if exact and _norm_cmp(getattr(row, "name", "") or "") != _norm_cmp(exact):
         return False
     return True
 

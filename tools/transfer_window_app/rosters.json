@@ -1,6 +1,6 @@
 {
   "season": 4,
-  "exported_at": 1785601551,
+  "exported_at": 1785607470,
   "injury_as_of_month": 6,
   "injured_count": 0,
   "squad_rules": {
@@ -8028,7 +8028,7 @@
       "coach": "Терзич",
       "formation": "4-3-3 уд · Терзич",
       "formation_id": 2,
-      "avg_start": 82.3,
+      "avg_start": 81.0,
       "start": [
         {
           "id": "Милан|Терраччано|ВРТ",
@@ -8044,7 +8044,7 @@
           "id": "Милан|Эрнандез|ЛЗ",
           "name": "Эрнандез",
           "position": "ЛЗ",
-          "overall": 87,
+          "overall": 75,
           "slot": "LB",
           "injured": false,
           "x": 0.1,
@@ -8561,7 +8561,7 @@
       "coach": "Пиоли",
       "formation": "4-3-3 уд · Пиоли",
       "formation_id": 2,
-      "avg_start": 85.3,
+      "avg_start": 85.5,
       "start": [
         {
           "id": "Наполи|Мерет|ВРТ",
@@ -8577,7 +8577,7 @@
           "id": "Наполи|Люка Эрнандез|ЛЗ",
           "name": "Люка Эрнандез",
           "position": "ЛЗ",
-          "overall": 85,
+          "overall": 87,
           "slot": "LB",
           "injured": false,
           "x": 0.1,
