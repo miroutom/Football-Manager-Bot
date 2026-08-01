@@ -190,6 +190,69 @@ def is_called_up(nation: str, player_name: str) -> bool:
     return any(str(p.get("name") or "").casefold() == want for p in squad_for_nation(nation))
 
 
+_WC_STATUSES = ("start", "bench", "reserve")
+_STATUS_CYCLE = ("reserve", "start", "bench")
+
+
+def _norm_status(raw: Any) -> str:
+    st = str(raw or "").strip().lower()
+    return st if st in _WC_STATUSES else "reserve"
+
+
+def set_squad_player_status(nation: str, name: str, status: str) -> dict[str, Any]:
+    """Установить status игрока в заявке сборной."""
+    canon = resolve_nation_name(nation) or (nation or "").strip()
+    st = _norm_status(status)
+    if st not in _WC_STATUSES:
+        raise ValueError("status: start | bench | reserve")
+    data = load_wc_squads()
+    teams = data.get("teams") or {}
+    roster: list = teams.get(canon) or []
+    want = (name or "").strip().casefold()
+    for row in roster:
+        if str(row.get("name") or "").casefold() == want:
+            row["status"] = st
+            if st != "start":
+                row.pop("lineup_slot", None)
+            data["season"] = season_paths.get_active_season()
+            save_wc_squads(data)
+            return dict(row)
+    raise ValueError(f"«{name}» не в заявке {canon}")
+
+
+def cycle_squad_player_status(nation: str, name: str) -> tuple[str, dict[str, Any]]:
+    """reserve → start → bench → reserve."""
+    canon = resolve_nation_name(nation) or (nation or "").strip()
+    data = load_wc_squads()
+    roster: list = (data.get("teams") or {}).get(canon) or []
+    want = (name or "").strip().casefold()
+    for row in roster:
+        if str(row.get("name") or "").casefold() == want:
+            cur = _norm_status(row.get("status"))
+            try:
+                i = _STATUS_CYCLE.index(cur)
+            except ValueError:
+                i = -1
+            nxt = _STATUS_CYCLE[(i + 1) % len(_STATUS_CYCLE)]
+            row["status"] = nxt
+            if nxt != "start":
+                row.pop("lineup_slot", None)
+            data["season"] = season_paths.get_active_season()
+            save_wc_squads(data)
+            return nxt, dict(row)
+    raise ValueError(f"«{name}» не в заявке {canon}")
+
+
+def squad_status_map(nation: str) -> dict[str, str]:
+    """name.casefold() → status для игроков в заявке."""
+    out: dict[str, str] = {}
+    for p in squad_for_nation(nation):
+        nm = str(p.get("name") or "").strip().casefold()
+        if nm:
+            out[nm] = _norm_status(p.get("status"))
+    return out
+
+
 def toggle_callup(
     nation: str,
     *,

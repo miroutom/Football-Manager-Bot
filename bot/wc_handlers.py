@@ -24,6 +24,10 @@ wc_router = Router()
 
 _NATIONS_PAGE = 12
 _PLAYERS_PAGE = 10
+_SQUAD_PAGE = 8
+
+_STATUS_ICON = {"start": "🟢", "bench": "🟡", "reserve": "⚪"}
+_STATUS_LABEL = {"start": "старт", "bench": "запас", "reserve": "резерв"}
 
 
 def _wc_home_kb() -> InlineKeyboardMarkup:
@@ -515,14 +519,23 @@ async def cb_call_sum(callback: CallbackQuery) -> None:
     await _edit(callback, text, kb)
 
 
-def _players_kb(nation_idx: int, page: int, players: list[dict], called: set[str]) -> InlineKeyboardMarkup:
+def _players_kb(
+    nation_idx: int,
+    page: int,
+    players: list[dict],
+    status_by_name: dict[str, str],
+) -> InlineKeyboardMarkup:
     pages = max(1, (len(players) + _PLAYERS_PAGE - 1) // _PLAYERS_PAGE)
     page = max(0, min(page, pages - 1))
     chunk = players[page * _PLAYERS_PAGE : (page + 1) * _PLAYERS_PAGE]
     rows: list[list[InlineKeyboardButton]] = []
     for i, p in enumerate(chunk):
-        idx = page * _PLAYERS_PAGE + i
-        mark = "✅ " if p["name"].casefold() in called else ""
+        nk = p["name"].casefold()
+        st = status_by_name.get(nk)
+        if st:
+            mark = _STATUS_ICON.get(st, "✅") + " "
+        else:
+            mark = "➕ "
         label = f"{mark}{p['name']} · {p.get('overall') or '—'}"
         if len(label) > 36:
             label = label[:35] + "…"
@@ -530,7 +543,7 @@ def _players_kb(nation_idx: int, page: int, players: list[dict], called: set[str
             [
                 InlineKeyboardButton(
                     text=label,
-                    callback_data=f"wc:call:t:{nation_idx}:{page}:{idx}",
+                    callback_data=f"wc:call:t:{nation_idx}:{page}:{i}",
                 )
             ]
         )
@@ -589,7 +602,9 @@ async def _show_nation_players(
 
     players = await asyncio.to_thread(club_players_for_nation, nation)
     roster = squad_for_nation(nation)
-    called = {str(p.get("name") or "").casefold() for p in roster}
+    from utils.wc_callups import squad_status_map
+
+    status_map = squad_status_map(nation)
     ev = evaluate_wc_squad(roster)
     await state.set_state(WcEnter.callup_players)
     await state.update_data(wc_nation_idx=nation_idx, wc_players=players)
@@ -597,9 +612,10 @@ async def _show_nation_players(
         f"<b>{html_escape(nation)}</b>\n"
         f"В клубах найдено: <b>{len(players)}</b>\n"
         f"{format_wc_quota_summary_html(ev)}\n"
-        f"Тап = вызов / снять. FA без клуба — «Вне клубов»."
+        f"➕ вызов / снять · 🟢🟡⚪ в заявке · статус — в «Заявка 26».\n"
+        f"FA без клуба — «Вне клубов»."
     )
-    await _edit(callback, text, _players_kb(nation_idx, page, players, called))
+    await _edit(callback, text, _players_kb(nation_idx, page, players, status_map))
 
 
 @wc_router.callback_query(F.data.startswith("wc:call:n:"))
@@ -634,17 +650,20 @@ async def cb_call_toggle(callback: CallbackQuery, state: FSMContext) -> None:
     except (IndexError, ValueError):
         await callback.answer()
         return
-    data = await state.get_data()
-    players = data.get("wc_players") or []
+    nations = _nations_sorted()
+    if nation_idx < 0 or nation_idx >= len(nations):
+        await callback.answer()
+        return
+    nation = nations[nation_idx]
+    from utils.wc_callups import club_players_for_nation
+
+    players = await asyncio.to_thread(club_players_for_nation, nation)
     abs_idx = page * _PLAYERS_PAGE + local_idx
     if abs_idx < 0 or abs_idx >= len(players):
-        # перезагрузить список
-        await callback.answer()
+        await callback.answer("Обновляю список…")
         await _show_nation_players(callback, state, nation_idx, page)
         return
     p = players[abs_idx]
-    nations = _nations_sorted()
-    nation = nations[nation_idx]
     from utils.wc_callups import toggle_callup
 
     try:
@@ -761,45 +780,138 @@ async def on_call_manual_fa_line(message: Message, state: FSMContext) -> None:
         f"· {html_escape(str(entry.get('position') or pos))} · {ovr}",
         parse_mode="HTML",
     )
-    from utils.wc_callups import club_players_for_nation, squad_for_nation
+    from utils.wc_callups import club_players_for_nation, squad_status_map
     from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_summary_html
 
     players = await asyncio.to_thread(club_players_for_nation, nation)
     roster = squad_for_nation(nation)
-    called = {str(p.get("name") or "").casefold() for p in roster}
+    status_map = squad_status_map(nation)
     ev = evaluate_wc_squad(roster)
     await state.update_data(wc_players=players)
     text = (
         f"<b>{html_escape(nation)}</b>\n"
         f"В клубах/FA: <b>{len(players)}</b>\n"
         f"{format_wc_quota_summary_html(ev)}\n"
-        f"Тап = вызов / снять вызов."
+        f"➕ вызов / снять · статус — в «Заявка 26»."
     )
     await message.answer(
-        text, reply_markup=_players_kb(nation_idx, page, players, called), parse_mode="HTML"
+        text, reply_markup=_players_kb(nation_idx, page, players, status_map), parse_mode="HTML"
     )
+
+
+def _sorted_roster(roster: list[dict]) -> list[dict]:
+    order = {"start": 0, "bench": 1, "reserve": 2, "": 3}
+
+    def key(p: dict) -> tuple:
+        st = str(p.get("status") or "").strip().lower()
+        if st not in order:
+            st = ""
+        return (
+            order[st],
+            -int(p.get("overall") or 0),
+            str(p.get("name") or "").casefold(),
+        )
+
+    return sorted(roster, key=key)
+
+
+def _squad_roster_kb(nation_idx: int, page: int, roster: list[dict]) -> InlineKeyboardMarkup:
+    sorted_r = _sorted_roster(roster)
+    pages = max(1, (len(sorted_r) + _SQUAD_PAGE - 1) // _SQUAD_PAGE)
+    page = max(0, min(page, pages - 1))
+    chunk = sorted_r[page * _SQUAD_PAGE : (page + 1) * _SQUAD_PAGE]
+    rows: list[list[InlineKeyboardButton]] = []
+    for i, p in enumerate(chunk):
+        st = str(p.get("status") or "reserve").strip().lower()
+        if st not in _STATUS_ICON:
+            st = "reserve"
+        icon = _STATUS_ICON[st]
+        lab = _STATUS_LABEL.get(st, st)
+        name = str(p.get("name") or "")
+        label = f"{icon} {name} · {p.get('overall') or '—'} · {lab}"
+        if len(label) > 38:
+            label = label[:37] + "…"
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=label,
+                    callback_data=f"wc:sq:cyc:{nation_idx}:{page}:{i}",
+                )
+            ]
+        )
+    nav: list[InlineKeyboardButton] = []
+    if page > 0:
+        nav.append(
+            InlineKeyboardButton(text="⬅️", callback_data=f"wc:sq:pg:{nation_idx}:{page - 1}")
+        )
+    if page < pages - 1:
+        nav.append(
+            InlineKeyboardButton(text="➡️", callback_data=f"wc:sq:pg:{nation_idx}:{page + 1}")
+        )
+    if nav:
+        rows.append(nav)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="✅ Подтвердить заявку", callback_data=f"wc:sq:done:{nation_idx}"
+            )
+        ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="🖼 Схема", callback_data=f"wc:sq:png:{nation_idx}"
+            ),
+            InlineKeyboardButton(
+                text="✏️ Строками", callback_data=f"wc:sq:edit:{nation_idx}"
+            ),
+        ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="⬅️ К игрокам", callback_data=f"wc:call:np:{nation_idx}:0"
+            )
+        ]
+    )
+    rows.append(_back_home_row())
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def _show_squad_roster(
+    callback: CallbackQuery,
+    nation_idx: int,
+    page: int = 0,
+) -> None:
+    nations = _nations_sorted()
+    if nation_idx < 0 or nation_idx >= len(nations):
+        await callback.answer("Нет такой сборной", show_alert=True)
+        return
+    nation = nations[nation_idx]
+    from utils.wc_callups import squad_for_nation
+    from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_summary_html
+
+    roster = squad_for_nation(nation)
+    ev = evaluate_wc_squad(roster)
+    n = len(roster)
+    text = (
+        f"<b>{html_escape(nation)}</b> · заявка 26\n"
+        f"{format_wc_quota_summary_html(ev)}\n\n"
+        f"Игроков в заявке: <b>{n}</b>\n"
+        f"Тап по строке: резерв → старт → запас → …\n"
+        f"🟢 старт · 🟡 запас · ⚪ резерв"
+    )
+    await _edit(callback, text, _squad_roster_kb(nation_idx, page, roster))
 
 
 def _squad_manage_kb(nation_idx: int) -> InlineKeyboardMarkup:
+    """Клавиатура под PNG (возврат в редактор заявки)."""
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🖼 Схема PNG", callback_data=f"wc:sq:png:{nation_idx}"
+                    text="📋 Заявка 26", callback_data=f"wc:sq:n:{nation_idx}"
                 ),
-                InlineKeyboardButton(
-                    text="✏️ Строками", callback_data=f"wc:sq:edit:{nation_idx}"
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="📄 Список текстом", callback_data=f"wc:call:sq:{nation_idx}"
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="⬅️ К игрокам", callback_data=f"wc:call:np:{nation_idx}:0"
-                )
             ],
             _back_home_row(),
         ]
@@ -825,21 +937,76 @@ async def cb_squad_manage(callback: CallbackQuery) -> None:
         nation_idx = int(callback.data.split(":")[-1])
     except ValueError:
         return
+    await _show_squad_roster(callback, nation_idx, 0)
+
+
+@wc_router.callback_query(F.data.startswith("wc:sq:pg:"))
+async def cb_squad_page(callback: CallbackQuery) -> None:
+    await callback.answer()
+    parts = callback.data.split(":")
+    try:
+        nation_idx = int(parts[3])
+        page = int(parts[4])
+    except (IndexError, ValueError):
+        return
+    await _show_squad_roster(callback, nation_idx, page)
+
+
+@wc_router.callback_query(F.data.startswith("wc:sq:cyc:"))
+async def cb_squad_cycle_status(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    try:
+        nation_idx = int(parts[3])
+        page = int(parts[4])
+        local_idx = int(parts[5])
+    except (IndexError, ValueError):
+        await callback.answer()
+        return
     nations = _nations_sorted()
     if nation_idx < 0 or nation_idx >= len(nations):
+        await callback.answer()
+        return
+    nation = nations[nation_idx]
+    from utils.wc_callups import cycle_squad_player_status, squad_for_nation
+
+    roster = _sorted_roster(squad_for_nation(nation))
+    abs_idx = page * _SQUAD_PAGE + local_idx
+    if abs_idx < 0 or abs_idx >= len(roster):
+        await callback.answer("Обновляю…")
+        await _show_squad_roster(callback, nation_idx, page)
+        return
+    name = str(roster[abs_idx].get("name") or "")
+    try:
+        new_st, _ = await asyncio.to_thread(cycle_squad_player_status, nation, name)
+    except Exception as e:
+        await callback.answer(str(e)[:180], show_alert=True)
+        return
+    await callback.answer(_STATUS_LABEL.get(new_st, new_st))
+    await _show_squad_roster(callback, nation_idx, page)
+
+
+@wc_router.callback_query(F.data.startswith("wc:sq:done:"))
+async def cb_squad_confirm(callback: CallbackQuery) -> None:
+    try:
+        nation_idx = int(callback.data.split(":")[-1])
+    except ValueError:
+        await callback.answer()
+        return
+    nations = _nations_sorted()
+    if nation_idx < 0 or nation_idx >= len(nations):
+        await callback.answer()
         return
     nation = nations[nation_idx]
     from utils.wc_callups import squad_for_nation
-    from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_summary_html
+    from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_hint
 
-    roster = squad_for_nation(nation)
-    ev = evaluate_wc_squad(roster)
-    text = (
-        f"<b>{html_escape(nation)}</b> · заявка 26\n"
-        f"{format_wc_quota_summary_html(ev)}\n\n"
-        f"<i>{_SQUAD_LINES_HELP.replace(chr(10) + '/cancel', '')}</i>"
-    )
-    await _edit(callback, text, _squad_manage_kb(nation_idx))
+    ev = evaluate_wc_squad(squad_for_nation(nation))
+    if ev.get("complete"):
+        await callback.answer("✅ Заявка полная: 26/26", show_alert=True)
+    else:
+        hint = format_wc_quota_hint(ev)
+        await callback.answer(f"⚠️ {hint}"[:200], show_alert=True)
+    await _show_squad_roster(callback, nation_idx, 0)
 
 
 @wc_router.callback_query(F.data.startswith("wc:sq:png:"))
@@ -936,5 +1103,15 @@ async def on_squad_lines(message: Message, state: FSMContext) -> None:
         lines.append("\n✅ Заявка полная (26/26)")
     await state.set_state(WcEnter.callup_players)
     await message.answer("\n".join(lines), parse_mode="HTML")
-    if callback_kb := _squad_manage_kb(nation_idx):
-        await message.answer("Меню заявки:", reply_markup=callback_kb)
+    await message.answer(
+        "Меню заявки:",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="📋 Заявка 26", callback_data=f"wc:sq:n:{nation_idx}"
+                    )
+                ]
+            ]
+        ),
+    )

@@ -1,0 +1,39 @@
+# -*- coding: utf-8 -*-
+from utils.wc_callups import _norm_status, cycle_squad_player_status, set_squad_player_status
+
+
+def test_norm_status_defaults_reserve():
+    assert _norm_status("") == "reserve"
+    assert _norm_status("start") == "start"
+
+
+def test_cycle_and_set_status(monkeypatch):
+    import utils.wc_callups as mod
+
+    data = {
+        "season": 4,
+        "teams": {
+            "Testland": [
+                {"name": "Alpha", "position": "ЦЗ", "overall": 80, "status": "reserve"},
+            ]
+        },
+    }
+
+    box = [dict(data)]
+
+    def _load():
+        return box[0]
+
+    def _save(d):
+        box[0] = d
+
+    monkeypatch.setattr(mod, "load_wc_squads", _load)
+    monkeypatch.setattr(mod, "save_wc_squads", _save)
+    monkeypatch.setattr(mod, "resolve_nation_name", lambda n: n)
+
+    st1, _ = cycle_squad_player_status("Testland", "Alpha")
+    assert st1 == "start"
+    st2, _ = cycle_squad_player_status("Testland", "Alpha")
+    assert st2 == "bench"
+    row = set_squad_player_status("Testland", "Alpha", "reserve")
+    assert row["status"] == "reserve"
