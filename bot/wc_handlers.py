@@ -44,6 +44,31 @@ def _mode_hint(mode: str) -> str:
     return _STATUS_LABEL.get(mode, mode)
 
 
+def _player_row_label(
+    name: str,
+    position: str | None,
+    overall: int | str | None,
+    *,
+    prefix: str = "",
+    suffix: str = "",
+    max_len: int = 64,
+) -> str:
+    """Подпись строки игрока: имя · позиция · рейтинг (лимит Telegram — 64)."""
+    pos = (position or "—").strip() or "—"
+    ovr = overall if overall not in (None, "") else "—"
+    tail = f" · {pos} · {ovr}"
+    if suffix:
+        tail += f" · {suffix}"
+    label = f"{prefix}{name}{tail}"
+    if len(label) <= max_len:
+        return label
+    budget = max_len - len(tail) - len(prefix) - 1
+    if budget < 2:
+        return f"{prefix}…{tail}"[:max_len]
+    short = name if len(name) <= budget else name[: budget - 1] + "…"
+    return f"{prefix}{short}{tail}"
+
+
 def _mode_buttons_row(
     prefix: str,
     nation_idx: int,
@@ -581,9 +606,12 @@ def _players_kb(
             mark = _STATUS_ICON.get(st, "✅") + " "
         else:
             mark = "➕ "
-        label = f"{mark}{p['name']} · {p.get('overall') or '—'}"
-        if len(label) > 36:
-            label = label[:35] + "…"
+        label = _player_row_label(
+            p["name"],
+            p.get("position"),
+            p.get("overall"),
+            prefix=mark,
+        )
         rows.append(
             [
                 InlineKeyboardButton(
@@ -944,9 +972,13 @@ def _squad_roster_kb(
         icon = _STATUS_ICON[st]
         lab = _STATUS_LABEL.get(st, st)
         name = str(p.get("name") or "")
-        label = f"{icon} {name} · {p.get('overall') or '—'} · {lab}"
-        if len(label) > 38:
-            label = label[:37] + "…"
+        label = _player_row_label(
+            name,
+            p.get("position"),
+            p.get("overall"),
+            prefix=f"{icon} ",
+            suffix=lab,
+        )
         rows.append(
             [
                 InlineKeyboardButton(
