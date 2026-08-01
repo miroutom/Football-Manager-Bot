@@ -196,6 +196,10 @@ body {
   background: #0f1820;
   border-right: 1px solid #2a3a48;
 }
+#layout.nations-layout #side-panels {
+  width: 300px;
+  min-width: 300px;
+}
 #fa-panel,
 #national-panel {
   padding: 12px;
@@ -309,54 +313,61 @@ body {
 .national-group.expanded .national-group-body {
   display: flex;
 }
-.national-player {
+.national-row {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 1px 2px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.12);
+}
+.national-row .player.national-player {
   display: flex;
   flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   max-width: none;
-  padding: 6px 8px;
-  font-size: 12px;
-  cursor: grab;
+  padding: 4px 6px;
+  justify-content: flex-start;
+  text-align: left;
 }
-.national-player .np-ovr {
-  flex: 0 0 auto;
-  font-size: 15px;
+.national-row .ovr {
+  min-width: 24px;
+  font-size: 13px;
   font-weight: 700;
   color: #b8f0c8;
-  min-width: 26px;
-  text-align: center;
+  flex-shrink: 0;
+  cursor: inherit;
 }
-.national-player .np-body {
+.national-row .pos {
+  font-size: 10px;
+  color: #9ab;
+  flex-shrink: 0;
+  min-width: 26px;
+  cursor: inherit;
+}
+.national-row .nm {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.national-player .np-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #e8eef4;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
+  cursor: inherit;
 }
-.national-player .np-meta {
+.national-row .club {
+  flex-shrink: 0;
+  max-width: 76px;
   font-size: 10px;
-  color: #8a9;
-  line-height: 1.2;
+  color: #7a9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.national-player .club,
-.national-player .ovr,
-.national-player .pos,
-.national-player .nm {
-  display: none;
 }
 .national-player .rm-btn {
   display: none;

@@ -931,17 +931,18 @@ async function importNationalFromFile(file) {
 }
 
 function renderNationalPlayer(p) {
+  const row = document.createElement("div");
+  row.className = "national-row";
   const el = document.createElement("div");
   el.className = "player national-player";
   el.draggable = true;
   el.dataset.id = p.id;
   const clubLabel = p.is_fa || p.team === FA_TEAM ? "FA" : (p.team || "?");
   el.innerHTML =
-    `<span class="np-ovr">${p.overall}</span>` +
-    `<div class="np-body">` +
-    `<span class="np-name">${p.name}</span>` +
-    `<span class="np-meta">${p.position} · ${clubLabel}</span>` +
-    `</div>`;
+    `<span class="ovr">${p.overall}</span>` +
+    `<span class="pos">${p.position}</span>` +
+    `<span class="nm" title="${p.name}">${p.name}</span>` +
+    `<span class="club" title="${clubLabel}">${clubLabel}</span>`;
   el.addEventListener("dragstart", (e) => {
     const isFa = !!(p.is_fa || p.team === FA_TEAM);
     dragPayload = {
@@ -959,7 +960,8 @@ function renderNationalPlayer(p) {
     startDragScroll();
   });
   el.addEventListener("dragend", stopDragScroll);
-  return el;
+  row.appendChild(el);
+  return row;
 }
 
 function renderNationalPanel() {
@@ -2676,6 +2678,7 @@ function updateModeUi() {
   if (faPanel) faPanel.hidden = isNationsMode();
   populateNationSelect();
   updateTitle();
+  document.getElementById("layout")?.classList.toggle("nations-layout", isNationsMode());
 }
 
 function currentState() {
