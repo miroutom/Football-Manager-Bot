@@ -824,6 +824,63 @@ function findNationalPlayer(id) {
   return null;
 }
 
+function squadIdsForTeam(teamName) {
+  const team = teams.find((t) => t.name === teamName);
+  const ids = new Set();
+  if (!team) return ids;
+  for (const zone of ["start", "bench", "reserve"]) {
+    for (const p of team[zone] || []) {
+      if (p?.id) ids.add(p.id);
+    }
+  }
+  return ids;
+}
+
+function nationNamesMatch(a, b) {
+  return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+}
+
+function returnPlayerToNationalPool(playerId, teamName) {
+  const loc = findPlayerGlobally(playerId);
+  if (!loc?.player) return;
+  const p = loc.player;
+  if (teamName && selectedNation && !nationNamesMatch(teamName, selectedNation)) return;
+  if (!window.confirm(`Вернуть ${p.name} (${p.position}, ${p.overall}) в пул?`)) return;
+  pushUndo();
+  removeAllInstancesOfId(playerId);
+  markDirty();
+  renderAll();
+  setStatus(`в пуле: ${p.name}`);
+}
+
+function setupNationalPoolDrop(listEl) {
+  if (!listEl || listEl.dataset.poolDropBound === "1") return;
+  listEl.dataset.poolDropBound = "1";
+  listEl.classList.add("national-pool-drop");
+  listEl.addEventListener("dragover", (e) => {
+    if (!isNationsMode() || !dragPayload?.id || dragPayload.fromNational) return;
+    if (!nationNamesMatch(dragPayload.team, selectedNation)) return;
+    e.preventDefault();
+    listEl.classList.add("drag-over");
+  });
+  listEl.addEventListener("dragleave", (e) => {
+    if (!listEl.contains(e.relatedTarget)) listEl.classList.remove("drag-over");
+  });
+  listEl.addEventListener("drop", (e) => {
+    e.preventDefault();
+    listEl.classList.remove("drag-over");
+    if (!isNationsMode() || !dragPayload?.id || dragPayload.fromNational) return;
+    if (!nationNamesMatch(dragPayload.team, selectedNation)) return;
+    pushUndo();
+    removeAllInstancesOfId(dragPayload.id);
+    dragPayload = null;
+    stopDragScroll();
+    markDirty();
+    renderAll();
+    setStatus("вернули в пул");
+  });
+}
+
 function setNationalPools(data) {
   nationalPools = data;
   nationalExpanded.clear();
@@ -833,12 +890,14 @@ function setNationalPools(data) {
   if (panel) panel.hidden = !showPanel;
   if (cnt) {
     const block = isNationsMode() && selectedNation
-      ? (nationalPools?.nations || []).find(
-          (b) => String(b.name || "").trim().toLowerCase() === selectedNation.trim().toLowerCase()
-        )
+      ? (nationalPools?.nations || []).find((b) => nationNamesMatch(b.name, selectedNation))
+      : null;
+    const inSquad = isNationsMode() && selectedNation ? squadIdsForTeam(selectedNation) : null;
+    const poolCount = block
+      ? (block.players || []).filter((p) => p?.id && !inSquad?.has(p.id)).length
       : null;
     cnt.textContent = String(
-      block?.players?.length || data?.player_count || nationalPools?.player_count || 0
+      poolCount ?? block?.players?.length ?? data?.player_count ?? nationalPools?.player_count ?? 0
     );
   }
   renderNationalPanel();
@@ -907,19 +966,28 @@ function renderNationalPanel() {
   const list = document.getElementById("national-list");
   const title = document.getElementById("national-panel-title");
   const panel = document.getElementById("national-panel");
+  const hint = document.getElementById("national-hint");
   if (!list) return;
   list.innerHTML = "";
+  if (hint && isNationsMode()) {
+    hint.textContent = "В заявку — перетащи. Из состава — × или перетащи сюда, вернётся в пул.";
+  }
+  setupNationalPoolDrop(list);
   const blocks = nationalPools?.nations || [];
   if (!blocks.length) return;
 
   const q = nationalFilter.trim().toLowerCase();
   let shown = 0;
   const nationFilterName = isNationsMode() ? selectedNation : "";
+  const inSquad = isNationsMode() && selectedNation ? squadIdsForTeam(selectedNation) : null;
 
   blocks.forEach((block) => {
     const nation = block.name || "?";
-    if (nationFilterName && nation !== nationFilterName) return;
+    if (nationFilterName && !nationNamesMatch(nation, nationFilterName)) return;
     let players = (block.players || []).slice();
+    if (inSquad) {
+      players = players.filter((p) => p?.id && !inSquad.has(p.id));
+    }
     if (q) {
       players = players.filter(
         (p) =>
@@ -927,8 +995,8 @@ function renderNationalPanel() {
           String(p.team || "").toLowerCase().includes(q) ||
           String(p.position || "").toLowerCase().includes(q)
       );
-      if (!players.length) return;
     }
+    if (!players.length) return;
 
     shown += players.length;
     if (isNationsMode()) {
@@ -958,7 +1026,11 @@ function renderNationalPanel() {
   if (!shown) {
     const empty = document.createElement("div");
     empty.className = "fa-hint";
-    empty.textContent = nationFilterName ? "Нет игроков в пуле" : "Никого не найдено";
+    empty.textContent = inSquad && nationFilterName
+      ? "Все в заявке — верни × или перетащи сюда"
+      : nationFilterName
+        ? "Нет игроков в пуле"
+        : "Никого не найдено";
     list.appendChild(empty);
   }
   if (panel && isNationsMode()) {
@@ -1692,6 +1764,10 @@ function removeFaPlayer(p) {
 }
 
 function removePlayerFromSquad(playerId, teamName) {
+  if (isNationsMode() && nationNamesMatch(teamName, selectedNation)) {
+    returnPlayerToNationalPool(playerId, teamName);
+    return;
+  }
   const loc = findPlayerGlobally(playerId);
   if (!loc || !loc.player) return;
   const p = loc.player;
@@ -1778,7 +1854,12 @@ function renderPlayer(teamName, p, inline) {
   const injuryBadge = p.injured
     ? `<span class="inj" aria-hidden="true">🏥</span>`
     : "";
-  const rmTitle = teamName === FA_TEAM ? "Удалить из FA" : "Убрать из заявки";
+  const rmTitle =
+    isNationsMode() && nationNamesMatch(teamName, selectedNation)
+      ? "Вернуть в пул"
+      : teamName === FA_TEAM
+        ? "Удалить из FA"
+        : "Убрать из заявки";
   el.innerHTML = inline
     ? `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span><span class="nm" title="Клик — изменить имя">${p.name}</span>`
     : `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm" title="Клик — изменить имя">${p.name}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span>`;
@@ -2142,12 +2223,26 @@ function movePlayer(src, destTeamName, destZone, destIndex) {
     removeAllInstancesOfId(moving.id);
     placePlayer(destTeam, destZone, destIndex, moving);
     if (displaced) {
-      for (const z of ["bench", "reserve"]) {
-        for (let i = 0; i < destTeam[z].length; i++) {
-          if (!destTeam[z][i]?.id) {
-            placePlayer(destTeam, z, i, displaced);
-            dedupeGlobally(teams);
-            return;
+      if (isNationsMode() && nationNamesMatch(destTeamName, selectedNation)) {
+        let placed = false;
+        for (const z of ["bench", "reserve", "start"]) {
+          for (let i = 0; i < destTeam[z].length; i++) {
+            if (!destTeam[z][i]?.id) {
+              placePlayer(destTeam, z, i, displaced);
+              placed = true;
+              break;
+            }
+          }
+          if (placed) break;
+        }
+      } else {
+        for (const z of ["bench", "reserve"]) {
+          for (let i = 0; i < destTeam[z].length; i++) {
+            if (!destTeam[z][i]?.id) {
+              placePlayer(destTeam, z, i, displaced);
+              dedupeGlobally(teams);
+              return;
+            }
           }
         }
       }

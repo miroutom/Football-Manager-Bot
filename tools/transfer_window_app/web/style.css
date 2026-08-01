@@ -265,6 +265,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 120px;
+}
+.national-list.national-pool-drop.drag-over {
+  outline: 2px dashed #3a8;
+  outline-offset: -2px;
+  background: rgba(58, 136, 136, 0.08);
 }
 .national-group {
   border: 1px solid #243240;
