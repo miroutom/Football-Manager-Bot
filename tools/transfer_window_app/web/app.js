@@ -115,7 +115,50 @@ function assignSubstitutesToGroups(players, groups) {
     const short = g.need - assigned[i];
     if (short > 0) missing.push({ slot_id: g.slot_id, label: g.label, need: short });
   });
-  return { assigned, missing };
+
+  const surplus = [];
+  pool.forEach((p, pi) => {
+    if (used[pi]) return;
+    const pos = String(p.position || "").trim().toUpperCase();
+    let label = pos;
+    for (const g of groups) {
+      if (g.allowed.includes(pos)) {
+        label = g.label;
+        break;
+      }
+    }
+    surplus.push({ name: p.name, position: pos, label });
+  });
+
+  return { assigned, missing, surplus };
+}
+
+function aggregateSurplus(surplus) {
+  const agg = {};
+  (surplus || []).forEach((s) => {
+    const lab = s.label || s.position || "?";
+    agg[lab] = (agg[lab] || 0) + 1;
+  });
+  return Object.keys(agg)
+    .sort()
+    .map((label) => ({ label, extra: agg[label] }));
+}
+
+function labelStatsFromSubs(subs, groups) {
+  const map = {};
+  groups.forEach((g) => {
+    if (!map[g.label]) map[g.label] = { label: g.label, need: 0, allowed: new Set() };
+    map[g.label].need += g.need;
+    g.allowed.forEach((p) => map[g.label].allowed.add(p));
+  });
+  return Object.values(map)
+    .map((v) => {
+      const have = subs.filter((p) =>
+        v.allowed.has(String(p.position || "").trim().toUpperCase())
+      ).length;
+      return { label: v.label, need: v.need, have, extra: Math.max(0, have - v.need) };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label, "ru"));
 }
 
 function aggregateMissing(missing) {
@@ -151,8 +194,9 @@ function evaluateTeamSquad(team) {
 
   const startSlots = team.start || [];
   const startMissing = startSlots.filter((s) => !(s && s.id)).length;
-  const { assigned, missing } = assignSubstitutesToGroups(subs, groups);
+  const { assigned, missing, surplus } = assignSubstitutesToGroups(subs, groups);
   const missingAgg = aggregateMissing(missing);
+  const surplusAgg = aggregateSurplus(surplus);
 
   const groupStatus = groups.map((g, i) => ({
     slot_id: g.slot_id,
@@ -166,6 +210,7 @@ function evaluateTeamSquad(team) {
   const complete =
     startMissing === 0 &&
     missing.length === 0 &&
+    surplus.length === 0 &&
     total === SQUAD_TARGET &&
     startSlots.length === SQUAD_START_TARGET;
 
@@ -178,7 +223,9 @@ function evaluateTeamSquad(team) {
     complete,
     missing_start: startMissing,
     missing_reserve: missingAgg,
+    surplus_reserve: surplusAgg,
     group_status: groupStatus,
+    label_stats: labelStatsFromSubs(subs, groups),
   };
 }
 
@@ -187,8 +234,25 @@ function formatMissingHint(ev) {
   if (Number(ev.missing_start) > 0) parts.push(`основа ×${ev.missing_start}`);
   (ev.missing_reserve || []).forEach((m) => parts.push(`${m.label} ×${m.need}`));
   if (Number(ev.total) < SQUAD_TARGET) parts.push(`всего ${ev.total}/${SQUAD_TARGET}`);
-  else if (Number(ev.total) > SQUAD_TARGET) parts.push(`лишних ${ev.total - SQUAD_TARGET}`);
-  return parts.length ? parts.join(" · ") : "OK";
+  return parts;
+}
+
+function formatSurplusHint(ev) {
+  const parts = [];
+  (ev.surplus_reserve || []).forEach((s) => parts.push(`${s.label} ×${s.extra}`));
+  if (Number(ev.total) > SQUAD_TARGET && !(ev.surplus_reserve || []).length) {
+    parts.push(`всего +${ev.total - SQUAD_TARGET}`);
+  }
+  return parts;
+}
+
+function formatSquadIssues(ev) {
+  const miss = formatMissingHint(ev);
+  const extra = formatSurplusHint(ev);
+  const chunks = [];
+  if (miss.length) chunks.push(`не хватает: ${miss.join(" · ")}`);
+  if (extra.length) chunks.push(`лишние: ${extra.join(" · ")}`);
+  return chunks.length ? chunks.join(" · ") : "OK";
 }
 
 function findIncompleteSquads() {
@@ -198,7 +262,7 @@ function findIncompleteSquads() {
 }
 
 function squadExportBlockedMessage(incomplete) {
-  const lines = incomplete.slice(0, 10).map((ev) => `${ev.team}: ${formatMissingHint(ev)}`);
+  const lines = incomplete.slice(0, 10).map((ev) => `${ev.team}: ${formatSquadIssues(ev)}`);
   const tail = incomplete.length > 10 ? `\n… и ещё ${incomplete.length - 10} клубов` : "";
   return (
     "Нельзя выгрузить составы: заявка должна быть 32 игрока " +
@@ -1314,16 +1378,24 @@ function renderTeam(team) {
   if (!squadEv.complete) {
     const qMiss = document.createElement("div");
     qMiss.className = "squad-quota-miss";
-    qMiss.textContent = `Не хватает: ${formatMissingHint(squadEv)}`;
+    qMiss.textContent = formatSquadIssues(squadEv);
     quota.appendChild(qMiss);
   }
   const qGrid = document.createElement("div");
   qGrid.className = "squad-quota-grid";
-  aggregateGroupStatus(squadEv.group_status).forEach((g) => {
+  (squadEv.label_stats || aggregateGroupStatus(squadEv.group_status)).forEach((g) => {
     const chip = document.createElement("span");
-    chip.className = "sq-chip" + (g.have >= g.need ? " done" : g.have > 0 ? " part" : "");
-    chip.textContent = `${g.label} ${g.have}/${g.need}`;
-    chip.title = `Замены на позицию ${g.label}: нужно ${g.need}`;
+    let cls = "sq-chip";
+    if (g.have > g.need) cls += " over";
+    else if (g.have >= g.need) cls += " done";
+    else if (g.have > 0) cls += " part";
+    chip.className = cls;
+    chip.textContent =
+      g.have > g.need ? `${g.label} ${g.have}/${g.need} (+${g.have - g.need})` : `${g.label} ${g.have}/${g.need}`;
+    chip.title =
+      g.have > g.need
+        ? `Лишний игрок на позицию ${g.label}: нужно ${g.need}, в заявке ${g.have}`
+        : `Замены на позицию ${g.label}: нужно ${g.need}`;
     qGrid.appendChild(chip);
   });
   quota.appendChild(qGrid);
@@ -1542,7 +1614,7 @@ async function saveState() {
     const ok = window.confirm(
       `Неполная заявка у ${incomplete.length} клуб(ов).\n` +
         `Нужно ${SQUAD_TARGET} игроков (11 основа + 21 замена).\n\n` +
-        `Пример: ${incomplete[0].team} — ${formatMissingHint(incomplete[0])}\n\n` +
+        `Пример: ${incomplete[0].team} — ${formatSquadIssues(incomplete[0])}\n\n` +
         "Всё равно сохранить черновик?"
     );
     if (!ok) return;

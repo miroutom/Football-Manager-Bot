@@ -308,6 +308,7 @@ body {
 }
 .sq-chip.part { color: #f5d78e; border-color: #8a7040; }
 .sq-chip.done { color: #9fdfb0; border-color: #4a7a58; }
+.sq-chip.over { color: #ffb4a8; border-color: #a05048; background: rgba(80, 30, 28, 0.45); }
 .team-body { display: flex; align-items: stretch; }
 .pitch {
   position: relative;

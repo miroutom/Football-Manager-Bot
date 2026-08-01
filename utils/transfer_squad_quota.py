@@ -78,8 +78,8 @@ def _norm_pos(raw: Any) -> str:
 def assign_substitutes_to_groups(
     players: list[dict[str, Any]],
     groups: list[ReserveGroup],
-) -> tuple[list[int], list[dict[str, Any]]]:
-    """Распределить запасных по группам слотов. Возвращает (filled[], missing[])."""
+) -> tuple[list[int], list[dict[str, Any]], list[dict[str, Any]]]:
+    """Распределить запасных по группам слотов. (filled[], missing[], surplus[])."""
     pool = [p for p in players if p and p.get("name") and _norm_pos(p.get("position"))]
     assigned = [0] * len(groups)
     used = [False] * len(pool)
@@ -115,7 +115,34 @@ def assign_substitutes_to_groups(
                     "need": short,
                 }
             )
-    return assigned, missing
+
+    surplus_raw: list[dict[str, Any]] = []
+    for pi, p in enumerate(pool):
+        if used[pi]:
+            continue
+        pos = _norm_pos(p.get("position"))
+        label = pos
+        for g in groups:
+            if pos in g.allowed:
+                label = g.label
+                break
+        surplus_raw.append(
+            {
+                "name": p.get("name"),
+                "position": pos,
+                "label": label,
+            }
+        )
+
+    return assigned, missing, surplus_raw
+
+
+def _aggregate_surplus(surplus: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    agg: dict[str, int] = {}
+    for s in surplus:
+        lab = str(s.get("label") or s.get("position") or "?")
+        agg[lab] = agg.get(lab, 0) + 1
+    return [{"label": k, "extra": v} for k, v in sorted(agg.items())]
 
 
 def _aggregate_missing(missing: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -139,13 +166,15 @@ def evaluate_team_squad(team: dict[str, Any], formation: dict[str, Any] | None) 
     start_slots = team.get("start") or []
     start_missing = sum(1 for s in start_slots if not (s and s.get("id")))
 
-    assigned, reserve_missing = assign_substitutes_to_groups(subs, groups)
+    assigned, reserve_missing, surplus_raw = assign_substitutes_to_groups(subs, groups)
     missing_agg = _aggregate_missing(reserve_missing)
+    surplus_agg = _aggregate_surplus(surplus_raw)
 
     total = len(starters) + len(subs)
     complete = (
         start_missing == 0
         and not reserve_missing
+        and not surplus_raw
         and total == SQUAD_TOTAL
         and len(start_slots) == SQUAD_START
     )
@@ -172,6 +201,7 @@ def evaluate_team_squad(team: dict[str, Any], formation: dict[str, Any] | None) 
         "complete": complete,
         "missing_start": start_missing,
         "missing_reserve": missing_agg,
+        "surplus_reserve": surplus_agg,
         "group_status": group_status,
         "groups": [
             {
@@ -215,8 +245,10 @@ def format_missing_hint(ev: dict[str, Any]) -> str:
         parts.append(f"основа ×{ev['missing_start']}")
     for m in ev.get("missing_reserve") or []:
         parts.append(f"{m['label']} ×{m['need']}")
+    for s in ev.get("surplus_reserve") or []:
+        parts.append(f"лишн. {s['label']} ×{s['extra']}")
     if int(ev.get("total") or 0) < SQUAD_TOTAL:
         parts.append(f"всего {ev['total']}/{SQUAD_TOTAL}")
-    elif int(ev.get("total") or 0) > SQUAD_TOTAL:
+    elif int(ev.get("total") or 0) > SQUAD_TOTAL and not ev.get("surplus_reserve"):
         parts.append(f"лишних {int(ev['total']) - SQUAD_TOTAL}")
     return " · ".join(parts) if parts else "OK"
