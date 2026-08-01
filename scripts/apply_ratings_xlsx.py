@@ -89,7 +89,12 @@ DEFAULT_ALIASES: dict[str, dict[str, str]] = {
     "Торрес": {"team": "Аталанта", "contains": "Торрес"},
     "Траоре": {"team": "Атлетик", "contains": "Траоре"},
     "Тюрам": {"team": "Атлетико", "contains": "Тюрам"},
-    "Фофана": {"team": "Челси", "contains": "Фофана", "position": "ЦЗ"},
+    "Фофана": {
+        "by_overall": {
+            "85": {"team": "Челси", "contains": "Фофана", "position": "ЦЗ", "set_overall": "87"},
+            "83": {"team": "Фиорентина", "contains": "Секу"},
+        }
+    },
     "Энрике": {"team": "Бетис", "contains": "Энрике"},
     "Эрнандез": {"team": "Милан", "contains": "Эрнандез"},
     "Эррера": {"team": "Жирона", "contains": "Эррера"},
@@ -109,6 +114,20 @@ def _load_aliases(path: str | None) -> dict[str, dict[str, str]]:
             if isinstance(v, dict):
                 out[str(k).strip()] = {str(a): str(b) for a, b in v.items()}
     return out
+
+
+def _pick_alias(entry: XlsxEntry, aliases: dict[str, dict[str, str]]) -> dict[str, str] | None:
+    raw = aliases.get(entry.xlsx_name)
+    if not raw:
+        return None
+    by_ovr = raw.get("by_overall")
+    if isinstance(by_ovr, dict) and entry.new_overall is not None:
+        sub = by_ovr.get(str(entry.new_overall))
+        if isinstance(sub, dict):
+            return {str(k): str(v) for k, v in sub.items()}
+    if by_ovr:
+        return None
+    return raw
 
 
 def _alias_matches_row(alias: dict[str, str], row: Any) -> bool:
@@ -318,7 +337,6 @@ def _person_key(row: Any) -> tuple[str, str, str]:
 def _run_db_prep(sleague) -> list[str]:
     """Починка известных дыр перед импортом рейтингов (flush, без commit)."""
     from data.defender import Defender
-    from data.midfielder import Midfielder
 
     notes: list[str] = []
 
@@ -333,14 +351,6 @@ def _run_db_prep(sleague) -> list[str]:
                 )
                 sleague.delete(r)
 
-    wrong_cm = None
-    for r in sleague.query(Midfielder).all():
-        if _norm_cmp(r.team) != _norm_cmp("Челси"):
-            continue
-        if "фофана" in (r.name or "").casefold() and _norm_cmp(r.position) == _norm_cmp("ЦП"):
-            wrong_cm = r
-            break
-
     cb_row = None
     for r in sleague.query(Defender).all():
         if _norm_cmp(r.team) != _norm_cmp("Челси"):
@@ -349,12 +359,6 @@ def _run_db_prep(sleague) -> list[str]:
         if "фофана" in nm and _norm_cmp(r.position) == _norm_cmp("ЦЗ"):
             cb_row = r
             break
-
-    if wrong_cm is not None:
-        notes.append(
-            f"DELETE wrong Chelsea CM: {wrong_cm.name} · {wrong_cm.position} id={wrong_cm.id}"
-        )
-        sleague.delete(wrong_cm)
 
     if cb_row is None:
         notes.append("ADD Челси · Фофана · ЦЗ · ovr=79 (Wesley, из squads)")
@@ -385,13 +389,15 @@ def resolve_entry(
     idx_c: PlayerIndex,
     aliases: dict[str, dict[str, str]],
 ) -> ResolvedPlayer:
+    alias = _pick_alias(entry, aliases)
     rp = ResolvedPlayer(
         xlsx_name=entry.xlsx_name,
         side=entry.side,
         kind=entry.kind,
         new_overall=entry.new_overall,
     )
-    alias = aliases.get(entry.xlsx_name)
+    if alias and alias.get("set_overall"):
+        rp.new_overall = _clamp(int(alias["set_overall"]))
     league_hits = _collapse_hits(_find_hits(idx_l, entry.xlsx_name, alias))
     cl_hits = _collapse_hits(_find_hits(idx_c, entry.xlsx_name, alias))
     if alias and alias.get("team"):
