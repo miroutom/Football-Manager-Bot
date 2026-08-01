@@ -12,12 +12,36 @@ python3 scripts/имя_скрипта.py [--apply] [опции]
 
 | Скрипт | Назначение |
 |--------|------------|
-| `assign_player_nicknames.py` | Интерактивно задать прозвища игрокам |
+| `season2_overall_bumps.py` / `season3_overall_bumps.py` | Пакетные ±overall по списку в скрипте |
+| `apply_ratings_xlsx.py` | Overall / FA из `рейтинги.xlsx` (число / тж / убираем) |
 | `import_removed_players_to_fa.py` | Импорт архивных игроков в `free_agents.db` |
 | `apply_transfer_window_state.py` | Применить JSON состояния transfer app к БД |
 | `export_transfer_window_squads_xlsx.py` | Excel составов для окна |
 | `assign_person_ids_active_season.py` | Проставить `person_id` в активном сезоне |
 | `local_bootstrap_active_season.py` | Локальная инициализация сезона |
+
+## Рейтинги из Excel
+
+`apply_ratings_xlsx.py` — активный сезон (`db/season_N/`):
+
+```bash
+python3 scripts/apply_ratings_xlsx.py ~/Documents/championship/рейтинги.xlsx --dry-run
+python3 scripts/apply_ratings_xlsx.py ~/Documents/championship/рейтинги.xlsx --apply
+```
+
+- **число** — новый absolute overall (лига + ЛЧ + пересборка `common.db`);
+- **тж** — не менять;
+- **убираем** — `release_club_player_to_fa` (стата сезона сохраняется).
+
+При однофамильцах — JSON алиасы:
+
+```bash
+python3 scripts/apply_ratings_xlsx.py рейтинги.xlsx --dry-run --aliases data/ratings_aliases.json
+```
+
+Формат: `{"Торрес": {"team": "Аталанта"}, "Гарсия": {"team": "Реал", "contains": "Гарсия"}}`.
+
+Частичное применение (пропустить ERR): `--apply --ignore-errors`.
 
 ## Трансферы и составы
 
