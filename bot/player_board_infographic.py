@@ -167,6 +167,8 @@ def collect_club_scorer_rows_all_time(
         db_name = season_paths.SEASON_CL_NAME
     elif sc in ("common", "merged", "all", "liga_cl", "lgcl"):
         db_name = season_paths.SEASON_COMMON_NAME
+    elif sc in ("wc", "world_cup"):
+        db_name = season_paths.SEASON_WC_NAME
     else:
         db_name = season_paths.SEASON_LEAGUE_NAME
 
@@ -496,12 +498,31 @@ def render_club_goalscorers_png_for_bot(
     )
 
     tournament = tournament_for_goalscorers_scope(scope)
-    scope_lab = {"league": "лига", "cl": "ЛЧ", "common": "лига+ЛЧ"}.get(tournament, tournament)
+    scope_lab = {
+        "league": "лига",
+        "cl": "ЛЧ",
+        "common": "лига+ЛЧ",
+        "wc": "ЧМ",
+    }.get(tournament, tournament)
 
     if season_mode == "cur":
         teams = teams_ordered_for_goalscorers(league_code)
         team = teams[team_index]
-        rows = collect_club_scorer_rows(team, tournament=tournament)
+        if tournament == "wc":
+            from utils import season_paths
+
+            path = season_paths.get_wc_db_path()
+            if not path or not os.path.isfile(path):
+                return "Нет world_cup.db для текущего сезона", []
+            e, S = _goalscorers_session_from_path(path)
+            sess = S()
+            try:
+                rows = collect_club_scorer_rows(team, tournament=tournament, session=sess)
+            finally:
+                sess.close()
+                e.dispose()
+        else:
+            rows = collect_club_scorer_rows(team, tournament=tournament)
         title = f"{scope_lab} · текущий сезон"
     elif season_mode == "life":
         teams = teams_ordered_for_goalscorers(league_code)
@@ -1149,10 +1170,11 @@ def render_all_clubs_scorers_png_pages(
         teams = teams_ordered_for_goalscorers(league_code)
     pages: list[bytes] = []
     for idx, _team in enumerate(teams):
+        scope = "wc" if league_code == "wc" else "league"
         _cap, blobs = render_club_goalscorers_png_for_bot(
             league_code,
             idx,
-            "league",
+            scope,
             season_mode=season_mode if season_mode != "life" else "life",
             season_num=season_num,
         )

@@ -59,9 +59,19 @@ def is_all_leagues_plus_cl(league_code: str | None) -> bool:
     return c == "allcl"
 
 
+def is_all_leagues_plus_cl_plus_wc(league_code: str | None) -> bool:
+    """Все национальные лиги + ЛЧ + сборные (ЧМ)."""
+    c = normalize_stats_league_code(league_code)
+    return c == "allclwc"
+
+
 def is_all_championships(league_code: str | None) -> bool:
-    """Любой режим «все чемпионаты» (лиги или лига+ЛЧ)."""
-    return is_all_leagues_only(league_code) or is_all_leagues_plus_cl(league_code)
+    """Любой режим «все чемпионаты» (лиги, лига+ЛЧ или лига+ЛЧ+сборные)."""
+    return (
+        is_all_leagues_only(league_code)
+        or is_all_leagues_plus_cl(league_code)
+        or is_all_leagues_plus_cl_plus_wc(league_code)
+    )
 
 
 def _norm_team(s: str) -> str:
@@ -283,6 +293,11 @@ def _finalize_life_rows(rows: list[dict]) -> list[dict]:
 
 
 def _life_cumulative_db(league_code: str | None) -> tuple[str, str]:
+    if is_all_leagues_plus_cl_plus_wc(league_code):
+        return (
+            season_paths.get_cumulative_common_db_path(),
+            "common_synced.db + world_cup.db",
+        )
     if is_all_leagues_plus_cl(league_code):
         return (
             season_paths.get_cumulative_common_db_path(),
@@ -298,6 +313,8 @@ def _life_cumulative_db(league_code: str | None) -> tuple[str, str]:
             season_paths.get_cumulative_cl_db_path(),
             "champions_league_synced.db",
         )
+    if league_code == "wc":
+        return ("", "world_cup.db (архивы сезонов)")
     return (
         season_paths.get_cumulative_league_db_path(),
         "league_synced.db",
@@ -338,6 +355,80 @@ def _season_db_path(season_num: int, *, cl: bool) -> str | None:
     base = season_paths.season_archive_directory(season_num)
     path = os.path.join(base, fname)
     return path if os.path.isfile(path) else None
+
+
+def _season_wc_path(season_num: int) -> str | None:
+    active = season_paths.get_active_season()
+    if season_num == active:
+        path = season_paths.get_wc_db_path()
+    else:
+        path = season_paths.get_wc_db_path_for_season(season_num)
+    return path if path and os.path.isfile(path) else None
+
+
+def _iter_wc_db_paths() -> list[tuple[int, str]]:
+    """(номер сезона, путь) ко всем ``world_cup.db`` без дубликатов."""
+    out: list[tuple[int, str]] = []
+    seen: set[str] = set()
+    db_dir = os.path.join(season_paths.PROJECT_ROOT, "db")
+    if os.path.isdir(db_dir):
+        for name in os.listdir(db_dir):
+            if not name.startswith("season_"):
+                continue
+            tail = name.replace("season_", "")
+            if not tail.isdigit():
+                continue
+            sn = int(tail)
+            path = _season_wc_path(sn)
+            if not path:
+                continue
+            ap = os.path.abspath(path)
+            if ap in seen:
+                continue
+            seen.add(ap)
+            out.append((sn, path))
+    cur = season_paths.get_wc_db_path()
+    if cur and os.path.isfile(cur):
+        ap = os.path.abspath(cur)
+        if ap not in seen:
+            out.append((season_paths.get_active_season(), cur))
+    return sorted(out, key=lambda x: x[0])
+
+
+def _row_merge_key(row: dict) -> tuple:
+    pid = row.get("person_id")
+    if pid is not None:
+        try:
+            return ("pid", int(pid))
+        except (TypeError, ValueError):
+            pass
+    return (
+        "name",
+        str(row.get("name") or "").strip().casefold(),
+        str(row.get("position") or "").strip().upper(),
+    )
+
+
+def _merge_stat_rows(
+    rows_a: list[dict],
+    rows_b: list[dict],
+    *,
+    sum_fields: tuple[str, ...],
+) -> list[dict]:
+    buckets: dict[tuple, dict] = {}
+    for r in rows_a + rows_b:
+        key = _row_merge_key(r)
+        cur = buckets.get(key)
+        if cur is None:
+            buckets[key] = dict(r)
+            continue
+        for f in sum_fields:
+            cur[f] = int(cur.get(f, 0) or 0) + int(r.get(f, 0) or 0)
+        if int(r.get("_pick_id", 0) or 0) > int(cur.get("_pick_id", 0) or 0):
+            for f in ("name", "team", "position", "overall", "person_id"):
+                if f in r:
+                    cur[f] = r[f]
+    return list(buckets.values())
 
 
 def _open_session(path: str) -> tuple[Session, Any]:
@@ -538,13 +629,17 @@ def _all_season_numbers(*, include_cl: bool) -> list[int]:
 
 
 def _db_passes_for_season(league_code: str | None) -> list[tuple[str, str | None]]:
-    """kind: league | cl | common → filter_code для клубов."""
+    """kind: league | cl | common | wc → filter_code для клубов."""
+    if is_all_leagues_plus_cl_plus_wc(league_code):
+        return [("common", None), ("wc", None)]
     if is_all_leagues_plus_cl(league_code):
         return [("common", None)]
     if is_all_leagues_only(league_code):
         return [("league", None)]
     if league_code == "cl":
         return [("cl", "cl")]
+    if league_code == "wc":
+        return [("wc", None)]
     return [("league", league_code)]
 
 
@@ -553,7 +648,68 @@ def _season_path_by_kind(season_num: int, kind: str) -> str | None:
         return _season_common_path(season_num)
     if kind == "cl":
         return _season_db_path(season_num, cl=True)
+    if kind == "wc":
+        return _season_wc_path(season_num)
     return _season_db_path(season_num, cl=False)
+
+
+def _aggregate_wc_life_outfield(*, merge_by_player: bool = True) -> list[dict]:
+    buckets: dict[tuple, dict] = {}
+    for season_num, path in _iter_wc_db_paths():
+        session, eng = _open_session(path)
+        try:
+            for Cls in _OUTFIELD:
+                for p in session.query(Cls).all():
+                    _fold_outfield_bucket(
+                        buckets,
+                        p,
+                        season_num,
+                        merge_by_player=merge_by_player,
+                        pick_club="active_season",
+                    )
+        finally:
+            session.close()
+            eng.dispose()
+    return _finalize_life_rows(list(buckets.values()))
+
+
+def _aggregate_wc_life_cards(*, merge_by_player: bool = True) -> list[dict]:
+    buckets: dict[tuple, dict] = {}
+    for season_num, path in _iter_wc_db_paths():
+        session, eng = _open_session(path)
+        try:
+            for Cls in _ALL:
+                for p in session.query(Cls).all():
+                    _fold_cards_bucket(
+                        buckets,
+                        p,
+                        season_num,
+                        merge_by_player=merge_by_player,
+                        pick_club="active_season",
+                    )
+        finally:
+            session.close()
+            eng.dispose()
+    return _finalize_life_rows(list(buckets.values()))
+
+
+def _aggregate_wc_life_clean_sheets(*, merge_by_player: bool = True) -> list[dict]:
+    buckets: dict[tuple, dict] = {}
+    for season_num, path in _iter_wc_db_paths():
+        session, eng = _open_session(path)
+        try:
+            for p in session.query(Goalkeeper).all():
+                _fold_cs_bucket(
+                    buckets,
+                    p,
+                    season_num,
+                    merge_by_player=merge_by_player,
+                    pick_club="active_season",
+                )
+        finally:
+            session.close()
+            eng.dispose()
+    return _finalize_life_rows(list(buckets.values()))
 
 
 def aggregate_outfield(
@@ -609,8 +765,24 @@ def aggregate_life_outfield(
     merge_by_player: bool = True,
 ) -> list[dict]:
     league_code = normalize_stats_league_code(league_code) or league_code
-    code = "cl" if cl else league_code
+    if cl:
+        code = "cl"
+    elif league_code == "wc":
+        return _aggregate_wc_life_outfield(merge_by_player=merge_by_player)
+    elif is_all_leagues_plus_cl_plus_wc(league_code):
+        base = aggregate_life_outfield("allcl", merge_by_player=merge_by_player)
+        wc = _aggregate_wc_life_outfield(merge_by_player=merge_by_player)
+        merged = _merge_stat_rows(
+            base,
+            wc,
+            sum_fields=("goals", "assists", "ga", "matches", "potm", "motm"),
+        )
+        return _finalize_life_rows(merged)
+    else:
+        code = league_code
     db_path, _ = _life_cumulative_db(code)
+    if not db_path:
+        return []
     return _aggregate_outfield_from_db(
         db_path,
         _filter_code_for_life(code),
@@ -701,8 +873,24 @@ def aggregate_life_cards(
     merge_by_player: bool = True,
 ) -> list[dict]:
     league_code = normalize_stats_league_code(league_code) or league_code
-    code = "cl" if cl else league_code
+    if cl:
+        code = "cl"
+    elif league_code == "wc":
+        return _aggregate_wc_life_cards(merge_by_player=merge_by_player)
+    elif is_all_leagues_plus_cl_plus_wc(league_code):
+        base = aggregate_life_cards("allcl", merge_by_player=merge_by_player)
+        wc = _aggregate_wc_life_cards(merge_by_player=merge_by_player)
+        merged = _merge_stat_rows(
+            base,
+            wc,
+            sum_fields=("yellow_cards", "red_cards", "matches", "potm", "motm"),
+        )
+        return _finalize_life_rows(merged)
+    else:
+        code = league_code
     db_path, _ = _life_cumulative_db(code)
+    if not db_path:
+        return []
     rows = _aggregate_cards_from_db(
         db_path,
         _filter_code_for_life(code),
@@ -755,7 +943,22 @@ def aggregate_life_clean_sheets(
     cl: bool = False,
     merge_by_player: bool = True,
 ) -> tuple[list[dict], list[dict]]:
-    code = "cl" if cl else league_code
+    league_code = normalize_stats_league_code(league_code) or league_code
+    if cl:
+        code = "cl"
+    elif league_code == "wc":
+        return _aggregate_wc_life_clean_sheets(merge_by_player=merge_by_player), []
+    elif is_all_leagues_plus_cl_plus_wc(league_code):
+        base_gk, _ = aggregate_life_clean_sheets("allcl", merge_by_player=merge_by_player)
+        wc_gk = _aggregate_wc_life_clean_sheets(merge_by_player=merge_by_player)
+        merged = _merge_stat_rows(
+            base_gk,
+            wc_gk,
+            sum_fields=("clean_sheets", "matches", "potm", "motm"),
+        )
+        return _finalize_life_rows(merged), []
+    else:
+        code = league_code
     db_path, _ = _life_cumulative_db(code)
     if not os.path.isfile(db_path):
         return [], []
@@ -804,6 +1007,8 @@ def _list_season_archives_with_cl() -> list[int]:
 def _display_league_name(league_code: str | None, *, cl: bool = False) -> str:
     if cl:
         return LEAGUE_NAMES["cl"]
+    if is_all_leagues_plus_cl_plus_wc(league_code):
+        return "Все чемпионаты (лиги + ЛЧ + сборные)"
     if is_all_leagues_plus_cl(league_code):
         return "Все чемпионаты (лиги + ЛЧ)"
     if is_all_leagues_only(league_code):
@@ -818,12 +1023,16 @@ def _life_title_suffix(league_code: str | None, *, cl: bool) -> str:
 
 
 def _season_title_suffix(season_num: int, league_code: str | None, *, cl: bool) -> str:
+    if is_all_leagues_plus_cl_plus_wc(league_code):
+        return f" — сезон {season_num} (лига+ЛЧ+сборные · сумма · текущий клуб)"
     if is_all_leagues_plus_cl(league_code):
         return f" — сезон {season_num} (лига+ЛЧ · сумма · текущий клуб)"
     if is_all_leagues_only(league_code):
         return f" — сезон {season_num} (все нац. лиги · сумма · текущий клуб)"
     if cl or league_code == "cl":
         return f" — сезон {season_num} (ЛЧ · одна строка · последний клуб)"
+    if league_code == "wc":
+        return f" — сезон {season_num} (ЧМ · одна строка · последняя сборная)"
     return f" — сезон {season_num} (сумма в лиге · финальный клуб)"
 
 
@@ -835,6 +1044,14 @@ def life_has_archive_data(*, cl: bool = False) -> bool:
 
 def life_has_combined_archive_data() -> bool:
     return os.path.isfile(season_paths.get_cumulative_common_db_path())
+
+
+def life_has_wc_archive_data() -> bool:
+    return bool(_iter_wc_db_paths())
+
+
+def life_has_allclwc_archive_data() -> bool:
+    return life_has_combined_archive_data() or life_has_wc_archive_data()
 
 
 def format_life_top_scorers(league_code: str | None, limit: int = 30) -> str:
@@ -1177,7 +1394,19 @@ def collect_top100_rows(
     При ошибке ``error_message`` не None, ``rows`` пустой.
     """
     code = normalize_stats_league_code(league_code) or league_code
-    if is_all_leagues_plus_cl(code):
+    if is_all_leagues_plus_cl_plus_wc(code):
+        if not life_has_allclwc_archive_data():
+            return (
+                None,
+                [],
+                0,
+                (
+                    "Пока нет архивов сезонов с common.db / world_cup.db. "
+                    "После игры и «Завершить сезон» появятся снимки в db/season_N/."
+                ),
+            )
+        scope_line = "лига + ЛЧ + сборные, все лиги"
+    elif is_all_leagues_plus_cl(code):
         if not life_has_combined_archive_data():
             return (
                 None,
@@ -1201,8 +1430,20 @@ def collect_top100_rows(
                 ),
             )
         scope_line = "все нац. лиги (без ЛЧ)"
+    elif code == "wc":
+        if not life_has_wc_archive_data():
+            return (
+                None,
+                [],
+                0,
+                (
+                    "Пока нет архивов сезонов с world_cup.db. "
+                    "После «Завершить сезон» появятся снимки в db/season_N/."
+                ),
+            )
+        scope_line = "ЧМ (сборные)"
     else:
-        return None, [], 0, "Топ-100: укажите all или allcl."
+        return None, [], 0, "Топ-100: укажите all, allcl или allclwc."
 
     rows = aggregate_life_outfield(code, merge_by_player=True)
     rows = [
@@ -1327,10 +1568,22 @@ def collect_stats_history_rows(
     cl = code == "cl"
 
     if scope == "life":
-        if is_all_leagues_plus_cl(code):
+        if is_all_leagues_plus_cl_plus_wc(code):
+            if not life_has_allclwc_archive_data():
+                return "", [], (
+                    "Пока нет архивов сезонов. "
+                    "После «Завершить сезон» появятся снимки в db/season_N/."
+                )
+        elif is_all_leagues_plus_cl(code):
             if not life_has_combined_archive_data():
                 return "", [], (
                     "Пока нет архивов сезонов. "
+                    "После «Завершить сезон» появятся снимки в db/season_N/."
+                )
+        elif code == "wc":
+            if not life_has_wc_archive_data():
+                return "", [], (
+                    "Пока нет архивов сезонов с world_cup.db. "
                     "После «Завершить сезон» появятся снимки в db/season_N/."
                 )
         elif code == "cl":

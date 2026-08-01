@@ -30,12 +30,14 @@ def tournament_db_for_league(league_code: str) -> str:
 
 
 def tournament_for_goalscorers_scope(scope: str) -> str:
-    """``league`` | ``cl`` | ``common`` (лига+ЛЧ) для отчёта по клубу."""
+    """``league`` | ``cl`` | ``common`` | ``wc`` (лига+ЛЧ / ЧМ) для отчёта по клубу."""
     s = (scope or "league").strip().lower()
     if s in ("cl", "champ_league"):
         return "cl"
     if s in ("common", "merged", "all", "liga_cl", "lgcl"):
         return "common"
+    if s in ("wc", "world_cup"):
+        return "wc"
     return "league"
 
 
@@ -305,6 +307,11 @@ def cl_team_names_from_champions_db(db_path: str) -> list[str]:
     return sorted(names, key=lambda x: x.casefold())
 
 
+def wc_team_names_from_db(db_path: str) -> list[str]:
+    """Сборные из world_cup.db (DISTINCT team по всем позициям)."""
+    return cl_team_names_from_champions_db(db_path)
+
+
 def _cl_teams_from_season_pickle(season_num: int) -> list[str] | None:
     import os
     import pickle
@@ -333,7 +340,22 @@ def teams_ordered_for_goalscorers_season_archive(
     Клубы для клавиатуры голеадоров в архиве сезона.
     Для ЛЧ — состав участников того сезона (БД / pickle), не текущий teams_champ_league.
     """
-    if league_code != "cl":
+    code = (league_code or "").strip().lower()
+    if code == "wc":
+        import os
+
+        from utils import season_paths
+
+        p = os.path.join(
+            season_paths.season_archive_directory(int(season_num)),
+            season_paths.SEASON_WC_NAME,
+        )
+        if os.path.isfile(p):
+            names = wc_team_names_from_db(p)
+            if names:
+                return names
+        return teams_ordered_for_goalscorers("wc")
+    if code != "cl":
         return teams_ordered_for_goalscorers(league_code)
     p = _archived_season_db_path_for_goalscorers(int(season_num), "cl")
     if p:
@@ -385,7 +407,7 @@ def render_team_goalscorers_single(
 def _archived_season_db_path_for_goalscorers(
     season_num: int, league_code: str, *, scope: str | None = None
 ) -> str | None:
-    """Путь к league.db, champions_league.db или common.db в архиве сезона."""
+    """Путь к league.db, champions_league.db, common.db или world_cup.db в архиве сезона."""
     import os
 
     from utils import season_paths
@@ -396,6 +418,8 @@ def _archived_season_db_path_for_goalscorers(
         p = os.path.join(base, season_paths.SEASON_CL_NAME)
     elif sc == "common":
         p = os.path.join(base, season_paths.SEASON_COMMON_NAME)
+    elif sc == "wc" or (league_code or "").strip().lower() == "wc":
+        p = os.path.join(base, season_paths.SEASON_WC_NAME)
     else:
         p = os.path.join(base, season_paths.SEASON_LEAGUE_NAME)
     return p if os.path.isfile(p) else None
@@ -477,6 +501,8 @@ def render_team_goalscorers_all_time_league(league_code: str) -> str:
 
 
 def _cumulative_db_path_for_goalscorers_scope(scope: str) -> str:
+    import os
+
     from utils import season_paths
 
     tournament = tournament_for_goalscorers_scope(scope)
@@ -484,6 +510,11 @@ def _cumulative_db_path_for_goalscorers_scope(scope: str) -> str:
         return season_paths.get_cumulative_cl_db_path()
     if tournament == "common":
         return season_paths.get_cumulative_common_db_path()
+    if tournament == "wc":
+        path = season_paths.get_wc_db_path()
+        if path and os.path.isfile(path):
+            return path
+        raise FileNotFoundError("world_cup.db не найден")
     return season_paths.get_cumulative_league_db_path()
 
 

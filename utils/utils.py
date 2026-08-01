@@ -82,11 +82,23 @@ def get_session(tournament: str = 'league'):
     tournament: 'league' или 'l' - национальные лиги
                 'cl' - Лига Чемпионов
                 'common' / 'merged' - объединённая лига+ЛЧ (``common_synced.db``)
+                'wc' / 'world_cup' - ЧМ (``world_cup.db`` активного сезона)
     """
     if tournament in ['cl', 'champ_league']:
         return session_cl
     if tournament in ('common', 'merged', 'all'):
         return session_common
+    if tournament in ('wc', 'world_cup'):
+        from utils import season_paths
+
+        path = season_paths.get_wc_db_path()
+        if not path or not os.path.isfile(path):
+            raise FileNotFoundError("world_cup.db не найден для активного сезона")
+        eng = create_engine(
+            f"sqlite:///{path}",
+            connect_args={"check_same_thread": False, "timeout": 30},
+        )
+        return sessionmaker(bind=eng)()
     return session_league
 
 

@@ -80,14 +80,19 @@ def _league_title(code: str) -> str:
     from utils.stats_history_agg import (
         is_all_leagues_only,
         is_all_leagues_plus_cl,
+        is_all_leagues_plus_cl_plus_wc,
         normalize_stats_league_code,
     )
 
     c = normalize_stats_league_code(code) or (code or "").strip().lower()
+    if is_all_leagues_plus_cl_plus_wc(c):
+        return "Все чемпионаты (лиги + ЛЧ + сборные)"
     if is_all_leagues_plus_cl(c):
         return "Все чемпионаты (лиги + ЛЧ)"
     if is_all_leagues_only(c):
         return "Все чемпионаты (нац. лиги)"
+    if c == "wc":
+        return "Сборные"
     return dict(LEAGUE_LABELS).get(c or code, code)
 
 
@@ -207,7 +212,7 @@ def _goalscorers_league_cb(season_key: str, code: str) -> str:
 
 
 def _goalscorers_league_pick_keyboard(season_key: str) -> InlineKeyboardMarkup:
-    """Пять нац. лиг; внутри клуба — лига / ЛЧ / лига+ЛЧ. ``season_key``: ``cur``, ``life`` или номер архива."""
+    """Пять нац. лиг + сборные; внутри клуба — лига / ЛЧ / лига+ЛЧ (кроме сборных)."""
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
     for code, label in _national_league_labels():
@@ -222,6 +227,14 @@ def _goalscorers_league_pick_keyboard(season_key: str) -> InlineKeyboardMarkup:
             row = []
     if row:
         rows.append(row)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="Сборные",
+                callback_data=_goalscorers_league_cb(season_key, "wc"),
+            ),
+        ]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -550,6 +563,12 @@ def _stats_history_root_kb() -> InlineKeyboardMarkup:
             InlineKeyboardButton(
                 text="Все чемпионаты + ЛЧ",
                 callback_data="stats:hist:lg:allcl",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="Все чемпионаты + ЛЧ + сборная",
+                callback_data="stats:hist:lg:allclwc",
             ),
         ],
     ]
@@ -1207,6 +1226,7 @@ async def cb_menu_stats_history(callback: CallbackQuery) -> None:
         "потом метрику: бомбардиры, ассисты, Г+А, сухие, ЖК, КК.\n"
         "• <b>Все чемпионаты</b> — только нац. лиги (РПЛ, АПЛ, …)\n"
         "• <b>Все чемпионаты + ЛЧ</b> — нац. лиги и Лига чемпионов вместе\n"
+        "• <b>Все чемпионаты + ЛЧ + сборная</b> — нац. лиги, ЛЧ и ЧМ вместе\n"
         "• <b>За всё время</b> — одна строка на игрока (сумма по сезонам), "
         "клуб — последний в архиве\n"
         "• <b>Сезон</b> — один снимок из архива\n",
@@ -2226,7 +2246,7 @@ async def cb_tcp_tops(callback: CallbackQuery) -> None:
 async def cb_menu_tgs_league(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.answer(
-        "Стата по клубам: <b>сезон</b> или <b>за все время</b> → одна из <b>5 лиг</b> → клуб → "
+        "Стата по клубам: <b>сезон</b> или <b>за все время</b> → <b>5 лиг</b> или <b>сборные</b> → клуб → "
         "<b>лига</b> / <b>ЛЧ</b> / <b>лига + ЛЧ</b>.",
         parse_mode=ParseMode.HTML,
         reply_markup=_tgs_season_root_keyboard(),
@@ -2244,8 +2264,8 @@ async def cb_tgsroot_season(callback: CallbackQuery) -> None:
     await callback.answer()
     if key == "cur":
         await callback.message.answer(
-            "Текущий сезон — выберите чемпионат (5 лиг), затем клуб. "
-            "Внутри клуба — отдельно лига, ЛЧ или суммарно:",
+            "Текущий сезон — выберите чемпионат (5 лиг или сборные), затем клуб. "
+            "Внутри клуба — отдельно лига, ЛЧ или суммарно (для сборных — только ЧМ):",
             parse_mode=ParseMode.HTML,
             reply_markup=_goalscorers_league_pick_keyboard("cur"),
         )
@@ -2253,7 +2273,7 @@ async def cb_tgsroot_season(callback: CallbackQuery) -> None:
     if key == "life":
         await callback.message.answer(
             "За все время — накопительная стата по клубу (включая ушедших игроков). "
-            "Выберите чемпионат, затем клуб:",
+            "Выберите чемпионат или сборные, затем клуб:",
             parse_mode=ParseMode.HTML,
             reply_markup=_goalscorers_league_pick_keyboard("life"),
         )
@@ -2597,7 +2617,7 @@ async def cb_formation_set(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("tgst:cur:"))
 async def cb_tgst_cur_pick_scope(callback: CallbackQuery) -> None:
-    """Текущий сезон: клуб выбран — клавиатура лига / ЛЧ / лига+ЛЧ."""
+    """Текущий сезон: клуб выбран — клавиатура лига / ЛЧ / лига+ЛЧ (или сразу ЧМ для сборных)."""
     parts = callback.data.split(":")
     if len(parts) != 4 or parts[1] != "cur":
         await callback.answer()
@@ -2609,6 +2629,9 @@ async def cb_tgst_cur_pick_scope(callback: CallbackQuery) -> None:
         await callback.answer()
         return
     await callback.answer()
+    if code == "wc":
+        await _answer_wc_club_stats(callback.message, season_mode="cur", idx=idx)
+        return
     try:
         teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
         team_name = teams[idx]
@@ -2627,7 +2650,7 @@ async def cb_tgst_cur_pick_scope(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("tgst:life:"))
 async def cb_tgst_life_pick_scope(callback: CallbackQuery) -> None:
-    """За все время: клуб выбран — клавиатура лига / ЛЧ / лига+ЛЧ."""
+    """За все время: клуб выбран — клавиатура лига / ЛЧ / лига+ЛЧ (или сразу ЧМ для сборных)."""
     parts = callback.data.split(":")
     if len(parts) != 4 or parts[1] != "life":
         await callback.answer()
@@ -2639,6 +2662,9 @@ async def cb_tgst_life_pick_scope(callback: CallbackQuery) -> None:
         await callback.answer()
         return
     await callback.answer()
+    if code == "wc":
+        await _answer_wc_club_stats(callback.message, season_mode="life", idx=idx)
+        return
     try:
         teams = await asyncio.to_thread(teams_ordered_for_goalscorers, code)
         team_name = teams[idx]
@@ -2657,7 +2683,7 @@ async def cb_tgst_life_pick_scope(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("tgst:sn:"))
 async def cb_tgst_sn_pick_scope(callback: CallbackQuery) -> None:
-    """Архив: клуб выбран — клавиатура лига / ЛЧ / лига+ЛЧ."""
+    """Архив: клуб выбран — клавиатура лига / ЛЧ / лига+ЛЧ (или сразу ЧМ для сборных)."""
     parts = callback.data.split(":")
     if len(parts) != 5:
         await callback.answer()
@@ -2670,6 +2696,11 @@ async def cb_tgst_sn_pick_scope(callback: CallbackQuery) -> None:
         return
     code = parts[3]
     await callback.answer()
+    if code == "wc":
+        await _answer_wc_club_stats(
+            callback.message, season_mode="sn", idx=idx, season_num=sn
+        )
+        return
     try:
         teams = await asyncio.to_thread(
             teams_ordered_for_goalscorers_season_archive, sn, code
@@ -2688,6 +2719,39 @@ async def cb_tgst_sn_pick_scope(callback: CallbackQuery) -> None:
     )
 
 
+async def _answer_wc_club_stats(
+    message: Message,
+    *,
+    season_mode: str,
+    idx: int,
+    season_num: int | None = None,
+) -> None:
+    """Стата сборной без выбора лига/ЛЧ."""
+    try:
+        from bot.player_board_infographic import render_club_goalscorers_png_for_bot
+
+        cap, blobs = await asyncio.to_thread(
+            render_club_goalscorers_png_for_bot,
+            "wc",
+            idx,
+            "wc",
+            season_mode=season_mode,
+            season_num=season_num,
+        )
+        if not blobs:
+            await message.answer(cap or "Нет данных.")
+            return
+        await answer_png_pages(
+            message,
+            blobs,
+            cap,
+            filename_prefix="club_stats",
+        )
+    except Exception as e:
+        logger.exception("wc_club_stats")
+        await message.answer(f"Ошибка: {e}")
+
+
 @router.callback_query(F.data.startswith("tgst:run:"))
 async def cb_tgst_run_report(callback: CallbackQuery) -> None:
     """Рендер статы клуба по выбранному scope."""
@@ -2697,7 +2761,7 @@ async def cb_tgst_run_report(callback: CallbackQuery) -> None:
         await callback.answer()
         return
     scope = parts[-1]
-    if scope not in ("league", "cl", "common"):
+    if scope not in ("league", "cl", "common", "wc"):
         await callback.answer("Неверный турнир.", show_alert=True)
         return
     await callback.answer("Считаю…")

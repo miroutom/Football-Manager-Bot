@@ -2270,6 +2270,8 @@ def show_team_goalscorers_table(
         tname = "Лига Чемпионов"
     elif tournament in ("common", "merged", "all"):
         tname = "лига + ЛЧ (общая БД)"
+    elif tournament in ("wc", "world_cup"):
+        tname = "ЧМ"
     else:
         tname = "национальные лиги"
     suf = f" · {title_suffix}" if title_suffix else ""
@@ -2378,13 +2380,24 @@ def format_team_goalscorers_league_report(
     precomputed_by_team: Optional[dict] = None,
 ) -> str:
     """Все команды лиги подряд — как пункт «b»→4 в консоли."""
-    tournament = "cl" if league_code == "cl" else "league"
+    if league_code == "wc":
+        tournament = "wc"
+    else:
+        tournament = "cl" if league_code == "cl" else "league"
     import teams as teams_mod
 
     if teams_order is not None:
         teams = list(teams_order)
     elif league_code == "cl":
         teams = sorted(teams_mod.teams_champ_league.keys())
+    elif league_code == "wc":
+        from utils.world_cup import load_wc_config
+
+        teams = [
+            str(n).strip()
+            for n in (load_wc_config().get("nations") or [])
+            if str(n).strip()
+        ]
     else:
         teams = sorted(LEAGUE_TEAMS[league_code])
     league_name = LEAGUE_NAMES.get(league_code, league_code)
