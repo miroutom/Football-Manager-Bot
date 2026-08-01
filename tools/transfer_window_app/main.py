@@ -333,6 +333,65 @@ def _collect_fa_locations(free_agents: list[dict]) -> dict[str, tuple[str, str, 
     return out
 
 
+def _normalize_fa_player(raw: dict) -> dict | None:
+    from utils.free_agents_db import fa_player_id
+
+    name = str(raw.get("name") or "").strip()
+    pos = str(raw.get("position") or "").strip().upper()
+    if not name or not pos:
+        return None
+    pid = raw.get("id") or fa_player_id(name, pos)
+    nick = raw.get("nickname")
+    return {
+        "id": pid,
+        "person_id": raw.get("person_id"),
+        "name": name,
+        "position": pos,
+        "overall": int(raw.get("overall") or 0),
+        "nation": (raw.get("nation") or "") or "",
+        "nickname": (nick or "") or "",
+        "status": (raw.get("status") or "bench") or "bench",
+    }
+
+
+def import_fa_payload(data: dict, *, sync_db: bool = True) -> tuple[list[dict], list[str]]:
+    """JSON из бота (free_agents.json) → список для UI; опционально пишет в free_agents.db."""
+    raw = data.get("players")
+    if not isinstance(raw, list):
+        raw = data.get("free_agents")
+    if not isinstance(raw, list):
+        raise ValueError("Нужен JSON из бота: поле players (free_agents.json).")
+
+    notes: list[str] = []
+    if sync_db:
+        from utils.free_agents_db import add_free_agent_player
+
+        for row in raw:
+            p = _normalize_fa_player(row if isinstance(row, dict) else {})
+            if not p:
+                continue
+            try:
+                add_free_agent_player(
+                    name=p["name"],
+                    position=p["position"],
+                    overall=int(p["overall"] or 72),
+                    nation=(p.get("nation") or "") or None,
+                    person_id=p.get("person_id"),
+                    nickname=(p.get("nickname") or "") or None,
+                    status=p.get("status") or "bench",
+                )
+            except ValueError as e:
+                notes.append(str(e))
+
+    try:
+        from utils.free_agents_db import list_free_agents
+
+        players = list_free_agents()
+    except Exception:
+        players = [p for row in raw if (p := _normalize_fa_player(row if isinstance(row, dict) else {}))]
+    return players, notes
+
+
 def _merge_squads_from_bot_export(
     teams_in: list[dict], text: str
 ) -> tuple[list[dict], list[str]]:
@@ -863,6 +922,20 @@ class Handler(BaseHTTPRequestHandler):
             teams_in = data.get("teams") or []
             updated, notes = _merge_squads_from_bot_export(teams_in, text)
             return self._send_json({"ok": True, "teams": updated, "notes": notes})
+        if parsed.path == "/api/import-fa":
+            data = self._read_json()
+            try:
+                players, notes = import_fa_payload(data, sync_db=True)
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 400)
+            return self._send_json(
+                {
+                    "ok": True,
+                    "players": players,
+                    "count": len(players),
+                    "notes": notes[:15],
+                }
+            )
         if parsed.path == "/api/fa/create":
             data = self._read_json()
             try:

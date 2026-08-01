@@ -271,7 +271,7 @@ async def cb_xfer_export_fa(callback: CallbackQuery) -> None:
         ttext = await asyncio.to_thread(export_free_agents_txt_for_bot)
         await callback.message.answer_document(
             BufferedInputFile(jtext.encode("utf-8"), filename="free_agents.json"),
-            caption="📥 Свободные агенты (JSON для приложения)",
+            caption="📥 Свободные агенты → transfer app: «Загрузить FA из бота»",
         )
         await callback.message.answer_document(
             BufferedInputFile(ttext.encode("utf-8"), filename="free_agents.txt"),

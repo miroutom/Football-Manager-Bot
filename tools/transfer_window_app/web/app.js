@@ -336,9 +336,11 @@ function applySavedState(saved, rosters) {
     ? { ...saved.baseline_home }
     : { ...freshBaseline };
   teams = migrateSavedState(saved, rosters);
-  if (Array.isArray(saved.free_agents)) {
+  if (Array.isArray(saved.free_agents) && saved.free_agents.length) {
     freeAgents = saved.free_agents.map((p) => ({ ...p, status: p.status || "bench" }));
     initFaBaseline(freeAgents);
+  } else if (rosters && Array.isArray(rosters.free_agents) && rosters.free_agents.length) {
+    syncFreeAgentsFromRosters(rosters);
   }
   removedFromSquad = saved.removed_from_squad || {};
   dedupeGlobally(teams);
@@ -755,6 +757,45 @@ async function importSquadsFromFile(file) {
   renderAll();
   const note = (j.notes || []).join("; ");
   setStatus(note || "составы обновлены из бота");
+}
+
+function setFreeAgentsFromImport(players) {
+  pushUndo();
+  freeAgents = (players || []).map((p) => ({ ...p, status: p.status || "bench" }));
+  for (const p of freeAgents) {
+    if (p && p.id) baselineHome[p.id] = FA_TEAM;
+  }
+  freeAgents.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
+  dirty = true;
+  renderAll();
+}
+
+async function reloadFaFromDb() {
+  const res = await fetch("/api/free-agents");
+  const j = await res.json();
+  if (!res.ok || j.error) throw new Error(j.error || "нет данных FA");
+  setFreeAgentsFromImport(j.players || []);
+  setStatus(`FA из БД: ${freeAgents.length} игроков`);
+}
+
+async function importFaFromFile(file) {
+  const text = await file.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (_) {
+    throw new Error("нужен JSON (free_agents.json из бота)");
+  }
+  const res = await fetch("/api/import-fa", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "import failed");
+  setFreeAgentsFromImport(j.players || []);
+  const note = (j.notes || []).length ? ` · ${j.notes.slice(0, 2).join("; ")}` : "";
+  setStatus(`FA из бота: ${freeAgents.length} игроков${note}`);
 }
 
 const DRAG_SCROLL_MARGIN = 72;
@@ -1854,6 +1895,16 @@ document.getElementById("btn-reset-rosters")?.addEventListener("click", () => {
 document.getElementById("btn-import-squads")?.addEventListener("click", () => {
   document.getElementById("import-squads-file")?.click();
 });
+document.getElementById("btn-import-fa")?.addEventListener("click", () => {
+  document.getElementById("import-fa-file")?.click();
+});
+document.getElementById("btn-reload-fa")?.addEventListener("click", async () => {
+  try {
+    await reloadFaFromDb();
+  } catch (err) {
+    setStatus("FA: " + err.message);
+  }
+});
 document.getElementById("sync-apply")?.addEventListener("click", () => {
   pullRemoteState();
 });
@@ -1870,6 +1921,16 @@ document.getElementById("import-squads-file")?.addEventListener("change", async 
     await importSquadsFromFile(f);
   } catch (err) {
     setStatus("ошибка импорта: " + err.message);
+  }
+});
+document.getElementById("import-fa-file")?.addEventListener("change", async (e) => {
+  const f = e.target.files?.[0];
+  e.target.value = "";
+  if (!f) return;
+  try {
+    await importFaFromFile(f);
+  } catch (err) {
+    setStatus("ошибка FA: " + err.message);
   }
 });
 
