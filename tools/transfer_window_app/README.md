@@ -21,6 +21,8 @@ python3 tools/transfer_window_app/export_rosters.py   # актуальные с�
 
 Браузер: `http://127.0.0.1:8765/` (порт: `--port N`).
 
+Остановка / перезапуск / `--tunnel`: [../../docs/transfer-window-app.md#остановка-и-перезапуск](../../docs/transfer-window-app.md#остановка-и-перезапуск).
+
 ## macOS
 
 ```bash
