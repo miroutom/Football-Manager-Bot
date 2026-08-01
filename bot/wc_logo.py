@@ -122,15 +122,7 @@ def _flag_badge(host: str, size: int = 56) -> Image.Image | None:
     tw, th = work.size
     scale = min(size / max(tw, 1), size / max(th, 1))
     nw, nh = max(1, int(tw * scale)), max(1, int(th * scale))
-    work = work.resize((nw, nh), Image.Resampling.LANCZOS)
-    canvas = Image.new("RGBA", (size + 8, size + 8), (0, 0, 0, 0))
-    # лёгкая рамка
-    d = ImageDraw.Draw(canvas)
-    d.rounded_rectangle(
-        [0, 0, size + 7, size + 7], radius=6, fill=(20, 24, 32), outline=(220, 220, 230), width=2
-    )
-    canvas.paste(work, (4 + (size - nw) // 2, 4 + (size - nh) // 2), work)
-    return canvas
+    return work.resize((nw, nh), Image.Resampling.LANCZOS)
 
 
 def _fill_dark(im: Image.Image, colors: tuple[tuple[int, int, int], ...]) -> None:
