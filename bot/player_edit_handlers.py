@@ -17,7 +17,7 @@ from aiogram.types import (
 
 from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
 from bot.states import PlayerFieldEnter
-from bot.transfer_handlers import _ROSTER_PAGE_SIZE
+from bot.roster_utils import ROSTER_PAGE_SIZE as _ROSTER_PAGE_SIZE
 from utils.player_field_edit import (
     apply_player_field_update,
     format_merge_preview_message,

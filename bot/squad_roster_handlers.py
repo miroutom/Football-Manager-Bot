@@ -18,7 +18,7 @@ from aiogram.types import (
 
 from bot.services import LEAGUE_LABELS, split_text_chunks, teams_ordered_for_goalscorers
 from bot.states import SquadRosterEnter
-from bot.transfer_handlers import _ROSTER_PAGE_SIZE, _league_roster_tuples
+from bot.roster_utils import ROSTER_PAGE_SIZE as _ROSTER_PAGE_SIZE, league_roster_tuples as _league_roster_tuples
 from utils.roster_manual import (
     FREE_AGENT_TEAM,
     add_players_to_team_roster_bulk,
