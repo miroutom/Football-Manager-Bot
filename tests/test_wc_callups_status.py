@@ -5,6 +5,8 @@ from utils.wc_callups import (
     cycle_squad_player_status,
     remove_from_squad,
     set_squad_player_status,
+    toggle_assign_player_to_squad,
+    toggle_squad_player_status,
 )
 
 
@@ -78,3 +80,37 @@ def test_assign_and_remove(monkeypatch):
     assert remove_from_squad("Testland", "Beta") is True
     assert box[0]["teams"]["Testland"] == []
     assert remove_from_squad("Testland", "Beta") is False
+
+
+def test_toggle_assign_same_status_removes(monkeypatch):
+    import utils.wc_callups as mod
+
+    box = [
+        {
+            "season": 4,
+            "teams": {
+                "Testland": [
+                    {"name": "Gamma", "position": "ЦП", "overall": 70, "status": "bench"},
+                ]
+            },
+        }
+    ]
+
+    def _load():
+        return box[0]
+
+    def _save(d):
+        box[0] = d
+
+    monkeypatch.setattr(mod, "load_wc_squads", _load)
+    monkeypatch.setattr(mod, "save_wc_squads", _save)
+    monkeypatch.setattr(mod, "resolve_nation_name", lambda n: n)
+
+    action, _ = toggle_assign_player_to_squad("Testland", name="Gamma", status="bench")
+    assert action == "removed"
+    assert box[0]["teams"]["Testland"] == []
+
+    assign_player_to_squad("Testland", name="Delta", status="start")
+    action, _ = toggle_squad_player_status("Testland", "Delta", "start")
+    assert action == "removed"
+    assert box[0]["teams"]["Testland"] == []

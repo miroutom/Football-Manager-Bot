@@ -269,6 +269,53 @@ def remove_from_squad(nation: str, name: str) -> bool:
     return False
 
 
+def toggle_assign_player_to_squad(
+    nation: str,
+    *,
+    name: str,
+    club: str = "",
+    position: str = "",
+    overall: int = 0,
+    status: str = "reserve",
+) -> tuple[str, dict[str, Any] | None]:
+    """
+    Назначить status; если игрок уже с этим status — снять с заявки.
+    Возвращает (action, entry): added | changed | removed.
+    """
+    st = _norm_status(status)
+    want = (name or "").strip().casefold()
+    if is_called_up(nation, name):
+        cur = squad_status_map(nation).get(want, "reserve")
+        if cur == st:
+            remove_from_squad(nation, name)
+            return "removed", None
+        return "changed", set_squad_player_status(nation, name, st)
+    entry = assign_player_to_squad(
+        nation,
+        name=name,
+        club=club,
+        position=position,
+        overall=overall,
+        status=st,
+    )
+    return "added", entry
+
+
+def toggle_squad_player_status(
+    nation: str,
+    name: str,
+    status: str,
+) -> tuple[str, dict[str, Any] | None]:
+    """Сменить status или снять, если status уже такой же."""
+    st = _norm_status(status)
+    want = (name or "").strip().casefold()
+    cur = squad_status_map(nation).get(want, "reserve")
+    if cur == st:
+        remove_from_squad(nation, name)
+        return "removed", None
+    return "changed", set_squad_player_status(nation, name, st)
+
+
 def assign_player_to_squad(
     nation: str,
     *,

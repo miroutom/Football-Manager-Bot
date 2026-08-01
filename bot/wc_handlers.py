@@ -667,7 +667,7 @@ async def _show_nation_players(
         f"В клубах найдено: <b>{len(players)}</b>\n"
         f"{format_wc_quota_summary_html(ev)}\n"
         f"Режим: <b>{html_escape(_mode_hint(assign_mode))}</b> — тап по игроку.\n"
-        f"🟢🟡⚪ — уже в заявке · FA без клуба — «Вне клубов»."
+        f"Повторный тап (тот же режим) — снять · FA — «Вне клубов»."
     )
     await _edit(
         callback,
@@ -748,7 +748,7 @@ async def _apply_call_assign(
     p = players[abs_idx]
     data = await state.get_data()
     mode = _norm_assign_mode(data.get(_WC_ASSIGN_MODE_KEY))
-    from utils.wc_callups import assign_player_to_squad, remove_from_squad
+    from utils.wc_callups import remove_from_squad, toggle_assign_player_to_squad
 
     try:
         if mode == "remove":
@@ -758,8 +758,8 @@ async def _apply_call_assign(
                 return
             await callback.answer("Снят")
         else:
-            await asyncio.to_thread(
-                assign_player_to_squad,
+            action, _ = await asyncio.to_thread(
+                toggle_assign_player_to_squad,
                 nation,
                 name=p["name"],
                 club=p.get("club") or "",
@@ -767,7 +767,10 @@ async def _apply_call_assign(
                 overall=int(p.get("overall") or 0),
                 status=mode,
             )
-            await callback.answer(_STATUS_LABEL.get(mode, mode))
+            if action == "removed":
+                await callback.answer("Снят")
+            else:
+                await callback.answer(_STATUS_LABEL.get(mode, mode))
     except Exception as e:
         await callback.answer(str(e)[:180], show_alert=True)
         return
@@ -1022,7 +1025,7 @@ async def _show_squad_roster(
         f"{format_wc_quota_summary_html(ev)}\n\n"
         f"Игроков в заявке: <b>{n}</b>\n"
         f"Режим: <b>{html_escape(_mode_hint(assign_mode))}</b> — тап по игроку.\n"
-        f"🟢 старт · 🟡 запас · ⚪ резерв"
+        f"Повторный тап (тот же режим) — снять с заявки."
     )
     await _edit(
         callback,
@@ -1131,7 +1134,7 @@ async def _apply_squad_assign(
         await callback.answer()
         return
     nation = nations[nation_idx]
-    from utils.wc_callups import remove_from_squad, set_squad_player_status, squad_for_nation
+    from utils.wc_callups import remove_from_squad, squad_for_nation, toggle_squad_player_status
 
     roster = _sorted_roster(squad_for_nation(nation))
     abs_idx = page * _SQUAD_PAGE + local_idx
@@ -1150,8 +1153,13 @@ async def _apply_squad_assign(
                 return
             await callback.answer("Снят")
         else:
-            await asyncio.to_thread(set_squad_player_status, nation, name, mode)
-            await callback.answer(_STATUS_LABEL.get(mode, mode))
+            action, _ = await asyncio.to_thread(
+                toggle_squad_player_status, nation, name, mode
+            )
+            if action == "removed":
+                await callback.answer("Снят")
+            else:
+                await callback.answer(_STATUS_LABEL.get(mode, mode))
     except Exception as e:
         await callback.answer(str(e)[:180], show_alert=True)
         return
