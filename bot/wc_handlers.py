@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import logging
 from html import escape as html_escape
 
@@ -133,7 +134,11 @@ def _wc_home_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(text="📣 Вызовы", callback_data="wc:call:home"),
-                InlineKeyboardButton(text="📥 Сборные", callback_data="wc:pools:export"),
+                InlineKeyboardButton(text="📥 Пул игроков", callback_data="wc:pools:export"),
+            ],
+            [
+                InlineKeyboardButton(text="📥 Заявки ЧМ", callback_data="wc:squads:import"),
+                InlineKeyboardButton(text="📤 Заявки ЧМ", callback_data="wc:squads:export"),
             ],
             [
                 InlineKeyboardButton(text="👤 Менеджеры", callback_data="wc:mgr"),
@@ -332,6 +337,84 @@ async def cb_wc_pools_export(callback: CallbackQuery) -> None:
     except Exception as e:
         logger.exception("wc national pools export")
         await callback.message.answer(f"✗ {html_escape(str(e))}", parse_mode="HTML")
+
+
+@wc_router.callback_query(F.data == "wc:squads:export")
+async def cb_wc_squads_export(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю заявки…")
+    if not callback.message:
+        return
+    try:
+        from aiogram.types import BufferedInputFile
+        from utils.transfer_export import export_wc_squads_txt_for_bot
+
+        txt = await asyncio.to_thread(export_wc_squads_txt_for_bot)
+        n_blocks = txt.count("\n@") + (1 if txt.startswith("@") else 0)
+        cap = (
+            f"📤 Заявки ЧМ · {n_blocks} сборных\n"
+            f"Transfer app: режим «Сборные ЧМ» → Загрузить заявки"
+        )
+        await callback.message.answer_document(
+            BufferedInputFile(txt.encode("utf-8"), filename="wc_squads_export.txt"),
+            caption=cap,
+        )
+    except Exception as e:
+        logger.exception("wc squads export")
+        await callback.message.answer(f"✗ {html_escape(str(e))}", parse_mode="HTML")
+
+
+@wc_router.callback_query(F.data == "wc:squads:import")
+async def cb_wc_squads_import_start(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    await state.set_state(WcEnter.squad_import)
+    if callback.message:
+        await callback.message.answer(
+            "📥 Отправь <code>wc_squads_export.txt</code> из transfer app "
+            "(режим «Сборные ЧМ» → Выгрузить заявки).\n"
+            "/cancel — отмена.",
+            parse_mode="HTML",
+        )
+
+
+@wc_router.message(StateFilter(WcEnter.squad_import), F.document)
+async def on_wc_squads_import_file(message: Message, state: FSMContext) -> None:
+    doc = message.document
+    if doc is None or not doc.file_name:
+        await message.answer("✗ Нужен файл-документ.", parse_mode="HTML")
+        return
+    fn = doc.file_name.lower()
+    if not fn.endswith(".txt"):
+        await message.answer("✗ Нужен .txt (<code>wc_squads_export.txt</code>).", parse_mode="HTML")
+        return
+    buf = io.BytesIO()
+    await message.bot.download(doc, destination=buf)
+    try:
+        text = buf.getvalue().decode("utf-8")
+    except UnicodeDecodeError:
+        text = buf.getvalue().decode("utf-8-sig")
+    if "@" not in text or "==== start ===" not in text.lower():
+        await message.answer(
+            "✗ Не похоже на wc_squads_export: нужны блоки <code>@Нация</code>, "
+            "<code>coach:</code>, <code>formation_id:</code>.",
+            parse_mode="HTML",
+        )
+        return
+    try:
+        from utils.wc_squad_app import import_wc_squads_export_txt
+
+        stats = await asyncio.to_thread(import_wc_squads_export_txt, text, True)
+    except Exception as e:
+        logger.exception("wc squads import")
+        await message.answer(f"✗ {html_escape(str(e))}", parse_mode="HTML")
+        return
+    await state.clear()
+    await message.answer(
+        f"✓ Заявки ЧМ применены\n"
+        f"• сборных: <b>{stats.get('teams_parsed') or stats.get('nations') or 0}</b>\n"
+        f"• игроков в БД: <b>{stats.get('players') or 0}</b>",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[_back_home_row()]),
+    )
 
 
 @wc_router.callback_query(F.data == "wc:rules")

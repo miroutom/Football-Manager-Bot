@@ -91,3 +91,12 @@ def export_national_pools_bundle_for_bot() -> tuple[str, str, dict[str, Any]]:
 
     data = build_all_national_pools()
     return format_national_pools_txt(data), format_national_pools_json(data), data
+
+
+def export_wc_squads_txt_for_bot() -> str:
+    """Готовые заявки сборных ЧМ (wc_squads_export.txt) из world_cup_squads.json."""
+    from tools.transfer_window_app.export_national_rosters import export_all_national_rosters
+    from utils.wc_squad_app import format_wc_squads_export_txt
+
+    data = export_all_national_rosters()
+    return format_wc_squads_export_txt(data.get("teams") or [])

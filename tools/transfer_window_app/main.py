@@ -294,8 +294,8 @@ def _print_share_startup_hints(port: int, *, tunnel_mode: bool, lan_mode: bool) 
         print("Сохраняйте часто (↻ синхронизация).")
 
 
-def _load_window_state_file(window: str) -> dict | None:
-    sp = _state_path(window)
+def _load_window_state_file(window: str, *, mode: str = "clubs") -> dict | None:
+    sp = _state_path(window, mode=mode)
     if not sp.is_file():
         return None
     try:
@@ -303,6 +303,20 @@ def _load_window_state_file(window: str) -> dict | None:
     except (OSError, json.JSONDecodeError):
         return None
     return raw if isinstance(raw, dict) else None
+
+
+def _ensure_national_rosters_json() -> Path:
+    p = _national_rosters_path()
+    if p.is_file():
+        return p
+    try:
+        from export_national_rosters import export_all_national_rosters
+
+        data = export_all_national_rosters()
+        p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    except Exception as e:
+        _write_startup_log(f"national_rosters export failed: {e}")
+    return p
 
 
 def _persist_window_state(
@@ -317,8 +331,9 @@ def _persist_window_state(
     Возвращает (payload, conflict).
     """
     window = _normalize_window(payload.get("window"))
+    mode = _normalize_mode(payload.get("mode"))
     with _state_lock:
-        current = _load_window_state_file(window)
+        current = _load_window_state_file(window, mode=mode)
         if has_save_conflict(current, expected_revision):
             return current or {}, True
         new_rev = state_revision(current) + 1
@@ -328,7 +343,8 @@ def _persist_window_state(
             client_name=client_name,
             client_id=client_id,
         )
-        sp = _state_path(window)
+        out["mode"] = mode
+        sp = _state_path(window, mode=mode)
         sp.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
         return out, False
 
@@ -439,7 +455,27 @@ def _rosters_path() -> Path:
     return _bundle_dir() / "rosters.json"
 
 
-def _state_path(window: str = DEFAULT_WINDOW) -> Path:
+def _normalize_mode(raw: str | None) -> str:
+    m = (raw or "clubs").strip().lower()
+    return "nations" if m in ("nations", "nation", "wc", "national") else "clubs"
+
+
+def _national_rosters_path() -> Path:
+    p = _bundle_dir() / "national_rosters.json"
+    if p.is_file():
+        return p
+    return _APP_DIR / "national_rosters.json"
+
+
+def _rosters_path_for_mode(mode: str) -> Path:
+    if _normalize_mode(mode) == "nations":
+        return _national_rosters_path()
+    return _rosters_path()
+
+
+def _state_path(window: str = DEFAULT_WINDOW, *, mode: str = "clubs") -> Path:
+    if _normalize_mode(mode) == "nations":
+        return _data_dir() / "transfer_window_state_nations.json"
     w = _normalize_window(window)
     return _data_dir() / f"transfer_window_state_{w}.json"
 
@@ -738,6 +774,33 @@ def compute_transfers(state: dict) -> list[dict]:
 
 
 def _squads_validation_error(data: dict) -> str | None:
+    mode = _normalize_mode(data.get("mode"))
+    teams = data.get("teams") or []
+    if mode == "nations":
+        from utils.wc_squad_quota import WC_TOTAL, evaluate_wc_squad, format_wc_quota_hint
+
+        lines: list[str] = []
+        for team in teams:
+            name = team.get("name") or "?"
+            roster = []
+            for zone in ("start", "bench", "reserve"):
+                for p in team.get(zone) or []:
+                    if p and p.get("name"):
+                        row = dict(p)
+                        row["status"] = zone
+                        if zone == "start" and row.get("slot"):
+                            row["lineup_slot"] = row["slot"]
+                        roster.append(row)
+            ev = evaluate_wc_squad(roster)
+            if ev.get("complete"):
+                continue
+            lines.append(f"{name}: {format_wc_quota_hint(ev)}")
+        if not lines:
+            return None
+        head = f"Неполная заявка сборной ({WC_TOTAL} игроков):"
+        tail = f"\n… и ещё {len(lines) - 12}" if len(lines) > 12 else ""
+        return head + "\n" + "\n".join(lines[:12]) + tail
+
     from utils.transfer_squad_quota import evaluate_all_teams, format_missing_hint
 
     formations = data.get("formations")
@@ -745,7 +808,7 @@ def _squads_validation_error(data: dict) -> str | None:
         rp = _rosters_path()
         if rp.is_file():
             formations = json.loads(rp.read_text(encoding="utf-8")).get("formations") or []
-    ev = evaluate_all_teams(data.get("teams") or [], formations or [])
+    ev = evaluate_all_teams(teams, formations or [])
     if ev.get("all_complete"):
         return None
     lines: list[str] = []
@@ -761,7 +824,17 @@ def _squads_validation_error(data: dict) -> str | None:
     return head + "\n" + "\n".join(lines[:12]) + tail
 
 
-def _squad_rules_payload() -> dict:
+def _squad_rules_payload(mode: str = "clubs") -> dict:
+    if _normalize_mode(mode) == "nations":
+        from utils.wc_squad_quota import WC_BENCH, WC_RESERVE, WC_START, WC_TOTAL
+
+        return {
+            "total": WC_TOTAL,
+            "start": WC_START,
+            "bench": WC_BENCH,
+            "reserve": WC_RESERVE,
+            "hint": f"{WC_TOTAL} игроков: {WC_START} старт + {WC_BENCH} запас + {WC_RESERVE} резерв (ЧМ)",
+        }
     from utils.squad_limits import transfer_app_squad_limits
     from utils.transfer_squad_quota import SQUAD_RESERVE, SQUAD_START, SQUAD_TOTAL
 
@@ -787,6 +860,7 @@ def build_state_payload(data: dict) -> dict:
     season = data.get("season")
     window = _normalize_window(data.get("window"))
     state = {
+        "mode": _normalize_mode(data.get("mode")),
         "window": window,
         "season": season,
         "rosters_revision": data.get("rosters_revision"),
@@ -795,7 +869,10 @@ def build_state_payload(data: dict) -> dict:
         "free_agents": free_agents,
         "removed_from_squad": removed_from_squad,
     }
-    state["transfers"] = compute_transfers(state)
+    if state["mode"] == "clubs":
+        state["transfers"] = compute_transfers(state)
+    else:
+        state["transfers"] = []
     return state
 
 
@@ -959,12 +1036,20 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_json(
                 {
                     "default_window": DEFAULT_WINDOW,
+                    "default_mode": "clubs",
+                    "modes": {
+                        "clubs": {"label": "Клубы", "squad_rules": _squad_rules_payload("clubs")},
+                        "nations": {
+                            "label": "Сборные ЧМ",
+                            "squad_rules": _squad_rules_payload("nations"),
+                        },
+                    },
                     "windows": WINDOW_QUOTAS,
                     "data_dir": str(_data_dir()),
                     "leagues": leagues,
                     "positions": positions,
                     "fa_team": "Free Agent",
-                    "squad_rules": _squad_rules_payload(),
+                    "squad_rules": _squad_rules_payload("clubs"),
                     "multiplayer": _multiplayer_config_payload(),
                     "nations_by_confederation": nations_catalog,
                     "nations": _nations_flat(nations_catalog),
@@ -986,12 +1071,19 @@ class Handler(BaseHTTPRequestHandler):
                     "data_dir": str(_data_dir()),
                     "export_dir": str(_export_dir()),
                     "rosters": str(_rosters_path()),
+                    "national_rosters": str(_national_rosters_path()),
                     "state_summer": str(_state_path("summer")),
                     "state_winter": str(_state_path("winter")),
+                    "state_nations": str(_state_path(mode="nations")),
                 }
             )
         if path == "/api/rosters":
-            p = _rosters_path()
+            qs = parse_qs(parsed.query)
+            mode = _normalize_mode((qs.get("mode") or ["clubs"])[0])
+            if mode == "nations":
+                p = _ensure_national_rosters_json()
+            else:
+                p = _rosters_path()
             if not p.is_file():
                 return self._send_json({"error": f"нет {p}"}, 500)
             payload = json.loads(p.read_text(encoding="utf-8"))
@@ -1005,6 +1097,7 @@ class Handler(BaseHTTPRequestHandler):
                 payload["free_agents"] = list_free_agents()
             except Exception:
                 payload.setdefault("free_agents", payload.get("free_agents") or [])
+            payload.setdefault("mode", mode)
             return self._send_json(payload)
         if path == "/api/national-pools":
             try:
@@ -1024,17 +1117,21 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_json({"players": rows, "team_label": "Free Agent"})
         if path == "/api/state/meta":
             qs = parse_qs(parsed.query)
+            mode = _normalize_mode((qs.get("mode") or ["clubs"])[0])
             window = _normalize_window((qs.get("window") or [DEFAULT_WINDOW])[0])
-            raw = _load_window_state_file(window)
+            raw = _load_window_state_file(window, mode=mode)
             meta = state_meta(raw)
             meta["window"] = window
+            meta["mode"] = mode
             return self._send_json(meta)
         if path == "/api/state":
             qs = parse_qs(parsed.query)
+            mode = _normalize_mode((qs.get("mode") or ["clubs"])[0])
             window = _normalize_window((qs.get("window") or [DEFAULT_WINDOW])[0])
-            raw = _load_window_state_file(window)
+            raw = _load_window_state_file(window, mode=mode)
             if raw is not None:
                 raw.setdefault("window", window)
+                raw.setdefault("mode", mode)
                 return self._send_json(raw)
             self.send_response(404)
             self.end_headers()
@@ -1072,12 +1169,14 @@ class Handler(BaseHTTPRequestHandler):
                     409,
                 )
             window = saved["window"]
-            sp = _state_path(window)
+            mode = _normalize_mode(saved.get("mode"))
+            sp = _state_path(window, mode=mode)
             return self._send_json(
                 {
                     "ok": True,
                     "path": str(sp),
                     "window": window,
+                    "mode": mode,
                     "revision": state_revision(saved),
                     "updated_by": saved.get("updated_by") or "",
                     "transfers_count": len(saved.get("transfers") or []),
@@ -1089,11 +1188,33 @@ class Handler(BaseHTTPRequestHandler):
             fmt = (qs.get("fmt") or ["txt"])[0]
             kind = (qs.get("kind") or ["squads"])[0]
             data = self._read_json()
-            if kind == "squads":
+            if kind in ("squads", "wc-squads"):
                 err = _squads_validation_error(data)
                 if err:
                     return self._send_json({"ok": False, "error": err}, 400)
             out_dir = _export_dir()
+            if kind == "wc-squads":
+                from utils.wc_squad_app import format_wc_squads_export_txt
+
+                out = out_dir / "wc_squads_export.txt"
+                out.write_text(
+                    format_wc_squads_export_txt(data.get("teams") or []),
+                    encoding="utf-8",
+                )
+                return self._send_json(
+                    {
+                        "ok": True,
+                        "path": str(out),
+                        "count": sum(
+                            1
+                            for t in data.get("teams") or []
+                            for z in ("start", "bench", "reserve")
+                            for p in t.get(z) or []
+                            if p.get("name")
+                        ),
+                        "nations": len(data.get("teams") or []),
+                    }
+                )
             if kind == "national":
                 try:
                     from national_pools import (
@@ -1166,6 +1287,18 @@ class Handler(BaseHTTPRequestHandler):
                     }
                 )
             return self._send_json({"ok": True, "path": str(out), "count": len(rows)})
+        if parsed.path == "/api/import-wc-squads":
+            data = self._read_json()
+            text = str(data.get("text") or "")
+            try:
+                from utils.wc_squad_app import parse_wc_squads_export_txt
+
+                teams = parse_wc_squads_export_txt(text)
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 400)
+            if not teams:
+                return self._send_json({"ok": False, "error": "Не найдено сборных (@Нация …)"}, 400)
+            return self._send_json({"ok": True, "teams": teams, "count": len(teams)})
         if parsed.path == "/api/import-squads":
             data = self._read_json()
             text = str(data.get("text") or "")

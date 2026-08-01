@@ -5,6 +5,8 @@ let teams = [];
 let dragPayload = null;
 let dragScrollActive = false;
 let currentWindow = "summer";
+let currentMode = "clubs";
+let selectedNation = "";
 let maxIn = 5;
 let maxOut = 5;
 let dirty = false;
@@ -47,6 +49,30 @@ let positionsCatalog = [
 const SQUAD_TARGET = 32;
 const SQUAD_START_TARGET = 11;
 const SQUAD_RESERVE_TARGET = 21;
+const WC_TOTAL = 26;
+const WC_START = 11;
+const WC_BENCH = 7;
+const WC_RESERVE = 8;
+
+function isNationsMode() {
+  return currentMode === "nations";
+}
+
+function activeSquadTarget() {
+  return isNationsMode() ? WC_TOTAL : SQUAD_TARGET;
+}
+
+function activeStartTarget() {
+  return isNationsMode() ? WC_START : SQUAD_START_TARGET;
+}
+
+function activeBenchCount() {
+  return isNationsMode() ? WC_BENCH : BENCH_SLOTS;
+}
+
+function activeReserveCount() {
+  return isNationsMode() ? WC_RESERVE : null;
+}
 
 const SLOT_RESERVE_LABEL = {
   GK: "ВРТ",
@@ -204,6 +230,8 @@ function aggregateGroupStatus(groupStatus) {
 }
 
 function evaluateTeamSquad(team) {
+  if (isNationsMode()) return evaluateWcTeamSquad(team);
+
   const form = formationById(team.formation_id);
   const groups = reserveGroupsForFormation(form);
   const starters = (team.start || []).filter((p) => p && p.id);
@@ -251,6 +279,39 @@ function evaluateTeamSquad(team) {
   };
 }
 
+function evaluateWcTeamSquad(team) {
+  const starters = (team.start || []).filter((p) => p && p.id);
+  const bench = (team.bench || []).filter((p) => p && p.id);
+  const reserve = (team.reserve || []).filter((p) => p && p.id);
+  const startMissing = (team.start || []).filter((s) => !(s && s.id)).length;
+  const benchMissing = Math.max(0, WC_BENCH - bench.length);
+  const reserveMissing = Math.max(0, WC_RESERVE - reserve.length);
+  const total = starters.length + bench.length + reserve.length;
+  const complete =
+    startMissing === 0 &&
+    benchMissing === 0 &&
+    reserveMissing === 0 &&
+    total === WC_TOTAL;
+
+  const missingReserve = [];
+  if (benchMissing) missingReserve.push({ label: "запас", need: benchMissing });
+  if (reserveMissing) missingReserve.push({ label: "резерв", need: reserveMissing });
+
+  return {
+    team: team.name,
+    total,
+    target: WC_TOTAL,
+    start_filled: WC_START - startMissing,
+    reserve_filled: bench.length + reserve.length,
+    complete,
+    missing_start: startMissing,
+    missing_reserve: missingReserve,
+    missing_groups: [],
+    surplus_reserve: total > WC_TOTAL ? [{ label: "всего", extra: total - WC_TOTAL }] : [],
+    group_status: [],
+  };
+}
+
 function formatMissingHint(ev) {
   const parts = [];
   if (Number(ev.missing_start) > 0) parts.push(`основа ×${ev.missing_start}`);
@@ -290,7 +351,13 @@ function findIncompleteSquads() {
 
 function squadExportBlockedMessage(incomplete) {
   const lines = incomplete.slice(0, 10).map((ev) => `${ev.team}: ${formatSquadIssues(ev)}`);
-  const tail = incomplete.length > 10 ? `\n… и ещё ${incomplete.length - 10} клубов` : "";
+  const tail = incomplete.length > 10 ? `\n… и ещё ${incomplete.length - 10}` : "";
+  if (isNationsMode()) {
+    return (
+      `Нельзя выгрузить заявки ЧМ: нужно ${WC_TOTAL} игроков ` +
+      `(11 старт + 7 запас + 8 резерв).\n\n${lines.join("\n")}${tail}`
+    );
+  }
   return (
     "Нельзя выгрузить составы: заявка должна быть 32 игрока " +
     `(11 основа + 21 замена по слотам схемы, у вратаря 1).\n\n${lines.join("\n")}${tail}`
@@ -550,12 +617,16 @@ function applySavedState(saved, rosters) {
   undoStack = [];
   updateUndoBtn();
   dirty = false;
+  populateNationSelect();
   renderAll();
   updateSyncBadge(saved);
 }
 
 async function pullRemoteState() {
-  const res = await fetch(`/api/state?window=${encodeURIComponent(currentWindow)}`);
+  const url = isNationsMode()
+    ? "/api/state?mode=nations"
+    : `/api/state?window=${encodeURIComponent(currentWindow)}`;
+  const res = await fetch(url);
   if (!res.ok) return false;
   const saved = await res.json();
   if (!lastRosters) return false;
@@ -572,7 +643,10 @@ async function pullRemoteState() {
 
 async function pollRemoteRevision() {
   try {
-    const res = await fetch(`/api/state/meta?window=${encodeURIComponent(currentWindow)}`);
+    const url = isNationsMode()
+      ? "/api/state/meta?mode=nations"
+      : `/api/state/meta?window=${encodeURIComponent(currentWindow)}`;
+    const res = await fetch(url);
     if (!res.ok) return;
     const meta = await res.json();
     updateSyncBadge(meta);
@@ -618,17 +692,21 @@ function loadFreshFromRosters(rosters, msg) {
   dirty = false;
   stateRevision = 0;
   rostersRevision = rosters.rosters_revision ?? null;
+  populateNationSelect();
+  updateTitle();
   renderAll();
   if (msg) setStatus(msg);
 }
 
 function resetToDbRosters() {
   const ok = window.confirm(
-    "Сбросить все изменения и загрузить составы из rosters.json?\n" +
-      "Текущие несохранённые трансферы будут потеряны."
+    isNationsMode()
+      ? "Сбросить все изменения и загрузить сборные из national_rosters.json?"
+      : "Сбросить все изменения и загрузить составы из rosters.json?\n" +
+          "Текущие несохранённые трансферы будут потеряны."
   );
   if (!ok) return;
-  fetch("/api/rosters")
+  fetch(`/api/rosters?mode=${encodeURIComponent(currentMode)}`)
     .then((r) => r.json())
     .then(async (rosters) => {
       rostersSeason = rosters.season ?? rostersSeason;
@@ -683,8 +761,16 @@ function setNationalPools(data) {
   nationalExpanded.clear();
   const panel = document.getElementById("national-panel");
   const cnt = document.getElementById("national-count");
-  if (panel) panel.hidden = !nationalPools?.nations?.length;
-  if (cnt) cnt.textContent = String(data?.player_count || 0);
+  const showPanel = isNationsMode() ? !!selectedNation : !!(nationalPools?.nations?.length);
+  if (panel) panel.hidden = !showPanel;
+  if (cnt) {
+    const block = isNationsMode() && selectedNation
+      ? (nationalPools?.nations || []).find((b) => b.name === selectedNation)
+      : null;
+    cnt.textContent = String(
+      block?.players?.length || data?.player_count || nationalPools?.player_count || 0
+    );
+  }
   renderNationalPanel();
 }
 
@@ -732,9 +818,11 @@ function renderNationalPlayer(p) {
       id: p.id,
       team: isFa ? FA_TEAM : p.team,
       fromFa: isFa,
+      fromNational: true,
       name: p.name,
       position: p.position,
       overall: p.overall,
+      club: p.team,
     };
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", p.id);
@@ -746,6 +834,8 @@ function renderNationalPlayer(p) {
 
 function renderNationalPanel() {
   const list = document.getElementById("national-list");
+  const title = document.getElementById("national-panel-title");
+  const panel = document.getElementById("national-panel");
   if (!list) return;
   list.innerHTML = "";
   const blocks = nationalPools?.nations || [];
@@ -753,14 +843,15 @@ function renderNationalPanel() {
 
   const q = nationalFilter.trim().toLowerCase();
   let shown = 0;
+  const nationFilterName = isNationsMode() ? selectedNation : "";
+
   blocks.forEach((block) => {
     const nation = block.name || "?";
+    if (nationFilterName && nation !== nationFilterName) return;
     let players = (block.players || []).slice();
     if (q) {
-      const nationHit = nation.toLowerCase().includes(q);
       players = players.filter(
         (p) =>
-          nationHit ||
           String(p.name || "").toLowerCase().includes(q) ||
           String(p.team || "").toLowerCase().includes(q) ||
           String(p.position || "").toLowerCase().includes(q)
@@ -769,6 +860,12 @@ function renderNationalPanel() {
     }
 
     shown += players.length;
+    if (isNationsMode()) {
+      if (title) title.textContent = `Пул · ${nation}`;
+      players.forEach((p) => list.appendChild(renderNationalPlayer(p)));
+      return;
+    }
+
     const group = document.createElement("div");
     group.className = "national-group" + (nationalExpanded.has(nation) || q ? " expanded" : "");
     const hdr = document.createElement("div");
@@ -790,8 +887,11 @@ function renderNationalPanel() {
   if (!shown) {
     const empty = document.createElement("div");
     empty.className = "fa-hint";
-    empty.textContent = "Никого не найдено";
+    empty.textContent = nationFilterName ? "Нет игроков в пуле" : "Никого не найдено";
     list.appendChild(empty);
+  }
+  if (panel && isNationsMode()) {
+    panel.hidden = !nationFilterName || !blocks.length;
   }
 }
 
@@ -1450,6 +1550,22 @@ function applyInjuryFlags(teamList) {
 }
 
 function ensureExtraReserveSlots(teamList) {
+  const emptySlot = () => ({
+    id: null,
+    name: null,
+    position: null,
+    overall: null,
+    injured: false,
+  });
+  if (isNationsMode()) {
+    for (const team of teamList || []) {
+      if (!Array.isArray(team.bench)) team.bench = [];
+      while (team.bench.length < WC_BENCH) team.bench.push(emptySlot());
+      if (!Array.isArray(team.reserve)) team.reserve = [];
+      while (team.reserve.length < WC_RESERVE) team.reserve.push(emptySlot());
+    }
+    return;
+  }
   /** В конце резерва всегда EXTRA_RESERVE пустых ячеек для дропа. */
   for (const team of teamList || []) {
     if (!Array.isArray(team.reserve)) team.reserve = [];
@@ -1554,6 +1670,7 @@ function countInOut(team) {
 }
 
 function isIncoming(teamName, player) {
+  if (isNationsMode()) return false;
   if (!player || !player.id) return false;
   return baselineHome[player.id] !== teamName;
 }
@@ -1932,11 +2049,41 @@ function dedupeGlobally(list) {
 
 function movePlayer(src, destTeamName, destZone, destIndex) {
   if (destTeamName === FA_TEAM) {
+    if (isNationsMode()) return;
     movePlayerToFa(src);
     return;
   }
   const destTeam = teams.find((t) => t.name === destTeamName);
   if (!destTeam) return;
+
+  if (src.fromNational || (isNationsMode() && findNationalPlayer(src.id))) {
+    const nat = findNationalPlayer(src.id);
+    const moving = nat
+      ? { ...nat, id: nat.id }
+      : {
+          id: src.id,
+          name: src.name,
+          position: src.position,
+          overall: src.overall,
+        };
+    const destSlot = destTeam[destZone][destIndex];
+    const displaced = destSlot?.id && destSlot.id !== moving.id ? { ...destSlot } : null;
+    removeAllInstancesOfId(moving.id);
+    placePlayer(destTeam, destZone, destIndex, moving);
+    if (displaced) {
+      for (const z of ["bench", "reserve"]) {
+        for (let i = 0; i < destTeam[z].length; i++) {
+          if (!destTeam[z][i]?.id) {
+            placePlayer(destTeam, z, i, displaced);
+            dedupeGlobally(teams);
+            return;
+          }
+        }
+      }
+    }
+    dedupeGlobally(teams);
+    return;
+  }
 
   if (src.fromFa || src.team === FA_TEAM) {
     let faPlayer = findFaPlayer(src.id);
@@ -2078,14 +2225,22 @@ function applyFormationToTeam(team, fid) {
     overall: null,
     injured: false,
   });
+  const benchCount = activeBenchCount();
   const bench = [];
-  for (let i = 0; i < BENCH_SLOTS; i++) {
+  for (let i = 0; i < benchCount; i++) {
     bench.push(remaining.length ? { ...remaining.shift() } : emptySlot());
   }
-  // Как в export_rosters: все оставшиеся в резерве + всегда EXTRA_RESERVE пустых ячеек
-  const reserve = remaining.map((p) => ({ ...p }));
-  for (let i = 0; i < EXTRA_RESERVE; i++) {
-    reserve.push(emptySlot());
+  let reserve;
+  if (isNationsMode()) {
+    reserve = [];
+    for (let i = 0; i < WC_RESERVE; i++) {
+      reserve.push(remaining.length ? { ...remaining.shift() } : emptySlot());
+    }
+  } else {
+    reserve = remaining.map((p) => ({ ...p }));
+    for (let i = 0; i < EXTRA_RESERVE; i++) {
+      reserve.push(emptySlot());
+    }
   }
 
   const label = form.label;
@@ -2109,14 +2264,29 @@ function onFormationChange(teamName, fid) {
   setStatus(`схема ${team.formation} — не сохранено`);
 }
 
+function onCoachChange(teamName, coach) {
+  const team = teams.find((t) => t.name === teamName);
+  if (!team) return;
+  team.coach = String(coach || "").trim();
+  const form = formationById(team.formation_id);
+  const label = form?.label || team.formation || "";
+  team.formation = team.coach ? `${label} · ${team.coach}` : label;
+  team.caption = team.formation;
+  markDirty();
+  renderAll();
+  setStatus(`тренер ${team.coach || "—"} — не сохранено`);
+}
+
 function renderTeam(team) {
   const card = document.createElement("div");
   card.className = "team-card";
   card.dataset.team = team.name;
-  const { inn, out } = countInOut(team);
-  const overIn = inn > maxIn;
-  const overOut = out > maxOut;
-  if (overIn || overOut) card.classList.add("over-quota");
+  if (!isNationsMode()) {
+    const { inn, out } = countInOut(team);
+    const overIn = inn > maxIn;
+    const overOut = out > maxOut;
+    if (overIn || overOut) card.classList.add("over-quota");
+  }
 
   const hdr = document.createElement("div");
   hdr.className = "team-hdr";
@@ -2154,21 +2324,44 @@ function renderTeam(team) {
   const avgSpan = document.createElement("span");
   avgSpan.textContent = ` · ср. старт ${team.avg_start}`;
   meta.appendChild(avgSpan);
-  if (team.coach) {
+  if (isNationsMode()) {
+    const coachWrap = document.createElement("label");
+    coachWrap.className = "formation-pick";
+    coachWrap.textContent = " · Тренер ";
+    const coachInp = document.createElement("input");
+    coachInp.type = "text";
+    coachInp.className = "coach-edit";
+    coachInp.value = team.coach || "";
+    coachInp.placeholder = "Фамилия";
+    coachInp.addEventListener("change", (e) => onCoachChange(team.name, e.target.value));
+    coachInp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        coachInp.blur();
+      }
+    });
+    coachWrap.appendChild(coachInp);
+    meta.appendChild(coachWrap);
+  } else if (team.coach) {
     const coachSpan = document.createElement("span");
     coachSpan.textContent = ` · ${team.coach}`;
     meta.appendChild(coachSpan);
   }
   hdr.appendChild(meta);
 
-  const counters = document.createElement("div");
-  counters.className = "counters";
-  counters.innerHTML = `
-    <span class="in${overIn ? " over" : ""}">${inn}/${maxIn} IN</span>
-    ·
-    <span class="out${overOut ? " over" : ""}">${out}/${maxOut} OUT</span>
-  `;
-  hdr.appendChild(counters);
+  if (!isNationsMode()) {
+    const { inn, out } = countInOut(team);
+    const overIn = inn > maxIn;
+    const overOut = out > maxOut;
+    const counters = document.createElement("div");
+    counters.className = "counters";
+    counters.innerHTML = `
+      <span class="in${overIn ? " over" : ""}">${inn}/${maxIn} IN</span>
+      ·
+      <span class="out${overOut ? " over" : ""}">${out}/${maxOut} OUT</span>
+    `;
+    hdr.appendChild(counters);
+  }
 
   const squadEv = evaluateTeamSquad(team);
   if (!squadEv.complete) card.classList.add("squad-incomplete");
@@ -2177,9 +2370,16 @@ function renderTeam(team) {
   quota.className = "squad-quota" + (squadEv.complete ? " ok" : " warn");
   const qHead = document.createElement("div");
   qHead.className = "squad-quota-head";
-  qHead.textContent = squadEv.complete
-    ? `Заявка ${squadEv.total}/${SQUAD_TARGET} ✓`
-    : `Заявка ${squadEv.total}/${SQUAD_TARGET} · замены ${squadEv.reserve_filled}/${SQUAD_RESERVE_TARGET}`;
+  const target = activeSquadTarget();
+  if (isNationsMode()) {
+    qHead.textContent = squadEv.complete
+      ? `Заявка ${squadEv.total}/${target} ✓`
+      : `Заявка ${squadEv.total}/${target} · старт ${squadEv.start_filled}/${WC_START} · зап+рез ${squadEv.reserve_filled}/${WC_BENCH + WC_RESERVE}`;
+  } else {
+    qHead.textContent = squadEv.complete
+      ? `Заявка ${squadEv.total}/${target} ✓`
+      : `Заявка ${squadEv.total}/${target} · замены ${squadEv.reserve_filled}/${SQUAD_RESERVE_TARGET}`;
+  }
   quota.appendChild(qHead);
   if (!squadEv.complete) {
     const qMiss = document.createElement("div");
@@ -2187,24 +2387,26 @@ function renderTeam(team) {
     qMiss.textContent = formatSquadIssues(squadEv);
     quota.appendChild(qMiss);
   }
-  const qGrid = document.createElement("div");
-  qGrid.className = "squad-quota-grid";
-  (squadEv.group_status || []).forEach((g) => {
-    const chip = document.createElement("span");
-    let cls = "sq-chip";
-    if (g.have > g.need) cls += " over";
-    else if (g.have >= g.need) cls += " done";
-    else if (g.have > 0) cls += " part";
-    chip.className = cls;
-    chip.textContent =
-      g.have > g.need ? `${g.label} ${g.have}/${g.need} (+${g.have - g.need})` : `${g.label} ${g.have}/${g.need}`;
-    chip.title =
-      g.have > g.need
-        ? `Слот ${g.slot_id}: лишний на ${g.label} (нужно ${g.need}, в заявке ${g.have})`
-        : `Слот ${g.slot_id}: замены с позицией ${g.label} — ${g.have}/${g.need}`;
-    qGrid.appendChild(chip);
-  });
-  quota.appendChild(qGrid);
+  if (!isNationsMode()) {
+    const qGrid = document.createElement("div");
+    qGrid.className = "squad-quota-grid";
+    (squadEv.group_status || []).forEach((g) => {
+      const chip = document.createElement("span");
+      let cls = "sq-chip";
+      if (g.have > g.need) cls += " over";
+      else if (g.have >= g.need) cls += " done";
+      else if (g.have > 0) cls += " part";
+      chip.className = cls;
+      chip.textContent =
+        g.have > g.need ? `${g.label} ${g.have}/${g.need} (+${g.have - g.need})` : `${g.label} ${g.have}/${g.need}`;
+      chip.title =
+        g.have > g.need
+          ? `Слот ${g.slot_id}: лишний на ${g.label} (нужно ${g.need}, в заявке ${g.have})`
+          : `Слот ${g.slot_id}: замены с позицией ${g.label} — ${g.have}/${g.need}`;
+      qGrid.appendChild(chip);
+    });
+    quota.appendChild(qGrid);
+  }
   hdr.appendChild(quota);
 
   const body = document.createElement("div");
@@ -2229,7 +2431,7 @@ function renderTeam(team) {
   const side = document.createElement("div");
   side.className = "sidebar";
   const hBench = document.createElement("h3");
-  hBench.textContent = "Запасные (в заявку 32)";
+  hBench.textContent = isNationsMode() ? `Запас (${WC_BENCH})` : "Запасные (в заявку 32)";
   side.appendChild(hBench);
   const benchList = document.createElement("div");
   benchList.className = "side-list";
@@ -2242,7 +2444,7 @@ function renderTeam(team) {
   });
   side.appendChild(benchList);
   const hRes = document.createElement("h3");
-  hRes.textContent = "Резерв (замены по позициям)";
+  hRes.textContent = isNationsMode() ? `Резерв (${WC_RESERVE})` : "Резерв (замены по позициям)";
   side.appendChild(hRes);
   const resList = document.createElement("div");
   resList.className = "side-list";
@@ -2263,15 +2465,56 @@ function renderTeam(team) {
 }
 
 function renderAll() {
-  renderFaPanel();
+  if (!isNationsMode()) renderFaPanel();
   renderNationalPanel();
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
-  teams.forEach((t) => grid.appendChild(renderTeam(t)));
+  const visible = isNationsMode() && selectedNation
+    ? teams.filter((t) => t.name === selectedNation)
+    : teams;
+  visible.forEach((t) => grid.appendChild(renderTeam(t)));
+}
+
+function populateNationSelect() {
+  const sel = document.getElementById("nation-select");
+  if (!sel) return;
+  const prev = selectedNation;
+  sel.innerHTML = "";
+  teams.forEach((t) => {
+    const opt = document.createElement("option");
+    opt.value = t.name;
+    opt.textContent = t.name;
+    sel.appendChild(opt);
+  });
+  if (prev && teams.some((t) => t.name === prev)) {
+    selectedNation = prev;
+  } else if (teams.length) {
+    selectedNation = teams[0].name;
+  } else {
+    selectedNation = "";
+  }
+  sel.value = selectedNation;
+}
+
+function updateModeUi() {
+  document.querySelectorAll(".clubs-only").forEach((el) => {
+    el.hidden = isNationsMode();
+  });
+  document.querySelectorAll(".nations-only").forEach((el) => {
+    el.hidden = !isNationsMode();
+  });
+  document.querySelectorAll(".mode-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.mode === currentMode);
+  });
+  const faPanel = document.getElementById("fa-panel");
+  if (faPanel) faPanel.hidden = isNationsMode();
+  populateNationSelect();
+  updateTitle();
 }
 
 function currentState() {
   return {
+    mode: currentMode,
     window: currentWindow,
     season: rostersSeason,
     revision: stateRevision,
@@ -2291,6 +2534,12 @@ function setStatus(msg) {
 }
 
 function updateTitle() {
+  if (isNationsMode()) {
+    const n = selectedNation || `${teams.length} сборных`;
+    document.getElementById("app-title").textContent = `Сборные ЧМ — ${n}`;
+    document.title = `Сборные ЧМ — ${n}`;
+    return;
+  }
   const label = windowLabels[currentWindow] || currentWindow;
   document.getElementById("app-title").textContent =
     `Трансферное окно (${label} ${maxIn}/${maxOut}) — 40 клубов`;
@@ -2309,11 +2558,37 @@ function applyWindowQuotas(cfg, windowKey) {
   updateTitle();
 }
 
+async function importWcSquadsFromFile(file) {
+  const text = await file.text();
+  const res = await fetch("/api/import-wc-squads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "import failed");
+  pushUndo();
+  const byName = new Map(teams.map((t) => [t.name, t]));
+  for (const imported of j.teams || []) {
+    byName.set(imported.name, imported);
+  }
+  teams = Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  dedupeGlobally(teams);
+  applyInjuryFlags(teams);
+  ensureExtraReserveSlots(teams);
+  populateNationSelect();
+  markDirty();
+  renderAll();
+  setStatus(`заявки ЧМ: ${j.count || 0} сборных`);
+}
+
 async function loadData() {
   ensureClientIdentity();
+  const savedMode = localStorage.getItem("tw_mode");
+  if (savedMode === "nations" || savedMode === "clubs") currentMode = savedMode;
   const [cfgRes, rostersRes] = await Promise.all([
     fetch("/api/config"),
-    fetch("/api/rosters"),
+    fetch(`/api/rosters?mode=${encodeURIComponent(currentMode)}`),
   ]);
   const cfg = await cfgRes.json();
   const rosters = await rostersRes.json();
@@ -2334,12 +2609,16 @@ async function loadData() {
     currentWindow = savedWin;
   }
   applyWindowQuotas(cfg, currentWindow || cfg.default_window || "summer");
-  if (cfg.squad_rules) squadRules = { ...squadRules, ...cfg.squad_rules };
+  const modeRules = cfg.modes?.[currentMode]?.squad_rules;
+  if (modeRules) squadRules = { ...squadRules, ...modeRules };
+  else if (cfg.squad_rules) squadRules = { ...squadRules, ...cfg.squad_rules };
   localStorage.setItem("tw_window", currentWindow);
+  localStorage.setItem("tw_mode", currentMode);
   injuryAsOfMonth = Number(rosters.injury_as_of_month) || 6;
   injuryById = buildInjuryIndex(rosters);
   formationsCatalog = Array.isArray(rosters.formations) ? rosters.formations : [];
   if (rosters.squad_rules) squadRules = { ...squadRules, ...rosters.squad_rules };
+  updateModeUi();
   if (cfg.data_dir) {
     window.__twDataDir = cfg.data_dir;
   }
@@ -2353,14 +2632,25 @@ async function loadData() {
   }
 
   const freshBaseline = { ...(rosters.baseline_home || {}) };
-  syncFreeAgentsFromRosters(rosters);
+  if (!isNationsMode()) syncFreeAgentsFromRosters(rosters);
   for (const pid of Object.keys(freshBaseline)) {
     if (!(pid in baselineHome) || baselineHome[pid] === undefined) {
       baselineHome[pid] = freshBaseline[pid];
     }
   }
 
-  const stateRes = await fetch(`/api/state?window=${encodeURIComponent(currentWindow)}`);
+  if (isNationsMode()) {
+    try {
+      if (!nationalPools?.nations?.length) await loadNationalPoolsFromApi();
+    } catch (_) {
+      /* пул опционален */
+    }
+  }
+
+  const stateUrl = isNationsMode()
+    ? "/api/state?mode=nations"
+    : `/api/state?window=${encodeURIComponent(currentWindow)}`;
+  const stateRes = await fetch(stateUrl);
   if (stateRes.ok) {
     const saved = await stateRes.json();
     const savedSeason = saved.season != null ? Number(saved.season) : null;
@@ -2368,7 +2658,9 @@ async function loadData() {
     if (savedSeason != null && curSeason != null && savedSeason !== curSeason) {
       loadFreshFromRosters(
         rosters,
-        `сезон ${curSeason}: старый сейв (${savedSeason}) сброшен — 0/${maxOut} OUT`
+        isNationsMode()
+          ? `сезон ${curSeason}: старый сейв (${savedSeason}) сброшен`
+          : `сезон ${curSeason}: старый сейв (${savedSeason}) сброшен — 0/${maxOut} OUT`
       );
       await saveState();
       return;
@@ -2399,11 +2691,14 @@ async function loadData() {
       const injN = Object.keys(injuryById).length;
       const rmN = Object.keys(removedFromSquad).length;
       setStatus(
-        `загружено: ${windowLabels[currentWindow] || currentWindow}` +
-          (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "") +
-          (freeAgents.length ? ` · FA: ${freeAgents.length}` : "") +
-          (rmN ? ` · убрано: ${rmN}` : "") +
-          (saved.updated_by ? ` · ${saved.updated_by}` : "")
+        isNationsMode()
+          ? `загружено: сборные ЧМ · ${teams.length} наций` +
+              (saved.updated_by ? ` · ${saved.updated_by}` : "")
+          : `загружено: ${windowLabels[currentWindow] || currentWindow}` +
+              (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "") +
+              (freeAgents.length ? ` · FA: ${freeAgents.length}` : "") +
+              (rmN ? ` · убрано: ${rmN}` : "") +
+              (saved.updated_by ? ` · ${saved.updated_by}` : "")
       );
     }
     startSyncPoll();
@@ -2413,13 +2708,29 @@ async function loadData() {
   baselineHome = freshBaseline;
   loadFreshFromRosters(
     rosters,
-    `сезон ${rosters.season || "?"} — исходные составы (${windowLabels[currentWindow]})` +
-      (Number(rosters.injured_count) || Object.keys(injuryById).length
-        ? ` · травм: ${Number(rosters.injured_count) || Object.keys(injuryById).length}`
-        : "") +
-      (freeAgents.length ? ` · FA: ${freeAgents.length}` : "")
+    isNationsMode()
+      ? `сезон ${rosters.season || "?"} — исходные заявки (${teams.length} сборных)`
+      : `сезон ${rosters.season || "?"} — исходные составы (${windowLabels[currentWindow]})` +
+          (Number(rosters.injured_count) || Object.keys(injuryById).length
+            ? ` · травм: ${Number(rosters.injured_count) || Object.keys(injuryById).length}`
+            : "") +
+          (freeAgents.length ? ` · FA: ${freeAgents.length}` : "")
   );
   startSyncPoll();
+}
+
+async function switchMode(nextMode) {
+  if (nextMode === currentMode) return;
+  if (dirty) {
+    const ok = window.confirm(
+      "Есть несохранённые изменения. Переключить режим без сохранения?"
+    );
+    if (!ok) return;
+  }
+  currentMode = nextMode;
+  localStorage.setItem("tw_mode", currentMode);
+  nationalPools = null;
+  await loadData();
 }
 
 async function switchWindow(next) {
@@ -2444,9 +2755,12 @@ async function saveState(options = {}) {
   const { silent = false, skipIncompleteConfirm = false } = options;
   const incomplete = findIncompleteSquads();
   if (incomplete.length && !skipIncompleteConfirm) {
+    const hint = isNationsMode()
+      ? `Нужно ${WC_TOTAL} игроков (11 старт + 7 запас + 8 резерв).`
+      : `Нужно ${SQUAD_TARGET} игроков (11 основа + 21 замена).`;
     const ok = window.confirm(
-      `Неполная заявка у ${incomplete.length} клуб(ов).\n` +
-        `Нужно ${SQUAD_TARGET} игроков (11 основа + 21 замена).\n\n` +
+      `Неполная заявка у ${incomplete.length} ${isNationsMode() ? "сборн(ых)" : "клуб(ов)"}.\n` +
+        `${hint}\n\n` +
         `Пример: ${incomplete[0].team} — ${formatSquadIssues(incomplete[0])}\n\n` +
         "Всё равно сохранить черновик?"
     );
@@ -2493,7 +2807,9 @@ async function saveState(options = {}) {
     });
     const n = j.transfers_count != null ? j.transfers_count : "?";
     const path = j.path || window.__twDataDir || "";
-    let msg = `сохранено (${windowLabels[currentWindow]}), трансферов: ${n}`;
+    let msg = isNationsMode()
+      ? `сохранено (сборные ЧМ), ${teams.length} наций`
+      : `сохранено (${windowLabels[currentWindow]}), трансферов: ${n}`;
     if (path) msg += ` → ${path}`;
     if (over.length) {
       msg += ` · сверх лимита: ${over.map((t) => t.name).join(", ")}`;
@@ -2531,6 +2847,27 @@ async function exportTransfersFmt(fmt) {
   setStatus(j.ok ? `трансферов ${j.count}: ${j.path}` : `ошибка: ${j.error || "?"}`);
 }
 
+async function exportWcSquads() {
+  const incomplete = findIncompleteSquads();
+  if (incomplete.length) {
+    window.alert(squadExportBlockedMessage(incomplete));
+    setStatus(`экспорт блокирован: неполная заявка (${incomplete.length})`);
+    return;
+  }
+  const res = await fetch("/api/export?fmt=txt&kind=wc-squads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(currentState()),
+  });
+  const j = await res.json();
+  setStatus(
+    j.ok
+      ? `заявки ЧМ: ${j.nations || 0} сборных → ${j.path}`
+      : `ошибка: ${j.error || "?"}`
+  );
+  if (!j.ok && j.error) window.alert(j.error);
+}
+
 async function exportNationalFmt(fmt) {
   const res = await fetch(`/api/export?fmt=${encodeURIComponent(fmt)}&kind=national`, {
     method: "POST",
@@ -2545,6 +2882,35 @@ async function exportNationalFmt(fmt) {
   );
 }
 
+document.getElementById("btn-mode-clubs")?.addEventListener("click", () => switchMode("clubs"));
+document.getElementById("btn-mode-nations")?.addEventListener("click", () => switchMode("nations"));
+document.getElementById("nation-select")?.addEventListener("change", (e) => {
+  selectedNation = e.target.value || "";
+  updateTitle();
+  setNationalPools(nationalPools || { nations: [] });
+  renderAll();
+});
+document.getElementById("btn-export-wc-squads")?.addEventListener("click", () => exportWcSquads());
+document.getElementById("btn-import-wc-squads")?.addEventListener("click", () => {
+  document.getElementById("import-wc-squads-file")?.click();
+});
+document.getElementById("btn-import-national-nations")?.addEventListener("click", async () => {
+  try {
+    await loadNationalPoolsFromApi();
+  } catch (err) {
+    setStatus("пул: " + err.message);
+  }
+});
+document.getElementById("import-wc-squads-file")?.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = "";
+  if (!file) return;
+  try {
+    await importWcSquadsFromFile(file);
+  } catch (err) {
+    setStatus("заявки ЧМ: " + err.message);
+  }
+});
 document.getElementById("btn-save").addEventListener("click", saveState);
 document.getElementById("btn-undo").addEventListener("click", undoLast);
 document.getElementById("btn-export-txt").addEventListener("click", () => exportFmt("txt"));

@@ -93,6 +93,53 @@ body {
   background: #1c4a7a;
   color: #fff;
 }
+.mode-switch {
+  display: inline-flex;
+  border: 1px solid #2a3a48;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mode-switch .mode-btn {
+  background: #0f1820;
+  color: #9ab;
+  border: none;
+  border-radius: 0;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.mode-switch .mode-btn + .mode-btn {
+  border-left: 1px solid #2a3a48;
+}
+.mode-switch .mode-btn:hover { background: #1a2834; color: #e8eef4; }
+.mode-switch .mode-btn.active {
+  background: #6b3a1a;
+  color: #fff;
+}
+.nation-switch label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #9ab;
+}
+.nation-switch select {
+  background: #0f1820;
+  color: #e8eef4;
+  border: 1px solid #2a3a48;
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-width: 160px;
+}
+.coach-edit {
+  background: #0f1820;
+  color: #e8eef4;
+  border: 1px solid #2a3a48;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  min-width: 120px;
+}
 .team-card.over-quota {
   border-color: #c0392b;
   box-shadow: 0 0 0 1px rgba(192, 57, 43, 0.35);
