@@ -58,6 +58,27 @@ function isNationsMode() {
   return currentMode === "nations";
 }
 
+function rostersLookLikeClubs(rosters) {
+  const list = rosters?.teams || [];
+  if (!list.length) return false;
+  const sample = list.slice(0, 5);
+  const clubish = sample.filter((t) => String(t.league || "").trim() !== "Сборная").length;
+  return clubish >= Math.min(3, sample.length);
+}
+
+function assertNationsRosters(rosters) {
+  if (!isNationsMode()) return true;
+  if (rosters?.mode === "nations" && !rostersLookLikeClubs(rosters)) return true;
+  const msg =
+    "Сервер на :8765 устарел — отдаёт клубы вместо 48 сборных ЧМ.\n\n" +
+    "Останови старый процесс и перезапусти:\n" +
+    "  tools/transfer_window_app/run.sh\n\n" +
+    "Или: lsof -ti :8765 | xargs kill -9 && ./run.sh";
+  window.alert(msg);
+  setStatus("⚠ перезапусти transfer app (run.sh) — нужен режим сборных ЧМ");
+  return false;
+}
+
 function activeSquadTarget() {
   return isNationsMode() ? WC_TOTAL : SQUAD_TARGET;
 }
@@ -2536,7 +2557,8 @@ function setStatus(msg) {
 function updateTitle() {
   if (isNationsMode()) {
     const n = selectedNation || `${teams.length} сборных`;
-    document.getElementById("app-title").textContent = `Сборные ЧМ — ${n}`;
+    const season = rostersSeason != null ? ` · сезон ${rostersSeason}` : "";
+    document.getElementById("app-title").textContent = `Сборные ЧМ — ${n}${season}`;
     document.title = `Сборные ЧМ — ${n}`;
     return;
   }
@@ -2592,6 +2614,22 @@ async function loadData() {
   ]);
   const cfg = await cfgRes.json();
   const rosters = await rostersRes.json();
+  if (!rostersRes.ok || rosters.error) {
+    throw new Error(rosters.error || `rosters HTTP ${rostersRes.status}`);
+  }
+  if (isNationsMode() && !assertNationsRosters(rosters)) {
+    currentMode = "clubs";
+    localStorage.setItem("tw_mode", currentMode);
+    return loadData();
+  }
+  if (isNationsMode() && !cfg.modes?.nations) {
+    window.alert(
+      "Эта версия сервера не поддерживает «Сборные ЧМ». Перезапусти run.sh из tools/transfer_window_app."
+    );
+    currentMode = "clubs";
+    localStorage.setItem("tw_mode", currentMode);
+    return loadData();
+  }
   lastRosters = rosters;
   rostersSeason = rosters.season ?? null;
   rostersRevision = rosters.rosters_revision ?? null;
