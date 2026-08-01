@@ -871,7 +871,18 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_file(_bundle_dir() / "web" / rel)
         if path == "/api/config":
             leagues: list[dict] = []
-            positions = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"]
+            try:
+                from utils.utils import defenders, forwards, goalkeepers, midfielders
+
+                positions = list(
+                    dict.fromkeys([*goalkeepers, *defenders, *midfielders, *forwards])
+                )
+            except Exception:
+                positions = [
+                    "ВРТ", "ЛЗ", "ПЗ", "ЦЗ", "ЛЦЗ", "ПЦЗ", "ЛФЗ", "ПФЗ",
+                    "ЦП", "ЦАП", "ЦОП", "ЛП", "ПП", "ЛЦП", "ПЦП",
+                    "ЛФА", "ПФА", "ФРВ",
+                ]
             try:
                 from player_stats import LEAGUE_NAMES, LEAGUE_TEAMS
                 from utils.transfer_market_draft import _EXCLUDED_TEAMS

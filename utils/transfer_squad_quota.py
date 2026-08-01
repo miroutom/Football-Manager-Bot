@@ -96,7 +96,7 @@ def assign_substitutes_to_groups(
             for pi, p in enumerate(pool):
                 if used[pi]:
                     continue
-                if _norm_pos(p.get("position")) in g.allowed:
+                if _norm_pos(p.get("position")) == _norm_pos(g.label):
                     picked = pi
                     break
             if picked < 0:
@@ -123,7 +123,7 @@ def assign_substitutes_to_groups(
         pos = _norm_pos(p.get("position"))
         label = pos
         for g in groups:
-            if pos in g.allowed:
+            if _norm_pos(g.label) == pos:
                 label = g.label
                 break
         surplus_raw.append(
@@ -201,6 +201,7 @@ def evaluate_team_squad(team: dict[str, Any], formation: dict[str, Any] | None) 
         "complete": complete,
         "missing_start": start_missing,
         "missing_reserve": missing_agg,
+        "missing_groups": missing,
         "surplus_reserve": surplus_agg,
         "group_status": group_status,
         "groups": [
@@ -243,8 +244,11 @@ def format_missing_hint(ev: dict[str, Any]) -> str:
     parts: list[str] = []
     if int(ev.get("missing_start") or 0) > 0:
         parts.append(f"основа ×{ev['missing_start']}")
-    for m in ev.get("missing_reserve") or []:
-        parts.append(f"{m['label']} ×{m['need']}")
+    for m in ev.get("missing_groups") or ev.get("missing_reserve") or []:
+        if "slot_id" in m:
+            parts.append(f"{m.get('label', '?')} {int(m.get('need', 0))}")
+        else:
+            parts.append(f"{m['label']} ×{m['need']}")
     for s in ev.get("surplus_reserve") or []:
         parts.append(f"лишн. {s['label']} ×{s['extra']}")
     if int(ev.get("total") or 0) < SQUAD_TOTAL:

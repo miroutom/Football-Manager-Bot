@@ -33,7 +33,11 @@ let removedFromSquad = {};
 let rostersSeason = null;
 let rostersRevision = null;
 let leaguesCatalog = [];
-let positionsCatalog = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
+let positionsCatalog = [
+  "ВРТ", "ЛЗ", "ПЗ", "ЦЗ", "ЛЦЗ", "ПЦЗ", "ЛФЗ", "ПФЗ",
+  "ЦП", "ЦАП", "ЦОП", "ЛП", "ПП", "ЛЦП", "ПЦП",
+  "ЛФА", "ПФА", "ФРВ", "ЦФД", "ЛФД", "ПФД",
+];
 
 const SQUAD_TARGET = 32;
 const SQUAD_START_TARGET = 11;
@@ -111,7 +115,8 @@ function assignSubstitutesToGroups(players, groups) {
       for (let pi = 0; pi < pool.length; pi += 1) {
         if (used[pi]) continue;
         const pos = String(pool[pi].position || "").trim().toUpperCase();
-        if (g.allowed.includes(pos)) {
+        const want = String(g.label || "").trim().toUpperCase();
+        if (pos === want) {
           picked = pi;
           break;
         }
@@ -134,7 +139,7 @@ function assignSubstitutesToGroups(players, groups) {
     const pos = String(p.position || "").trim().toUpperCase();
     let label = pos;
     for (const g of groups) {
-      if (g.allowed.includes(pos)) {
+      if (String(g.label || "").trim().toUpperCase() === pos) {
         label = g.label;
         break;
       }
@@ -235,16 +240,21 @@ function evaluateTeamSquad(team) {
     complete,
     missing_start: startMissing,
     missing_reserve: missingAgg,
+    missing_groups: missing,
     surplus_reserve: surplusAgg,
     group_status: groupStatus,
-    label_stats: labelStatsFromSubs(subs, groups),
   };
 }
 
 function formatMissingHint(ev) {
   const parts = [];
   if (Number(ev.missing_start) > 0) parts.push(`основа ×${ev.missing_start}`);
-  (ev.missing_reserve || []).forEach((m) => parts.push(`${m.label} ×${m.need}`));
+  (ev.missing_groups || []).forEach((m) => {
+    parts.push(`${m.label} ${Number(m.need || 0)}`);
+  });
+  if (!(ev.missing_groups || []).length) {
+    (ev.missing_reserve || []).forEach((m) => parts.push(`${m.label} ×${m.need}`));
+  }
   if (Number(ev.total) < SQUAD_TARGET) parts.push(`всего ${ev.total}/${SQUAD_TARGET}`);
   return parts;
 }
@@ -1303,8 +1313,8 @@ function renderPlayer(teamName, p, inline) {
     : "";
   const rmTitle = teamName === FA_TEAM ? "Удалить из FA" : "Убрать из заявки";
   el.innerHTML = inline
-    ? `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
-    : `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm">${p.name}</span><span class="pos">${p.position}</span>`;
+    ? `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span><span class="nm" title="Клик — изменить имя">${p.name}</span>`
+    : `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm" title="Клик — изменить имя">${p.name}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span>`;
   el.querySelector(".rm-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -1318,6 +1328,16 @@ function renderPlayer(teamName, p, inline) {
     e.stopPropagation();
     e.preventDefault();
     startOvrEdit(el.querySelector(".ovr"), p.id);
+  });
+  el.querySelector(".pos")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    startPosEdit(el.querySelector(".pos"), p.id, teamName);
+  });
+  el.querySelector(".nm")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    startNameEdit(el.querySelector(".nm"), p.id, teamName);
   });
   el.addEventListener("dragstart", onDragStart);
   el.addEventListener("dragend", stopDragScroll);
@@ -1334,6 +1354,59 @@ function syncPlayerOverall(id, value) {
       }
     }
   }
+  for (const p of freeAgents) {
+    if (p.id === id) p.overall = value;
+  }
+}
+
+function playerIdFor(teamName, name, position) {
+  const nm = String(name || "").trim();
+  const pos = String(position || "").trim().toUpperCase();
+  if (teamName === FA_TEAM) return `Free Agent|${nm}|${pos}`;
+  return `${teamName}|${nm}|${pos}`;
+}
+
+function rekeyPlayer(oldId, teamName, name, position) {
+  const newId = playerIdFor(teamName, name, position);
+  if (!oldId || oldId === newId) return newId;
+  const nm = String(name || "").trim();
+  const pos = String(position || "").trim().toUpperCase();
+
+  for (const team of teams) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (let i = 0; i < team[zone].length; i++) {
+        const p = team[zone][i];
+        if (p?.id === oldId) {
+          p.id = newId;
+          p.name = nm;
+          p.position = pos;
+        }
+      }
+    }
+  }
+  for (const p of freeAgents) {
+    if (p.id === oldId) {
+      p.id = newId;
+      p.name = nm;
+      p.position = pos;
+    }
+  }
+  if (baselineHome[oldId] !== undefined) {
+    baselineHome[newId] = baselineHome[oldId];
+    delete baselineHome[oldId];
+  }
+  if (removedFromSquad[oldId]) {
+    removedFromSquad[newId] = { ...removedFromSquad[oldId], id: newId, name: nm, position: pos };
+    delete removedFromSquad[oldId];
+  }
+  return newId;
+}
+
+function resolvePlayerTeamName(playerId, fallbackTeam) {
+  if (fallbackTeam && fallbackTeam !== FA_TEAM) return fallbackTeam;
+  const parts = String(playerId || "").split("|");
+  if (parts.length >= 3 && parts[0] !== "Free Agent") return parts[0];
+  return fallbackTeam || FA_TEAM;
 }
 
 function startOvrEdit(span, playerId) {
@@ -1354,6 +1427,73 @@ function startOvrEdit(span, playerId) {
     syncPlayerOverall(playerId, v);
     markDirty();
     setStatus("рейтинг изменён (не сохранено)");
+    renderAll();
+  };
+  inp.addEventListener("blur", commit);
+  inp.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      inp.blur();
+    }
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      renderAll();
+    }
+  });
+}
+
+function startPosEdit(span, playerId, teamName) {
+  if (!span || !playerId) return;
+  const loc = findPlayerGlobally(playerId);
+  const before = String(loc?.player?.position || span.textContent || "").trim().toUpperCase();
+  const sel = document.createElement("select");
+  sel.className = "pos-edit";
+  positionsCatalog.forEach((code) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = code;
+    if (code === before) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  span.replaceWith(sel);
+  sel.focus();
+  const commit = () => {
+    const pos = String(sel.value || before).trim().toUpperCase();
+    const nm = loc?.player?.name || "";
+    const homeTeam = resolvePlayerTeamName(playerId, teamName);
+    rekeyPlayer(playerId, homeTeam, nm, pos);
+    markDirty();
+    setStatus("позиция изменена (не сохранено)");
+    renderAll();
+  };
+  sel.addEventListener("blur", commit);
+  sel.addEventListener("change", commit);
+  sel.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      renderAll();
+    }
+  });
+}
+
+function startNameEdit(span, playerId, teamName) {
+  if (!span || !playerId) return;
+  const loc = findPlayerGlobally(playerId);
+  const before = String(loc?.player?.name || span.textContent || "").trim();
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.className = "nm-edit";
+  inp.value = before;
+  span.replaceWith(inp);
+  inp.focus();
+  inp.select();
+  const commit = () => {
+    const nm = String(inp.value || before).trim() || before;
+    const pos = loc?.player?.position || "";
+    const homeTeam = resolvePlayerTeamName(playerId, teamName);
+    rekeyPlayer(playerId, homeTeam, nm, pos);
+    markDirty();
+    setStatus("имя изменено (не сохранено)");
     renderAll();
   };
   inp.addEventListener("blur", commit);
@@ -1764,7 +1904,7 @@ function renderTeam(team) {
   }
   const qGrid = document.createElement("div");
   qGrid.className = "squad-quota-grid";
-  (squadEv.label_stats || aggregateGroupStatus(squadEv.group_status)).forEach((g) => {
+  (squadEv.group_status || []).forEach((g) => {
     const chip = document.createElement("span");
     let cls = "sq-chip";
     if (g.have > g.need) cls += " over";
@@ -1775,8 +1915,8 @@ function renderTeam(team) {
       g.have > g.need ? `${g.label} ${g.have}/${g.need} (+${g.have - g.need})` : `${g.label} ${g.have}/${g.need}`;
     chip.title =
       g.have > g.need
-        ? `Лишний игрок на позицию ${g.label}: нужно ${g.need}, в заявке ${g.have}`
-        : `Замены на позицию ${g.label}: нужно ${g.need}`;
+        ? `Слот ${g.slot_id}: лишний на ${g.label} (нужно ${g.need}, в заявке ${g.have})`
+        : `Слот ${g.slot_id}: замены с позицией ${g.label} — ${g.have}/${g.need}`;
     qGrid.appendChild(chip);
   });
   quota.appendChild(qGrid);

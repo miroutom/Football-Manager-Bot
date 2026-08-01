@@ -458,8 +458,29 @@ body {
   background: #0f1a12;
   color: #fff;
 }
-.player .nm { font-size: 9px; line-height: 1.1; word-break: break-word; }
-.player .pos { font-size: 8px; color: #9ab; }
+.player .pos { font-size: 8px; color: #9ab; cursor: pointer; }
+.player .pos:hover { color: #fff; text-decoration: underline; }
+.player .nm { font-size: 9px; line-height: 1.1; word-break: break-word; cursor: pointer; }
+.player .nm:hover { color: #fff; text-decoration: underline; }
+.pos-edit {
+  max-width: 52px;
+  font-size: 8px;
+  padding: 0 1px;
+  border: 1px solid #6ee7a0;
+  border-radius: 4px;
+  background: #0f1a12;
+  color: #fff;
+}
+.nm-edit {
+  width: 100%;
+  max-width: 72px;
+  font-size: 9px;
+  padding: 0 2px;
+  border: 1px solid #6ee7a0;
+  border-radius: 4px;
+  background: #0f1a12;
+  color: #fff;
+}
 .sidebar {
   flex: 0.9;
   background: #1c3a9e;
