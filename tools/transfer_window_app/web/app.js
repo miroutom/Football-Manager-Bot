@@ -1088,6 +1088,29 @@ function setNationalPools(data) {
   renderNationalPanel();
 }
 
+async function loadCoachesCatalog() {
+  if (coachesCatalog.length) return coachesCatalog;
+  try {
+    const res = await fetch("/api/coaches");
+    const j = await res.json();
+    if (res.ok && Array.isArray(j.coaches) && j.coaches.length) {
+      coachesCatalog = j.coaches;
+      return coachesCatalog;
+    }
+  } catch (_) {
+    /* offline or stale server */
+  }
+  try {
+    const res = await fetch("/web/coaches.json");
+    const j = await res.json();
+    const list = Array.isArray(j) ? j : j.coaches;
+    if (Array.isArray(list) && list.length) coachesCatalog = list;
+  } catch (_) {
+    /* no fallback */
+  }
+  return coachesCatalog;
+}
+
 async function loadNationalPoolsFromApi() {
   const res = await fetch("/api/national-pools");
   const j = await res.json();
@@ -3056,7 +3079,11 @@ async function loadData() {
     fillPoolPositionSelect(document.getElementById("fa-pos-filter"));
     fillPoolPositionSelect(document.getElementById("national-pos-filter"));
   }
-  if (Array.isArray(cfg.coaches)) coachesCatalog = cfg.coaches;
+  if (Array.isArray(cfg.coaches) && cfg.coaches.length) {
+    coachesCatalog = cfg.coaches;
+  } else {
+    await loadCoachesCatalog();
+  }
   if (cfg.windows) {
     Object.entries(cfg.windows).forEach(([k, v]) => {
       if (v && v.label) windowLabels[k] = v.label;

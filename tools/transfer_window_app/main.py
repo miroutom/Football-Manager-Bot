@@ -534,6 +534,15 @@ def _nations_flat(catalog: dict[str, list[str]] | None = None) -> list[str]:
     return out
 
 
+def _load_coaches_list() -> list[str]:
+    try:
+        from coach_squad_state import list_coach_display_names
+
+        return list_coach_display_names()
+    except Exception:
+        return []
+
+
 def _write_startup_log(msg: str) -> None:
     try:
         with (_data_dir() / "startup.log").open("a", encoding="utf-8") as f:
@@ -1034,13 +1043,7 @@ class Handler(BaseHTTPRequestHandler):
                 nations_catalog = _load_nations_catalog()
             except Exception:
                 nations_catalog = {}
-            coaches_list: list[str] = []
-            try:
-                from coach_squad_state import list_coach_display_names
-
-                coaches_list = list_coach_display_names()
-            except Exception:
-                coaches_list = []
+            coaches_list = _load_coaches_list()
             return self._send_json(
                 {
                     "default_window": DEFAULT_WINDOW,
@@ -1074,6 +1077,8 @@ class Handler(BaseHTTPRequestHandler):
                     "count": len(_nations_flat(catalog)),
                 }
             )
+        if path == "/api/coaches":
+            return self._send_json({"ok": True, "coaches": _load_coaches_list()})
         if path == "/api/paths":
             return self._send_json(
                 {

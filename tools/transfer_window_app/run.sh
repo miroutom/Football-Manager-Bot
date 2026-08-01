@@ -17,8 +17,11 @@ if curl -sf -o /dev/null http://127.0.0.1:8765/ 2>/dev/null; then
   if [[ -n "$CFG" ]] && ! echo "$CFG" | grep -q '"modes"'; then
     STALE=1
   fi
+  if [[ -n "$CFG" ]] && ! echo "$CFG" | grep -q '"coaches"'; then
+    STALE=1
+  fi
   if [[ -n "$STALE" ]]; then
-    echo "На :8765 старый сервер (нет режима «Сборные ЧМ») — останови (Ctrl+C) и запусти run.sh снова."
+    echo "На :8765 старый сервер (нет режима «Сборные ЧМ» или списка тренеров) — останови (Ctrl+C) и запусти run.sh снова."
     echo "Или: lsof -ti :8765 | xargs kill -9 && ./run.sh"
     exit 1
   fi
