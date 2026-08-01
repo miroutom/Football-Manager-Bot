@@ -20,6 +20,11 @@
     </div>
     <span class="status" id="status">загрузка…</span>
     <span class="status sync-badge" id="sync-badge" title="Версия общего сейва"></span>
+    <div id="share-panel" class="share-panel" hidden>
+      <span class="share-label">Ссылка для друга</span>
+      <input type="text" id="share-url" class="share-url" readonly>
+      <button type="button" id="btn-copy-share" class="secondary">Копировать</button>
+    </div>
     <button type="button" id="btn-undo" disabled title="Отменить последнее действие">↩ Отмена</button>
     <button type="button" id="btn-save">Сохранить</button>
     <button type="button" id="btn-reset-rosters" class="secondary">Сбросить к БД</button>

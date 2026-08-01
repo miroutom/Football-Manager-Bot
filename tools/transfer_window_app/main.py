@@ -41,6 +41,7 @@ from multiplayer_state import (
     state_meta,
     state_revision,
 )
+from remote_tunnel import start_cloudflared_tunnel
 
 WINDOW_QUOTAS: dict[str, dict[str, int]] = {
     "summer": {"max_in": 5, "max_out": 5, "label": "Лето"},
@@ -49,6 +50,10 @@ WINDOW_QUOTAS: dict[str, dict[str, int]] = {
 DEFAULT_WINDOW = "summer"
 _BIND_HOST = "127.0.0.1"
 _SERVER_PORT = 8765
+_TUNNEL_URL: str | None = None
+_TUNNEL_PENDING = False
+_TUNNEL_ERROR: str | None = None
+_TUNNEL_PROC = None
 _state_lock = threading.Lock()
 
 
@@ -64,66 +69,125 @@ def _lan_ip_priority(ip: str) -> int:
         return 0
     if a == 10:
         return 1
+    if a == 100:  # Tailscale / CGNAT tailnet
+        return 2
     if a == 172 and 16 <= b <= 31:
         return 4
     return 10
 
 
-def _guess_lan_ip_via_route() -> str | None:
-    import socket
+def _endpoint_label(ip: str) -> str:
+    pr = _lan_ip_priority(ip)
+    if pr == 0:
+        return "Wi‑Fi"
+    if pr == 1:
+        return "Локальная сеть"
+    if pr == 2:
+        return "Tailscale"
+    if pr >= 4:
+        return "VPN (обычно не для друга)"
+    return "Сеть"
 
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except OSError:
-        return None
 
-
-def _collect_lan_ips() -> list[str]:
-    """Приватные IP хоста (Wi‑Fi/Ethernet), без VPN utun и loopback."""
+def collect_share_endpoints(port: int | None = None) -> list[dict[str, str]]:
+    """Адреса для мультиплеера: Wi‑Fi, Tailscale (100.x на utun), без VPN 172.x."""
     import re
     import subprocess
 
+    p = int(port or _SERVER_PORT)
     out = ""
     try:
         out = subprocess.check_output(["ifconfig"], text=True, timeout=3)
     except (OSError, subprocess.SubprocessError):
         ip = _guess_lan_ip_via_route()
-        return [ip] if ip else []
+        if ip:
+            return [
+                {
+                    "ip": ip,
+                    "url": f"http://{ip}:{p}/",
+                    "label": _endpoint_label(ip),
+                    "kind": "fallback",
+                }
+            ]
+        return []
 
-    skip_prefixes = ("lo", "utun", "gif", "stf", "bridge", "awdl", "llw")
-    candidates: list[tuple[int, str]] = []
+    skip_prefixes = ("lo", "gif", "stf", "bridge", "awdl", "llw")
+    candidates: list[tuple[int, str, str]] = []
+
     for block in re.split(r"\n(?=\w)", out):
         head = block.split("\n", 1)[0]
         if ":" not in head:
             continue
         iface = head.split(":")[0]
-        if any(iface.startswith(p) for p in skip_prefixes):
-            continue
         m = re.search(r"\n\tinet (\d+\.\d+\.\d+\.\d+)", block)
         if not m:
             continue
         ip = m.group(1)
         if ip.startswith("127."):
             continue
-        candidates.append((_lan_ip_priority(ip), ip))
+
+        if iface.startswith("utun"):
+            if ip.startswith("100."):
+                candidates.append((2, ip, "Tailscale"))
+            continue
+
+        if any(iface.startswith(pfx) for pfx in skip_prefixes):
+            continue
+
+        candidates.append((_lan_ip_priority(ip), ip, _endpoint_label(ip)))
 
     seen: set[str] = set()
-    ordered: list[str] = []
-    for _prio, ip in sorted(candidates):
+    endpoints: list[dict[str, str]] = []
+    for _prio, ip, label in sorted(candidates):
         if ip in seen:
             continue
         seen.add(ip)
-        ordered.append(ip)
+        endpoints.append(
+            {
+                "ip": ip,
+                "url": f"http://{ip}:{p}/",
+                "label": label,
+                "kind": label.casefold().replace(" ", "_"),
+            }
+        )
 
-    if not ordered:
+    if not endpoints:
         ip = _guess_lan_ip_via_route()
         if ip:
-            ordered.append(ip)
-    return ordered
+            endpoints.append(
+                {
+                    "ip": ip,
+                    "url": f"http://{ip}:{p}/",
+                    "label": _endpoint_label(ip),
+                    "kind": "fallback",
+                }
+            )
+    return endpoints
+
+
+def _collect_lan_ips() -> list[str]:
+    return [e["ip"] for e in collect_share_endpoints()]
+
+
+def _guess_lan_ip_via_route() -> str | None:
+    import re
+    import subprocess
+
+    try:
+        out = subprocess.check_output(["route", "-n", "get", "default"], text=True, timeout=3)
+        m = re.search(r"interface:\s*(\S+)", out)
+        if not m:
+            return None
+        iface = m.group(1)
+        out2 = subprocess.check_output(["ifconfig", iface], text=True, timeout=3)
+        m2 = re.search(r"inet (\d+\.\d+\.\d+\.\d+)", out2)
+        if m2:
+            ip = m2.group(1)
+            if not ip.startswith("127."):
+                return ip
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return None
 
 
 def _guess_lan_ip() -> str | None:
@@ -131,24 +195,101 @@ def _guess_lan_ip() -> str | None:
     return ips[0] if ips else None
 
 
-def _print_lan_startup_hints(port: int) -> None:
-    ips = _collect_lan_ips()
-    if not ips:
-        print(
-            f"LAN (мультиплеер): не нашли IP — дайте напарнику http://<ваш-WiFi-IP>:{port}/",
-            file=sys.stderr,
-        )
+def _multiplayer_config_payload() -> dict:
+    endpoints = collect_share_endpoints(_SERVER_PORT)
+    lan_ips = [e["ip"] for e in endpoints]
+    lan_url = None
+    tailscale_url = None
+    for ep in endpoints:
+        if ep.get("label") == "Tailscale":
+            tailscale_url = ep["url"]
+        elif _lan_ip_priority(ep["ip"]) <= 1 and not lan_url:
+            lan_url = ep["url"]
+    if not lan_url and lan_ips and _BIND_HOST == "0.0.0.0":
+        lan_url = f"http://{lan_ips[0]}:{_SERVER_PORT}/"
+
+    share_url = _TUNNEL_URL or tailscale_url or lan_url
+    return {
+        "sync": True,
+        "lan_mode": _BIND_HOST == "0.0.0.0",
+        "tunnel_mode": _TUNNEL_PENDING or bool(_TUNNEL_URL),
+        "tunnel_pending": _TUNNEL_PENDING and not _TUNNEL_URL and not _TUNNEL_ERROR,
+        "tunnel_error": _TUNNEL_ERROR,
+        "host": _BIND_HOST,
+        "port": _SERVER_PORT,
+        "endpoints": endpoints,
+        "lan_ips": lan_ips,
+        "lan_url": lan_url,
+        "tailscale_url": tailscale_url,
+        "tunnel_url": _TUNNEL_URL,
+        "share_url": share_url,
+    }
+
+
+def _on_tunnel_url(url: str) -> None:
+    global _TUNNEL_URL, _TUNNEL_PENDING
+    _TUNNEL_URL = url.rstrip("/") + "/"
+    _TUNNEL_PENDING = False
+    print("\n🌐 Удалённый доступ — отправь другу (любая квартира / мобильный интернет):")
+    print(f"  {_TUNNEL_URL}")
+    print("  Держи терминал открытым. Ссылка временная; сохраняйте часто (↻ синхронизация).")
+    print("  ⚠️  Кто знает ссылку — может зайти. Только для доверенного напарника.\n")
+
+
+def _on_tunnel_error(msg: str) -> None:
+    global _TUNNEL_PENDING, _TUNNEL_ERROR
+    _TUNNEL_PENDING = False
+    _TUNNEL_ERROR = msg
+    print(f"⚠️  Туннель: {msg}", file=sys.stderr)
+
+
+def _start_remote_tunnel(port: int) -> None:
+    global _TUNNEL_PENDING, _TUNNEL_PROC
+    _TUNNEL_PENDING = True
+    print("⏳ Создаём публичную ссылку через cloudflared…")
+    _TUNNEL_PROC = start_cloudflared_tunnel(
+        port,
+        on_url=_on_tunnel_url,
+        on_error=_on_tunnel_error,
+    )
+
+
+def _print_share_startup_hints(port: int, *, tunnel_mode: bool, lan_mode: bool) -> None:
+    if tunnel_mode:
+        if _TUNNEL_URL:
+            print(f"Удалённая ссылка: {_TUNNEL_URL}")
+        elif _TUNNEL_ERROR:
+            print(f"⚠️  Туннель не поднялся: {_TUNNEL_ERROR}", file=sys.stderr)
         return
-    print("LAN (мультиплеер) — отправь напарнику ссылку с Wi‑Fi (192.168… / 10…):")
-    for ip in ips:
-        mark = " ← обычно эта" if _lan_ip_priority(ip) <= 1 else ""
-        print(f"  http://{ip}:{port}/{mark}")
-    if any(_lan_ip_priority(ip) >= 4 for ip in ips):
+
+    if lan_mode:
+        endpoints = collect_share_endpoints(port)
+        wifi = [e for e in endpoints if _lan_ip_priority(e["ip"]) <= 1]
+        tailscale = [e for e in endpoints if e.get("label") == "Tailscale"]
+        if tailscale:
+            print("Tailscale — работает из разных квартир (если оба в одной tailnet):")
+            for ep in tailscale:
+                print(f"  {ep['url']}")
+        if wifi:
+            print("LAN — только одна Wi‑Fi сеть (одна квартира / офис):")
+            for ep in wifi:
+                mark = " ← обычно эта" if ep["ip"].startswith("192.168.") else ""
+                print(f"  {ep['url']}{mark}")
+        if not wifi and not tailscale:
+            print(
+                f"LAN: IP не найден — напарнику http://<ваш-WiFi-IP>:{port}/",
+                file=sys.stderr,
+            )
+        vpn_only = [e for e in endpoints if _lan_ip_priority(e["ip"]) >= 4]
+        if vpn_only:
+            print(
+                "  (172.31… — часто VPN; для друга из другой квартиры не подходит)",
+                file=sys.stderr,
+            )
         print(
-            "  (адреса 172.31… — часто VPN; другу они обычно не подходят)",
-            file=sys.stderr,
+            "Из разных квартир без Tailscale: python3 tools/transfer_window_app/main.py --tunnel"
         )
-    print("Друзья должны быть в той же Wi‑Fi-сети. Сохраняйте часто (↻ синхронизация).")
+        print("Сохраняйте часто (↻ синхронизация).")
 
 
 def _load_window_state_file(window: str) -> dict | None:
@@ -190,11 +331,12 @@ def _persist_window_state(
         return out, False
 
 
-def _parse_runtime_args(argv: list[str]) -> tuple[str, int, bool]:
-    """host, port, open_browser."""
+def _parse_runtime_args(argv: list[str]) -> tuple[str, int, bool, bool]:
+    """host, port, open_browser, tunnel_mode."""
     host = "127.0.0.1"
     port = 8765
     open_browser = True
+    tunnel_mode = "--tunnel" in argv or "--remote" in argv
     if "--host" in argv:
         host = argv[argv.index("--host") + 1]
     elif "--lan" in argv:
@@ -203,7 +345,7 @@ def _parse_runtime_args(argv: list[str]) -> tuple[str, int, bool]:
         port = int(argv[argv.index("--port") + 1])
     if "--no-browser" in argv:
         open_browser = False
-    return host, port, open_browser
+    return host, port, open_browser, tunnel_mode
 
 
 def _normalize_window(raw: str | None) -> str:
@@ -755,18 +897,7 @@ class Handler(BaseHTTPRequestHandler):
                     "positions": positions,
                     "fa_team": "Free Agent",
                     "squad_rules": _squad_rules_payload(),
-                    "multiplayer": {
-                        "sync": True,
-                        "lan_mode": _BIND_HOST == "0.0.0.0",
-                        "host": _BIND_HOST,
-                        "port": _SERVER_PORT,
-                        "lan_ips": _collect_lan_ips(),
-                        "lan_url": (
-                            f"http://{_guess_lan_ip()}:{_SERVER_PORT}/"
-                            if _BIND_HOST == "0.0.0.0" and _guess_lan_ip()
-                            else None
-                        ),
-                    },
+                    "multiplayer": _multiplayer_config_payload(),
                 }
             )
         if path == "/api/paths":
@@ -1038,8 +1169,10 @@ def _handle_already_running(port: int, *, want_lan: bool, open_browser: bool) ->
     mp = (cfg or {}).get("multiplayer") or {}
     lan_mode = bool(mp.get("lan_mode"))
     lan_url = mp.get("lan_url")
+    tunnel_url = mp.get("tunnel_url")
+    share_url = mp.get("share_url") or tunnel_url or lan_url
 
-    if want_lan and not lan_mode:
+    if want_lan and not lan_mode and not tunnel_url:
         print(
             f"⚠️  Порт {port} занят старым Transfer Window (только localhost, без LAN).\n"
             "    Остановите его и запустите снова с --lan:\n"
@@ -1052,7 +1185,10 @@ def _handle_already_running(port: int, *, want_lan: bool, open_browser: bool) ->
             webbrowser.open(url)
         return 1
 
-    if lan_mode and lan_url:
+    if tunnel_url:
+        print(f"Уже запущено · удалённый доступ: {tunnel_url}")
+        print(f"Локально: {url}")
+    elif lan_mode and lan_url:
         ips = mp.get("lan_ips") or []
         if ips:
             print("Уже запущено · LAN (мультиплеер):")
@@ -1071,9 +1207,9 @@ def _handle_already_running(port: int, *, want_lan: bool, open_browser: bool) ->
                     f"⚠️  LAN-режим не подтверждён. Если нужен мультиплеер — перезапустите с --lan.",
                     file=sys.stderr,
                 )
-    _write_startup_log(f"already running → {url} lan={lan_mode}")
+    _write_startup_log(f"already running → {url} lan={lan_mode} tunnel={bool(tunnel_url)}")
     if open_browser:
-        webbrowser.open(lan_url or url)
+        webbrowser.open(share_url or url)
     return 0
 
 
@@ -1089,7 +1225,7 @@ def _open_browser_when_ready(url: str, port: int) -> None:
 
 def main() -> int:
     global _BIND_HOST, _SERVER_PORT
-    _BIND_HOST, _SERVER_PORT, open_browser = _parse_runtime_args(sys.argv)
+    _BIND_HOST, _SERVER_PORT, open_browser, tunnel_mode = _parse_runtime_args(sys.argv)
     port = _SERVER_PORT
     host = _BIND_HOST
     url = f"http://127.0.0.1:{port}/"
@@ -1114,8 +1250,10 @@ def main() -> int:
         raise
 
     print(f"Transfer Window: {url}")
-    if host == "0.0.0.0":
-        _print_lan_startup_hints(port)
+    if tunnel_mode:
+        _start_remote_tunnel(port)
+    if host == "0.0.0.0" or tunnel_mode:
+        _print_share_startup_hints(port, tunnel_mode=tunnel_mode, lan_mode=(host == "0.0.0.0"))
     print(f"Сейвы и экспорты: {data}")
     print("Окна: лето 5/5, зима 2/2 — переключатель в шапке.")
     if migrated:

@@ -314,6 +314,60 @@ function updateSyncBadge(meta) {
   el.textContent = meta.revision ? `rev ${meta.revision}${who}` : "rev 0";
 }
 
+function updateSharePanel(mp) {
+  const panel = document.getElementById("share-panel");
+  const input = document.getElementById("share-url");
+  if (!panel || !input || !mp) return;
+  const url = mp.share_url || mp.tunnel_url || mp.tailscale_url || mp.lan_url;
+  if (!url) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  input.value = url;
+  input.title = mp.tunnel_url
+    ? "Публичная ссылка — работает из любой квартиры"
+    : mp.tailscale_url
+      ? "Tailscale — из разных квартир, если оба в tailnet"
+      : "LAN — только одна Wi‑Fi сеть";
+}
+
+async function pollTunnelUrl() {
+  for (let i = 0; i < 45; i += 1) {
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const res = await fetch("/api/config");
+      if (!res.ok) continue;
+      const cfg = await res.json();
+      const mp = cfg.multiplayer || {};
+      if (mp.tunnel_url || mp.tunnel_error || !mp.tunnel_pending) {
+        updateSharePanel(mp);
+        if (mp.tunnel_url) setStatus("ссылка для друга готова — копируй из шапки");
+        else if (mp.tunnel_error) setStatus("туннель: " + mp.tunnel_error);
+        return;
+      }
+    } catch (_) {
+      /* retry */
+    }
+  }
+}
+
+function setupSharePanel() {
+  document.getElementById("btn-copy-share")?.addEventListener("click", async () => {
+    const input = document.getElementById("share-url");
+    const url = input?.value || "";
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setStatus("ссылка скопирована");
+    } catch (_) {
+      input?.select();
+      document.execCommand("copy");
+      setStatus("ссылка скопирована");
+    }
+  });
+}
+
 function showSyncBanner(meta) {
   pendingRemoteMeta = meta;
   const bar = document.getElementById("sync-banner");
@@ -1720,8 +1774,9 @@ async function loadData() {
   if (cfg.data_dir) {
     window.__twDataDir = cfg.data_dir;
   }
-  if (cfg.multiplayer?.lan_url) {
-    window.__twLanUrl = cfg.multiplayer.lan_url;
+  if (cfg.multiplayer) {
+    updateSharePanel(cfg.multiplayer);
+    if (cfg.multiplayer.tunnel_pending) pollTunnelUrl();
   }
 
   const freshBaseline = { ...(rosters.baseline_home || {}) };
@@ -1938,5 +1993,6 @@ loadData()
   .then(() => {
     setupPlayerForm();
     setupFaSignForm();
+    setupSharePanel();
   })
   .catch((e) => setStatus("ошибка: " + e.message));
