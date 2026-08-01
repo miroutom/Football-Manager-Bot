@@ -193,6 +193,12 @@ def export_all() -> dict:
         "season": season,
         "injury_as_of_month": INJURY_AS_OF_MONTH,
         "injured_count": injured_n,
+        "squad_rules": {
+            "total": 32,
+            "start": 11,
+            "reserve": 21,
+            "reserve_per_slot": {"default": 2, "GK": 1},
+        },
         "formations": _export_formations_catalog(),
         "leagues": leagues,
         "teams": teams,

@@ -273,6 +273,41 @@ body {
 .team-hdr .counters { font-size: 12px; margin-top: 4px; }
 .team-hdr .counters .in { color: #7dcea0; }
 .team-hdr .counters .out { color: #f1948a; }
+.team-card.squad-incomplete { box-shadow: 0 0 0 2px rgba(241, 148, 138, 0.45); }
+.squad-quota {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.squad-quota.ok {
+  background: rgba(45, 90, 60, 0.35);
+  border: 1px solid rgba(100, 180, 120, 0.35);
+}
+.squad-quota.warn {
+  background: rgba(90, 55, 30, 0.35);
+  border: 1px solid rgba(220, 160, 80, 0.35);
+}
+.squad-quota-head { font-weight: 600; color: #e8eef4; }
+.squad-quota-miss { color: #f5c896; margin-top: 3px; }
+.squad-quota-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+.sq-chip {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(20, 30, 40, 0.6);
+  border: 1px solid #3a4a58;
+  color: #9ab;
+  font-size: 10px;
+}
+.sq-chip.part { color: #f5d78e; border-color: #8a7040; }
+.sq-chip.done { color: #9fdfb0; border-color: #4a7a58; }
 .team-body { display: flex; align-items: stretch; }
 .pitch {
   position: relative;

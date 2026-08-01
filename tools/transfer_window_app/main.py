@@ -318,6 +318,47 @@ def compute_transfers(state: dict) -> list[dict]:
     return rows
 
 
+def _squads_validation_error(data: dict) -> str | None:
+    from utils.transfer_squad_quota import evaluate_all_teams, format_missing_hint
+
+    formations = data.get("formations")
+    if not formations:
+        rp = _rosters_path()
+        if rp.is_file():
+            formations = json.loads(rp.read_text(encoding="utf-8")).get("formations") or []
+    ev = evaluate_all_teams(data.get("teams") or [], formations or [])
+    if ev.get("all_complete"):
+        return None
+    lines: list[str] = []
+    for row in ev.get("teams") or []:
+        if row.get("complete"):
+            continue
+        hint = format_missing_hint(row)
+        lines.append(f"{row.get('team')}: {hint}")
+    if not lines:
+        return None
+    head = "Неполная заявка (32 игрока: 11 основа + 21 замена по слотам схемы):"
+    tail = f"\n… и ещё {len(lines) - 12}" if len(lines) > 12 else ""
+    return head + "\n" + "\n".join(lines[:12]) + tail
+
+
+def _squad_rules_payload() -> dict:
+    from utils.squad_limits import transfer_app_squad_limits
+    from utils.transfer_squad_quota import SQUAD_RESERVE, SQUAD_START, SQUAD_TOTAL
+
+    lim = transfer_app_squad_limits()
+    return {
+        "total": lim["total"],
+        "start": lim["start"],
+        "reserve": lim["reserve"],
+        "reserve_per_slot": {"default": 2, "GK": 1},
+        "hint": (
+            f"{SQUAD_TOTAL} игроков: {SQUAD_START} в основе + {SQUAD_RESERVE} замен "
+            "(по 2 на каждый слот схемы, у вратаря 1)"
+        ),
+    }
+
+
 def build_state_payload(data: dict) -> dict:
     """Persisted state: squads + baseline + computed transfer log + window."""
     baseline_home = data.get("baseline_home") or {}
@@ -488,6 +529,7 @@ class Handler(BaseHTTPRequestHandler):
                     "leagues": leagues,
                     "positions": positions,
                     "fa_team": "Free Agent",
+                    "squad_rules": _squad_rules_payload(),
                 }
             )
         if path == "/api/paths":
@@ -558,6 +600,10 @@ class Handler(BaseHTTPRequestHandler):
             fmt = (qs.get("fmt") or ["txt"])[0]
             kind = (qs.get("kind") or ["squads"])[0]
             data = self._read_json()
+            if kind == "squads":
+                err = _squads_validation_error(data)
+                if err:
+                    return self._send_json({"ok": False, "error": err}, 400)
             out_dir = _export_dir()
             if kind == "transfers":
                 rows = compute_transfers(data)

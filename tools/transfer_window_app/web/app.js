@@ -23,6 +23,189 @@ let rostersSeason = null;
 let leaguesCatalog = [];
 let positionsCatalog = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
+const SQUAD_TARGET = 32;
+const SQUAD_START_TARGET = 11;
+const SQUAD_RESERVE_TARGET = 21;
+
+const SLOT_RESERVE_LABEL = {
+  GK: "ВРТ",
+  LB: "ЛЗ",
+  RB: "ПЗ",
+  LCB: "ЦЗ",
+  RCB: "ЦЗ",
+  CB: "ЦЗ",
+  LW: "ЛФА",
+  ST: "ФРВ",
+  RW: "ПФА",
+  LCM: "ЦП",
+  RCM: "ЦП",
+  CAM: "ЦАП",
+  CDM: "ЦОП",
+  LM: "ЛП",
+  RM: "ПП",
+  STL: "ФРВ",
+  STR: "ПФА",
+  CCM: "ЦП",
+};
+
+let squadRules = {
+  total: SQUAD_TARGET,
+  start: SQUAD_START_TARGET,
+  reserve: SQUAD_RESERVE_TARGET,
+};
+
+function formationById(fid) {
+  const id = Number(fid) || 1;
+  return formationsCatalog.find((f) => Number(f.id) === id) || null;
+}
+
+function primaryReserveLabel(slotId, allowed) {
+  const pref = SLOT_RESERVE_LABEL[slotId];
+  if (pref && allowed.includes(pref)) return pref;
+  return allowed.length ? allowed.slice().sort()[0] : slotId || "?";
+}
+
+function reserveGroupsForFormation(form) {
+  if (!form || !Array.isArray(form.slots)) return [];
+  return form.slots.map((slot) => {
+    const sid = String(slot.slot_id || "").trim();
+    const allowed = (slot.allowed_positions || []).map((p) => String(p).trim().toUpperCase()).filter(Boolean);
+    return {
+      slot_id: sid,
+      label: primaryReserveLabel(sid, allowed),
+      allowed,
+      need: sid === "GK" ? 1 : 2,
+    };
+  });
+}
+
+function assignSubstitutesToGroups(players, groups) {
+  const pool = (players || []).filter((p) => p && p.name && String(p.position || "").trim());
+  const assigned = groups.map(() => 0);
+  const used = pool.map(() => false);
+
+  const order = groups
+    .map((g, i) => i)
+    .sort((a, b) => {
+      const ga = groups[a];
+      const gb = groups[b];
+      return ga.allowed.length - gb.allowed.length || gb.need - ga.need || ga.slot_id.localeCompare(gb.slot_id);
+    });
+
+  for (const gi of order) {
+    const g = groups[gi];
+    for (let n = 0; n < g.need; n += 1) {
+      let picked = -1;
+      for (let pi = 0; pi < pool.length; pi += 1) {
+        if (used[pi]) continue;
+        const pos = String(pool[pi].position || "").trim().toUpperCase();
+        if (g.allowed.includes(pos)) {
+          picked = pi;
+          break;
+        }
+      }
+      if (picked < 0) break;
+      used[picked] = true;
+      assigned[gi] += 1;
+    }
+  }
+
+  const missing = [];
+  groups.forEach((g, i) => {
+    const short = g.need - assigned[i];
+    if (short > 0) missing.push({ slot_id: g.slot_id, label: g.label, need: short });
+  });
+  return { assigned, missing };
+}
+
+function aggregateMissing(missing) {
+  const agg = {};
+  (missing || []).forEach((m) => {
+    agg[m.label] = (agg[m.label] || 0) + Number(m.need || 0);
+  });
+  return Object.keys(agg)
+    .sort()
+    .map((label) => ({ label, need: agg[label] }));
+}
+
+function aggregateGroupStatus(groupStatus) {
+  const agg = {};
+  (groupStatus || []).forEach((g) => {
+    if (!agg[g.label]) agg[g.label] = { label: g.label, need: 0, have: 0 };
+    agg[g.label].need += Number(g.need || 0);
+    agg[g.label].have += Number(g.have || 0);
+  });
+  return Object.values(agg).sort((a, b) => a.label.localeCompare(b.label, "ru"));
+}
+
+function evaluateTeamSquad(team) {
+  const form = formationById(team.formation_id);
+  const groups = reserveGroupsForFormation(form);
+  const starters = (team.start || []).filter((p) => p && p.id);
+  const subs = [];
+  ["bench", "reserve"].forEach((zone) => {
+    (team[zone] || []).forEach((p) => {
+      if (p && p.id) subs.push(p);
+    });
+  });
+
+  const startSlots = team.start || [];
+  const startMissing = startSlots.filter((s) => !(s && s.id)).length;
+  const { assigned, missing } = assignSubstitutesToGroups(subs, groups);
+  const missingAgg = aggregateMissing(missing);
+
+  const groupStatus = groups.map((g, i) => ({
+    slot_id: g.slot_id,
+    label: g.label,
+    need: g.need,
+    have: assigned[i],
+    allowed: g.allowed,
+  }));
+
+  const total = starters.length + subs.length;
+  const complete =
+    startMissing === 0 &&
+    missing.length === 0 &&
+    total === SQUAD_TARGET &&
+    startSlots.length === SQUAD_START_TARGET;
+
+  return {
+    team: team.name,
+    total,
+    target: SQUAD_TARGET,
+    start_filled: SQUAD_START_TARGET - startMissing,
+    reserve_filled: SQUAD_RESERVE_TARGET - missing.reduce((s, m) => s + m.need, 0),
+    complete,
+    missing_start: startMissing,
+    missing_reserve: missingAgg,
+    group_status: groupStatus,
+  };
+}
+
+function formatMissingHint(ev) {
+  const parts = [];
+  if (Number(ev.missing_start) > 0) parts.push(`основа ×${ev.missing_start}`);
+  (ev.missing_reserve || []).forEach((m) => parts.push(`${m.label} ×${m.need}`));
+  if (Number(ev.total) < SQUAD_TARGET) parts.push(`всего ${ev.total}/${SQUAD_TARGET}`);
+  else if (Number(ev.total) > SQUAD_TARGET) parts.push(`лишних ${ev.total - SQUAD_TARGET}`);
+  return parts.length ? parts.join(" · ") : "OK";
+}
+
+function findIncompleteSquads() {
+  return teams
+    .map((t) => evaluateTeamSquad(t))
+    .filter((ev) => !ev.complete);
+}
+
+function squadExportBlockedMessage(incomplete) {
+  const lines = incomplete.slice(0, 10).map((ev) => `${ev.team}: ${formatMissingHint(ev)}`);
+  const tail = incomplete.length > 10 ? `\n… и ещё ${incomplete.length - 10} клубов` : "";
+  return (
+    "Нельзя выгрузить составы: заявка должна быть 32 игрока " +
+    `(11 основа + 21 замена по слотам схемы, у вратаря 1).\n\n${lines.join("\n")}${tail}`
+  );
+}
+
 function pushUndo() {
   undoStack.push({
     teams: JSON.parse(JSON.stringify(teams)),
@@ -947,11 +1130,6 @@ function movePlayer(src, destTeamName, destZone, destIndex) {
   dedupeGlobally(teams);
 }
 
-function formationById(fid) {
-  const id = Number(fid);
-  return formationsCatalog.find((f) => Number(f.id) === id) || null;
-}
-
 function collectTeamPlayers(team) {
   const out = [];
   for (const zone of ["start", "bench", "reserve"]) {
@@ -1122,6 +1300,35 @@ function renderTeam(team) {
   `;
   hdr.appendChild(counters);
 
+  const squadEv = evaluateTeamSquad(team);
+  if (!squadEv.complete) card.classList.add("squad-incomplete");
+
+  const quota = document.createElement("div");
+  quota.className = "squad-quota" + (squadEv.complete ? " ok" : " warn");
+  const qHead = document.createElement("div");
+  qHead.className = "squad-quota-head";
+  qHead.textContent = squadEv.complete
+    ? `Заявка ${squadEv.total}/${SQUAD_TARGET} ✓`
+    : `Заявка ${squadEv.total}/${SQUAD_TARGET} · замены ${squadEv.reserve_filled}/${SQUAD_RESERVE_TARGET}`;
+  quota.appendChild(qHead);
+  if (!squadEv.complete) {
+    const qMiss = document.createElement("div");
+    qMiss.className = "squad-quota-miss";
+    qMiss.textContent = `Не хватает: ${formatMissingHint(squadEv)}`;
+    quota.appendChild(qMiss);
+  }
+  const qGrid = document.createElement("div");
+  qGrid.className = "squad-quota-grid";
+  aggregateGroupStatus(squadEv.group_status).forEach((g) => {
+    const chip = document.createElement("span");
+    chip.className = "sq-chip" + (g.have >= g.need ? " done" : g.have > 0 ? " part" : "");
+    chip.textContent = `${g.label} ${g.have}/${g.need}`;
+    chip.title = `Замены на позицию ${g.label}: нужно ${g.need}`;
+    qGrid.appendChild(chip);
+  });
+  quota.appendChild(qGrid);
+  hdr.appendChild(quota);
+
   const body = document.createElement("div");
   body.className = "team-body";
 
@@ -1144,7 +1351,7 @@ function renderTeam(team) {
   const side = document.createElement("div");
   side.className = "sidebar";
   const hBench = document.createElement("h3");
-  hBench.textContent = "Запасные";
+  hBench.textContent = "Запасные (в заявку 32)";
   side.appendChild(hBench);
   const benchList = document.createElement("div");
   benchList.className = "side-list";
@@ -1157,7 +1364,7 @@ function renderTeam(team) {
   });
   side.appendChild(benchList);
   const hRes = document.createElement("h3");
-  hRes.textContent = "Резерв";
+  hRes.textContent = "Резерв (замены по позициям)";
   side.appendChild(hRes);
   const resList = document.createElement("div");
   resList.className = "side-list";
@@ -1192,6 +1399,7 @@ function currentState() {
     teams,
     free_agents: freeAgents,
     removed_from_squad: removedFromSquad,
+    formations: formationsCatalog,
   };
 }
 
@@ -1238,10 +1446,12 @@ async function loadData() {
     currentWindow = savedWin;
   }
   applyWindowQuotas(cfg, currentWindow || cfg.default_window || "summer");
+  if (cfg.squad_rules) squadRules = { ...squadRules, ...cfg.squad_rules };
   localStorage.setItem("tw_window", currentWindow);
   injuryAsOfMonth = Number(rosters.injury_as_of_month) || 6;
   injuryById = buildInjuryIndex(rosters);
   formationsCatalog = Array.isArray(rosters.formations) ? rosters.formations : [];
+  if (rosters.squad_rules) squadRules = { ...squadRules, ...rosters.squad_rules };
   if (cfg.data_dir) {
     window.__twDataDir = cfg.data_dir;
   }
@@ -1327,6 +1537,16 @@ async function switchWindow(next) {
 }
 
 async function saveState() {
+  const incomplete = findIncompleteSquads();
+  if (incomplete.length) {
+    const ok = window.confirm(
+      `Неполная заявка у ${incomplete.length} клуб(ов).\n` +
+        `Нужно ${SQUAD_TARGET} игроков (11 основа + 21 замена).\n\n` +
+        `Пример: ${incomplete[0].team} — ${formatMissingHint(incomplete[0])}\n\n` +
+        "Всё равно сохранить черновик?"
+    );
+    if (!ok) return;
+  }
   const res = await fetch("/api/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1353,6 +1573,12 @@ async function saveState() {
 }
 
 async function exportFmt(fmt) {
+  const incomplete = findIncompleteSquads();
+  if (incomplete.length) {
+    window.alert(squadExportBlockedMessage(incomplete));
+    setStatus(`экспорт блокирован: неполная заявка (${incomplete.length} клубов)`);
+    return;
+  }
   const res = await fetch(`/api/export?fmt=${fmt}&kind=squads`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1360,6 +1586,7 @@ async function exportFmt(fmt) {
   });
   const j = await res.json();
   setStatus(j.ok ? `выгружено: ${j.path}` : `ошибка: ${j.error || "?"}`);
+  if (!j.ok && j.error) window.alert(j.error);
 }
 
 async function exportTransfersFmt(fmt) {
