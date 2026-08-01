@@ -11,7 +11,8 @@
   python3 scripts/apply_ratings_xlsx.py /path/to/рейтинги.xlsx --dry-run
   python3 scripts/apply_ratings_xlsx.py /path/to/рейтинги.xlsx --apply
 
-По умолчанию — активный сезон (``db/season_N/``). Сначала всегда ``--dry-run``.
+При ``--apply`` после xlsx: автоматически **+3** всем игрокам РПЛ-клубов,
+пересборка ``common.db``, ``*_synced.db`` и ``tools/transfer_window_app/rosters.json``.
 """
 from __future__ import annotations
 
@@ -383,6 +384,60 @@ def _run_db_prep(sleague) -> list[str]:
         sleague.flush()
     return notes
 
+
+def _apply_rpl_bonus(sleague, scl, *, delta: int = 3) -> list[str]:
+    """+3 (с clamp РПЛ) всем активным игрокам клубов РПЛ в league и ЛЧ."""
+    from player_stats import LEAGUE_TEAMS
+    from utils.ovr_debug_advice import clamp_ovr_delta_for_team
+
+    rpl_teams = {_norm_cmp(t) for t in LEAGUE_TEAMS.get("rpl", ())}
+    notes: list[str] = []
+    for session, label in ((sleague, "лига"), (scl, "ЛЧ")):
+        for Cls in _ALL_PLAYER:
+            for r in session.query(Cls).all():
+                team = (getattr(r, "team", "") or "").strip()
+                if not team or is_free_agent_team(team):
+                    continue
+                if _norm_cmp(team) not in rpl_teams:
+                    continue
+                if bool(getattr(r, "left_team", False)):
+                    continue
+                cur = int(getattr(r, "overall", 0) or 0)
+                d = clamp_ovr_delta_for_team(team, cur, int(delta))
+                if not d:
+                    continue
+                new = _clamp(cur + d)
+                if new == cur:
+                    continue
+                r.overall = new
+                notes.append(
+                    f"{label} {team} · {player_display_name(r)} · {r.position} {cur}→{new}"
+                )
+    return notes
+
+
+def _post_apply_publish(*, export_rosters: bool, rebuild_synced: bool) -> None:
+    """common.db + накопительные *_synced + rosters.json для Transfer Window App."""
+    rebuild_common_database()
+    print("  · common.db пересобран")
+
+    if rebuild_synced:
+        from utils import season_paths
+        from utils.cumulative_db import rebuild_all_time_databases_from_season_archives
+
+        if season_paths.is_legacy_mode():
+            print("  · *_synced: legacy-режим — пропуск")
+        else:
+            log = rebuild_all_time_databases_from_season_archives()
+            seasons = log.get("seasons") or []
+            print(f"  · *_synced пересобраны из архивов season {seasons}")
+
+    if export_rosters:
+        import subprocess
+
+        script = os.path.join(ROOT, "tools", "transfer_window_app", "export_rosters.py")
+        subprocess.run([sys.executable, script], check=True, cwd=ROOT)
+
 def resolve_entry(
     entry: XlsxEntry,
     idx_l: PlayerIndex,
@@ -620,6 +675,9 @@ def main() -> None:
     ap.add_argument("--errors-only", action="store_true", help="Только проблемные строки + сводка")
     ap.add_argument("--report", help="Записать проблемные строки в .txt")
     ap.add_argument("--ignore-errors", action="store_true", help="При --apply пропустить ERR строки")
+    ap.add_argument("--no-rpl-bonus", action="store_true", help="Не делать +3 игрокам РПЛ после apply")
+    ap.add_argument("--no-synced", action="store_true", help="Не пересобирать league/cl/common *_synced.db")
+    ap.add_argument("--no-export-rosters", action="store_true", help="Не обновлять tools/transfer_window_app/rosters.json")
     args = ap.parse_args()
     if args.dry_run == args.apply:
         print("Укажите ровно один флаг: --dry-run или --apply")
@@ -708,6 +766,10 @@ def main() -> None:
     if args.dry_run:
         sleague.rollback()
         scl.rollback()
+        if not args.no_rpl_bonus:
+            rpl_n = len(_apply_rpl_bonus(sleague, scl))
+            if rpl_n:
+                print(f"\n(dry-run) РПЛ +3 затронуло бы {rpl_n} строк league/ЛЧ")
         if ambiguous or not_found:
             print("\n(dry-run) Исправьте совпадения в xlsx или добавьте алиасы, затем --apply")
         else:
@@ -736,7 +798,11 @@ def main() -> None:
         applied_ok.extend(ok)
         applied_err.extend(err)
 
-    if applied_ok:
+    rpl_notes: list[str] = []
+    if not args.no_rpl_bonus:
+        rpl_notes = _apply_rpl_bonus(sleague, scl)
+
+    if applied_ok or rpl_notes:
         try:
             sleague.commit()
             scl.commit()
@@ -744,12 +810,23 @@ def main() -> None:
             sleague.rollback()
             scl.rollback()
             raise
-        rebuild_common_database()
-        print(f"\nCommit + common.db пересобран. Изменений: {len(applied_ok)}")
+        print(f"\nCommit league + cl. Xlsx: {len(applied_ok)} строк", end="")
+        if rpl_notes:
+            print(f"; РПЛ +3: {len(rpl_notes)}", end="")
+        print()
         for s in applied_ok[:40]:
             print(" ", s)
         if len(applied_ok) > 40:
-            print(f"  … и ещё {len(applied_ok) - 40}")
+            print(f"  … xlsx ещё {len(applied_ok) - 40}")
+        for s in rpl_notes[:15]:
+            print(" ", s)
+        if len(rpl_notes) > 15:
+            print(f"  … РПЛ ещё {len(rpl_notes) - 15}")
+        print("\nПубликация для бота и Transfer Window App:")
+        _post_apply_publish(
+            export_rosters=not args.no_export_rosters,
+            rebuild_synced=not args.no_synced,
+        )
     else:
         sleague.rollback()
         scl.rollback()
