@@ -1178,7 +1178,8 @@ async def _begin_stats_for_played_slot(
         f"Матч: <b>{hn}</b> <code>{hs}:{aws}</code> <b>{an}</b> — счёт из журнала.",
         parse_mode="HTML",
     )
-    await _prompt_stats_played_list(message, state)
+    await state.update_data(stats_played_keys=None)
+    await _send_stats_lines_ui(message, state)
 
 
 def _post_match_continue_kb(
@@ -1332,26 +1333,6 @@ def _stats_lines_done_kb() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(text="✓ Готово", callback_data="stats:done")],
         ]
-    )
-
-
-async def _prompt_stats_played_list(message: Message, state: FSMContext) -> None:
-    """Опционально: список сыгравших одним сообщением, затем построчная стата."""
-    data = await state.get_data()
-    home = data["stats_home"]
-    away = data["stats_away"]
-    hs = data["stats_hs"]
-    aws = data["stats_aws"]
-    hn = html_escape(home)
-    an = html_escape(away)
-    await state.set_state(PostMatch.stats_played_list)
-    await message.answer(
-        f"<b>Кто сыграл?</b> {hn} <code>{hs}:{aws}</code> {an}\n\n"
-        "Одним сообщением — имена через перевод строки или запятую "
-        "(каждому сразу <b>+1 матч</b>, потом вводишь голы/пасы/жк по строкам).\n"
-        "Не хочешь списком — напиши <code>пропустить</code> "
-        "(стата как раньше, +1 матч при первой строке игрока).",
-        parse_mode="HTML",
     )
 
 
@@ -2638,64 +2619,14 @@ async def cb_postmatch_stats_yes(callback: CallbackQuery, state: FSMContext) -> 
         return
 
     await callback.answer()
-    await _prompt_stats_played_list(callback.message, state)
+    await state.update_data(stats_played_keys=None)
+    await _send_stats_lines_ui(callback.message, state)
 
 
 @match_router.message(StateFilter(PostMatch.stats_played_list), _TEXT_NOT_CMD)
-async def on_stats_played_list(message: Message, state: FSMContext) -> None:
-    from utils.match_stats_bot import (
-        apply_played_names_for_fixture,
-        is_skip_played_list,
-        parse_played_names_message,
-    )
-
-    data = await state.get_data()
-    home = data.get("stats_home")
-    away = data.get("stats_away")
-    if not home or not away:
-        await message.answer("Сессия устарела. Начни снова с записи счёта.")
-        await state.clear()
-        return
-    raw = (message.text or "").strip()
-    if is_skip_played_list(raw):
-        await state.update_data(stats_played_keys=None)
-        await _send_stats_lines_ui(message, state)
-        return
-    names = parse_played_names_message(raw)
-    if not names:
-        await message.answer(
-            "Не разобрал имена. Повтори список или напиши <code>пропустить</code>.",
-            parse_mode="HTML",
-        )
-        return
-    keys, ok_lines, err_lines = await asyncio.to_thread(
-        apply_played_names_for_fixture,
-        names,
-        home=str(home),
-        away=str(away),
-        tournament=str(data.get("stats_tournament", "league")),
-    )
-    parts: list[str] = []
-    if ok_lines:
-        parts.append("✓ Матч засчитан:\n" + "\n".join(ok_lines[:40]))
-        if len(ok_lines) > 40:
-            parts.append(f"…ещё {len(ok_lines) - 40}")
-    if err_lines:
-        parts.append("⚠ Не записано:\n" + "\n".join(err_lines[:20]))
-        if len(err_lines) > 20:
-            parts.append(f"…ещё {len(err_lines) - 20}")
-    if parts:
-        await message.answer(html_escape("\n\n".join(parts)), parse_mode="HTML")
-    if not keys and err_lines:
-        await message.answer(
-            "Никого не засчитали — поправь список или <code>пропустить</code>.",
-            parse_mode="HTML",
-        )
-        return
-    await state.update_data(
-        stats_played_keys=sorted(keys),
-        stats_session_match_keys=sorted(keys),
-    )
+async def on_stats_played_list_legacy(message: Message, state: FSMContext) -> None:
+    """Старая сессия на шаге «кто сыграл» — сразу построчная стата."""
+    await state.update_data(stats_played_keys=None)
     await _send_stats_lines_ui(message, state)
 
 
