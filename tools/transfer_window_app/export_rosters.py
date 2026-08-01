@@ -154,15 +154,34 @@ def export_all() -> dict:
     season = get_active_season()
     teams: list[dict] = []
     baseline_home: dict[str, str] = {}
+    leagues: list[dict] = []
     for code in ("rpl", "eng", "esp", "ita", "ger"):
-        for team in LEAGUE_TEAMS.get(code, []):
-            if team in _EXCLUDED_TEAMS:
-                continue
+        league_teams = [
+            t for t in LEAGUE_TEAMS.get(code, []) if t not in _EXCLUDED_TEAMS
+        ]
+        leagues.append(
+            {
+                "code": code,
+                "name": LEAGUE_NAMES.get(code, code),
+                "teams": league_teams,
+            }
+        )
+        for team in league_teams:
             block = export_team(team, season=season)
             block["league"] = LEAGUE_NAMES.get(code, code)
             teams.append(block)
             for pid in block["baseline_ids"]:
                 baseline_home[pid] = team
+    free_agents: list[dict] = []
+    try:
+        from utils.free_agents_db import fa_player_id, list_free_agents
+
+        free_agents = list_free_agents()
+        for p in free_agents:
+            pid = p.get("id") or fa_player_id(p.get("name", ""), p.get("position", ""))
+            baseline_home[pid] = "Free Agent"
+    except Exception:
+        pass
     injured_n = sum(
         1
         for t in teams
@@ -175,8 +194,10 @@ def export_all() -> dict:
         "injury_as_of_month": INJURY_AS_OF_MONTH,
         "injured_count": injured_n,
         "formations": _export_formations_catalog(),
+        "leagues": leagues,
         "teams": teams,
         "baseline_home": baseline_home,
+        "free_agents": free_agents,
     }
 
 

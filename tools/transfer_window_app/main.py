@@ -158,6 +158,79 @@ def _collect_player_locations(teams: list[dict]) -> dict[str, tuple[str, str, di
     return out
 
 
+def _collect_fa_locations(free_agents: list[dict]) -> dict[str, tuple[str, str, dict]]:
+    out: dict[str, tuple[str, str, dict]] = {}
+    for p in free_agents or []:
+        if p and p.get("id") and p.get("name"):
+            st = (p.get("status") or "bench") or "bench"
+            out[p["id"]] = ("Free Agent", st, p)
+    return out
+
+
+def _merge_squads_from_bot_export(
+    teams_in: list[dict], text: str
+) -> tuple[list[dict], list[str]]:
+    """
+    Подтянуть рейтинги/позиции из squads_export бота в текущее состояние приложения.
+    Не меняет baseline и не переставляет игроков по слотам — только поля карточек.
+    """
+    from scripts.apply_bulk_squad_declarations import resolve_team_label, split_bulk_blocks
+    from utils.roster_manual import parse_squad_declaration_text
+    from utils.transfer_window_apply import strip_transfers_appendix
+
+    teams = json.loads(json.dumps(teams_in))
+    by_name = {t["name"]: t for t in teams}
+    notes: list[str] = []
+    updated = 0
+    body = strip_transfers_appendix(text or "")
+    for team_raw, block in split_bulk_blocks(body):
+        team_name = resolve_team_label(team_raw)
+        team = by_name.get(team_name)
+        if not team:
+            notes.append(f"нет команды в state: {team_name}")
+            continue
+        entries, errors = parse_squad_declaration_text(block)
+        if errors:
+            notes.append(f"{team_name}: {errors[0]}")
+            continue
+        index: dict[str, dict] = {}
+        for zone in ("start", "bench", "reserve"):
+            for p in team.get(zone) or []:
+                if not p or not p.get("id"):
+                    continue
+                key = f"{(p.get('name') or '').strip().casefold()}|{(p.get('position') or '').strip().upper()}"
+                index[p["id"]] = p
+                index[key] = p
+        for ent in entries:
+            name = (ent.get("name") or "").strip()
+            pos = (ent.get("position") or "").strip().upper()
+            ovr = int(ent.get("overall") or 0)
+            if not name:
+                continue
+            pid = f"{team_name}|{name}|{pos}"
+            key = f"{name.casefold()}|{pos}"
+            target = index.get(pid) or index.get(key)
+            if not target:
+                for p in index.values():
+                    if isinstance(p, dict) and (p.get("name") or "").strip().casefold() == name.casefold():
+                        target = p
+                        break
+            if not target:
+                notes.append(f"{team_name}: не найден {name} ({pos})")
+                continue
+            changed = False
+            if ovr and int(target.get("overall") or 0) != ovr:
+                target["overall"] = ovr
+                changed = True
+            if pos and (target.get("position") or "").upper() != pos:
+                target["position"] = pos
+                changed = True
+            if changed:
+                updated += 1
+    notes.insert(0, f"обновлено карточек: {updated}")
+    return teams, notes
+
+
 def compute_squads(state: dict) -> list[dict]:
     """Все игроки с текущим статусом (start/bench/reserve)."""
     rows: list[dict] = []
@@ -213,6 +286,7 @@ def _player_name_from_id(pid: str) -> str:
 def compute_transfers(state: dict) -> list[dict]:
     baseline_home: dict[str, str] = state.get("baseline_home") or {}
     loc = _collect_player_locations(state.get("teams") or [])
+    loc.update(_collect_fa_locations(state.get("free_agents") or []))
     rows: list[dict] = []
     for pid, from_team in sorted(baseline_home.items(), key=lambda x: x[1]):
         if pid not in loc:
@@ -240,11 +314,13 @@ def build_state_payload(data: dict) -> dict:
     """Persisted state: squads + baseline + computed transfer log + window."""
     baseline_home = data.get("baseline_home") or {}
     teams = data.get("teams") or []
+    free_agents = data.get("free_agents") or []
     window = _normalize_window(data.get("window"))
     state = {
         "window": window,
         "baseline_home": baseline_home,
         "teams": teams,
+        "free_agents": free_agents,
     }
     state["transfers"] = compute_transfers(state)
     return state
@@ -371,11 +447,35 @@ class Handler(BaseHTTPRequestHandler):
             rel = path[len("/web/") :]
             return self._send_file(_bundle_dir() / "web" / rel)
         if path == "/api/config":
+            leagues: list[dict] = []
+            positions = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"]
+            try:
+                from player_stats import LEAGUE_NAMES, LEAGUE_TEAMS
+                from utils.transfer_market_draft import _EXCLUDED_TEAMS
+
+                for code in ("rpl", "eng", "esp", "ita", "ger"):
+                    teams_l = [
+                        t
+                        for t in LEAGUE_TEAMS.get(code, [])
+                        if t not in _EXCLUDED_TEAMS
+                    ]
+                    leagues.append(
+                        {
+                            "code": code,
+                            "name": LEAGUE_NAMES.get(code, code),
+                            "teams": teams_l,
+                        }
+                    )
+            except Exception:
+                pass
             return self._send_json(
                 {
                     "default_window": DEFAULT_WINDOW,
                     "windows": WINDOW_QUOTAS,
                     "data_dir": str(_data_dir()),
+                    "leagues": leagues,
+                    "positions": positions,
+                    "fa_team": "Free Agent",
                 }
             )
         if path == "/api/paths":
@@ -391,7 +491,22 @@ class Handler(BaseHTTPRequestHandler):
             p = _rosters_path()
             if not p.is_file():
                 return self._send_json({"error": f"нет {p}"}, 500)
-            return self._send_json(json.loads(p.read_text(encoding="utf-8")))
+            payload = json.loads(p.read_text(encoding="utf-8"))
+            try:
+                from utils.free_agents_db import list_free_agents
+
+                payload["free_agents"] = list_free_agents()
+            except Exception:
+                payload.setdefault("free_agents", payload.get("free_agents") or [])
+            return self._send_json(payload)
+        if path == "/api/free-agents":
+            try:
+                from utils.free_agents_db import list_free_agents
+
+                rows = list_free_agents()
+            except Exception as e:
+                return self._send_json({"error": str(e)}, 500)
+            return self._send_json({"players": rows, "team_label": "Free Agent"})
         if path == "/api/state":
             qs = parse_qs(parsed.query)
             window = _normalize_window((qs.get("window") or [DEFAULT_WINDOW])[0])
@@ -478,6 +593,61 @@ class Handler(BaseHTTPRequestHandler):
                     }
                 )
             return self._send_json({"ok": True, "path": str(out), "count": len(rows)})
+        if parsed.path == "/api/import-squads":
+            data = self._read_json()
+            text = str(data.get("text") or "")
+            teams_in = data.get("teams") or []
+            updated, notes = _merge_squads_from_bot_export(teams_in, text)
+            return self._send_json({"ok": True, "teams": updated, "notes": notes})
+        if parsed.path == "/api/fa/create":
+            data = self._read_json()
+            try:
+                from utils.free_agents_db import add_free_agent_player
+
+                row = add_free_agent_player(
+                    name=str(data.get("name") or ""),
+                    position=str(data.get("position") or ""),
+                    overall=int(data.get("overall") or 72),
+                    nation=str(data.get("nation") or "") or None,
+                    nickname=str(data.get("nickname") or "") or None,
+                    status=str(data.get("status") or "bench"),
+                )
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 400)
+            return self._send_json({"ok": True, "player": row})
+        if parsed.path == "/api/fa/apply-to-db":
+            """Записать нового игрока сразу в клуб (минуя FA pool) — для подтверждения из UI."""
+            data = self._read_json()
+            try:
+                from utils.player_transfer import add_player_to_club
+
+                add_player_to_club(
+                    str(data.get("name") or ""),
+                    str(data.get("position") or ""),
+                    str(data.get("team") or ""),
+                    str(data.get("status") or "bench"),
+                    int(data.get("overall") or 72),
+                    nation=str(data.get("nation") or "") or None,
+                )
+                if data.get("nickname"):
+                    from utils.person_registry import lookup_canonical_person_id
+                    from utils.player_nicknames import set_nickname
+
+                    pid = lookup_canonical_person_id(
+                        str(data.get("name") or ""),
+                        str(data.get("position") or ""),
+                        team=str(data.get("team") or ""),
+                    )
+                    if pid:
+                        set_nickname(
+                            int(pid),
+                            str(data.get("nickname")),
+                            name=str(data.get("name") or ""),
+                            team=str(data.get("team") or ""),
+                        )
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 400)
+            return self._send_json({"ok": True})
         self.send_error(404)
 
 

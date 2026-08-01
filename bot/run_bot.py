@@ -94,6 +94,17 @@ async def main() -> None:
             "Не удалось применить миграции SQLite (колонка motm)"
         )
         raise
+    try:
+        from utils.free_agents_db import ensure_free_agents_db, migrate_free_agents_from_league_dbs
+
+        await asyncio.to_thread(ensure_free_agents_db)
+        stats = await asyncio.to_thread(migrate_free_agents_from_league_dbs)
+        if stats.get("migrated") or stats.get("removed_league"):
+            logging.getLogger(__name__).info("Free agents migration: %s", stats)
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Не удалось мигрировать свободных агентов в free_agents.db"
+        )
     token = get_bot_token()
     dp = Dispatcher(storage=MemoryStorage())
     match_router.message.middleware(AccessMiddleware())

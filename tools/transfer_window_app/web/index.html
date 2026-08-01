@@ -14,13 +14,98 @@
       <button type="button" class="win-btn" data-window="winter" id="btn-winter">Зима 2/2</button>
     </div>
     <span class="status" id="status">загрузка…</span>
+    <button type="button" id="btn-undo" disabled title="Отменить последнее действие">↩ Отмена</button>
     <button type="button" id="btn-save">Сохранить</button>
-    <button type="button" id="btn-export-txt">Выгрузить составы .txt</button>
-    <button type="button" id="btn-export-xlsx">Выгрузить составы .xlsx</button>
+    <button type="button" id="btn-import-squads" class="secondary">Загрузить составы из бота</button>
+    <input type="file" id="import-squads-file" accept=".txt" hidden>
+    <button type="button" id="btn-new-player" class="accent">+ Новый игрок</button>
+    <button type="button" id="btn-fa-sign" class="accent">Свободный → клуб</button>
+    <button type="button" id="btn-export-txt">Составы .txt</button>
+    <button type="button" id="btn-export-xlsx">Составы .xlsx</button>
     <button type="button" id="btn-export-transfers-txt">Трансферы .txt</button>
     <button type="button" id="btn-export-transfers-xlsx">Трансферы .xlsx</button>
   </div>
-  <div id="grid"></div>
+  <div id="layout">
+    <aside id="fa-panel">
+      <div class="fa-hdr">
+        <h2>Свободные агенты</h2>
+        <span class="fa-count" id="fa-count">0</span>
+      </div>
+      <p class="fa-hint">Перетащи в клуб или верни сюда, чтобы отменить переход</p>
+      <div id="fa-list" class="fa-list drop-zone" data-fa-drop="1"></div>
+    </aside>
+    <div id="grid"></div>
+  </div>
+
+  <div id="modal-overlay" class="modal hidden" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-hdr">
+        <h3 id="modal-title">Новый игрок</h3>
+        <button type="button" class="modal-close" id="modal-close" aria-label="Закрыть">×</button>
+      </div>
+      <form id="player-form" class="modal-body">
+        <label>Имя<input name="name" required autocomplete="off"></label>
+        <label>Никнейм (опц.)<input name="nickname" autocomplete="off"></label>
+        <label>Рейтинг<input name="overall" type="number" min="1" max="99" value="72" required></label>
+        <label>Позиция
+          <select name="position" required id="form-position"></select>
+        </label>
+        <label>Нация<input name="nation" autocomplete="off" placeholder="RUS, ENG…"></label>
+        <label class="checkbox-row">
+          <input type="checkbox" name="to_fa" id="form-to-fa">
+          <span>Только в пул свободных агентов</span>
+        </label>
+        <label>Лига
+          <select name="league" id="form-league"></select>
+        </label>
+        <label>Клуб
+          <select name="team" id="form-team"></select>
+        </label>
+        <label>Зона заявки
+          <select name="status">
+            <option value="bench">Запас</option>
+            <option value="reserve">Резерв</option>
+            <option value="start">Старт (вручную на поле)</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="secondary" id="modal-cancel">Отмена</button>
+          <button type="submit" class="accent" id="modal-confirm">Подтвердить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-fa-overlay" class="modal hidden" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-hdr">
+        <h3>Свободный агент → клуб</h3>
+        <button type="button" class="modal-close" id="modal-fa-close" aria-label="Закрыть">×</button>
+      </div>
+      <form id="fa-sign-form" class="modal-body">
+        <label>Игрок
+          <select name="player_id" id="fa-sign-player" required></select>
+        </label>
+        <label>Лига
+          <select name="league" id="fa-sign-league"></select>
+        </label>
+        <label>Клуб
+          <select name="team" id="fa-sign-team" required></select>
+        </label>
+        <label>Зона
+          <select name="status">
+            <option value="bench">Запас</option>
+            <option value="reserve">Резерв</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="secondary" id="modal-fa-cancel">Отмена</button>
+          <button type="submit" class="accent">Подтвердить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="/web/app.js"></script>
 </body>
 </html>

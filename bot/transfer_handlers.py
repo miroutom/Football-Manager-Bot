@@ -32,6 +32,10 @@ def _home_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="📤 Загрузить файлы", callback_data="xfer:upload:start")],
+            [
+                InlineKeyboardButton(text="📥 Выгрузить составы", callback_data="xfer:export:squads"),
+                InlineKeyboardButton(text="📥 Свободные агенты", callback_data="xfer:export:fa"),
+            ],
             [InlineKeyboardButton(text="✖️ Закрыть", callback_data="xfer:upload:close")],
         ]
     )
@@ -56,6 +60,7 @@ async def _send_home(message: Message, state: FSMContext) -> None:
         "1️⃣ <b>Составы</b> — <code>squads_export_*.txt</code>\n"
         "2️⃣ <b>Трансферы</b> — <code>transfers_export_*.txt</code> "
         "или <code>transfer_window_state_*.json</code>\n\n"
+        "Кнопки ниже — выгрузить актуальные составы и пул свободных агентов из БД.\n"
         "JSON дополнительно применит схемы тренеров из state.\n"
         "/cancel — отмена.",
         parse_mode="HTML",
@@ -228,6 +233,53 @@ async def cb_xfer_apply(callback: CallbackQuery, state: FSMContext) -> None:
                 f"✗ Ошибка: {html_escape(str(e))}",
                 parse_mode="HTML",
             )
+
+
+@transfer_router.callback_query(F.data == "xfer:export:squads")
+async def cb_xfer_export_squads(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю составы…")
+    if not callback.message:
+        return
+    try:
+        from aiogram.types import BufferedInputFile
+        from utils.transfer_export import export_squads_txt_for_bot
+
+        text = await asyncio.to_thread(export_squads_txt_for_bot)
+        doc = BufferedInputFile(
+            text.encode("utf-8"),
+            filename="squads_export_bot.txt",
+        )
+        await callback.message.answer_document(
+            doc,
+            caption="📥 Актуальные составы 40 клубов (для transfer app → «Загрузить из бота»)",
+        )
+    except Exception as e:
+        logger.exception("export squads")
+        await callback.message.answer(f"✗ {html_escape(str(e))}", parse_mode="HTML")
+
+
+@transfer_router.callback_query(F.data == "xfer:export:fa")
+async def cb_xfer_export_fa(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю FA…")
+    if not callback.message:
+        return
+    try:
+        from aiogram.types import BufferedInputFile
+        from utils.transfer_export import export_free_agents_json_for_bot, export_free_agents_txt_for_bot
+
+        jtext = await asyncio.to_thread(export_free_agents_json_for_bot)
+        ttext = await asyncio.to_thread(export_free_agents_txt_for_bot)
+        await callback.message.answer_document(
+            BufferedInputFile(jtext.encode("utf-8"), filename="free_agents.json"),
+            caption="📥 Свободные агенты (JSON для приложения)",
+        )
+        await callback.message.answer_document(
+            BufferedInputFile(ttext.encode("utf-8"), filename="free_agents.txt"),
+            caption="📋 Тот же пул — таблица для просмотра",
+        )
+    except Exception as e:
+        logger.exception("export free agents")
+        await callback.message.answer(f"✗ {html_escape(str(e))}", parse_mode="HTML")
 
 
 @transfer_router.message(StateFilter(TransferUpload), Command("cancel"))

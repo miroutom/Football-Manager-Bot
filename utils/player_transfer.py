@@ -432,6 +432,81 @@ def backfill_cl_rows_from_league(*, rebuild_common: bool = True) -> list[str]:
     return log
 
 
+def _apply_fa_sign_with_status(
+    player: str,
+    from_team: str,
+    position: str,
+    to_team: str,
+    new_status: str | None,
+    *,
+    new_overall: int | None = None,
+) -> dict[str, int]:
+    """Подписание из ``free_agents.db`` в клуб."""
+    from utils.free_agents_db import is_free_agent_team, open_fa_session, remove_free_agent_after_signing
+    from utils.utils import session_cl, session_league
+
+    if not is_free_agent_team(from_team):
+        raise ValueError(f"Не свободный агент: {from_team!r}")
+
+    fa_sess, fa_eng = open_fa_session()
+    counts: dict[str, int] = {"league": 0, "cl": 0}
+    want_name = _norm_cmp(player)
+    want_pos = _norm_cmp(position)
+    donor = None
+    donor_cls = None
+    try:
+        for Cls in _ALL_PLAYER:
+            for r in fa_sess.query(Cls).all():
+                if _norm_cmp(getattr(r, "name", "") or "") != want_name:
+                    continue
+                if want_pos and _norm_cmp(getattr(r, "position", "") or "") != want_pos:
+                    continue
+                donor_cls, donor = Cls, r
+                break
+            if donor is not None:
+                break
+        if donor is None or donor_cls is None:
+            raise ValueError(f"Свободный агент не найден: {player} ({position})")
+
+        pos_u = (position or getattr(donor, "position", "") or "").strip().upper()
+        st = (new_status or getattr(donor, "status", None) or "bench")
+        st = str(st).strip().lower() if st else "bench"
+        if st not in ("start", "bench", "reserve"):
+            st = "bench"
+
+        if _row_exists_at_team(session_league, donor_cls, player, to_team, pos_u):
+            raise ValueError(f"Уже есть: {player} ({pos_u}) в «{to_team}».")
+
+        _insert_fresh_row_at_team(
+            session_league,
+            donor_cls,
+            donor,
+            to_team,
+            pos_u,
+            st,
+            new_overall=new_overall,
+        )
+        counts["league"] = 1
+        session_league.commit()
+
+        counts["cl"] = _ensure_cl_mirror_from_league_destination(
+            session_league,
+            session_cl,
+            player,
+            to_team,
+            pos_u,
+            st,
+            new_overall=new_overall,
+        )
+        session_cl.commit()
+    finally:
+        fa_sess.close()
+        fa_eng.dispose()
+
+    remove_free_agent_after_signing(player, position)
+    return counts
+
+
 def apply_transfer_with_status(
     player: str,
     from_team: str,
@@ -447,7 +522,33 @@ def apply_transfer_with_status(
     """
     Трансфер + заявка в новом клубе. ``new_status`` is None — сброс status (старое поведение).
     """
+    from utils.free_agents_db import is_free_agent_team
     from utils.utils import session_cl, session_league
+
+    if is_free_agent_team(from_team):
+        counts = _apply_fa_sign_with_status(
+            player,
+            from_team,
+            position,
+            to_team,
+            new_status,
+            new_overall=new_overall,
+        )
+        if rebuild_common:
+            from utils.common_db import rebuild_common_database
+
+            rebuild_common_database()
+        from utils import cumulative_mirror
+
+        cumulative_mirror.mirror_transfer_with_status(
+            player,
+            from_team,
+            position,
+            to_team,
+            new_status,
+            new_overall=new_overall,
+        )
+        return counts
 
     counts = _apply_transfer_with_status_to_sessions(
         session_league,

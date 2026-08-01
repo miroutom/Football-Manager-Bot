@@ -14,6 +14,352 @@ let injuryById = {};
 let formationsCatalog = []; // [{id, label, key, slots}]
 const BENCH_SLOTS = 7;
 const EXTRA_RESERVE = 5;
+const FA_TEAM = "Free Agent";
+
+let freeAgents = [];
+let undoStack = [];
+let leaguesCatalog = [];
+let positionsCatalog = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
+
+function pushUndo() {
+  undoStack.push({
+    teams: JSON.parse(JSON.stringify(teams)),
+    freeAgents: JSON.parse(JSON.stringify(freeAgents)),
+    baselineHome: { ...baselineHome },
+  });
+  if (undoStack.length > 50) undoStack.shift();
+  updateUndoBtn();
+}
+
+function updateUndoBtn() {
+  const btn = document.getElementById("btn-undo");
+  if (btn) btn.disabled = undoStack.length === 0;
+}
+
+function undoLast() {
+  const snap = undoStack.pop();
+  if (!snap) return;
+  teams = snap.teams;
+  freeAgents = snap.freeAgents;
+  baselineHome = snap.baselineHome;
+  dirty = true;
+  renderAll();
+  setStatus("отменено последнее действие");
+  updateUndoBtn();
+}
+
+function initFaBaseline(list) {
+  for (const p of list || []) {
+    if (p && p.id) baselineHome[p.id] = FA_TEAM;
+  }
+}
+
+function syncFreeAgentsFromRosters(rosters) {
+  const raw = rosters.free_agents || [];
+  freeAgents = raw.map((p) => ({ ...p, status: p.status || "bench" }));
+  initFaBaseline(freeAgents);
+}
+
+function findFaPlayer(id) {
+  return freeAgents.find((p) => p.id === id) || null;
+}
+
+function renderFaPanel() {
+  const list = document.getElementById("fa-list");
+  const cnt = document.getElementById("fa-count");
+  if (!list) return;
+  list.innerHTML = "";
+  if (cnt) cnt.textContent = String(freeAgents.length);
+  const sorted = freeAgents.slice().sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
+  if (!sorted.length) {
+    const empty = document.createElement("div");
+    empty.className = "fa-hint";
+    empty.textContent = "Пул пуст — перетащи сюда или добавь нового";
+    list.appendChild(empty);
+  }
+  sorted.forEach((p) => {
+    const el = renderPlayer(FA_TEAM, p, true);
+    el.dataset.fromFa = "1";
+    el.addEventListener("dragstart", (e) => {
+      dragPayload = {
+        id: p.id,
+        team: FA_TEAM,
+        fromFa: true,
+        name: p.name,
+        position: p.position,
+        overall: p.overall,
+      };
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", p.id);
+      startDragScroll();
+    });
+    list.appendChild(el);
+  });
+  if (!list.dataset.faDropBound) {
+    list.dataset.faDropBound = "1";
+    list.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      list.classList.add("drag-over");
+    });
+    list.addEventListener("dragleave", () => list.classList.remove("drag-over"));
+    list.addEventListener("drop", (e) => {
+      e.preventDefault();
+      list.classList.remove("drag-over");
+      if (!dragPayload) return;
+      pushUndo();
+      movePlayerToFa(dragPayload);
+      dragPayload = null;
+      stopDragScroll();
+      renderAll();
+      dirty = true;
+      setStatus("в пул свободных агентов");
+    });
+  }
+}
+
+function movePlayerToFa(src) {
+  if (!src || !src.id) return;
+  if (findFaPlayer(src.id)) return;
+  const loc = findPlayerGlobally(src.id);
+  if (!loc) return;
+  const p = { ...loc.player };
+  if (!baselineHome[src.id]) baselineHome[src.id] = loc.teamName;
+  removeAllInstancesOfId(src.id);
+  freeAgents.push({ ...p, status: "bench" });
+  freeAgents.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
+  dedupeGlobally(teams);
+}
+
+function placeNewPlayer(teamName, zone, player) {
+  const team = teams.find((t) => t.name === teamName);
+  if (!team) return false;
+  let idx = -1;
+  for (let i = 0; i < team[zone].length; i++) {
+    if (!team[zone][i]?.id) {
+      idx = i;
+      break;
+    }
+  }
+  if (idx < 0 && zone === "reserve") {
+    team.reserve.push({ id: null, name: null, position: null, overall: null });
+    idx = team.reserve.length - 1;
+  }
+  if (idx < 0) return false;
+  placePlayer(team, zone, idx, player);
+  return true;
+}
+
+function fillLeagueSelect(sel, selectedCode) {
+  if (!sel) return;
+  sel.innerHTML = "";
+  leaguesCatalog.forEach((lg) => {
+    const opt = document.createElement("option");
+    opt.value = lg.code;
+    opt.textContent = lg.name;
+    if (lg.code === selectedCode) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function teamsForLeague(code) {
+  const lg = leaguesCatalog.find((l) => l.code === code);
+  return lg ? lg.teams.slice() : [];
+}
+
+function fillTeamSelect(sel, leagueCode, selectedTeam) {
+  if (!sel) return;
+  sel.innerHTML = "";
+  teamsForLeague(leagueCode).forEach((t) => {
+    const opt = document.createElement("option");
+    opt.value = t;
+    opt.textContent = t;
+    if (t === selectedTeam) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.remove("hidden");
+    el.setAttribute("aria-hidden", "false");
+  }
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add("hidden");
+    el.setAttribute("aria-hidden", "true");
+  }
+}
+
+function setupPlayerForm() {
+  const form = document.getElementById("player-form");
+  const posSel = document.getElementById("form-position");
+  const lgSel = document.getElementById("form-league");
+  const tmSel = document.getElementById("form-team");
+  const toFa = document.getElementById("form-to-fa");
+  if (!form || !posSel) return;
+
+  posSel.innerHTML = "";
+  positionsCatalog.forEach((p) => {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    posSel.appendChild(opt);
+  });
+  fillLeagueSelect(lgSel, leaguesCatalog[0]?.code);
+  fillTeamSelect(tmSel, leaguesCatalog[0]?.code, teamsForLeague(leaguesCatalog[0]?.code)[0]);
+  lgSel?.addEventListener("change", () => fillTeamSelect(tmSel, lgSel.value, teamsForLeague(lgSel.value)[0]));
+  toFa?.addEventListener("change", () => {
+    const disabled = !!toFa.checked;
+    lgSel.disabled = disabled;
+    tmSel.disabled = disabled;
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const name = String(fd.get("name") || "").trim();
+    const nickname = String(fd.get("nickname") || "").trim();
+    const overall = Math.max(1, Math.min(99, parseInt(fd.get("overall"), 10) || 72));
+    const position = String(fd.get("position") || "").trim().toUpperCase();
+    const nation = String(fd.get("nation") || "").trim();
+    const toFaOnly = !!fd.get("to_fa");
+    const team = String(fd.get("team") || "").trim();
+    const status = String(fd.get("status") || "bench");
+    if (!name || !position) return;
+
+    pushUndo();
+    let player;
+    if (toFaOnly) {
+      try {
+        const res = await fetch("/api/fa/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, nickname, overall, position, nation, status }),
+        });
+        const j = await res.json();
+        if (!j.ok) throw new Error(j.error || "ошибка FA");
+        player = j.player;
+      } catch (err) {
+        player = {
+          id: `${FA_TEAM}|${name}|${position}`,
+          name,
+          position,
+          overall,
+          nation,
+          nickname,
+          status,
+        };
+      }
+      baselineHome[player.id] = FA_TEAM;
+      freeAgents.push({ ...player, status });
+      freeAgents.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
+    } else {
+      const id = `${team}|${name}|${position}`;
+      player = { id, name, position, overall, nation, nickname, status };
+      baselineHome[id] = team;
+      const zone = status === "start" ? "reserve" : status;
+      if (!placeNewPlayer(team, zone, player)) {
+        undoStack.pop();
+        updateUndoBtn();
+        setStatus(`нет места в ${team} (${zone})`);
+        return;
+      }
+      try {
+        await fetch("/api/fa/apply-to-db", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, nickname, overall, position, nation, team, status }),
+        });
+      } catch (_) {
+        /* offline bundle — только state */
+      }
+    }
+    dirty = true;
+    closeModal("modal-overlay");
+    form.reset();
+    renderAll();
+    setStatus(toFaOnly ? `добавлен FA: ${name}` : `новый игрок в ${team}: ${name}`);
+  });
+}
+
+function setupFaSignForm() {
+  const form = document.getElementById("fa-sign-form");
+  const pSel = document.getElementById("fa-sign-player");
+  const lgSel = document.getElementById("fa-sign-league");
+  const tmSel = document.getElementById("fa-sign-team");
+  if (!form || !pSel) return;
+
+  const refreshPlayers = () => {
+    pSel.innerHTML = "";
+    freeAgents
+      .slice()
+      .sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0))
+      .forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = `${p.overall} ${p.position} ${p.name}`;
+        pSel.appendChild(opt);
+      });
+  };
+  fillLeagueSelect(lgSel, leaguesCatalog[0]?.code);
+  fillTeamSelect(tmSel, leaguesCatalog[0]?.code, teamsForLeague(leaguesCatalog[0]?.code)[0]);
+  lgSel?.addEventListener("change", () => fillTeamSelect(tmSel, lgSel.value, teamsForLeague(lgSel.value)[0]));
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const pid = pSel.value;
+    const team = tmSel.value;
+    const status = form.status.value || "bench";
+    const p = findFaPlayer(pid);
+    if (!p || !team) return;
+    pushUndo();
+    freeAgents = freeAgents.filter((x) => x.id !== pid);
+    if (!baselineHome[pid]) baselineHome[pid] = FA_TEAM;
+    if (!placeNewPlayer(team, status === "start" ? "bench" : status, { ...p, status })) {
+      freeAgents.push(p);
+      undoStack.pop();
+      updateUndoBtn();
+      setStatus(`нет места в ${team}`);
+      return;
+    }
+    dirty = true;
+    closeModal("modal-fa-overlay");
+    renderAll();
+    setStatus(`${p.name} → ${team}`);
+  });
+
+  document.getElementById("btn-fa-sign")?.addEventListener("click", () => {
+    refreshPlayers();
+    if (!freeAgents.length) {
+      setStatus("нет свободных агентов");
+      return;
+    }
+    openModal("modal-fa-overlay");
+  });
+}
+
+async function importSquadsFromFile(file) {
+  const text = await file.text();
+  const res = await fetch("/api/import-squads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, teams }),
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "import failed");
+  pushUndo();
+  teams = j.teams;
+  dedupeGlobally(teams);
+  applyInjuryFlags(teams);
+  dirty = true;
+  renderAll();
+  const note = (j.notes || []).join("; ");
+  setStatus(note || "составы обновлены из бота");
+}
 
 const DRAG_SCROLL_MARGIN = 72;
 const DRAG_SCROLL_SPEED = 18;
@@ -342,6 +688,7 @@ function setupDrop(el, teamName, zone, index) {
     e.preventDefault();
     el.classList.remove("drag-over");
     if (!dragPayload) return;
+    pushUndo();
     movePlayer(dragPayload, teamName, zone, index);
     dragPayload = null;
     stopDragScroll();
@@ -460,8 +807,47 @@ function dedupeGlobally(list) {
 }
 
 function movePlayer(src, destTeamName, destZone, destIndex) {
+  if (destTeamName === FA_TEAM) {
+    movePlayerToFa(src);
+    return;
+  }
   const destTeam = teams.find((t) => t.name === destTeamName);
   if (!destTeam) return;
+
+  if (src.fromFa || src.team === FA_TEAM) {
+    const faPlayer = findFaPlayer(src.id);
+    if (!faPlayer) return;
+    freeAgents = freeAgents.filter((p) => p.id !== src.id);
+    if (!baselineHome[src.id]) baselineHome[src.id] = FA_TEAM;
+    const destSlot = destTeam[destZone][destIndex];
+    const moving = { ...faPlayer };
+    const displaced = destSlot?.id && destSlot.id !== moving.id ? { ...destSlot } : null;
+    removeAllInstancesOfId(moving.id);
+    placePlayer(destTeam, destZone, destIndex, moving);
+    if (displaced) {
+      if (baselineHome[displaced.id] === FA_TEAM) {
+        freeAgents.push({ ...displaced, status: "bench" });
+      } else {
+        const home = baselineHome[displaced.id] || destTeamName;
+        const homeTeam = teams.find((t) => t.name === home);
+        if (homeTeam) {
+          let placed = false;
+          for (const z of ["bench", "reserve"]) {
+            for (let i = 0; i < homeTeam[z].length; i++) {
+              if (!homeTeam[z][i]?.id) {
+                placePlayer(homeTeam, z, i, displaced);
+                placed = true;
+                break;
+              }
+            }
+            if (placed) break;
+          }
+        }
+      }
+    }
+    dedupeGlobally(teams);
+    return;
+  }
 
   const loc = findPlayerGlobally(src.id);
   if (!loc) return;
@@ -715,13 +1101,14 @@ function renderTeam(team) {
 }
 
 function renderAll() {
+  renderFaPanel();
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
   teams.forEach((t) => grid.appendChild(renderTeam(t)));
 }
 
 function currentState() {
-  return { window: currentWindow, baseline_home: baselineHome, teams };
+  return { window: currentWindow, baseline_home: baselineHome, teams, free_agents: freeAgents };
 }
 
 function setStatus(msg) {
@@ -754,6 +1141,8 @@ async function loadData() {
   ]);
   const cfg = await cfgRes.json();
   const rosters = await rostersRes.json();
+  leaguesCatalog = Array.isArray(cfg.leagues) ? cfg.leagues : (rosters.leagues || []);
+  if (Array.isArray(cfg.positions)) positionsCatalog = cfg.positions;
   if (cfg.windows) {
     Object.entries(cfg.windows).forEach(([k, v]) => {
       if (v && v.label) windowLabels[k] = v.label;
@@ -772,20 +1161,30 @@ async function loadData() {
     window.__twDataDir = cfg.data_dir;
   }
 
-  const freshBaseline = rosters.baseline_home || {};
+  const freshBaseline = { ...(rosters.baseline_home || {}) };
+  syncFreeAgentsFromRosters(rosters);
+  Object.assign(freshBaseline, baselineHome);
+
   const stateRes = await fetch(`/api/state?window=${encodeURIComponent(currentWindow)}`);
   if (stateRes.ok) {
     const saved = await stateRes.json();
-    baselineHome = freshBaseline;
+    baselineHome = { ...freshBaseline, ...(saved.baseline_home || {}) };
     teams = migrateSavedState(saved, rosters);
+    if (Array.isArray(saved.free_agents) && saved.free_agents.length) {
+      freeAgents = saved.free_agents.map((p) => ({ ...p }));
+      initFaBaseline(freeAgents);
+    }
     dedupeGlobally(teams);
     applyInjuryFlags(teams);
     ensureExtraReserveSlots(teams);
+    undoStack = [];
+    updateUndoBtn();
     dirty = false;
     const injN = Object.keys(injuryById).length;
     setStatus(
       `загружено: ${windowLabels[currentWindow] || currentWindow}` +
-        (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "")
+        (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "") +
+        (freeAgents.length ? ` · FA: ${freeAgents.length}` : "")
     );
     renderAll();
     return;
@@ -796,11 +1195,14 @@ async function loadData() {
   dedupeGlobally(teams);
   applyInjuryFlags(teams);
   ensureExtraReserveSlots(teams);
+  undoStack = [];
+  updateUndoBtn();
   dirty = false;
   const injN = Number(rosters.injured_count) || Object.keys(injuryById).length;
   setStatus(
     `сезон ${rosters.season || "?"} — исходные составы (${windowLabels[currentWindow]})` +
-      (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "")
+      (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "") +
+      (freeAgents.length ? ` · FA: ${freeAgents.length}` : "")
   );
   renderAll();
 }
@@ -865,11 +1267,35 @@ async function exportTransfersFmt(fmt) {
 }
 
 document.getElementById("btn-save").addEventListener("click", saveState);
+document.getElementById("btn-undo").addEventListener("click", undoLast);
 document.getElementById("btn-export-txt").addEventListener("click", () => exportFmt("txt"));
 document.getElementById("btn-export-xlsx").addEventListener("click", () => exportFmt("xlsx"));
 document.getElementById("btn-export-transfers-txt").addEventListener("click", () => exportTransfersFmt("simple"));
 document.getElementById("btn-export-transfers-xlsx").addEventListener("click", () => exportTransfersFmt("xlsx"));
 document.getElementById("btn-summer").addEventListener("click", () => switchWindow("summer"));
 document.getElementById("btn-winter").addEventListener("click", () => switchWindow("winter"));
+document.getElementById("btn-new-player")?.addEventListener("click", () => openModal("modal-overlay"));
+document.getElementById("modal-close")?.addEventListener("click", () => closeModal("modal-overlay"));
+document.getElementById("modal-cancel")?.addEventListener("click", () => closeModal("modal-overlay"));
+document.getElementById("modal-fa-close")?.addEventListener("click", () => closeModal("modal-fa-overlay"));
+document.getElementById("modal-fa-cancel")?.addEventListener("click", () => closeModal("modal-fa-overlay"));
+document.getElementById("btn-import-squads")?.addEventListener("click", () => {
+  document.getElementById("import-squads-file")?.click();
+});
+document.getElementById("import-squads-file")?.addEventListener("change", async (e) => {
+  const f = e.target.files?.[0];
+  e.target.value = "";
+  if (!f) return;
+  try {
+    await importSquadsFromFile(f);
+  } catch (err) {
+    setStatus("ошибка импорта: " + err.message);
+  }
+});
 
-loadData().catch((e) => setStatus("ошибка: " + e.message));
+loadData()
+  .then(() => {
+    setupPlayerForm();
+    setupFaSignForm();
+  })
+  .catch((e) => setStatus("ошибка: " + e.message));

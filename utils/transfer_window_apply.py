@@ -82,6 +82,10 @@ def _transfers_from_state_dict(data: dict[str, Any]) -> list[dict[str, Any]]:
             for p in team.get(zone) or []:
                 if p and p.get("id") and p.get("name"):
                     loc[str(p["id"])] = (tname, zone, dict(p))
+    for p in data.get("free_agents") or []:
+        if p and p.get("id") and p.get("name"):
+            st = (p.get("status") or "bench") or "bench"
+            loc[str(p["id"])] = ("Free Agent", st, dict(p))
     rows: list[dict[str, Any]] = []
     for pid, from_team in sorted(baseline_home.items(), key=lambda x: x[1]):
         if pid not in loc:
@@ -130,7 +134,9 @@ class TransferApplyResult:
 
 
 def apply_transfers(transfers: list[dict[str, Any]], *, dry_run: bool = False) -> int:
+    from utils.free_agents_db import is_free_agent_team
     from utils.player_transfer import apply_transfer_with_status, normalize_player_name_for_db
+    from utils.roster_manual import FREE_AGENT_TEAM
     from utils.transfer_input import normalize_position, resolve_team_name
     from utils.utils import session_league
 
@@ -138,12 +144,16 @@ def apply_transfers(transfers: list[dict[str, Any]], *, dry_run: bool = False) -
     for t in transfers:
         name = normalize_player_name_for_db(str(t.get("name") or ""))
         pos = normalize_position(str(t.get("position") or ""))
-        frm = resolve_team_name(str(t.get("from_team") or ""), session_league) or str(
-            t.get("from_team") or ""
-        )
-        to = resolve_team_name(str(t.get("to_team") or ""), session_league) or str(
-            t.get("to_team") or ""
-        )
+        frm_raw = str(t.get("from_team") or "")
+        if is_free_agent_team(frm_raw):
+            frm = FREE_AGENT_TEAM
+        else:
+            frm = resolve_team_name(frm_raw, session_league) or frm_raw
+        to_raw = str(t.get("to_team") or "")
+        if is_free_agent_team(to_raw):
+            to = FREE_AGENT_TEAM
+        else:
+            to = resolve_team_name(to_raw, session_league) or to_raw
         if not pos:
             from player_stats import find_player_by_name, get_session
 
