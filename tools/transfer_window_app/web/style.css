@@ -467,3 +467,31 @@ body {
   border-radius: 4px;
   text-align: center;
 }
+
+.sync-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #3d2a10;
+  border-bottom: 1px solid #8a6a2a;
+  color: #ffe8b0;
+  font-size: 13px;
+}
+.sync-banner[hidden] { display: none !important; }
+.sync-banner-text { flex: 1; }
+.sync-banner-btn {
+  background: #1c4a7a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.sync-banner-btn.secondary { background: #334455; }
+.sync-badge {
+  font-size: 11px;
+  color: #7a9;
+  white-space: nowrap;
+}

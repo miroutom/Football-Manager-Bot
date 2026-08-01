@@ -17,6 +17,11 @@ const EXTRA_RESERVE = 5;
 const FA_TEAM = "Free Agent";
 
 let freeAgents = [];
+let lastRosters = null;
+let stateRevision = 0;
+let clientIdentity = { id: "", name: "" };
+let syncPollTimer = null;
+let pendingRemoteMeta = null;
 let undoStack = [];
 let removedFromSquad = {};
 let rostersSeason = null;
@@ -286,6 +291,109 @@ function updateUndoBtn() {
   if (btn) btn.disabled = undoStack.length === 0;
 }
 
+function ensureClientIdentity() {
+  let id = localStorage.getItem("tw_client_id");
+  if (!id) {
+    id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `p${Date.now()}`;
+    localStorage.setItem("tw_client_id", id);
+  }
+  let name = localStorage.getItem("tw_client_name");
+  if (!name) {
+    const entered = window.prompt("Ваше имя для мультиплеера (видят напарники):", "") || "";
+    name = entered.trim() || "игрок";
+    localStorage.setItem("tw_client_name", name);
+  }
+  clientIdentity = { id, name };
+  return clientIdentity;
+}
+
+function updateSyncBadge(meta) {
+  const el = document.getElementById("sync-badge");
+  if (!el || !meta) return;
+  const who = meta.updated_by ? ` · ${meta.updated_by}` : "";
+  el.textContent = meta.revision ? `rev ${meta.revision}${who}` : "rev 0";
+}
+
+function showSyncBanner(meta) {
+  pendingRemoteMeta = meta;
+  const bar = document.getElementById("sync-banner");
+  if (!bar) return;
+  const who = meta.updated_by || "напарник";
+  bar.hidden = false;
+  bar.querySelector(".sync-banner-text").textContent =
+    `${who} сохранил новую версию (rev ${meta.revision}). Обновить? Несохранённые изменения пропадут.`;
+}
+
+function hideSyncBanner() {
+  pendingRemoteMeta = null;
+  const bar = document.getElementById("sync-banner");
+  if (bar) bar.hidden = true;
+}
+
+function applySavedState(saved, rosters) {
+  const freshBaseline = rosters.baseline_home || {};
+  baselineHome = saved.baseline_home && Object.keys(saved.baseline_home).length
+    ? { ...saved.baseline_home }
+    : { ...freshBaseline };
+  teams = migrateSavedState(saved, rosters);
+  if (Array.isArray(saved.free_agents)) {
+    freeAgents = saved.free_agents.map((p) => ({ ...p, status: p.status || "bench" }));
+    initFaBaseline(freeAgents);
+  }
+  removedFromSquad = saved.removed_from_squad || {};
+  dedupeGlobally(teams);
+  applyInjuryFlags(teams);
+  ensureExtraReserveSlots(teams);
+  stateRevision = Number(saved.revision) || 0;
+  undoStack = [];
+  updateUndoBtn();
+  dirty = false;
+  renderAll();
+  updateSyncBadge(saved);
+}
+
+async function pullRemoteState() {
+  const res = await fetch(`/api/state?window=${encodeURIComponent(currentWindow)}`);
+  if (!res.ok) return false;
+  const saved = await res.json();
+  if (!lastRosters) return false;
+  applySavedState(saved, lastRosters);
+  hideSyncBanner();
+  const who = saved.updated_by || "?";
+  setStatus(`синхронизировано (rev ${stateRevision}, ${who})`);
+  return true;
+}
+
+async function pollRemoteRevision() {
+  try {
+    const res = await fetch(`/api/state/meta?window=${encodeURIComponent(currentWindow)}`);
+    if (!res.ok) return;
+    const meta = await res.json();
+    updateSyncBadge(meta);
+    const remoteRev = Number(meta.revision) || 0;
+    if (remoteRev <= stateRevision) return;
+    if (dirty) {
+      showSyncBanner(meta);
+      return;
+    }
+    await pullRemoteState();
+  } catch (_) {
+    /* offline */
+  }
+}
+
+function startSyncPoll() {
+  if (syncPollTimer) clearInterval(syncPollTimer);
+  syncPollTimer = setInterval(pollRemoteRevision, 2500);
+}
+
+function stopSyncPoll() {
+  if (syncPollTimer) {
+    clearInterval(syncPollTimer);
+    syncPollTimer = null;
+  }
+}
+
 function loadFreshFromRosters(rosters, msg) {
   baselineHome = { ...(rosters.baseline_home || {}) };
   syncFreeAgentsFromRosters(rosters);
@@ -299,6 +407,7 @@ function loadFreshFromRosters(rosters, msg) {
   applyInjuryFlags(teams);
   ensureExtraReserveSlots(teams);
   dirty = false;
+  stateRevision = 0;
   renderAll();
   if (msg) setStatus(msg);
 }
@@ -1505,6 +1614,9 @@ function currentState() {
   return {
     window: currentWindow,
     season: rostersSeason,
+    revision: stateRevision,
+    client_id: clientIdentity.id,
+    client_name: clientIdentity.name,
     baseline_home: baselineHome,
     teams,
     free_agents: freeAgents,
@@ -1537,12 +1649,14 @@ function applyWindowQuotas(cfg, windowKey) {
 }
 
 async function loadData() {
+  ensureClientIdentity();
   const [cfgRes, rostersRes] = await Promise.all([
     fetch("/api/config"),
     fetch("/api/rosters"),
   ]);
   const cfg = await cfgRes.json();
   const rosters = await rostersRes.json();
+  lastRosters = rosters;
   rostersSeason = rosters.season ?? null;
   leaguesCatalog = Array.isArray(cfg.leagues) ? cfg.leagues : (rosters.leagues || []);
   if (Array.isArray(cfg.positions)) positionsCatalog = cfg.positions;
@@ -1564,6 +1678,9 @@ async function loadData() {
   if (rosters.squad_rules) squadRules = { ...squadRules, ...rosters.squad_rules };
   if (cfg.data_dir) {
     window.__twDataDir = cfg.data_dir;
+  }
+  if (cfg.multiplayer?.lan_url) {
+    window.__twLanUrl = cfg.multiplayer.lan_url;
   }
 
   const freshBaseline = { ...(rosters.baseline_home || {}) };
@@ -1598,27 +1715,17 @@ async function loadData() {
     baselineHome = saved.baseline_home && Object.keys(saved.baseline_home).length
       ? { ...saved.baseline_home }
       : freshBaseline;
-    teams = migrateSavedState(saved, rosters);
-    if (Array.isArray(saved.free_agents) && saved.free_agents.length) {
-      freeAgents = saved.free_agents.map((p) => ({ ...p }));
-      initFaBaseline(freeAgents);
-    }
-    removedFromSquad = saved.removed_from_squad || {};
-    dedupeGlobally(teams);
-    applyInjuryFlags(teams);
-    ensureExtraReserveSlots(teams);
-    undoStack = [];
-    updateUndoBtn();
-    dirty = false;
+    applySavedState(saved, rosters);
     const injN = Object.keys(injuryById).length;
     const rmN = Object.keys(removedFromSquad).length;
     setStatus(
       `загружено: ${windowLabels[currentWindow] || currentWindow}` +
         (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "") +
         (freeAgents.length ? ` · FA: ${freeAgents.length}` : "") +
-        (rmN ? ` · убрано: ${rmN}` : "")
+        (rmN ? ` · убрано: ${rmN}` : "") +
+        (saved.updated_by ? ` · ${saved.updated_by}` : "")
     );
-    renderAll();
+    startSyncPoll();
     return;
   }
 
@@ -1631,6 +1738,7 @@ async function loadData() {
         : "") +
       (freeAgents.length ? ` · FA: ${freeAgents.length}` : "")
   );
+  startSyncPoll();
 }
 
 async function switchWindow(next) {
@@ -1663,8 +1771,26 @@ async function saveState() {
     body: JSON.stringify(currentState()),
   });
   const j = await res.json();
+  if (res.status === 409 && j.conflict) {
+    const who = j.updated_by || "напарник";
+    const ok = window.confirm(
+      `${who} уже сохранил (rev ${j.revision}).\n\n` +
+        "Загрузить его версию? Ваши несохранённые правки пропадут."
+    );
+    if (ok && j.server_state && lastRosters) {
+      applySavedState(j.server_state, lastRosters);
+      hideSyncBanner();
+      setStatus(`загружена версия ${who} (rev ${stateRevision})`);
+    } else {
+      setStatus("конфликт сохранения — договоритесь, кто сохраняет");
+    }
+    return;
+  }
   if (j.ok) {
     dirty = false;
+    stateRevision = Number(j.revision) || stateRevision;
+    hideSyncBanner();
+    updateSyncBadge(j);
     const over = teams.filter((t) => {
       const { inn, out } = countInOut(t);
       return inn > maxIn || out > maxOut;
@@ -1727,6 +1853,14 @@ document.getElementById("btn-reset-rosters")?.addEventListener("click", () => {
 });
 document.getElementById("btn-import-squads")?.addEventListener("click", () => {
   document.getElementById("import-squads-file")?.click();
+});
+document.getElementById("sync-apply")?.addEventListener("click", () => {
+  pullRemoteState();
+});
+document.getElementById("sync-dismiss")?.addEventListener("click", () => {
+  if (pendingRemoteMeta) stateRevision = Number(pendingRemoteMeta.revision) || stateRevision;
+  hideSyncBanner();
+  setStatus("обновление отложено — сохраните свои правки");
 });
 document.getElementById("import-squads-file")?.addEventListener("change", async (e) => {
   const f = e.target.files?.[0];

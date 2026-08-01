@@ -32,12 +32,92 @@ _APP_DIR = Path(__file__).resolve().parent
 _ROOT = _APP_DIR.parents[1] if len(_APP_DIR.parents) > 2 else _APP_DIR
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+if str(_APP_DIR) not in sys.path:
+    sys.path.insert(0, str(_APP_DIR))
+
+from multiplayer_state import (
+    bump_state_meta,
+    has_save_conflict,
+    state_meta,
+    state_revision,
+)
 
 WINDOW_QUOTAS: dict[str, dict[str, int]] = {
     "summer": {"max_in": 5, "max_out": 5, "label": "Лето"},
     "winter": {"max_in": 2, "max_out": 2, "label": "Зима"},
 }
 DEFAULT_WINDOW = "summer"
+_BIND_HOST = "127.0.0.1"
+_SERVER_PORT = 8765
+_state_lock = threading.Lock()
+
+
+def _guess_lan_ip() -> str | None:
+    import socket
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except OSError:
+        return None
+
+
+def _load_window_state_file(window: str) -> dict | None:
+    sp = _state_path(window)
+    if not sp.is_file():
+        return None
+    try:
+        raw = json.loads(sp.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return raw if isinstance(raw, dict) else None
+
+
+def _persist_window_state(
+    payload: dict,
+    *,
+    expected_revision: int | None,
+    client_name: str,
+    client_id: str,
+) -> tuple[dict, bool]:
+    """
+    Сохранить state с revision++.
+    Возвращает (payload, conflict).
+    """
+    window = _normalize_window(payload.get("window"))
+    with _state_lock:
+        current = _load_window_state_file(window)
+        if has_save_conflict(current, expected_revision):
+            return current or {}, True
+        new_rev = state_revision(current) + 1
+        out = bump_state_meta(
+            payload,
+            revision=new_rev,
+            client_name=client_name,
+            client_id=client_id,
+        )
+        sp = _state_path(window)
+        sp.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+        return out, False
+
+
+def _parse_runtime_args(argv: list[str]) -> tuple[str, int, bool]:
+    """host, port, open_browser."""
+    host = "127.0.0.1"
+    port = 8765
+    open_browser = True
+    if "--host" in argv:
+        host = argv[argv.index("--host") + 1]
+    elif "--lan" in argv:
+        host = "0.0.0.0"
+    if "--port" in argv:
+        port = int(argv[argv.index("--port") + 1])
+    if "--no-browser" in argv:
+        open_browser = False
+    return host, port, open_browser
 
 
 def _normalize_window(raw: str | None) -> str:
@@ -530,6 +610,17 @@ class Handler(BaseHTTPRequestHandler):
                     "positions": positions,
                     "fa_team": "Free Agent",
                     "squad_rules": _squad_rules_payload(),
+                    "multiplayer": {
+                        "sync": True,
+                        "lan_mode": _BIND_HOST == "0.0.0.0",
+                        "host": _BIND_HOST,
+                        "port": _SERVER_PORT,
+                        "lan_url": (
+                            f"http://{_guess_lan_ip()}:{_SERVER_PORT}/"
+                            if _BIND_HOST == "0.0.0.0" and _guess_lan_ip()
+                            else None
+                        ),
+                    },
                 }
             )
         if path == "/api/paths":
@@ -561,14 +652,18 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self._send_json({"error": str(e)}, 500)
             return self._send_json({"players": rows, "team_label": "Free Agent"})
+        if path == "/api/state/meta":
+            qs = parse_qs(parsed.query)
+            window = _normalize_window((qs.get("window") or [DEFAULT_WINDOW])[0])
+            raw = _load_window_state_file(window)
+            meta = state_meta(raw)
+            meta["window"] = window
+            return self._send_json(meta)
         if path == "/api/state":
             qs = parse_qs(parsed.query)
             window = _normalize_window((qs.get("window") or [DEFAULT_WINDOW])[0])
-            sp = _state_path(window)
-            if sp.is_file():
-                raw = json.loads(sp.read_text(encoding="utf-8"))
-                if not isinstance(raw, dict):
-                    raw = {}
+            raw = _load_window_state_file(window)
+            if raw is not None:
                 raw.setdefault("window", window)
                 return self._send_json(raw)
             self.send_response(404)
@@ -581,17 +676,41 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/save":
             data = self._read_json()
             payload = build_state_payload(data)
-            window = payload["window"]
-            sp = _state_path(window)
-            sp.write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+            expected = data.get("revision")
+            try:
+                expected_revision = int(expected) if expected is not None else None
+            except (TypeError, ValueError):
+                expected_revision = None
+            client_name = str(data.get("client_name") or "")
+            client_id = str(data.get("client_id") or "")
+            saved, conflict = _persist_window_state(
+                payload,
+                expected_revision=expected_revision,
+                client_name=client_name,
+                client_id=client_id,
             )
+            if conflict:
+                return self._send_json(
+                    {
+                        "ok": False,
+                        "conflict": True,
+                        "revision": state_revision(saved),
+                        "updated_by": saved.get("updated_by") or "",
+                        "server_state": saved,
+                        "error": "Кто-то уже сохранил новее. Обновите или перезапишите.",
+                    },
+                    409,
+                )
+            window = saved["window"]
+            sp = _state_path(window)
             return self._send_json(
                 {
                     "ok": True,
                     "path": str(sp),
                     "window": window,
-                    "transfers_count": len(payload.get("transfers") or []),
+                    "revision": state_revision(saved),
+                    "updated_by": saved.get("updated_by") or "",
+                    "transfers_count": len(saved.get("transfers") or []),
                     "data_dir": str(_data_dir()),
                 }
             )
@@ -752,9 +871,10 @@ def _open_browser_when_ready(url: str, port: int) -> None:
 
 
 def main() -> int:
-    port = 8765
-    if "--port" in sys.argv:
-        port = int(sys.argv[sys.argv.index("--port") + 1])
+    global _BIND_HOST, _SERVER_PORT
+    _BIND_HOST, _SERVER_PORT, open_browser = _parse_runtime_args(sys.argv)
+    port = _SERVER_PORT
+    host = _BIND_HOST
     url = f"http://127.0.0.1:{port}/"
 
     migrated = _migrate_legacy_state_files()
@@ -763,29 +883,37 @@ def main() -> int:
     # Повторный клик по .app: сервер уже крутится — сразу браузер, без второго процесса.
     if _port_is_open(port):
         _write_startup_log(f"already running → {url}")
-        webbrowser.open(url)
+        if open_browser:
+            webbrowser.open(url)
         return 0
 
     try:
-        server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        server = ThreadingHTTPServer((host, port), Handler)
     except OSError as e:
         _write_startup_log(f"bind failed: {e}")
         if _port_is_open(port):
-            webbrowser.open(url)
+            if open_browser:
+                webbrowser.open(url)
             return 0
         raise
 
     print(f"Transfer Window: {url}")
+    if host == "0.0.0.0":
+        lan = _guess_lan_ip()
+        if lan:
+            print(f"LAN (мультиплеер): http://{lan}:{port}/")
+        print("Друзья открывают LAN-ссылку в браузере; сохраняйте часто (↻ синхронизация).")
     print(f"Сейвы и экспорты: {data}")
     print("Окна: лето 5/5, зима 2/2 — переключатель в шапке.")
     if migrated:
         print("Перенесены старые сейвы:")
         for line in migrated:
             print(f"  {line}")
-    _write_startup_log(f"start {url} data={data}")
-    threading.Thread(
-        target=_open_browser_when_ready, args=(url, port), daemon=True
-    ).start()
+    _write_startup_log(f"start {url} host={host} data={data}")
+    if open_browser:
+        threading.Thread(
+            target=_open_browser_when_ready, args=(url, port), daemon=True
+        ).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:

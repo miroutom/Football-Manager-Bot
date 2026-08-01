@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="/web/style.css">
 </head>
 <body>
+  <div id="sync-banner" class="sync-banner" hidden>
+    <span class="sync-banner-text"></span>
+    <button type="button" id="sync-apply" class="sync-banner-btn">Обновить</button>
+    <button type="button" id="sync-dismiss" class="sync-banner-btn secondary">Позже</button>
+  </div>
   <div id="toolbar">
     <h1 id="app-title">Трансферное окно — 40 клубов</h1>
     <div id="window-switch" class="window-switch" role="group" aria-label="Тип окна">
@@ -14,6 +19,7 @@
       <button type="button" class="win-btn" data-window="winter" id="btn-winter">Зима 2/2</button>
     </div>
     <span class="status" id="status">загрузка…</span>
+    <span class="status sync-badge" id="sync-badge" title="Версия общего сейва"></span>
     <button type="button" id="btn-undo" disabled title="Отменить последнее действие">↩ Отмена</button>
     <button type="button" id="btn-save">Сохранить</button>
     <button type="button" id="btn-reset-rosters" class="secondary">Сбросить к БД</button>
