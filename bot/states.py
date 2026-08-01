@@ -46,6 +46,7 @@ class WcEnter(StatesGroup):
     callup_nation = State()
     callup_players = State()
     callup_manual_fa = State()
+    squad_lines = State()
 
 
 class AddOnlyStats(StatesGroup):

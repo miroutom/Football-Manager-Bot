@@ -552,8 +552,15 @@ def _players_kb(nation_idx: int, page: int, players: list[dict], called: set[str
     rows.append(
         [
             InlineKeyboardButton(
+                text="📋 Заявка 26", callback_data=f"wc:sq:n:{nation_idx}"
+            ),
+            InlineKeyboardButton(
                 text="📄 Заявка текстом", callback_data=f"wc:call:sq:{nation_idx}"
             ),
+        ]
+    )
+    rows.append(
+        [
             InlineKeyboardButton(
                 text="➕ Вне клубов", callback_data=f"wc:call:fa:{nation_idx}:{page}"
             ),
@@ -578,16 +585,19 @@ async def _show_nation_players(
         return
     nation = nations[nation_idx]
     from utils.wc_callups import club_players_for_nation, squad_for_nation
+    from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_summary_html
 
     players = await asyncio.to_thread(club_players_for_nation, nation)
-    called = {str(p.get("name") or "").casefold() for p in squad_for_nation(nation)}
+    roster = squad_for_nation(nation)
+    called = {str(p.get("name") or "").casefold() for p in roster}
+    ev = evaluate_wc_squad(roster)
     await state.set_state(WcEnter.callup_players)
     await state.update_data(wc_nation_idx=nation_idx, wc_players=players)
-    n_called = len(called)
     text = (
         f"<b>{html_escape(nation)}</b>\n"
-        f"В клубах найдено: <b>{len(players)}</b> · в заявке: <b>{n_called}</b>\n"
-        f"Тап = вызов / снять. FA без клуба — кнопка «Вне клубов»."
+        f"В клубах найдено: <b>{len(players)}</b>\n"
+        f"{format_wc_quota_summary_html(ev)}\n"
+        f"Тап = вызов / снять. FA без клуба — «Вне клубов»."
     )
     await _edit(callback, text, _players_kb(nation_idx, page, players, called))
 
@@ -752,16 +762,179 @@ async def on_call_manual_fa_line(message: Message, state: FSMContext) -> None:
         parse_mode="HTML",
     )
     from utils.wc_callups import club_players_for_nation, squad_for_nation
+    from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_summary_html
 
     players = await asyncio.to_thread(club_players_for_nation, nation)
-    called = {str(p.get("name") or "").casefold() for p in squad_for_nation(nation)}
+    roster = squad_for_nation(nation)
+    called = {str(p.get("name") or "").casefold() for p in roster}
+    ev = evaluate_wc_squad(roster)
     await state.update_data(wc_players=players)
-    n_called = len(called)
     text = (
         f"<b>{html_escape(nation)}</b>\n"
-        f"В клубах/FA: <b>{len(players)}</b> · в заявке: <b>{n_called}</b>\n"
+        f"В клубах/FA: <b>{len(players)}</b>\n"
+        f"{format_wc_quota_summary_html(ev)}\n"
         f"Тап = вызов / снять вызов."
     )
     await message.answer(
         text, reply_markup=_players_kb(nation_idx, page, players, called), parse_mode="HTML"
     )
+
+
+def _squad_manage_kb(nation_idx: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🖼 Схема PNG", callback_data=f"wc:sq:png:{nation_idx}"
+                ),
+                InlineKeyboardButton(
+                    text="✏️ Строками", callback_data=f"wc:sq:edit:{nation_idx}"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📄 Список текстом", callback_data=f"wc:call:sq:{nation_idx}"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️ К игрокам", callback_data=f"wc:call:np:{nation_idx}:0"
+                )
+            ],
+            _back_home_row(),
+        ]
+    )
+
+
+_SQUAD_LINES_HELP = (
+    "Отправь строки (можно несколько):\n"
+    "<code>Имя start [LW]</code>\n"
+    "<code>Имя bench</code>\n"
+    "<code>Имя reserve</code>\n\n"
+    "Слоты старта 4-3-3 ат: <code>LW ST RW LCM CAM RCM LB LCB RCB RB GK</code>\n"
+    "На слот можно поставить любого — позиция в БД не важна.\n\n"
+    "26 игроков: 11 старт + 7 запас + 8 резерв · 2 ВРТ (1 в старте, 1 в запасе/резерве).\n"
+    "/cancel — отмена."
+)
+
+
+@wc_router.callback_query(F.data.startswith("wc:sq:n:"))
+async def cb_squad_manage(callback: CallbackQuery) -> None:
+    await callback.answer()
+    try:
+        nation_idx = int(callback.data.split(":")[-1])
+    except ValueError:
+        return
+    nations = _nations_sorted()
+    if nation_idx < 0 or nation_idx >= len(nations):
+        return
+    nation = nations[nation_idx]
+    from utils.wc_callups import squad_for_nation
+    from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_summary_html
+
+    roster = squad_for_nation(nation)
+    ev = evaluate_wc_squad(roster)
+    text = (
+        f"<b>{html_escape(nation)}</b> · заявка 26\n"
+        f"{format_wc_quota_summary_html(ev)}\n\n"
+        f"<i>{_SQUAD_LINES_HELP.replace(chr(10) + '/cancel', '')}</i>"
+    )
+    await _edit(callback, text, _squad_manage_kb(nation_idx))
+
+
+@wc_router.callback_query(F.data.startswith("wc:sq:png:"))
+async def cb_squad_png(callback: CallbackQuery) -> None:
+    await callback.answer("Рисую схему…")
+    try:
+        nation_idx = int(callback.data.split(":")[-1])
+    except ValueError:
+        return
+    nations = _nations_sorted()
+    if nation_idx < 0 or nation_idx >= len(nations):
+        return
+    nation = nations[nation_idx]
+    from bot.squad_pitch import render_squad_pitch_png_bytes
+
+    try:
+        png = await asyncio.to_thread(render_squad_pitch_png_bytes, nation, "wc")
+    except Exception as e:
+        logger.exception("wc squad png")
+        await callback.answer(str(e)[:180], show_alert=True)
+        return
+    if callback.message:
+        from aiogram.types import BufferedInputFile
+
+        await callback.message.answer_photo(
+            BufferedInputFile(png, filename="wc_squad.png"),
+            caption=f"{nation} · 4-3-3 ат",
+            reply_markup=_squad_manage_kb(nation_idx),
+        )
+
+
+@wc_router.callback_query(F.data.startswith("wc:sq:edit:"))
+async def cb_squad_edit_start(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    try:
+        nation_idx = int(callback.data.split(":")[-1])
+    except ValueError:
+        return
+    nations = _nations_sorted()
+    if nation_idx < 0 or nation_idx >= len(nations):
+        return
+    await state.set_state(WcEnter.squad_lines)
+    await state.update_data(wc_nation_idx=nation_idx)
+    if callback.message:
+        await callback.message.answer(
+            f"<b>{html_escape(nations[nation_idx])}</b> — расстановка заявки\n\n{_SQUAD_LINES_HELP}",
+            parse_mode="HTML",
+        )
+
+
+@wc_router.message(StateFilter(WcEnter.squad_lines))
+async def on_squad_lines(message: Message, state: FSMContext) -> None:
+    if (message.text or "").strip().casefold() in ("/cancel", "отмена"):
+        await state.set_state(WcEnter.callup_players)
+        await message.answer("Отменено.")
+        return
+    data = await state.get_data()
+    nation_idx = int(data.get("wc_nation_idx") or 0)
+    nations = _nations_sorted()
+    if nation_idx < 0 or nation_idx >= len(nations):
+        await state.clear()
+        await message.answer("Сессия сброшена. /wc")
+        return
+    nation = nations[nation_idx]
+    from utils.wc_squad_lines import apply_wc_squad_status_lines
+    from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_hint
+
+    try:
+        res = await asyncio.to_thread(apply_wc_squad_status_lines, nation, message.text or "")
+    except Exception as e:
+        await message.answer(f"✗ {html_escape(str(e))}", parse_mode="HTML")
+        return
+    lines: list[str] = []
+    if res.ok:
+        lines.append(f"✓ Обновлено: <b>{len(res.ok)}</b>")
+        for row in res.ok[:12]:
+            lines.append(f"· {html_escape(row)}")
+        if len(res.ok) > 12:
+            lines.append(f"… ещё {len(res.ok) - 12}")
+    if res.errors:
+        lines.append(f"\n✗ Ошибки: <b>{len(res.errors)}</b>")
+        for err in res.errors[:8]:
+            lines.append(f"· {html_escape(err)}")
+    if not res.ok and not res.errors:
+        await message.answer("Пустой ввод.")
+        return
+    from utils.wc_callups import squad_for_nation
+
+    ev = evaluate_wc_squad(squad_for_nation(nation))
+    hint = format_wc_quota_hint(ev)
+    if hint != "OK":
+        lines.append(f"\n⚠️ {html_escape(hint)}")
+    elif ev.get("complete"):
+        lines.append("\n✅ Заявка полная (26/26)")
+    await state.set_state(WcEnter.callup_players)
+    await message.answer("\n".join(lines), parse_mode="HTML")
+    if callback_kb := _squad_manage_kb(nation_idx):
+        await message.answer("Меню заявки:", reply_markup=callback_kb)

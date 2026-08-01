@@ -260,6 +260,7 @@ def add_manual_callup(
         "position": (position or "").strip(),
         "overall": int(overall or 0),
         "source": "manual",
+        "status": "reserve",
     }
     if ensure_fa and not club_s:
         try:

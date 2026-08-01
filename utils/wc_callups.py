@@ -11,9 +11,13 @@ from sqlalchemy.orm import sessionmaker
 
 from utils import season_paths
 from utils.roster_manual import FREE_AGENT_TEAM
-from utils.world_cup import load_wc_squads, save_wc_squads
+from utils.wc_squad_quota import (
+    WC_TOTAL,
+    evaluate_wc_squad,
+    format_wc_quota_summary_html,
+)
+from utils.world_cup import load_wc_squads, nations_by_confederation, save_wc_squads
 from utils.world_cup_format import flatten_nations
-from utils.world_cup import nations_by_confederation
 
 
 def _norm_nat(s: str) -> str:
@@ -210,12 +214,15 @@ def toggle_callup(
             roster.pop(i)
             save_wc_squads(data)
             return False, dict(row)
+    if len(roster) >= WC_TOTAL:
+        raise ValueError(f"Заявка полна ({WC_TOTAL} игроков). Сначала снимите кого-то.")
     entry = {
         "name": (name or "").strip(),
         "club": (club or "").strip(),
         "position": (position or "").strip(),
         "overall": int(overall or 0),
         "source": "callup",
+        "status": "reserve",
     }
     roster.append(entry)
     save_wc_squads(data)
@@ -228,17 +235,49 @@ def squad_summary_html(nation: str | None = None) -> str:
     if nation:
         canon = resolve_nation_name(nation) or nation
         roster = teams.get(canon) or []
-        lines = [f"<b>Заявка · {canon}</b>", f"Игроков: <b>{len(roster)}</b>", ""]
-        for p in sorted(roster, key=lambda x: (-int(x.get("overall") or 0), str(x.get("name") or "").casefold())):
+        if not roster:
+            return f"<b>{canon}</b>\nЗаявка пуста."
+        ev = evaluate_wc_squad(roster)
+        lines = [
+            f"<b>Заявка · {canon}</b>",
+            format_wc_quota_summary_html(ev),
+            "",
+            "<i>Формат: 26 = 11 старт + 7 запас + 8 резерв · 4-3-3 ат · 2 ВРТ</i>",
+            "",
+        ]
+        order = {"start": 0, "bench": 1, "reserve": 2, "": 3}
+
+        def _sort_key(p: dict) -> tuple:
+            st = str(p.get("status") or "").strip().lower()
+            if st not in order:
+                st = ""
+            slot = str(p.get("lineup_slot") or "")
+            return (
+                order[st],
+                slot,
+                -int(p.get("overall") or 0),
+                str(p.get("name") or "").casefold(),
+            )
+
+        for p in sorted(roster, key=_sort_key):
+            st = str(p.get("status") or "—").strip().lower() or "—"
+            slot = p.get("lineup_slot")
+            slot_s = f" · {slot}" if st == "start" and slot else ""
             lines.append(
-                f"· {p.get('name')} · {p.get('position') or '—'} · "
+                f"· [{st}{slot_s}] {p.get('name')} · {p.get('position') or '—'} · "
                 f"{p.get('overall') or '—'} · {p.get('club') or '—'}"
             )
-        return "\n".join(lines) if roster else f"<b>{canon}</b>\nЗаявка пуста."
+        return "\n".join(lines)
     filled = sum(1 for v in teams.values() if isinstance(v, list) and v)
     total_players = sum(len(v) for v in teams.values() if isinstance(v, list))
+    complete = sum(
+        1
+        for v in teams.values()
+        if isinstance(v, list) and v and evaluate_wc_squad(v).get("complete")
+    )
     return (
         f"<b>Вызовы ЧМ</b>\n"
         f"Сборных с заявкой: <b>{filled}</b> / 48\n"
+        f"Полных заявок (26): <b>{complete}</b>\n"
         f"Всего игроков: <b>{total_players}</b>"
     )

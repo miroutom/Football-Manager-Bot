@@ -32,6 +32,8 @@ from squad_kit_palette import KitSpec, kit_for_team
 from team_squad_schemas import SquadSlot, get_slots_for_formation_key
 from utils import season_paths
 from utils.lineup_slot import resolve_lineup_slot_for_formation
+
+from utils.wc_squad_quota import WC_BENCH, WC_FORMATION_KEY, WC_RESERVE
 from utils.squad_graphics_assets import (
     commons_crest_filename_for_team,
     load_commons_crest_rgba,
@@ -1125,15 +1127,39 @@ def _place_on_slot(slot: SquadSlot, pool: list[_Pl], used: set[int]) -> _Pl | No
     return best
 
 
-def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], list[_Pl]]:
-    slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
+def _formation_key_for_team(team_db: str, *, is_wc: bool = False) -> str:
+    if is_wc:
+        return WC_FORMATION_KEY
+    return resolve_formation_key_for_team(team_db)
+
+
+def _place_on_slot_flexible(slot: SquadSlot, pool: list[_Pl], used: set[int]) -> _Pl | None:
+    """Любой свободный игрок на слот (заявка сборной ЧМ)."""
+    cands = [p for p in pool if id(p) not in used]
+    if not cands:
+        return None
+    best = min(cands, key=lambda p: (p.roster_rank, -p.score, (p.name or "").lower()))
+    used.add(id(best))
+    return best
+
+
+def _assign_slots(
+    players: list[_Pl],
+    team_db: str,
+    *,
+    is_wc: bool = False,
+) -> tuple[dict[str, _Pl], list[_Pl]]:
+    formation_key = _formation_key_for_team(team_db, is_wc=is_wc)
+    slots = get_slots_for_formation_key(formation_key)
+    flexible = is_wc
     explicit = any(_norm_pl_status(p) for p in players)
     if not explicit:
         pool = players[:]
         used: set[int] = set()
         slot_player: dict[str, _Pl] = {}
+        place_fn = _place_on_slot_flexible if flexible else _place_on_slot
         for slot in slots:
-            p = _place_on_slot(slot, pool, used)
+            p = place_fn(slot, pool, used)
             if p:
                 slot_player[slot.slot_id] = p
         bench = [p for p in pool if id(p) not in used]
@@ -1152,22 +1178,30 @@ def _assign_slots(players: list[_Pl], team_db: str) -> tuple[dict[str, _Pl], lis
             slot_player[sid] = p
             used.add(id(p))
     slot_iter = _slots_explicit_order(slots)
+    fill_fn = _place_on_slot_flexible if flexible else _place_on_slot_explicit
     for slot in slot_iter:
         if slot.slot_id in slot_player:
             continue
-        placed = _place_on_slot_explicit(slot, starters, used)
+        placed = fill_fn(slot, starters, used)
         if placed:
             slot_player[slot.slot_id] = placed
-    # Частичная заявка в БД (есть start/bench у части игроков): на поле попадали только
-    # строки со status=start — у остальных status пустой, слоты оставались пустыми.
-    # Добираем слоты как в авто-режиме из игроков без явной скамейки/резерва.
     fill_pool = [p for p in players if _norm_pl_status(p) not in ("bench", "reserve")]
     for slot in slot_iter:
         if slot.slot_id in slot_player:
             continue
-        placed = _place_on_slot(slot, fill_pool, used)
+        placed = (
+            _place_on_slot_flexible(slot, fill_pool, used)
+            if flexible
+            else _place_on_slot(slot, fill_pool, used)
+        )
         if placed:
             slot_player[slot.slot_id] = placed
+    if is_wc:
+        bench = [p for p in players if _norm_pl_status(p) == "bench"]
+        reserves_extra = [p for p in players if _norm_pl_status(p) == "reserve"]
+        bench.sort(key=lambda p: (-p.score, p.name.lower()))
+        reserves_extra.sort(key=lambda p: (-p.score, p.name.lower()))
+        return slot_player, bench + reserves_extra
     bench = [p for p in players if id(p) not in used]
     bench.sort(
         key=lambda p: (
@@ -1247,12 +1281,22 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         im.save(out, format="PNG", optimize=True)
         return out.getvalue()
 
-    slot_map, bench = _assign_slots(players, team_db) if players else ({}, [])
+    slot_map, bench = _assign_slots(players, team_db, is_wc=is_wc) if players else ({}, [])
     on_field_names = { _player_name_key(p.name) for p in slot_map.values() if p is not None }
     bench = [p for p in bench if _player_name_key(p.name) not in on_field_names]
-    slots = get_slots_for_formation_key(resolve_formation_key_for_team(team_db))
-    subs = bench[:SUBSTITUTES_COUNT]
-    reserves = bench[SUBSTITUTES_COUNT:]
+    slots = get_slots_for_formation_key(_formation_key_for_team(team_db, is_wc=is_wc))
+    if is_wc and any(_norm_pl_status(p) for p in players):
+        subs = [p for p in players if _norm_pl_status(p) == "bench"]
+        reserves = [p for p in players if _norm_pl_status(p) == "reserve"]
+        subs.sort(key=lambda x: (-x.score, x.name.lower()))
+        reserves.sort(key=lambda x: (-x.score, x.name.lower()))
+    else:
+        if is_wc:
+            subs = bench[:WC_BENCH]
+            reserves = bench[WC_BENCH : WC_BENCH + WC_RESERVE]
+        else:
+            subs = bench[:SUBSTITUTES_COUNT]
+            reserves = bench[SUBSTITUTES_COUNT:]
 
     pitch_body_h = max(_PITCH_H, _sidebar_bench_content_height(subs, reserves))
     h = _CONTENT_TOP + pitch_body_h + 36
