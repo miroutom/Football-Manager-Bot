@@ -121,6 +121,29 @@ def fa_player_id(name: str, position: str) -> str:
     return f"{FREE_AGENT_TEAM}|{(name or '').strip()}|{(position or '').strip().upper()}"
 
 
+def _load_fired_map(sess: Session) -> dict[tuple[str, int], bool]:
+    from sqlalchemy import text
+    from sqlalchemy.exc import OperationalError
+
+    out: dict[tuple[str, int], bool] = {}
+    for table in ("forwards", "midfielders", "defenders", "goalkeepers"):
+        try:
+            for rid, val in sess.execute(text(f'SELECT id, fired FROM "{table}"')).fetchall():
+                out[(table, int(rid))] = bool(val)
+        except OperationalError:
+            pass
+    return out
+
+
+def _set_row_fired(sess: Session, table: str, row_id: int, fired: bool) -> None:
+    from sqlalchemy import text
+
+    sess.execute(
+        text(f'UPDATE "{table}" SET fired = :f WHERE id = :id'),
+        {"f": int(fired), "id": int(row_id)},
+    )
+
+
 def list_free_agents(*, include_left: bool = False) -> list[dict[str, Any]]:
     """Все свободные агенты для UI / экспорта."""
     from utils.player_names import player_display_name
@@ -129,7 +152,9 @@ def list_free_agents(*, include_left: bool = False) -> list[dict[str, Any]]:
     sess, eng = open_fa_session()
     rows: list[dict[str, Any]] = []
     try:
+        fired_map = _load_fired_map(sess)
         for Cls in _ALL:
+            table = Cls.__tablename__
             q = sess.query(Cls)
             if not include_left and hasattr(Cls, "left_team"):
                 q = q.filter((Cls.left_team.is_(False)) | (Cls.left_team.is_(None)))
@@ -155,7 +180,7 @@ def list_free_agents(*, include_left: bool = False) -> list[dict[str, Any]]:
                         )
                         or "",
                         "status": (getattr(r, "status", None) or "bench") or "bench",
-                        "fired": bool(getattr(r, "fired", False)),
+                        "fired": fired_map.get((table, int(r.id)), False),
                     }
                 )
     finally:
@@ -215,10 +240,9 @@ def add_free_agent_player(
             row.status = st
         if hasattr(row, "left_team"):
             row.left_team = False
-        if hasattr(row, "fired"):
-            row.fired = False
         sess.add(row)
         sess.flush()
+        _set_row_fired(sess, Cls.__tablename__, int(row.id), False)
         ensure_row_person_id(row, persist=True)
         sess.commit()
         if nickname and str(nickname).strip():
@@ -328,8 +352,6 @@ def _upsert_league_row_into_fa(
         st = "bench"
     if "status" in data:
         data["status"] = st
-    if fired is not None and "fired" in cols:
-        data["fired"] = bool(fired)
 
     dup = None
     want_n = (data.get("name") or "").strip().casefold()
@@ -357,14 +379,16 @@ def _upsert_league_row_into_fa(
                 dup.nation = v
             elif k == "status":
                 dup.status = v
-            elif k == "fired":
-                dup.fired = bool(v)
         ensure_row_person_id(dup, persist=True)
+        if fired is not None:
+            _set_row_fired(fa_sess, Cls.__tablename__, int(dup.id), fired)
         return dup, False
     obj = Cls(**data)
     fa_sess.add(obj)
     fa_sess.flush()
     ensure_row_person_id(obj, persist=True)
+    if fired is not None:
+        _set_row_fired(fa_sess, Cls.__tablename__, int(obj.id), fired)
     return obj, True
 
 
@@ -380,16 +404,11 @@ def release_club_player_to_fa(
     Снять игрока с активной заявки клуба → пул ``free_agents.db``.
     В league/cl строка остаётся с ``left_team=True`` (стата сезона сохраняется).
     """
-    from utils import season_paths
     from utils.common_db import resolve_team_name_for_cl_pool
-    from utils.migrate_fired import ensure_fired_schema
     from utils.player_field_edit import find_player_row
     from utils.player_transfer import mark_player_left_team, normalize_player_name_for_db
     from utils.transfer_input import normalize_position
     from utils.utils import session_cl, session_league
-
-    ensure_fired_schema(season_paths.get_league_db_path())
-    ensure_fired_schema(get_free_agents_db_path())
 
     nm = normalize_player_name_for_db((name or "").strip())
     pos = normalize_position(position)

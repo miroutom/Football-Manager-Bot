@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Колонка ``fired`` — игрок исключён из клуба (FA pool)."""
+"""Колонка ``fired`` только в ``free_agents.db`` — исключён из клуба vs новый FA."""
 from __future__ import annotations
 
 import logging
@@ -41,58 +41,19 @@ def migrate_fired_for_sqlite(db_path: str, *, label: str = "") -> list[str]:
     return out
 
 
-def ensure_fired_schema(db_path: str) -> None:
-    """Идемпотентно: колонка ``fired`` в четырёх таблицах игроков."""
-    migrate_fired_for_sqlite(db_path)
+def ensure_fired_schema(db_path: str | None = None) -> None:
+    """Идемпотентно: ``fired`` только в ``db/free_agents.db``."""
+    if db_path is None:
+        from utils.free_agents_db import get_free_agents_db_path
 
-
-def _add_column_via_engines() -> list[str]:
-    from sqlalchemy import text
-    from sqlalchemy.exc import OperationalError
-
-    from utils.utils import engine_cl, engine_common, engine_league
-
-    out: list[str] = []
-    for engine, label in (
-        (engine_league, "league"),
-        (engine_cl, "cl"),
-        (engine_common, "common"),
-    ):
-        with engine.begin() as conn:
-            for table in _TABLES:
-                try:
-                    conn.execute(
-                        text(
-                            f"ALTER TABLE {table} ADD COLUMN fired BOOLEAN "
-                            "DEFAULT 0 NOT NULL"
-                        )
-                    )
-                    out.append(f"{label}:{table}")
-                except OperationalError as e:
-                    if "duplicate column name" not in str(e).lower():
-                        raise
-    return out
+        db_path = get_free_agents_db_path()
+    migrate_fired_for_sqlite(db_path, label="free_agents")
 
 
 def migrate_all_fired_columns() -> list[str]:
-    from utils import season_paths
     from utils.free_agents_db import get_free_agents_db_path
 
-    out = _add_column_via_engines()
-    seen = set(out)
-    for label, path in season_paths.iter_player_roster_db_paths(
-        include_synced=True, include_archives=True
-    ):
-        for item in migrate_fired_for_sqlite(path, label=label):
-            if item not in seen:
-                seen.add(item)
-                out.append(item)
-    fa_path = get_free_agents_db_path()
-    for item in migrate_fired_for_sqlite(fa_path, label="free_agents"):
-        if item not in seen:
-            seen.add(item)
-            out.append(item)
-    return out
+    return migrate_fired_for_sqlite(get_free_agents_db_path(), label="free_agents")
 
 
 if __name__ == "__main__":
@@ -101,4 +62,4 @@ if __name__ == "__main__":
     if added:
         print("Добавлено:", ", ".join(added))
     else:
-        print("Колонка fired уже есть.")
+        print("Колонка fired уже есть в free_agents.db.")
