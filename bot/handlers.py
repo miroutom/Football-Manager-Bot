@@ -1466,6 +1466,14 @@ async def cb_menu_skipped(callback: CallbackQuery) -> None:
             await answer_report_photos(callback.message, text, "Пропущенные матчи")
         except Exception as e2:
             await callback.message.answer(f"Ошибка: {e2}")
+            return
+    if callback.message:
+        from bot.match_handlers import _send_skipped_pick_list
+
+        try:
+            await _send_skipped_pick_list(callback.message)
+        except Exception:
+            logger.exception("skipped pick list")
 
 
 @router.callback_query(F.data == "menu:journal")
@@ -1547,6 +1555,13 @@ async def cmd_skipped(message: Message) -> None:
             await answer_report_photos(message, text, "Пропущенные матчи")
         except Exception as e2:
             await message.answer(f"Ошибка: {e2}")
+            return
+    from bot.match_handlers import _send_skipped_pick_list
+
+    try:
+        await _send_skipped_pick_list(message)
+    except Exception:
+        logger.exception("skipped pick list")
 
 
 @router.message(Command("journal"))

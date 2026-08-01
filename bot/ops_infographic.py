@@ -63,7 +63,7 @@ _LEAGUE_SHORT = {
 
 def render_status_infographic_png_bytes() -> list[bytes]:
     from main import LEAGUES, count_remaining_in_schedule, load_or_generate_mixed_schedule
-    from match_results import count_recorded_matches
+    from match_results import count_journal_by_entry_type, count_recorded_matches
     from skipped_matches import load_skipped_matches
     from utils.season_paths import get_active_season
 
@@ -71,11 +71,12 @@ def render_status_infographic_png_bytes() -> list[bytes]:
     remaining = count_remaining_in_schedule(mixed)
     total = sum(len(d["matches"]) for d in mixed)
     journal_n = count_recorded_matches()
+    play_n, sim_n = count_journal_by_entry_type()
     skipped_n = len(load_skipped_matches())
     season = get_active_season()
 
     theme = _STATUS_THEME
-    w, h = 720, 420
+    w, h = 720, 480
     im = Image.new("RGB", (w, h), theme.bg)
     draw = ImageDraw.Draw(im)
     draw_header_bar(
@@ -87,34 +88,39 @@ def render_status_infographic_png_bytes() -> list[bytes]:
         subtitle=None,
     )
 
-    # KPI cards
+    # KPI cards — 2 ряда по 3
     kpis = [
-        ("В календаре", str(total)),
-        ("Осталось", str(remaining)),
-        ("В журнале", str(journal_n)),
-        ("Пропуски", str(skipped_n)),
+        ("В календаре", str(total), False),
+        ("Осталось", str(remaining), True),
+        ("Пропуски", str(skipped_n), False),
+        ("Игра", str(play_n), False),
+        ("Симуляция", str(sim_n), False),
+        ("В журнале", str(journal_n), False),
     ]
-    card_w = 150
-    gap = 16
+    card_w = 210
+    gap = 18
     x0 = 24
-    y0 = _HEADER_H + 24
+    y0 = _HEADER_H + 20
     title_f = pick_font(13)
     val_f = pick_font(28, bold=True)
-    for i, (lab, val) in enumerate(kpis):
-        x = x0 + i * (card_w + gap)
+    for i, (lab, val, accent_val) in enumerate(kpis):
+        col = i % 3
+        row = i // 3
+        x = x0 + col * (card_w + gap)
+        y = y0 + row * 92
         draw.rounded_rectangle(
-            [x, y0, x + card_w, y0 + 78],
+            [x, y, x + card_w, y + 78],
             radius=10,
             fill=theme.row_a,
             outline=theme.accent,
             width=2,
         )
-        draw.text((x + 12, y0 + 12), lab, fill=theme.text_dim, font=title_f)
-        fill = theme.accent if lab == "Осталось" else theme.text
-        draw.text((x + 12, y0 + 36), val, fill=fill, font=val_f)
+        draw.text((x + 12, y + 12), lab, fill=theme.text_dim, font=title_f)
+        fill = theme.accent if accent_val else theme.text
+        draw.text((x + 12, y + 36), val, fill=fill, font=val_f)
 
     # league played
-    y = y0 + 100
+    y = y0 + 196
     draw.text((24, y), "Сыграно по лигам (таблицы)", fill=theme.text, font=pick_font(16, bold=True))
     y += 28
     name_f = pick_font(15)

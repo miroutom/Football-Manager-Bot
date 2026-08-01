@@ -714,7 +714,7 @@ def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
     cl_ph = (
         cl_phase_from_mixed_schedule_line(match_str, day=day) if league_code == "cl" else None
     )
-    from utils.calendar_slot_labels import home_display_tour
+    from utils.calendar_slot_labels import home_display_round
     from utils.player_discipline import find_fixture_round
 
     slot = {
@@ -724,7 +724,7 @@ def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
         "away": away,
         "league_code": league_code,
         "cl_ph": cl_ph,
-        "display_round": home_display_tour(home, league_code),
+        "display_round": home_display_round(home, league_code),
         "fixture_round": find_fixture_round(
             home, away, league_code, cl_phase=cl_ph
         ),
@@ -734,7 +734,7 @@ def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
 
 def _skipped_row_to_slot(row: dict) -> dict:
     """Слот отложенного матча: ``round`` в JSON — месяц календаря при отложении."""
-    from utils.calendar_slot_labels import home_display_tour
+    from utils.calendar_slot_labels import home_display_round
     from utils.player_discipline import find_fixture_round
 
     lc = str(row.get("tournament") or "")
@@ -747,7 +747,7 @@ def _skipped_row_to_slot(row: dict) -> dict:
         "away": away,
         "league_code": lc,
         "cl_ph": cl_ph,
-        "display_round": home_display_tour(str(home or ""), lc),
+        "display_round": home_display_round(str(home or ""), lc),
         "fixture_round": find_fixture_round(
             str(home or ""),
             str(away or ""),
@@ -771,7 +771,7 @@ def _calendar_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     Пример: ``1. м2 т6 · Бавария — Вольфсбург (Бундеслига, сим)``; ЛЧ без ``т``.
     """
     from config.leagues_config import manager_session_label
-    from utils.calendar_slot_labels import home_display_tour
+    from utils.calendar_slot_labels import home_display_round
 
     home = str(slot.get("home") or "?").strip()
     away = str(slot.get("away") or "?").strip()
@@ -781,7 +781,7 @@ def _calendar_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     month = slot.get("day", "?")
     rnd = slot.get("display_round")
     if rnd is None:
-        rnd = home_display_tour(home, lc_code)
+        rnd = home_display_round(home, lc_code)
     rnd_part = f" т{rnd}" if rnd is not None else ""
 
     mode = manager_session_label(home, away) or "?"
@@ -823,12 +823,12 @@ def _played_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     lc_code = str(slot.get("league_code") or slot.get("tournament") or "")
     lg = _league_title(lc_code)
     from config.leagues_config import manager_session_label
-    from utils.calendar_slot_labels import home_display_tour
+    from utils.calendar_slot_labels import home_display_round
 
     month = slot.get("day", "?")
     rnd = slot.get("display_round")
     if rnd is None:
-        rnd = home_display_tour(home, lc_code)
+        rnd = home_display_round(home, lc_code)
     rnd_part = f" т{rnd}" if rnd is not None else ""
     mode = manager_session_label(home, away) or "?"
     mode_short = "игра" if mode == "Игра" else ("сим" if mode == "Симуляция" else "?")

@@ -320,7 +320,7 @@ def list_played_schedule_matches(
     """
     from config.leagues_config import manager_session_label
     from match_results import find_journal_match_record
-    from utils.calendar_slot_labels import home_display_tour
+    from utils.calendar_slot_labels import home_display_round
     from utils.player_discipline import find_fixture_round
 
     lf = (league_filter or "").strip().lower()
@@ -381,7 +381,7 @@ def list_played_schedule_matches(
                     "cl_ph": cl_ph,
                     "home_score": int(hs),
                     "away_score": int(aws),
-                    "display_round": home_display_tour(home, league_code),
+                    "display_round": home_display_round(home, league_code),
                     "fixture_round": find_fixture_round(
                         home, away, league_code, cl_phase=cl_ph
                     ),

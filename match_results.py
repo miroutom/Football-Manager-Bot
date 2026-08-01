@@ -642,6 +642,19 @@ def count_recorded_matches() -> int:
     return len(records)
 
 
+def count_journal_by_entry_type() -> tuple[int, int]:
+    """Число записей журнала: (игра, симуляция). Старые строки без поля — «игра»."""
+    records, _ = load_records_and_keys()
+    play_n = sim_n = 0
+    for r in records:
+        et = (r.get("entry_type") or "play").strip().lower()
+        if et == "simulation":
+            sim_n += 1
+        else:
+            play_n += 1
+    return play_n, sim_n
+
+
 def format_played_matches_report(limit: int = 100, league_code: str = None) -> str:
     """Текстовый отчёт по журналу сыгранных матчей."""
     records, _ = load_records_and_keys()

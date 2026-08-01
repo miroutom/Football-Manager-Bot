@@ -184,7 +184,7 @@ def render_status_short() -> str:
 def render_full_status_text() -> str:
     """Как пункт «i» в консольном main: расписание, журнал, сыграно по лигам, skipped."""
     from main import LEAGUES, count_remaining_in_schedule, load_or_generate_mixed_schedule
-    from match_results import count_recorded_matches, get_match_results_path
+    from match_results import count_journal_by_entry_type, count_recorded_matches, get_match_results_path
     from skipped_matches import load_skipped_matches
 
     mixed = load_or_generate_mixed_schedule()
@@ -195,7 +195,9 @@ def render_full_status_text() -> str:
     lines.append(f"Всего матчей в расписании: {total}")
     lines.append(f"Осталось сыграть (по календарю): {remaining}")
     n_journal = count_recorded_matches()
+    play_n, sim_n = count_journal_by_entry_type()
     lines.append(f"Журнал сыгранных: {n_journal} записей → {get_match_results_path()}")
+    lines.append(f"  из них игра: {play_n}, симуляция: {sim_n}")
     lines.append("")
     lines.append("Матчей сыграно по лигам (таблицы / pickle):")
     for key, league in LEAGUES.items():
