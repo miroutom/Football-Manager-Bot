@@ -224,6 +224,28 @@ def count_remaining_in_schedule(mixed_schedule):
     return count
 
 
+def count_schedule_by_session_kind(mixed_schedule) -> tuple[int, int]:
+    """
+    Сколько матчей в календаре — «Игра» и «Симуляция» (по ``manager_session_label``).
+    Считаются все слоты расписания, без фильтра «уже сыгран».
+    """
+    from config.leagues_config import manager_session_label
+
+    play_n = sim_n = 0
+    for day_data in mixed_schedule:
+        for match_str in day_data.get("matches") or []:
+            parts = match_str.split(";")
+            if len(parts) < 3:
+                continue
+            home, away = parts[0].strip(), parts[1].strip()
+            lab = manager_session_label(home, away)
+            if lab == "Игра":
+                play_n += 1
+            elif lab == "Симуляция":
+                sim_n += 1
+    return play_n, sim_n
+
+
 def list_remaining_schedule_matches(
     mixed_schedule,
     *,
