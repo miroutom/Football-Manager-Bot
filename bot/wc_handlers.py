@@ -133,6 +133,9 @@ def _wc_home_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(text="📣 Вызовы", callback_data="wc:call:home"),
+                InlineKeyboardButton(text="📥 Сборные", callback_data="wc:pools:export"),
+            ],
+            [
                 InlineKeyboardButton(text="👤 Менеджеры", callback_data="wc:mgr"),
             ],
             [
@@ -298,6 +301,37 @@ async def cb_wc_close(callback: CallbackQuery, state: FSMContext) -> None:
         await callback.message.delete()
     except Exception:
         await callback.message.edit_text("ЧМ закрыто.")
+
+
+@wc_router.callback_query(F.data == "wc:pools:export")
+async def cb_wc_pools_export(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю сборные…")
+    if not callback.message:
+        return
+    try:
+        from aiogram.types import BufferedInputFile
+        from utils.transfer_export import export_national_pools_bundle_for_bot
+
+        txt, jtext, meta = await asyncio.to_thread(export_national_pools_bundle_for_bot)
+        nations = len(meta.get("nations") or [])
+        players = int(meta.get("player_count") or 0)
+        season = meta.get("season") or "?"
+        cap = (
+            f"📥 Сборные · сезон {season}\n"
+            f"{nations} наций, {players} игроков (клуб + FA)\n"
+            f"Transfer app: «Загрузить сборные» или import national_pools.json"
+        )
+        await callback.message.answer_document(
+            BufferedInputFile(txt.encode("utf-8"), filename="national_pools.txt"),
+            caption=cap,
+        )
+        await callback.message.answer_document(
+            BufferedInputFile(jtext.encode("utf-8"), filename="national_pools.json"),
+            caption="📋 JSON для transfer app",
+        )
+    except Exception as e:
+        logger.exception("wc national pools export")
+        await callback.message.answer(f"✗ {html_escape(str(e))}", parse_mode="HTML")
 
 
 @wc_router.callback_query(F.data == "wc:rules")

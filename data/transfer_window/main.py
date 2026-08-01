@@ -135,7 +135,10 @@ def _state_path(window: str = DEFAULT_WINDOW) -> Path:
 
 
 def _export_dir() -> Path:
-    return _data_dir()
+    """Папка для выгрузок из приложения (составы, трансферы, сборные)."""
+    d = Path.home() / "Downloads"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 
 def _write_startup_log(msg: str) -> None:

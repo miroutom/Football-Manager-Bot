@@ -13,42 +13,70 @@
     <button type="button" id="sync-dismiss" class="sync-banner-btn secondary">Позже</button>
   </div>
   <div id="toolbar">
-    <h1 id="app-title">Трансферное окно — 40 клубов</h1>
-    <div id="window-switch" class="window-switch" role="group" aria-label="Тип окна">
-      <button type="button" class="win-btn active" data-window="summer" id="btn-summer">Лето 5/5</button>
-      <button type="button" class="win-btn" data-window="winter" id="btn-winter">Зима 2/2</button>
+    <div class="toolbar-row toolbar-main">
+      <h1 id="app-title">Трансферное окно — 40 клубов</h1>
+      <div id="window-switch" class="window-switch" role="group" aria-label="Тип окна">
+        <button type="button" class="win-btn active" data-window="summer" id="btn-summer">Лето 5/5</button>
+        <button type="button" class="win-btn" data-window="winter" id="btn-winter">Зима 2/2</button>
+      </div>
+      <span class="status" id="status">загрузка…</span>
+      <span class="status sync-badge" id="sync-badge" title="Версия общего сейва"></span>
+      <span class="status live-badge" id="live-badge" hidden title="Изменения автоматически уходят напарнику (~1 с)">● live</span>
+      <div id="share-panel" class="share-panel" hidden>
+        <span class="share-label">Ссылка для друга</span>
+        <input type="text" id="share-url" class="share-url" readonly>
+        <button type="button" id="btn-copy-share" class="secondary">Копировать</button>
+      </div>
+      <button type="button" id="btn-undo" disabled title="Отменить последнее действие">↩ Отмена</button>
+      <button type="button" id="btn-save">Сохранить</button>
+      <button type="button" id="btn-reset-rosters" class="secondary">Сбросить к БД</button>
     </div>
-    <span class="status" id="status">загрузка…</span>
-    <span class="status sync-badge" id="sync-badge" title="Версия общего сейва"></span>
-    <span class="status live-badge" id="live-badge" hidden title="Изменения автоматически уходят напарнику (~1 с)">● live</span>
-    <div id="share-panel" class="share-panel" hidden>
-      <span class="share-label">Ссылка для друга</span>
-      <input type="text" id="share-url" class="share-url" readonly>
-      <button type="button" id="btn-copy-share" class="secondary">Копировать</button>
+    <div class="toolbar-row toolbar-secondary">
+      <div class="toolbar-group">
+        <span class="toolbar-group-label">Загрузка</span>
+        <button type="button" id="btn-import-squads" class="secondary">Составы</button>
+        <button type="button" id="btn-import-fa" class="secondary">FA</button>
+        <button type="button" id="btn-import-national" class="secondary">Сборные</button>
+        <button type="button" id="btn-reload-fa" class="secondary" title="Обновить пул из free_agents.db">↻ FA</button>
+      </div>
+      <div class="toolbar-group">
+        <span class="toolbar-group-label">Игроки</span>
+        <button type="button" id="btn-new-player" class="accent">+ Новый</button>
+        <button type="button" id="btn-fa-sign" class="accent">FA → клуб</button>
+      </div>
+      <div class="toolbar-group">
+        <span class="toolbar-group-label">Выгрузка</span>
+        <button type="button" id="btn-export-txt">Составы .txt</button>
+        <button type="button" id="btn-export-xlsx">Составы .xlsx</button>
+        <button type="button" id="btn-export-transfers-txt">Трансферы .txt</button>
+        <button type="button" id="btn-export-transfers-xlsx">Трансферы .xlsx</button>
+        <button type="button" id="btn-export-national-txt" class="secondary">Сборные</button>
+      </div>
     </div>
-    <button type="button" id="btn-undo" disabled title="Отменить последнее действие">↩ Отмена</button>
-    <button type="button" id="btn-save">Сохранить</button>
-    <button type="button" id="btn-reset-rosters" class="secondary">Сбросить к БД</button>
-    <button type="button" id="btn-import-squads" class="secondary">Загрузить составы из бота</button>
-    <button type="button" id="btn-import-fa" class="secondary">Загрузить FA из бота</button>
-    <button type="button" id="btn-reload-fa" class="secondary" title="Обновить пул из free_agents.db на хосте">↻ FA из БД</button>
     <input type="file" id="import-squads-file" accept=".txt" hidden>
     <input type="file" id="import-fa-file" accept=".json" hidden>
-    <button type="button" id="btn-new-player" class="accent">+ Новый игрок</button>
-    <button type="button" id="btn-fa-sign" class="accent">Свободный → клуб</button>
-    <button type="button" id="btn-export-txt">Составы .txt</button>
-    <button type="button" id="btn-export-xlsx">Составы .xlsx</button>
-    <button type="button" id="btn-export-transfers-txt">Трансферы .txt</button>
-    <button type="button" id="btn-export-transfers-xlsx">Трансферы .xlsx</button>
+    <input type="file" id="import-national-file" accept=".json" hidden>
+    <button type="button" id="btn-export-national-json" class="secondary" hidden>сборные .json</button>
   </div>
   <div id="layout">
-    <aside id="fa-panel">
-      <div class="fa-hdr">
-        <h2>Свободные агенты</h2>
-        <span class="fa-count" id="fa-count">0</span>
+    <aside id="side-panels">
+      <div id="fa-panel">
+        <div class="fa-hdr">
+          <h2>Свободные агенты</h2>
+          <span class="fa-count" id="fa-count">0</span>
+        </div>
+        <p class="fa-hint">Перетащи в клуб или верни сюда, чтобы отменить переход</p>
+        <div id="fa-list" class="fa-list drop-zone" data-fa-drop="1"></div>
       </div>
-      <p class="fa-hint">Перетащи в клуб или верни сюда, чтобы отменить переход</p>
-      <div id="fa-list" class="fa-list drop-zone" data-fa-drop="1"></div>
+      <div id="national-panel" hidden>
+        <div class="fa-hdr">
+          <h2>Сборные</h2>
+          <span class="fa-count" id="national-count">0</span>
+        </div>
+        <input type="search" id="national-search" class="national-search" placeholder="Нация или игрок…" autocomplete="off">
+        <p class="fa-hint">По нациям: клуб и FA. Перетащи в заявку клуба</p>
+        <div id="national-list" class="national-list"></div>
+      </div>
     </aside>
     <div id="grid"></div>
   </div>
@@ -66,7 +94,15 @@
         <label>Позиция
           <select name="position" required id="form-position"></select>
         </label>
-        <label>Нация<input name="nation" autocomplete="off" placeholder="RUS, ENG…"></label>
+        <label>Нация (опц.)
+          <div class="nation-picker">
+            <div class="nation-combobox">
+              <input type="text" id="form-nation-input" autocomplete="off" placeholder="Страна — начни вводить, напр. Россия">
+              <input type="hidden" name="nation" id="form-nation-value">
+              <ul id="form-nation-suggestions" class="nation-suggestions hidden"></ul>
+            </div>
+          </div>
+        </label>
         <label class="checkbox-row">
           <input type="checkbox" name="to_fa" id="form-to-fa">
           <span>Только в пул свободных агентов</span>

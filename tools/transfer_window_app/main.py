@@ -445,7 +445,57 @@ def _state_path(window: str = DEFAULT_WINDOW) -> Path:
 
 
 def _export_dir() -> Path:
-    return _data_dir()
+    """Папка для выгрузок из приложения (составы, трансферы, сборные)."""
+    d = Path.home() / "Downloads"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _load_nations_catalog() -> dict[str, list[str]]:
+    """Сборные из world_cup_config.json (несколько путей — dev, .app bundle)."""
+    paths = [
+        _ROOT / "data" / "world_cup_config.json",
+        _bundle_dir() / "data" / "world_cup_config.json",
+        Path(__file__).resolve().parents[2] / "data" / "world_cup_config.json",
+    ]
+    for path in paths:
+        if not path.is_file():
+            continue
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            by_conf = raw.get("nations_by_confederation") or {}
+            if isinstance(by_conf, dict) and by_conf:
+                return {
+                    str(k): [str(x) for x in v]
+                    for k, v in by_conf.items()
+                    if isinstance(v, list)
+                }
+        except (OSError, json.JSONDecodeError, TypeError):
+            continue
+    try:
+        from utils.world_cup import nations_by_confederation
+
+        cat = nations_by_confederation()
+        if cat:
+            return cat
+    except Exception:
+        pass
+    return {}
+
+
+def _nations_flat(catalog: dict[str, list[str]] | None = None) -> list[str]:
+    cat = catalog if catalog is not None else _load_nations_catalog()
+    seen: set[str] = set()
+    out: list[str] = []
+    for lst in cat.values():
+        for name in lst:
+            s = str(name).strip()
+            if not s or s in seen:
+                continue
+            seen.add(s)
+            out.append(s)
+    out.sort(key=lambda x: x.casefold())
+    return out
 
 
 def _write_startup_log(msg: str) -> None:
@@ -902,6 +952,10 @@ class Handler(BaseHTTPRequestHandler):
                     )
             except Exception:
                 pass
+            try:
+                nations_catalog = _load_nations_catalog()
+            except Exception:
+                nations_catalog = {}
             return self._send_json(
                 {
                     "default_window": DEFAULT_WINDOW,
@@ -912,12 +966,25 @@ class Handler(BaseHTTPRequestHandler):
                     "fa_team": "Free Agent",
                     "squad_rules": _squad_rules_payload(),
                     "multiplayer": _multiplayer_config_payload(),
+                    "nations_by_confederation": nations_catalog,
+                    "nations": _nations_flat(nations_catalog),
+                }
+            )
+        if path == "/api/nations":
+            catalog = _load_nations_catalog()
+            return self._send_json(
+                {
+                    "ok": True,
+                    "nations_by_confederation": catalog,
+                    "nations": _nations_flat(catalog),
+                    "count": len(_nations_flat(catalog)),
                 }
             )
         if path == "/api/paths":
             return self._send_json(
                 {
                     "data_dir": str(_data_dir()),
+                    "export_dir": str(_export_dir()),
                     "rosters": str(_rosters_path()),
                     "state_summer": str(_state_path("summer")),
                     "state_winter": str(_state_path("winter")),
@@ -939,6 +1006,14 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 payload.setdefault("free_agents", payload.get("free_agents") or [])
             return self._send_json(payload)
+        if path == "/api/national-pools":
+            try:
+                from national_pools import build_all_national_pools
+
+                data = build_all_national_pools()
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 500)
+            return self._send_json({"ok": True, **data})
         if path == "/api/free-agents":
             try:
                 from utils.free_agents_db import list_free_agents
@@ -1019,6 +1094,32 @@ class Handler(BaseHTTPRequestHandler):
                 if err:
                     return self._send_json({"ok": False, "error": err}, 400)
             out_dir = _export_dir()
+            if kind == "national":
+                try:
+                    from national_pools import (
+                        build_all_national_pools,
+                        write_national_pools_json,
+                        write_national_pools_txt,
+                    )
+
+                    pools = build_all_national_pools()
+                except Exception as e:
+                    return self._send_json({"ok": False, "error": str(e)}, 500)
+                out_dir = _export_dir()
+                if fmt == "json":
+                    out = out_dir / "national_pools.json"
+                    write_national_pools_json(str(out), pools)
+                else:
+                    out = out_dir / "national_pools.txt"
+                    write_national_pools_txt(str(out), pools)
+                return self._send_json(
+                    {
+                        "ok": True,
+                        "path": str(out),
+                        "nations": len(pools.get("nations") or []),
+                        "count": pools.get("player_count") or 0,
+                    }
+                )
             if kind == "transfers":
                 rows = compute_transfers(data)
                 window = _normalize_window(data.get("window"))
@@ -1071,6 +1172,15 @@ class Handler(BaseHTTPRequestHandler):
             teams_in = data.get("teams") or []
             updated, notes = _merge_squads_from_bot_export(teams_in, text)
             return self._send_json({"ok": True, "teams": updated, "notes": notes})
+        if parsed.path == "/api/import-national-pools":
+            data = self._read_json()
+            try:
+                from national_pools import parse_national_pools_json
+
+                parsed = parse_national_pools_json(data)
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 400)
+            return self._send_json({"ok": True, **parsed})
         if parsed.path == "/api/import-fa":
             data = self._read_json()
             try:

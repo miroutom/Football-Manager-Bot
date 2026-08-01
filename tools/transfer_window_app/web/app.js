@@ -17,6 +17,9 @@ const EXTRA_RESERVE = 5;
 const FA_TEAM = "Free Agent";
 
 let freeAgents = [];
+let nationalPools = null;
+let nationalFilter = "";
+const nationalExpanded = new Set();
 let lastRosters = null;
 let stateRevision = 0;
 let clientIdentity = { id: "", name: "" };
@@ -33,6 +36,8 @@ let removedFromSquad = {};
 let rostersSeason = null;
 let rostersRevision = null;
 let leaguesCatalog = [];
+let nationsByConfederation = {};
+let nationsList = [];
 let positionsCatalog = [
   "ВРТ", "ЛЗ", "ПЗ", "ЦЗ", "ЛЦЗ", "ПЦЗ", "ЛФЗ", "ПФЗ",
   "ЦП", "ЦАП", "ЦОП", "ЛП", "ПП", "ЛЦП", "ПЦП",
@@ -665,6 +670,131 @@ function findFaPlayer(id) {
   return freeAgents.find((p) => p.id === id) || null;
 }
 
+function findNationalPlayer(id) {
+  for (const block of nationalPools?.nations || []) {
+    const p = (block.players || []).find((x) => x.id === id);
+    if (p) return p;
+  }
+  return null;
+}
+
+function setNationalPools(data) {
+  nationalPools = data;
+  nationalExpanded.clear();
+  const panel = document.getElementById("national-panel");
+  const cnt = document.getElementById("national-count");
+  if (panel) panel.hidden = !nationalPools?.nations?.length;
+  if (cnt) cnt.textContent = String(data?.player_count || 0);
+  renderNationalPanel();
+}
+
+async function loadNationalPoolsFromApi() {
+  const res = await fetch("/api/national-pools");
+  const j = await res.json();
+  if (!res.ok || j.error) throw new Error(j.error || "нет данных сборных");
+  setNationalPools(j);
+  setStatus(`Сборные: ${j.nations?.length || 0} наций, ${j.player_count || 0} игроков`);
+}
+
+async function importNationalFromFile(file) {
+  const text = await file.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (_) {
+    throw new Error("нужен JSON (national_pools.json)");
+  }
+  const res = await fetch("/api/import-national-pools", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "import failed");
+  setNationalPools(j);
+  setStatus(`Сборные из файла: ${j.nations?.length || 0} наций, ${j.player_count || 0} игроков`);
+}
+
+function renderNationalPlayer(p) {
+  const el = document.createElement("div");
+  el.className = "player national-player";
+  el.draggable = true;
+  el.dataset.id = p.id;
+  const clubLabel = p.is_fa || p.team === FA_TEAM ? "FA" : (p.team || "?");
+  el.innerHTML =
+    `<span class="ovr">${p.overall}</span>` +
+    `<span class="pos">${p.position}</span>` +
+    `<span class="nm">${p.name}</span>` +
+    `<span class="club" title="${clubLabel}">${clubLabel}</span>`;
+  el.addEventListener("dragstart", (e) => {
+    const isFa = !!(p.is_fa || p.team === FA_TEAM);
+    dragPayload = {
+      id: p.id,
+      team: isFa ? FA_TEAM : p.team,
+      fromFa: isFa,
+      name: p.name,
+      position: p.position,
+      overall: p.overall,
+    };
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", p.id);
+    startDragScroll();
+  });
+  el.addEventListener("dragend", stopDragScroll);
+  return el;
+}
+
+function renderNationalPanel() {
+  const list = document.getElementById("national-list");
+  if (!list) return;
+  list.innerHTML = "";
+  const blocks = nationalPools?.nations || [];
+  if (!blocks.length) return;
+
+  const q = nationalFilter.trim().toLowerCase();
+  let shown = 0;
+  blocks.forEach((block) => {
+    const nation = block.name || "?";
+    let players = (block.players || []).slice();
+    if (q) {
+      const nationHit = nation.toLowerCase().includes(q);
+      players = players.filter(
+        (p) =>
+          nationHit ||
+          String(p.name || "").toLowerCase().includes(q) ||
+          String(p.team || "").toLowerCase().includes(q) ||
+          String(p.position || "").toLowerCase().includes(q)
+      );
+      if (!players.length) return;
+    }
+
+    shown += players.length;
+    const group = document.createElement("div");
+    group.className = "national-group" + (nationalExpanded.has(nation) || q ? " expanded" : "");
+    const hdr = document.createElement("div");
+    hdr.className = "national-group-hdr";
+    hdr.innerHTML = `<span>${nation}</span><span class="cnt">${players.length}</span>`;
+    hdr.addEventListener("click", () => {
+      if (nationalExpanded.has(nation)) nationalExpanded.delete(nation);
+      else nationalExpanded.add(nation);
+      group.classList.toggle("expanded");
+    });
+    const body = document.createElement("div");
+    body.className = "national-group-body";
+    players.forEach((p) => body.appendChild(renderNationalPlayer(p)));
+    group.appendChild(hdr);
+    group.appendChild(body);
+    list.appendChild(group);
+  });
+
+  if (!shown) {
+    const empty = document.createElement("div");
+    empty.className = "fa-hint";
+    empty.textContent = "Никого не найдено";
+    list.appendChild(empty);
+  }
+}
+
 function renderFaPanel() {
   const list = document.getElementById("fa-list");
   const cnt = document.getElementById("fa-count");
@@ -785,6 +915,10 @@ function openModal(id) {
     el.classList.remove("hidden");
     el.setAttribute("aria-hidden", "false");
   }
+  if (id === "modal-overlay") {
+    resetNationPicker();
+    ensureNationsLoaded();
+  }
 }
 
 function closeModal(id) {
@@ -793,6 +927,146 @@ function closeModal(id) {
     el.classList.add("hidden");
     el.setAttribute("aria-hidden", "true");
   }
+}
+
+function rebuildNationsList() {
+  const seen = new Set();
+  nationsList = [];
+  if (Array.isArray(window.__twNationsFlat) && window.__twNationsFlat.length) {
+    for (const name of window.__twNationsFlat) {
+      const s = String(name || "").trim();
+      if (!s || seen.has(s)) continue;
+      seen.add(s);
+      nationsList.push(s);
+    }
+  } else {
+    for (const list of Object.values(nationsByConfederation || {})) {
+      if (!Array.isArray(list)) continue;
+      for (const name of list) {
+        const s = String(name || "").trim();
+        if (!s || seen.has(s)) continue;
+        seen.add(s);
+        nationsList.push(s);
+      }
+    }
+  }
+  nationsList.sort((a, b) => a.localeCompare(b, "ru"));
+}
+
+function setNationsCatalog(byConf, flat) {
+  if (byConf && typeof byConf === "object") nationsByConfederation = byConf;
+  if (Array.isArray(flat) && flat.length) window.__twNationsFlat = flat;
+  rebuildNationsList();
+}
+
+async function ensureNationsLoaded() {
+  if (nationsList.length) return;
+  try {
+    const res = await fetch("/api/nations");
+    const j = await res.json();
+    if (j.ok) setNationsCatalog(j.nations_by_confederation, j.nations);
+  } catch (_) {
+    /* offline */
+  }
+  setupNationPicker();
+}
+
+function normNat(s) {
+  let t = String(s || "")
+    .trim()
+    .toLowerCase()
+    .replace(/ё/g, "е");
+  t = t.replace(/[''`´ʻʼ’]/g, "'");
+  return t.split(/\s+/).filter(Boolean).join(" ");
+}
+
+function resolveCatalogNation(text) {
+  const key = normNat(text);
+  if (!key) return null;
+  for (const n of nationsList) {
+    if (normNat(n) === key) return n;
+  }
+  return null;
+}
+
+function nationPrefixMatches(text) {
+  const q = normNat(text);
+  if (!q) return false;
+  return nationsList.some((n) => normNat(n).includes(q));
+}
+
+function resetNationPicker() {
+  const input = document.getElementById("form-nation-input");
+  const hidden = document.getElementById("form-nation-value");
+  const list = document.getElementById("form-nation-suggestions");
+  if (input) {
+    input.value = "";
+    input.classList.remove("invalid");
+  }
+  if (hidden) hidden.value = "";
+  if (list) list.classList.add("hidden");
+}
+
+function setupNationPicker() {
+  const input = document.getElementById("form-nation-input");
+  const hidden = document.getElementById("form-nation-value");
+  const list = document.getElementById("form-nation-suggestions");
+  if (!input || !hidden || !list) return;
+
+  const validateNation = () => {
+    const raw = input.value.trim();
+    const resolved = resolveCatalogNation(raw);
+    const invalid = raw.length > 0 && !resolved && !nationPrefixMatches(raw);
+    input.classList.toggle("invalid", invalid);
+    hidden.value = resolved || "";
+    return !invalid;
+  };
+
+  const showSuggestions = () => {
+    const raw = input.value.trim();
+    const q = normNat(raw);
+    const matches = q
+      ? nationsList.filter((n) => normNat(n).includes(q))
+      : nationsList.slice();
+    list.innerHTML = "";
+    if (!matches.length) {
+      list.classList.add("hidden");
+      return;
+    }
+    if (matches.length === 1 && normNat(matches[0]) === q) {
+      list.classList.add("hidden");
+      return;
+    }
+    matches.slice(0, 16).forEach((n) => {
+      const li = document.createElement("li");
+      li.textContent = n;
+      li.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        input.value = n;
+        validateNation();
+        list.classList.add("hidden");
+      });
+      list.appendChild(li);
+    });
+    list.classList.remove("hidden");
+  };
+
+  if (!input.dataset.nationBound) {
+    input.dataset.nationBound = "1";
+    input.addEventListener("input", () => {
+      validateNation();
+      showSuggestions();
+    });
+    input.addEventListener("focus", showSuggestions);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") list.classList.add("hidden");
+    });
+    input.addEventListener("blur", () => {
+      setTimeout(() => list.classList.add("hidden"), 150);
+      validateNation();
+    });
+  }
+  window.__twValidateNation = validateNation;
 }
 
 function setupPlayerForm() {
@@ -818,9 +1092,14 @@ function setupPlayerForm() {
     lgSel.disabled = disabled;
     tmSel.disabled = disabled;
   });
+  setupNationPicker();
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (window.__twValidateNation && !window.__twValidateNation()) {
+      setStatus("нация не из списка — выбери из подсказок или оставь пустым");
+      return;
+    }
     const fd = new FormData(form);
     const name = String(fd.get("name") || "").trim();
     const nickname = String(fd.get("nickname") || "").trim();
@@ -1660,7 +1939,13 @@ function movePlayer(src, destTeamName, destZone, destIndex) {
   if (!destTeam) return;
 
   if (src.fromFa || src.team === FA_TEAM) {
-    const faPlayer = findFaPlayer(src.id);
+    let faPlayer = findFaPlayer(src.id);
+    if (!faPlayer) {
+      const nat = findNationalPlayer(src.id);
+      if (nat && (nat.is_fa || nat.team === FA_TEAM)) {
+        faPlayer = { ...nat, status: "bench" };
+      }
+    }
     if (!faPlayer) return;
     freeAgents = freeAgents.filter((p) => p.id !== src.id);
     if (!baselineHome[src.id]) baselineHome[src.id] = FA_TEAM;
@@ -1979,6 +2264,7 @@ function renderTeam(team) {
 
 function renderAll() {
   renderFaPanel();
+  renderNationalPanel();
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
   teams.forEach((t) => grid.appendChild(renderTeam(t)));
@@ -2035,6 +2321,8 @@ async function loadData() {
   rostersSeason = rosters.season ?? null;
   rostersRevision = rosters.rosters_revision ?? null;
   leaguesCatalog = Array.isArray(cfg.leagues) ? cfg.leagues : (rosters.leagues || []);
+  nationsByConfederation = cfg.nations_by_confederation || {};
+  setNationsCatalog(cfg.nations_by_confederation, cfg.nations);
   if (Array.isArray(cfg.positions)) positionsCatalog = cfg.positions;
   if (cfg.windows) {
     Object.entries(cfg.windows).forEach(([k, v]) => {
@@ -2243,6 +2531,20 @@ async function exportTransfersFmt(fmt) {
   setStatus(j.ok ? `трансферов ${j.count}: ${j.path}` : `ошибка: ${j.error || "?"}`);
 }
 
+async function exportNationalFmt(fmt) {
+  const res = await fetch(`/api/export?fmt=${encodeURIComponent(fmt)}&kind=national`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(currentState()),
+  });
+  const j = await res.json();
+  setStatus(
+    j.ok
+      ? `сборные: ${j.nations} наций, ${j.count} игроков → ${j.path}`
+      : `ошибка: ${j.error || "?"}`
+  );
+}
+
 document.getElementById("btn-save").addEventListener("click", saveState);
 document.getElementById("btn-undo").addEventListener("click", undoLast);
 document.getElementById("btn-export-txt").addEventListener("click", () => exportFmt("txt"));
@@ -2264,6 +2566,18 @@ document.getElementById("btn-import-squads")?.addEventListener("click", () => {
 });
 document.getElementById("btn-import-fa")?.addEventListener("click", () => {
   document.getElementById("import-fa-file")?.click();
+});
+document.getElementById("btn-import-national")?.addEventListener("click", async () => {
+  try {
+    await loadNationalPoolsFromApi();
+  } catch (err) {
+    setStatus("сборные: " + err.message);
+  }
+});
+document.getElementById("btn-export-national-txt")?.addEventListener("click", () => exportNationalFmt("txt"));
+document.getElementById("national-search")?.addEventListener("input", (e) => {
+  nationalFilter = e.target.value || "";
+  renderNationalPanel();
 });
 document.getElementById("btn-reload-fa")?.addEventListener("click", async () => {
   try {
@@ -2298,6 +2612,16 @@ document.getElementById("import-fa-file")?.addEventListener("change", async (e) 
     await importFaFromFile(f);
   } catch (err) {
     setStatus("ошибка FA: " + err.message);
+  }
+});
+document.getElementById("import-national-file")?.addEventListener("change", async (e) => {
+  const f = e.target.files?.[0];
+  e.target.value = "";
+  if (!f) return;
+  try {
+    await importNationalFromFile(f);
+  } catch (err) {
+    setStatus("ошибка сборных: " + err.message);
   }
 });
 

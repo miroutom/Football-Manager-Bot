@@ -79,3 +79,15 @@ def export_free_agents_txt_for_bot() -> str:
             f"{p.get('overall')}\t{p.get('nation') or ''}\t{p.get('nickname') or ''}"
         )
     return "\n".join(lines) + "\n"
+
+
+def export_national_pools_bundle_for_bot() -> tuple[str, str, dict[str, Any]]:
+    """TXT + JSON всех игроков по нациям (клуб + FA) для бота / transfer app."""
+    from tools.transfer_window_app.national_pools import (
+        build_all_national_pools,
+        format_national_pools_json,
+        format_national_pools_txt,
+    )
+
+    data = build_all_national_pools()
+    return format_national_pools_txt(data), format_national_pools_json(data), data
