@@ -22,6 +22,12 @@ let stateRevision = 0;
 let clientIdentity = { id: "", name: "" };
 let syncPollTimer = null;
 let pendingRemoteMeta = null;
+let liveSyncEnabled = false;
+let autosaveTimer = null;
+let autosaveInFlight = false;
+const LIVE_SYNC_POLL_MS = 1000;
+const LIVE_SYNC_DEBOUNCE_MS = 700;
+const SYNC_POLL_MS = 2500;
 let undoStack = [];
 let removedFromSquad = {};
 let rostersSeason = null;
@@ -307,6 +313,37 @@ function ensureClientIdentity() {
   return clientIdentity;
 }
 
+function setLiveSyncEnabled(on) {
+  liveSyncEnabled = !!on;
+  const badge = document.getElementById("live-badge");
+  if (badge) badge.hidden = !liveSyncEnabled;
+  startSyncPoll();
+}
+
+function markDirty() {
+  dirty = true;
+  scheduleAutosave();
+}
+
+function scheduleAutosave() {
+  if (!liveSyncEnabled || !dirty) return;
+  if (autosaveTimer) clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    autosaveTimer = null;
+    flushAutosave();
+  }, LIVE_SYNC_DEBOUNCE_MS);
+}
+
+async function flushAutosave() {
+  if (!liveSyncEnabled || !dirty || autosaveInFlight) return;
+  autosaveInFlight = true;
+  try {
+    await saveState({ silent: true, skipIncompleteConfirm: true });
+  } finally {
+    autosaveInFlight = false;
+  }
+}
+
 function updateSyncBadge(meta) {
   const el = document.getElementById("sync-badge");
   if (!el || !meta) return;
@@ -416,7 +453,11 @@ async function pullRemoteState() {
   applySavedState(saved, lastRosters);
   hideSyncBanner();
   const who = saved.updated_by || "?";
-  setStatus(`синхронизировано (rev ${stateRevision}, ${who})`);
+  setStatus(
+    liveSyncEnabled
+      ? `⟳ обновлено от ${who} (rev ${stateRevision})`
+      : `синхронизировано (rev ${stateRevision}, ${who})`
+  );
   return true;
 }
 
@@ -428,7 +469,9 @@ async function pollRemoteRevision() {
     updateSyncBadge(meta);
     const remoteRev = Number(meta.revision) || 0;
     if (remoteRev <= stateRevision) return;
+    if (dragPayload) return;
     if (dirty) {
+      if (liveSyncEnabled && (autosaveInFlight || autosaveTimer)) return;
       showSyncBanner(meta);
       return;
     }
@@ -440,7 +483,8 @@ async function pollRemoteRevision() {
 
 function startSyncPoll() {
   if (syncPollTimer) clearInterval(syncPollTimer);
-  syncPollTimer = setInterval(pollRemoteRevision, 2500);
+  const ms = liveSyncEnabled ? LIVE_SYNC_POLL_MS : SYNC_POLL_MS;
+  syncPollTimer = setInterval(pollRemoteRevision, ms);
 }
 
 function stopSyncPoll() {
@@ -494,7 +538,7 @@ function undoLast() {
   freeAgents = snap.freeAgents;
   baselineHome = snap.baselineHome;
   removedFromSquad = snap.removedFromSquad || {};
-  dirty = true;
+  markDirty();
   renderAll();
   setStatus("отменено последнее действие");
   updateUndoBtn();
@@ -563,7 +607,7 @@ function renderFaPanel() {
       dragPayload = null;
       stopDragScroll();
       renderAll();
-      dirty = true;
+      markDirty();
       setStatus("в пул свободных агентов");
     });
   }
@@ -730,7 +774,7 @@ function setupPlayerForm() {
         /* offline bundle — только state */
       }
     }
-    dirty = true;
+    markDirty();
     closeModal("modal-overlay");
     form.reset();
     renderAll();
@@ -778,7 +822,7 @@ function setupFaSignForm() {
       setStatus(`нет места в ${team}`);
       return;
     }
-    dirty = true;
+    markDirty();
     closeModal("modal-fa-overlay");
     renderAll();
     setStatus(`${p.name} → ${team}`);
@@ -807,7 +851,7 @@ async function importSquadsFromFile(file) {
   teams = j.teams;
   dedupeGlobally(teams);
   applyInjuryFlags(teams);
-  dirty = true;
+  markDirty();
   renderAll();
   const note = (j.notes || []).join("; ");
   setStatus(note || "составы обновлены из бота");
@@ -820,7 +864,7 @@ function setFreeAgentsFromImport(players) {
     if (p && p.id) baselineHome[p.id] = FA_TEAM;
   }
   freeAgents.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
-  dirty = true;
+  markDirty();
   renderAll();
 }
 
@@ -1053,7 +1097,7 @@ function removeFaPlayer(p) {
   pushUndo();
   freeAgents = freeAgents.filter((x) => x.id !== p.id);
   delete baselineHome[p.id];
-  dirty = true;
+  markDirty();
   renderAll();
   fetch("/api/fa/delete", {
     method: "POST",
@@ -1101,7 +1145,7 @@ function removePlayerFromSquad(playerId, teamName) {
   removeAllInstancesOfId(playerId);
   freeAgents = freeAgents.filter((x) => x.id !== playerId);
   dedupeGlobally(teams);
-  dirty = true;
+  markDirty();
   renderAll();
   setStatus(`убран из заявки: ${p.name} (не трансфер)`);
 }
@@ -1213,7 +1257,7 @@ function startOvrEdit(span, playerId) {
     const raw = parseInt(inp.value, 10);
     const v = Number.isFinite(raw) ? Math.max(1, Math.min(99, raw)) : before;
     syncPlayerOverall(playerId, v);
-    dirty = true;
+    markDirty();
     setStatus("рейтинг изменён (не сохранено)");
     renderAll();
   };
@@ -1259,7 +1303,7 @@ function setupDrop(el, teamName, zone, index) {
     dragPayload = null;
     stopDragScroll();
     renderAll();
-    dirty = true;
+    markDirty();
     setStatus("изменено (не сохранено)");
   });
 }
@@ -1540,7 +1584,7 @@ function onFormationChange(teamName, fid) {
   const team = teams.find((t) => t.name === teamName);
   if (!team) return;
   if (!applyFormationToTeam(team, fid)) return;
-  dirty = true;
+  markDirty();
   renderAll();
   setStatus(`схема ${team.formation} — не сохранено`);
 }
@@ -1776,6 +1820,10 @@ async function loadData() {
   }
   if (cfg.multiplayer) {
     updateSharePanel(cfg.multiplayer);
+    const mp = cfg.multiplayer;
+    setLiveSyncEnabled(
+      !!(mp.live_sync || mp.share_url || mp.lan_mode || mp.tunnel_url || mp.tunnel_mode)
+    );
     if (cfg.multiplayer.tunnel_pending) pollTunnelUrl();
   }
 
@@ -1840,19 +1888,25 @@ async function loadData() {
 async function switchWindow(next) {
   if (next === currentWindow) return;
   if (dirty) {
-    const ok = window.confirm(
-      "Есть несохранённые изменения. Переключить окно без сохранения текущего?"
-    );
-    if (!ok) return;
+    if (liveSyncEnabled) {
+      await flushAutosave();
+    }
+    if (dirty) {
+      const ok = window.confirm(
+        "Есть несохранённые изменения. Переключить окно без сохранения текущего?"
+      );
+      if (!ok) return;
+    }
   }
   currentWindow = next;
   localStorage.setItem("tw_window", currentWindow);
   await loadData();
 }
 
-async function saveState() {
+async function saveState(options = {}) {
+  const { silent = false, skipIncompleteConfirm = false } = options;
   const incomplete = findIncompleteSquads();
-  if (incomplete.length) {
+  if (incomplete.length && !skipIncompleteConfirm) {
     const ok = window.confirm(
       `Неполная заявка у ${incomplete.length} клуб(ов).\n` +
         `Нужно ${SQUAD_TARGET} игроков (11 основа + 21 замена).\n\n` +
@@ -1869,6 +1923,11 @@ async function saveState() {
   const j = await res.json();
   if (res.status === 409 && j.conflict) {
     const who = j.updated_by || "напарник";
+    if (silent) {
+      showSyncBanner({ revision: j.revision, updated_by: who });
+      setStatus(`${who} тоже менял — нажми «Обновить» или сохрани снова`);
+      return;
+    }
     const ok = window.confirm(
       `${who} уже сохранил (rev ${j.revision}).\n\n` +
         "Загрузить его версию? Ваши несохранённые правки пропадут."
@@ -1887,6 +1946,10 @@ async function saveState() {
     stateRevision = Number(j.revision) || stateRevision;
     hideSyncBanner();
     updateSyncBadge(j);
+    if (silent) {
+      setStatus(`⟳ синхронизировано (rev ${stateRevision})`);
+      return;
+    }
     const over = teams.filter((t) => {
       const { inn, out } = countInOut(t);
       return inn > maxIn || out > maxOut;

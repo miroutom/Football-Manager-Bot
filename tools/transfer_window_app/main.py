@@ -209,8 +209,10 @@ def _multiplayer_config_payload() -> dict:
         lan_url = f"http://{lan_ips[0]}:{_SERVER_PORT}/"
 
     share_url = _TUNNEL_URL or tailscale_url or lan_url
+    live_sync = bool(_TUNNEL_URL or _TUNNEL_PENDING or _BIND_HOST == "0.0.0.0")
     return {
         "sync": True,
+        "live_sync": live_sync,
         "lan_mode": _BIND_HOST == "0.0.0.0",
         "tunnel_mode": _TUNNEL_PENDING or bool(_TUNNEL_URL),
         "tunnel_pending": _TUNNEL_PENDING and not _TUNNEL_URL and not _TUNNEL_ERROR,

@@ -35,6 +35,11 @@ body {
 }
 #toolbar button:hover { background: #2563a8; }
 #toolbar .status { font-size: 12px; color: #9ab; }
+.live-badge {
+  color: #5dffa8;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
 .window-switch {
   display: inline-flex;
   border: 1px solid #2a3a48;
