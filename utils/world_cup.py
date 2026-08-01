@@ -243,20 +243,47 @@ def add_manual_callup(
     position: str = "",
     overall: int = 0,
     season: int | None = None,
+    ensure_fa: bool = True,
 ) -> dict[str, Any]:
     """Добавить игрока в заявку сборной вручную (поверх клубных вызовов)."""
+    from utils.roster_manual import FREE_AGENT_TEAM
+
     data = load_wc_squads()
     sn = int(season if season is not None else season_paths.get_active_season())
     data["season"] = sn
     teams = data.setdefault("teams", {})
     roster = teams.setdefault(nation.strip(), [])
+    club_s = (club or "").strip()
     entry = {
         "name": name.strip(),
-        "club": (club or "").strip(),
+        "club": club_s or FREE_AGENT_TEAM,
         "position": (position or "").strip(),
         "overall": int(overall or 0),
         "source": "manual",
     }
+    if ensure_fa and not club_s:
+        try:
+            from utils.free_agents_db import add_free_agent_player, list_free_agents
+            from utils.player_transfer import normalize_player_name_for_db
+            from utils.transfer_input import normalize_position
+
+            nm = normalize_player_name_for_db(entry["name"])
+            pos = normalize_position(entry["position"])
+            found = any(
+                (p.get("name") or "").strip().casefold() == nm.casefold()
+                for p in list_free_agents()
+            )
+            if not found and nm and pos:
+                fa_row = add_free_agent_player(
+                    name=nm,
+                    position=pos,
+                    overall=int(entry["overall"] or 72),
+                    nation=nation.strip(),
+                    status="bench",
+                )
+                entry["person_id"] = fa_row.get("person_id")
+        except Exception:
+            pass
     # не дублировать по имени
     want = entry["name"].casefold()
     for i, row in enumerate(roster):

@@ -7,7 +7,7 @@ import logging
 from html import escape as html_escape
 
 from aiogram import F, Router
-from aiogram.filters import Command
+from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
@@ -553,7 +553,10 @@ def _players_kb(nation_idx: int, page: int, players: list[dict], called: set[str
         [
             InlineKeyboardButton(
                 text="📄 Заявка текстом", callback_data=f"wc:call:sq:{nation_idx}"
-            )
+            ),
+            InlineKeyboardButton(
+                text="➕ Вне клубов", callback_data=f"wc:call:fa:{nation_idx}:{page}"
+            ),
         ]
     )
     rows.append(
@@ -584,7 +587,7 @@ async def _show_nation_players(
     text = (
         f"<b>{html_escape(nation)}</b>\n"
         f"В клубах найдено: <b>{len(players)}</b> · в заявке: <b>{n_called}</b>\n"
-        f"Тап = вызов / снять вызов."
+        f"Тап = вызов / снять. FA без клуба — кнопка «Вне клубов»."
     )
     await _edit(callback, text, _players_kb(nation_idx, page, players, called))
 
@@ -677,3 +680,88 @@ async def cb_call_squad_text(callback: CallbackQuery) -> None:
         ]
     )
     await _edit(callback, text, kb)
+
+
+@wc_router.callback_query(F.data.startswith("wc:call:fa:"))
+async def cb_call_add_fa_start(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    parts = callback.data.split(":")
+    try:
+        nation_idx = int(parts[3])
+        page = int(parts[4])
+    except (IndexError, ValueError):
+        return
+    nations = _nations_sorted()
+    if nation_idx < 0 or nation_idx >= len(nations):
+        return
+    await state.set_state(WcEnter.callup_manual_fa)
+    await state.update_data(wc_nation_idx=nation_idx, wc_page=page)
+    if callback.message:
+        await callback.message.answer(
+            f"<b>{html_escape(nations[nation_idx])}</b> — игрок <b>без клуба</b>\n\n"
+            "Отправь одной строкой:\n"
+            "<code>Имя Позиция Рейтинг</code>\n"
+            "Пример: <code>Иванов ST 75</code>\n\n"
+            "/cancel — отмена.",
+            parse_mode="HTML",
+        )
+
+
+@wc_router.message(StateFilter(WcEnter.callup_manual_fa))
+async def on_call_manual_fa_line(message: Message, state: FSMContext) -> None:
+    if (message.text or "").strip().casefold() in ("/cancel", "отмена"):
+        await state.set_state(WcEnter.callup_players)
+        await message.answer("Отменено.")
+        return
+    data = await state.get_data()
+    nation_idx = int(data.get("wc_nation_idx") or 0)
+    page = int(data.get("wc_page") or 0)
+    nations = _nations_sorted()
+    if nation_idx < 0 or nation_idx >= len(nations):
+        await state.clear()
+        await message.answer("Сессия сброшена. /wc")
+        return
+    nation = nations[nation_idx]
+    parts = (message.text or "").strip().split()
+    if len(parts) < 3 or not parts[-1].isdigit():
+        await message.answer(
+            "Нужен формат: <code>Имя Позиция Рейтинг</code>",
+            parse_mode="HTML",
+        )
+        return
+    ovr = int(parts[-1])
+    pos = parts[-2]
+    name = " ".join(parts[:-2])
+    from utils.wc_callups import add_fa_player_for_nation_callup
+
+    try:
+        entry = await asyncio.to_thread(
+            add_fa_player_for_nation_callup,
+            nation,
+            name=name,
+            position=pos,
+            overall=ovr,
+        )
+    except Exception as e:
+        await message.answer(f"✗ {html_escape(str(e))}", parse_mode="HTML")
+        return
+    await state.set_state(WcEnter.callup_players)
+    await message.answer(
+        f"✓ Добавлен в FA и заявку: <b>{html_escape(entry.get('name') or name)}</b> "
+        f"· {html_escape(str(entry.get('position') or pos))} · {ovr}",
+        parse_mode="HTML",
+    )
+    from utils.wc_callups import club_players_for_nation, squad_for_nation
+
+    players = await asyncio.to_thread(club_players_for_nation, nation)
+    called = {str(p.get("name") or "").casefold() for p in squad_for_nation(nation)}
+    await state.update_data(wc_players=players)
+    n_called = len(called)
+    text = (
+        f"<b>{html_escape(nation)}</b>\n"
+        f"В клубах/FA: <b>{len(players)}</b> · в заявке: <b>{n_called}</b>\n"
+        f"Тап = вызов / снять вызов."
+    )
+    await message.answer(
+        text, reply_markup=_players_kb(nation_idx, page, players, called), parse_mode="HTML"
+    )

@@ -285,10 +285,13 @@ def _player_name_from_id(pid: str) -> str:
 
 def compute_transfers(state: dict) -> list[dict]:
     baseline_home: dict[str, str] = state.get("baseline_home") or {}
+    removed = set((state.get("removed_from_squad") or {}).keys())
     loc = _collect_player_locations(state.get("teams") or [])
     loc.update(_collect_fa_locations(state.get("free_agents") or []))
     rows: list[dict] = []
     for pid, from_team in sorted(baseline_home.items(), key=lambda x: x[1]):
+        if pid in removed:
+            continue
         if pid not in loc:
             continue
         to_team, status, p = loc[pid]
@@ -315,12 +318,14 @@ def build_state_payload(data: dict) -> dict:
     baseline_home = data.get("baseline_home") or {}
     teams = data.get("teams") or []
     free_agents = data.get("free_agents") or []
+    removed_from_squad = data.get("removed_from_squad") or {}
     window = _normalize_window(data.get("window"))
     state = {
         "window": window,
         "baseline_home": baseline_home,
         "teams": teams,
         "free_agents": free_agents,
+        "removed_from_squad": removed_from_squad,
     }
     state["transfers"] = compute_transfers(state)
     return state

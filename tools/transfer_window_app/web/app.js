@@ -18,6 +18,7 @@ const FA_TEAM = "Free Agent";
 
 let freeAgents = [];
 let undoStack = [];
+let removedFromSquad = {};
 let leaguesCatalog = [];
 let positionsCatalog = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
@@ -26,6 +27,7 @@ function pushUndo() {
     teams: JSON.parse(JSON.stringify(teams)),
     freeAgents: JSON.parse(JSON.stringify(freeAgents)),
     baselineHome: { ...baselineHome },
+    removedFromSquad: JSON.parse(JSON.stringify(removedFromSquad)),
   });
   if (undoStack.length > 50) undoStack.shift();
   updateUndoBtn();
@@ -42,6 +44,7 @@ function undoLast() {
   teams = snap.teams;
   freeAgents = snap.freeAgents;
   baselineHome = snap.baselineHome;
+  removedFromSquad = snap.removedFromSquad || {};
   dirty = true;
   renderAll();
   setStatus("отменено последнее действие");
@@ -552,6 +555,36 @@ function ensureExtraReserveSlots(teamList) {
   }
 }
 
+function removePlayerFromSquad(playerId, teamName) {
+  const loc = findPlayerGlobally(playerId);
+  if (!loc || !loc.player) return;
+  const p = loc.player;
+  const home = baselineHome[playerId] || loc.teamName;
+  const msg =
+    `Убрать ${p.name} (${p.position}, ${p.overall}) из заявки?\n\n` +
+    `Клуб: ${home}\n` +
+    "Игрок исчезнет из состава сезона — это не трансфер. " +
+    "В БД останется история (person_id, прошлые сезоны).\n\n" +
+    "Отменить можно кнопкой ↩ до закрытия приложения.";
+  if (!window.confirm(msg)) return;
+  pushUndo();
+  removedFromSquad[playerId] = {
+    id: playerId,
+    name: p.name,
+    position: p.position,
+    overall: p.overall,
+    home_team: home,
+    removed_from: teamName || loc.teamName,
+  };
+  delete baselineHome[playerId];
+  removeAllInstancesOfId(playerId);
+  freeAgents = freeAgents.filter((x) => x.id !== playerId);
+  dedupeGlobally(teams);
+  dirty = true;
+  renderAll();
+  setStatus(`убран из заявки: ${p.name} (не трансфер)`);
+}
+
 function countInOut(team) {
   const ids = new Set();
   const collect = (arr) => arr.forEach((p) => { if (p && p.id) ids.add(p.id); });
@@ -560,10 +593,12 @@ function countInOut(team) {
   collect(team.reserve);
   let inn = 0;
   ids.forEach((id) => {
+    if (removedFromSquad[id]) return;
     if (baselineHome[id] !== team.name) inn += 1;
   });
   let out = 0;
   Object.entries(baselineHome).forEach(([id, home]) => {
+    if (removedFromSquad[id]) return;
     if (home === team.name && !ids.has(id)) out += 1;
   });
   return { inn, out };
@@ -607,8 +642,13 @@ function renderPlayer(teamName, p, inline) {
     ? `<span class="inj" aria-hidden="true">🏥</span>`
     : "";
   el.innerHTML = inline
-    ? `${injuryBadge}<span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
-    : `${injuryBadge}<span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm">${p.name}</span><span class="pos">${p.position}</span>`;
+    ? `${injuryBadge}<button type="button" class="rm-btn" title="Убрать из заявки">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
+    : `${injuryBadge}<button type="button" class="rm-btn" title="Убрать из заявки">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm">${p.name}</span><span class="pos">${p.position}</span>`;
+  el.querySelector(".rm-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    removePlayerFromSquad(p.id, teamName);
+  });
   el.querySelector(".ovr")?.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -1108,7 +1148,13 @@ function renderAll() {
 }
 
 function currentState() {
-  return { window: currentWindow, baseline_home: baselineHome, teams, free_agents: freeAgents };
+  return {
+    window: currentWindow,
+    baseline_home: baselineHome,
+    teams,
+    free_agents: freeAgents,
+    removed_from_squad: removedFromSquad,
+  };
 }
 
 function setStatus(msg) {
@@ -1174,6 +1220,7 @@ async function loadData() {
       freeAgents = saved.free_agents.map((p) => ({ ...p }));
       initFaBaseline(freeAgents);
     }
+    removedFromSquad = saved.removed_from_squad || {};
     dedupeGlobally(teams);
     applyInjuryFlags(teams);
     ensureExtraReserveSlots(teams);
@@ -1181,10 +1228,12 @@ async function loadData() {
     updateUndoBtn();
     dirty = false;
     const injN = Object.keys(injuryById).length;
+    const rmN = Object.keys(removedFromSquad).length;
     setStatus(
       `загружено: ${windowLabels[currentWindow] || currentWindow}` +
         (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "") +
-        (freeAgents.length ? ` · FA: ${freeAgents.length}` : "")
+        (freeAgents.length ? ` · FA: ${freeAgents.length}` : "") +
+        (rmN ? ` · убрано: ${rmN}` : "")
     );
     renderAll();
     return;

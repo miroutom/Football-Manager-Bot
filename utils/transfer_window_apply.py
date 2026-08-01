@@ -74,6 +74,7 @@ def _transfers_from_state_dict(data: dict[str, Any]) -> list[dict[str, Any]]:
     if direct:
         return direct
     baseline_home: dict[str, str] = dict(data.get("baseline_home") or {})
+    removed = set((data.get("removed_from_squad") or {}).keys())
     teams = list(data.get("teams") or [])
     loc: dict[str, tuple[str, str, dict]] = {}
     for team in teams:
@@ -88,6 +89,8 @@ def _transfers_from_state_dict(data: dict[str, Any]) -> list[dict[str, Any]]:
             loc[str(p["id"])] = ("Free Agent", st, dict(p))
     rows: list[dict[str, Any]] = []
     for pid, from_team in sorted(baseline_home.items(), key=lambda x: x[1]):
+        if pid in removed:
+            continue
         if pid not in loc:
             continue
         to_team, status, p = loc[pid]

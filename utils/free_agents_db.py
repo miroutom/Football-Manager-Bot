@@ -254,6 +254,130 @@ def remove_free_agent_after_signing(name: str, position: str) -> bool:
     return removed
 
 
+def _upsert_league_row_into_fa(
+    fa_sess: Session,
+    row: Any,
+    Cls: type,
+    *,
+    status: str = "bench",
+    new_overall: int | None = None,
+) -> tuple[Any, bool]:
+    """Скопировать/обновить строку клуба в ``free_agents.db``. Возвращает (row, created_new)."""
+    from utils.person_registry import ensure_row_person_id
+
+    cols = {c.name for c in Cls.__table__.columns}
+    data = {c: getattr(row, c) for c in cols if c != "id"}
+    data["team"] = FREE_AGENT_TEAM
+    if "left_team" in data:
+        data["left_team"] = False
+    if new_overall is not None:
+        data["overall"] = int(new_overall)
+    st = (status or "bench").strip().lower()
+    if st not in ("start", "bench", "reserve"):
+        st = "bench"
+    if "status" in data:
+        data["status"] = st
+
+    dup = None
+    want_n = (data.get("name") or "").strip().casefold()
+    want_p = (data.get("position") or "").strip().casefold()
+    for ex in fa_sess.query(Cls).all():
+        if (ex.name or "").strip().casefold() == want_n and (
+            ex.position or ""
+        ).strip().casefold() == want_p:
+            dup = ex
+            break
+    if dup is not None:
+        for k, v in data.items():
+            if k == "id":
+                continue
+            if k in ("goals", "assists", "matches", "ga", "potm", "motm", "clean_sheets"):
+                cur = int(getattr(dup, k, 0) or 0)
+                add = int(v or 0)
+                if add > cur:
+                    setattr(dup, k, add)
+            elif k == "overall" and int(v or 0) > int(getattr(dup, "overall", 0) or 0):
+                dup.overall = int(v)
+            elif k == "person_id" and v and not getattr(dup, "person_id", None):
+                dup.person_id = v
+            elif k == "nation" and v and not getattr(dup, "nation", None):
+                dup.nation = v
+            elif k == "status":
+                dup.status = v
+        ensure_row_person_id(dup, persist=True)
+        return dup, False
+    obj = Cls(**data)
+    fa_sess.add(obj)
+    fa_sess.flush()
+    ensure_row_person_id(obj, persist=True)
+    return obj, True
+
+
+def release_club_player_to_fa(
+    name: str,
+    position: str,
+    from_team: str,
+    *,
+    new_status: str = "bench",
+    new_overall: int | None = None,
+) -> dict[str, Any]:
+    """
+    Снять игрока с активной заявки клуба → пул ``free_agents.db``.
+    В league/cl строка остаётся с ``left_team=True`` (стата сезона сохраняется).
+    """
+    from utils.common_db import resolve_team_name_for_cl_pool
+    from utils.player_field_edit import find_player_row
+    from utils.player_transfer import mark_player_left_team, normalize_player_name_for_db
+    from utils.transfer_input import normalize_position
+    from utils.utils import session_cl, session_league
+
+    nm = normalize_player_name_for_db((name or "").strip())
+    pos = normalize_position(position)
+    team = (from_team or "").strip()
+    if not nm or not pos or not team:
+        raise ValueError("Нужны имя, позиция и клуб.")
+
+    sleague = session_league
+    scl = session_cl
+    Cls_l, row_l = find_player_row(sleague, team, nm, pos)
+    if row_l is None:
+        raise ValueError(f"Нет игрока «{nm}» ({pos}) в «{team}».")
+    if bool(getattr(row_l, "left_team", False)):
+        raise ValueError(f"«{nm}» уже снят с заявки «{team}».")
+
+    fa_sess, fa_eng = open_fa_session()
+    try:
+        fa_row, _created = _upsert_league_row_into_fa(
+            fa_sess,
+            row_l,
+            Cls_l,
+            status=new_status,
+            new_overall=new_overall,
+        )
+        fa_sess.commit()
+        pid = int(fa_row.person_id) if getattr(fa_row, "person_id", None) else None
+    finally:
+        fa_sess.close()
+        fa_eng.dispose()
+
+    mark_player_left_team(row_l)
+    cl_team = resolve_team_name_for_cl_pool(team)
+    if cl_team:
+        Cls_c, row_c = find_player_row(scl, cl_team, nm, pos)
+        if row_c is not None and not bool(getattr(row_c, "left_team", False)):
+            mark_player_left_team(row_c)
+    sleague.commit()
+    scl.commit()
+
+    return {
+        "name": nm,
+        "position": pos,
+        "from_team": team,
+        "person_id": pid,
+        "fa_id": fa_player_id(nm, pos),
+    }
+
+
 def migrate_free_agents_from_league_dbs(*, dry_run: bool = False) -> dict[str, int]:
     """
     Перенести все строки ``team = Free Agent`` из league/cl/common → ``free_agents.db``,
@@ -276,43 +400,11 @@ def migrate_free_agents_from_league_dbs(*, dry_run: bool = False) -> dict[str, i
     ]
 
     def _copy_row_to_fa(row, Cls) -> bool:
-        from utils.person_registry import ensure_row_person_id
-
         nonlocal stats
-        cols = {c.name for c in Cls.__table__.columns}
-        data = {c: getattr(row, c) for c in cols if c != "id"}
-        data["team"] = FREE_AGENT_TEAM
-        if "left_team" in data:
-            data["left_team"] = False
-        fa_cls = Cls
-        dup = None
-        for ex in fa_sess.query(fa_cls).all():
-            if (ex.name or "").strip().casefold() == (data.get("name") or "").strip().casefold() and (
-                ex.position or ""
-            ).strip().casefold() == (data.get("position") or "").strip().casefold():
-                dup = ex
-                break
-        if dup is not None:
-            for k, v in data.items():
-                if k == "id":
-                    continue
-                if k in ("goals", "assists", "matches", "ga", "potm", "motm", "clean_sheets"):
-                    cur = int(getattr(dup, k, 0) or 0)
-                    add = int(v or 0)
-                    if add > cur:
-                        setattr(dup, k, add)
-                elif k == "overall" and int(v or 0) > int(getattr(dup, "overall", 0) or 0):
-                    dup.overall = int(v)
-                elif k == "person_id" and v and not getattr(dup, "person_id", None):
-                    dup.person_id = v
-            ensure_row_person_id(dup, persist=True)
-            return False
-        obj = fa_cls(**data)
-        fa_sess.add(obj)
-        fa_sess.flush()
-        ensure_row_person_id(obj, persist=True)
-        stats["migrated"] += 1
-        return True
+        _obj, created = _upsert_league_row_into_fa(fa_sess, row, Cls)
+        if created:
+            stats["migrated"] += 1
+        return created
 
     try:
         seen_keys: set[tuple[str, str]] = set()

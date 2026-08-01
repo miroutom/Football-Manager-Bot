@@ -507,6 +507,33 @@ def _apply_fa_sign_with_status(
     return counts
 
 
+def _apply_release_to_fa_with_status(
+    player: str,
+    from_team: str,
+    position: str,
+    new_status: str | None,
+    *,
+    new_overall: int | None = None,
+) -> dict[str, int]:
+    """Снять с заявки клуба → ``free_agents.db`` (трансфер OUT в FA)."""
+    from utils.free_agents_db import is_free_agent_team, release_club_player_to_fa
+
+    if is_free_agent_team(from_team):
+        raise ValueError(f"Игрок уже свободный агент: {from_team!r}")
+    st = (new_status or "bench")
+    st = str(st).strip().lower() if st else "bench"
+    if st not in ("start", "bench", "reserve"):
+        st = "bench"
+    release_club_player_to_fa(
+        player,
+        position,
+        from_team,
+        new_status=st,
+        new_overall=new_overall,
+    )
+    return {"league": 1, "cl": 0, "fa": 1}
+
+
 def apply_transfer_with_status(
     player: str,
     from_team: str,
@@ -531,6 +558,30 @@ def apply_transfer_with_status(
             from_team,
             position,
             to_team,
+            new_status,
+            new_overall=new_overall,
+        )
+        if rebuild_common:
+            from utils.common_db import rebuild_common_database
+
+            rebuild_common_database()
+        from utils import cumulative_mirror
+
+        cumulative_mirror.mirror_transfer_with_status(
+            player,
+            from_team,
+            position,
+            to_team,
+            new_status,
+            new_overall=new_overall,
+        )
+        return counts
+
+    if is_free_agent_team(to_team):
+        counts = _apply_release_to_fa_with_status(
+            player,
+            from_team,
+            position,
             new_status,
             new_overall=new_overall,
         )

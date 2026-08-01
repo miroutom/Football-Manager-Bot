@@ -45,6 +45,7 @@ class WcEnter(StatesGroup):
     """ЧМ: вызовы в сборные (выбор нации / игрока)."""
     callup_nation = State()
     callup_players = State()
+    callup_manual_fa = State()
 
 
 class AddOnlyStats(StatesGroup):

@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from utils import season_paths
+from utils.roster_manual import FREE_AGENT_TEAM
 from utils.world_cup import load_wc_squads, save_wc_squads
 from utils.world_cup_format import flatten_nations
 from utils.world_cup import nations_by_confederation
@@ -35,7 +36,7 @@ def resolve_nation_name(raw: str) -> str | None:
 
 def club_players_for_nation(nation: str, *, limit: int = 120) -> list[dict[str, Any]]:
     """
-    Игроки из ``league.db`` с ``nation`` ≈ сборной.
+    Игроки из ``league.db`` с ``nation`` ≈ сборной + свободные агенты той же нации.
     Сортировка: overall desc, имя.
     """
     canon = resolve_nation_name(nation) or (nation or "").strip()
@@ -47,6 +48,7 @@ def club_players_for_nation(nation: str, *, limit: int = 120) -> list[dict[str, 
     from data.forward import Forward
     from data.goalkeeper import Goalkeeper
     from data.midfielder import Midfielder
+    from utils.roster_manual import FREE_AGENT_TEAM
 
     path = season_paths.get_league_db_path()
     eng = create_engine(f"sqlite:///{path}")
@@ -72,15 +74,44 @@ def club_players_for_nation(nation: str, *, limit: int = 120) -> list[dict[str, 
                             "position": (getattr(r, "position", None) or "").strip(),
                             "overall": int(getattr(r, "overall", 0) or 0),
                             "nation": canon,
+                            "source": "club",
                         }
                     )
     finally:
         eng.dispose()
 
-    # дедуп по имени (один игрок мог продублироваться редко)
+    try:
+        from utils.free_agents_db import list_free_agents
+
+        for p in list_free_agents():
+            nat = p.get("nation") or ""
+            if _norm_nat(str(nat)) != want:
+                continue
+            rows.append(
+                {
+                    "name": p.get("name") or "",
+                    "club": FREE_AGENT_TEAM,
+                    "position": p.get("position") or "",
+                    "overall": int(p.get("overall") or 0),
+                    "nation": canon,
+                    "source": "fa",
+                    "person_id": p.get("person_id"),
+                }
+            )
+    except Exception:
+        pass
+
+    # дедуп по имени (клубный приоритетнее FA-дубля)
     seen: set[str] = set()
     uniq: list[dict[str, Any]] = []
-    for p in sorted(rows, key=lambda x: (-int(x["overall"]), x["name"].casefold())):
+    for p in sorted(
+        rows,
+        key=lambda x: (
+            0 if x.get("source") == "club" else 1,
+            -int(x["overall"]),
+            x["name"].casefold(),
+        ),
+    ):
         k = p["name"].casefold()
         if k in seen:
             continue
@@ -89,6 +120,55 @@ def club_players_for_nation(nation: str, *, limit: int = 120) -> list[dict[str, 
         if len(uniq) >= limit:
             break
     return uniq
+
+
+def add_fa_player_for_nation_callup(
+    nation: str,
+    *,
+    name: str,
+    position: str,
+    overall: int,
+) -> dict[str, Any]:
+    """Игрок без клуба: ``free_agents.db`` + заявка сборной ЧМ."""
+    from utils.free_agents_db import add_free_agent_player, fa_player_id, list_free_agents
+    from utils.player_transfer import normalize_player_name_for_db
+    from utils.transfer_input import normalize_position
+    from utils.world_cup import add_manual_callup
+
+    canon = resolve_nation_name(nation) or (nation or "").strip()
+    nm = normalize_player_name_for_db(name)
+    pos = normalize_position(position)
+    ovr = max(1, min(99, int(overall or 72)))
+
+    existing = None
+    for p in list_free_agents():
+        if (p.get("name") or "").strip().casefold() == nm.casefold() and (
+            p.get("position") or ""
+        ).strip().casefold() == pos.casefold():
+            existing = p
+            break
+    if existing is None:
+        row = add_free_agent_player(
+            name=nm,
+            position=pos,
+            overall=ovr,
+            nation=canon,
+            status="bench",
+        )
+    else:
+        row = existing
+
+    entry = add_manual_callup(
+        canon,
+        name=nm,
+        club=FREE_AGENT_TEAM,
+        position=pos,
+        overall=ovr,
+        ensure_fa=False,
+    )
+    entry["fa_id"] = row.get("id") or fa_player_id(nm, pos)
+    entry["person_id"] = row.get("person_id") or entry.get("person_id")
+    return entry
 
 
 def squad_for_nation(nation: str) -> list[dict[str, Any]]:
