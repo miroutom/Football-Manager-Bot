@@ -581,6 +581,7 @@ def _normalize_fa_player(raw: dict) -> dict | None:
         "nation": (raw.get("nation") or "") or "",
         "nickname": (nick or "") or "",
         "status": (raw.get("status") or "bench") or "bench",
+        "fired": bool(raw.get("fired")),
     }
 
 
@@ -1344,6 +1345,38 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self._send_json({"ok": False, "error": str(e)}, 400)
             return self._send_json({"ok": True, "player": row})
+        if parsed.path == "/api/fa/release":
+            data = self._read_json()
+            try:
+                from utils.free_agents_db import list_free_agents, release_club_player_to_fa
+
+                info = release_club_player_to_fa(
+                    str(data.get("name") or ""),
+                    str(data.get("position") or ""),
+                    str(data.get("from_team") or ""),
+                    new_status=str(data.get("status") or "bench"),
+                    new_overall=int(data["overall"]) if data.get("overall") is not None else None,
+                )
+                fa_id = info.get("fa_id") or ""
+                player = next(
+                    (p for p in list_free_agents() if p.get("id") == fa_id),
+                    None,
+                )
+                if not player:
+                    player = _normalize_fa_player(
+                        {
+                            "id": fa_id,
+                            "name": info.get("name"),
+                            "position": info.get("position"),
+                            "person_id": info.get("person_id"),
+                            "fired": True,
+                            "status": data.get("status") or "bench",
+                            "overall": data.get("overall") or 0,
+                        }
+                    )
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 400)
+            return self._send_json({"ok": True, "player": player})
         if parsed.path == "/api/fa/delete":
             data = self._read_json()
             try:

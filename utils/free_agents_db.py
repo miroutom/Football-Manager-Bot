@@ -52,9 +52,11 @@ def ensure_free_agents_db(*, template_league_path: str | None = None) -> str:
     path = get_free_agents_db_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     if os.path.isfile(path) and _fa_db_has_player_tables(path):
+        from utils.migrate_fired import ensure_fired_schema
         from utils.migrate_lineup_slot import ensure_lineup_slot_schema
 
         ensure_lineup_slot_schema(path)
+        ensure_fired_schema(path)
         return path
     if os.path.isfile(path):
         try:
@@ -82,18 +84,22 @@ def ensure_free_agents_db(*, template_league_path: str | None = None) -> str:
         conn.commit()
     finally:
         conn.close()
+    from utils.migrate_fired import ensure_fired_schema
     from utils.migrate_lineup_slot import ensure_lineup_slot_schema
 
     ensure_lineup_slot_schema(path)
+    ensure_fired_schema(path)
     return path
 
 
 def open_fa_session() -> tuple[Session, Any]:
     ensure_free_agents_db()
+    from utils.migrate_fired import ensure_fired_schema
     from utils.migrate_lineup_slot import ensure_lineup_slot_schema
 
     path = get_free_agents_db_path()
     ensure_lineup_slot_schema(path)
+    ensure_fired_schema(path)
     eng = create_engine(
         f"sqlite:///{path}",
         connect_args={"check_same_thread": False, "timeout": 30},
@@ -149,6 +155,7 @@ def list_free_agents(*, include_left: bool = False) -> list[dict[str, Any]]:
                         )
                         or "",
                         "status": (getattr(r, "status", None) or "bench") or "bench",
+                        "fired": bool(getattr(r, "fired", False)),
                     }
                 )
     finally:
@@ -208,6 +215,8 @@ def add_free_agent_player(
             row.status = st
         if hasattr(row, "left_team"):
             row.left_team = False
+        if hasattr(row, "fired"):
+            row.fired = False
         sess.add(row)
         sess.flush()
         ensure_row_person_id(row, persist=True)
@@ -223,6 +232,7 @@ def add_free_agent_player(
             "nation": (getattr(row, "nation", None) or "") or "",
             "nickname": (nickname or "").strip(),
             "status": st,
+            "fired": False,
         }
     finally:
         sess.close()
@@ -301,6 +311,7 @@ def _upsert_league_row_into_fa(
     *,
     status: str = "bench",
     new_overall: int | None = None,
+    fired: bool | None = None,
 ) -> tuple[Any, bool]:
     """Скопировать/обновить строку клуба в ``free_agents.db``. Возвращает (row, created_new)."""
     from utils.person_registry import ensure_row_person_id
@@ -317,6 +328,8 @@ def _upsert_league_row_into_fa(
         st = "bench"
     if "status" in data:
         data["status"] = st
+    if fired is not None and "fired" in cols:
+        data["fired"] = bool(fired)
 
     dup = None
     want_n = (data.get("name") or "").strip().casefold()
@@ -344,6 +357,8 @@ def _upsert_league_row_into_fa(
                 dup.nation = v
             elif k == "status":
                 dup.status = v
+            elif k == "fired":
+                dup.fired = bool(v)
         ensure_row_person_id(dup, persist=True)
         return dup, False
     obj = Cls(**data)
@@ -365,11 +380,16 @@ def release_club_player_to_fa(
     Снять игрока с активной заявки клуба → пул ``free_agents.db``.
     В league/cl строка остаётся с ``left_team=True`` (стата сезона сохраняется).
     """
+    from utils import season_paths
     from utils.common_db import resolve_team_name_for_cl_pool
+    from utils.migrate_fired import ensure_fired_schema
     from utils.player_field_edit import find_player_row
     from utils.player_transfer import mark_player_left_team, normalize_player_name_for_db
     from utils.transfer_input import normalize_position
     from utils.utils import session_cl, session_league
+
+    ensure_fired_schema(season_paths.get_league_db_path())
+    ensure_fired_schema(get_free_agents_db_path())
 
     nm = normalize_player_name_for_db((name or "").strip())
     pos = normalize_position(position)
@@ -393,6 +413,7 @@ def release_club_player_to_fa(
             Cls_l,
             status=new_status,
             new_overall=new_overall,
+            fired=True,
         )
         fa_sess.commit()
         pid = int(fa_row.person_id) if getattr(fa_row, "person_id", None) else None

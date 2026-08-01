@@ -265,6 +265,53 @@ body {
   color: #cfe;
   font-size: 11px;
 }
+.pool-filters {
+  margin: 0 0 8px;
+}
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+}
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 9px;
+  color: #8a9;
+  min-width: 0;
+}
+.filter-field input,
+.filter-field select {
+  width: 52px;
+  box-sizing: border-box;
+  padding: 3px 4px;
+  border-radius: 4px;
+  border: 1px solid #2a3a48;
+  background: #152028;
+  color: #cfe;
+  font-size: 11px;
+}
+.filter-field select {
+  width: 64px;
+}
+.filter-field select#fa-kind-filter {
+  width: 72px;
+}
+.filter-reset {
+  padding: 3px 8px;
+  font-size: 10px;
+  align-self: flex-end;
+}
+.fa-tag {
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #5a3030;
+  color: #faa;
+  flex-shrink: 0;
+}
 .national-list {
   display: flex;
   flex-direction: column;

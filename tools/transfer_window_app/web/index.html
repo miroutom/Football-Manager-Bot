@@ -85,6 +85,15 @@
           <span class="fa-count" id="fa-count">0</span>
         </div>
         <p class="fa-hint">Перетащи в клуб или верни сюда, чтобы отменить переход</p>
+        <div class="pool-filters" id="fa-filters">
+          <div class="filter-row">
+            <label class="filter-field">Рейт.<input type="number" id="fa-ovr-min" min="1" max="99" placeholder="от"></label>
+            <label class="filter-field"><input type="number" id="fa-ovr-max" min="1" max="99" placeholder="до"></label>
+            <label class="filter-field">Поз.<select id="fa-pos-filter"><option value="">все</option></select></label>
+            <label class="filter-field">Тип<select id="fa-kind-filter"><option value="">все</option><option value="fired">исключён</option><option value="new">новый</option></select></label>
+            <button type="button" id="fa-filters-reset" class="secondary filter-reset">Сброс</button>
+          </div>
+        </div>
         <div id="fa-list" class="fa-list drop-zone" data-fa-drop="1"></div>
       </div>
       <div id="national-panel" hidden>
@@ -93,6 +102,14 @@
           <span class="fa-count" id="national-count">0</span>
         </div>
         <input type="search" id="national-search" class="national-search" placeholder="Игрок…" autocomplete="off">
+        <div class="pool-filters" id="national-filters">
+          <div class="filter-row">
+            <label class="filter-field">Рейт.<input type="number" id="national-ovr-min" min="1" max="99" placeholder="от"></label>
+            <label class="filter-field"><input type="number" id="national-ovr-max" min="1" max="99" placeholder="до"></label>
+            <label class="filter-field">Поз.<select id="national-pos-filter"><option value="">все</option></select></label>
+            <button type="button" id="national-filters-reset" class="secondary filter-reset">Сброс</button>
+          </div>
+        </div>
         <p class="fa-hint" id="national-hint">Перетащи в заявку · × или сюда — вернуть в пул</p>
         <div id="national-list" class="national-list"></div>
       </div>

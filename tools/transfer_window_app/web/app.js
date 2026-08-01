@@ -22,6 +22,9 @@ let freeAgents = [];
 let nationalPools = null;
 let nationalFilter = "";
 const nationalExpanded = new Set();
+const poolFiltersEmpty = { ovrMin: "", ovrMax: "", position: "" };
+let faPoolFilters = { ...poolFiltersEmpty, kind: "" };
+let nationalPoolFilters = { ...poolFiltersEmpty };
 let lastRosters = null;
 let stateRevision = 0;
 let clientIdentity = { id: "", name: "" };
@@ -672,7 +675,7 @@ function applySavedState(saved, rosters) {
     : { ...freshBaseline };
   teams = migrateSavedState(saved, rosters);
   if (Array.isArray(saved.free_agents) && saved.free_agents.length) {
-    freeAgents = saved.free_agents.map((p) => ({ ...p, status: p.status || "bench" }));
+    freeAgents = saved.free_agents.map((p) => ({ ...p, status: p.status || "bench", fired: !!p.fired }));
     initFaBaseline(freeAgents);
   } else if (rosters && Array.isArray(rosters.free_agents) && rosters.free_agents.length) {
     syncFreeAgentsFromRosters(rosters);
@@ -749,7 +752,7 @@ function loadFreshFromRosters(rosters, msg) {
   baselineHome = { ...(rosters.baseline_home || {}) };
   syncFreeAgentsFromRosters(rosters);
   teams = JSON.parse(JSON.stringify(rosters.teams || []));
-  freeAgents = (rosters.free_agents || []).map((p) => ({ ...p, status: p.status || "bench" }));
+  freeAgents = (rosters.free_agents || []).map((p) => ({ ...p, status: p.status || "bench", fired: !!p.fired }));
   initFaBaseline(freeAgents);
   removedFromSquad = {};
   undoStack = [];
@@ -808,7 +811,7 @@ function initFaBaseline(list) {
 
 function syncFreeAgentsFromRosters(rosters) {
   const raw = rosters.free_agents || [];
-  freeAgents = raw.map((p) => ({ ...p, status: p.status || "bench" }));
+  freeAgents = raw.map((p) => ({ ...p, status: p.status || "bench", fired: !!p.fired }));
   initFaBaseline(freeAgents);
 }
 
@@ -879,6 +882,136 @@ function setupNationalPoolDrop(listEl) {
     renderAll();
     setStatus("вернули в пул");
   });
+}
+
+function parseFilterOvr(minStr, maxStr) {
+  const minRaw = String(minStr ?? "").trim();
+  const maxRaw = String(maxStr ?? "").trim();
+  const min = minRaw === "" ? null : parseInt(minRaw, 10);
+  const max = maxRaw === "" ? null : parseInt(maxRaw, 10);
+  if (min != null && Number.isNaN(min)) return { min: null, max: null };
+  if (max != null && Number.isNaN(max)) return { min: null, max: null };
+  return { min, max };
+}
+
+function playerMatchesOvr(p, min, max) {
+  const o = Number(p.overall) || 0;
+  if (min != null && max != null) {
+    if (min === max) return o === min;
+    const lo = Math.min(min, max);
+    const hi = Math.max(min, max);
+    return o >= lo && o <= hi;
+  }
+  if (min != null) return o >= min;
+  if (max != null) return o <= max;
+  return true;
+}
+
+function playerMatchesPoolFilters(p, filters, { faKind = false } = {}) {
+  const { min, max } = parseFilterOvr(filters.ovrMin, filters.ovrMax);
+  if (!playerMatchesOvr(p, min, max)) return false;
+  if (filters.position && p.position !== filters.position) return false;
+  if (faKind && filters.kind === "fired" && !p.fired) return false;
+  if (faKind && filters.kind === "new" && p.fired) return false;
+  return true;
+}
+
+function poolFiltersActive(filters, { faKind = false } = {}) {
+  return !!(filters.ovrMin || filters.ovrMax || filters.position || (faKind && filters.kind));
+}
+
+function fillPoolPositionSelect(selectEl) {
+  if (!selectEl) return;
+  const cur = selectEl.value || "";
+  selectEl.innerHTML = '<option value="">все</option>';
+  positionsCatalog.forEach((code) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = code;
+    selectEl.appendChild(opt);
+  });
+  selectEl.value = cur;
+}
+
+function readFaPoolFiltersFromDom() {
+  faPoolFilters = {
+    ovrMin: document.getElementById("fa-ovr-min")?.value || "",
+    ovrMax: document.getElementById("fa-ovr-max")?.value || "",
+    position: document.getElementById("fa-pos-filter")?.value || "",
+    kind: document.getElementById("fa-kind-filter")?.value || "",
+  };
+}
+
+function readNationalPoolFiltersFromDom() {
+  nationalPoolFilters = {
+    ovrMin: document.getElementById("national-ovr-min")?.value || "",
+    ovrMax: document.getElementById("national-ovr-max")?.value || "",
+    position: document.getElementById("national-pos-filter")?.value || "",
+  };
+}
+
+function resetFaPoolFilters() {
+  faPoolFilters = { ...poolFiltersEmpty, kind: "" };
+  const ids = ["fa-ovr-min", "fa-ovr-max"];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  const pos = document.getElementById("fa-pos-filter");
+  const kind = document.getElementById("fa-kind-filter");
+  if (pos) pos.value = "";
+  if (kind) kind.value = "";
+  renderFaPanel();
+}
+
+function resetNationalPoolFilters() {
+  nationalPoolFilters = { ...poolFiltersEmpty };
+  nationalFilter = "";
+  const search = document.getElementById("national-search");
+  if (search) search.value = "";
+  ["national-ovr-min", "national-ovr-max"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  const pos = document.getElementById("national-pos-filter");
+  if (pos) pos.value = "";
+  renderNationalPanel();
+}
+
+function setupPoolFilters() {
+  fillPoolPositionSelect(document.getElementById("fa-pos-filter"));
+  fillPoolPositionSelect(document.getElementById("national-pos-filter"));
+
+  const faInputs = ["fa-ovr-min", "fa-ovr-max", "fa-pos-filter", "fa-kind-filter"];
+  faInputs.forEach((id) => {
+    document.getElementById(id)?.addEventListener("input", () => {
+      readFaPoolFiltersFromDom();
+      renderFaPanel();
+    });
+    document.getElementById(id)?.addEventListener("change", () => {
+      readFaPoolFiltersFromDom();
+      renderFaPanel();
+    });
+  });
+  document.getElementById("fa-filters-reset")?.addEventListener("click", resetFaPoolFilters);
+
+  const natInputs = ["national-ovr-min", "national-ovr-max", "national-pos-filter"];
+  natInputs.forEach((id) => {
+    document.getElementById(id)?.addEventListener("input", () => {
+      readNationalPoolFiltersFromDom();
+      renderNationalPanel();
+    });
+    document.getElementById(id)?.addEventListener("change", () => {
+      readNationalPoolFiltersFromDom();
+      renderNationalPanel();
+    });
+  });
+  document.getElementById("national-filters-reset")?.addEventListener("click", resetNationalPoolFilters);
+}
+
+function formatPoolCount(shown, total, filtersActive) {
+  if (filtersActive && total != null && shown !== total) return `${shown}/${total}`;
+  return String(shown);
 }
 
 function setNationalPools(data) {
@@ -980,8 +1113,11 @@ function renderNationalPanel() {
 
   const q = nationalFilter.trim().toLowerCase();
   let shown = 0;
+  let total = 0;
   const nationFilterName = isNationsMode() ? selectedNation : "";
   const inSquad = isNationsMode() && selectedNation ? squadIdsForTeam(selectedNation) : null;
+  const natFiltersOn =
+    poolFiltersActive(nationalPoolFilters) || !!q;
 
   blocks.forEach((block) => {
     const nation = block.name || "?";
@@ -990,6 +1126,7 @@ function renderNationalPanel() {
     if (inSquad) {
       players = players.filter((p) => p?.id && !inSquad.has(p.id));
     }
+    total += players.length;
     if (q) {
       players = players.filter(
         (p) =>
@@ -998,6 +1135,7 @@ function renderNationalPanel() {
           String(p.position || "").toLowerCase().includes(q)
       );
     }
+    players = players.filter((p) => playerMatchesPoolFilters(p, nationalPoolFilters));
     if (!players.length) return;
 
     shown += players.length;
@@ -1029,11 +1167,19 @@ function renderNationalPanel() {
     const empty = document.createElement("div");
     empty.className = "fa-hint";
     empty.textContent = inSquad && nationFilterName
-      ? "Все в заявке — верни × или перетащи сюда"
+      ? natFiltersOn
+        ? "Никого не найдено — ослабь фильтры"
+        : "Все в заявке — верни × или перетащи сюда"
       : nationFilterName
-        ? "Нет игроков в пуле"
+        ? natFiltersOn
+          ? "Никого не найдено — ослабь фильтры"
+          : "Нет игроков в пуле"
         : "Никого не найдено";
     list.appendChild(empty);
+  }
+  const cnt = document.getElementById("national-count");
+  if (cnt && isNationsMode() && nationFilterName) {
+    cnt.textContent = formatPoolCount(shown, total, natFiltersOn);
   }
   if (panel && isNationsMode()) {
     panel.hidden = !nationFilterName || !blocks.length;
@@ -1045,15 +1191,19 @@ function renderFaPanel() {
   const cnt = document.getElementById("fa-count");
   if (!list) return;
   list.innerHTML = "";
-  if (cnt) cnt.textContent = String(freeAgents.length);
   const sorted = freeAgents.slice().sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
-  if (!sorted.length) {
+  const filtered = sorted.filter((p) => playerMatchesPoolFilters(p, faPoolFilters, { faKind: true }));
+  const faFiltersOn = poolFiltersActive(faPoolFilters, { faKind: true });
+  if (cnt) cnt.textContent = formatPoolCount(filtered.length, sorted.length, faFiltersOn);
+  if (!filtered.length) {
     const empty = document.createElement("div");
     empty.className = "fa-hint";
-    empty.textContent = "Пул пуст — перетащи сюда или добавь нового";
+    empty.textContent = sorted.length
+      ? "Никого не найдено — ослабь фильтры"
+      : "Пул пуст — перетащи сюда или добавь нового";
     list.appendChild(empty);
   }
-  sorted.forEach((p) => {
+  filtered.forEach((p) => {
     const el = renderPlayer(FA_TEAM, p, true);
     el.dataset.fromFa = "1";
     el.addEventListener("dragstart", (e) => {
@@ -1098,12 +1248,48 @@ function movePlayerToFa(src) {
   if (findFaPlayer(src.id)) return;
   const loc = findPlayerGlobally(src.id);
   if (!loc) return;
-  const p = { ...loc.player };
+  const oldId = src.id;
+  let p = { ...loc.player };
+  const fromTeam = baselineHome[src.id] || loc.teamName;
+  const fromClub = fromTeam && fromTeam !== FA_TEAM;
   if (!baselineHome[src.id]) baselineHome[src.id] = loc.teamName;
   removeAllInstancesOfId(src.id);
-  freeAgents.push({ ...p, status: "bench" });
+  const fired = fromClub ? true : !!p.fired;
+  freeAgents.push({ ...p, status: "bench", fired });
   freeAgents.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
   dedupeGlobally(teams);
+
+  if (fromClub) {
+    fetch("/api/fa/release", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: p.name,
+        position: p.position,
+        from_team: fromTeam,
+        overall: p.overall,
+      }),
+    })
+      .then((res) => res.json())
+      .then((j) => {
+        if (!j.ok || !j.player) return;
+        const np = { ...j.player, status: "bench", fired: true };
+        const idx = freeAgents.findIndex(
+          (x) =>
+            x.id === np.id ||
+            (String(x.name || "").toLowerCase() === String(np.name || "").toLowerCase() &&
+              String(x.position || "").toUpperCase() === String(np.position || "").toUpperCase())
+        );
+        if (idx < 0) return;
+        if (baselineHome[oldId]) {
+          baselineHome[np.id] = baselineHome[oldId];
+          if (np.id !== oldId) delete baselineHome[oldId];
+        }
+        freeAgents[idx] = np;
+        renderFaPanel();
+      })
+      .catch(() => {});
+  }
 }
 
 function placeNewPlayer(teamName, zone, player) {
@@ -1380,7 +1566,7 @@ function setupPlayerForm() {
         };
       }
       baselineHome[player.id] = FA_TEAM;
-      freeAgents.push({ ...player, status });
+      freeAgents.push({ ...player, status, fired: !!player.fired });
       freeAgents.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
     } else {
       const id = `${team}|${name}|${position}`;
@@ -1488,7 +1674,7 @@ async function importSquadsFromFile(file) {
 
 function setFreeAgentsFromImport(players) {
   pushUndo();
-  freeAgents = (players || []).map((p) => ({ ...p, status: p.status || "bench" }));
+  freeAgents = (players || []).map((p) => ({ ...p, status: p.status || "bench", fired: !!p.fired }));
   for (const p of freeAgents) {
     if (p && p.id) baselineHome[p.id] = FA_TEAM;
   }
@@ -1856,6 +2042,10 @@ function renderPlayer(teamName, p, inline) {
   const injuryBadge = p.injured
     ? `<span class="inj" aria-hidden="true">🏥</span>`
     : "";
+  const firedBadge =
+    teamName === FA_TEAM && p.fired
+      ? `<span class="fa-tag" title="Исключён из клуба">увол</span>`
+      : "";
   const rmTitle =
     isNationsMode() && nationNamesMatch(teamName, selectedNation)
       ? "Вернуть в пул"
@@ -1863,8 +2053,8 @@ function renderPlayer(teamName, p, inline) {
         ? "Удалить из FA"
         : "Убрать из заявки";
   el.innerHTML = inline
-    ? `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span><span class="nm" title="Клик — изменить имя">${p.name}</span>`
-    : `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm" title="Клик — изменить имя">${p.name}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span>`;
+    ? `${injuryBadge}${firedBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span><span class="nm" title="Клик — изменить имя">${p.name}</span>`
+    : `${injuryBadge}${firedBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm" title="Клик — изменить имя">${p.name}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span>`;
   el.querySelector(".rm-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -2784,7 +2974,11 @@ async function loadData() {
   leaguesCatalog = Array.isArray(cfg.leagues) ? cfg.leagues : (rosters.leagues || []);
   nationsByConfederation = cfg.nations_by_confederation || {};
   setNationsCatalog(cfg.nations_by_confederation, cfg.nations);
-  if (Array.isArray(cfg.positions)) positionsCatalog = cfg.positions;
+  if (Array.isArray(cfg.positions)) {
+    positionsCatalog = cfg.positions;
+    fillPoolPositionSelect(document.getElementById("fa-pos-filter"));
+    fillPoolPositionSelect(document.getElementById("national-pos-filter"));
+  }
   if (cfg.windows) {
     Object.entries(cfg.windows).forEach(([k, v]) => {
       if (v && v.label) windowLabels[k] = v.label;
@@ -3182,6 +3376,7 @@ document.getElementById("import-national-file")?.addEventListener("change", asyn
 loadData()
   .then(() => {
     setupPlayerForm();
+    setupPoolFilters();
     setupFaSignForm();
     setupSharePanel();
   })
