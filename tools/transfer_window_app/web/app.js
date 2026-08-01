@@ -30,9 +30,11 @@ let pendingRemoteMeta = null;
 let liveSyncEnabled = false;
 let autosaveTimer = null;
 let autosaveInFlight = false;
+let periodicAutosaveTimer = null;
 const LIVE_SYNC_POLL_MS = 1000;
 const LIVE_SYNC_DEBOUNCE_MS = 700;
 const SYNC_POLL_MS = 2500;
+const PERIODIC_AUTOSAVE_MS = 10 * 60 * 1000;
 let undoStack = [];
 let removedFromSquad = {};
 let rostersSeason = null;
@@ -53,6 +55,7 @@ const WC_TOTAL = 26;
 const WC_START = 11;
 const WC_BENCH = 7;
 const WC_RESERVE = 8;
+const WC_GK_TOTAL = 2;
 
 function isNationsMode() {
   return currentMode === "nations";
@@ -300,19 +303,31 @@ function evaluateTeamSquad(team) {
   };
 }
 
+function countGoalkeepers(players) {
+  return (players || []).filter(
+    (p) => p && p.id && String(p.position || "").trim().toUpperCase() === "ВРТ"
+  ).length;
+}
+
 function evaluateWcTeamSquad(team) {
   const starters = (team.start || []).filter((p) => p && p.id);
   const bench = (team.bench || []).filter((p) => p && p.id);
   const reserve = (team.reserve || []).filter((p) => p && p.id);
+  const all = [...starters, ...bench, ...reserve];
   const startMissing = (team.start || []).filter((s) => !(s && s.id)).length;
   const benchMissing = Math.max(0, WC_BENCH - bench.length);
   const reserveMissing = Math.max(0, WC_RESERVE - reserve.length);
-  const total = starters.length + bench.length + reserve.length;
+  const total = all.length;
+  const gkHave = countGoalkeepers(all);
+  const gkStart = countGoalkeepers(starters);
+  const gkMissing = Math.max(0, WC_GK_TOTAL - gkHave);
   const complete =
     startMissing === 0 &&
     benchMissing === 0 &&
     reserveMissing === 0 &&
-    total === WC_TOTAL;
+    total === WC_TOTAL &&
+    gkHave >= WC_GK_TOTAL &&
+    gkStart >= 1;
 
   const missingReserve = [];
   if (benchMissing) missingReserve.push({ label: "запас", need: benchMissing });
@@ -330,27 +345,45 @@ function evaluateWcTeamSquad(team) {
     missing_groups: [],
     surplus_reserve: total > WC_TOTAL ? [{ label: "всего", extra: total - WC_TOTAL }] : [],
     group_status: [],
+    gk_have: gkHave,
+    gk_missing: gkMissing,
+    gk_start: gkStart,
+    wc_mode: true,
   };
 }
 
 function formatMissingHint(ev) {
+  const target = ev.target ?? (ev.wc_mode || isNationsMode() ? WC_TOTAL : SQUAD_TARGET);
+  const wc = !!(ev.wc_mode || target === WC_TOTAL);
   const parts = [];
-  if (Number(ev.missing_start) > 0) parts.push(`основа ×${ev.missing_start}`);
+  if (Number(ev.missing_start) > 0) {
+    parts.push(wc ? `старт ×${ev.missing_start}` : `основа ×${ev.missing_start}`);
+  }
   (ev.missing_groups || []).forEach((m) => {
     parts.push(`${m.label} ${Number(m.need || 0)}`);
   });
   if (!(ev.missing_groups || []).length) {
     (ev.missing_reserve || []).forEach((m) => parts.push(`${m.label} ×${m.need}`));
   }
-  if (Number(ev.total) < SQUAD_TARGET) parts.push(`всего ${ev.total}/${SQUAD_TARGET}`);
+  if (wc) {
+    const gkMiss = Number(ev.gk_missing ?? 0);
+    if (gkMiss > 0) parts.push(`вратари ×${WC_GK_TOTAL}`);
+    else if (Number(ev.gk_start ?? 0) < 1) parts.push("вратарь в старте ×1");
+  } else if (Number(ev.total) < target) {
+    parts.push(`всего ${ev.total}/${target}`);
+  }
   return parts;
 }
 
 function formatSurplusHint(ev) {
+  const target = ev.target ?? (ev.wc_mode || isNationsMode() ? WC_TOTAL : SQUAD_TARGET);
+  const wc = !!(ev.wc_mode || target === WC_TOTAL);
   const parts = [];
   (ev.surplus_reserve || []).forEach((s) => parts.push(`${s.label} ×${s.extra}`));
-  if (Number(ev.total) > SQUAD_TARGET && !(ev.surplus_reserve || []).length) {
-    parts.push(`всего +${ev.total - SQUAD_TARGET}`);
+  if (!wc && Number(ev.total) > target && !(ev.surplus_reserve || []).length) {
+    parts.push(`всего +${ev.total - target}`);
+  } else if (wc && Number(ev.total) > target && !(ev.surplus_reserve || []).length) {
+    parts.push(`всего +${ev.total - target}`);
   }
   return parts;
 }
@@ -446,6 +479,20 @@ async function flushAutosave() {
   } finally {
     autosaveInFlight = false;
   }
+}
+
+function startPeriodicAutosave() {
+  if (periodicAutosaveTimer) clearInterval(periodicAutosaveTimer);
+  periodicAutosaveTimer = setInterval(async () => {
+    if (!dirty || autosaveInFlight || dragPayload) return;
+    autosaveInFlight = true;
+    try {
+      await saveState({ silent: true, skipIncompleteConfirm: true });
+      setStatus(`⟳ автосейв · rev ${stateRevision}`);
+    } finally {
+      autosaveInFlight = false;
+    }
+  }, PERIODIC_AUTOSAVE_MS);
 }
 
 function updateSyncBadge(meta) {
@@ -786,7 +833,9 @@ function setNationalPools(data) {
   if (panel) panel.hidden = !showPanel;
   if (cnt) {
     const block = isNationsMode() && selectedNation
-      ? (nationalPools?.nations || []).find((b) => b.name === selectedNation)
+      ? (nationalPools?.nations || []).find(
+          (b) => String(b.name || "").trim().toLowerCase() === selectedNation.trim().toLowerCase()
+        )
       : null;
     cnt.textContent = String(
       block?.players?.length || data?.player_count || nationalPools?.player_count || 0
@@ -829,10 +878,11 @@ function renderNationalPlayer(p) {
   el.dataset.id = p.id;
   const clubLabel = p.is_fa || p.team === FA_TEAM ? "FA" : (p.team || "?");
   el.innerHTML =
-    `<span class="ovr">${p.overall}</span>` +
-    `<span class="pos">${p.position}</span>` +
-    `<span class="nm">${p.name}</span>` +
-    `<span class="club" title="${clubLabel}">${clubLabel}</span>`;
+    `<span class="np-ovr">${p.overall}</span>` +
+    `<div class="np-body">` +
+    `<span class="np-name">${p.name}</span>` +
+    `<span class="np-meta">${p.position} · ${clubLabel}</span>` +
+    `</div>`;
   el.addEventListener("dragstart", (e) => {
     const isFa = !!(p.is_fa || p.team === FA_TEAM);
     dragPayload = {
@@ -845,7 +895,7 @@ function renderNationalPlayer(p) {
       overall: p.overall,
       club: p.team,
     };
-    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.effectAllowed = "copy";
     e.dataTransfer.setData("text/plain", p.id);
     startDragScroll();
   });
@@ -2740,6 +2790,7 @@ async function loadData() {
       );
     }
     startSyncPoll();
+    startPeriodicAutosave();
     return;
   }
 
@@ -2755,6 +2806,7 @@ async function loadData() {
           (freeAgents.length ? ` · FA: ${freeAgents.length}` : "")
   );
   startSyncPoll();
+  startPeriodicAutosave();
 }
 
 async function switchMode(nextMode) {

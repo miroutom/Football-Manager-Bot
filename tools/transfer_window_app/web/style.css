@@ -302,23 +302,53 @@ body {
   display: flex;
 }
 .national-player {
+  display: flex;
   flex-direction: row;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   max-width: none;
-  justify-content: flex-start;
-  padding: 3px 5px;
-  font-size: 10px;
+  padding: 6px 8px;
+  font-size: 12px;
   cursor: grab;
 }
-.national-player .club {
-  margin-left: auto;
-  color: #7a9;
-  font-size: 9px;
-  max-width: 72px;
+.national-player .np-ovr {
+  flex: 0 0 auto;
+  font-size: 15px;
+  font-weight: 700;
+  color: #b8f0c8;
+  min-width: 26px;
+  text-align: center;
+}
+.national-player .np-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.national-player .np-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e8eef4;
+  line-height: 1.2;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.national-player .np-meta {
+  font-size: 10px;
+  color: #8a9;
+  line-height: 1.2;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.national-player .club,
+.national-player .ovr,
+.national-player .pos,
+.national-player .nm {
+  display: none;
 }
 .national-player .rm-btn {
   display: none;
