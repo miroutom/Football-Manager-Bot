@@ -839,6 +839,39 @@ function ensureExtraReserveSlots(teamList) {
   }
 }
 
+function removeFaPlayer(p) {
+  if (!p || !p.id) return;
+  const msg =
+    `Удалить ${p.name} (${p.position}, ${p.overall}) из пула свободных агентов?\n\n` +
+    "Игрок будет удалён из free_agents.db (не трансфер). " +
+    "Отменить можно кнопкой ↩ до перезагрузки страницы.";
+  if (!window.confirm(msg)) return;
+  pushUndo();
+  freeAgents = freeAgents.filter((x) => x.id !== p.id);
+  delete baselineHome[p.id];
+  dirty = true;
+  renderAll();
+  fetch("/api/fa/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: p.id,
+      name: p.name,
+      position: p.position,
+      person_id: p.person_id,
+    }),
+  })
+    .then((res) => res.json())
+    .then((j) => {
+      if (!j.ok) {
+        setStatus(`удалён локально (БД: ${j.error || "ошибка"})`);
+        return;
+      }
+      setStatus(`удалён из FA: ${p.name}`);
+    })
+    .catch(() => setStatus(`удалён локально: ${p.name}`));
+}
+
 function removePlayerFromSquad(playerId, teamName) {
   const loc = findPlayerGlobally(playerId);
   if (!loc || !loc.player) return;
@@ -925,13 +958,18 @@ function renderPlayer(teamName, p, inline) {
   const injuryBadge = p.injured
     ? `<span class="inj" aria-hidden="true">🏥</span>`
     : "";
+  const rmTitle = teamName === FA_TEAM ? "Удалить из FA" : "Убрать из заявки";
   el.innerHTML = inline
-    ? `${injuryBadge}<button type="button" class="rm-btn" title="Убрать из заявки">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
-    : `${injuryBadge}<button type="button" class="rm-btn" title="Убрать из заявки">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm">${p.name}</span><span class="pos">${p.position}</span>`;
+    ? `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
+    : `${injuryBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm">${p.name}</span><span class="pos">${p.position}</span>`;
   el.querySelector(".rm-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
-    removePlayerFromSquad(p.id, teamName);
+    if (teamName === FA_TEAM) {
+      removeFaPlayer(p);
+    } else {
+      removePlayerFromSquad(p.id, teamName);
+    }
   });
   el.querySelector(".ovr")?.addEventListener("click", (e) => {
     e.stopPropagation();

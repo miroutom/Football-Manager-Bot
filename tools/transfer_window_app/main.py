@@ -673,6 +673,27 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self._send_json({"ok": False, "error": str(e)}, 400)
             return self._send_json({"ok": True, "player": row})
+        if parsed.path == "/api/fa/delete":
+            data = self._read_json()
+            try:
+                from utils.free_agents_db import delete_free_agent_player
+
+                pid = data.get("person_id")
+                person_id = int(pid) if pid is not None and str(pid).strip() else None
+                ok = delete_free_agent_player(
+                    name=str(data.get("name") or ""),
+                    position=str(data.get("position") or ""),
+                    person_id=person_id,
+                    fa_id=str(data.get("id") or "") or None,
+                )
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 400)
+            if not ok:
+                return self._send_json(
+                    {"ok": False, "error": "игрок не найден в free_agents.db"},
+                    404,
+                )
+            return self._send_json({"ok": True})
         if parsed.path == "/api/fa/apply-to-db":
             """Записать нового игрока сразу в клуб (минуя FA pool) — для подтверждения из UI."""
             data = self._read_json()

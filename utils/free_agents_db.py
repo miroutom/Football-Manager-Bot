@@ -229,6 +229,46 @@ def add_free_agent_player(
         eng.dispose()
 
 
+def delete_free_agent_player(
+    *,
+    name: str = "",
+    position: str = "",
+    person_id: int | None = None,
+    fa_id: str | None = None,
+) -> bool:
+    """Удалить свободного агента из ``free_agents.db`` (ручное удаление из пула)."""
+    nm = (name or "").strip()
+    pos = (position or "").strip()
+    if fa_id:
+        parts = str(fa_id).split("|")
+        if len(parts) >= 3:
+            if not nm:
+                nm = parts[1].strip()
+            if not pos:
+                pos = parts[2].strip()
+    if person_id is not None:
+        pid = int(person_id)
+        if pid > 0:
+            sess, eng = open_fa_session()
+            removed = False
+            try:
+                for Cls in _ALL:
+                    for r in list(sess.query(Cls).all()):
+                        if getattr(r, "person_id", None) == pid:
+                            sess.delete(r)
+                            removed = True
+                if removed:
+                    sess.commit()
+            finally:
+                sess.close()
+                eng.dispose()
+            if removed:
+                return True
+    if nm and pos:
+        return remove_free_agent_after_signing(nm, pos)
+    return False
+
+
 def remove_free_agent_after_signing(name: str, position: str) -> bool:
     """Удалить строку FA после подписания в клуб (стата уходит в league.db)."""
     from utils.player_transfer import _cls_for_position, _norm_cmp
