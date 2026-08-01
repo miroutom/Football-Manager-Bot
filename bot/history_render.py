@@ -469,7 +469,14 @@ def _lookup_position_nation(
 
                 if row is not None:
                     pos = (getattr(row, "position", None) or "").strip() or None
-                    nat = (getattr(row, "nation", None) or "").strip() or None
+                    from utils.player_nation import resolve_player_nation
+
+                    nat = resolve_player_nation(
+                        getattr(row, "name", None) or nm,
+                        getattr(row, "team", None) or raw_t or None,
+                        getattr(row, "nation", None),
+                        session_league,
+                    )
                     logger.debug(
                         "_lookup: %s → matched '%s' in %s → pos=%s nat=%s",
                         nm, candidate, Cls.__name__, pos, nat,
