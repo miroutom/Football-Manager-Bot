@@ -52,7 +52,24 @@ _SERVER_PORT = 8765
 _state_lock = threading.Lock()
 
 
-def _guess_lan_ip() -> str | None:
+def _lan_ip_priority(ip: str) -> int:
+    parts = ip.split(".")
+    if len(parts) != 4:
+        return 50
+    try:
+        a, b = int(parts[0]), int(parts[1])
+    except ValueError:
+        return 50
+    if a == 192 and b == 168:
+        return 0
+    if a == 10:
+        return 1
+    if a == 172 and 16 <= b <= 31:
+        return 4
+    return 10
+
+
+def _guess_lan_ip_via_route() -> str | None:
     import socket
 
     try:
@@ -63,6 +80,75 @@ def _guess_lan_ip() -> str | None:
         return ip
     except OSError:
         return None
+
+
+def _collect_lan_ips() -> list[str]:
+    """Приватные IP хоста (Wi‑Fi/Ethernet), без VPN utun и loopback."""
+    import re
+    import subprocess
+
+    out = ""
+    try:
+        out = subprocess.check_output(["ifconfig"], text=True, timeout=3)
+    except (OSError, subprocess.SubprocessError):
+        ip = _guess_lan_ip_via_route()
+        return [ip] if ip else []
+
+    skip_prefixes = ("lo", "utun", "gif", "stf", "bridge", "awdl", "llw")
+    candidates: list[tuple[int, str]] = []
+    for block in re.split(r"\n(?=\w)", out):
+        head = block.split("\n", 1)[0]
+        if ":" not in head:
+            continue
+        iface = head.split(":")[0]
+        if any(iface.startswith(p) for p in skip_prefixes):
+            continue
+        m = re.search(r"\n\tinet (\d+\.\d+\.\d+\.\d+)", block)
+        if not m:
+            continue
+        ip = m.group(1)
+        if ip.startswith("127."):
+            continue
+        candidates.append((_lan_ip_priority(ip), ip))
+
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for _prio, ip in sorted(candidates):
+        if ip in seen:
+            continue
+        seen.add(ip)
+        ordered.append(ip)
+
+    if not ordered:
+        ip = _guess_lan_ip_via_route()
+        if ip:
+            ordered.append(ip)
+    return ordered
+
+
+def _guess_lan_ip() -> str | None:
+    ips = _collect_lan_ips()
+    return ips[0] if ips else None
+
+
+def _print_lan_startup_hints(port: int) -> None:
+    ips = _collect_lan_ips()
+    if not ips:
+        print(
+            f"LAN (мультиплеер): не нашли IP — дайте напарнику http://<ваш-WiFi-IP>:{port}/",
+            file=sys.stderr,
+        )
+        return
+    print("LAN (мультиплеер) — отправь напарнику ссылку с Wi‑Fi (192.168… / 10…):")
+    for ip in ips:
+        mark = " ← обычно эта" if _lan_ip_priority(ip) <= 1 else ""
+        print(f"  http://{ip}:{port}/{mark}")
+    if any(_lan_ip_priority(ip) >= 4 for ip in ips):
+        print(
+            "  (адреса 172.31… — часто VPN; другу они обычно не подходят)",
+            file=sys.stderr,
+        )
+    print("Друзья должны быть в той же Wi‑Fi-сети. Сохраняйте часто (↻ синхронизация).")
 
 
 def _load_window_state_file(window: str) -> dict | None:
@@ -615,6 +701,7 @@ class Handler(BaseHTTPRequestHandler):
                         "lan_mode": _BIND_HOST == "0.0.0.0",
                         "host": _BIND_HOST,
                         "port": _SERVER_PORT,
+                        "lan_ips": _collect_lan_ips(),
                         "lan_url": (
                             f"http://{_guess_lan_ip()}:{_SERVER_PORT}/"
                             if _BIND_HOST == "0.0.0.0" and _guess_lan_ip()
@@ -893,7 +980,14 @@ def _handle_already_running(port: int, *, want_lan: bool, open_browser: bool) ->
         return 1
 
     if lan_mode and lan_url:
-        print(f"Уже запущено · LAN (мультиплеер): {lan_url}")
+        ips = mp.get("lan_ips") or []
+        if ips:
+            print("Уже запущено · LAN (мультиплеер):")
+            for ip in ips:
+                mark = " ← обычно эта" if _lan_ip_priority(str(ip)) <= 1 else ""
+                print(f"  http://{ip}:{port}/{mark}")
+        else:
+            print(f"Уже запущено · LAN (мультиплеер): {lan_url}")
         print(f"Локально: {url}")
     else:
         print(f"Уже запущено → {url}")
@@ -948,16 +1042,7 @@ def main() -> int:
 
     print(f"Transfer Window: {url}")
     if host == "0.0.0.0":
-        lan = _guess_lan_ip()
-        if lan:
-            print(f"LAN (мультиплеер): http://{lan}:{port}/")
-        else:
-            print(
-                "LAN (мультиплеер): не удалось определить IP — "
-                f"дайте напарнику http://<ваш-IP>:{port}/",
-                file=sys.stderr,
-            )
-        print("Друзья открывают LAN-ссылку в браузере; сохраняйте часто (↻ синхронизация).")
+        _print_lan_startup_hints(port)
     print(f"Сейвы и экспорты: {data}")
     print("Окна: лето 5/5, зима 2/2 — переключатель в шапке.")
     if migrated:
