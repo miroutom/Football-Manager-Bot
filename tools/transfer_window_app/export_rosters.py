@@ -189,8 +189,12 @@ def export_all() -> dict:
         for p in t.get(z) or []
         if p.get("injured")
     )
+    import time
+
+    exported_at = int(time.time())
     return {
         "season": season,
+        "exported_at": exported_at,
         "injury_as_of_month": INJURY_AS_OF_MONTH,
         "injured_count": injured_n,
         "squad_rules": {

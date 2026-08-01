@@ -739,6 +739,7 @@ def build_state_payload(data: dict) -> dict:
     state = {
         "window": window,
         "season": season,
+        "rosters_revision": data.get("rosters_revision"),
         "baseline_home": baseline_home,
         "teams": teams,
         "free_agents": free_agents,
@@ -916,6 +917,10 @@ class Handler(BaseHTTPRequestHandler):
             if not p.is_file():
                 return self._send_json({"error": f"нет {p}"}, 500)
             payload = json.loads(p.read_text(encoding="utf-8"))
+            try:
+                payload["rosters_revision"] = int(p.stat().st_mtime)
+            except OSError:
+                payload.setdefault("rosters_revision", payload.get("exported_at"))
             try:
                 from utils.free_agents_db import list_free_agents
 

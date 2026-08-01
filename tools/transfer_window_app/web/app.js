@@ -31,6 +31,7 @@ const SYNC_POLL_MS = 2500;
 let undoStack = [];
 let removedFromSquad = {};
 let rostersSeason = null;
+let rostersRevision = null;
 let leaguesCatalog = [];
 let positionsCatalog = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
@@ -421,6 +422,99 @@ function hideSyncBanner() {
   if (bar) bar.hidden = true;
 }
 
+function buildFreshRosterIndexes(rosters) {
+  const byId = new Map();
+  const teamIds = new Map();
+  for (const t of rosters?.teams || []) {
+    const ids = new Set();
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (const p of t[zone] || []) {
+        if (!p?.id) continue;
+        byId.set(p.id, { ...p, _team: t.name });
+        ids.add(p.id);
+      }
+    }
+    teamIds.set(t.name, ids);
+  }
+  return { byId, teamIds, baseline: rosters?.baseline_home || {} };
+}
+
+function clearTeamSlot(team, zone, index) {
+  const slot = team[zone][index];
+  if (zone === "start") {
+    team[zone][index] = {
+      id: null,
+      name: null,
+      position: null,
+      overall: null,
+      injured: false,
+      slot: slot?.slot,
+      x: slot?.x,
+      y: slot?.y,
+    };
+  } else {
+    team[zone][index] = { id: null, name: null, position: null, overall: null, injured: false };
+  }
+}
+
+function copyInjuryFields(from, to) {
+  if (!from || !to) return;
+  to.injured = !!from.injured;
+  if (from.injury_from != null) to.injury_from = from.injury_from;
+  else delete to.injury_from;
+  if (from.injury_until != null) to.injury_until = from.injury_until;
+  else delete to.injury_until;
+  if (from.injury_months != null) to.injury_months = from.injury_months;
+  else delete to.injury_months;
+}
+
+function reconcileWithFreshRosters(rosters) {
+  const { byId, baseline: freshBaseline } = buildFreshRosterIndexes(rosters);
+  let ovr = 0;
+  let removed = 0;
+
+  for (const team of teams) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (let i = 0; i < (team[zone] || []).length; i++) {
+        const p = team[zone][i];
+        if (!p?.id || !p.name) continue;
+
+        const home = baselineHome[p.id];
+        const freshHome = freshBaseline[p.id];
+        if (freshHome === FA_TEAM && home === team.name) {
+          clearTeamSlot(team, zone, i);
+          removed += 1;
+          continue;
+        }
+
+        const fresh = byId.get(p.id);
+        if (!fresh) continue;
+        if (fresh.overall != null && Number(p.overall) !== Number(fresh.overall)) {
+          p.overall = fresh.overall;
+          ovr += 1;
+        }
+        if (fresh.position && p.position !== fresh.position) p.position = fresh.position;
+        copyInjuryFields(fresh, p);
+      }
+    }
+  }
+
+  syncFreeAgentsFromRosters(rosters);
+  for (const [pid, home] of Object.entries(freshBaseline)) {
+    if (baselineHome[pid] === undefined || baselineHome[pid] === home) {
+      baselineHome[pid] = home;
+    }
+  }
+  dedupeGlobally(teams);
+  applyInjuryFlags(teams);
+  ensureExtraReserveSlots(teams);
+  if (rosters?.rosters_revision != null) {
+    rostersRevision = rosters.rosters_revision;
+  }
+  renderAll();
+  return { ovr, removed, fa: freeAgents.length };
+}
+
 function applySavedState(saved, rosters) {
   const freshBaseline = rosters.baseline_home || {};
   baselineHome = saved.baseline_home && Object.keys(saved.baseline_home).length
@@ -508,6 +602,7 @@ function loadFreshFromRosters(rosters, msg) {
   ensureExtraReserveSlots(teams);
   dirty = false;
   stateRevision = 0;
+  rostersRevision = rosters.rosters_revision ?? null;
   renderAll();
   if (msg) setStatus(msg);
 }
@@ -1754,6 +1849,7 @@ function currentState() {
     window: currentWindow,
     season: rostersSeason,
     revision: stateRevision,
+    rosters_revision: rostersRevision,
     client_id: clientIdentity.id,
     client_name: clientIdentity.name,
     baseline_home: baselineHome,
@@ -1797,6 +1893,7 @@ async function loadData() {
   const rosters = await rostersRes.json();
   lastRosters = rosters;
   rostersSeason = rosters.season ?? null;
+  rostersRevision = rosters.rosters_revision ?? null;
   leaguesCatalog = Array.isArray(cfg.leagues) ? cfg.leagues : (rosters.leagues || []);
   if (Array.isArray(cfg.positions)) positionsCatalog = cfg.positions;
   if (cfg.windows) {
@@ -1860,15 +1957,27 @@ async function loadData() {
       ? { ...saved.baseline_home }
       : freshBaseline;
     applySavedState(saved, rosters);
-    const injN = Object.keys(injuryById).length;
-    const rmN = Object.keys(removedFromSquad).length;
-    setStatus(
-      `загружено: ${windowLabels[currentWindow] || currentWindow}` +
-        (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "") +
-        (freeAgents.length ? ` · FA: ${freeAgents.length}` : "") +
-        (rmN ? ` · убрано: ${rmN}` : "") +
-        (saved.updated_by ? ` · ${saved.updated_by}` : "")
-    );
+    const savedRostersRev = saved.rosters_revision ?? null;
+    const curRostersRev = rosters.rosters_revision ?? null;
+    if (curRostersRev != null && savedRostersRev !== curRostersRev) {
+      const stats = reconcileWithFreshRosters(rosters);
+      await saveState({ silent: true, skipIncompleteConfirm: true });
+      hideSyncBanner();
+      setStatus(
+        `БД → app: рейтинги ${stats.ovr}, снято ${stats.removed}, FA ${stats.fa}` +
+          (saved.updated_by ? ` · сейв ${saved.updated_by}` : "")
+      );
+    } else {
+      const injN = Object.keys(injuryById).length;
+      const rmN = Object.keys(removedFromSquad).length;
+      setStatus(
+        `загружено: ${windowLabels[currentWindow] || currentWindow}` +
+          (injN ? ` · травм на ${injuryAsOfMonth} мес.: ${injN}` : "") +
+          (freeAgents.length ? ` · FA: ${freeAgents.length}` : "") +
+          (rmN ? ` · убрано: ${rmN}` : "") +
+          (saved.updated_by ? ` · ${saved.updated_by}` : "")
+      );
+    }
     startSyncPoll();
     return;
   }
