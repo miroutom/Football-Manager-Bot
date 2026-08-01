@@ -253,6 +253,57 @@ def squad_status_map(nation: str) -> dict[str, str]:
     return out
 
 
+def remove_from_squad(nation: str, name: str) -> bool:
+    """Снять игрока с заявки. False если не был в заявке."""
+    canon = resolve_nation_name(nation) or (nation or "").strip()
+    data = load_wc_squads()
+    teams = data.get("teams") or {}
+    roster: list = teams.get(canon) or []
+    want = (name or "").strip().casefold()
+    for i, row in enumerate(list(roster)):
+        if str(row.get("name") or "").casefold() == want:
+            roster.pop(i)
+            data["season"] = season_paths.get_active_season()
+            save_wc_squads(data)
+            return True
+    return False
+
+
+def assign_player_to_squad(
+    nation: str,
+    *,
+    name: str,
+    club: str = "",
+    position: str = "",
+    overall: int = 0,
+    status: str = "reserve",
+) -> dict[str, Any]:
+    """Добавить в заявку или сменить status (без снятия)."""
+    if is_called_up(nation, name):
+        return set_squad_player_status(nation, name, status)
+    canon = resolve_nation_name(nation) or (nation or "").strip()
+    if not canon:
+        raise ValueError("Неизвестная сборная")
+    data = load_wc_squads()
+    data["season"] = season_paths.get_active_season()
+    teams = data.setdefault("teams", {})
+    roster: list = teams.setdefault(canon, [])
+    if len(roster) >= WC_TOTAL:
+        raise ValueError(f"Заявка полна ({WC_TOTAL} игроков). Сначала снимите кого-то.")
+    st = _norm_status(status)
+    entry = {
+        "name": (name or "").strip(),
+        "club": (club or "").strip(),
+        "position": (position or "").strip(),
+        "overall": int(overall or 0),
+        "source": "callup",
+        "status": st,
+    }
+    roster.append(entry)
+    save_wc_squads(data)
+    return entry
+
+
 def toggle_callup(
     nation: str,
     *,

@@ -27,7 +27,51 @@ _PLAYERS_PAGE = 10
 _SQUAD_PAGE = 8
 
 _STATUS_ICON = {"start": "🟢", "bench": "🟡", "reserve": "⚪"}
-_STATUS_LABEL = {"start": "старт", "bench": "запас", "reserve": "резерв"}
+_STATUS_LABEL = {"start": "старт", "bench": "запас", "reserve": "резерв", "remove": "снять"}
+_ASSIGN_MODES = ("start", "bench", "reserve", "remove")
+_WC_ASSIGN_MODE_KEY = "wc_assign_mode"
+
+
+def _norm_assign_mode(raw: str | None) -> str:
+    m = (raw or "reserve").strip().lower()
+    return m if m in _ASSIGN_MODES else "reserve"
+
+
+def _mode_hint(mode: str) -> str:
+    mode = _norm_assign_mode(mode)
+    if mode == "remove":
+        return "➖ Снять"
+    return _STATUS_LABEL.get(mode, mode)
+
+
+def _mode_buttons_row(
+    prefix: str,
+    nation_idx: int,
+    page: int,
+    active: str,
+) -> list[InlineKeyboardButton]:
+    active = _norm_assign_mode(active)
+    btns: list[InlineKeyboardButton] = []
+    for key, label in (
+        ("start", "🟢 Старт"),
+        ("bench", "🟡 Запас"),
+        ("reserve", "⚪ Резерв"),
+    ):
+        text = f"▸ {label}" if key == active else label
+        btns.append(
+            InlineKeyboardButton(
+                text=text,
+                callback_data=f"{prefix}:m:{nation_idx}:{page}:{key}",
+            )
+        )
+    rm = "▸ ➖ Снять" if active == "remove" else "➖ Снять"
+    btns.append(
+        InlineKeyboardButton(
+            text=rm,
+            callback_data=f"{prefix}:m:{nation_idx}:{page}:remove",
+        )
+    )
+    return btns
 
 
 def _wc_home_kb() -> InlineKeyboardMarkup:
@@ -524,6 +568,7 @@ def _players_kb(
     page: int,
     players: list[dict],
     status_by_name: dict[str, str],
+    assign_mode: str,
 ) -> InlineKeyboardMarkup:
     pages = max(1, (len(players) + _PLAYERS_PAGE - 1) // _PLAYERS_PAGE)
     page = max(0, min(page, pages - 1))
@@ -543,10 +588,11 @@ def _players_kb(
             [
                 InlineKeyboardButton(
                     text=label,
-                    callback_data=f"wc:call:t:{nation_idx}:{page}:{i}",
+                    callback_data=f"wc:call:a:{nation_idx}:{page}:{i}",
                 )
             ]
         )
+    rows.append(_mode_buttons_row("wc:call", nation_idx, page, assign_mode))
     nav: list[InlineKeyboardButton] = []
     if page > 0:
         nav.append(
@@ -591,6 +637,7 @@ async def _show_nation_players(
     state: FSMContext,
     nation_idx: int,
     page: int = 0,
+    assign_mode: str | None = None,
 ) -> None:
     nations = _nations_sorted()
     if nation_idx < 0 or nation_idx >= len(nations):
@@ -599,6 +646,13 @@ async def _show_nation_players(
     nation = nations[nation_idx]
     from utils.wc_callups import club_players_for_nation, squad_for_nation
     from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_summary_html
+
+    data = await state.get_data()
+    if assign_mode is None:
+        assign_mode = _norm_assign_mode(data.get(_WC_ASSIGN_MODE_KEY))
+    else:
+        assign_mode = _norm_assign_mode(assign_mode)
+        await state.update_data(**{_WC_ASSIGN_MODE_KEY: assign_mode})
 
     players = await asyncio.to_thread(club_players_for_nation, nation)
     roster = squad_for_nation(nation)
@@ -612,10 +666,14 @@ async def _show_nation_players(
         f"<b>{html_escape(nation)}</b>\n"
         f"В клубах найдено: <b>{len(players)}</b>\n"
         f"{format_wc_quota_summary_html(ev)}\n"
-        f"➕ вызов / снять · 🟢🟡⚪ в заявке · статус — в «Заявка 26».\n"
-        f"FA без клуба — «Вне клубов»."
+        f"Режим: <b>{html_escape(_mode_hint(assign_mode))}</b> — тап по игроку.\n"
+        f"🟢🟡⚪ — уже в заявке · FA без клуба — «Вне клубов»."
     )
-    await _edit(callback, text, _players_kb(nation_idx, page, players, status_map))
+    await _edit(
+        callback,
+        text,
+        _players_kb(nation_idx, page, players, status_map, assign_mode),
+    )
 
 
 @wc_router.callback_query(F.data.startswith("wc:call:n:"))
@@ -640,8 +698,22 @@ async def cb_call_nation_page(callback: CallbackQuery, state: FSMContext) -> Non
     await _show_nation_players(callback, state, nation_idx, page)
 
 
-@wc_router.callback_query(F.data.startswith("wc:call:t:"))
-async def cb_call_toggle(callback: CallbackQuery, state: FSMContext) -> None:
+@wc_router.callback_query(F.data.startswith("wc:call:m:"))
+async def cb_call_mode(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = callback.data.split(":")
+    try:
+        nation_idx = int(parts[3])
+        page = int(parts[4])
+        mode = parts[5]
+    except (IndexError, ValueError):
+        await callback.answer()
+        return
+    await callback.answer(_mode_hint(mode))
+    await _show_nation_players(callback, state, nation_idx, page, assign_mode=mode)
+
+
+@wc_router.callback_query(F.data.startswith("wc:call:a:"))
+async def cb_call_assign(callback: CallbackQuery, state: FSMContext) -> None:
     parts = callback.data.split(":")
     try:
         nation_idx = int(parts[3])
@@ -650,6 +722,16 @@ async def cb_call_toggle(callback: CallbackQuery, state: FSMContext) -> None:
     except (IndexError, ValueError):
         await callback.answer()
         return
+    await _apply_call_assign(callback, state, nation_idx, page, local_idx)
+
+
+async def _apply_call_assign(
+    callback: CallbackQuery,
+    state: FSMContext,
+    nation_idx: int,
+    page: int,
+    local_idx: int,
+) -> None:
     nations = _nations_sorted()
     if nation_idx < 0 or nation_idx >= len(nations):
         await callback.answer()
@@ -664,22 +746,45 @@ async def cb_call_toggle(callback: CallbackQuery, state: FSMContext) -> None:
         await _show_nation_players(callback, state, nation_idx, page)
         return
     p = players[abs_idx]
-    from utils.wc_callups import toggle_callup
+    data = await state.get_data()
+    mode = _norm_assign_mode(data.get(_WC_ASSIGN_MODE_KEY))
+    from utils.wc_callups import assign_player_to_squad, remove_from_squad
 
     try:
-        added, _ = await asyncio.to_thread(
-            toggle_callup,
-            nation,
-            name=p["name"],
-            club=p.get("club") or "",
-            position=p.get("position") or "",
-            overall=int(p.get("overall") or 0),
-        )
+        if mode == "remove":
+            ok = await asyncio.to_thread(remove_from_squad, nation, p["name"])
+            if not ok:
+                await callback.answer("Не в заявке", show_alert=True)
+                return
+            await callback.answer("Снят")
+        else:
+            await asyncio.to_thread(
+                assign_player_to_squad,
+                nation,
+                name=p["name"],
+                club=p.get("club") or "",
+                position=p.get("position") or "",
+                overall=int(p.get("overall") or 0),
+                status=mode,
+            )
+            await callback.answer(_STATUS_LABEL.get(mode, mode))
     except Exception as e:
         await callback.answer(str(e)[:180], show_alert=True)
         return
-    await callback.answer("Вызван" if added else "Снят")
     await _show_nation_players(callback, state, nation_idx, page)
+
+
+@wc_router.callback_query(F.data.startswith("wc:call:t:"))
+async def cb_call_toggle_legacy(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = callback.data.split(":")
+    try:
+        nation_idx = int(parts[3])
+        page = int(parts[4])
+        local_idx = int(parts[5])
+    except (IndexError, ValueError):
+        await callback.answer()
+        return
+    await _apply_call_assign(callback, state, nation_idx, page, local_idx)
 
 
 @wc_router.callback_query(F.data.startswith("wc:call:sq:"))
@@ -780,22 +885,25 @@ async def on_call_manual_fa_line(message: Message, state: FSMContext) -> None:
         f"· {html_escape(str(entry.get('position') or pos))} · {ovr}",
         parse_mode="HTML",
     )
-    from utils.wc_callups import club_players_for_nation, squad_status_map
+    from utils.wc_callups import club_players_for_nation, squad_for_nation, squad_status_map
     from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_summary_html
 
     players = await asyncio.to_thread(club_players_for_nation, nation)
     roster = squad_for_nation(nation)
     status_map = squad_status_map(nation)
     ev = evaluate_wc_squad(roster)
+    assign_mode = _norm_assign_mode(data.get(_WC_ASSIGN_MODE_KEY))
     await state.update_data(wc_players=players)
     text = (
         f"<b>{html_escape(nation)}</b>\n"
         f"В клубах/FA: <b>{len(players)}</b>\n"
         f"{format_wc_quota_summary_html(ev)}\n"
-        f"➕ вызов / снять · статус — в «Заявка 26»."
+        f"Режим: <b>{html_escape(_mode_hint(assign_mode))}</b> — тап по игроку."
     )
     await message.answer(
-        text, reply_markup=_players_kb(nation_idx, page, players, status_map), parse_mode="HTML"
+        text,
+        reply_markup=_players_kb(nation_idx, page, players, status_map, assign_mode),
+        parse_mode="HTML",
     )
 
 
@@ -815,7 +923,12 @@ def _sorted_roster(roster: list[dict]) -> list[dict]:
     return sorted(roster, key=key)
 
 
-def _squad_roster_kb(nation_idx: int, page: int, roster: list[dict]) -> InlineKeyboardMarkup:
+def _squad_roster_kb(
+    nation_idx: int,
+    page: int,
+    roster: list[dict],
+    assign_mode: str,
+) -> InlineKeyboardMarkup:
     sorted_r = _sorted_roster(roster)
     pages = max(1, (len(sorted_r) + _SQUAD_PAGE - 1) // _SQUAD_PAGE)
     page = max(0, min(page, pages - 1))
@@ -835,10 +948,11 @@ def _squad_roster_kb(nation_idx: int, page: int, roster: list[dict]) -> InlineKe
             [
                 InlineKeyboardButton(
                     text=label,
-                    callback_data=f"wc:sq:cyc:{nation_idx}:{page}:{i}",
+                    callback_data=f"wc:sq:a:{nation_idx}:{page}:{i}",
                 )
             ]
         )
+    rows.append(_mode_buttons_row("wc:sq", nation_idx, page, assign_mode))
     nav: list[InlineKeyboardButton] = []
     if page > 0:
         nav.append(
@@ -880,8 +994,10 @@ def _squad_roster_kb(nation_idx: int, page: int, roster: list[dict]) -> InlineKe
 
 async def _show_squad_roster(
     callback: CallbackQuery,
+    state: FSMContext,
     nation_idx: int,
     page: int = 0,
+    assign_mode: str | None = None,
 ) -> None:
     nations = _nations_sorted()
     if nation_idx < 0 or nation_idx >= len(nations):
@@ -891,6 +1007,13 @@ async def _show_squad_roster(
     from utils.wc_callups import squad_for_nation
     from utils.wc_squad_quota import evaluate_wc_squad, format_wc_quota_summary_html
 
+    data = await state.get_data()
+    if assign_mode is None:
+        assign_mode = _norm_assign_mode(data.get(_WC_ASSIGN_MODE_KEY))
+    else:
+        assign_mode = _norm_assign_mode(assign_mode)
+        await state.update_data(**{_WC_ASSIGN_MODE_KEY: assign_mode})
+
     roster = squad_for_nation(nation)
     ev = evaluate_wc_squad(roster)
     n = len(roster)
@@ -898,10 +1021,14 @@ async def _show_squad_roster(
         f"<b>{html_escape(nation)}</b> · заявка 26\n"
         f"{format_wc_quota_summary_html(ev)}\n\n"
         f"Игроков в заявке: <b>{n}</b>\n"
-        f"Тап по строке: резерв → старт → запас → …\n"
+        f"Режим: <b>{html_escape(_mode_hint(assign_mode))}</b> — тап по игроку.\n"
         f"🟢 старт · 🟡 запас · ⚪ резерв"
     )
-    await _edit(callback, text, _squad_roster_kb(nation_idx, page, roster))
+    await _edit(
+        callback,
+        text,
+        _squad_roster_kb(nation_idx, page, roster, assign_mode),
+    )
 
 
 def _squad_manage_kb(nation_idx: int) -> InlineKeyboardMarkup:
@@ -931,17 +1058,17 @@ _SQUAD_LINES_HELP = (
 
 
 @wc_router.callback_query(F.data.startswith("wc:sq:n:"))
-async def cb_squad_manage(callback: CallbackQuery) -> None:
+async def cb_squad_manage(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     try:
         nation_idx = int(callback.data.split(":")[-1])
     except ValueError:
         return
-    await _show_squad_roster(callback, nation_idx, 0)
+    await _show_squad_roster(callback, state, nation_idx, 0)
 
 
 @wc_router.callback_query(F.data.startswith("wc:sq:pg:"))
-async def cb_squad_page(callback: CallbackQuery) -> None:
+async def cb_squad_page(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     parts = callback.data.split(":")
     try:
@@ -949,11 +1076,25 @@ async def cb_squad_page(callback: CallbackQuery) -> None:
         page = int(parts[4])
     except (IndexError, ValueError):
         return
-    await _show_squad_roster(callback, nation_idx, page)
+    await _show_squad_roster(callback, state, nation_idx, page)
 
 
-@wc_router.callback_query(F.data.startswith("wc:sq:cyc:"))
-async def cb_squad_cycle_status(callback: CallbackQuery) -> None:
+@wc_router.callback_query(F.data.startswith("wc:sq:m:"))
+async def cb_squad_mode(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = callback.data.split(":")
+    try:
+        nation_idx = int(parts[3])
+        page = int(parts[4])
+        mode = parts[5]
+    except (IndexError, ValueError):
+        await callback.answer()
+        return
+    await callback.answer(_mode_hint(mode))
+    await _show_squad_roster(callback, state, nation_idx, page, assign_mode=mode)
+
+
+@wc_router.callback_query(F.data.startswith("wc:sq:a:"))
+async def cb_squad_assign(callback: CallbackQuery, state: FSMContext) -> None:
     parts = callback.data.split(":")
     try:
         nation_idx = int(parts[3])
@@ -962,31 +1103,63 @@ async def cb_squad_cycle_status(callback: CallbackQuery) -> None:
     except (IndexError, ValueError):
         await callback.answer()
         return
+    await _apply_squad_assign(callback, state, nation_idx, page, local_idx)
+
+
+@wc_router.callback_query(F.data.startswith("wc:sq:cyc:"))
+async def cb_squad_cycle_status(callback: CallbackQuery, state: FSMContext) -> None:
+    parts = callback.data.split(":")
+    try:
+        nation_idx = int(parts[3])
+        page = int(parts[4])
+        local_idx = int(parts[5])
+    except (IndexError, ValueError):
+        await callback.answer()
+        return
+    await _apply_squad_assign(callback, state, nation_idx, page, local_idx)
+
+
+async def _apply_squad_assign(
+    callback: CallbackQuery,
+    state: FSMContext,
+    nation_idx: int,
+    page: int,
+    local_idx: int,
+) -> None:
     nations = _nations_sorted()
     if nation_idx < 0 or nation_idx >= len(nations):
         await callback.answer()
         return
     nation = nations[nation_idx]
-    from utils.wc_callups import cycle_squad_player_status, squad_for_nation
+    from utils.wc_callups import remove_from_squad, set_squad_player_status, squad_for_nation
 
     roster = _sorted_roster(squad_for_nation(nation))
     abs_idx = page * _SQUAD_PAGE + local_idx
     if abs_idx < 0 or abs_idx >= len(roster):
         await callback.answer("Обновляю…")
-        await _show_squad_roster(callback, nation_idx, page)
+        await _show_squad_roster(callback, state, nation_idx, page)
         return
     name = str(roster[abs_idx].get("name") or "")
+    data = await state.get_data()
+    mode = _norm_assign_mode(data.get(_WC_ASSIGN_MODE_KEY))
     try:
-        new_st, _ = await asyncio.to_thread(cycle_squad_player_status, nation, name)
+        if mode == "remove":
+            ok = await asyncio.to_thread(remove_from_squad, nation, name)
+            if not ok:
+                await callback.answer("Не в заявке", show_alert=True)
+                return
+            await callback.answer("Снят")
+        else:
+            await asyncio.to_thread(set_squad_player_status, nation, name, mode)
+            await callback.answer(_STATUS_LABEL.get(mode, mode))
     except Exception as e:
         await callback.answer(str(e)[:180], show_alert=True)
         return
-    await callback.answer(_STATUS_LABEL.get(new_st, new_st))
-    await _show_squad_roster(callback, nation_idx, page)
+    await _show_squad_roster(callback, state, nation_idx, page)
 
 
 @wc_router.callback_query(F.data.startswith("wc:sq:done:"))
-async def cb_squad_confirm(callback: CallbackQuery) -> None:
+async def cb_squad_confirm(callback: CallbackQuery, state: FSMContext) -> None:
     try:
         nation_idx = int(callback.data.split(":")[-1])
     except ValueError:
@@ -1006,7 +1179,7 @@ async def cb_squad_confirm(callback: CallbackQuery) -> None:
     else:
         hint = format_wc_quota_hint(ev)
         await callback.answer(f"⚠️ {hint}"[:200], show_alert=True)
-    await _show_squad_roster(callback, nation_idx, 0)
+    await _show_squad_roster(callback, state, nation_idx, 0)
 
 
 @wc_router.callback_query(F.data.startswith("wc:sq:png:"))
