@@ -860,6 +860,56 @@ def _port_is_open(port: int) -> bool:
             return False
 
 
+def _fetch_running_config(port: int) -> dict | None:
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/config", timeout=1.5) as r:
+            raw = json.loads(r.read().decode("utf-8"))
+            return raw if isinstance(raw, dict) else None
+    except (OSError, urllib.error.URLError, json.JSONDecodeError, TimeoutError):
+        return None
+
+
+def _handle_already_running(port: int, *, want_lan: bool, open_browser: bool) -> int:
+    url = f"http://127.0.0.1:{port}/"
+    cfg = _fetch_running_config(port)
+    mp = (cfg or {}).get("multiplayer") or {}
+    lan_mode = bool(mp.get("lan_mode"))
+    lan_url = mp.get("lan_url")
+
+    if want_lan and not lan_mode:
+        print(
+            f"⚠️  Порт {port} занят старым Transfer Window (только localhost, без LAN).\n"
+            "    Остановите его и запустите снова с --lan:\n"
+            f"    lsof -i :{port}\n"
+            "    kill <PID>\n"
+            "    python3 tools/transfer_window_app/main.py --lan",
+            file=sys.stderr,
+        )
+        if open_browser:
+            webbrowser.open(url)
+        return 1
+
+    if lan_mode and lan_url:
+        print(f"Уже запущено · LAN (мультиплеер): {lan_url}")
+        print(f"Локально: {url}")
+    else:
+        print(f"Уже запущено → {url}")
+        if want_lan:
+            lan = _guess_lan_ip()
+            if lan:
+                print(
+                    f"⚠️  LAN-режим не подтверждён. Если нужен мультиплеер — перезапустите с --lan.",
+                    file=sys.stderr,
+                )
+    _write_startup_log(f"already running → {url} lan={lan_mode}")
+    if open_browser:
+        webbrowser.open(lan_url or url)
+    return 0
+
+
 def _open_browser_when_ready(url: str, port: int) -> None:
     """Открыть браузер сразу после готовности порта (без лишней паузы)."""
     for _ in range(40):  # ~2 с
@@ -882,19 +932,18 @@ def main() -> int:
 
     # Повторный клик по .app: сервер уже крутится — сразу браузер, без второго процесса.
     if _port_is_open(port):
-        _write_startup_log(f"already running → {url}")
-        if open_browser:
-            webbrowser.open(url)
-        return 0
+        return _handle_already_running(
+            port, want_lan=(host == "0.0.0.0"), open_browser=open_browser
+        )
 
     try:
         server = ThreadingHTTPServer((host, port), Handler)
     except OSError as e:
         _write_startup_log(f"bind failed: {e}")
         if _port_is_open(port):
-            if open_browser:
-                webbrowser.open(url)
-            return 0
+            return _handle_already_running(
+                port, want_lan=(host == "0.0.0.0"), open_browser=open_browser
+            )
         raise
 
     print(f"Transfer Window: {url}")
@@ -902,6 +951,12 @@ def main() -> int:
         lan = _guess_lan_ip()
         if lan:
             print(f"LAN (мультиплеер): http://{lan}:{port}/")
+        else:
+            print(
+                "LAN (мультиплеер): не удалось определить IP — "
+                f"дайте напарнику http://<ваш-IP>:{port}/",
+                file=sys.stderr,
+            )
         print("Друзья открывают LAN-ссылку в браузере; сохраняйте часто (↻ синхронизация).")
     print(f"Сейвы и экспорты: {data}")
     print("Окна: лето 5/5, зима 2/2 — переключатель в шапке.")

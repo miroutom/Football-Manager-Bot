@@ -8,7 +8,8 @@ if [[ ! -f rosters.json ]]; then
   exit 1
 fi
 if curl -sf -o /dev/null http://127.0.0.1:8765/ 2>/dev/null; then
-  echo "Уже запущено → http://127.0.0.1:8765/"
+  echo "Уже запущено на :8765"
+  python3 main.py --lan --no-browser 2>/dev/null || true
   open "http://127.0.0.1:8765/" 2>/dev/null || true
   exit 0
 fi
