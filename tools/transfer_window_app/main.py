@@ -1034,6 +1034,13 @@ class Handler(BaseHTTPRequestHandler):
                 nations_catalog = _load_nations_catalog()
             except Exception:
                 nations_catalog = {}
+            coaches_list: list[str] = []
+            try:
+                from coach_squad_state import list_coach_display_names
+
+                coaches_list = list_coach_display_names()
+            except Exception:
+                coaches_list = []
             return self._send_json(
                 {
                     "default_window": DEFAULT_WINDOW,
@@ -1049,6 +1056,7 @@ class Handler(BaseHTTPRequestHandler):
                     "data_dir": str(_data_dir()),
                     "leagues": leagues,
                     "positions": positions,
+                    "coaches": coaches_list,
                     "fa_team": "Free Agent",
                     "squad_rules": _squad_rules_payload("clubs"),
                     "multiplayer": _multiplayer_config_payload(),

@@ -50,6 +50,7 @@ let positionsCatalog = [
   "ЦП", "ЦАП", "ЦОП", "ЛП", "ПП", "ЛЦП", "ПЦП",
   "ЛФА", "ПФА", "ФРВ", "ЦФД", "ЛФД", "ПФД",
 ];
+let coachesCatalog = [];
 
 const SQUAD_TARGET = 32;
 const SQUAD_START_TARGET = 11;
@@ -839,6 +840,57 @@ function squadIdsForTeam(teamName) {
   return ids;
 }
 
+function playerIdentityKey(p) {
+  if (!p) return "";
+  const pid = Number(p.person_id);
+  if (Number.isFinite(pid) && pid > 0) return `pid:${pid}`;
+  const nm = String(p.name || "").trim().toLowerCase();
+  return nm ? `nm:${nm}` : "";
+}
+
+function squadIdentityKeysForTeam(teamName) {
+  const team = teams.find((t) => t.name === teamName);
+  const keys = new Set();
+  if (!team) return keys;
+  for (const zone of ["start", "bench", "reserve"]) {
+    for (const p of team[zone] || []) {
+      const k = playerIdentityKey(p);
+      if (k) keys.add(k);
+      if (p?.id) keys.add(`id:${p.id}`);
+    }
+  }
+  return keys;
+}
+
+function isPlayerInNationalSquad(p, squadKeys) {
+  if (!p || !squadKeys?.size) return false;
+  const k = playerIdentityKey(p);
+  if (k && squadKeys.has(k)) return true;
+  if (p.id && squadKeys.has(`id:${p.id}`)) return true;
+  return false;
+}
+
+function syncNationalPoolPlayer(oldId, patch) {
+  if (!nationalPools?.nations) return;
+  const loc = findPlayerGlobally(oldId);
+  const personId = patch.person_id ?? loc?.player?.person_id;
+  const name = patch.name ?? loc?.player?.name;
+  const nmKey = String(name || "").trim().toLowerCase();
+  for (const block of nationalPools.nations) {
+    for (const p of block.players || []) {
+      const sameId = oldId && p.id === oldId;
+      const samePid = personId && p.person_id === personId;
+      const sameName = nmKey && String(p.name || "").trim().toLowerCase() === nmKey;
+      if (!sameId && !samePid && !sameName) continue;
+      if (patch.id) p.id = patch.id;
+      if (patch.name) p.name = patch.name;
+      if (patch.position) p.position = patch.position;
+      if (patch.overall != null) p.overall = patch.overall;
+      if (patch.person_id != null) p.person_id = patch.person_id;
+    }
+  }
+}
+
 function nationNamesMatch(a, b) {
   return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
 }
@@ -1025,9 +1077,9 @@ function setNationalPools(data) {
     const block = isNationsMode() && selectedNation
       ? (nationalPools?.nations || []).find((b) => nationNamesMatch(b.name, selectedNation))
       : null;
-    const inSquad = isNationsMode() && selectedNation ? squadIdsForTeam(selectedNation) : null;
+    const inSquad = isNationsMode() && selectedNation ? squadIdentityKeysForTeam(selectedNation) : null;
     const poolCount = block
-      ? (block.players || []).filter((p) => p?.id && !inSquad?.has(p.id)).length
+      ? (block.players || []).filter((p) => p?.id && !isPlayerInNationalSquad(p, inSquad)).length
       : null;
     cnt.textContent = String(
       poolCount ?? block?.players?.length ?? data?.player_count ?? nationalPools?.player_count ?? 0
@@ -1086,6 +1138,7 @@ function renderNationalPlayer(p) {
       name: p.name,
       position: p.position,
       overall: p.overall,
+      person_id: p.person_id,
       club: p.team,
     };
     e.dataTransfer.effectAllowed = "copy";
@@ -1115,7 +1168,7 @@ function renderNationalPanel() {
   let shown = 0;
   let total = 0;
   const nationFilterName = isNationsMode() ? selectedNation : "";
-  const inSquad = isNationsMode() && selectedNation ? squadIdsForTeam(selectedNation) : null;
+  const inSquad = isNationsMode() && selectedNation ? squadIdentityKeysForTeam(selectedNation) : null;
   const natFiltersOn =
     poolFiltersActive(nationalPoolFilters) || !!q;
 
@@ -1124,7 +1177,7 @@ function renderNationalPanel() {
     if (nationFilterName && !nationNamesMatch(nation, nationFilterName)) return;
     let players = (block.players || []).slice();
     if (inSquad) {
-      players = players.filter((p) => p?.id && !inSquad.has(p.id));
+      players = players.filter((p) => p?.id && !isPlayerInNationalSquad(p, inSquad));
     }
     total += players.length;
     if (q) {
@@ -2093,10 +2146,12 @@ function syncPlayerOverall(id, value) {
         if (slot?.id === id) slot.overall = value;
       }
     }
+    recomputeAvgStart(team);
   }
   for (const p of freeAgents) {
     if (p.id === id) p.overall = value;
   }
+  syncNationalPoolPlayer(id, { overall: value });
 }
 
 function playerIdFor(teamName, name, position) {
@@ -2111,6 +2166,8 @@ function rekeyPlayer(oldId, teamName, name, position) {
   if (!oldId || oldId === newId) return newId;
   const nm = String(name || "").trim();
   const pos = String(position || "").trim().toUpperCase();
+  const loc = findPlayerGlobally(oldId);
+  const personId = loc?.player?.person_id;
 
   for (const team of teams) {
     for (const zone of ["start", "bench", "reserve"]) {
@@ -2139,6 +2196,7 @@ function rekeyPlayer(oldId, teamName, name, position) {
     removedFromSquad[newId] = { ...removedFromSquad[oldId], id: newId, name: nm, position: pos };
     delete removedFromSquad[oldId];
   }
+  syncNationalPoolPlayer(oldId, { id: newId, name: nm, position: pos, person_id: personId });
   return newId;
 }
 
@@ -2403,17 +2461,30 @@ function movePlayer(src, destTeamName, destZone, destIndex) {
   if (src.fromNational || (isNationsMode() && findNationalPlayer(src.id))) {
     const nat = findNationalPlayer(src.id);
     const moving = nat
-      ? { ...nat, id: nat.id }
+      ? { ...nat }
       : {
           id: src.id,
           name: src.name,
           position: src.position,
           overall: src.overall,
+          person_id: src.person_id,
         };
+    if (isNationsMode() && destTeamName) {
+      moving.id = playerIdFor(destTeamName, moving.name, moving.position);
+    }
     const destSlot = destTeam[destZone][destIndex];
     const displaced = destSlot?.id && destSlot.id !== moving.id ? { ...destSlot } : null;
+    const oldPoolId = nat?.id || src.id;
     removeAllInstancesOfId(moving.id);
+    if (oldPoolId && oldPoolId !== moving.id) removeAllInstancesOfId(oldPoolId);
     placePlayer(destTeam, destZone, destIndex, moving);
+    syncNationalPoolPlayer(oldPoolId, {
+      id: moving.id,
+      name: moving.name,
+      position: moving.position,
+      overall: moving.overall,
+      person_id: moving.person_id,
+    });
     if (displaced) {
       if (isNationsMode() && nationNamesMatch(destTeamName, selectedNation)) {
         let placed = false;
@@ -2686,19 +2757,24 @@ function renderTeam(team) {
     const coachWrap = document.createElement("label");
     coachWrap.className = "formation-pick";
     coachWrap.textContent = " · Тренер ";
-    const coachInp = document.createElement("input");
-    coachInp.type = "text";
-    coachInp.className = "coach-edit";
-    coachInp.value = team.coach || "";
-    coachInp.placeholder = "Фамилия";
-    coachInp.addEventListener("change", (e) => onCoachChange(team.name, e.target.value));
-    coachInp.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        coachInp.blur();
-      }
+    const coachSel = document.createElement("select");
+    coachSel.className = "coach-edit";
+    const emptyOpt = document.createElement("option");
+    emptyOpt.value = "";
+    emptyOpt.textContent = "—";
+    coachSel.appendChild(emptyOpt);
+    const curCoach = (team.coach || "").trim();
+    const names = coachesCatalog.slice();
+    if (curCoach && !names.includes(curCoach)) names.unshift(curCoach);
+    names.forEach((name) => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      if (name === curCoach) opt.selected = true;
+      coachSel.appendChild(opt);
     });
-    coachWrap.appendChild(coachInp);
+    coachSel.addEventListener("change", (e) => onCoachChange(team.name, e.target.value));
+    coachWrap.appendChild(coachSel);
     meta.appendChild(coachWrap);
   } else if (team.coach) {
     const coachSpan = document.createElement("span");
@@ -2823,6 +2899,7 @@ function renderTeam(team) {
 }
 
 function renderAll() {
+  teams.forEach(recomputeAvgStart);
   if (!isNationsMode()) renderFaPanel();
   renderNationalPanel();
   const grid = document.getElementById("grid");
@@ -2979,6 +3056,7 @@ async function loadData() {
     fillPoolPositionSelect(document.getElementById("fa-pos-filter"));
     fillPoolPositionSelect(document.getElementById("national-pos-filter"));
   }
+  if (Array.isArray(cfg.coaches)) coachesCatalog = cfg.coaches;
   if (cfg.windows) {
     Object.entries(cfg.windows).forEach(([k, v]) => {
       if (v && v.label) windowLabels[k] = v.label;

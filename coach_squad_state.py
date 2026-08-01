@@ -107,6 +107,16 @@ def list_coach_ids() -> list[str]:
     return sorted(_load().get("coaches", {}).keys())
 
 
+def list_coach_display_names() -> list[str]:
+    """Уникальные отображаемые имена тренеров (для UI сборных ЧМ)."""
+    names = {
+        str(c.get("name", "")).strip()
+        for c in _load().get("coaches", {}).values()
+        if str(c.get("name", "")).strip()
+    }
+    return sorted(names, key=str.casefold)
+
+
 def get_team_for_coach(coach_id: str) -> str | None:
     for team, cid in _load().get("team_coach", {}).items():
         if cid == coach_id:
