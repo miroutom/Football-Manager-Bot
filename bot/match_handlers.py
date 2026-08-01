@@ -125,17 +125,6 @@ async def _finish_match_and_offer_stats(
         parse_mode="HTML",
     )
 
-    from bot.wc_announcement import maybe_announce_world_cup_started
-
-    await maybe_announce_world_cup_started(
-        message,
-        ok=ok,
-        home=home,
-        away=away,
-        league_code=league_code,
-        cl_phase=cl_phase,
-    )
-
     # Даже если «Да» не нажмут / сессия сорвётся — матч доступен в «Стата без матча».
     await _enqueue_stats_pending_for_fixture(
         home=home,
@@ -159,6 +148,7 @@ async def _finish_match_and_offer_stats(
         stats_tournament="cl" if league_code == "cl" else "league",
         stats_league_code=league_code,
         stats_schedule_day=schedule_day,
+        stats_cl_phase=cl_phase,
         stats_continue_source="calendar",
     )
     kb = InlineKeyboardMarkup(
@@ -502,10 +492,11 @@ async def _apply_motm_and_finalize(
     hs = data.get("stats_hs")
     aws = data.get("stats_aws")
     lc = data.get("stats_league_code")
-    cl_ph = None
+    cl_ph = data.get("stats_cl_phase")
     if str(tourn) == "cl" or str(lc or "") == "cl":
         ason = data.get("stats_ason_ctx") or {}
-        cl_ph = ason.get("cl_ph") if isinstance(ason, dict) else None
+        if not cl_ph and isinstance(ason, dict):
+            cl_ph = ason.get("cl_ph")
         if not cl_ph and home and away:
             from match_results import find_journal_match_record
 
@@ -554,6 +545,16 @@ async def _apply_motm_and_finalize(
     await message.answer(
         f"⭐ Игрок матча: <b>{html_escape(name)}</b> ({html_escape(team)})",
         parse_mode="HTML",
+    )
+    from bot.wc_announcement import maybe_announce_world_cup_started
+
+    await maybe_announce_world_cup_started(
+        message,
+        ok=True,
+        home=home,
+        away=away,
+        league_code=str(lc or ("cl" if str(tourn) == "cl" else "")),
+        cl_phase=str(cl_ph) if cl_ph else None,
     )
     await _finalize_stats_session(message, state)
 
@@ -1167,6 +1168,7 @@ async def _begin_stats_for_played_slot(
         stats_tournament="cl" if lc == "cl" else "league",
         stats_league_code=lc,
         stats_schedule_day=slot.get("day"),
+        stats_cl_phase=cl_ph,
         stats_continue_source="ason",
         stats_ason_ctx=ason_ctx,
     )
