@@ -79,6 +79,7 @@ def club_players_for_nation(nation: str, *, limit: int = 120) -> list[dict[str, 
                             "overall": int(getattr(r, "overall", 0) or 0),
                             "nation": canon,
                             "source": "club",
+                            "person_id": getattr(r, "person_id", None),
                         }
                     )
     finally:
@@ -123,6 +124,17 @@ def club_players_for_nation(nation: str, *, limit: int = 120) -> list[dict[str, 
         uniq.append(p)
         if len(uniq) >= limit:
             break
+
+    from utils.player_nicknames import get_nickname_for_player
+
+    for p in uniq:
+        nick = get_nickname_for_player(
+            person_id=p.get("person_id"),
+            name=p.get("name"),
+            team=p.get("club"),
+        )
+        if nick:
+            p["nickname"] = nick
     return uniq
 
 

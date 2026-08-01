@@ -51,22 +51,44 @@ def _player_row_label(
     *,
     prefix: str = "",
     suffix: str = "",
+    nickname: str | None = None,
     max_len: int = 64,
 ) -> str:
     """Подпись строки игрока: имя · позиция · рейтинг (лимит Telegram — 64)."""
+    from utils.player_nicknames import is_complex_player_name
+
     pos = (position or "—").strip() or "—"
     ovr = overall if overall not in (None, "") else "—"
     tail = f" · {pos} · {ovr}"
     if suffix:
         tail += f" · {suffix}"
-    label = f"{prefix}{name}{tail}"
+
+    def _with_display(display: str) -> str:
+        return f"{prefix}{display}{tail}"
+
+    nick = (nickname or "").strip()
+    prefer_nick = bool(nick) and (
+        is_complex_player_name(name) or len(_with_display(name)) > max_len
+    )
+    if prefer_nick:
+        nick_label = _with_display(nick)
+        if len(nick_label) <= max_len:
+            return nick_label
+
+    label = _with_display(name)
     if len(label) <= max_len:
         return label
+
+    if nick:
+        nick_label = _with_display(nick)
+        if len(nick_label) <= max_len:
+            return nick_label
+
     budget = max_len - len(tail) - len(prefix) - 1
     if budget < 2:
         return f"{prefix}…{tail}"[:max_len]
     short = name if len(name) <= budget else name[: budget - 1] + "…"
-    return f"{prefix}{short}{tail}"
+    return _with_display(short)
 
 
 def _mode_buttons_row(
@@ -611,6 +633,7 @@ def _players_kb(
             p.get("position"),
             p.get("overall"),
             prefix=mark,
+            nickname=p.get("nickname"),
         )
         rows.append(
             [
@@ -960,6 +983,8 @@ def _squad_roster_kb(
     roster: list[dict],
     assign_mode: str,
 ) -> InlineKeyboardMarkup:
+    from utils.player_nicknames import get_nickname_for_player
+
     sorted_r = _sorted_roster(roster)
     pages = max(1, (len(sorted_r) + _SQUAD_PAGE - 1) // _SQUAD_PAGE)
     page = max(0, min(page, pages - 1))
@@ -972,12 +997,18 @@ def _squad_roster_kb(
         icon = _STATUS_ICON[st]
         lab = _STATUS_LABEL.get(st, st)
         name = str(p.get("name") or "")
+        nick = p.get("nickname") or get_nickname_for_player(
+            name=name,
+            team=p.get("club"),
+            person_id=p.get("person_id"),
+        )
         label = _player_row_label(
             name,
             p.get("position"),
             p.get("overall"),
             prefix=f"{icon} ",
             suffix=lab,
+            nickname=nick,
         )
         rows.append(
             [
