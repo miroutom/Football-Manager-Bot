@@ -16,7 +16,6 @@ except ImportError as e:
 
 from bot.report_gfx import (
     draw_header_bar,
-    kit_accent_stripe,
     paste_row_emblem,
     pick_font,
     png_bytes,
@@ -504,10 +503,7 @@ def _render_single_table_png(
         y1 = y0 + _ROW_H
         bg = theme.row_a if i % 2 == 0 else theme.row_b
         draw.rectangle([0, y0, canvas_w, y1], fill=bg)
-        if mode not in ("nation", "flag", "wc", "national"):
-            kit_accent_stripe(draw, team=row["name"], x0=0, y0=y0, y1=y1, width=4)
-        else:
-            draw.rectangle([0, y0, 4, y1], fill=theme.accent)
+        draw.rectangle([0, y0, 4, y1], fill=theme.accent)
 
         cy = y0 + _ROW_H // 2
         draw.text(
