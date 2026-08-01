@@ -209,7 +209,18 @@ body {
   transform: none;
   bottom: calc(100% + 4px);
 }
-.player .ovr { font-size: 13px; font-weight: 700; color: #b8f0c8; line-height: 1; }
+.player .ovr { font-size: 13px; font-weight: 700; color: #b8f0c8; line-height: 1; cursor: pointer; }
+.player .ovr:hover { color: #fff; text-decoration: underline; }
+.ovr-edit {
+  width: 34px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 2px;
+  border: 1px solid #6ee7a0;
+  border-radius: 4px;
+  background: #0f1a12;
+  color: #fff;
+}
 .player .nm { font-size: 9px; line-height: 1.1; word-break: break-word; }
 .player .pos { font-size: 8px; color: #9ab; }
 .sidebar {

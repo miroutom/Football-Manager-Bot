@@ -17,7 +17,7 @@ async def setup_bot_commands(bot: Bot) -> None:
             BotCommand(command="play_skipped", description="Сыграть из списка отложенных"),
             BotCommand(command="play_schedule", description="Выбрать матч из календаря (mixed_schedule)"),
             BotCommand(command="fix_score", description="Исправить счёт уже записанного матча"),
-            BotCommand(command="transfer", description="Трансферный дашборд (окно, квоты, НО/СО/СУ/НУ)"),
+            BotCommand(command="transfer", description="Загрузить трансферы и составы из приложения"),
             BotCommand(command="squad_status", description="Правка заявки start/bench/reserve по строкам"),
             BotCommand(command="awards", description="Награда сезона (+1: мяч, бутса, перчатка, Golden Boy)"),
             BotCommand(command="stats_match", description="Стата по сыгранному матчу из календаря"),

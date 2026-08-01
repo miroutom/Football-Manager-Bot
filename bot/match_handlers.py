@@ -2326,12 +2326,21 @@ async def cmd_play_schedule(message: Message, state: FSMContext) -> None:
     await _send_schedule_play_league_step(message)
 
 
-def _skipped_pick_kb(matches_slice: list) -> InlineKeyboardMarkup:
-    """Кнопки skipm:<индекс в полном упорядоченном списке>."""
+def _skipped_pick_kb(matches_slice: list, *, offset: int = 0) -> InlineKeyboardMarkup:
+    """Кнопки skipm:<индекс> и skip:drop:<индекс>."""
     rows: list[list[InlineKeyboardButton]] = []
     for j, m in enumerate(matches_slice):
+        idx = offset + j
         label = _calendar_slot_btn_label(_skipped_row_to_slot(m), index=j + 1)
-        rows.append([InlineKeyboardButton(text=label, callback_data=f"skipm:{j}")])
+        rows.append([InlineKeyboardButton(text=label, callback_data=f"skipm:{idx}")])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=f"🗑 Убрать #{j + 1} из пропусков",
+                    callback_data=f"skip:drop:{idx}",
+                )
+            ]
+        )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -2341,24 +2350,37 @@ async def _send_skipped_pick_list(message: Message) -> None:
     ordered = list_skipped_matches_ordered()
     if not ordered:
         await message.answer(
-            "Отложенных матчей нет (skipped_matches.json пуст).\n"
-            "Чтобы отложить матч — при «Записать следующий» нажми «Отложить (skipped)»."
+            "Отложенных матчей нет (<code>skipped_matches.json</code> пуст).\n\n"
+            "Пропуск появляется, если при записи матча нажать "
+            "«⏭ Отложить (skipped)» вместо ввода счёта.",
+            parse_mode="HTML",
         )
         return
+
+    lines = [
+        "<b>Отложенные матчи</b> — выбери матч или убери ошибочный пропуск:\n"
+    ]
+    for i, m in enumerate(ordered, 1):
+        lg = html_escape(_league_title(m.get("tournament") or ""))
+        lines.append(
+            f"{i}. <b>{html_escape(m.get('home') or '?')}</b> — "
+            f"<b>{html_escape(m.get('away') or '?')}</b> · {lg} · "
+            f"м{html_escape(str(m.get('round') or '?'))}"
+        )
 
     note = ""
     if len(ordered) > _MAX_SKIP_BUTTONS:
         note = (
-            f"\n⚠ Показаны первые {_MAX_SKIP_BUTTONS} из {len(ordered)}. "
-            "Остальные можно записать через консольный main или уменьшить список вручную."
+            f"\n⚠ Показаны первые {_MAX_SKIP_BUTTONS} из {len(ordered)}."
         )
 
     slice_len = min(len(ordered), _MAX_SKIP_BUTTONS)
     kb = _skipped_pick_kb(ordered[:slice_len])
 
     await message.answer(
-        "Выбери отложенный матч кнопкой ниже — затем отправь счёт двумя числами через пробел "
-        f'(например <code>2 1</code>).{note}\n/cancel — отмена.',
+        "\n".join(lines)
+        + f"{note}\n\n"
+        "Кнопка матча — ввод счёта; «Убрать» — удалить из списка без игры.",
         reply_markup=kb,
         parse_mode="HTML",
     )
@@ -2368,7 +2390,47 @@ async def _send_skipped_pick_list(message: Message) -> None:
 async def cb_skip_list(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     await state.clear()
-    await _send_skipped_pick_list(callback.message)
+    if not callback.message:
+        return
+    try:
+        await _send_skipped_pick_list(callback.message)
+    except Exception:
+        logger.exception("skip list")
+        await callback.message.answer(
+            "Не удалось показать пропуски. Попробуй /play_skipped или /skipped."
+        )
+
+
+@match_router.callback_query(F.data.startswith("skip:drop:"))
+async def cb_skip_drop(callback: CallbackQuery, state: FSMContext) -> None:
+    from skipped_matches import list_skipped_matches_ordered, remove_skipped_match
+
+    try:
+        idx = int((callback.data or "").split(":")[-1])
+    except ValueError:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    ordered = list_skipped_matches_ordered()
+    if idx < 0 or idx >= len(ordered):
+        await callback.answer("Матча уже нет в списке.", show_alert=True)
+        return
+    row = ordered[idx]
+    remove_skipped_match(
+        row["home"],
+        row["away"],
+        row.get("round"),
+        row.get("tournament"),
+        cl_phase=row.get("cl_phase") if row.get("tournament") == "cl" else None,
+    )
+    await callback.answer("Убрано из пропусков")
+    await state.clear()
+    if callback.message:
+        await callback.message.answer(
+            f"✓ Убрано: <b>{html_escape(row['home'])}</b> — "
+            f"<b>{html_escape(row['away'])}</b>",
+            parse_mode="HTML",
+        )
+        await _send_skipped_pick_list(callback.message)
 
 
 @match_router.message(Command("play_skipped"))

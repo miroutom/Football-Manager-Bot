@@ -261,11 +261,61 @@ function renderPlayer(teamName, p, inline) {
     ? `<span class="inj" aria-hidden="true">🏥</span>`
     : "";
   el.innerHTML = inline
-    ? `${injuryBadge}<span class="ovr">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
-    : `${injuryBadge}<span class="ovr">${p.overall}</span><span class="nm">${p.name}</span><span class="pos">${p.position}</span>`;
+    ? `${injuryBadge}<span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos">${p.position}</span><span class="nm">${p.name}</span>`
+    : `${injuryBadge}<span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm">${p.name}</span><span class="pos">${p.position}</span>`;
+  el.querySelector(".ovr")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    startOvrEdit(el.querySelector(".ovr"), p.id);
+  });
   el.addEventListener("dragstart", onDragStart);
   el.addEventListener("dragend", stopDragScroll);
   return el;
+}
+
+function syncPlayerOverall(id, value) {
+  if (!id) return;
+  for (const team of teams) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (let i = 0; i < team[zone].length; i++) {
+        const slot = team[zone][i];
+        if (slot?.id === id) slot.overall = value;
+      }
+    }
+  }
+}
+
+function startOvrEdit(span, playerId) {
+  if (!span || !playerId) return;
+  const inp = document.createElement("input");
+  inp.type = "number";
+  inp.min = "1";
+  inp.max = "99";
+  inp.className = "ovr-edit";
+  const before = parseInt(span.textContent || "0", 10) || 72;
+  inp.value = String(before);
+  span.replaceWith(inp);
+  inp.focus();
+  inp.select();
+  const commit = () => {
+    const raw = parseInt(inp.value, 10);
+    const v = Number.isFinite(raw) ? Math.max(1, Math.min(99, raw)) : before;
+    syncPlayerOverall(playerId, v);
+    dirty = true;
+    setStatus("рейтинг изменён (не сохранено)");
+    renderAll();
+  };
+  inp.addEventListener("blur", commit);
+  inp.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      inp.blur();
+    }
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      renderAll();
+    }
+  });
 }
 
 function onDragStart(e) {

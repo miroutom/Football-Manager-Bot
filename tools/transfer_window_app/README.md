@@ -46,3 +46,8 @@ xattr -dr com.apple.quarantine dist/TransferWindow.app
 - 🏥 у игроков с травмой на **6-й месяц** (из `player_discipline.json`)
 - Смена схемы 1–10 на карточке клуба (расстановка пересобирается)
 - Сохранить / выгрузить составы и переходы (файлы с суффиксом `_summer` / `_winter`)
+- Клик по рейтингу игрока — правка OVR (1–99), затем «Сохранить» и выгрузка
+
+## Бот
+
+«🔄 Трансферы» → загрузи `squads_export_*.txt`, затем `transfers_export_*.txt` или `transfer_window_state_*.json`.

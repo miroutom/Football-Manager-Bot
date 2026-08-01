@@ -65,6 +65,13 @@ class ClPenalties(StatesGroup):
     waiting = State()
 
 
+class TransferUpload(StatesGroup):
+    """Загрузка squads_export + transfers из desktop-приложения."""
+    waiting_squads = State()
+    waiting_transfers = State()
+    confirm = State()
+
+
 class TransferEnter(StatesGroup):
     """Пакет трансферов или одиночный режим; заявка start/bench/reserve."""
     batch_to_count = State()  # клуб «куда» + число трансферов (1–5)

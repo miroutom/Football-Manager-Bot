@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -38,93 +37,27 @@ _DEFAULT_SQUADS = (
 
 
 def _strip_transfers_appendix(text: str) -> str:
-    """Убрать хвост ``=== transfers ===`` из экспорта составов."""
-    m = re.search(r"(?im)^===\s*transfers\s*===", text)
-    if m:
-        return text[: m.start()].rstrip() + "\n"
-    return text
+    from utils.transfer_window_apply import strip_transfers_appendix as _strip
+
+    return _strip(text)
 
 
 def _apply_transfers(transfers: list[dict], *, dry_run: bool) -> int:
-    from utils.player_transfer import apply_transfer_with_status, normalize_player_name_for_db
-    from utils.transfer_input import normalize_position, resolve_team_name
-    from utils.utils import session_league
+    from utils.transfer_window_apply import apply_transfers
 
-    n_ok = 0
-    for i, t in enumerate(transfers, 1):
-        name = normalize_player_name_for_db(str(t.get("name") or ""))
-        pos = normalize_position(str(t.get("position") or ""))
-        frm = resolve_team_name(str(t.get("from_team") or ""), session_league) or str(
-            t.get("from_team") or ""
-        )
-        to = resolve_team_name(str(t.get("to_team") or ""), session_league) or str(
-            t.get("to_team") or ""
-        )
-        st = (t.get("status") or "bench")
-        st = str(st).strip().lower() if st else None
-        if st not in ("start", "bench", "reserve"):
-            st = "bench"
-        ovr = t.get("overall")
-        ovr_i = int(ovr) if ovr is not None else None
-        print(f"  [{i}/{len(transfers)}] {name} ({pos}) {frm} → {to} [{st}]")
-        if dry_run:
-            n_ok += 1
-            continue
-        apply_transfer_with_status(
-            name,
-            frm,
-            pos,
-            to,
-            st,
-            rebuild_common=False,
-            new_overall=ovr_i,
-        )
-        n_ok += 1
-    return n_ok
+    return apply_transfers(transfers, dry_run=dry_run)
 
 
 def _apply_squads_file(path: Path, *, dry_run: bool) -> int:
-    from scripts.apply_bulk_squad_declarations import resolve_team_label, split_bulk_blocks
-    from utils.roster_manual import apply_team_squad_declaration, parse_squad_declaration_text
+    from utils.transfer_window_apply import apply_squads_text
 
-    text = _strip_transfers_appendix(path.read_text(encoding="utf-8"))
-    blocks = split_bulk_blocks(text)
-    n = 0
-    for team_raw, body in blocks:
-        team = resolve_team_label(team_raw)
-        entries, errors = parse_squad_declaration_text(body)
-        if errors:
-            print(f"!!! разбор {team}: {errors}", file=sys.stderr)
-            raise SystemExit(2)
-        if dry_run:
-            print(f"  squad OK {team}: {len(entries)}")
-            n += 1
-            continue
-        r = apply_team_squad_declaration(team, entries)
-        print(f"  {team}: заявлено {r['declared']}, снято {r['released']}")
-        n += 1
-    return n
+    return apply_squads_text(path.read_text(encoding="utf-8"), dry_run=dry_run)
 
 
 def _apply_formations(teams: list[dict], *, dry_run: bool) -> int:
-    from coach_squad_state import get_coach_id_for_team, set_active_formation_id
+    from utils.transfer_window_apply import apply_formations
 
-    n = 0
-    for t in teams:
-        name = str(t.get("name") or "").strip()
-        fid = t.get("formation_id")
-        if not name or fid is None:
-            continue
-        fid_i = int(fid)
-        cid = get_coach_id_for_team(name)
-        if not cid:
-            print(f"  !! нет тренера для {name}, схема {fid_i} пропущена")
-            continue
-        print(f"  {name}: схема {fid_i} (coach {cid})")
-        if not dry_run:
-            set_active_formation_id(cid, fid_i)
-        n += 1
-    return n
+    return apply_formations(teams, dry_run=dry_run)
 
 
 def main() -> int:
@@ -143,6 +76,10 @@ def main() -> int:
     data = json.loads(args.state.read_text(encoding="utf-8"))
     window = data.get("window") or "?"
     transfers = list(data.get("transfers") or [])
+    if not transfers:
+        from utils.transfer_window_apply import _transfers_from_state_dict
+
+        transfers = _transfers_from_state_dict(data)
     teams = list(data.get("teams") or [])
     print(f"window={window} transfers={len(transfers)} teams={len(teams)}")
     print(f"state={args.state}")
