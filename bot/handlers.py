@@ -2113,6 +2113,12 @@ async def cb_menu_top100(callback: CallbackQuery) -> None:
                         callback_data="top100:lg:allcl",
                     ),
                 ],
+                [
+                    InlineKeyboardButton(
+                        text="Все чемпионаты + ЛЧ + сборная",
+                        callback_data="top100:lg:allclwc",
+                    ),
+                ],
             ]
         ),
     )
@@ -2152,7 +2158,7 @@ async def cb_top100_pick_sort(callback: CallbackQuery) -> None:
         await callback.answer("Ошибка кнопки.", show_alert=True)
         return
     code = parts[2]
-    if code not in ("all", "allcl"):
+    if code not in ("all", "allcl", "allclwc"):
         await callback.answer("Ошибка кнопки.", show_alert=True)
         return
     await callback.answer()
@@ -2168,7 +2174,7 @@ async def cb_top100_sort(callback: CallbackQuery) -> None:
     # Старые кнопки top100:1 → лига+ЛЧ
     if len(parts) == 2 and parts[1].isdigit():
         league_code, sk = "allcl", int(parts[1])
-    elif len(parts) == 3 and parts[1] in ("all", "allcl") and parts[2].isdigit():
+    elif len(parts) == 3 and parts[1] in ("all", "allcl", "allclwc") and parts[2].isdigit():
         league_code, sk = parts[1], int(parts[2])
     else:
         await callback.answer()
