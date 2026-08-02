@@ -21,6 +21,7 @@ const FA_TEAM = "Free Agent";
 let freeAgents = [];
 let nationalPools = null;
 let nationalFilter = "";
+let faFilter = "";
 const nationalExpanded = new Set();
 const poolFiltersEmpty = { ovrMin: "", ovrMax: "", position: "" };
 let faPoolFilters = { ...poolFiltersEmpty, kind: "" };
@@ -680,6 +681,9 @@ function applySavedState(saved, rosters) {
   if (Array.isArray(saved.free_agents) && saved.free_agents.length) {
     freeAgents = saved.free_agents.map((p) => ({ ...p, status: p.status || "bench", fired: !!p.fired }));
     initFaBaseline(freeAgents);
+    if (rosters?.free_agents?.length) {
+      mergeFreeAgentsWithDb(rosters.free_agents);
+    }
   } else if (rosters && Array.isArray(rosters.free_agents) && rosters.free_agents.length) {
     syncFreeAgentsFromRosters(rosters);
   }
@@ -753,10 +757,8 @@ function stopSyncPoll() {
 
 function loadFreshFromRosters(rosters, msg) {
   baselineHome = { ...(rosters.baseline_home || {}) };
-  syncFreeAgentsFromRosters(rosters);
   teams = JSON.parse(JSON.stringify(rosters.teams || []));
-  freeAgents = (rosters.free_agents || []).map((p) => ({ ...p, status: p.status || "bench", fired: !!p.fired }));
-  initFaBaseline(freeAgents);
+  syncFreeAgentsFromRosters(rosters);
   removedFromSquad = {};
   undoStack = [];
   updateUndoBtn();
@@ -812,10 +814,28 @@ function initFaBaseline(list) {
   }
 }
 
+/** Добавить/обновить FA из free_agents.db (не терять «новых» после reload/save). */
+function mergeFreeAgentsWithDb(dbList) {
+  const byId = new Map((freeAgents || []).map((p) => [p.id, p]));
+  for (const raw of dbList || []) {
+    if (!raw?.id) continue;
+    const prev = byId.get(raw.id);
+    const merged = {
+      ...(prev || {}),
+      ...raw,
+      status: raw.status || prev?.status || "bench",
+      fired: !!raw.fired,
+    };
+    byId.set(raw.id, merged);
+    baselineHome[raw.id] = FA_TEAM;
+  }
+  freeAgents = Array.from(byId.values()).sort(
+    (a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0)
+  );
+}
+
 function syncFreeAgentsFromRosters(rosters) {
-  const raw = rosters.free_agents || [];
-  freeAgents = raw.map((p) => ({ ...p, status: p.status || "bench", fired: !!p.fired }));
-  initFaBaseline(freeAgents);
+  mergeFreeAgentsWithDb(rosters.free_agents || []);
 }
 
 function findFaPlayer(id) {
@@ -872,8 +892,34 @@ function isPlayerInNationalSquad(p, squadKeys) {
   return false;
 }
 
-function syncNationalPoolPlayer(_oldId, _patch) {
-  /* Пул сборной — только из БД (/api/national-pools). Не мутируем из заявки. */
+function syncNationalPoolPlayer(oldId, patch) {
+  if (!nationalPools?.nations?.length) return;
+  const loc = oldId ? findPlayerGlobally(oldId) : null;
+  const pid = Number(patch?.person_id || loc?.player?.person_id || 0);
+  for (const block of nationalPools.nations) {
+    for (let i = 0; i < (block.players || []).length; i++) {
+      const p = block.players[i];
+      const match =
+        (oldId && p.id === oldId) ||
+        (Number.isFinite(pid) && pid > 0 && Number(p.person_id) === pid);
+      if (!match) continue;
+      const team = p.team || (oldId || "").split("|")[0] || "";
+      const isFa = !!(p.is_fa || team === FA_TEAM || patch?.is_fa);
+      const nm = patch.name != null ? String(patch.name).trim() : p.name;
+      const pos = patch.position != null ? String(patch.position).trim().toUpperCase() : p.position;
+      const next = {
+        ...p,
+        ...patch,
+        name: nm,
+        position: pos,
+        id:
+          patch.id ||
+          (isFa ? playerIdFor(FA_TEAM, nm, pos) : playerIdFor(team, nm, pos)),
+      };
+      block.players[i] = patchPlayerFromProfile(next);
+    }
+  }
+  if (isNationsMode()) renderNationalPanel();
 }
 
 function playerProfileKey(p) {
@@ -884,15 +930,44 @@ function playerProfileKey(p) {
 
 function propagatePlayerProfileEdit(playerId, patch) {
   const loc = findPlayerGlobally(playerId);
-  const pid = playerProfileKey(loc?.player);
+  let pid = playerProfileKey(loc?.player);
+  if (!pid && patch.person_id) pid = String(Number(patch.person_id));
+  if (!pid) {
+    const poolPid = lookupPersonIdFromPools(playerId, loc?.player);
+    if (poolPid) pid = String(poolPid);
+  }
   if (!pid) return;
   const cur = { ...(playerProfiles[pid] || {}) };
   if (patch.name != null) cur.name = String(patch.name).trim();
   if (patch.position != null) cur.position = String(patch.position).trim().toUpperCase();
   if (patch.overall != null) cur.overall = Number(patch.overall);
+  if (patch.nation != null) cur.nation = String(patch.nation).trim();
+  if (patch.nickname != null || patch.nickname_set) {
+    cur.nickname = String(patch.nickname || "").trim();
+  }
   playerProfiles[pid] = cur;
   applyPlayerProfilesEverywhere();
+  syncNationalPoolPlayer(playerId, {
+    ...patch,
+    person_id: Number(pid),
+  });
   persistPlayerProfiles();
+}
+
+function lookupPersonIdFromPools(playerId, player) {
+  if (player?.person_id) return Number(player.person_id);
+  const parts = String(playerId || "").split("|");
+  const team = parts[0] || player?.team || "";
+  const name = player?.name || parts[1] || "";
+  for (const block of nationalPools?.nations || []) {
+    for (const p of block.players || []) {
+      if (playerId && p.id === playerId) return p.person_id || null;
+      if (name && p.name === name && (!team || p.team === team || team === FA_TEAM)) {
+        return p.person_id || null;
+      }
+    }
+  }
+  return null;
 }
 
 async function persistPlayerProfiles() {
@@ -927,6 +1002,8 @@ function patchPlayerFromProfile(p) {
   if (prof.name) out.name = prof.name;
   if (prof.position) out.position = prof.position;
   if (prof.overall != null) out.overall = Number(prof.overall);
+  if (prof.nation) out.nation = prof.nation;
+  if ("nickname" in prof) out.nickname = prof.nickname || "";
   const home = baselineHome[p.id] || (String(p.id || "").split("|")[0] || "");
   if (home && out.name && out.position) {
     out.id = playerIdFor(home === FA_TEAM ? FA_TEAM : home, out.name, out.position);
@@ -946,6 +1023,14 @@ function applyPlayerProfilesEverywhere() {
     recomputeAvgStart(team);
   }
   freeAgents = freeAgents.map((p) => patchPlayerFromProfile(p));
+  syncAllNationalPoolsFromProfiles();
+}
+
+function syncAllNationalPoolsFromProfiles() {
+  if (!nationalPools?.nations?.length) return;
+  for (const block of nationalPools.nations) {
+    block.players = (block.players || []).map((p) => patchPlayerFromProfile(p));
+  }
 }
 
 function nationNamesMatch(a, b) {
@@ -1001,6 +1086,17 @@ function parseFilterOvr(minStr, maxStr) {
   if (min != null && Number.isNaN(min)) return { min: null, max: null };
   if (max != null && Number.isNaN(max)) return { min: null, max: null };
   return { min, max };
+}
+
+function playerMatchesNameSearch(p, q) {
+  const ql = (q || "").trim().toLowerCase();
+  if (!ql) return true;
+  const name = String(p.name || "").toLowerCase();
+  const nick = String(p.nickname || "").toLowerCase();
+  if (name.includes(ql) || nick.includes(ql)) return true;
+  const parts = name.split(/\s+/).filter(Boolean);
+  const surname = parts.length ? parts[parts.length - 1] : name;
+  return surname.includes(ql) || surname.startsWith(ql);
 }
 
 function playerMatchesOvr(p, min, max) {
@@ -1061,6 +1157,9 @@ function readNationalPoolFiltersFromDom() {
 
 function resetFaPoolFilters() {
   faPoolFilters = { ...poolFiltersEmpty, kind: "" };
+  faFilter = "";
+  const search = document.getElementById("fa-search");
+  if (search) search.value = "";
   const ids = ["fa-ovr-min", "fa-ovr-max"];
   ids.forEach((id) => {
     const el = document.getElementById(id);
@@ -1124,6 +1223,15 @@ function formatPoolCount(shown, total, filtersActive) {
 }
 
 function setNationalPools(data) {
+  if (data?.nations) {
+    data = {
+      ...data,
+      nations: data.nations.map((block) => ({
+        ...block,
+        players: (block.players || []).map((p) => patchPlayerFromProfile(p)),
+      })),
+    };
+  }
   nationalPools = data;
   nationalExpanded.clear();
   const panel = document.getElementById("national-panel");
@@ -1204,10 +1312,17 @@ function renderNationalPlayer(p) {
   el.dataset.id = p.id;
   const clubLabel = p.is_fa || p.team === FA_TEAM ? "FA" : (p.team || "?");
   el.innerHTML =
+    `<button type="button" class="edit-btn" title="Редактировать">✎</button>` +
     `<span class="ovr">${p.overall}</span>` +
     `<span class="pos">${p.position}</span>` +
     `<span class="nm" title="${p.name}">${p.name}</span>` +
     `<span class="club" title="${clubLabel}">${clubLabel}</span>`;
+  el.querySelector(".edit-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const team = p.is_fa || p.team === FA_TEAM ? FA_TEAM : (p.team || FA_TEAM);
+    openPlayerEditModal(p, team);
+  });
   el.addEventListener("dragstart", (e) => {
     const isFa = !!(p.is_fa || p.team === FA_TEAM);
     dragPayload = {
@@ -1325,15 +1440,22 @@ function renderFaPanel() {
   if (!list) return;
   list.innerHTML = "";
   const sorted = freeAgents.slice().sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
-  const filtered = sorted.filter((p) => playerMatchesPoolFilters(p, faPoolFilters, { faKind: true }));
-  const faFiltersOn = poolFiltersActive(faPoolFilters, { faKind: true });
+  const q = faFilter.trim().toLowerCase();
+  let filtered = sorted.filter((p) => playerMatchesPoolFilters(p, faPoolFilters, { faKind: true }));
+  if (q) filtered = filtered.filter((p) => playerMatchesNameSearch(p, q));
+  const faFiltersOn = poolFiltersActive(faPoolFilters, { faKind: true }) || !!q;
   if (cnt) cnt.textContent = formatPoolCount(filtered.length, sorted.length, faFiltersOn);
   if (!filtered.length) {
     const empty = document.createElement("div");
     empty.className = "fa-hint";
-    empty.textContent = sorted.length
-      ? "Никого не найдено — ослабь фильтры"
-      : "Пул пуст — перетащи сюда или добавь нового";
+    const dbNew = sorted.filter((p) => !p.fired).length;
+    if (sorted.length && faPoolFilters.kind === "new" && dbNew > 0) {
+      empty.textContent = `Новых ${dbNew}, но фильтр скрывает — поставьте «Тип: все» или ↻ FA`;
+    } else {
+      empty.textContent = sorted.length
+        ? "Никого не найдено — ослабь фильтры"
+        : "Пул пуст — перетащи сюда или добавь нового";
+    }
     list.appendChild(empty);
   }
   filtered.forEach((p) => {
@@ -1696,11 +1818,17 @@ function setupPlayerForm() {
           nation,
           nickname,
           status,
+          fired: false,
         };
       }
-      baselineHome[player.id] = FA_TEAM;
-      freeAgents.push({ ...player, status, fired: !!player.fired });
-      freeAgents.sort((a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0));
+      mergeFreeAgentsWithDb([player]);
+      if (isNationsMode()) {
+        try {
+          await loadNationalPoolsFromApi();
+        } catch (_) {
+          /* offline */
+        }
+      }
     } else {
       const id = `${team}|${name}|${position}`;
       player = { id, name, position, overall, nation, nickname, status };
@@ -2186,8 +2314,13 @@ function renderPlayer(teamName, p, inline) {
         ? "Удалить из FA"
         : "Убрать из заявки";
   el.innerHTML = inline
-    ? `${injuryBadge}${firedBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span><span class="nm" title="Клик — изменить имя">${p.name}</span>`
-    : `${injuryBadge}${firedBadge}<button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm" title="Клик — изменить имя">${p.name}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span>`;
+    ? `${injuryBadge}${firedBadge}<button type="button" class="edit-btn" title="Редактировать">✎</button><button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span><span class="nm" title="Клик — изменить имя">${p.name}</span>`
+    : `${injuryBadge}${firedBadge}<button type="button" class="edit-btn" title="Редактировать">✎</button><button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm" title="Клик — изменить имя">${p.name}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span>`;
+  el.querySelector(".edit-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    openPlayerEditModal(p, teamName);
+  });
   el.querySelector(".rm-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -3181,14 +3314,6 @@ async function loadData() {
     }
   }
 
-  if (isNationsMode()) {
-    try {
-      if (!nationalPools?.nations?.length) await loadNationalPoolsFromApi();
-    } catch (_) {
-      /* пул опционален */
-    }
-  }
-
   const stateUrl = isNationsMode()
     ? "/api/state?mode=nations"
     : `/api/state?window=${encodeURIComponent(currentWindow)}`;
@@ -3219,6 +3344,7 @@ async function loadData() {
       ? { ...saved.baseline_home }
       : freshBaseline;
     applySavedState(saved, rosters);
+    applyPlayerProfilesEverywhere();
     const savedRostersRev = saved.rosters_revision ?? null;
     const curRostersRev = rosters.rosters_revision ?? null;
     if (curRostersRev != null && savedRostersRev !== curRostersRev) {
@@ -3245,6 +3371,9 @@ async function loadData() {
     }
     startSyncPoll();
     startPeriodicAutosave();
+    if (isNationsMode()) {
+      loadNationalPoolsFromApi().catch(() => {}).then(() => renderNationalPanel());
+    }
     return;
   }
 
@@ -3259,8 +3388,12 @@ async function loadData() {
             : "") +
           (freeAgents.length ? ` · FA: ${freeAgents.length}` : "")
   );
+  applyPlayerProfilesEverywhere();
   startSyncPoll();
   startPeriodicAutosave();
+  if (isNationsMode()) {
+    loadNationalPoolsFromApi().catch(() => {}).then(() => renderNationalPanel());
+  }
 }
 
 async function switchMode(nextMode) {
@@ -3473,6 +3606,8 @@ document.getElementById("btn-winter").addEventListener("click", () => switchWind
 document.getElementById("btn-new-player")?.addEventListener("click", () => openModal("modal-overlay"));
 document.getElementById("modal-close")?.addEventListener("click", () => closeModal("modal-overlay"));
 document.getElementById("modal-cancel")?.addEventListener("click", () => closeModal("modal-overlay"));
+document.getElementById("modal-edit-close")?.addEventListener("click", () => closeModal("modal-edit-overlay"));
+document.getElementById("modal-edit-cancel")?.addEventListener("click", () => closeModal("modal-edit-overlay"));
 document.getElementById("modal-fa-close")?.addEventListener("click", () => closeModal("modal-fa-overlay"));
 document.getElementById("modal-fa-cancel")?.addEventListener("click", () => closeModal("modal-fa-overlay"));
 document.getElementById("btn-reset-rosters")?.addEventListener("click", () => {
@@ -3495,6 +3630,10 @@ document.getElementById("btn-export-national-txt")?.addEventListener("click", ()
 document.getElementById("national-search")?.addEventListener("input", (e) => {
   nationalFilter = e.target.value || "";
   renderNationalPanel();
+});
+document.getElementById("fa-search")?.addEventListener("input", (e) => {
+  faFilter = e.target.value || "";
+  renderFaPanel();
 });
 document.getElementById("btn-reload-fa")?.addEventListener("click", async () => {
   try {
@@ -3545,6 +3684,7 @@ document.getElementById("import-national-file")?.addEventListener("change", asyn
 loadData()
   .then(() => {
     setupPlayerForm();
+    setupPlayerEditForm();
     setupPoolFilters();
     setupFaSignForm();
     setupSharePanel();

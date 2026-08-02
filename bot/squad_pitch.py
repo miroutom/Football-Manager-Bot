@@ -305,6 +305,7 @@ class _Pl:
     status: str | None = None
     roster_rank: int = 9999
     lineup_slot: str | None = None
+    person_id: int | None = None
 
 
 def _squad_rows_from_py_files() -> bool:
@@ -470,6 +471,8 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
             slot = getattr(p, "lineup_slot", None)
             if slot is not None:
                 slot = str(slot).strip().upper() or None
+            pid_raw = getattr(p, "person_id", None)
+            person_id = int(pid_raw) if pid_raw is not None else None
             out.append(
                 _Pl(
                     name=p.name,
@@ -481,6 +484,7 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     status=st,
                     roster_rank=9999,
                     lineup_slot=slot,
+                    person_id=person_id if person_id and person_id > 0 else None,
                 )
             )
     use_py = _squad_rows_from_py_files()

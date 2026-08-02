@@ -85,6 +85,7 @@
           <span class="fa-count" id="fa-count">0</span>
         </div>
         <p class="fa-hint">Перетащи в клуб или верни сюда, чтобы отменить переход</p>
+        <input type="search" id="fa-search" class="national-search" placeholder="Фамилия…" autocomplete="off">
         <div class="pool-filters" id="fa-filters">
           <div class="filter-row">
             <label class="filter-field">Рейт.<input type="number" id="fa-ovr-min" min="1" max="99" placeholder="от"></label>
@@ -189,6 +190,42 @@
         <div class="modal-actions">
           <button type="button" class="secondary" id="modal-fa-cancel">Отмена</button>
           <button type="submit" class="accent">Подтвердить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-edit-overlay" class="modal hidden" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-hdr">
+        <h3 id="modal-edit-title">Редактировать игрока</h3>
+        <button type="button" class="modal-close" id="modal-edit-close" aria-label="Закрыть">×</button>
+      </div>
+      <form id="player-edit-form" class="modal-body">
+        <input type="hidden" name="player_id" id="edit-player-id">
+        <input type="hidden" name="team" id="edit-team">
+        <input type="hidden" name="old_name" id="edit-old-name">
+        <input type="hidden" name="old_position" id="edit-old-position">
+        <input type="hidden" name="person_id" id="edit-person-id">
+        <p id="edit-context" class="edit-context"></p>
+        <label>Имя<input name="name" id="edit-name" required autocomplete="off"></label>
+        <label>Никнейм (опц.)<input name="nickname" id="edit-nickname" autocomplete="off"></label>
+        <label>Рейтинг<input name="overall" id="edit-overall" type="number" min="1" max="99" required></label>
+        <label>Позиция
+          <select name="position" required id="edit-position"></select>
+        </label>
+        <label>Нация (опц.)
+          <div class="nation-picker">
+            <div class="nation-combobox">
+              <input type="text" id="edit-nation-input" autocomplete="off" placeholder="Страна — начни вводить">
+              <input type="hidden" name="nation" id="edit-nation-value">
+              <ul id="edit-nation-suggestions" class="nation-suggestions hidden"></ul>
+            </div>
+          </div>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="secondary" id="modal-edit-cancel">Отмена</button>
+          <button type="submit" class="accent">Сохранить</button>
         </div>
       </form>
     </div>

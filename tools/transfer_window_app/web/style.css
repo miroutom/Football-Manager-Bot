@@ -547,7 +547,6 @@ body {
   cursor: pointer;
   font-size: 13px;
 }
-.modal-actions button.secondary { background: #2a3a48; }
 .player .rm-btn {
   position: absolute;
   top: 0;
@@ -566,6 +565,29 @@ body {
   transition: opacity 0.15s;
 }
 .player:hover .rm-btn { opacity: 1; }
+.player .edit-btn {
+  position: absolute;
+  top: 0;
+  right: 16px;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: rgba(52, 152, 219, 0.9);
+  color: #fff;
+  font-size: 9px;
+  line-height: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.player:hover .edit-btn { opacity: 1; }
+.edit-context {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: #8ab;
+}
 .player { position: relative; }
 
 .team-card {

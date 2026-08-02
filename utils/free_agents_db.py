@@ -147,7 +147,7 @@ def _set_row_fired(sess: Session, table: str, row_id: int, fired: bool) -> None:
 def list_free_agents(*, include_left: bool = False) -> list[dict[str, Any]]:
     """Все свободные агенты для UI / экспорта."""
     from utils.player_names import player_display_name
-    from utils.player_nicknames import get_nickname_for_player
+    from utils.player_nicknames import get_nickname
 
     sess, eng = open_fa_session()
     rows: list[dict[str, Any]] = []
@@ -175,10 +175,7 @@ def list_free_agents(*, include_left: bool = False) -> list[dict[str, Any]]:
                         "position": pos,
                         "overall": int(getattr(r, "overall", 0) or 0),
                         "nation": (getattr(r, "nation", None) or "") or "",
-                        "nickname": get_nickname_for_player(
-                            person_id=pid, name=name, team=FREE_AGENT_TEAM
-                        )
-                        or "",
+                        "nickname": get_nickname(pid) or "",
                         "status": (getattr(r, "status", None) or "bench") or "bench",
                         "fired": fired_map.get((table, int(r.id)), False),
                     }
@@ -301,6 +298,91 @@ def delete_free_agent_player(
     if nm and pos:
         return remove_free_agent_after_signing(nm, pos)
     return False
+
+
+def update_free_agent_player_fields(
+    name: str,
+    position: str,
+    *,
+    new_name: str | None = None,
+    new_position: str | None = None,
+    new_overall: int | None = None,
+    new_nation: str | None = None,
+    nation_clear: bool = False,
+    person_id: int | None = None,
+) -> dict[str, Any]:
+    """Обновить существующую строку FA (без создания новой)."""
+    from utils.player_field_edit import find_player_row, parse_field_value
+    from utils.player_transfer import normalize_player_name_for_db
+
+    nm = normalize_player_name_for_db((name or "").strip())
+    pos = (position or "").strip().upper()
+    if not nm or not pos:
+        raise ValueError("Нужны имя и позиция.")
+
+    sess, eng = open_fa_session()
+    try:
+        _, row = find_player_row(sess, FREE_AGENT_TEAM, nm, pos)
+        if row is None and person_id:
+            for Cls in _ALL:
+                for r in sess.query(Cls).all():
+                    if getattr(r, "person_id", None) == int(person_id):
+                        row = r
+                        break
+                if row is not None:
+                    break
+        if row is None:
+            raise ValueError(f"Свободный агент не найден: {nm} ({pos})")
+
+        Cls = type(row)
+        cur_name = (row.name or "").strip()
+        cur_pos = (row.position or "").strip().upper()
+
+        if new_name is not None:
+            row.name = parse_field_value(Cls, "name", str(new_name))
+            cur_name = (row.name or "").strip()
+        if new_position is not None:
+            new_pos = parse_field_value(Cls, "position", str(new_position))
+            if new_pos != cur_pos:
+                from utils.player_transfer import _cls_for_position
+
+                Target = _cls_for_position(new_pos)
+                if Target is not Cls:
+                    cols = {c.name for c in Target.__table__.columns}
+                    data = {c: getattr(row, c) for c in cols if c != "id" and hasattr(row, c)}
+                    data["position"] = new_pos
+                    new_row = Target(**data)
+                    sess.add(new_row)
+                    sess.delete(row)
+                    sess.flush()
+                    row = new_row
+                    Cls = Target
+                else:
+                    row.position = new_pos
+                cur_pos = new_pos
+        if new_overall is not None:
+            row.overall = parse_field_value(Cls, "overall", str(new_overall))
+        if nation_clear:
+            row.nation = None
+        elif new_nation is not None:
+            nat = (str(new_nation).strip() or None)
+            row.nation = nat
+
+        sess.commit()
+        pid = int(row.person_id) if getattr(row, "person_id", None) else None
+        return {
+            "id": fa_player_id(cur_name, cur_pos),
+            "person_id": pid,
+            "name": cur_name,
+            "position": cur_pos,
+            "overall": int(row.overall or 0),
+            "nation": (getattr(row, "nation", None) or "") or "",
+            "team": FREE_AGENT_TEAM,
+            "is_fa": True,
+        }
+    finally:
+        sess.close()
+        eng.dispose()
 
 
 def remove_free_agent_after_signing(name: str, position: str) -> bool:

@@ -48,6 +48,9 @@ def merge_profile(
     name: str | None = None,
     position: str | None = None,
     overall: int | None = None,
+    nation: str | None = None,
+    nickname: str | None = None,
+    nickname_set: bool = False,
 ) -> dict[str, dict[str, Any]]:
     pid = int(person_id)
     if pid <= 0:
@@ -60,6 +63,10 @@ def merge_profile(
         cur["position"] = str(position).strip().upper()
     if overall is not None:
         cur["overall"] = int(overall)
+    if nation is not None:
+        cur["nation"] = str(nation).strip()
+    if nickname_set:
+        cur["nickname"] = str(nickname or "").strip()
     profiles[key] = cur
     return profiles
 
@@ -84,4 +91,8 @@ def patch_player_dict(p: dict[str, Any], profiles: dict[str, dict[str, Any]]) ->
         out["position"] = prof["position"]
     if prof.get("overall") is not None:
         out["overall"] = int(prof["overall"])
+    if prof.get("nation"):
+        out["nation"] = prof["nation"]
+    if "nickname" in prof:
+        out["nickname"] = prof.get("nickname") or ""
     return out

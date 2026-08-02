@@ -487,6 +487,27 @@ def _export_dir() -> Path:
     return d
 
 
+def _enrich_teams_person_ids(teams: list) -> None:
+    """Добавить person_id в JSON-заявку, если в экспорте его не было."""
+    try:
+        from utils.person_registry import lookup_canonical_person_id_by_team
+    except Exception:
+        return
+    for team in teams or []:
+        tn = str(team.get("name") or "").strip()
+        if not tn:
+            continue
+        for zone in ("start", "bench", "reserve"):
+            for p in team.get(zone) or []:
+                if not isinstance(p, dict) or not p.get("name"):
+                    continue
+                if p.get("person_id"):
+                    continue
+                pid = lookup_canonical_person_id_by_team(str(p["name"]), team=tn)
+                if pid:
+                    p["person_id"] = int(pid)
+
+
 def _load_nations_catalog() -> dict[str, list[str]]:
     """Сборные из world_cup_config.json (несколько путей — dev, .app bundle)."""
     paths = [
@@ -1107,6 +1128,8 @@ class Handler(BaseHTTPRequestHandler):
             if not p.is_file():
                 return self._send_json({"error": f"нет {p}"}, 500)
             payload = json.loads(p.read_text(encoding="utf-8"))
+            if mode != "nations":
+                _enrich_teams_person_ids(payload.get("teams") or [])
             try:
                 payload["rosters_revision"] = int(p.stat().st_mtime)
             except OSError:
@@ -1180,15 +1203,73 @@ class Handler(BaseHTTPRequestHandler):
                         overall = int(ovr) if ovr is not None else None
                     except (TypeError, ValueError):
                         overall = None
+                    nation = data.get("nation")
+                    nick = data.get("nickname")
                     profiles = merge_profile(
                         profiles,
                         person_id,
                         name=str(data.get("name") or "") or None,
                         position=str(data.get("position") or "") or None,
                         overall=overall,
+                        nation=str(nation).strip() if nation is not None else None,
+                        nickname=str(nick).strip() if nick is not None else None,
+                        nickname_set="nickname" in data,
                     )
             save_profiles(_data_dir(), profiles)
             return self._send_json({"ok": True, "profiles": profiles})
+        if parsed.path == "/api/player/update":
+            data = self._read_json()
+            try:
+                from player_update import update_existing_player
+
+                ovr_raw = data.get("overall")
+                overall = None
+                if ovr_raw is not None and str(ovr_raw).strip() != "":
+                    overall = int(ovr_raw)
+                result = update_existing_player(
+                    team=str(data.get("team") or ""),
+                    name=str(data.get("name") or ""),
+                    position=str(data.get("position") or ""),
+                    person_id=int(data["person_id"])
+                    if data.get("person_id") not in (None, "")
+                    else None,
+                    new_name=str(data["new_name"]).strip()
+                    if data.get("new_name") is not None
+                    else None,
+                    new_position=str(data["new_position"]).strip().upper()
+                    if data.get("new_position") is not None
+                    else None,
+                    new_overall=overall,
+                    new_nation=str(data.get("nation") or "").strip()
+                    if "nation" in data
+                    else None,
+                    nation_set="nation" in data,
+                    nickname=str(data.get("nickname") or "").strip()
+                    if "nickname" in data
+                    else None,
+                    nickname_set="nickname" in data,
+                )
+                pid = result.get("person_id")
+                if pid:
+                    from player_profiles import load_profiles, merge_profile, save_profiles
+
+                    profs = load_profiles(_data_dir())
+                    p = result.get("player") or {}
+                    profs = merge_profile(
+                        profs,
+                        int(pid),
+                        name=p.get("name"),
+                        position=p.get("position"),
+                        overall=p.get("overall"),
+                        nation=p.get("nation") or None,
+                        nickname=p.get("nickname") or "",
+                        nickname_set="nickname" in data,
+                    )
+                    save_profiles(_data_dir(), profs)
+                    result["profiles"] = profs
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 400)
+            return self._send_json(result)
         if parsed.path == "/api/save":
             data = self._read_json()
             payload = build_state_payload(data)
