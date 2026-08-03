@@ -515,15 +515,61 @@ function updateSharePanel(mp) {
   const url = mp.share_url || mp.tunnel_url || mp.tailscale_url || mp.lan_url;
   if (!url) {
     panel.hidden = true;
+    lastShareUrl = "";
     return;
   }
+  lastShareUrl = url;
   panel.hidden = false;
   input.value = url;
   input.title = mp.tunnel_url
-    ? "Публичная ссылка — работает из любой квартиры"
+    ? "Публичная ссылка — работает из любой квартиры (клик — выделить)"
     : mp.tailscale_url
       ? "Tailscale — из разных квартир, если оба в tailnet"
-      : "LAN — только одна Wi‑Fi сеть";
+      : "LAN — только одна Wi‑Fi сеть (клик — выделить)";
+}
+
+let lastShareUrl = "";
+
+function selectShareUrlInput(input) {
+  if (!input?.value) return;
+  input.focus();
+  input.select();
+  try {
+    input.setSelectionRange(0, input.value.length);
+  } catch (_) {
+    /* Safari/old WebKit */
+  }
+}
+
+async function copyTextToClipboard(text) {
+  const s = String(text || "").trim();
+  if (!s) return false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(s);
+      return true;
+    }
+  } catch (_) {
+    /* fallback below */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = s;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    ta.style.top = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, s.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (_) {
+    return false;
+  }
 }
 
 async function pollTunnelUrl() {
@@ -547,17 +593,27 @@ async function pollTunnelUrl() {
 }
 
 function setupSharePanel() {
-  document.getElementById("btn-copy-share")?.addEventListener("click", async () => {
-    const input = document.getElementById("share-url");
-    const url = input?.value || "";
-    if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
+  const input = document.getElementById("share-url");
+  const btn = document.getElementById("btn-copy-share");
+  input?.addEventListener("click", () => selectShareUrlInput(input));
+  input?.addEventListener("focus", () => selectShareUrlInput(input));
+  btn?.addEventListener("click", async () => {
+    const url = lastShareUrl || input?.value || "";
+    if (!url) {
+      setStatus("ссылка ещё не готова");
+      return;
+    }
+    selectShareUrlInput(input);
+    const ok = await copyTextToClipboard(url);
+    if (ok) {
       setStatus("ссылка скопирована");
-    } catch (_) {
-      input?.select();
-      document.execCommand("copy");
-      setStatus("ссылка скопирована");
+      const prev = btn.textContent;
+      btn.textContent = "Скопировано";
+      setTimeout(() => {
+        btn.textContent = prev;
+      }, 1500);
+    } else {
+      setStatus("не удалось скопировать — выдели ссылку и Cmd+C");
     }
   });
 }

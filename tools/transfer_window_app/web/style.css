@@ -179,6 +179,8 @@ body {
   border: 1px solid #2a3a48;
   background: #152028;
   color: #cfe;
+  cursor: pointer;
+  user-select: all;
 }
 
 #layout {
