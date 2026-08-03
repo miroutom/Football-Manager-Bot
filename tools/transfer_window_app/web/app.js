@@ -1377,12 +1377,8 @@ function renderNationalPlayer(p) {
     `<div class="player-actions">` +
     `<button type="button" class="edit-btn" title="Редактировать">✎</button>` +
     `</div>`;
-  el.querySelector(".edit-btn")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    const team = p.is_fa || p.team === FA_TEAM ? FA_TEAM : (p.team || FA_TEAM);
-    openPlayerEditModal(p, team);
-  });
+  const team = p.is_fa || p.team === FA_TEAM ? FA_TEAM : (p.team || FA_TEAM);
+  bindPlayerActionButton(el.querySelector(".edit-btn"), () => openPlayerEditModal(p, team));
   el.addEventListener("dragstart", (e) => {
     const isFa = !!(p.is_fa || p.team === FA_TEAM);
     dragPayload = {
@@ -1665,6 +1661,9 @@ function openModal(id) {
     resetNationPicker();
     ensureNationsLoaded();
   }
+  if (id === "modal-edit-overlay") {
+    ensureNationsLoaded();
+  }
 }
 
 function closeModal(id) {
@@ -1915,6 +1914,251 @@ function setupPlayerForm() {
     form.reset();
     renderAll();
     setStatus(toFaOnly ? `добавлен FA: ${name}` : `новый игрок в ${team}: ${name}`);
+  });
+}
+
+function bindPlayerActionButton(btn, handler) {
+  if (!btn || typeof handler !== "function") return;
+  btn.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+  });
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    handler(e);
+  });
+}
+
+function resetEditNationPicker() {
+  const input = document.getElementById("edit-nation-input");
+  const hidden = document.getElementById("edit-nation-value");
+  const list = document.getElementById("edit-nation-suggestions");
+  if (input) {
+    input.value = "";
+    input.classList.remove("invalid");
+  }
+  if (hidden) hidden.value = "";
+  if (list) list.classList.add("hidden");
+}
+
+function setupEditNationPicker() {
+  const input = document.getElementById("edit-nation-input");
+  const hidden = document.getElementById("edit-nation-value");
+  const list = document.getElementById("edit-nation-suggestions");
+  if (!input || !hidden || !list || input.dataset.bound === "1") return;
+  input.dataset.bound = "1";
+
+  const validateNation = () => {
+    const raw = input.value.trim();
+    const resolved = resolveCatalogNation(raw);
+    const invalid = raw.length > 0 && !resolved && !nationPrefixMatches(raw);
+    input.classList.toggle("invalid", invalid);
+    hidden.value = resolved || "";
+    return !invalid;
+  };
+
+  const showSuggestions = () => {
+    const raw = input.value.trim();
+    const q = normNat(raw);
+    const matches = q
+      ? nationsList.filter((n) => normNat(n).includes(q))
+      : nationsList.slice();
+    list.innerHTML = "";
+    if (!matches.length) {
+      list.classList.add("hidden");
+      return;
+    }
+    if (matches.length === 1 && normNat(matches[0]) === q) {
+      list.classList.add("hidden");
+      return;
+    }
+    matches.slice(0, 16).forEach((n) => {
+      const li = document.createElement("li");
+      li.textContent = n;
+      li.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        input.value = n;
+        hidden.value = n;
+        list.classList.add("hidden");
+        validateNation();
+      });
+      list.appendChild(li);
+    });
+    list.classList.remove("hidden");
+  };
+
+  input.addEventListener("input", () => {
+    showSuggestions();
+    validateNation();
+  });
+  input.addEventListener("focus", showSuggestions);
+  input.addEventListener("blur", () => {
+    setTimeout(() => list.classList.add("hidden"), 150);
+    validateNation();
+  });
+  window.__twValidateEditNation = validateNation;
+}
+
+async function openPlayerEditModal(player, teamName) {
+  if (!player?.name) return;
+  try {
+    await ensureNationsLoaded();
+  } catch (_) {
+    /* offline */
+  }
+  setupEditNationPicker();
+  const team = teamName === FA_TEAM || player.is_fa ? FA_TEAM : (teamName || player.team || "");
+  const pid = player.person_id || lookupPersonIdFromPools(player.id, player);
+  const prof = pid ? playerProfiles[String(pid)] || {} : {};
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val == null ? "" : String(val);
+  };
+  setVal("edit-player-id", player.id || "");
+  setVal("edit-team", team);
+  setVal("edit-old-name", player.name);
+  setVal("edit-old-position", player.position);
+  setVal("edit-person-id", pid || "");
+  setVal("edit-name", prof.name || player.name);
+  setVal("edit-nickname", player.nickname || prof.nickname || "");
+  setVal("edit-overall", prof.overall != null ? prof.overall : player.overall ?? 72);
+  const posSel = document.getElementById("edit-position");
+  if (posSel) {
+    if (!posSel.options.length) {
+      positionsCatalog.forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p;
+        opt.textContent = p;
+        posSel.appendChild(opt);
+      });
+    }
+    posSel.value = prof.position || player.position;
+  }
+  const ctx = document.getElementById("edit-context");
+  if (ctx) ctx.textContent = team === FA_TEAM ? "Свободный агент" : `Клуб: ${team}`;
+  resetEditNationPicker();
+  const nat = prof.nation || player.nation || "";
+  const natInput = document.getElementById("edit-nation-input");
+  const natHidden = document.getElementById("edit-nation-value");
+  if (natInput) natInput.value = nat;
+  if (natHidden) natHidden.value = resolveCatalogNation(nat) || nat;
+  openModal("modal-edit-overlay");
+  document.getElementById("edit-name")?.focus();
+}
+
+function applyPlayerUpdateLocally(oldId, teamName, updated) {
+  const p = updated || {};
+  const newId = p.id || playerIdFor(teamName, p.name, p.position);
+  const patch = {
+    id: newId,
+    name: p.name,
+    position: p.position,
+    overall: Number(p.overall),
+    nation: p.nation || "",
+    nickname: p.nickname || "",
+    person_id: p.person_id,
+  };
+
+  for (const team of teams) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (let i = 0; i < (team[zone] || []).length; i++) {
+        const slot = team[zone][i];
+        if (slot?.id === oldId) {
+          Object.assign(slot, patch);
+          if (oldId !== newId) slot.id = newId;
+        }
+      }
+    }
+    recomputeAvgStart(team);
+  }
+  for (let i = 0; i < freeAgents.length; i++) {
+    if (freeAgents[i].id === oldId) {
+      freeAgents[i] = { ...freeAgents[i], ...patch, id: newId };
+    }
+  }
+  if (oldId !== newId) {
+    if (baselineHome[oldId] !== undefined) {
+      baselineHome[newId] = baselineHome[oldId];
+      delete baselineHome[oldId];
+    }
+    if (removedFromSquad[oldId]) {
+      removedFromSquad[newId] = { ...removedFromSquad[oldId], ...patch, id: newId };
+      delete removedFromSquad[oldId];
+    }
+  }
+  syncNationalPoolPlayer(oldId, patch);
+  if (p.person_id) {
+    playerProfiles[String(p.person_id)] = {
+      ...(playerProfiles[String(p.person_id)] || {}),
+      name: patch.name,
+      position: patch.position,
+      overall: patch.overall,
+      nation: patch.nation,
+      nickname: patch.nickname,
+    };
+    applyPlayerProfilesEverywhere();
+  }
+}
+
+function setupPlayerEditForm() {
+  const form = document.getElementById("player-edit-form");
+  if (!form || form.dataset.bound === "1") return;
+  form.dataset.bound = "1";
+  setupEditNationPicker();
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (window.__twValidateEditNation && !window.__twValidateEditNation()) {
+      setStatus("нация не из списка — выбери из подсказок или оставь пустым");
+      return;
+    }
+    const oldId = document.getElementById("edit-player-id")?.value || "";
+    const team = document.getElementById("edit-team")?.value || "";
+    const oldName = document.getElementById("edit-old-name")?.value || "";
+    const oldPos = document.getElementById("edit-old-position")?.value || "";
+    const personId = document.getElementById("edit-person-id")?.value || "";
+    const name = String(document.getElementById("edit-name")?.value || "").trim();
+    const nickname = String(document.getElementById("edit-nickname")?.value || "").trim();
+    const overall = Math.max(
+      1,
+      Math.min(99, parseInt(document.getElementById("edit-overall")?.value, 10) || 72)
+    );
+    const position = String(document.getElementById("edit-position")?.value || "")
+      .trim()
+      .toUpperCase();
+    const nation = String(document.getElementById("edit-nation-value")?.value || "").trim();
+    if (!name || !position) return;
+
+    pushUndo();
+    try {
+      const res = await fetch("/api/player/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          team,
+          name: oldName,
+          position: oldPos,
+          person_id: personId || undefined,
+          new_name: name !== oldName ? name : undefined,
+          new_position: position !== oldPos ? position : undefined,
+          overall,
+          nation,
+          nickname,
+        }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.ok) throw new Error(j.error || "ошибка сохранения");
+      if (j.profiles) playerProfiles = j.profiles;
+      applyPlayerUpdateLocally(oldId, team, j.player || {});
+      markDirty();
+      closeModal("modal-edit-overlay");
+      renderAll();
+      setStatus(`сохранено: ${(j.player || {}).name || name} · ${overall}`);
+    } catch (err) {
+      undoStack.pop();
+      updateUndoBtn();
+      setStatus("правка: " + err.message);
+    }
   });
 }
 
@@ -2386,14 +2630,8 @@ function renderPlayer(teamName, p, inline) {
     `<button type="button" class="edit-btn" title="Редактировать">✎</button>` +
     `<button type="button" class="rm-btn" title="${rmTitle}">×</button>` +
     `</div>`;
-  el.querySelector(".edit-btn")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    openPlayerEditModal(p, teamName);
-  });
-  el.querySelector(".rm-btn")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    e.preventDefault();
+  bindPlayerActionButton(el.querySelector(".edit-btn"), () => openPlayerEditModal(p, teamName));
+  bindPlayerActionButton(el.querySelector(".rm-btn"), () => {
     if (teamName === FA_TEAM) {
       removeFaPlayer(p);
     } else {
