@@ -1368,11 +1368,15 @@ function renderNationalPlayer(p) {
   el.dataset.id = p.id;
   const clubLabel = p.is_fa || p.team === FA_TEAM ? "FA" : (p.team || "?");
   el.innerHTML =
-    `<button type="button" class="edit-btn" title="Редактировать">✎</button>` +
+    `<div class="player-main">` +
     `<span class="ovr">${p.overall}</span>` +
     `<span class="pos">${p.position}</span>` +
     `<span class="nm" title="${p.name}">${p.name}</span>` +
-    `<span class="club" title="${clubLabel}">${clubLabel}</span>`;
+    `<span class="club" title="${clubLabel}">${clubLabel}</span>` +
+    `</div>` +
+    `<div class="player-actions">` +
+    `<button type="button" class="edit-btn" title="Редактировать">✎</button>` +
+    `</div>`;
   el.querySelector(".edit-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -2347,7 +2351,11 @@ function renderPlayer(teamName, p, inline) {
     return el;
   }
   const el = document.createElement("div");
-  el.className = "player" + (isIncoming(teamName, p) ? " incoming" : "") + (p.injured ? " injured" : "");
+  el.className =
+    "player" +
+    (inline ? " player-inline" : "") +
+    (isIncoming(teamName, p) ? " incoming" : "") +
+    (p.injured ? " injured" : "");
   el.draggable = true;
   el.dataset.id = p.id;
   el.dataset.team = teamName;
@@ -2369,9 +2377,15 @@ function renderPlayer(teamName, p, inline) {
       : teamName === FA_TEAM
         ? "Удалить из FA"
         : "Убрать из заявки";
-  el.innerHTML = inline
-    ? `${injuryBadge}${firedBadge}<button type="button" class="edit-btn" title="Редактировать">✎</button><button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span><span class="nm" title="Клик — изменить имя">${p.name}</span>`
-    : `${injuryBadge}${firedBadge}<button type="button" class="edit-btn" title="Редактировать">✎</button><button type="button" class="rm-btn" title="${rmTitle}">×</button><span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm" title="Клик — изменить имя">${p.name}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span>`;
+  const mainHtml = inline
+    ? `${injuryBadge}${firedBadge}<span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span><span class="nm" title="Клик — изменить имя">${p.name}</span>`
+    : `${injuryBadge}${firedBadge}<span class="ovr" title="Клик — изменить рейтинг">${p.overall}</span><span class="nm" title="Клик — изменить имя">${p.name}</span><span class="pos" title="Клик — изменить позицию">${p.position}</span>`;
+  el.innerHTML =
+    `<div class="player-main">${mainHtml}</div>` +
+    `<div class="player-actions">` +
+    `<button type="button" class="edit-btn" title="Редактировать">✎</button>` +
+    `<button type="button" class="rm-btn" title="${rmTitle}">×</button>` +
+    `</div>`;
   el.querySelector(".edit-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();

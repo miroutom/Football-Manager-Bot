@@ -549,42 +549,94 @@ body {
   cursor: pointer;
   font-size: 13px;
 }
-.player .rm-btn {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 14px;
-  height: 14px;
+.player .rm-btn,
+.player .edit-btn {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border: none;
-  border-radius: 3px;
-  background: rgba(192, 57, 43, 0.85);
+  border-radius: 4px;
   color: #fff;
   font-size: 11px;
-  line-height: 1;
+  line-height: 20px;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
+  pointer-events: auto;
 }
-.player:hover .rm-btn { opacity: 1; }
+.player .rm-btn {
+  background: rgba(192, 57, 43, 0.9);
+}
 .player .edit-btn {
-  position: absolute;
-  top: 0;
-  right: 16px;
-  width: 14px;
-  height: 14px;
-  padding: 0;
-  border: none;
-  border-radius: 3px;
-  background: rgba(52, 152, 219, 0.9);
-  color: #fff;
-  font-size: 9px;
-  line-height: 14px;
-  cursor: pointer;
+  background: rgba(52, 152, 219, 0.95);
+  font-size: 10px;
+}
+.player-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.15s;
+  pointer-events: none;
 }
-.player:hover .edit-btn { opacity: 1; }
+.player:hover .player-actions,
+.player:focus-within .player-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.player-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+}
+.player-inline,
+.side-row .player,
+.reserve-row .player,
+.national-row .player,
+.fa-list .player {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  max-width: none;
+}
+.player-inline .player-main,
+.side-row .player-main,
+.reserve-row .player-main,
+.national-row .player-main,
+.fa-list .player-main {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.player-inline .player-actions,
+.side-row .player-actions,
+.reserve-row .player-actions,
+.national-row .player-actions,
+.fa-list .player-actions {
+  margin-left: auto;
+  opacity: 0.7;
+  pointer-events: auto;
+}
+.player-inline:hover .player-actions,
+.side-row .player:hover .player-actions,
+.reserve-row .player:hover .player-actions,
+.national-row .player:hover .player-actions,
+.fa-list .player:hover .player-actions {
+  opacity: 1;
+}
+.slot .player-actions {
+  opacity: 0;
+  pointer-events: none;
+}
+.slot .player:hover .player-actions,
+.slot .player:focus-within .player-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
 .edit-context {
   margin: 0 0 8px;
   font-size: 11px;
@@ -824,9 +876,6 @@ body {
   background: rgba(0,0,0,.15);
 }
 .side-row .player, .reserve-row .player {
-  flex-direction: row;
-  gap: 6px;
-  max-width: none;
   width: 100%;
   justify-content: flex-start;
 }
