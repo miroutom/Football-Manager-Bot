@@ -250,6 +250,13 @@ def _insert_fresh_row_at_team(
     _cascade_status(sess, Cls, to_team, pos_u, row, new_status)
 
 
+def _player_already_at_team(sess, player: str, team: str, position: str) -> bool:
+    for Cls in _ALL_PLAYER:
+        if _row_exists_at_team(sess, Cls, player, team, position):
+            return True
+    return False
+
+
 def _apply_transfer_with_status_to_sessions(
     sess_league,
     sess_cl,
@@ -270,6 +277,25 @@ def _apply_transfer_with_status_to_sessions(
     position = position.strip()
 
     counts: dict[str, int] = {"league": 0, "cl": 0}
+    if _player_already_at_team(sess_league, player, to_team, position):
+        st = (new_status or "bench")
+        st = str(st).strip().lower() if st else "bench"
+        if st not in ("start", "bench", "reserve"):
+            st = "bench"
+        counts["cl"] = _ensure_cl_mirror_from_league_destination(
+            sess_league,
+            sess_cl,
+            player,
+            to_team,
+            position,
+            st,
+            new_overall=new_overall,
+            nation_update=nation_update,
+            new_nation=new_nation,
+        )
+        if counts["cl"]:
+            sess_cl.commit()
+        return counts
     want_name = _norm_cmp(player)
     want_pos = _norm_cmp(position)
 
@@ -302,9 +328,7 @@ def _apply_transfer_with_status_to_sessions(
         for _Cls, r in sources:
             ensure_row_person_id(r, persist=True)
         if _row_exists_at_team(sess, donor_cls, player, to_team, position):
-            raise ValueError(
-                f"Уже есть строка: {player} ({position}) в «{to_team}»."
-            )
+            return
         _insert_fresh_row_at_team(
             sess,
             donor_cls,
@@ -474,8 +498,20 @@ def _apply_fa_sign_with_status(
         if st not in ("start", "bench", "reserve"):
             st = "bench"
 
-        if _row_exists_at_team(session_league, donor_cls, player, to_team, pos_u):
-            raise ValueError(f"Уже есть: {player} ({pos_u}) в «{to_team}».")
+        if _player_already_at_team(session_league, player, to_team, pos_u):
+            counts["cl"] = _ensure_cl_mirror_from_league_destination(
+                session_league,
+                session_cl,
+                player,
+                to_team,
+                pos_u,
+                st,
+                new_overall=new_overall,
+            )
+            if counts["cl"]:
+                session_cl.commit()
+            remove_free_agent_after_signing(player, position)
+            return counts
 
         _insert_fresh_row_at_team(
             session_league,
