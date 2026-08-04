@@ -57,6 +57,8 @@ let playerProfiles = {};
 const SQUAD_TARGET = 32;
 const SQUAD_START_TARGET = 11;
 const SQUAD_RESERVE_TARGET = 21;
+/** Замены вне старта: 21 = 7 в «Запасе» + 14 в «Резерве». */
+const MIN_RESERVE_SLOTS = SQUAD_RESERVE_TARGET - BENCH_SLOTS;
 const WC_TOTAL = 26;
 const WC_START = 11;
 const WC_BENCH = 7;
@@ -2462,22 +2464,22 @@ function ensureExtraReserveSlots(teamList) {
     }
     return;
   }
-  /** В конце резерва всегда EXTRA_RESERVE пустых ячеек для дропа. */
+  /** Клубы: 7 запас + мин. 14 резерв (= 21 замена) + пустые ячейки для дропа. */
   for (const team of teamList || []) {
+    if (!Array.isArray(team.bench)) team.bench = [];
+    while (team.bench.length < BENCH_SLOTS) team.bench.push(emptySlot());
+
     if (!Array.isArray(team.reserve)) team.reserve = [];
+    while (team.reserve.length < MIN_RESERVE_SLOTS) {
+      team.reserve.push(emptySlot());
+    }
     let trailingEmpty = 0;
     for (let i = team.reserve.length - 1; i >= 0; i--) {
       if (team.reserve[i] && team.reserve[i].id) break;
       trailingEmpty += 1;
     }
     while (trailingEmpty < EXTRA_RESERVE) {
-      team.reserve.push({
-        id: null,
-        name: null,
-        position: null,
-        overall: null,
-        injured: false,
-      });
+      team.reserve.push(emptySlot());
       trailingEmpty += 1;
     }
   }
@@ -3187,6 +3189,9 @@ function applyFormationToTeam(team, fid) {
     }
   } else {
     reserve = remaining.map((p) => ({ ...p }));
+    while (reserve.length < MIN_RESERVE_SLOTS) {
+      reserve.push(emptySlot());
+    }
     for (let i = 0; i < EXTRA_RESERVE; i++) {
       reserve.push(emptySlot());
     }

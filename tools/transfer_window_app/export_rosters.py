@@ -23,6 +23,7 @@ from formation_catalog import FORMATION_ID_LABELS, label_for_formation_id  # noq
 from team_squad_schemas import get_slots_for_formation_key  # noqa: E402
 from utils.season_paths import get_active_season  # noqa: E402
 from utils.transfer_market_draft import _EXCLUDED_TEAMS  # noqa: E402
+from utils.transfer_squad_quota import SQUAD_RESERVE  # noqa: E402
 
 EXTRA_RESERVE_SLOTS = 5
 _EMPTY = {"id": None, "name": None, "position": None, "overall": None}
@@ -130,6 +131,9 @@ def export_team(team: str, *, season: int) -> dict:
     reserve = [_pl_dict(p, team, season=season) for p in bench_all[SUBSTITUTES_COUNT:]]
     while len(bench) < SUBSTITUTES_COUNT:
         bench.append({**_EMPTY, "injured": False})
+    min_reserve = SQUAD_RESERVE - SUBSTITUTES_COUNT
+    while len(reserve) < min_reserve:
+        reserve.append({**_EMPTY, "injured": False})
     reserve.extend({**_EMPTY, "injured": False} for _ in range(EXTRA_RESERVE_SLOTS))
     starters_ovr = [s["overall"] for s in start if s.get("overall")]
     avg = round(sum(starters_ovr) / len(starters_ovr), 1) if starters_ovr else 0.0
