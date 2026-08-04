@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Публичный HTTPS-туннель для мультиплеера (Yandex si-infra tunneler).
+Публичный HTTPS-туннель для мультиплеера.
 
-Документация: https://docs.yandex-team.ru/si-infra/tunneler/tunneler
+По умолчанию: cloudflared Quick Tunnel (работает с любой сети, в т.ч. хост на Windows).
+Альтернатива: Yandex tunneler — TW_TUNNEL_BACKEND=tunneler (см. si-infra docs).
 
-Команда по умолчанию задаётся через TW_TUNNEL_CMD (плейсхолдер {port}):
-  export TW_TUNNEL_CMD='tunneler http --port {port}'
-  python3 tools/transfer_window_app/main.py --tunnel
-
-Если tunneler запускаете вручную в другом терминале:
-  python3 tools/transfer_window_app/main.py --tunnel --tunnel-url 'https://…'
+Хост поднимает app + туннель; напарник открывает только ссылку в браузере (cloudflare на его машине не нужен).
 """
 from __future__ import annotations
 
@@ -24,10 +20,12 @@ import time
 from typing import Callable
 from urllib.parse import urlparse
 
-DOCS_URL = "https://docs.yandex-team.ru/si-infra/tunneler/tunneler"
+CLOUDFLARED_DOCS = (
+    "https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/"
+)
+TUNNELER_DOCS = "https://docs.yandex-team.ru/si-infra/tunneler/tunneler"
 
-_DEFAULT_CMD = "tunneler http --port {port}"
-
+_CLOUDFLARE_URL_RE = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com", re.I)
 _HTTPS_RE = re.compile(r"https://[^\s'\"<>]+", re.I)
 
 _SKIP_URL_PARTS = (
@@ -35,8 +33,23 @@ _SKIP_URL_PARTS = (
     "passport.yandex",
     "mc.yandex.ru",
     "developers.cloudflare.com",
-    "trycloudflare.com",
 )
+
+_DEFAULT_TUNNELER_CMD = "tunneler http --port {port}"
+
+
+def tunnel_backend() -> str:
+    raw = (os.environ.get("TW_TUNNEL_BACKEND") or "cloudflared").strip().lower()
+    if raw in ("tunneler", "yandex", "ya"):
+        return "tunneler"
+    return "cloudflared"
+
+
+def find_cloudflared() -> str | None:
+    override = (os.environ.get("CLOUDFLARED_BIN") or "").strip()
+    if override and os.path.isfile(override):
+        return override
+    return shutil.which("cloudflared")
 
 
 def find_tunneler() -> str | None:
@@ -46,23 +59,25 @@ def find_tunneler() -> str | None:
     return shutil.which("tunneler")
 
 
-def tunnel_cmd_template() -> str:
-    for key in ("TW_TUNNEL_CMD", "TUNNELER_CMD"):
-        raw = (os.environ.get(key) or "").strip()
-        if raw:
-            return raw
-    return _DEFAULT_CMD
+def _normalize_public_url(raw: str) -> str | None:
+    s = (raw or "").strip().rstrip(".,;)")
+    if not s.lower().startswith("https://"):
+        return None
+    if not urlparse(s).netloc:
+        return None
+    return s.rstrip("/") + "/"
 
 
-def build_tunneler_argv(port: int, *, host: str = "127.0.0.1") -> list[str]:
-    tpl = tunnel_cmd_template()
-    rendered = tpl.format(port=int(port), host=host)
-    return shlex.split(rendered)
-
-
-def parse_tunnel_url(text: str) -> str | None:
+def parse_tunnel_url(text: str, *, backend: str | None = None) -> str | None:
     if not text:
         return None
+    backend = backend or tunnel_backend()
+
+    if backend == "cloudflared":
+        m = _CLOUDFLARE_URL_RE.search(text)
+        if m:
+            return _normalize_public_url(m.group(0))
+
     try:
         data = json.loads(text)
     except (TypeError, json.JSONDecodeError):
@@ -85,13 +100,121 @@ def parse_tunnel_url(text: str) -> str | None:
     return best
 
 
-def _normalize_public_url(raw: str) -> str | None:
-    s = (raw or "").strip().rstrip(".,;)")
-    if not s.lower().startswith("https://"):
+def _watch_process_output(
+    proc: subprocess.Popen,
+    *,
+    on_url: Callable[[str], None] | None,
+    on_error: Callable[[str], None] | None,
+    timeout_sec: float,
+    backend: str,
+    argv: list[str],
+    fail_hint: str,
+) -> None:
+    deadline = time.monotonic() + timeout_sec
+    url_found = False
+    assert proc.stdout is not None
+    buf: list[str] = []
+    while True:
+        if proc.poll() is not None:
+            rest = proc.stdout.read() or ""
+            if rest:
+                buf.append(rest)
+            if not url_found:
+                url = parse_tunnel_url("".join(buf), backend=backend)
+                if url:
+                    url_found = True
+                    if on_url:
+                        on_url(url)
+            if not url_found and on_error:
+                on_error(f"{fail_hint}\n  Команда: {shlex.join(argv)}")
+            return
+        line = proc.stdout.readline()
+        if not line:
+            if time.monotonic() > deadline and not url_found:
+                if on_error:
+                    on_error(
+                        f"таймаут ожидания ссылки ({backend}).\n"
+                        f"  {fail_hint}\n"
+                        "  Или передай готовую ссылку: --tunnel-url 'https://…'"
+                    )
+                proc.kill()
+            time.sleep(0.05)
+            continue
+        buf.append(line)
+        url = parse_tunnel_url(line, backend=backend)
+        if url and not url_found:
+            url_found = True
+            if on_url:
+                on_url(url)
+
+
+def start_cloudflared_tunnel(
+    port: int,
+    *,
+    on_url: Callable[[str], None] | None = None,
+    on_error: Callable[[str], None] | None = None,
+    timeout_sec: float = 90.0,
+) -> subprocess.Popen | None:
+    """cloudflared tunnel --url http://127.0.0.1:PORT → https://….trycloudflare.com"""
+    bin_path = find_cloudflared()
+    if not bin_path:
+        if on_error:
+            on_error(
+                "cloudflared не найден в PATH.\n"
+                "  Windows: winget install Cloudflare.cloudflared\n"
+                "  macOS: brew install cloudflared\n"
+                f"  Или: {CLOUDFLARED_DOCS}"
+            )
         return None
-    if not urlparse(s).netloc:
+
+    argv = [
+        bin_path,
+        "tunnel",
+        "--no-autoupdate",
+        "--url",
+        f"http://127.0.0.1:{int(port)}",
+    ]
+    try:
+        proc = subprocess.Popen(
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+    except OSError as e:
+        if on_error:
+            on_error(f"не удалось запустить cloudflared: {e}")
         return None
-    return s.rstrip("/") + "/"
+
+    threading.Thread(
+        target=_watch_process_output,
+        kwargs={
+            "proc": proc,
+            "on_url": on_url,
+            "on_error": on_error,
+            "timeout_sec": timeout_sec,
+            "backend": "cloudflared",
+            "argv": argv,
+            "fail_hint": "cloudflared завершился без публичной ссылки.",
+        },
+        daemon=True,
+    ).start()
+    return proc
+
+
+def _tunneler_cmd_template() -> str:
+    for key in ("TW_TUNNEL_CMD", "TUNNELER_CMD"):
+        raw = (os.environ.get(key) or "").strip()
+        if raw:
+            return raw
+    return _DEFAULT_TUNNELER_CMD
+
+
+def build_tunneler_argv(port: int, *, host: str = "127.0.0.1") -> list[str]:
+    tpl = _tunneler_cmd_template()
+    rendered = tpl.format(port=int(port), host=host)
+    return shlex.split(rendered)
 
 
 def start_tunneler_process(
@@ -102,10 +225,6 @@ def start_tunneler_process(
     timeout_sec: float = 120.0,
     host: str = "127.0.0.1",
 ) -> subprocess.Popen | None:
-    """
-    Запустить Yandex tunneler (si-infra) для локального http://127.0.0.1:PORT.
-    URL читается из stdout/stderr процесса.
-    """
     try:
         argv = build_tunneler_argv(port, host=host)
     except ValueError as e:
@@ -118,13 +237,12 @@ def start_tunneler_process(
         return None
 
     bin_path = argv[0]
-    if "/" not in bin_path and not shutil.which(bin_path):
+    if "/" not in bin_path and "\\" not in bin_path and not shutil.which(bin_path):
         if on_error:
             on_error(
                 "tunneler не найден в PATH.\n"
-                f"  Установка и команда — в доке: {DOCS_URL}\n"
-                f"  Либо: export TUNNELER_BIN=/path/to/tunneler\n"
-                f"  Либо вручную: python3 tools/transfer_window_app/main.py --tunnel --tunnel-url 'https://…'"
+                f"  Дока: {TUNNELER_DOCS}\n"
+                f"  Либо: set TUNNELER_BIN=C:\\path\\to\\tunneler.exe"
             )
         return None
 
@@ -138,57 +256,36 @@ def start_tunneler_process(
         )
     except OSError as e:
         if on_error:
-            on_error(f"не удалось запустить tunneler ({shlex.join(argv)}): {e}")
+            on_error(f"не удалось запустить tunneler: {e}")
         return None
 
-    def _watch() -> None:
-        deadline = time.monotonic() + timeout_sec
-        url_found = False
-        assert proc.stdout is not None
-        buf: list[str] = []
-        while True:
-            if proc.poll() is not None:
-                rest = proc.stdout.read() or ""
-                if rest:
-                    buf.append(rest)
-                blob = "".join(buf)
-                if not url_found:
-                    url = parse_tunnel_url(blob)
-                    if url:
-                        url_found = True
-                        if on_url:
-                            on_url(url)
-                if not url_found and on_error:
-                    on_error(
-                        "tunneler завершился без публичной ссылки.\n"
-                        f"  Команда: {shlex.join(argv)}\n"
-                        f"  Дока: {DOCS_URL}\n"
-                        "  Проверь TW_TUNNEL_CMD или передай --tunnel-url вручную."
-                    )
-                return
-            line = proc.stdout.readline()
-            if not line:
-                if time.monotonic() > deadline and not url_found:
-                    if on_error:
-                        on_error(
-                            "таймаут ожидания ссылки от tunneler.\n"
-                            f"  Дока: {DOCS_URL}\n"
-                            "  Запусти tunneler вручную и передай --tunnel-url."
-                        )
-                    proc.kill()
-                time.sleep(0.05)
-                continue
-            buf.append(line)
-            url = parse_tunnel_url(line)
-            if url and not url_found:
-                url_found = True
-                if on_url:
-                    on_url(url)
-
-    threading.Thread(target=_watch, daemon=True).start()
+    threading.Thread(
+        target=_watch_process_output,
+        kwargs={
+            "proc": proc,
+            "on_url": on_url,
+            "on_error": on_error,
+            "timeout_sec": timeout_sec,
+            "backend": "tunneler",
+            "argv": argv,
+            "fail_hint": f"tunneler завершился без ссылки. Дока: {TUNNELER_DOCS}",
+        },
+        daemon=True,
+    ).start()
     return proc
 
 
-# Совместимость со старым импортом.
-start_cloudflared_tunnel = start_tunneler_process
-start_remote_tunnel = start_tunneler_process
+def start_remote_tunnel(
+    port: int,
+    *,
+    on_url: Callable[[str], None] | None = None,
+    on_error: Callable[[str], None] | None = None,
+    timeout_sec: float = 90.0,
+) -> subprocess.Popen | None:
+    if tunnel_backend() == "tunneler":
+        return start_tunneler_process(
+            port, on_url=on_url, on_error=on_error, timeout_sec=max(timeout_sec, 120.0)
+        )
+    return start_cloudflared_tunnel(
+        port, on_url=on_url, on_error=on_error, timeout_sec=timeout_sec
+    )

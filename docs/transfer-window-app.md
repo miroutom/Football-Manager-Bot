@@ -76,7 +76,7 @@ python3 tools/transfer_window_app/main.py --lan
 
 ### После перезапуска `--tunnel`
 
-- Старая публичная ссылка **перестаёт работать** после перезапуска tunneler.
+- Старая ссылка `https://….trycloudflare.com` **перестаёт работать** после перезапуска.
 - В терминале появится **новая** ссылка (~10–30 с) — отправь её другу снова.
 - В шапке app: **«Ссылка для друга» → Копировать** (когда ссылка готова).
 - У друга должна быть метка **● live** — иначе перезагрузи страницу по новой ссылке.
@@ -103,7 +103,7 @@ python3 tools/transfer_window_app/main.py --tunnel   # или --lan, или бе
 python3 tools/transfer_window_app/main.py --tunnel --port 9000
 ```
 
-У напарника в ссылке будет `:9000` (для tunnel — новый URL от tunneler).
+У напарника в ссылке будет `:9000` (для tunnel — новый URL от cloudflared).
 
 ---
 
@@ -113,34 +113,37 @@ python3 tools/transfer_window_app/main.py --tunnel --port 9000
 
 #### Из разных квартир (рекомендуется)
 
-Wi‑Fi/LAN не подходит, если вы в разных сетях. Поднимите **публичный туннель** через [Yandex tunneler](https://docs.yandex-team.ru/si-infra/tunneler/tunneler) (cloudflared **не** используем):
+Один **хостит** (Windows/Mac/Linux + проект + БД). Второй **только открывает ссылку в браузере** — cloudflared на машине напарника **не нужен**.
+
+**Windows (хост):**
+
+```bat
+python tools\transfer_window_app\export_rosters.py
+tools\transfer_window_app\share_remote.bat
+```
+
+Один раз: `winget install Cloudflare.cloudflared`
+
+**macOS (хост):**
 
 ```bash
 python3 tools/transfer_window_app/export_rosters.py
-
-# Авто: tunneler в PATH, команда по умолчанию tunneler http --port {port}
 ./tools/transfer_window_app/share_remote.sh
-
-# Своя команда из доки:
-export TW_TUNNEL_CMD='tunneler … {port} …'
-python3 tools/transfer_window_app/main.py --tunnel
 ```
 
-**Tunneler уже запущен вручную** (в другом терминале):
+Один раз: `brew install cloudflared`
 
-```bash
-python3 tools/transfer_window_app/main.py --tunnel --tunnel-url 'https://…'
-# или
-TW_TUNNEL_URL='https://…' ./tools/transfer_window_app/share_remote.sh
-```
+**macOS / телефон (напарник):** открыть `https://….trycloudflare.com` из терминала хоста — больше ничего ставить не надо.
 
-Через ~10–30 с в терминале появится **HTTPS-ссылка** — её открывает напарник.
+Через ~10–30 с появится **`https://….trycloudflare.com`** — эту ссылку отправляешь напарнику.
 
-- Держите терминал с `--tunnel` **открытым**, пока играете.
+- Держите терминал хоста **открытым**, пока играете.
 - Ссылка **временная** — только для доверенного напарника.
 - В шапке app: **«Ссылка для друга» → Копировать**.
 
-**Альтернатива:** [Tailscale](https://tailscale.com) на обоих Mac/PC → хост запускает `--lan`, друг открывает адрес **`100.x.x.x`** из терминала (строка «Tailscale»).
+**Корп. tunneler (опционально):** `set TW_TUNNEL_BACKEND=tunneler` (Windows) / `export TW_TUNNEL_BACKEND=tunneler` (Mac) — см. [si-infra tunneler](https://docs.yandex-team.ru/si-infra/tunneler/tunneler).
+
+**Альтернатива:** [Tailscale](https://tailscale.com) на обоих → хост `--lan`, друг открывает **`100.x.x.x`**.
 
 #### Одна Wi‑Fi / одна квартира
 

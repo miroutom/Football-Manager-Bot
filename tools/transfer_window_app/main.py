@@ -41,7 +41,7 @@ from multiplayer_state import (
     state_meta,
     state_revision,
 )
-from remote_tunnel import DOCS_URL, start_tunneler_process
+from remote_tunnel import start_remote_tunnel, tunnel_backend
 
 WINDOW_QUOTAS: dict[str, dict[str, int]] = {
     "summer": {"max_in": 5, "max_out": 5, "label": "Лето"},
@@ -254,19 +254,21 @@ def _start_remote_tunnel(port: int, *, preset_url: str = "", spawn: bool = True)
     if not spawn:
         _TUNNEL_PENDING = True
         print(
-            "⏳ Режим --tunnel-manual: подними tunneler в другом терминале "
-            f"(см. {DOCS_URL})",
+            "⏳ Режим --tunnel-manual: подними туннель в другом терминале "
+            "(cloudflared или tunneler).",
             file=sys.stderr,
         )
         print(
             "  Затем перезапусти с --tunnel-url 'https://…' "
-            "или export TW_TUNNEL_URL=…",
+            "или TW_TUNNEL_URL=…",
             file=sys.stderr,
         )
         return
     _TUNNEL_PENDING = True
-    print(f"⏳ Создаём публичную ссылку через Yandex tunneler… ({DOCS_URL})")
-    _TUNNEL_PROC = start_tunneler_process(
+    backend = tunnel_backend()
+    label = "cloudflared" if backend == "cloudflared" else "Yandex tunneler"
+    print(f"⏳ Создаём публичную ссылку через {label}…")
+    _TUNNEL_PROC = start_remote_tunnel(
         port,
         on_url=_on_tunnel_url,
         on_error=_on_tunnel_error,
