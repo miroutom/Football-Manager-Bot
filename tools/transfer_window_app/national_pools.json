@@ -1,6 +1,6 @@
 {
   "season": 4,
-  "exported_at": 1785613391,
+  "exported_at": 1785615026,
   "nations": [
     {
       "name": "Австрия",
@@ -66,26 +66,6 @@
           "person_id": 474
         },
         {
-          "id": "Free Agent|Грегориш|ФРВ",
-          "name": "Грегориш",
-          "position": "ФРВ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Австрия",
-          "is_fa": true,
-          "person_id": 1064
-        },
-        {
-          "id": "Free Agent|Лайнхарт|ЦЗ",
-          "name": "Лайнхарт",
-          "position": "ЦЗ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Австрия",
-          "is_fa": true,
-          "person_id": 1415
-        },
-        {
           "id": "Лейпциг|Шлагер|ЦОП",
           "name": "Шлагер",
           "position": "ЦОП",
@@ -144,36 +124,6 @@
           "nation": "Австрия",
           "is_fa": true,
           "person_id": 835
-        },
-        {
-          "id": "Free Agent|Перван|ВРТ",
-          "name": "Перван",
-          "position": "ВРТ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Австрия",
-          "is_fa": true,
-          "person_id": 1589
-        },
-        {
-          "id": "Free Agent|Лазаро|ПЗ",
-          "name": "Лазаро",
-          "position": "ПЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Австрия",
-          "is_fa": true,
-          "person_id": 1477
-        },
-        {
-          "id": "Free Agent|Адаму|ФРВ",
-          "name": "Адаму",
-          "position": "ФРВ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Австрия",
-          "is_fa": true,
-          "person_id": 1065
         }
       ]
     },
@@ -189,86 +139,6 @@
           "nation": "албания",
           "is_fa": false,
           "person_id": 239
-        },
-        {
-          "id": "Free Agent|Баллиу|ПЗ",
-          "name": "Баллиу",
-          "position": "ПЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Албания",
-          "is_fa": true,
-          "person_id": 1497
-        },
-        {
-          "id": "Free Agent|Джимсити|ЦЗ",
-          "name": "Джимсити",
-          "position": "ЦЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Албания",
-          "is_fa": true,
-          "person_id": 1438
-        },
-        {
-          "id": "Free Agent|Хюсай|ПЗ",
-          "name": "Хюсай",
-          "position": "ПЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Албания",
-          "is_fa": true,
-          "person_id": 1456
-        },
-        {
-          "id": "Free Agent|Кумбулла|ЦЗ",
-          "name": "Кумбулла",
-          "position": "ЦЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Албания",
-          "is_fa": true,
-          "person_id": 1464
-        },
-        {
-          "id": "Free Agent|Аслани|ЦП",
-          "name": "Аслани",
-          "position": "ЦП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Албания",
-          "is_fa": true,
-          "person_id": 1245
-        },
-        {
-          "id": "Free Agent|Байрами|ЦАП",
-          "name": "Байрами",
-          "position": "ЦАП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Албания",
-          "is_fa": true,
-          "person_id": 1260
-        },
-        {
-          "id": "Free Agent|Даку|ЦФД",
-          "name": "Даку",
-          "position": "ЦФД",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Албания",
-          "is_fa": true,
-          "person_id": 1153
-        },
-        {
-          "id": "Free Agent|Митай|ЛЗ",
-          "name": "Митай",
-          "position": "ЛЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Албания",
-          "is_fa": true,
-          "person_id": 1540
         }
       ]
     },
@@ -304,26 +174,6 @@
           "nation": "Алжир",
           "is_fa": false,
           "person_id": 757
-        },
-        {
-          "id": "Free Agent|Бенсебаини|ЛЗ",
-          "name": "Бенсебаини",
-          "position": "ЛЗ",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Алжир",
-          "is_fa": true,
-          "person_id": 1392
-        },
-        {
-          "id": "Free Agent|Манди|ЦЗ",
-          "name": "Манди",
-          "position": "ЦЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Алжир",
-          "is_fa": true,
-          "person_id": 1522
         },
         {
           "id": "Free Agent|Шаиби|ЛФА",
@@ -601,16 +451,6 @@
           "person_id": 911
         },
         {
-          "id": "Free Agent|Маунт|ЦП",
-          "name": "Маунт",
-          "position": "ЦП",
-          "overall": 81,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1189
-        },
-        {
           "id": "Ньюкасл|Поуп|ВРТ",
           "name": "Поуп",
           "position": "ВРТ",
@@ -639,16 +479,6 @@
           "nation": "Англия",
           "is_fa": false,
           "person_id": 555
-        },
-        {
-          "id": "Free Agent|Абрахам|ФРВ",
-          "name": "Абрахам",
-          "position": "ФРВ",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1087
         },
         {
           "id": "Астон Вилла|Акпом|ФРВ",
@@ -771,26 +601,6 @@
           "person_id": 1044
         },
         {
-          "id": "Free Agent|Макгуайр|ЦЗ",
-          "name": "Макгуайр",
-          "position": "ЦЗ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1384
-        },
-        {
-          "id": "Free Agent|Марч|ЦП",
-          "name": "Марч",
-          "position": "ЦП",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1173
-        },
-        {
           "id": "Аталанта|Хендерсон|ВРТ",
           "name": "Хендерсон",
           "position": "ВРТ",
@@ -861,16 +671,6 @@
           "person_id": 1156
         },
         {
-          "id": "Free Agent|Адарабьо|ЦЗ",
-          "name": "Адарабьо",
-          "position": "ЦЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1374
-        },
-        {
           "id": "Хоффенхайм|Гиббс-Уайт|ЦАП",
           "name": "Гиббс-Уайт",
           "position": "ЦАП",
@@ -879,16 +679,6 @@
           "nation": "Англия",
           "is_fa": false,
           "person_id": 506
-        },
-        {
-          "id": "Free Agent|Дайер|ЦЗ",
-          "name": "Дайер",
-          "position": "ЦЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1391
         },
         {
           "id": "Free Agent|Джонс|ЦП",
@@ -909,16 +699,6 @@
           "nation": "Англия",
           "is_fa": false,
           "person_id": 762
-        },
-        {
-          "id": "Free Agent|Милнер|ЦП",
-          "name": "Милнер",
-          "position": "ЦП",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1176
         },
         {
           "id": "Фиорентина|Мингз|ЦЗ",
@@ -951,16 +731,6 @@
           "person_id": 958
         },
         {
-          "id": "Free Agent|Скипп|ЦОП",
-          "name": "Скипп",
-          "position": "ЦОП",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1196
-        },
-        {
           "id": "Рома|Эллиотт|ЦАП",
           "name": "Эллиотт",
           "position": "ЦАП",
@@ -971,16 +741,6 @@
           "person_id": 333
         },
         {
-          "id": "Free Agent|Лаллана|ЦП",
-          "name": "Лаллана",
-          "position": "ЦП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1177
-        },
-        {
           "id": "Free Agent|Лофтус-Чик|ЦП",
           "name": "Лофтус-Чик",
           "position": "ЦП",
@@ -989,46 +749,6 @@
           "nation": "Англия",
           "is_fa": true,
           "person_id": 457
-        },
-        {
-          "id": "Free Agent|Мёрфи|ПФА",
-          "name": "Мёрфи",
-          "position": "ПФА",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 132
-        },
-        {
-          "id": "Free Agent|Рид|ЦП",
-          "name": "Рид",
-          "position": "ЦП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1184
-        },
-        {
-          "id": "Free Agent|Таргетт|ЛЗ",
-          "name": "Таргетт",
-          "position": "ЛЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 763
-        },
-        {
-          "id": "Free Agent|Уэлбек|ФРВ",
-          "name": "Уэлбек",
-          "position": "ФРВ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1030
         },
         {
           "id": "Free Agent|Чалоба|ЦЗ",
@@ -1081,16 +801,6 @@
           "person_id": 735
         },
         {
-          "id": "Free Agent|Ласель|ЦЗ",
-          "name": "Ласель",
-          "position": "ЦЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1385
-        },
-        {
           "id": "Боруссия М|Льюис|ПЗ",
           "name": "Льюис",
           "position": "ПЗ",
@@ -1099,16 +809,6 @@
           "nation": "Англия",
           "is_fa": false,
           "person_id": 1389
-        },
-        {
-          "id": "Free Agent|Нкетиа|ФРВ",
-          "name": "Нкетиа",
-          "position": "ФРВ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1024
         },
         {
           "id": "Free Agent|Сессеньон|ЛЗ",
@@ -1141,16 +841,6 @@
           "person_id": 791
         },
         {
-          "id": "Free Agent|Чамберс|ЦЗ",
-          "name": "Чамберс",
-          "position": "ЦЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1361
-        },
-        {
           "id": "Free Agent|Поттер|ЛФА",
           "name": "Поттер",
           "position": "ЛФА",
@@ -1159,26 +849,6 @@
           "nation": "Англия",
           "is_fa": true,
           "person_id": 246
-        },
-        {
-          "id": "Free Agent|Илинг|ЛП",
-          "name": "Илинг",
-          "position": "ЛП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1247
-        },
-        {
-          "id": "Free Agent|Стиль|ВРТ",
-          "name": "Стиль",
-          "position": "ВРТ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Англия",
-          "is_fa": true,
-          "person_id": 1572
         }
       ]
     },
@@ -1271,6 +941,16 @@
           "person_id": 315
         },
         {
+          "id": "Интер|Мартинез|ФРВ",
+          "name": "Мартинез",
+          "position": "ФРВ",
+          "overall": 85,
+          "team": "Интер",
+          "nation": "Аргентина",
+          "is_fa": false,
+          "person_id": 62
+        },
+        {
           "id": "Астон Вилла|Мартинез|ВРТ",
           "name": "Мартинез",
           "position": "ВРТ",
@@ -1289,16 +969,6 @@
           "nation": "Аргентина",
           "is_fa": true,
           "person_id": 296
-        },
-        {
-          "id": "Интер|Мартинез|ФРВ",
-          "name": "Мартинез",
-          "position": "ФРВ",
-          "overall": 84,
-          "team": "Интер",
-          "nation": "Аргентина",
-          "is_fa": false,
-          "person_id": 62
         },
         {
           "id": "Ливерпуль|Энцо|ЦП",
@@ -1339,16 +1009,6 @@
           "nation": "Аргентина",
           "is_fa": false,
           "person_id": 41
-        },
-        {
-          "id": "Free Agent|Мак Аллистер|ЦП",
-          "name": "Мак Аллистер",
-          "position": "ЦП",
-          "overall": 82,
-          "team": "Free Agent",
-          "nation": "Аргентина",
-          "is_fa": true,
-          "person_id": 419
         },
         {
           "id": "Локомотив|Муссо|ВРТ",
@@ -1421,16 +1081,6 @@
           "person_id": 99
         },
         {
-          "id": "Реал Сосьедад|Хулиан Альварез|ФРВ",
-          "name": "Хулиан Альварез",
-          "position": "ФРВ",
-          "overall": 81,
-          "team": "Реал Сосьедад",
-          "nation": "Аргентина",
-          "is_fa": false,
-          "person_id": 134
-        },
-        {
           "id": "Арсенал|Акунья|ЛЗ",
           "name": "Акунья",
           "position": "ЛЗ",
@@ -1481,16 +1131,6 @@
           "person_id": 388
         },
         {
-          "id": "Free Agent|Фойт|ПЗ",
-          "name": "Фойт",
-          "position": "ПЗ",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Аргентина",
-          "is_fa": true,
-          "person_id": 1517
-        },
-        {
           "id": "Крылья Советов|Гарре|ПФА",
           "name": "Гарре",
           "position": "ПФА",
@@ -1531,6 +1171,16 @@
           "person_id": 923
         },
         {
+          "id": "Реал Сосьедад|Хулиан Альварез|ФРВ",
+          "name": "Хулиан Альварез",
+          "position": "ФРВ",
+          "overall": 79,
+          "team": "Реал Сосьедад",
+          "nation": "Аргентина",
+          "is_fa": false,
+          "person_id": 134
+        },
+        {
           "id": "Жирона|Марчесин|ВРТ",
           "name": "Марчесин",
           "position": "ВРТ",
@@ -1539,16 +1189,6 @@
           "nation": "Аргентина",
           "is_fa": false,
           "person_id": 1008
-        },
-        {
-          "id": "Зенит|Паласиос|ПФА",
-          "name": "Паласиос",
-          "position": "ПФА",
-          "overall": 78,
-          "team": "Зенит",
-          "nation": "Аргентина",
-          "is_fa": false,
-          "person_id": 267
         },
         {
           "id": "Free Agent|Паласиос|ЦОП",
@@ -1571,16 +1211,6 @@
           "person_id": 122
         },
         {
-          "id": "Free Agent|Куарта|ЦЗ",
-          "name": "Куарта",
-          "position": "ЦЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Аргентина",
-          "is_fa": true,
-          "person_id": 1443
-        },
-        {
           "id": "Free Agent|Паредес|ЦП",
           "name": "Паредес",
           "position": "ЦП",
@@ -1601,16 +1231,6 @@
           "person_id": 766
         },
         {
-          "id": "Free Agent|Бельтран|ФРВ",
-          "name": "Бельтран",
-          "position": "ФРВ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Аргентина",
-          "is_fa": true,
-          "person_id": 1159
-        },
-        {
           "id": "Free Agent|Брайда|ЛЗ",
           "name": "Брайда",
           "position": "ЛЗ",
@@ -1619,26 +1239,6 @@
           "nation": "Аргентина",
           "is_fa": true,
           "person_id": 872
-        },
-        {
-          "id": "Free Agent|Пеццелла|ЦЗ",
-          "name": "Пеццелла",
-          "position": "ЦЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Аргентина",
-          "is_fa": true,
-          "person_id": 616
-        },
-        {
-          "id": "Free Agent|Аларио|ФРВ",
-          "name": "Аларио",
-          "position": "ФРВ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Аргентина",
-          "is_fa": true,
-          "person_id": 1054
         },
         {
           "id": "Атлетико|Маммана|ЦЗ",
@@ -1651,24 +1251,14 @@
           "person_id": 924
         },
         {
-          "id": "Free Agent|Паломино|ЦЗ",
-          "name": "Паломино",
-          "position": "ЦЗ",
+          "id": "Free Agent|Паласиос|ПФА",
+          "name": "Паласиос",
+          "position": "ПФА",
           "overall": 75,
           "team": "Free Agent",
           "nation": "Аргентина",
           "is_fa": true,
-          "person_id": 1440
-        },
-        {
-          "id": "Free Agent|Гаттони|ЦЗ",
-          "name": "Гаттони",
-          "position": "ЦЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Аргентина",
-          "is_fa": true,
-          "person_id": 1513
+          "person_id": 267
         },
         {
           "id": "Free Agent|Пеллегрини|ЛЗ",
@@ -1679,26 +1269,6 @@
           "nation": "Аргентина",
           "is_fa": true,
           "person_id": 789
-        },
-        {
-          "id": "Free Agent|Вада|ЦП",
-          "name": "Вада",
-          "position": "ЦП",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Аргентина",
-          "is_fa": true,
-          "person_id": 1341
-        },
-        {
-          "id": "Free Agent|Сармиенто|ПФА",
-          "name": "Сармиенто",
-          "position": "ПФА",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Аргентина",
-          "is_fa": true,
-          "person_id": 1046
         }
       ]
     },
@@ -1734,46 +1304,6 @@
           "nation": "Армения",
           "is_fa": false,
           "person_id": 354
-        },
-        {
-          "id": "Free Agent|Байрамян|ЛФА",
-          "name": "Байрамян",
-          "position": "ЛФА",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Армения",
-          "is_fa": true,
-          "person_id": 1150
-        },
-        {
-          "id": "Free Agent|Толян|ПЗ",
-          "name": "Толян",
-          "position": "ПЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Армения",
-          "is_fa": true,
-          "person_id": 1470
-        },
-        {
-          "id": "Free Agent|Арутюнян|ЦП",
-          "name": "Арутюнян",
-          "position": "ЦП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Армения",
-          "is_fa": true,
-          "person_id": 1320
-        },
-        {
-          "id": "Free Agent|Иву|ЦП",
-          "name": "Иву",
-          "position": "ЦП",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Армения",
-          "is_fa": true,
-          "person_id": 1342
         }
       ]
     },
@@ -2053,31 +1583,6 @@
       ]
     },
     {
-      "name": "Беларусь",
-      "players": [
-        {
-          "id": "Free Agent|Лисакович|ФРВ",
-          "name": "Лисакович",
-          "position": "ФРВ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Беларусь",
-          "is_fa": true,
-          "person_id": 1157
-        },
-        {
-          "id": "Free Agent|Мартынович|ЦЗ",
-          "name": "Мартынович",
-          "position": "ЦЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Беларусь",
-          "is_fa": true,
-          "person_id": 1555
-        }
-      ]
-    },
-    {
       "name": "Бельгия",
       "players": [
         {
@@ -2191,16 +1696,6 @@
           "person_id": 933
         },
         {
-          "id": "Free Agent|Витсель|ЦЗ",
-          "name": "Витсель",
-          "position": "ЦЗ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Бельгия",
-          "is_fa": true,
-          "person_id": 1486
-        },
-        {
           "id": "Севилья|Карраско|ЛФА",
           "name": "Карраско",
           "position": "ЛФА",
@@ -2241,26 +1736,6 @@
           "person_id": 204
         },
         {
-          "id": "Free Agent|Кастанье|ПЗ",
-          "name": "Кастанье",
-          "position": "ПЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Бельгия",
-          "is_fa": true,
-          "person_id": 1376
-        },
-        {
-          "id": "Free Agent|Янузай|ПФА",
-          "name": "Янузай",
-          "position": "ПФА",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Бельгия",
-          "is_fa": true,
-          "person_id": 1124
-        },
-        {
           "id": "Free Agent|Де Кетеларе|ЦАП",
           "name": "Де Кетеларе",
           "position": "ЦАП",
@@ -2271,26 +1746,6 @@
           "person_id": 348
         },
         {
-          "id": "Free Agent|Менье|ПЗ",
-          "name": "Менье",
-          "position": "ПЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Бельгия",
-          "is_fa": true,
-          "person_id": 1395
-        },
-        {
-          "id": "Free Agent|Дендонкер|ЦП",
-          "name": "Дендонкер",
-          "position": "ЦП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Бельгия",
-          "is_fa": true,
-          "person_id": 1172
-        },
-        {
           "id": "Реал|Куртуа|ВРТ",
           "name": "Куртуа",
           "position": "ВРТ",
@@ -2299,16 +1754,6 @@
           "nation": "Бельгия",
           "is_fa": false,
           "person_id": 937
-        },
-        {
-          "id": "Free Agent|Вранкс|ЦП",
-          "name": "Вранкс",
-          "position": "ЦП",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Бельгия",
-          "is_fa": true,
-          "person_id": 1236
         }
       ]
     },
@@ -2324,26 +1769,6 @@
           "nation": "Босния",
           "is_fa": true,
           "person_id": 145
-        },
-        {
-          "id": "Free Agent|Колашинац|ЦЗ",
-          "name": "Колашинац",
-          "position": "ЦЗ",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Босния",
-          "is_fa": true,
-          "person_id": 1437
-        },
-        {
-          "id": "Free Agent|Крунич|ЦП",
-          "name": "Крунич",
-          "position": "ЦП",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Босния",
-          "is_fa": true,
-          "person_id": 1252
         },
         {
           "id": "Крылья Советов|Рахманович|ЦП",
@@ -2404,6 +1829,16 @@
           "nation": "Бразилия",
           "is_fa": false,
           "person_id": 104
+        },
+        {
+          "id": "Челси|Сильва|ЦЗ",
+          "name": "Сильва",
+          "position": "ЦЗ",
+          "overall": 88,
+          "team": "Челси",
+          "nation": "Бразилия",
+          "is_fa": false,
+          "person_id": 773
         },
         {
           "id": "Дортмунд|Фред|ЦП",
@@ -2516,16 +1951,6 @@
           "person_id": 624
         },
         {
-          "id": "Спартак|Пепе|ФРВ",
-          "name": "Пепе",
-          "position": "ФРВ",
-          "overall": 83,
-          "team": "Спартак",
-          "nation": "Бразилия",
-          "is_fa": false,
-          "person_id": 85
-        },
-        {
           "id": "Лейпциг|Фабиньо|ЦОП",
           "name": "Фабиньо",
           "position": "ЦОП",
@@ -2594,16 +2019,6 @@
           "nation": "Бразилия",
           "is_fa": false,
           "person_id": 34
-        },
-        {
-          "id": "Челси|Сильва|ЦЗ",
-          "name": "Сильва",
-          "position": "ЦЗ",
-          "overall": 82,
-          "team": "Челси",
-          "nation": "Бразилия",
-          "is_fa": false,
-          "person_id": 773
         },
         {
           "id": "Реал|Талиска|ЦАП",
@@ -2676,6 +2091,26 @@
           "person_id": 720
         },
         {
+          "id": "Спартак|Пепе|ФРВ",
+          "name": "Пепе",
+          "position": "ФРВ",
+          "overall": 80,
+          "team": "Спартак",
+          "nation": "Бразилия",
+          "is_fa": false,
+          "person_id": 85
+        },
+        {
+          "id": "Бетис|Пепе|ЦЗ",
+          "name": "Пепе",
+          "position": "ЦЗ",
+          "overall": 80,
+          "team": "Бетис",
+          "nation": "Бразилия",
+          "is_fa": false,
+          "person_id": 4504
+        },
+        {
           "id": "Зенит|Савио|ЛФА",
           "name": "Савио",
           "position": "ЛФА",
@@ -2704,16 +2139,6 @@
           "nation": "Бразилия",
           "is_fa": false,
           "person_id": 925
-        },
-        {
-          "id": "Free Agent|Аугусто|ЛП",
-          "name": "Аугусто",
-          "position": "ЛП",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1244
         },
         {
           "id": "Бавария|Грохе|ВРТ",
@@ -2956,16 +2381,6 @@
           "person_id": 585
         },
         {
-          "id": "Free Agent|Виллиан|ЛП",
-          "name": "Виллиан",
-          "position": "ЛП",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1182
-        },
-        {
           "id": "Брайтон|Игорь|ЦЗ",
           "name": "Игорь",
           "position": "ЦЗ",
@@ -3016,16 +2431,6 @@
           "person_id": 712
         },
         {
-          "id": "Free Agent|Виллиан Жозе|ФРВ",
-          "name": "Виллиан Жозе",
-          "position": "ФРВ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 26
-        },
-        {
           "id": "Севилья|Жоелинтон|ЦП",
           "name": "Жоелинтон",
           "position": "ЦП",
@@ -3046,16 +2451,6 @@
           "person_id": 154
         },
         {
-          "id": "Free Agent|Винисиус|ФРВ",
-          "name": "Винисиус",
-          "position": "ФРВ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1037
-        },
-        {
           "id": "Атлетико|Додо|ПЗ",
           "name": "Додо",
           "position": "ПЗ",
@@ -3064,16 +2459,6 @@
           "nation": "Бразилия",
           "is_fa": false,
           "person_id": 644
-        },
-        {
-          "id": "Free Agent|Жезус|ЦЗ",
-          "name": "Жезус",
-          "position": "ЦЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1459
         },
         {
           "id": "Ювентус|Коуто|ПЗ",
@@ -3086,13 +2471,13 @@
           "person_id": 635
         },
         {
-          "id": "Наполи|Матеус Энрике|ЦП",
+          "id": "Free Agent|Матеус Энрике|ЦП",
           "name": "Матеус Энрике",
           "position": "ЦП",
           "overall": 75,
-          "team": "Наполи",
+          "team": "Free Agent",
           "nation": "Бразилия",
-          "is_fa": false,
+          "is_fa": true,
           "person_id": 577
         },
         {
@@ -3106,16 +2491,6 @@
           "person_id": 1303
         },
         {
-          "id": "Free Agent|Энрике|ЦОП",
-          "name": "Энрике",
-          "position": "ЦОП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1261
-        },
-        {
           "id": "Рома|Виктор|ЦЗ",
           "name": "Виктор",
           "position": "ЦЗ",
@@ -3124,136 +2499,6 @@
           "nation": "Бразилия",
           "is_fa": false,
           "person_id": 880
-        },
-        {
-          "id": "Free Agent|Рожерио|ЛЗ",
-          "name": "Рожерио",
-          "position": "ЛЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1431
-        },
-        {
-          "id": "Free Agent|Тормена|ЦЗ",
-          "name": "Тормена",
-          "position": "ЦЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1529
-        },
-        {
-          "id": "Free Agent|Абнер|ЛЗ",
-          "name": "Абнер",
-          "position": "ЛЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1503
-        },
-        {
-          "id": "Free Agent|Натан|ЦЗ",
-          "name": "Натан",
-          "position": "ЦЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1460
-        },
-        {
-          "id": "Free Agent|Родригао|ПЗ",
-          "name": "Родригао",
-          "position": "ПЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1566
-        },
-        {
-          "id": "Free Agent|Гилерме|ВРТ",
-          "name": "Гилерме",
-          "position": "ВРТ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1622
-        },
-        {
-          "id": "Free Agent|Руан|ЦЗ",
-          "name": "Руан",
-          "position": "ЦЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1471
-        },
-        {
-          "id": "Free Agent|Фассон|ЦЗ",
-          "name": "Фассон",
-          "position": "ЦЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1536
-        },
-        {
-          "id": "Free Agent|Ренан|ЦЗ",
-          "name": "Ренан",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1568
-        },
-        {
-          "id": "Free Agent|Муниз|ФРВ",
-          "name": "Муниз",
-          "position": "ФРВ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1039
-        },
-        {
-          "id": "Free Agent|Шеттине|ФРВ",
-          "name": "Шеттине",
-          "position": "ФРВ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1163
-        },
-        {
-          "id": "Free Agent|Итало|ПЗ",
-          "name": "Итало",
-          "position": "ПЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1565
-        },
-        {
-          "id": "Free Agent|Андре Андерсон|ФРВ",
-          "name": "Андре Андерсон",
-          "position": "ФРВ",
-          "overall": 64,
-          "team": "Free Agent",
-          "nation": "Бразилия",
-          "is_fa": true,
-          "person_id": 1082
         }
       ]
     },
@@ -3314,16 +2559,6 @@
           "nation": "Венгрия",
           "is_fa": false,
           "person_id": 846
-        },
-        {
-          "id": "Free Agent|Саллаи|ПП",
-          "name": "Саллаи",
-          "position": "ПП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Венгрия",
-          "is_fa": true,
-          "person_id": 1220
         },
         {
           "id": "Хоффенхайм|Керкес|ЛЗ",
@@ -3456,36 +2691,6 @@
           "person_id": 1221
         },
         {
-          "id": "Free Agent|Дункан|ЦП",
-          "name": "Дункан",
-          "position": "ЦП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Гана",
-          "is_fa": true,
-          "person_id": 1242
-        },
-        {
-          "id": "Free Agent|Фамье|ФРВ",
-          "name": "Фамье",
-          "position": "ФРВ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Гана",
-          "is_fa": true,
-          "person_id": 1155
-        },
-        {
-          "id": "Free Agent|Мумин|ЦЗ",
-          "name": "Мумин",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Гана",
-          "is_fa": true,
-          "person_id": 1496
-        },
-        {
           "id": "Free Agent|Семеньо|ФРВ",
           "name": "Семеньо",
           "position": "ФРВ",
@@ -3509,26 +2714,6 @@
           "nation": "Гвинея",
           "is_fa": false,
           "person_id": 1070
-        },
-        {
-          "id": "Free Agent|Мориба|ЦП",
-          "name": "Мориба",
-          "position": "ЦП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Гвинея",
-          "is_fa": true,
-          "person_id": 1216
-        },
-        {
-          "id": "Free Agent|Сиссе|ЦП",
-          "name": "Сиссе",
-          "position": "ЦП",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Гвинея",
-          "is_fa": true,
-          "person_id": 1351
         }
       ]
     },
@@ -3674,16 +2859,6 @@
           "nation": "Германия",
           "is_fa": false,
           "person_id": 486
-        },
-        {
-          "id": "Free Agent|Гинтер|ЦЗ",
-          "name": "Гинтер",
-          "position": "ЦЗ",
-          "overall": 84,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1416
         },
         {
           "id": "Мю|Мухтар|ФРВ",
@@ -3936,16 +3111,6 @@
           "person_id": 1174
         },
         {
-          "id": "Free Agent|Гюнтер|ЛЗ",
-          "name": "Гюнтер",
-          "position": "ЛЗ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1414
-        },
-        {
           "id": "Лейпциг|Клостерманн|ПЗ",
           "name": "Клостерманн",
           "position": "ПЗ",
@@ -3974,36 +3139,6 @@
           "nation": "Германия",
           "is_fa": false,
           "person_id": 448
-        },
-        {
-          "id": "Free Agent|Бериша|ФРВ",
-          "name": "Бериша",
-          "position": "ФРВ",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1066
-        },
-        {
-          "id": "Free Agent|Вульф|ПЗ",
-          "name": "Вульф",
-          "position": "ПЗ",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1393
-        },
-        {
-          "id": "Free Agent|Роде|ЦОП",
-          "name": "Роде",
-          "position": "ЦОП",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1205
         },
         {
           "id": "Ювентус|Хенрихс|ПЗ",
@@ -4126,16 +3261,6 @@
           "person_id": 475
         },
         {
-          "id": "Free Agent|Нубель|ВРТ",
-          "name": "Нубель",
-          "position": "ВРТ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1587
-        },
-        {
           "id": "Ньюкасл|Прёмель|ЦП",
           "name": "Прёмель",
           "position": "ЦП",
@@ -4154,56 +3279,6 @@
           "nation": "Германия",
           "is_fa": true,
           "person_id": 849
-        },
-        {
-          "id": "Free Agent|Хёфлер|ЦП",
-          "name": "Хёфлер",
-          "position": "ЦП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1217
-        },
-        {
-          "id": "Free Agent|Антон|ЦЗ",
-          "name": "Антон",
-          "position": "ЦЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1426
-        },
-        {
-          "id": "Free Agent|Гейгер|ЦОП",
-          "name": "Гейгер",
-          "position": "ЦОП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1224
-        },
-        {
-          "id": "Free Agent|Демме|ЦОП",
-          "name": "Демме",
-          "position": "ЦОП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1254
-        },
-        {
-          "id": "Free Agent|Кублер|ПЗ",
-          "name": "Кублер",
-          "position": "ПЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1419
         },
         {
           "id": "Хоффенхайм|Мукоко|ФРВ",
@@ -4226,16 +3301,6 @@
           "person_id": 508
         },
         {
-          "id": "Free Agent|Эггештейн|ЦОП",
-          "name": "Эггештейн",
-          "position": "ЦОП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1218
-        },
-        {
           "id": "Free Agent|Йенц|ЦЗ",
           "name": "Йенц",
           "position": "ЦЗ",
@@ -4256,36 +3321,6 @@
           "person_id": 980
         },
         {
-          "id": "Free Agent|Миттельштадт|ЛЗ",
-          "name": "Миттельштадт",
-          "position": "ЛЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1428
-        },
-        {
-          "id": "Free Agent|Ульрих|ВРТ",
-          "name": "Ульрих",
-          "position": "ВРТ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1579
-        },
-        {
-          "id": "Free Agent|Филипп|ФРВ",
-          "name": "Филипп",
-          "position": "ФРВ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1063
-        },
-        {
           "id": "Free Agent|Фридрих|ЦЗ",
           "name": "Фридрих",
           "position": "ЦЗ",
@@ -4294,26 +3329,6 @@
           "nation": "Германия",
           "is_fa": true,
           "person_id": 836
-        },
-        {
-          "id": "Free Agent|Фюнрих|ЦАП",
-          "name": "Фюнрих",
-          "position": "ЦАП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1226
-        },
-        {
-          "id": "Free Agent|Хёлер|ФРВ",
-          "name": "Хёлер",
-          "position": "ФРВ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1062
         },
         {
           "id": "Лацио|Байер|ЛФА",
@@ -4326,46 +3341,6 @@
           "person_id": 157
         },
         {
-          "id": "Free Agent|Вагноман|ПЗ",
-          "name": "Вагноман",
-          "position": "ПЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1427
-        },
-        {
-          "id": "Free Agent|Гульде|ЦЗ",
-          "name": "Гульде",
-          "position": "ЦЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1418
-        },
-        {
-          "id": "Free Agent|Каразор|ЦП",
-          "name": "Каразор",
-          "position": "ЦП",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1227
-        },
-        {
-          "id": "Free Agent|Ленц|ЛЗ",
-          "name": "Ленц",
-          "position": "ЛЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1413
-        },
-        {
           "id": "Free Agent|Стиллер|ЦП",
           "name": "Стиллер",
           "position": "ЦП",
@@ -4374,46 +3349,6 @@
           "nation": "Германия",
           "is_fa": true,
           "person_id": 1225
-        },
-        {
-          "id": "Free Agent|Кариус|ВРТ",
-          "name": "Кариус",
-          "position": "ВРТ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1577
-        },
-        {
-          "id": "Free Agent|Левелинг|ФРВ",
-          "name": "Левелинг",
-          "position": "ФРВ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1069
-        },
-        {
-          "id": "Free Agent|Хак|ЛП",
-          "name": "Хак",
-          "position": "ЛП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1229
-        },
-        {
-          "id": "Free Agent|Брелоу|ВРТ",
-          "name": "Брелоу",
-          "position": "ВРТ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1588
         },
         {
           "id": "Free Agent|Джон|ЛЗ",
@@ -4426,46 +3361,6 @@
           "person_id": 850
         },
         {
-          "id": "Free Agent|Кейтель|ЦОП",
-          "name": "Кейтель",
-          "position": "ЦОП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1222
-        },
-        {
-          "id": "Free Agent|Нганкам|ПФА",
-          "name": "Нганкам",
-          "position": "ПФА",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1099
-        },
-        {
-          "id": "Free Agent|Янтшке|ЦЗ",
-          "name": "Янтшке",
-          "position": "ЦЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1410
-        },
-        {
-          "id": "Free Agent|Атуболу|ВРТ",
-          "name": "Атуболу",
-          "position": "ВРТ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1584
-        },
-        {
           "id": "Free Agent|Жустван|ЦАП",
           "name": "Жустван",
           "position": "ЦАП",
@@ -4474,86 +3369,6 @@
           "nation": "Германия",
           "is_fa": true,
           "person_id": 511
-        },
-        {
-          "id": "Free Agent|Стензель|ПЗ",
-          "name": "Стензель",
-          "position": "ПЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1430
-        },
-        {
-          "id": "Free Agent|Упхофф|ВРТ",
-          "name": "Упхофф",
-          "position": "ВРТ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1586
-        },
-        {
-          "id": "Free Agent|Вайсхаупт|ЛП",
-          "name": "Вайсхаупт",
-          "position": "ЛП",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1223
-        },
-        {
-          "id": "Free Agent|Массимо|ПП",
-          "name": "Массимо",
-          "position": "ПП",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1232
-        },
-        {
-          "id": "Free Agent|Ломб|ВРТ",
-          "name": "Ломб",
-          "position": "ВРТ",
-          "overall": 66,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1582
-        },
-        {
-          "id": "Free Agent|Эглофф|ЦАП",
-          "name": "Эглофф",
-          "position": "ЦАП",
-          "overall": 65,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1234
-        },
-        {
-          "id": "Free Agent|Крациг|ЛЗ",
-          "name": "Крациг",
-          "position": "ЛЗ",
-          "overall": 61,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1400
-        },
-        {
-          "id": "Free Agent|Денк|ЦЗ",
-          "name": "Денк",
-          "position": "ЦЗ",
-          "overall": 60,
-          "team": "Free Agent",
-          "nation": "Германия",
-          "is_fa": true,
-          "person_id": 1401
         }
       ]
     },
@@ -4634,36 +3449,6 @@
           "nation": "Грузия",
           "is_fa": true,
           "person_id": 231
-        },
-        {
-          "id": "Free Agent|Марадишвили|ЦП",
-          "name": "Марадишвили",
-          "position": "ЦП",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Грузия",
-          "is_fa": true,
-          "person_id": 1329
-        },
-        {
-          "id": "Free Agent|Сарвели|ФРВ",
-          "name": "Сарвели",
-          "position": "ФРВ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Грузия",
-          "is_fa": true,
-          "person_id": 1144
-        },
-        {
-          "id": "Free Agent|Хубулов|ЦП",
-          "name": "Хубулов",
-          "position": "ЦП",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Грузия",
-          "is_fa": true,
-          "person_id": 1325
         }
       ]
     },
@@ -4816,26 +3601,6 @@
           "person_id": 847
         },
         {
-          "id": "Free Agent|Винд|ФРВ",
-          "name": "Винд",
-          "position": "ФРВ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Дания",
-          "is_fa": true,
-          "person_id": 1071
-        },
-        {
-          "id": "Free Agent|Паульсен|ФРВ",
-          "name": "Паульсен",
-          "position": "ФРВ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Дания",
-          "is_fa": true,
-          "person_id": 1058
-        },
-        {
           "id": "Арсенал|Дамсгаард|ЦАП",
           "name": "Дамсгаард",
           "position": "ЦАП",
@@ -4846,16 +3611,6 @@
           "person_id": 535
         },
         {
-          "id": "Free Agent|Хёйлунд|ФРВ",
-          "name": "Хёйлунд",
-          "position": "ФРВ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Дания",
-          "is_fa": true,
-          "person_id": 1042
-        },
-        {
           "id": "Free Agent|Исаксен|ПФА",
           "name": "Исаксен",
           "position": "ПФА",
@@ -4864,31 +3619,6 @@
           "nation": "Дания",
           "is_fa": true,
           "person_id": 159
-        },
-        {
-          "id": "Free Agent|Нартей|ЦП",
-          "name": "Нартей",
-          "position": "ЦП",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Дания",
-          "is_fa": true,
-          "person_id": 1233
-        }
-      ]
-    },
-    {
-      "name": "Доминиканская Республика",
-      "players": [
-        {
-          "id": "Free Agent|Мариано|ФРВ",
-          "name": "Мариано",
-          "position": "ФРВ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Доминиканская Республика",
-          "is_fa": true,
-          "person_id": 1125
         }
       ]
     },
@@ -4934,16 +3664,6 @@
           "nation": "ДР Конго",
           "is_fa": false,
           "person_id": 708
-        },
-        {
-          "id": "Free Agent|Бонгонда|ЛФА",
-          "name": "Бонгонда",
-          "position": "ЛФА",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "ДР Конго",
-          "is_fa": true,
-          "person_id": 1161
         }
       ]
     },
@@ -4969,16 +3689,6 @@
           "nation": "Египет",
           "is_fa": false,
           "person_id": 1052
-        },
-        {
-          "id": "Free Agent|Элнени|ЦП",
-          "name": "Элнени",
-          "position": "ЦП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Египет",
-          "is_fa": true,
-          "person_id": 1170
         }
       ]
     },
@@ -5009,16 +3719,6 @@
           "nation": "Израиль",
           "is_fa": false,
           "person_id": 673
-        },
-        {
-          "id": "Free Agent|Перец|ВРТ",
-          "name": "Перец",
-          "position": "ВРТ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Израиль",
-          "is_fa": true,
-          "person_id": 1580
         }
       ]
     },
@@ -5034,31 +3734,6 @@
           "nation": "Иран",
           "is_fa": false,
           "person_id": 169
-        },
-        {
-          "id": "Free Agent|Мохеби|ЛФА",
-          "name": "Мохеби",
-          "position": "ЛФА",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Иран",
-          "is_fa": true,
-          "person_id": 1145
-        }
-      ]
-    },
-    {
-      "name": "Ирландия",
-      "players": [
-        {
-          "id": "Free Agent|Келлехер|ВРТ",
-          "name": "Келлехер",
-          "position": "ВРТ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Ирландия",
-          "is_fa": true,
-          "person_id": 1575
         }
       ]
     },
@@ -5311,26 +3986,6 @@
           "person_id": 4705
         },
         {
-          "id": "Free Agent|Жерар Морено|ФРВ",
-          "name": "Жерар Морено",
-          "position": "ФРВ",
-          "overall": 83,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1129
-        },
-        {
-          "id": "Free Agent|Иглесиас|ФРВ",
-          "name": "Иглесиас",
-          "position": "ФРВ",
-          "overall": 83,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 27
-        },
-        {
           "id": "Ливерпуль|Коке|ЦП",
           "name": "Коке",
           "position": "ЦП",
@@ -5401,16 +4056,6 @@
           "person_id": 996
         },
         {
-          "id": "Астон Вилла|Торрес|ЦЗ",
-          "name": "Торрес",
-          "position": "ЦЗ",
-          "overall": 83,
-          "team": "Астон Вилла",
-          "nation": "Испания",
-          "is_fa": false,
-          "person_id": 739
-        },
-        {
           "id": "Мю|Тьяго|ЦП",
           "name": "Тьяго",
           "position": "ЦП",
@@ -5471,16 +4116,6 @@
           "person_id": 284
         },
         {
-          "id": "Free Agent|Альбиоль|ЦЗ",
-          "name": "Альбиоль",
-          "position": "ЦЗ",
-          "overall": 81,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1519
-        },
-        {
           "id": "Крылья Советов|Гуаита|ВРТ",
           "name": "Гуаита",
           "position": "ВРТ",
@@ -5511,6 +4146,16 @@
           "person_id": 564
         },
         {
+          "id": "Вольфсбург|Саму Гарсия|ЦП",
+          "name": "Саму Гарсия",
+          "position": "ЦП",
+          "overall": 81,
+          "team": "Вольфсбург",
+          "nation": "Испания",
+          "is_fa": false,
+          "person_id": 304
+        },
+        {
           "id": "Атлетико|Сауль|ЦП",
           "name": "Сауль",
           "position": "ЦП",
@@ -5521,14 +4166,14 @@
           "person_id": 294
         },
         {
-          "id": "Аталанта|Торрес|ЦП",
+          "id": "Астон Вилла|Торрес|ЦЗ",
           "name": "Торрес",
-          "position": "ЦП",
+          "position": "ЦЗ",
           "overall": 81,
-          "team": "Аталанта",
+          "team": "Астон Вилла",
           "nation": "Испания",
           "is_fa": false,
-          "person_id": 349
+          "person_id": 739
         },
         {
           "id": "Астон Вилла|Адан|ВРТ",
@@ -5579,16 +4224,6 @@
           "nation": "Испания",
           "is_fa": false,
           "person_id": 243
-        },
-        {
-          "id": "Free Agent|Беренгер|ЛП",
-          "name": "Беренгер",
-          "position": "ЛП",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1211
         },
         {
           "id": "Free Agent|Джордан|ЦП",
@@ -5721,36 +4356,6 @@
           "person_id": 600
         },
         {
-          "id": "Free Agent|Ромеу|ЦОП",
-          "name": "Ромеу",
-          "position": "ЦОП",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1278
-        },
-        {
-          "id": "Free Agent|Сусо|ПФА",
-          "name": "Сусо",
-          "position": "ПФА",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1122
-        },
-        {
-          "id": "Ювентус|Торрес|ЛФА",
-          "name": "Торрес",
-          "position": "ЛФА",
-          "overall": 80,
-          "team": "Ювентус",
-          "nation": "Испания",
-          "is_fa": false,
-          "person_id": 161
-        },
-        {
           "id": "Атлетико|Хоселу|ФРВ",
           "name": "Хоселу",
           "position": "ФРВ",
@@ -5781,16 +4386,6 @@
           "person_id": 594
         },
         {
-          "id": "Free Agent|Айозе|ЛФА",
-          "name": "Айозе",
-          "position": "ЛФА",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 25
-        },
-        {
           "id": "Ювентус|Альба|ЛЗ",
           "name": "Альба",
           "position": "ЛЗ",
@@ -5811,36 +4406,6 @@
           "person_id": 257
         },
         {
-          "id": "Free Agent|Аспиликуэта|ПЗ",
-          "name": "Аспиликуэта",
-          "position": "ПЗ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1485
-        },
-        {
-          "id": "Free Agent|Берчиче|ЛЗ",
-          "name": "Берчиче",
-          "position": "ЛЗ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1481
-        },
-        {
-          "id": "Free Agent|Давид Лопес|ЦЗ",
-          "name": "Давид Лопес",
-          "position": "ЦЗ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1491
-        },
-        {
           "id": "Челси|Кукурелья|ЛЗ",
           "name": "Кукурелья",
           "position": "ЛЗ",
@@ -5849,26 +4414,6 @@
           "nation": "Испания",
           "is_fa": false,
           "person_id": 778
-        },
-        {
-          "id": "Free Agent|Моралес|ФРВ",
-          "name": "Моралес",
-          "position": "ФРВ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1130
-        },
-        {
-          "id": "Реал Сосьедад|Муньоз|ЛЗ",
-          "name": "Муньоз",
-          "position": "ЛЗ",
-          "overall": 79,
-          "team": "Реал Сосьедад",
-          "nation": "Испания",
-          "is_fa": false,
-          "person_id": 631
         },
         {
           "id": "Локомотив|Одриозола|ПЗ",
@@ -5891,16 +4436,6 @@
           "person_id": 1455
         },
         {
-          "id": "Free Agent|Пино|ПФА",
-          "name": "Пино",
-          "position": "ПФА",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1128
-        },
-        {
           "id": "Фиорентина|Са|ВРТ",
           "name": "Са",
           "position": "ВРТ",
@@ -5909,26 +4444,6 @@
           "nation": "Испания",
           "is_fa": false,
           "person_id": 999
-        },
-        {
-          "id": "Вольфсбург|Саму Гарсия|ЦП",
-          "name": "Саму Гарсия",
-          "position": "ЦП",
-          "overall": 79,
-          "team": "Вольфсбург",
-          "nation": "Испания",
-          "is_fa": false,
-          "person_id": 304
-        },
-        {
-          "id": "Free Agent|Себаллос|ЦП",
-          "name": "Себаллос",
-          "position": "ЦП",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1298
         },
         {
           "id": "Крылья Советов|Барриос|ЦОП",
@@ -5951,16 +4466,6 @@
           "person_id": 613
         },
         {
-          "id": "Free Agent|Весга|ЦП",
-          "name": "Весга",
-          "position": "ЦП",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1270
-        },
-        {
           "id": "Атлетик|Де Маркос|ПЗ",
           "name": "Де Маркос",
           "position": "ПЗ",
@@ -5979,46 +4484,6 @@
           "nation": "Испания",
           "is_fa": false,
           "person_id": 590
-        },
-        {
-          "id": "Free Agent|Комесанья|ЦЗ",
-          "name": "Комесанья",
-          "position": "ЦЗ",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1516
-        },
-        {
-          "id": "Free Agent|Педраза|ЛЗ",
-          "name": "Педраза",
-          "position": "ЛЗ",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1514
-        },
-        {
-          "id": "Free Agent|Педро|ПФА",
-          "name": "Педро",
-          "position": "ПФА",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1031
-        },
-        {
-          "id": "Free Agent|Регилон|ЛЗ",
-          "name": "Регилон",
-          "position": "ЛЗ",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1383
         },
         {
           "id": "Байер|Руис|ЦП",
@@ -6041,6 +4506,16 @@
           "person_id": 532
         },
         {
+          "id": "Ювентус|Торрес|ЛФА",
+          "name": "Торрес",
+          "position": "ЛФА",
+          "overall": 78,
+          "team": "Ювентус",
+          "nation": "Испания",
+          "is_fa": false,
+          "person_id": 161
+        },
+        {
           "id": "Free Agent|Бельерин|ПЗ",
           "name": "Бельерин",
           "position": "ПЗ",
@@ -6061,16 +4536,6 @@
           "person_id": 286
         },
         {
-          "id": "Free Agent|Гиль|ЛФА",
-          "name": "Гиль",
-          "position": "ЛФА",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1048
-        },
-        {
           "id": "Атлетик|Гурузета|ФРВ",
           "name": "Гурузета",
           "position": "ФРВ",
@@ -6079,36 +4544,6 @@
           "nation": "Испания",
           "is_fa": false,
           "person_id": 12
-        },
-        {
-          "id": "Free Agent|Де Фрутос|ЛФА",
-          "name": "Де Фрутос",
-          "position": "ЛФА",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1111
-        },
-        {
-          "id": "Free Agent|Лльоренте|ЦЗ",
-          "name": "Лльоренте",
-          "position": "ЦЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1462
-        },
-        {
-          "id": "Free Agent|Мир|ФРВ",
-          "name": "Мир",
-          "position": "ФРВ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1123
         },
         {
           "id": "Бетис|Миранда|ЛЗ",
@@ -6141,54 +4576,24 @@
           "person_id": 298
         },
         {
-          "id": "Free Agent|Тригерос|ЦП",
-          "name": "Тригерос",
+          "id": "Аталанта|Торрес|ЦП",
+          "name": "Торрес",
           "position": "ЦП",
           "overall": 77,
-          "team": "Free Agent",
+          "team": "Аталанта",
           "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1310
+          "is_fa": false,
+          "person_id": 349
         },
         {
-          "id": "Free Agent|Аридане|ЦЗ",
-          "name": "Аридане",
-          "position": "ЦЗ",
-          "overall": 76,
-          "team": "Free Agent",
+          "id": "Боруссия М|Траоре|ПФА",
+          "name": "Траоре",
+          "position": "ПФА",
+          "overall": 77,
+          "team": "Боруссия М",
           "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1501
-        },
-        {
-          "id": "Free Agent|Баэна|ЦП",
-          "name": "Баэна",
-          "position": "ЦП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1306
-        },
-        {
-          "id": "Free Agent|Валентин|ЦОП",
-          "name": "Валентин",
-          "position": "ЦОП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1288
-        },
-        {
-          "id": "Free Agent|Руйбаль|ПЗ",
-          "name": "Руйбаль",
-          "position": "ПЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1506
+          "is_fa": false,
+          "person_id": 193
         },
         {
           "id": "Free Agent|Телло|ЛФА",
@@ -6231,26 +4636,6 @@
           "person_id": 608
         },
         {
-          "id": "Free Agent|Иван Мартин|ЦП",
-          "name": "Иван Мартин",
-          "position": "ЦП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1284
-        },
-        {
-          "id": "Free Agent|Камелло|ФРВ",
-          "name": "Камелло",
-          "position": "ФРВ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1115
-        },
-        {
           "id": "Хоффенхайм|Лекуе|ПЗ",
           "name": "Лекуе",
           "position": "ПЗ",
@@ -6259,6 +4644,16 @@
           "nation": "Испания",
           "is_fa": false,
           "person_id": 1373
+        },
+        {
+          "id": "Реал Сосьедад|Муньоз|ЛЗ",
+          "name": "Муньоз",
+          "position": "ЛЗ",
+          "overall": 75,
+          "team": "Реал Сосьедад",
+          "nation": "Испания",
+          "is_fa": false,
+          "person_id": 631
         },
         {
           "id": "Тоттенхэм|Порро|ПЗ",
@@ -6281,36 +4676,6 @@
           "person_id": 306
         },
         {
-          "id": "Free Agent|Рока|ЦОП",
-          "name": "Рока",
-          "position": "ЦОП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 313
-        },
-        {
-          "id": "Free Agent|Суарез|ПФА",
-          "name": "Суарез",
-          "position": "ПФА",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1132
-        },
-        {
-          "id": "Боруссия М|Траоре|ПФА",
-          "name": "Траоре",
-          "position": "ПФА",
-          "overall": 75,
-          "team": "Боруссия М",
-          "nation": "Испания",
-          "is_fa": false,
-          "person_id": 193
-        },
-        {
           "id": "Наполи|Фати|ФРВ",
           "name": "Фати",
           "position": "ФРВ",
@@ -6319,86 +4684,6 @@
           "nation": "Испания",
           "is_fa": false,
           "person_id": 144
-        },
-        {
-          "id": "Free Agent|Эрик Гарсия|ЦЗ",
-          "name": "Эрик Гарсия",
-          "position": "ЦЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1490
-        },
-        {
-          "id": "Free Agent|Вилья|ЛП",
-          "name": "Вилья",
-          "position": "ЛП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1285
-        },
-        {
-          "id": "Free Agent|Гомез|ЛЗ",
-          "name": "Гомез",
-          "position": "ЛЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1273
-        },
-        {
-          "id": "Free Agent|Карденас|ВРТ",
-          "name": "Карденас",
-          "position": "ВРТ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1612
-        },
-        {
-          "id": "Free Agent|Телла|ЛФА",
-          "name": "Телла",
-          "position": "ЛФА",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1138
-        },
-        {
-          "id": "Free Agent|Терратс|ЦП",
-          "name": "Терратс",
-          "position": "ЦП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1309
-        },
-        {
-          "id": "Free Agent|Фемения|ПЗ",
-          "name": "Фемения",
-          "position": "ПЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1518
-        },
-        {
-          "id": "Free Agent|Агиррезабала|ВРТ",
-          "name": "Агиррезабала",
-          "position": "ВРТ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1607
         },
         {
           "id": "Free Agent|Валери|ПЗ",
@@ -6411,166 +4696,6 @@
           "person_id": 607
         },
         {
-          "id": "Free Agent|Вильялибре|ФРВ",
-          "name": "Вильялибре",
-          "position": "ФРВ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1104
-        },
-        {
-          "id": "Free Agent|Куэнка|ЦЗ",
-          "name": "Куэнка",
-          "position": "ЦЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1521
-        },
-        {
-          "id": "Free Agent|Пенья|ВРТ",
-          "name": "Пенья",
-          "position": "ВРТ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1609
-        },
-        {
-          "id": "Free Agent|Перез|ЦП",
-          "name": "Перез",
-          "position": "ЦП",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1292
-        },
-        {
-          "id": "Free Agent|Хуан Карлос|ВРТ",
-          "name": "Хуан Карлос",
-          "position": "ВРТ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1610
-        },
-        {
-          "id": "Free Agent|Адриан|ВРТ",
-          "name": "Адриан",
-          "position": "ВРТ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1576
-        },
-        {
-          "id": "Free Agent|Бажетич|ЦОП",
-          "name": "Бажетич",
-          "position": "ЦОП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1188
-        },
-        {
-          "id": "Free Agent|Меркеланц|ЛФА",
-          "name": "Меркеланц",
-          "position": "ЛФА",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1120
-        },
-        {
-          "id": "Free Agent|Позо|ПЗ",
-          "name": "Позо",
-          "position": "ПЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1498
-        },
-        {
-          "id": "Free Agent|Витоло|ЛП",
-          "name": "Витоло",
-          "position": "ЛП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1276
-        },
-        {
-          "id": "Free Agent|Мори|ПЗ",
-          "name": "Мори",
-          "position": "ПЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1396
-        },
-        {
-          "id": "Free Agent|Пачеко|ЦЗ",
-          "name": "Пачеко",
-          "position": "ЦЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1510
-        },
-        {
-          "id": "Free Agent|Хуанпе|ЦЗ",
-          "name": "Хуанпе",
-          "position": "ЦЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1493
-        },
-        {
-          "id": "Free Agent|Чаварриа|ЛЗ",
-          "name": "Чаварриа",
-          "position": "ЛЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1500
-        },
-        {
-          "id": "Free Agent|Коста|ВРТ",
-          "name": "Коста",
-          "position": "ВРТ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1614
-        },
-        {
-          "id": "Free Agent|Топпе|ЦАП",
-          "name": "Топпе",
-          "position": "ЦАП",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1283
-        },
-        {
           "id": "Free Agent|Торре|ЦАП",
           "name": "Торре",
           "position": "ЦАП",
@@ -6579,86 +4704,6 @@
           "nation": "Испания",
           "is_fa": true,
           "person_id": 308
-        },
-        {
-          "id": "Free Agent|Ноласкоаин|ЦОП",
-          "name": "Ноласкоаин",
-          "position": "ЦОП",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1272
-        },
-        {
-          "id": "Free Agent|Алтимира|ЦОП",
-          "name": "Алтимира",
-          "position": "ЦОП",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1296
-        },
-        {
-          "id": "Free Agent|Мартин|ЦЗ",
-          "name": "Мартин",
-          "position": "ЦЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1499
-        },
-        {
-          "id": "Free Agent|Турриентес|ЦП",
-          "name": "Турриентес",
-          "position": "ЦП",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1301
-        },
-        {
-          "id": "Free Agent|Аларкон|ФРВ",
-          "name": "Аларкон",
-          "position": "ФРВ",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1107
-        },
-        {
-          "id": "Free Agent|Оласагасти|ЦП",
-          "name": "Оласагасти",
-          "position": "ЦП",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1302
-        },
-        {
-          "id": "Free Agent|Трилли|ПЗ",
-          "name": "Трилли",
-          "position": "ПЗ",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1489
-        },
-        {
-          "id": "Free Agent|Гарридо|ЦП",
-          "name": "Гарридо",
-          "position": "ЦП",
-          "overall": 65,
-          "team": "Free Agent",
-          "nation": "Испания",
-          "is_fa": true,
-          "person_id": 1279
         }
       ]
     },
@@ -6746,16 +4791,6 @@
           "person_id": 353
         },
         {
-          "id": "Рома|Пеллегрини|ЦАП",
-          "name": "Пеллегрини",
-          "position": "ЦАП",
-          "overall": 85,
-          "team": "Рома",
-          "nation": "Италия",
-          "is_fa": false,
-          "person_id": 463
-        },
-        {
           "id": "Бетис|Эль Шарави|ЛФА",
           "name": "Эль Шарави",
           "position": "ЛФА",
@@ -6826,16 +4861,6 @@
           "person_id": 884
         },
         {
-          "id": "Free Agent|Грифо|ЛФА",
-          "name": "Грифо",
-          "position": "ЛФА",
-          "overall": 82,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1059
-        },
-        {
           "id": "Лейпциг|Инсинье|ЛФА",
           "name": "Инсинье",
           "position": "ЛФА",
@@ -6864,6 +4889,16 @@
           "nation": "Италия",
           "is_fa": false,
           "person_id": 45
+        },
+        {
+          "id": "Рома|Пеллегрини|ЦАП",
+          "name": "Пеллегрини",
+          "position": "ЦАП",
+          "overall": 82,
+          "team": "Рома",
+          "nation": "Италия",
+          "is_fa": false,
+          "person_id": 463
         },
         {
           "id": "Спартак|Распадори|ФРВ",
@@ -7086,16 +5121,6 @@
           "person_id": 662
         },
         {
-          "id": "Free Agent|Карнесекки|ВРТ",
-          "name": "Карнесекки",
-          "position": "ВРТ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1590
-        },
-        {
           "id": "Наполи|Консильи|ВРТ",
           "name": "Консильи",
           "position": "ВРТ",
@@ -7136,16 +5161,6 @@
           "person_id": 329
         },
         {
-          "id": "Free Agent|Белотти|ФРВ",
-          "name": "Белотти",
-          "position": "ФРВ",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1089
-        },
-        {
           "id": "Free Agent|Калабрия|ПЗ",
           "name": "Калабрия",
           "position": "ПЗ",
@@ -7164,16 +5179,6 @@
           "nation": "Италия",
           "is_fa": false,
           "person_id": 640
-        },
-        {
-          "id": "Free Agent|Кастровилль|ЦП",
-          "name": "Кастровилль",
-          "position": "ЦП",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1239
         },
         {
           "id": "Локомотив|Колпани|ЦП",
@@ -7216,16 +5221,6 @@
           "person_id": 358
         },
         {
-          "id": "Free Agent|Скамакка|ФРВ",
-          "name": "Скамакка",
-          "position": "ФРВ",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1068
-        },
-        {
           "id": "Лацио|Касале|ЦЗ",
           "name": "Касале",
           "position": "ЦЗ",
@@ -7234,16 +5229,6 @@
           "nation": "Италия",
           "is_fa": false,
           "person_id": 788
-        },
-        {
-          "id": "Free Agent|Катальди|ЦОП",
-          "name": "Катальди",
-          "position": "ЦОП",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1248
         },
         {
           "id": "Фиорентина|Паризи|ЛЗ",
@@ -7266,56 +5251,6 @@
           "person_id": 767
         },
         {
-          "id": "Free Agent|Гатти|ЦЗ",
-          "name": "Гатти",
-          "position": "ЦЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1451
-        },
-        {
-          "id": "Free Agent|Голлини|ВРТ",
-          "name": "Голлини",
-          "position": "ВРТ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1600
-        },
-        {
-          "id": "Free Agent|Де Шильо|ПЗ",
-          "name": "Де Шильо",
-          "position": "ПЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1453
-        },
-        {
-          "id": "Free Agent|Кин|ФРВ",
-          "name": "Кин",
-          "position": "ФРВ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 47
-        },
-        {
-          "id": "Free Agent|Мандрагора|ЦП",
-          "name": "Мандрагора",
-          "position": "ЦП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 336
-        },
-        {
           "id": "Free Agent|Побега|ЦП",
           "name": "Побега",
           "position": "ЦП",
@@ -7334,236 +5269,6 @@
           "nation": "Италия",
           "is_fa": false,
           "person_id": 967
-        },
-        {
-          "id": "Free Agent|Краньо|ВРТ",
-          "name": "Краньо",
-          "position": "ВРТ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1602
-        },
-        {
-          "id": "Free Agent|Скальвини|ЦЗ",
-          "name": "Скальвини",
-          "position": "ЦЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1434
-        },
-        {
-          "id": "Free Agent|Флоренци|ПЗ",
-          "name": "Флоренци",
-          "position": "ПЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1457
-        },
-        {
-          "id": "Free Agent|Линетти|ЦП",
-          "name": "Линетти",
-          "position": "ЦП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1268
-        },
-        {
-          "id": "Free Agent|Пинамонти|ФРВ",
-          "name": "Пинамонти",
-          "position": "ФРВ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1093
-        },
-        {
-          "id": "Free Agent|Белланова|ПЗ",
-          "name": "Белланова",
-          "position": "ПЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1475
-        },
-        {
-          "id": "Free Agent|Джиджи|ЦЗ",
-          "name": "Джиджи",
-          "position": "ЦЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1480
-        },
-        {
-          "id": "Free Agent|Сепе|ВРТ",
-          "name": "Сепе",
-          "position": "ВРТ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1598
-        },
-        {
-          "id": "Free Agent|Вити|ЦЗ",
-          "name": "Вити",
-          "position": "ЦЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1466
-        },
-        {
-          "id": "Free Agent|Пинсольо|ВРТ",
-          "name": "Пинсольо",
-          "position": "ВРТ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1596
-        },
-        {
-          "id": "Free Agent|Раньери|ЦЗ",
-          "name": "Раньери",
-          "position": "ЦЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1446
-        },
-        {
-          "id": "Free Agent|Феррари|ЦЗ",
-          "name": "Феррари",
-          "position": "ЦЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1469
-        },
-        {
-          "id": "Free Agent|Гаэтано|ЦП",
-          "name": "Гаэтано",
-          "position": "ЦП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 339
-        },
-        {
-          "id": "Free Agent|Дзаноли|ПЗ",
-          "name": "Дзаноли",
-          "position": "ПЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 648
-        },
-        {
-          "id": "Free Agent|Миранте|ВРТ",
-          "name": "Миранте",
-          "position": "ВРТ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1599
-        },
-        {
-          "id": "Free Agent|Руджери|ЛЗ",
-          "name": "Руджери",
-          "position": "ЛЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1441
-        },
-        {
-          "id": "Free Agent|Соппи|ПЗ",
-          "name": "Соппи",
-          "position": "ПЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1478
-        },
-        {
-          "id": "Free Agent|Форк|ВРТ",
-          "name": "Форк",
-          "position": "ВРТ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1593
-        },
-        {
-          "id": "Free Agent|Мулаттьери|ФРВ",
-          "name": "Мулаттьери",
-          "position": "ФРВ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1096
-        },
-        {
-          "id": "Free Agent|Пеголо|ВРТ",
-          "name": "Пеголо",
-          "position": "ВРТ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1603
-        },
-        {
-          "id": "Free Agent|Пеллегри|ФРВ",
-          "name": "Пеллегри",
-          "position": "ФРВ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1102
-        },
-        {
-          "id": "Free Agent|Дзортеа|ПЗ",
-          "name": "Дзортеа",
-          "position": "ПЗ",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1442
-        },
-        {
-          "id": "Free Agent|Джемелло|ВРТ",
-          "name": "Джемелло",
-          "position": "ВРТ",
-          "overall": 64,
-          "team": "Free Agent",
-          "nation": "Италия",
-          "is_fa": true,
-          "person_id": 1606
         }
       ]
     },
@@ -7589,16 +5294,6 @@
           "nation": "Кабо-Верде",
           "is_fa": false,
           "person_id": 707
-        },
-        {
-          "id": "Free Agent|Бебе|ЦАП",
-          "name": "Бебе",
-          "position": "ЦАП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Кабо-Верде",
-          "is_fa": true,
-          "person_id": 1289
         }
       ]
     },
@@ -7679,16 +5374,6 @@
           "nation": "Камерун",
           "is_fa": false,
           "person_id": 210
-        },
-        {
-          "id": "Free Agent|Болокка|ЦП",
-          "name": "Болокка",
-          "position": "ЦП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Камерун",
-          "is_fa": true,
-          "person_id": 1263
         }
       ]
     },
@@ -7761,16 +5446,6 @@
           "person_id": 393
         },
         {
-          "id": "Free Agent|Запата|ФРВ",
-          "name": "Запата",
-          "position": "ФРВ",
-          "overall": 81,
-          "team": "Free Agent",
-          "nation": "Колумбия",
-          "is_fa": true,
-          "person_id": 1098
-        },
-        {
           "id": "Лейпциг|Карраскаль|ЦАП",
           "name": "Карраскаль",
           "position": "ЦАП",
@@ -7801,6 +5476,16 @@
           "person_id": 993
         },
         {
+          "id": "Хоффенхайм|Дани Муньоз|ПЗ",
+          "name": "Дани Муньоз",
+          "position": "ПЗ",
+          "overall": 79,
+          "team": "Хоффенхайм",
+          "nation": "Колумбия",
+          "is_fa": false,
+          "person_id": 889
+        },
+        {
           "id": "Тоттенхэм|Куадрадо|ПФА",
           "name": "Куадрадо",
           "position": "ПФА",
@@ -7811,16 +5496,6 @@
           "person_id": 135
         },
         {
-          "id": "Хоффенхайм|Дани Муньоз|ПЗ",
-          "name": "Дани Муньоз",
-          "position": "ПЗ",
-          "overall": 77,
-          "team": "Хоффенхайм",
-          "nation": "Колумбия",
-          "is_fa": false,
-          "person_id": 889
-        },
-        {
           "id": "Ливерпуль|Диас|ЛФА",
           "name": "Диас",
           "position": "ЛФА",
@@ -7829,16 +5504,6 @@
           "nation": "Колумбия",
           "is_fa": false,
           "person_id": 117
-        },
-        {
-          "id": "Free Agent|Кордоба|ЦФД",
-          "name": "Кордоба",
-          "position": "ЦФД",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Колумбия",
-          "is_fa": true,
-          "person_id": 1060
         },
         {
           "id": "Атлетик|Лерма|ЦП",
@@ -7861,16 +5526,6 @@
           "person_id": 922
         },
         {
-          "id": "Free Agent|Мина|ЦЗ",
-          "name": "Мина",
-          "position": "ЦЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Колумбия",
-          "is_fa": true,
-          "person_id": 1445
-        },
-        {
           "id": "Атлетик|Эрнандез|ФРВ",
           "name": "Эрнандез",
           "position": "ФРВ",
@@ -7879,36 +5534,6 @@
           "nation": "Колумбия",
           "is_fa": false,
           "person_id": 213
-        },
-        {
-          "id": "Free Agent|Фалькао|ФРВ",
-          "name": "Фалькао",
-          "position": "ФРВ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Колумбия",
-          "is_fa": true,
-          "person_id": 1116
-        },
-        {
-          "id": "Free Agent|Эспиноза|ЦЗ",
-          "name": "Эспиноза",
-          "position": "ЦЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Колумбия",
-          "is_fa": true,
-          "person_id": 1492
-        },
-        {
-          "id": "Free Agent|Солис|ЦП",
-          "name": "Солис",
-          "position": "ЦП",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Колумбия",
-          "is_fa": true,
-          "person_id": 1286
         }
       ]
     },
@@ -7939,16 +5564,6 @@
           "nation": "Косово",
           "is_fa": false,
           "person_id": 654
-        },
-        {
-          "id": "Free Agent|Войвода|ЛП",
-          "name": "Войвода",
-          "position": "ЛП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Косово",
-          "is_fa": true,
-          "person_id": 1269
         }
       ]
     },
@@ -7956,24 +5571,14 @@
       "name": "коста-рика",
       "players": [
         {
-          "id": "Free Agent|Навас|ВРТ",
+          "id": "Франкфурт|Навас|ВРТ",
           "name": "Навас",
           "position": "ВРТ",
           "overall": 85,
-          "team": "Free Agent",
+          "team": "Франкфурт",
           "nation": "коста-рика",
-          "is_fa": true,
+          "is_fa": false,
           "person_id": 982
-        },
-        {
-          "id": "Free Agent|Угальде|ФРВ",
-          "name": "Угальде",
-          "position": "ФРВ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "коста-рика",
-          "is_fa": true,
-          "person_id": 234
         }
       ]
     },
@@ -8061,16 +5666,6 @@
           "person_id": 883
         },
         {
-          "id": "Free Agent|Куаме|ФРВ",
-          "name": "Куаме",
-          "position": "ФРВ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Кот-Д’Ивуар",
-          "is_fa": true,
-          "person_id": 1075
-        },
-        {
           "id": "Франкфурт|Диалло|ПФА",
           "name": "Диалло",
           "position": "ПФА",
@@ -8089,16 +5684,6 @@
           "nation": "Кот-Д’Ивуар",
           "is_fa": true,
           "person_id": 825
-        },
-        {
-          "id": "Free Agent|Туре|ФРВ",
-          "name": "Туре",
-          "position": "ФРВ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Кот-Д’Ивуар",
-          "is_fa": true,
-          "person_id": 1074
         }
       ]
     },
@@ -8151,6 +5736,16 @@
       "name": "Мали",
       "players": [
         {
+          "id": "Атлетик|Траоре|ПЗ",
+          "name": "Траоре",
+          "position": "ПЗ",
+          "overall": 82,
+          "team": "Атлетик",
+          "nation": "Мали",
+          "is_fa": false,
+          "person_id": 1508
+        },
+        {
           "id": "Аталанта|Бакайоко|ЛФА",
           "name": "Бакайоко",
           "position": "ЛФА",
@@ -8174,7 +5769,7 @@
           "id": "Севилья|Мохамед Камара|ЦП",
           "name": "Мохамед Камара",
           "position": "ЦП",
-          "overall": 79,
+          "overall": 78,
           "team": "Севилья",
           "nation": "Мали",
           "is_fa": false,
@@ -8211,16 +5806,6 @@
           "person_id": 536
         },
         {
-          "id": "Атлетик|Траоре|ПЗ",
-          "name": "Траоре",
-          "position": "ПЗ",
-          "overall": 77,
-          "team": "Атлетик",
-          "nation": "Мали",
-          "is_fa": false,
-          "person_id": 1508
-        },
-        {
           "id": "Free Agent|Койта|ФРВ",
           "name": "Койта",
           "position": "ФРВ",
@@ -8239,16 +5824,6 @@
           "nation": "Мали",
           "is_fa": true,
           "person_id": 510
-        },
-        {
-          "id": "Free Agent|Кебе|ЦП",
-          "name": "Кебе",
-          "position": "ЦП",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Мали",
-          "is_fa": true,
-          "person_id": 1287
         }
       ]
     },
@@ -8361,16 +5936,6 @@
           "person_id": 253
         },
         {
-          "id": "Free Agent|Эззалзули|ЛП",
-          "name": "Эззалзули",
-          "position": "ЛП",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Марокко",
-          "is_fa": true,
-          "person_id": 1294
-        },
-        {
           "id": "Free Agent|Эль Ямик|ЦЗ",
           "name": "Эль Ямик",
           "position": "ЦЗ",
@@ -8476,33 +6041,13 @@
           "person_id": 216
         },
         {
-          "id": "Free Agent|Гуардадо|ЦОП",
-          "name": "Гуардадо",
-          "position": "ЦОП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Мексика",
-          "is_fa": true,
-          "person_id": 310
-        },
-        {
-          "id": "Free Agent|Хименез|ФРВ",
-          "name": "Хименез",
-          "position": "ФРВ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Мексика",
-          "is_fa": true,
-          "person_id": 1036
-        },
-        {
-          "id": "Мю|Эрик Санчес|ЦП",
+          "id": "Free Agent|Эрик Санчес|ЦП",
           "name": "Эрик Санчес",
           "position": "ЦП",
           "overall": 76,
-          "team": "Мю",
+          "team": "Free Agent",
           "nation": "Мексика",
-          "is_fa": false,
+          "is_fa": true,
           "person_id": 249
         },
         {
@@ -8621,26 +6166,6 @@
           "person_id": 894
         },
         {
-          "id": "Free Agent|Айвоби|ПП",
-          "name": "Айвоби",
-          "position": "ПП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Нигерия",
-          "is_fa": true,
-          "person_id": 1185
-        },
-        {
-          "id": "Free Agent|Бонифасе|ФРВ",
-          "name": "Бонифасе",
-          "position": "ФРВ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Нигерия",
-          "is_fa": true,
-          "person_id": 1056
-        },
-        {
           "id": "Free Agent|Акпогума|ЦЗ",
           "name": "Акпогума",
           "position": "ЦЗ",
@@ -8659,26 +6184,6 @@
           "nation": "Нигерия",
           "is_fa": true,
           "person_id": 1091
-        },
-        {
-          "id": "Free Agent|Мозес|ЛЗ",
-          "name": "Мозес",
-          "position": "ЛЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Нигерия",
-          "is_fa": true,
-          "person_id": 1548
-        },
-        {
-          "id": "Free Agent|Олусегун|ФРВ",
-          "name": "Олусегун",
-          "position": "ФРВ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Нигерия",
-          "is_fa": true,
-          "person_id": 1140
         }
       ]
     },
@@ -9046,16 +6551,6 @@
           "person_id": 11
         },
         {
-          "id": "Free Agent|Вельтман|ПЗ",
-          "name": "Вельтман",
-          "position": "ПЗ",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Нидерланды",
-          "is_fa": true,
-          "person_id": 1366
-        },
-        {
           "id": "Бетис|Виффер|ЦП",
           "name": "Виффер",
           "position": "ЦП",
@@ -9064,16 +6559,6 @@
           "nation": "Нидерланды",
           "is_fa": false,
           "person_id": 375
-        },
-        {
-          "id": "Free Agent|Вегхорст|ФРВ",
-          "name": "Вегхорст",
-          "position": "ФРВ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Нидерланды",
-          "is_fa": true,
-          "person_id": 1067
         },
         {
           "id": "Ливерпуль|Джуст|ЦЗ",
@@ -9096,16 +6581,6 @@
           "person_id": 589
         },
         {
-          "id": "Free Agent|Клаассен|ЦП",
-          "name": "Клаассен",
-          "position": "ЦП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Нидерланды",
-          "is_fa": true,
-          "person_id": 357
-        },
-        {
           "id": "Лацио|Купмайнерс|ЦП",
           "name": "Купмайнерс",
           "position": "ЦП",
@@ -9114,26 +6589,6 @@
           "nation": "Нидерланды",
           "is_fa": false,
           "person_id": 351
-        },
-        {
-          "id": "Free Agent|Тете|ПЗ",
-          "name": "Тете",
-          "position": "ПЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Нидерланды",
-          "is_fa": true,
-          "person_id": 1375
-        },
-        {
-          "id": "Free Agent|Вербругген|ВРТ",
-          "name": "Вербругген",
-          "position": "ВРТ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Нидерланды",
-          "is_fa": true,
-          "person_id": 1571
         },
         {
           "id": "Free Agent|Промес|ЛФА",
@@ -9204,26 +6659,6 @@
           "nation": "Нидерланды",
           "is_fa": true,
           "person_id": 873
-        },
-        {
-          "id": "Free Agent|Фосу-Менса|ПЗ",
-          "name": "Фосу-Менса",
-          "position": "ПЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Нидерланды",
-          "is_fa": true,
-          "person_id": 1407
-        },
-        {
-          "id": "Free Agent|Ван Хек|ЦЗ",
-          "name": "Ван Хек",
-          "position": "ЦЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Нидерланды",
-          "is_fa": true,
-          "person_id": 1367
         }
       ]
     },
@@ -9261,46 +6696,6 @@
           "person_id": 815
         },
         {
-          "id": "Free Agent|Сорлот|ФРВ",
-          "name": "Сорлот",
-          "position": "ФРВ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Норвегия",
-          "is_fa": true,
-          "person_id": 1131
-        },
-        {
-          "id": "Free Agent|Педерсен|ПЗ",
-          "name": "Педерсен",
-          "position": "ПЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Норвегия",
-          "is_fa": true,
-          "person_id": 1468
-        },
-        {
-          "id": "Free Agent|Остигард|ЦЗ",
-          "name": "Остигард",
-          "position": "ЦЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Норвегия",
-          "is_fa": true,
-          "person_id": 647
-        },
-        {
-          "id": "Free Agent|Торстведт|ЦОП",
-          "name": "Торстведт",
-          "position": "ЦОП",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Норвегия",
-          "is_fa": true,
-          "person_id": 1259
-        },
-        {
           "id": "Free Agent|Холм|ПЗ",
           "name": "Холм",
           "position": "ПЗ",
@@ -9309,16 +6704,6 @@
           "nation": "Норвегия",
           "is_fa": true,
           "person_id": 663
-        },
-        {
-          "id": "Free Agent|Хауге|ЛП",
-          "name": "Хауге",
-          "position": "ЛП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Норвегия",
-          "is_fa": true,
-          "person_id": 1206
         }
       ]
     },
@@ -9346,16 +6731,6 @@
           "person_id": 672
         },
         {
-          "id": "Free Agent|Санабрия|ЦАП",
-          "name": "Санабрия",
-          "position": "ЦАП",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Парагвай",
-          "is_fa": true,
-          "person_id": 1266
-        },
-        {
           "id": "Динамо|Фернандез|ЦЗ",
           "name": "Фернандез",
           "position": "ЦЗ",
@@ -9374,16 +6749,6 @@
           "nation": "Парагвай",
           "is_fa": false,
           "person_id": 519
-        },
-        {
-          "id": "Free Agent|Энсисо|ЛФА",
-          "name": "Энсисо",
-          "position": "ЛФА",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Парагвай",
-          "is_fa": true,
-          "person_id": 1032
         }
       ]
     },
@@ -9456,16 +6821,6 @@
           "person_id": 1007
         },
         {
-          "id": "Free Agent|Милик|ФРВ",
-          "name": "Милик",
-          "position": "ФРВ",
-          "overall": 81,
-          "team": "Free Agent",
-          "nation": "Польша",
-          "is_fa": true,
-          "person_id": 1078
-        },
-        {
           "id": "Бавария|Залевски|ПФА",
           "name": "Залевски",
           "position": "ПФА",
@@ -9504,46 +6859,6 @@
           "nation": "Польша",
           "is_fa": true,
           "person_id": 942
-        },
-        {
-          "id": "Free Agent|Кивиор|ЦЗ",
-          "name": "Кивиор",
-          "position": "ЦЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Польша",
-          "is_fa": true,
-          "person_id": 1358
-        },
-        {
-          "id": "Free Agent|Модер|ЦП",
-          "name": "Модер",
-          "position": "ЦП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Польша",
-          "is_fa": true,
-          "person_id": 1179
-        },
-        {
-          "id": "Free Agent|Зима|ЦЗ",
-          "name": "Зима",
-          "position": "ЦЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Польша",
-          "is_fa": true,
-          "person_id": 1476
-        },
-        {
-          "id": "Free Agent|Рыбус|ЛЗ",
-          "name": "Рыбус",
-          "position": "ЛЗ",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Польша",
-          "is_fa": true,
-          "person_id": 1553
         }
       ]
     },
@@ -9631,6 +6946,16 @@
           "person_id": 935
         },
         {
+          "id": "Сити|Сильва|ЦП",
+          "name": "Сильва",
+          "position": "ЦП",
+          "overall": 85,
+          "team": "Сити",
+          "nation": "Португалия",
+          "is_fa": false,
+          "person_id": 278
+        },
+        {
           "id": "Ювентус|Инасиу|ЦЗ",
           "name": "Инасиу",
           "position": "ЦЗ",
@@ -9649,16 +6974,6 @@
           "nation": "Португалия",
           "is_fa": false,
           "person_id": 962
-        },
-        {
-          "id": "Сити|Сильва|ЦП",
-          "name": "Сильва",
-          "position": "ЦП",
-          "overall": 84,
-          "team": "Сити",
-          "nation": "Португалия",
-          "is_fa": false,
-          "person_id": 278
         },
         {
           "id": "Бетис|Феликс|ФРВ",
@@ -9699,6 +7014,16 @@
           "nation": "Португалия",
           "is_fa": false,
           "person_id": 976
+        },
+        {
+          "id": "Аталанта|Антониу Сильва|ЦЗ",
+          "name": "Антониу Сильва",
+          "position": "ЦЗ",
+          "overall": 82,
+          "team": "Аталанта",
+          "nation": "Португалия",
+          "is_fa": false,
+          "person_id": 773
         },
         {
           "id": "Бавария|Геррейро|ЛЗ",
@@ -9781,16 +7106,6 @@
           "person_id": 529
         },
         {
-          "id": "Free Agent|Карвальо|ЦОП",
-          "name": "Карвальо",
-          "position": "ЦОП",
-          "overall": 81,
-          "team": "Free Agent",
-          "nation": "Португалия",
-          "is_fa": true,
-          "person_id": 311
-        },
-        {
           "id": "Тоттенхэм|Лопеш|ВРТ",
           "name": "Лопеш",
           "position": "ВРТ",
@@ -9801,34 +7116,14 @@
           "person_id": 968
         },
         {
-          "id": "Бетис|Пепе|ЦЗ",
-          "name": "Пепе",
-          "position": "ЦЗ",
-          "overall": 81,
+          "id": "Бетис|Витинья|ЦП",
+          "name": "Витинья",
+          "position": "ЦП",
+          "overall": 80,
           "team": "Бетис",
           "nation": "Португалия",
           "is_fa": false,
-          "person_id": 4504
-        },
-        {
-          "id": "Жирона|Перейра|ЦП",
-          "name": "Перейра",
-          "position": "ЦП",
-          "overall": 81,
-          "team": "Жирона",
-          "nation": "Португалия",
-          "is_fa": false,
-          "person_id": 305
-        },
-        {
-          "id": "Аталанта|Антониу Сильва|ЦЗ",
-          "name": "Антониу Сильва",
-          "position": "ЦЗ",
-          "overall": 80,
-          "team": "Аталанта",
-          "nation": "Португалия",
-          "is_fa": false,
-          "person_id": 773
+          "person_id": 314
         },
         {
           "id": "Байер|Мариу|ЦАП",
@@ -9851,16 +7146,6 @@
           "person_id": 556
         },
         {
-          "id": "Зенит|Витинья|ФРВ",
-          "name": "Витинья",
-          "position": "ФРВ",
-          "overall": 79,
-          "team": "Зенит",
-          "nation": "Португалия",
-          "is_fa": false,
-          "person_id": 266
-        },
-        {
           "id": "Сити|Нуньес|ЦП",
           "name": "Нуньес",
           "position": "ЦП",
@@ -9871,6 +7156,16 @@
           "person_id": 280
         },
         {
+          "id": "Жирона|Перейра|ЦП",
+          "name": "Перейра",
+          "position": "ЦП",
+          "overall": 79,
+          "team": "Жирона",
+          "nation": "Португалия",
+          "is_fa": false,
+          "person_id": 305
+        },
+        {
           "id": "Вольфсбург|Руи|ЛЗ",
           "name": "Руи",
           "position": "ЛЗ",
@@ -9879,6 +7174,16 @@
           "nation": "Португалия",
           "is_fa": false,
           "person_id": 1458
+        },
+        {
+          "id": "Зенит|Витинья|ФРВ",
+          "name": "Витинья",
+          "position": "ФРВ",
+          "overall": 78,
+          "team": "Зенит",
+          "nation": "Португалия",
+          "is_fa": false,
+          "person_id": 266
         },
         {
           "id": "Франкфурт|Диоманде|ЦЗ",
@@ -9899,16 +7204,6 @@
           "nation": "Португалия",
           "is_fa": false,
           "person_id": 571
-        },
-        {
-          "id": "Free Agent|Виейра|ЦАП",
-          "name": "Виейра",
-          "position": "ЦАП",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Португалия",
-          "is_fa": true,
-          "person_id": 1169
         },
         {
           "id": "Интер|Гедеш|ФРВ",
@@ -9979,42 +7274,12 @@
           "nation": "Португалия",
           "is_fa": false,
           "person_id": 480
-        },
-        {
-          "id": "Бетис|Витинья|ЦП",
-          "name": "Витинья",
-          "position": "ЦП",
-          "overall": 75,
-          "team": "Бетис",
-          "nation": "Португалия",
-          "is_fa": false,
-          "person_id": 314
-        },
-        {
-          "id": "Free Agent|Томаш|ФРВ",
-          "name": "Томаш",
-          "position": "ФРВ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Португалия",
-          "is_fa": true,
-          "person_id": 1072
         }
       ]
     },
     {
       "name": "Россия",
       "players": [
-        {
-          "id": "Free Agent|Головин|ЦП",
-          "name": "Головин",
-          "position": "ЦП",
-          "overall": 85,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1308
-        },
         {
           "id": "Атлетико|Джикия|ЦЗ",
           "name": "Джикия",
@@ -10104,16 +7369,6 @@
           "nation": "Россия",
           "is_fa": false,
           "person_id": 1619
-        },
-        {
-          "id": "Free Agent|Акинфеев|ВРТ",
-          "name": "Акинфеев",
-          "position": "ВРТ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1615
         },
         {
           "id": "Урал|Егорычев|ЦП",
@@ -10556,16 +7811,6 @@
           "person_id": 1617
         },
         {
-          "id": "Free Agent|Дзюба|ФРВ",
-          "name": "Дзюба",
-          "position": "ФРВ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1134
-        },
-        {
           "id": "Реал Сосьедад|Захарян|ЛФА",
           "name": "Захарян",
           "position": "ЛФА",
@@ -10616,16 +7861,6 @@
           "person_id": 1312
         },
         {
-          "id": "Free Agent|Сазонов|ЦЗ",
-          "name": "Сазонов",
-          "position": "ЦЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1479
-        },
-        {
           "id": "Лацио|Солдатенков|ЦЗ",
           "name": "Солдатенков",
           "position": "ЦЗ",
@@ -10656,26 +7891,6 @@
           "person_id": 36
         },
         {
-          "id": "Free Agent|Комличенко|ФРВ",
-          "name": "Комличенко",
-          "position": "ФРВ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1148
-        },
-        {
-          "id": "Free Agent|Сергеев|ФРВ",
-          "name": "Сергеев",
-          "position": "ФРВ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1167
-        },
-        {
           "id": "Free Agent|Батши|ПФА",
           "name": "Батши",
           "position": "ПФА",
@@ -10684,626 +7899,6 @@
           "nation": "Россия",
           "is_fa": true,
           "person_id": 72
-        },
-        {
-          "id": "Free Agent|Лантратов|ВРТ",
-          "name": "Лантратов",
-          "position": "ВРТ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1621
-        },
-        {
-          "id": "Free Agent|Мостовой|ПФА",
-          "name": "Мостовой",
-          "position": "ПФА",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1166
-        },
-        {
-          "id": "Free Agent|Помазун|ВРТ",
-          "name": "Помазун",
-          "position": "ВРТ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1627
-        },
-        {
-          "id": "Free Agent|Сутормин|ЦП",
-          "name": "Сутормин",
-          "position": "ЦП",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1356
-        },
-        {
-          "id": "Free Agent|Ахметов|ЦП",
-          "name": "Ахметов",
-          "position": "ЦП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1305
-        },
-        {
-          "id": "Free Agent|Гладышев|ЛФА",
-          "name": "Гладышев",
-          "position": "ЛФА",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1137
-        },
-        {
-          "id": "Free Agent|Глебов|ЦОП",
-          "name": "Глебов",
-          "position": "ЦОП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1334
-        },
-        {
-          "id": "Free Agent|Круговой|ПЗ",
-          "name": "Круговой",
-          "position": "ПЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1567
-        },
-        {
-          "id": "Free Agent|Умяров|ЦП",
-          "name": "Умяров",
-          "position": "ЦП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1346
-        },
-        {
-          "id": "Free Agent|Уткин|ЦАП",
-          "name": "Уткин",
-          "position": "ЦАП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1333
-        },
-        {
-          "id": "Free Agent|Худяков|ЛЗ",
-          "name": "Худяков",
-          "position": "ЛЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1539
-        },
-        {
-          "id": "Free Agent|Васютин|ВРТ",
-          "name": "Васютин",
-          "position": "ВРТ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1628
-        },
-        {
-          "id": "Free Agent|Дюпин|ВРТ",
-          "name": "Дюпин",
-          "position": "ВРТ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1625
-        },
-        {
-          "id": "Free Agent|Ионов|ПФА",
-          "name": "Ионов",
-          "position": "ПФА",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1147
-        },
-        {
-          "id": "Free Agent|Магкеев|ЦП",
-          "name": "Магкеев",
-          "position": "ЦП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1331
-        },
-        {
-          "id": "Free Agent|Прохин|ЦЗ",
-          "name": "Прохин",
-          "position": "ЦЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1542
-        },
-        {
-          "id": "Free Agent|Аюпов|ЦП",
-          "name": "Аюпов",
-          "position": "ЦП",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1350
-        },
-        {
-          "id": "Free Agent|Витюгов|ЦП",
-          "name": "Витюгов",
-          "position": "ЦП",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1326
-        },
-        {
-          "id": "Free Agent|Голенков|ФРВ",
-          "name": "Голенков",
-          "position": "ФРВ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1149
-        },
-        {
-          "id": "Free Agent|Кабутов|ПЗ",
-          "name": "Кабутов",
-          "position": "ПЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1551
-        },
-        {
-          "id": "Free Agent|Лукин|ЦЗ",
-          "name": "Лукин",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1524
-        },
-        {
-          "id": "Free Agent|Мелехин|ЦЗ",
-          "name": "Мелехин",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1545
-        },
-        {
-          "id": "Free Agent|Ненахов|ПЗ",
-          "name": "Ненахов",
-          "position": "ПЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1538
-        },
-        {
-          "id": "Free Agent|Овсянников|ВРТ",
-          "name": "Овсянников",
-          "position": "ВРТ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1620
-        },
-        {
-          "id": "Free Agent|Осипенко|ЦЗ",
-          "name": "Осипенко",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1543
-        },
-        {
-          "id": "Free Agent|Паршивлюк|ПЗ",
-          "name": "Паршивлюк",
-          "position": "ПЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1527
-        },
-        {
-          "id": "Free Agent|Песьяков|ВРТ",
-          "name": "Песьяков",
-          "position": "ВРТ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1623
-        },
-        {
-          "id": "Free Agent|Петров|ПЗ",
-          "name": "Петров",
-          "position": "ПЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1532
-        },
-        {
-          "id": "Free Agent|Рыбчинский|ПП",
-          "name": "Рыбчинский",
-          "position": "ПП",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1330
-        },
-        {
-          "id": "Free Agent|Филипенко|ЦЗ",
-          "name": "Филипенко",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1564
-        },
-        {
-          "id": "Free Agent|Щетинин|ЦАП",
-          "name": "Щетинин",
-          "position": "ЦАП",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1335
-        },
-        {
-          "id": "Free Agent|Грицаенко|ЦЗ",
-          "name": "Грицаенко",
-          "position": "ЦЗ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1549
-        },
-        {
-          "id": "Free Agent|Карпицкий|ЦЗ",
-          "name": "Карпицкий",
-          "position": "ЦЗ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1535
-        },
-        {
-          "id": "Free Agent|Миронов|ЦОП",
-          "name": "Миронов",
-          "position": "ЦОП",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1332
-        },
-        {
-          "id": "Free Agent|Набабкин|ПЗ",
-          "name": "Набабкин",
-          "position": "ПЗ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1523
-        },
-        {
-          "id": "Free Agent|Сорокин|ЦЗ",
-          "name": "Сорокин",
-          "position": "ЦЗ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1550
-        },
-        {
-          "id": "Free Agent|Терентьев|ПЗ",
-          "name": "Терентьев",
-          "position": "ПЗ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1546
-        },
-        {
-          "id": "Free Agent|Чернов|ЛЗ",
-          "name": "Чернов",
-          "position": "ЛЗ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1547
-        },
-        {
-          "id": "Free Agent|Эктов|ПЗ",
-          "name": "Эктов",
-          "position": "ПЗ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1533
-        },
-        {
-          "id": "Free Agent|Акбашев|ЦП",
-          "name": "Акбашев",
-          "position": "ЦП",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1336
-        },
-        {
-          "id": "Free Agent|Апшацев|ПЗ",
-          "name": "Апшацев",
-          "position": "ПЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1557
-        },
-        {
-          "id": "Free Agent|Вахания|ЛЗ",
-          "name": "Вахания",
-          "position": "ЛЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1541
-        },
-        {
-          "id": "Free Agent|Влут|ПЗ",
-          "name": "Влут",
-          "position": "ПЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1563
-        },
-        {
-          "id": "Free Agent|Денисов|ПЗ",
-          "name": "Денисов",
-          "position": "ПЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1558
-        },
-        {
-          "id": "Free Agent|Зотов|ЦП",
-          "name": "Зотов",
-          "position": "ЦП",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1343
-        },
-        {
-          "id": "Free Agent|Литвинов|ПЗ",
-          "name": "Литвинов",
-          "position": "ПЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1559
-        },
-        {
-          "id": "Free Agent|Морозов|ЦЗ",
-          "name": "Морозов",
-          "position": "ЦЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1537
-        },
-        {
-          "id": "Free Agent|Цыпченко|ФРВ",
-          "name": "Цыпченко",
-          "position": "ФРВ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1142
-        },
-        {
-          "id": "Free Agent|Шмаков|ЦП",
-          "name": "Шмаков",
-          "position": "ЦП",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1352
-        },
-        {
-          "id": "Free Agent|Кобнан|ПФА",
-          "name": "Кобнан",
-          "position": "ПФА",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1141
-        },
-        {
-          "id": "Free Agent|Комаров|ЦП",
-          "name": "Комаров",
-          "position": "ЦП",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1337
-        },
-        {
-          "id": "Free Agent|Коновалов|ЦОП",
-          "name": "Коновалов",
-          "position": "ЦОП",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1340
-        },
-        {
-          "id": "Free Agent|Кутицкий|ЦП",
-          "name": "Кутицкий",
-          "position": "ЦП",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1316
-        },
-        {
-          "id": "Free Agent|Рядно|ЛЗ",
-          "name": "Рядно",
-          "position": "ЛЗ",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1525
-        },
-        {
-          "id": "Free Agent|Соколов|ЦАП",
-          "name": "Соколов",
-          "position": "ЦАП",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1323
-        },
-        {
-          "id": "Free Agent|Сунгатулин|ЦП",
-          "name": "Сунгатулин",
-          "position": "ЦП",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1353
-        },
-        {
-          "id": "Free Agent|Тороп|ВРТ",
-          "name": "Тороп",
-          "position": "ВРТ",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1616
-        },
-        {
-          "id": "Free Agent|Тугарев|ЛФА",
-          "name": "Тугарев",
-          "position": "ЛФА",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1151
-        },
-        {
-          "id": "Free Agent|Шитов|ФРВ",
-          "name": "Шитов",
-          "position": "ФРВ",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1143
-        },
-        {
-          "id": "Free Agent|Иванов|ЦП",
-          "name": "Иванов",
-          "position": "ЦП",
-          "overall": 66,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1344
-        },
-        {
-          "id": "Free Agent|Медведев|ВРТ",
-          "name": "Медведев",
-          "position": "ВРТ",
-          "overall": 66,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1624
-        },
-        {
-          "id": "Free Agent|Хромов|ЦАП",
-          "name": "Хромов",
-          "position": "ЦАП",
-          "overall": 66,
-          "team": "Free Agent",
-          "nation": "Россия",
-          "is_fa": true,
-          "person_id": 1338
         }
       ]
     },
@@ -11319,36 +7914,6 @@
           "nation": "румыния",
           "is_fa": false,
           "person_id": 574
-        },
-        {
-          "id": "Free Agent|Бикфалви|ЦАП",
-          "name": "Бикфалви",
-          "position": "ЦАП",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Румыния",
-          "is_fa": true,
-          "person_id": 1349
-        },
-        {
-          "id": "Free Agent|Ратиу|ПЗ",
-          "name": "Ратиу",
-          "position": "ПЗ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Румыния",
-          "is_fa": true,
-          "person_id": 1502
-        },
-        {
-          "id": "Free Agent|Попа|ВРТ",
-          "name": "Попа",
-          "position": "ВРТ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Румыния",
-          "is_fa": true,
-          "person_id": 1605
         }
       ]
     },
@@ -11399,16 +7964,6 @@
           "nation": "Северная Македония",
           "is_fa": false,
           "person_id": 338
-        },
-        {
-          "id": "Free Agent|Димитриевски|ВРТ",
-          "name": "Димитриевски",
-          "position": "ВРТ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Северная Македония",
-          "is_fa": true,
-          "person_id": 1611
         }
       ]
     },
@@ -11534,46 +8089,6 @@
           "nation": "Сенегал",
           "is_fa": true,
           "person_id": 795
-        },
-        {
-          "id": "Free Agent|Сисс|ЦОП",
-          "name": "Сисс",
-          "position": "ЦОП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Сенегал",
-          "is_fa": true,
-          "person_id": 1290
-        },
-        {
-          "id": "Free Agent|Балло|ЛЗ",
-          "name": "Балло",
-          "position": "ЛЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Сенегал",
-          "is_fa": true,
-          "person_id": 1378
-        },
-        {
-          "id": "Free Agent|Фалл|ЦЗ",
-          "name": "Фалл",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Сенегал",
-          "is_fa": true,
-          "person_id": 1488
-        },
-        {
-          "id": "Free Agent|Сек|ФРВ",
-          "name": "Сек",
-          "position": "ФРВ",
-          "overall": 65,
-          "team": "Free Agent",
-          "nation": "Сенегал",
-          "is_fa": true,
-          "person_id": 1101
         }
       ]
     },
@@ -11609,36 +8124,6 @@
           "nation": "Сербия",
           "is_fa": false,
           "person_id": 345
-        },
-        {
-          "id": "Free Agent|Влахович|ФРВ",
-          "name": "Влахович",
-          "position": "ФРВ",
-          "overall": 83,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1077
-        },
-        {
-          "id": "Free Agent|Тадич|ЛФА",
-          "name": "Тадич",
-          "position": "ЛФА",
-          "overall": 82,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 168
-        },
-        {
-          "id": "Free Agent|Гудель|ЦЗ",
-          "name": "Гудель",
-          "position": "ЦЗ",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1511
         },
         {
           "id": "Севилья|Дмитрович|ВРТ",
@@ -11699,106 +8184,6 @@
           "nation": "Сербия",
           "is_fa": false,
           "person_id": 1154
-        },
-        {
-          "id": "Free Agent|Йович|ФРВ",
-          "name": "Йович",
-          "position": "ФРВ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1085
-        },
-        {
-          "id": "Free Agent|Лукич|ЦП",
-          "name": "Лукич",
-          "position": "ЦП",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1183
-        },
-        {
-          "id": "Free Agent|Радонич|ЛФА",
-          "name": "Радонич",
-          "position": "ЛФА",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1097
-        },
-        {
-          "id": "Free Agent|Рачич|ЦП",
-          "name": "Рачич",
-          "position": "ЦП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1262
-        },
-        {
-          "id": "Free Agent|Баньяк|ЦП",
-          "name": "Баньяк",
-          "position": "ЦП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1318
-        },
-        {
-          "id": "Free Agent|Майсторович|ЦЗ",
-          "name": "Майсторович",
-          "position": "ЦЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1528
-        },
-        {
-          "id": "Free Agent|Вуячич|ЦЗ",
-          "name": "Вуячич",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1552
-        },
-        {
-          "id": "Free Agent|Чумич|ЛФА",
-          "name": "Чумич",
-          "position": "ЛФА",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1152
-        },
-        {
-          "id": "Free Agent|Дремгич|ЦЗ",
-          "name": "Дремгич",
-          "position": "ЦЗ",
-          "overall": 69,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1554
-        },
-        {
-          "id": "Free Agent|Лангович|ПЗ",
-          "name": "Лангович",
-          "position": "ПЗ",
-          "overall": 68,
-          "team": "Free Agent",
-          "nation": "Сербия",
-          "is_fa": true,
-          "person_id": 1544
         }
       ]
     },
@@ -11854,16 +8239,6 @@
           "nation": "Словакия",
           "is_fa": false,
           "person_id": 230
-        },
-        {
-          "id": "Free Agent|Родак|ВРТ",
-          "name": "Родак",
-          "position": "ВРТ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Словакия",
-          "is_fa": true,
-          "person_id": 1574
         }
       ]
     },
@@ -11871,13 +8246,13 @@
       "name": "Словения",
       "players": [
         {
-          "id": "Free Agent|Облак|ВРТ",
+          "id": "Атлетико|Облак|ВРТ",
           "name": "Облак",
           "position": "ВРТ",
           "overall": 84,
-          "team": "Free Agent",
+          "team": "Атлетико",
           "nation": "Словения",
-          "is_fa": true,
+          "is_fa": false,
           "person_id": 930
         },
         {
@@ -11889,16 +8264,6 @@
           "nation": "Словения",
           "is_fa": false,
           "person_id": 67
-        },
-        {
-          "id": "Free Agent|Кампль|ЦП",
-          "name": "Кампль",
-          "position": "ЦП",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Словения",
-          "is_fa": true,
-          "person_id": 1214
         }
       ]
     },
@@ -11956,26 +8321,6 @@
           "person_id": 670
         },
         {
-          "id": "Free Agent|Брукс|ЦЗ",
-          "name": "Брукс",
-          "position": "ЦЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "США",
-          "is_fa": true,
-          "person_id": 1421
-        },
-        {
-          "id": "Free Agent|Маккенни|ЦП",
-          "name": "Маккенни",
-          "position": "ЦП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "США",
-          "is_fa": true,
-          "person_id": 1246
-        },
-        {
           "id": "Free Agent|Рейна|ПФА",
           "name": "Рейна",
           "position": "ПФА",
@@ -11984,16 +8329,6 @@
           "nation": "США",
           "is_fa": true,
           "person_id": 203
-        },
-        {
-          "id": "Free Agent|Робинсон|ЛЗ",
-          "name": "Робинсон",
-          "position": "ЛЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "США",
-          "is_fa": true,
-          "person_id": 1370
         },
         {
           "id": "Боруссия М|Себашё|ФРВ",
@@ -12014,16 +8349,6 @@
           "nation": "США",
           "is_fa": true,
           "person_id": 833
-        },
-        {
-          "id": "Free Agent|Стеффен|ВРТ",
-          "name": "Стеффен",
-          "position": "ВРТ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "США",
-          "is_fa": true,
-          "person_id": 1578
         },
         {
           "id": "Free Agent|Тиллман|ЦАП",
@@ -12054,36 +8379,6 @@
           "nation": "США",
           "is_fa": true,
           "person_id": 455
-        },
-        {
-          "id": "Free Agent|Рим|ЦЗ",
-          "name": "Рим",
-          "position": "ЦЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "США",
-          "is_fa": true,
-          "person_id": 1377
-        },
-        {
-          "id": "Free Agent|Чендлер|ПП",
-          "name": "Чендлер",
-          "position": "ПП",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "США",
-          "is_fa": true,
-          "person_id": 1207
-        },
-        {
-          "id": "Free Agent|Ааронсон|ЦАП",
-          "name": "Ааронсон",
-          "position": "ЦАП",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "США",
-          "is_fa": true,
-          "person_id": 1208
         }
       ]
     },
@@ -12201,16 +8496,6 @@
           "person_id": 78
         },
         {
-          "id": "Free Agent|Озкан|ЦОП",
-          "name": "Озкан",
-          "position": "ЦОП",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Турция",
-          "is_fa": true,
-          "person_id": 1198
-        },
-        {
           "id": "Атлетик|Демираль|ЦЗ",
           "name": "Демираль",
           "position": "ЦЗ",
@@ -12229,16 +8514,6 @@
           "nation": "Турция",
           "is_fa": true,
           "person_id": 596
-        },
-        {
-          "id": "Free Agent|Челик|ПЗ",
-          "name": "Челик",
-          "position": "ПЗ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Турция",
-          "is_fa": true,
-          "person_id": 1463
         },
         {
           "id": "Хоффенхайм|Кабак|ЦЗ",
@@ -12264,16 +8539,6 @@
           "nation": "Узбекистан",
           "is_fa": false,
           "person_id": 102
-        },
-        {
-          "id": "Free Agent|Ашурматов|ЦЗ",
-          "name": "Ашурматов",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Узбекистан",
-          "is_fa": true,
-          "person_id": 1556
         }
       ]
     },
@@ -12311,6 +8576,16 @@
           "person_id": 201
         },
         {
+          "id": "Зенит|Коваленко|ЦАП",
+          "name": "Коваленко",
+          "position": "ЦАП",
+          "overall": 78,
+          "team": "Зенит",
+          "nation": "Украина",
+          "is_fa": false,
+          "person_id": 391
+        },
+        {
           "id": "Краснодар|Мудрык|ФРВ",
           "name": "Мудрык",
           "position": "ФРВ",
@@ -12341,16 +8616,6 @@
           "person_id": 523
         },
         {
-          "id": "Free Agent|Коваленко|ЦАП",
-          "name": "Коваленко",
-          "position": "ЦАП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Украина",
-          "is_fa": true,
-          "person_id": 391
-        },
-        {
           "id": "Боруссия М|Судаков|ЦАП",
           "name": "Судаков",
           "position": "ЦАП",
@@ -12359,36 +8624,6 @@
           "nation": "Украина",
           "is_fa": false,
           "person_id": 546
-        },
-        {
-          "id": "Free Agent|Лунин|ВРТ",
-          "name": "Лунин",
-          "position": "ВРТ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Украина",
-          "is_fa": true,
-          "person_id": 1613
-        },
-        {
-          "id": "Free Agent|Лещук|ВРТ",
-          "name": "Лещук",
-          "position": "ВРТ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Украина",
-          "is_fa": true,
-          "person_id": 1618
-        },
-        {
-          "id": "Free Agent|Кулаков|ПЗ",
-          "name": "Кулаков",
-          "position": "ПЗ",
-          "overall": 67,
-          "team": "Free Agent",
-          "nation": "Украина",
-          "is_fa": true,
-          "person_id": 1562
         }
       ]
     },
@@ -12524,66 +8759,6 @@
           "nation": "Уругвай",
           "is_fa": true,
           "person_id": 650
-        },
-        {
-          "id": "Free Agent|Вечино|ЦОП",
-          "name": "Вечино",
-          "position": "ЦОП",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Уругвай",
-          "is_fa": true,
-          "person_id": 453
-        },
-        {
-          "id": "Free Agent|Стуани|ФРВ",
-          "name": "Стуани",
-          "position": "ФРВ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Уругвай",
-          "is_fa": true,
-          "person_id": 1110
-        },
-        {
-          "id": "Free Agent|Винья|ЛЗ",
-          "name": "Винья",
-          "position": "ЛЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Уругвай",
-          "is_fa": true,
-          "person_id": 1465
-        },
-        {
-          "id": "Free Agent|Альварес Мартинез|ФРВ",
-          "name": "Альварес Мартинез",
-          "position": "ФРВ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Уругвай",
-          "is_fa": true,
-          "person_id": 1095
-        },
-        {
-          "id": "Free Agent|Лаксальт|ПЗ",
-          "name": "Лаксальт",
-          "position": "ПЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Уругвай",
-          "is_fa": true,
-          "person_id": 1526
-        },
-        {
-          "id": "Free Agent|Ленини|ЦП",
-          "name": "Ленини",
-          "position": "ЦП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Уругвай",
-          "is_fa": true,
-          "person_id": 1319
         }
       ]
     },
@@ -12609,16 +8784,6 @@
           "nation": "Уэльс",
           "is_fa": false,
           "person_id": 139
-        },
-        {
-          "id": "Free Agent|Дамметт|ЦЗ",
-          "name": "Дамметт",
-          "position": "ЦЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Уэльс",
-          "is_fa": true,
-          "person_id": 1387
         }
       ]
     },
@@ -12779,16 +8944,6 @@
           "nation": "Франция",
           "is_fa": false,
           "person_id": 449
-        },
-        {
-          "id": "Free Agent|Диаби|ПФА",
-          "name": "Диаби",
-          "position": "ПФА",
-          "overall": 84,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 119
         },
         {
           "id": "Реал|Тчуамени|ЦП",
@@ -12961,6 +9116,16 @@
           "person_id": 120
         },
         {
+          "id": "Реал|Нкунку|ПФА",
+          "name": "Нкунку",
+          "position": "ПФА",
+          "overall": 82,
+          "team": "Реал",
+          "nation": "Франция",
+          "is_fa": false,
+          "person_id": 31
+        },
+        {
           "id": "Ливерпуль|Олисе|ПФА",
           "name": "Олисе",
           "position": "ПФА",
@@ -13011,16 +9176,6 @@
           "person_id": 4496
         },
         {
-          "id": "Франкфурт|Бубакар Камара|ЦП",
-          "name": "Бубакар Камара",
-          "position": "ЦП",
-          "overall": 81,
-          "team": "Франкфурт",
-          "nation": "Франция",
-          "is_fa": false,
-          "person_id": 1171
-        },
-        {
           "id": "Спартак|Гиго|ЦЗ",
           "name": "Гиго",
           "position": "ЦЗ",
@@ -13039,16 +9194,6 @@
           "nation": "Франция",
           "is_fa": false,
           "person_id": 914
-        },
-        {
-          "id": "Free Agent|Капу|ЦЗ",
-          "name": "Капу",
-          "position": "ЦЗ",
-          "overall": 81,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1515
         },
         {
           "id": "Урал|Лафонт|ВРТ",
@@ -13109,16 +9254,6 @@
           "nation": "Франция",
           "is_fa": false,
           "person_id": 566
-        },
-        {
-          "id": "Free Agent|Коклен|ЦП",
-          "name": "Коклен",
-          "position": "ЦП",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1307
         },
         {
           "id": "Арсенал|Кондогбия|ЦЗ",
@@ -13221,6 +9356,16 @@
           "person_id": 320
         },
         {
+          "id": "Франкфурт|Бубакар Камара|ЦП",
+          "name": "Бубакар Камара",
+          "position": "ЦП",
+          "overall": 79,
+          "team": "Франкфурт",
+          "nation": "Франция",
+          "is_fa": false,
+          "person_id": 1171
+        },
+        {
           "id": "Астон Вилла|Динь|ЛЗ",
           "name": "Динь",
           "position": "ЛЗ",
@@ -13229,16 +9374,6 @@
           "nation": "Франция",
           "is_fa": false,
           "person_id": 742
-        },
-        {
-          "id": "Free Agent|Дисаси|ЦЗ",
-          "name": "Дисаси",
-          "position": "ЦЗ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 777
         },
         {
           "id": "Free Agent|Зума|ЦЗ",
@@ -13291,16 +9426,6 @@
           "person_id": 841
         },
         {
-          "id": "Free Agent|Фофана|ЦЗ",
-          "name": "Фофана",
-          "position": "ЦЗ",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 774
-        },
-        {
           "id": "Ювентус|Черки|ЦАП",
           "name": "Черки",
           "position": "ЦАП",
@@ -13331,16 +9456,6 @@
           "person_id": 526
         },
         {
-          "id": "Франкфурт|Нкунку|ЛЗ",
-          "name": "Нкунку",
-          "position": "ЛЗ",
-          "overall": 78,
-          "team": "Франкфурт",
-          "nation": "Франция",
-          "is_fa": false,
-          "person_id": 817
-        },
-        {
           "id": "Аталанта|Шевалье|ВРТ",
           "name": "Шевалье",
           "position": "ВРТ",
@@ -13349,16 +9464,6 @@
           "nation": "Франция",
           "is_fa": false,
           "person_id": 944
-        },
-        {
-          "id": "Free Agent|Баде|ЦЗ",
-          "name": "Баде",
-          "position": "ЦЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1512
         },
         {
           "id": "Free Agent|Калулу|ЦЗ",
@@ -13379,16 +9484,6 @@
           "nation": "Франция",
           "is_fa": false,
           "person_id": 496
-        },
-        {
-          "id": "Free Agent|Лежене|ЦЗ",
-          "name": "Лежене",
-          "position": "ЦЗ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1495
         },
         {
           "id": "Free Agent|Ленглет|ЦЗ",
@@ -13451,24 +9546,14 @@
           "person_id": 194
         },
         {
-          "id": "Free Agent|Ауар|ЦАП",
-          "name": "Ауар",
-          "position": "ЦАП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1258
-        },
-        {
-          "id": "Реал|Нкунку|ПФА",
+          "id": "Франкфурт|Нкунку|ЛЗ",
           "name": "Нкунку",
-          "position": "ПФА",
+          "position": "ЛЗ",
           "overall": 76,
-          "team": "Реал",
+          "team": "Франкфурт",
           "nation": "Франция",
           "is_fa": false,
-          "person_id": 31
+          "person_id": 817
         },
         {
           "id": "Лейпциг|Солет|ЦЗ",
@@ -13521,16 +9606,6 @@
           "person_id": 447
         },
         {
-          "id": "Free Agent|Тамезе|ЦП",
-          "name": "Тамезе",
-          "position": "ЦП",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1265
-        },
-        {
           "id": "Лацио|Тель|ФРВ",
           "name": "Тель",
           "position": "ФРВ",
@@ -13558,7 +9633,7 @@
           "team": "Милан",
           "nation": "Франция",
           "is_fa": false,
-          "person_id": 793
+          "person_id": 652
         },
         {
           "id": "Free Agent|Диуф|ЦП",
@@ -13569,66 +9644,6 @@
           "nation": "Франция",
           "is_fa": true,
           "person_id": 534
-        },
-        {
-          "id": "Free Agent|Загаду|ЦЗ",
-          "name": "Загаду",
-          "position": "ЦЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1429
-        },
-        {
-          "id": "Free Agent|Исидор|ФРВ",
-          "name": "Исидор",
-          "position": "ФРВ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1146
-        },
-        {
-          "id": "Free Agent|Козза|ЛЗ",
-          "name": "Козза",
-          "position": "ЛЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1433
-        },
-        {
-          "id": "Free Agent|Руальт|ЦЗ",
-          "name": "Руальт",
-          "position": "ЦЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1425
-        },
-        {
-          "id": "Free Agent|Дефрель|ФРВ",
-          "name": "Дефрель",
-          "position": "ФРВ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1094
-        },
-        {
-          "id": "Free Agent|Карамо|ФРВ",
-          "name": "Карамо",
-          "position": "ФРВ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1100
         },
         {
           "id": "Free Agent|Нианзу|ЦЗ",
@@ -13651,16 +9666,6 @@
           "person_id": 852
         },
         {
-          "id": "Free Agent|Силдилла|ПЗ",
-          "name": "Силдилла",
-          "position": "ПЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1417
-        },
-        {
           "id": "Free Agent|Чо|ФРВ",
           "name": "Чо",
           "position": "ФРВ",
@@ -13669,26 +9674,6 @@
           "nation": "Франция",
           "is_fa": true,
           "person_id": 40
-        },
-        {
-          "id": "Free Agent|Милло|ЦАП",
-          "name": "Милло",
-          "position": "ЦАП",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1231
-        },
-        {
-          "id": "Free Agent|Нтека|ФРВ",
-          "name": "Нтека",
-          "position": "ФРВ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Франция",
-          "is_fa": true,
-          "person_id": 1117
         }
       ]
     },
@@ -13736,13 +9721,13 @@
           "person_id": 424
         },
         {
-          "id": "Free Agent|Майер|ЦП",
+          "id": "Вольфсбург|Майер|ЦП",
           "name": "Майер",
           "position": "ЦП",
           "overall": 84,
-          "team": "Free Agent",
+          "team": "Вольфсбург",
           "nation": "Хорватия",
-          "is_fa": true,
+          "is_fa": false,
           "person_id": 516
         },
         {
@@ -13856,16 +9841,6 @@
           "person_id": 827
         },
         {
-          "id": "Free Agent|Брекало|ФРВ",
-          "name": "Брекало",
-          "position": "ФРВ",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Хорватия",
-          "is_fa": true,
-          "person_id": 1076
-        },
-        {
           "id": "Хоффенхайм|Крамарич|ЦП",
           "name": "Крамарич",
           "position": "ЦП",
@@ -13874,56 +9849,6 @@
           "nation": "Хорватия",
           "is_fa": false,
           "person_id": 507
-        },
-        {
-          "id": "Free Agent|Грбич|ВРТ",
-          "name": "Грбич",
-          "position": "ВРТ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Хорватия",
-          "is_fa": true,
-          "person_id": 1608
-        },
-        {
-          "id": "Free Agent|Башич|ЦП",
-          "name": "Башич",
-          "position": "ЦП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Хорватия",
-          "is_fa": true,
-          "person_id": 1249
-        },
-        {
-          "id": "Free Agent|Эрлич|ЦЗ",
-          "name": "Эрлич",
-          "position": "ЦЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Хорватия",
-          "is_fa": true,
-          "person_id": 1467
-        },
-        {
-          "id": "Free Agent|Якич|ЦОП",
-          "name": "Якич",
-          "position": "ЦОП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Хорватия",
-          "is_fa": true,
-          "person_id": 1204
-        },
-        {
-          "id": "Free Agent|Смолчич|ЦЗ",
-          "name": "Смолчич",
-          "position": "ЦЗ",
-          "overall": 71,
-          "team": "Free Agent",
-          "nation": "Хорватия",
-          "is_fa": true,
-          "person_id": 1404
         }
       ]
     },
@@ -14006,16 +9931,6 @@
           "person_id": 919
         },
         {
-          "id": "Free Agent|Хложек|ФРВ",
-          "name": "Хложек",
-          "position": "ФРВ",
-          "overall": 77,
-          "team": "Free Agent",
-          "nation": "Чехия",
-          "is_fa": true,
-          "person_id": 1057
-        },
-        {
           "id": "Free Agent|Холс|ЦЗ",
           "name": "Холс",
           "position": "ЦЗ",
@@ -14034,26 +9949,6 @@
           "nation": "Чехия",
           "is_fa": true,
           "person_id": 236
-        },
-        {
-          "id": "Free Agent|Кадерабек|ПЗ",
-          "name": "Кадерабек",
-          "position": "ПЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Чехия",
-          "is_fa": true,
-          "person_id": 1420
-        },
-        {
-          "id": "Free Agent|Коварь|ВРТ",
-          "name": "Коварь",
-          "position": "ВРТ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Чехия",
-          "is_fa": true,
-          "person_id": 1581
         }
       ]
     },
@@ -14061,24 +9956,14 @@
       "name": "Чили",
       "players": [
         {
-          "id": "Free Agent|Алексис Санчес|ФРВ",
+          "id": "Барселона|Алексис Санчес|ФРВ",
           "name": "Алексис Санчес",
           "position": "ФРВ",
           "overall": 83,
-          "team": "Free Agent",
+          "team": "Барселона",
           "nation": "Чили",
-          "is_fa": true,
+          "is_fa": false,
           "person_id": 249
-        },
-        {
-          "id": "Free Agent|Браво|ВРТ",
-          "name": "Браво",
-          "position": "ВРТ",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Чили",
-          "is_fa": true,
-          "person_id": 1570
         },
         {
           "id": "Цска|Мендес|ЦП",
@@ -14099,16 +9984,6 @@
           "nation": "Чили",
           "is_fa": false,
           "person_id": 249
-        },
-        {
-          "id": "Free Agent|Давила|ФРВ",
-          "name": "Давила",
-          "position": "ФРВ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Чили",
-          "is_fa": true,
-          "person_id": 1135
         }
       ]
     },
@@ -14154,16 +10029,6 @@
           "nation": "Швейцария",
           "is_fa": false,
           "person_id": 490
-        },
-        {
-          "id": "Free Agent|Омлин|ВРТ",
-          "name": "Омлин",
-          "position": "ВРТ",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Швейцария",
-          "is_fa": true,
-          "person_id": 1583
         },
         {
           "id": "Севилья|Соу|ЦП",
@@ -14234,56 +10099,6 @@
           "nation": "Швейцария",
           "is_fa": true,
           "person_id": 240
-        },
-        {
-          "id": "Free Agent|Родригез|ЛЗ",
-          "name": "Родригез",
-          "position": "ЛЗ",
-          "overall": 75,
-          "team": "Free Agent",
-          "nation": "Швейцария",
-          "is_fa": true,
-          "person_id": 1472
-        },
-        {
-          "id": "Free Agent|Биссек|ЦЗ",
-          "name": "Биссек",
-          "position": "ЦЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Швейцария",
-          "is_fa": true,
-          "person_id": 1449
-        },
-        {
-          "id": "Free Agent|Зесигер|ЦЗ",
-          "name": "Зесигер",
-          "position": "ЦЗ",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Швейцария",
-          "is_fa": true,
-          "person_id": 1432
-        },
-        {
-          "id": "Free Agent|Евтич|ЦП",
-          "name": "Евтич",
-          "position": "ЦП",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Швейцария",
-          "is_fa": true,
-          "person_id": 1339
-        },
-        {
-          "id": "Free Agent|Стержиу|ЦЗ",
-          "name": "Стержиу",
-          "position": "ЦЗ",
-          "overall": 70,
-          "team": "Free Agent",
-          "nation": "Швейцария",
-          "is_fa": true,
-          "person_id": 1424
         }
       ]
     },
@@ -14321,16 +10136,6 @@
           "person_id": 512
         },
         {
-          "id": "Free Agent|Линделёф|ЦЗ",
-          "name": "Линделёф",
-          "position": "ЦЗ",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Швеция",
-          "is_fa": true,
-          "person_id": 1382
-        },
-        {
           "id": "Динамо|Форсберг|ЦАП",
           "name": "Форсберг",
           "position": "ЦАП",
@@ -14359,26 +10164,6 @@
           "nation": "Швеция",
           "is_fa": false,
           "person_id": 483
-        },
-        {
-          "id": "Free Agent|Кажусте|ЦОП",
-          "name": "Кажусте",
-          "position": "ЦОП",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Швеция",
-          "is_fa": true,
-          "person_id": 1253
-        },
-        {
-          "id": "Free Agent|Крафт|ПЗ",
-          "name": "Крафт",
-          "position": "ПЗ",
-          "overall": 73,
-          "team": "Free Agent",
-          "nation": "Швеция",
-          "is_fa": true,
-          "person_id": 1386
         }
       ]
     },
@@ -14424,36 +10209,6 @@
           "nation": "Шотландия",
           "is_fa": true,
           "person_id": 412
-        },
-        {
-          "id": "Free Agent|Мактоминей|ЦОП",
-          "name": "Мактоминей",
-          "position": "ЦОП",
-          "overall": 79,
-          "team": "Free Agent",
-          "nation": "Шотландия",
-          "is_fa": true,
-          "person_id": 1201
-        },
-        {
-          "id": "Free Agent|Керни|ЦП",
-          "name": "Керни",
-          "position": "ЦП",
-          "overall": 74,
-          "team": "Free Agent",
-          "nation": "Шотландия",
-          "is_fa": true,
-          "person_id": 1187
-        },
-        {
-          "id": "Free Agent|Гилмор|ЦП",
-          "name": "Гилмор",
-          "position": "ЦП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Шотландия",
-          "is_fa": true,
-          "person_id": 1178
         }
       ]
     },
@@ -14513,21 +10268,6 @@
       ]
     },
     {
-      "name": "Экваториальная Гвинея",
-      "players": [
-        {
-          "id": "Free Agent|Обианг|ЦОП",
-          "name": "Обианг",
-          "position": "ЦОП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Экваториальная Гвинея",
-          "is_fa": true,
-          "person_id": 1264
-        }
-      ]
-    },
-    {
       "name": "Южная Корея",
       "players": [
         {
@@ -14539,16 +10279,6 @@
           "nation": "Южная Корея",
           "is_fa": false,
           "person_id": 805
-        },
-        {
-          "id": "Free Agent|Ён|ЦАП",
-          "name": "Ён",
-          "position": "ЦАП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Южная Корея",
-          "is_fa": true,
-          "person_id": 1230
         }
       ]
     },
@@ -14584,16 +10314,6 @@
           "nation": "Ямайка",
           "is_fa": true,
           "person_id": 258
-        },
-        {
-          "id": "Free Agent|Кордова|ПП",
-          "name": "Кордова",
-          "position": "ПП",
-          "overall": 76,
-          "team": "Free Agent",
-          "nation": "Ямайка",
-          "is_fa": true,
-          "person_id": 1186
         }
       ]
     },
@@ -14631,16 +10351,6 @@
           "person_id": 1423
         },
         {
-          "id": "Free Agent|Кубо|ПФА",
-          "name": "Кубо",
-          "position": "ПФА",
-          "overall": 80,
-          "team": "Free Agent",
-          "nation": "Япония",
-          "is_fa": true,
-          "person_id": 37
-        },
-        {
           "id": "Арсенал|Томиясу|ЦЗ",
           "name": "Томиясу",
           "position": "ЦЗ",
@@ -14671,16 +10381,6 @@
           "person_id": 450
         },
         {
-          "id": "Free Agent|Доан|ПФА",
-          "name": "Доан",
-          "position": "ПФА",
-          "overall": 78,
-          "team": "Free Agent",
-          "nation": "Япония",
-          "is_fa": true,
-          "person_id": 1061
-        },
-        {
           "id": "Free Agent|Сугавару|ПЗ",
           "name": "Сугавару",
           "position": "ПЗ",
@@ -14699,29 +10399,9 @@
           "nation": "Япония",
           "is_fa": true,
           "person_id": 274
-        },
-        {
-          "id": "Free Agent|Харагучи|ЦАП",
-          "name": "Харагучи",
-          "position": "ЦАП",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Япония",
-          "is_fa": true,
-          "person_id": 1228
-        },
-        {
-          "id": "Free Agent|Хасебе|ЦЗ",
-          "name": "Хасебе",
-          "position": "ЦЗ",
-          "overall": 72,
-          "team": "Free Agent",
-          "nation": "Япония",
-          "is_fa": true,
-          "person_id": 1403
         }
       ]
     }
   ],
-  "player_count": 1427
+  "player_count": 997
 }

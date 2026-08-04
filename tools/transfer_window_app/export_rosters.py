@@ -95,6 +95,8 @@ def _pl_dict(
         "overall": int(p.score or 0),
         "slot": slot_id,
     }
+    if getattr(p, "person_id", None):
+        row["person_id"] = int(p.person_id)
     row.update(_injury_fields(p.name, team, season=season))
     return row
 

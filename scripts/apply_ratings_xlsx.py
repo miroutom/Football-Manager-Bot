@@ -3,22 +3,30 @@
 """
 Обновление overall и снятие игроков из xlsx «рейтинги».
 
-Формат (две колонки: «Травмы» / «Не травмы»):
+Формат xlsx (блоки «Травмы» / «Не травмы», с row 3):
+  Игрок | Рейтинг | Клуб  (×2)
+
   - число — новый absolute overall;
   - ``тж`` / ``tj`` — рейтинг не менять;
   - ``убираем`` — снять с заявки → free_agents.db.
 
-  python3 scripts/apply_ratings_xlsx.py /path/to/рейтинги.xlsx --dry-run
-  python3 scripts/apply_ratings_xlsx.py /path/to/рейтинги.xlsx --apply
+  Колонка **Клуб** обязательна для однофамильцев. Старый формат без клуба
+  (``Пепе (Бетис)`` в ячейке имени) тоже поддерживается.
 
-При ``--apply`` после xlsx: автоматически **+3** всем игрокам РПЛ-клубов,
-пересборка ``common.db``, ``*_synced.db`` и ``tools/transfer_window_app/rosters.json``.
+При ``--apply`` перед записью — снимок ``db/backup_pre_ratings_apply_<ts>/``;
+затем **+3** всем игрокам РПЛ-клубов, пересборка ``common.db``, ``*_synced.db``,
+``tools/transfer_window_app/rosters.json``.
 """
 from __future__ import annotations
 
 import argparse
+import glob
+import json
 import os
+import re
+import shutil
 import sys
+from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -139,6 +147,8 @@ def _load_aliases(path: str | None) -> dict[str, dict[str, str]]:
 
 
 def _pick_alias(entry: XlsxEntry, aliases: dict[str, dict[str, str]]) -> dict[str, str] | None:
+    if entry.xlsx_team:
+        return None
     raw = aliases.get(entry.xlsx_name)
     if not raw:
         return None
@@ -180,6 +190,72 @@ class XlsxEntry:
     side: str
     kind: ActionKind
     new_overall: int | None = None
+    xlsx_team: str | None = None
+    xlsx_raw: str = ""
+
+
+_TEAM_SUFFIX_RES = (
+    re.compile(r"\(([^)]+)\)\s*$"),
+    re.compile(r"[·•—–\-,]\s*([^·•—–\-,()]+)\s*$"),
+)
+
+
+def _all_league_team_names() -> list[str]:
+    from player_stats import LEAGUE_TEAMS
+
+    out: list[str] = []
+    seen: set[str] = set()
+    for teams in LEAGUE_TEAMS.values():
+        for t in teams:
+            tm = (t or "").strip()
+            if tm and tm not in seen:
+                seen.add(tm)
+                out.append(tm)
+    return sorted(out, key=len, reverse=True)
+
+
+def _resolve_team_hint(raw_team: str, known_teams: list[str]) -> str | None:
+    from utils.transfer_input import resolve_team_name
+    from utils.utils import session_league
+
+    hint = (raw_team or "").strip()
+    if not hint:
+        return None
+    resolved = resolve_team_name(hint, session_league)
+    if resolved:
+        return resolved
+    ncf = _norm_cmp(hint)
+    for tm in known_teams:
+        if _norm_cmp(tm) == ncf:
+            return tm
+    for tm in known_teams:
+        if ncf and ncf in _norm_cmp(tm):
+            return tm
+    return hint
+
+
+def _parse_player_cell(raw: str, known_teams: list[str]) -> tuple[str, str | None]:
+    """``Пепе (Бетис)`` → (``Пепе``, ``Бетис``)."""
+    s = str(raw or "").strip()
+    if not s:
+        return "", None
+    for rx in _TEAM_SUFFIX_RES:
+        m = rx.search(s)
+        if m:
+            team = _resolve_team_hint(m.group(1).strip(), known_teams)
+            name = s[: m.start()].strip()
+            if name:
+                return name, team
+    parts = s.rsplit(None, 1)
+    if len(parts) == 2:
+        name, maybe_team = parts[0].strip(), parts[1].strip()
+        resolved = _resolve_team_hint(maybe_team, known_teams)
+        if resolved and _norm_cmp(resolved) in {_norm_cmp(t) for t in known_teams}:
+            return name, resolved
+        for tm in known_teams:
+            if _norm_cmp(tm) == _norm_cmp(maybe_team):
+                return name, tm
+    return s, None
 
 
 @dataclass
@@ -195,6 +271,7 @@ class ResolvedPlayer:
     side: str
     kind: ActionKind
     new_overall: int | None
+    xlsx_team: str | None = None
     league_hits: list[DbHit] = field(default_factory=list)
     cl_hits: list[DbHit] = field(default_factory=list)
     error: str = ""
@@ -222,25 +299,45 @@ def _norm_rating(raw: Any) -> tuple[ActionKind, int | None]:
 def load_ratings_xlsx(path: str) -> list[XlsxEntry]:
     import openpyxl
 
+    known_teams = _all_league_team_names()
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     ws = wb.active
     out: list[XlsxEntry] = []
-    seen: set[tuple[str, str, ActionKind, int | None]] = set()
+    seen: set[tuple[str, str, str, ActionKind, int | None]] = set()
+    # side, col_игрок, col_рейтинг, col_клуб
+    blocks = (
+        ("injured", 0, 1, 2),
+        ("ok", 3, 4, 5),
+    )
     for row in ws.iter_rows(min_row=3, values_only=True):
-        pairs = (
-            ("injured", row[0] if len(row) > 0 else None, row[1] if len(row) > 1 else None),
-            ("ok", row[3] if len(row) > 3 else None, row[4] if len(row) > 4 else None),
-        )
-        for side, name_raw, rating_raw in pairs:
+        for side, i_name, i_rating, i_team in blocks:
+            name_raw = row[i_name] if len(row) > i_name else None
             name = str(name_raw or "").strip()
             if not name:
                 continue
+            rating_raw = row[i_rating] if len(row) > i_rating else None
+            team_raw = row[i_team] if len(row) > i_team else None
+            team: str | None = None
+            if team_raw is not None and str(team_raw).strip():
+                team = _resolve_team_hint(str(team_raw).strip(), known_teams)
+            else:
+                name, team = _parse_player_cell(name, known_teams)
             kind, ovr = _norm_rating(rating_raw)
-            key = (name.casefold(), side, kind, ovr)
+            team_key = _norm_cmp(team or "")
+            key = (name.casefold(), team_key, side, kind, ovr)
             if key in seen:
                 continue
             seen.add(key)
-            out.append(XlsxEntry(xlsx_name=name, side=side, kind=kind, new_overall=ovr))
+            out.append(
+                XlsxEntry(
+                    xlsx_name=name,
+                    side=side,
+                    kind=kind,
+                    new_overall=ovr,
+                    xlsx_team=team,
+                    xlsx_raw=name if not team_raw else f"{name} · {team_raw}",
+                )
+            )
     return out
 
 
@@ -440,6 +537,116 @@ def _apply_rpl_bonus(sleague, scl, *, delta: int = 3) -> list[str]:
     return notes
 
 
+def _season_db_paths() -> dict[str, str]:
+    from utils import season_paths
+
+    sn = season_paths.get_active_season()
+    if season_paths.is_legacy_mode():
+        base = os.path.join(ROOT, "db")
+        return {
+            "season": str(sn),
+            "league": os.path.join(base, "league_synced.db"),
+            "cl": os.path.join(base, "champions_league_synced.db"),
+            "common": os.path.join(base, "common_synced.db"),
+            "free_agents": os.path.join(base, "free_agents.db"),
+        }
+    sdir = season_paths.get_season_directory_abs()
+    return {
+        "season": str(sn),
+        "league": os.path.join(sdir, "league.db"),
+        "cl": os.path.join(sdir, "champions_league.db"),
+        "common": os.path.join(sdir, "common.db"),
+        "free_agents": os.path.join(ROOT, "db", "free_agents.db"),
+    }
+
+
+def _backup_before_apply() -> str:
+    paths = _season_db_paths()
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    dest = os.path.join(ROOT, "db", f"backup_pre_ratings_apply_{ts}")
+    os.makedirs(dest, exist_ok=True)
+    copied: dict[str, str] = {}
+    for key in ("league", "cl", "common", "free_agents"):
+        src = paths[key]
+        if os.path.isfile(src) and os.path.getsize(src) > 0:
+            dst = os.path.join(dest, os.path.basename(src))
+            shutil.copy2(src, dst)
+            copied[key] = os.path.basename(src)
+    manifest = {
+        "created_at": ts,
+        "season": paths["season"],
+        "files": copied,
+    }
+    with open(os.path.join(dest, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+    return dest
+
+
+def _find_latest_ratings_backup() -> str | None:
+    found = sorted(glob.glob(os.path.join(ROOT, "db", "backup_pre_ratings_apply_*")))
+    return found[-1] if found else None
+
+
+def rollback_ratings_apply(backup_dir: str, *, publish: bool = True) -> None:
+    manifest_path = os.path.join(backup_dir, "manifest.json")
+    if not os.path.isdir(backup_dir):
+        raise SystemExit(f"Нет каталога бэкапа: {backup_dir}")
+    paths = _season_db_paths()
+    if os.path.isfile(manifest_path):
+        with open(manifest_path, encoding="utf-8") as f:
+            manifest = json.load(f)
+        files = manifest.get("files") or {}
+    else:
+        files = {
+            k: os.path.basename(paths[k])
+            for k in ("league", "cl", "common", "free_agents")
+            if os.path.isfile(os.path.join(backup_dir, os.path.basename(paths[k])))
+        }
+    restored: list[str] = []
+    for key, fn in files.items():
+        src = os.path.join(backup_dir, fn)
+        dst = paths.get(key)
+        if not dst or not os.path.isfile(src):
+            continue
+        shutil.copy2(src, dst)
+        restored.append(f"{key}: {fn} → {os.path.relpath(dst, ROOT)}")
+    if not restored:
+        raise SystemExit(f"В бэкапе нет файлов для восстановления: {backup_dir}")
+    print(f"Откат из {os.path.relpath(backup_dir, ROOT)}:")
+    for line in restored:
+        print(f"  · {line}")
+    if publish:
+        print("\nПересборка common / synced / rosters…")
+        _post_apply_publish(export_rosters=True, rebuild_synced=True)
+    print("Откат завершён.")
+
+
+def _entry_team_alias(
+    entry: XlsxEntry,
+    aliases: dict[str, dict[str, str]],
+) -> dict[str, str] | None:
+    if entry.xlsx_team:
+        base: dict[str, str] = {"team": entry.xlsx_team.strip()}
+        raw = aliases.get(entry.xlsx_name)
+        if isinstance(raw, dict):
+            by_ovr = raw.get("by_overall")
+            if isinstance(by_ovr, dict) and entry.new_overall is not None:
+                sub = by_ovr.get(str(entry.new_overall))
+                if isinstance(sub, dict):
+                    sub_team = (sub.get("team") or "").strip()
+                    if not sub_team or _norm_cmp(sub_team) == _norm_cmp(entry.xlsx_team):
+                        for k in ("contains", "position", "exact_name", "set_overall"):
+                            if sub.get(k) is not None:
+                                base[k] = str(sub[k])
+            if "contains" not in base and raw.get("contains"):
+                base["contains"] = str(raw["contains"])
+            if "position" not in base and raw.get("position"):
+                base["position"] = str(raw["position"])
+        return base
+    alias = _pick_alias(entry, aliases)
+    return alias
+
+
 def _post_apply_publish(*, export_rosters: bool, rebuild_synced: bool) -> None:
     """common.db + накопительные *_synced + rosters.json для Transfer Window App."""
     rebuild_common_database()
@@ -462,18 +669,59 @@ def _post_apply_publish(*, export_rosters: bool, rebuild_synced: bool) -> None:
         script = os.path.join(ROOT, "tools", "transfer_window_app", "export_rosters.py")
         subprocess.run([sys.executable, script], check=True, cwd=ROOT)
 
+def _xlsx_label(rp: ResolvedPlayer) -> str:
+    if rp.xlsx_team:
+        return f"{rp.xlsx_name} · {rp.xlsx_team}"
+    return rp.xlsx_name
+
+
+def _not_found_message(
+    entry: XlsxEntry,
+    idx_l: PlayerIndex,
+    idx_c: PlayerIndex,
+    alias: dict[str, str] | None,
+) -> str:
+    broad_l = _collapse_hits(_find_hits(idx_l, entry.xlsx_name, None))
+    broad_c = _collapse_hits(_find_hits(idx_c, entry.xlsx_name, None))
+    if entry.xlsx_team:
+        if broad_l or broad_c:
+            labels: list[str] = []
+            for h in broad_l[:4]:
+                r = h.row
+                labels.append(
+                    f"{r.team} · {player_display_name(r)} · {r.position} ovr={r.overall}"
+                )
+            extra = len(broad_l) - 4
+            if extra > 0:
+                labels.append(f"…лига ещё {extra}")
+            return (
+                f"не найден в клубе «{entry.xlsx_team}»"
+                + ("; в БД: " + "; ".join(labels) if labels else "")
+            )
+        return f"не найден (клуб «{entry.xlsx_team}»)"
+    if broad_l:
+        if len(broad_l) > 1:
+            labels = [
+                f"{h.row.team} · {player_display_name(h.row)} · {h.row.position} ovr={h.row.overall}"
+                for h in broad_l[:5]
+            ]
+            return "не найден; однофамильцы — укажите клуб: " + "; ".join(labels)
+    return "не найден"
+
+
 def resolve_entry(
     entry: XlsxEntry,
     idx_l: PlayerIndex,
     idx_c: PlayerIndex,
     aliases: dict[str, dict[str, str]],
 ) -> ResolvedPlayer:
-    alias = _pick_alias(entry, aliases)
+    alias = _entry_team_alias(entry, aliases)
     rp = ResolvedPlayer(
         xlsx_name=entry.xlsx_name,
         side=entry.side,
         kind=entry.kind,
         new_overall=entry.new_overall,
+        xlsx_team=entry.xlsx_team,
     )
     if alias and alias.get("set_overall"):
         rp.new_overall = _clamp(int(alias["set_overall"]))
@@ -485,7 +733,7 @@ def resolve_entry(
 
     # Сопоставляем league ↔ cl по person_id или (имя, позиция, клуб через cl pool)
     if not league_hits and not cl_hits:
-        rp.error = "не найден"
+        rp.error = _not_found_message(entry, idx_l, idx_c, alias)
         return rp
 
     # Для remove/set нужна однозначная league-строка (команда+позиция)
@@ -496,7 +744,10 @@ def resolve_entry(
                 f"{h.row.team} · {player_display_name(h.row)} · {h.row.position} ovr={h.row.overall}"
                 for h in league_hits
             ]
-            rp.error = f"неоднозначно ({len(league_hits)}): " + "; ".join(labels)
+            hint = ""
+            if not entry.xlsx_team:
+                hint = " — уточните клуб в колонке «Клуб»"
+            rp.error = f"неоднозначно ({len(league_hits)}): " + "; ".join(labels) + hint
             rp.league_hits = league_hits
             rp.cl_hits = cl_hits
             return rp
@@ -531,8 +782,9 @@ def _format_hit(h: DbHit) -> str:
 
 
 def _preview_line(rp: ResolvedPlayer) -> str:
+    label = _xlsx_label(rp)
     if rp.error:
-        return f"ERR  [{rp.side}] {rp.xlsx_name} — {rp.error}"
+        return f"ERR  [{rp.side}] {label} — {rp.error}"
     bits: list[str] = []
     if rp.league_hits:
         h = rp.league_hits[0]
@@ -563,7 +815,7 @@ def _preview_line(rp: ResolvedPlayer) -> str:
             bits.append(f"ЛЧ {r.team} · {cur}→{rp.new_overall}")
         elif rp.kind == "remove":
             bits.append(f"ЛЧ {r.team} · left")
-    return f"OK   [{rp.side}] {rp.xlsx_name}: " + " | ".join(bits)
+    return f"OK   [{rp.side}] {label}: " + " | ".join(bits)
 
 
 def _set_overall_on_row(row: Any, new_ovr: int) -> bool:
@@ -591,13 +843,18 @@ def _apply_set(rp: ResolvedPlayer) -> tuple[list[str], list[str]]:
 
         from utils.common_db import resolve_team_name_for_cl_pool
         from utils.player_field_edit import find_player_row as find_player_row_exact
+        from utils.squad_roster_sync import _find_row_by_person_id
 
-        cl_team = resolve_team_name_for_cl_pool(team)
-        if cl_team:
-            _Cls, row_c = find_player_row_exact(session_cl, cl_team, nm, pos)
-            if row_c is not None and not bool(getattr(row_c, "left_team", False)):
-                if _set_overall_on_row(row_c, new_ovr):
-                    ok.append(f"ЛЧ {cl_team} · {nm} · {pos} → {new_ovr}")
+        cl_team = resolve_team_name_for_cl_pool(team) or team
+        _Cls, row_c = find_player_row_exact(session_cl, cl_team, nm, pos)
+        if row_c is None:
+            pid = getattr(r, "person_id", None)
+            if pid:
+                row_c, _Cls = _find_row_by_person_id(session_cl, cl_team, int(pid))
+        if row_c is not None and not bool(getattr(row_c, "left_team", False)):
+            if _set_overall_on_row(row_c, new_ovr):
+                cl_label = (getattr(row_c, "team", None) or cl_team or team).strip()
+                ok.append(f"ЛЧ {cl_label} · {nm} · {pos} → {new_ovr}")
         return ok, err
 
     if len(rp.cl_hits) == 1:
@@ -643,7 +900,7 @@ def _action_label(rp: ResolvedPlayer) -> str:
 
 
 def _error_detail(rp: ResolvedPlayer) -> str:
-    return f"[{rp.side}] {rp.xlsx_name} ({_action_label(rp)}): {rp.error}"
+    return f"[{rp.side}] {_xlsx_label(rp)} ({_action_label(rp)}): {rp.error}"
 
 
 def _dedupe_errors(items: list[ResolvedPlayer]) -> list[ResolvedPlayer]:
@@ -692,9 +949,16 @@ def _print_error_sections(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Overall / FA из xlsx рейтинги")
-    ap.add_argument("xlsx", help="Путь к рейтинги.xlsx")
+    ap.add_argument("xlsx", nargs="?", help="Путь к рейтинги.xlsx")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument(
+        "--rollback",
+        nargs="?",
+        const="latest",
+        metavar="BACKUP_DIR",
+        help="Восстановить league/cl/common/FA из backup_pre_ratings_apply_*",
+    )
     ap.add_argument("--aliases", help="JSON: {\"Торрес\": {\"team\": \"Аталанта\"}, ...}")
     ap.add_argument("--errors-only", action="store_true", help="Только проблемные строки + сводка")
     ap.add_argument("--report", help="Записать проблемные строки в .txt")
@@ -703,6 +967,20 @@ def main() -> None:
     ap.add_argument("--no-synced", action="store_true", help="Не пересобирать league/cl/common *_synced.db")
     ap.add_argument("--no-export-rosters", action="store_true", help="Не обновлять tools/transfer_window_app/rosters.json")
     args = ap.parse_args()
+
+    if args.rollback:
+        backup = args.rollback
+        if backup == "latest":
+            backup = _find_latest_ratings_backup()
+            if not backup:
+                print("Нет backup_pre_ratings_apply_* в db/. Откат невозможен.")
+                sys.exit(1)
+        rollback_ratings_apply(os.path.expanduser(backup))
+        return
+
+    if not args.xlsx:
+        print("Укажите путь к xlsx или --rollback BACKUP_DIR")
+        sys.exit(2)
     if args.dry_run == args.apply:
         print("Укажите ровно один флаг: --dry-run или --apply")
         sys.exit(2)
@@ -804,6 +1082,11 @@ def main() -> None:
         print("\nОтмена: есть неоднозначные строки. Сначала dry-run и правки.")
         print("  Либо --aliases file.json, либо --apply --ignore-errors")
         sys.exit(1)
+
+    backup_dir = ""
+    if args.apply:
+        backup_dir = _backup_before_apply()
+        print(f"\nБэкап перед apply: {os.path.relpath(backup_dir, ROOT)}")
 
     applied_ok: list[str] = []
     applied_err: list[str] = []
