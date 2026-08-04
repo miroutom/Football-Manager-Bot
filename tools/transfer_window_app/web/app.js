@@ -10,6 +10,8 @@ let selectedNation = "";
 let maxIn = 5;
 let maxOut = 5;
 let dirty = false;
+/** Клубы/FA с локальными правками, ещё не стянутыми с сервера. */
+let dirtyTeams = new Set();
 let windowLabels = { summer: "Лето", winter: "Зима" };
 let injuryAsOfMonth = 6;
 let injuryById = {};
@@ -465,9 +467,60 @@ function setLiveSyncEnabled(on) {
   startSyncPoll();
 }
 
-function markDirty() {
+function markDirty(...teamNames) {
   dirty = true;
+  for (const raw of teamNames) {
+    const name = String(raw || "").trim();
+    if (name) dirtyTeams.add(name);
+  }
   scheduleAutosave();
+}
+
+function snapshotDirtyTeams() {
+  const snap = { teams: {}, fa: null };
+  for (const name of dirtyTeams) {
+    if (name === FA_TEAM) {
+      snap.fa = JSON.parse(JSON.stringify(freeAgents));
+      continue;
+    }
+    const t = teams.find((x) => x.name === name);
+    if (t) snap.teams[name] = JSON.parse(JSON.stringify(t));
+  }
+  return snap;
+}
+
+function restoreDirtyTeamsSnapshot(snap) {
+  if (!snap) return;
+  for (const [name, t] of Object.entries(snap.teams || {})) {
+    const idx = teams.findIndex((x) => x.name === name);
+    if (idx >= 0) teams[idx] = t;
+  }
+  if (snap.fa) freeAgents = snap.fa;
+  dedupeGlobally(teams);
+  applyInjuryFlags(teams);
+  ensureExtraReserveSlots(teams);
+}
+
+/** Подтянуть с сервера всё, кроме клубов из dirtyTeams. */
+async function pullRemoteStatePartial() {
+  const url = isNationsMode()
+    ? "/api/state?mode=nations"
+    : `/api/state?window=${encodeURIComponent(currentWindow)}`;
+  const res = await fetch(url);
+  if (!res.ok) return false;
+  const saved = await res.json();
+  if (!lastRosters) return false;
+  const kept = new Set(dirtyTeams);
+  const snap = snapshotDirtyTeams();
+  applySavedState(saved, lastRosters);
+  if (kept.size) {
+    restoreDirtyTeamsSnapshot(snap);
+    dirtyTeams = kept;
+    dirty = true;
+  }
+  hideSyncBanner();
+  updateSyncBadge(saved);
+  return true;
 }
 
 function scheduleAutosave() {
@@ -661,9 +714,23 @@ async function fetchRemoteMeta() {
 async function keepLocalVersion() {
   hideSyncBanner();
   try {
-    const meta = await fetchRemoteMeta();
-    stateRevision = Number(meta.revision) || stateRevision;
-    dirty = true;
+    const url = isNationsMode()
+      ? "/api/state?mode=nations"
+      : `/api/state?window=${encodeURIComponent(currentWindow)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("state");
+    const saved = await res.json();
+    stateRevision = Number(saved.revision) || stateRevision;
+    if (dirtyTeams.size) {
+      const kept = new Set(dirtyTeams);
+      const snap = snapshotDirtyTeams();
+      applySavedState(saved, lastRosters);
+      restoreDirtyTeamsSnapshot(snap);
+      dirtyTeams = kept;
+      dirty = true;
+    } else {
+      dirty = true;
+    }
     await saveState({ silent: true, skipIncompleteConfirm: true });
     setStatus(`сохранена ваша версия (rev ${stateRevision})`);
   } catch (e) {
@@ -788,6 +855,7 @@ function applySavedState(saved, rosters) {
   undoStack = [];
   updateUndoBtn();
   dirty = false;
+  dirtyTeams = new Set();
   populateNationSelect();
   renderAll();
   updateSyncBadge(saved);
@@ -824,17 +892,21 @@ async function pollRemoteRevision() {
     const remoteRev = Number(meta.revision) || 0;
     if (remoteRev <= stateRevision) return;
     if (dragPayload) return;
-    if (dirty) {
-      if (liveSyncEnabled && (autosaveInFlight || autosaveTimer)) return;
-      showSyncBanner(meta);
+    if (liveSyncEnabled && (autosaveInFlight || autosaveTimer)) return;
+
+    // Нет локальных правок — просто подтягиваем напарника.
+    if (!dirty || !dirtyTeams.size) {
+      await pullRemoteState();
       return;
     }
-    // В live-мультиплеере не подменяем сейв молча — только через плашку.
-    if (liveSyncEnabled) {
-      showSyncBanner(meta);
+
+    // Правим разные клубы: подтянуть его изменения, сохранить свои.
+    const who = meta.updated_by || "напарник";
+    if (await pullRemoteStatePartial()) {
+      setStatus(`⟳ ${who}: другие клубы обновлены · ваши: ${[...dirtyTeams].join(", ")}`);
       return;
     }
-    await pullRemoteState();
+    showSyncBanner(meta);
   } catch (_) {
     /* offline */
   }
@@ -864,6 +936,7 @@ function loadFreshFromRosters(rosters, msg) {
   applyInjuryFlags(teams);
   ensureExtraReserveSlots(teams);
   dirty = false;
+  dirtyTeams = new Set();
   stateRevision = 0;
   rostersRevision = rosters.rosters_revision ?? null;
   populateNationSelect();
@@ -2943,12 +3016,15 @@ function setupDrop(el, teamName, zone, index) {
     e.preventDefault();
     el.classList.remove("drag-over");
     if (!dragPayload) return;
+    const srcTeam = dragPayload.team;
     pushUndo();
     movePlayer(dragPayload, teamName, zone, index);
     dragPayload = null;
     stopDragScroll();
     renderAll();
-    markDirty();
+    markDirty(teamName);
+    if (srcTeam && srcTeam !== teamName) markDirty(srcTeam);
+    if (srcTeam === FA_TEAM || teamName === FA_TEAM) markDirty(FA_TEAM);
     setStatus("изменено (не сохранено)");
   });
 }
@@ -3300,7 +3376,7 @@ function onFormationChange(teamName, fid) {
   const team = teams.find((t) => t.name === teamName);
   if (!team) return;
   if (!applyFormationToTeam(team, fid)) return;
-  markDirty();
+  markDirty(teamName);
   renderAll();
   setStatus(`схема ${team.formation} — не сохранено`);
 }
@@ -3313,7 +3389,7 @@ function onCoachChange(teamName, coach) {
   const label = form?.label || team.formation || "";
   team.formation = team.coach ? `${label} · ${team.coach}` : label;
   team.caption = team.formation;
-  markDirty();
+  markDirty(teamName);
   renderAll();
   setStatus(`тренер ${team.coach || "—"} — не сохранено`);
 }
@@ -3836,7 +3912,7 @@ async function switchWindow(next) {
 }
 
 async function saveState(options = {}) {
-  const { silent = false, skipIncompleteConfirm = false } = options;
+  const { silent = false, skipIncompleteConfirm = false, mergeRetry = false } = options;
   const incomplete = findIncompleteSquads();
   if (incomplete.length && !skipIncompleteConfirm) {
     const hint = isNationsMode()
@@ -3859,6 +3935,15 @@ async function saveState(options = {}) {
   if (res.status === 409 && j.conflict) {
     const who = j.updated_by || "напарник";
     stateRevision = Number(j.revision) || stateRevision;
+    if (!mergeRetry && j.server_state && dirtyTeams.size && lastRosters) {
+      const snap = snapshotDirtyTeams();
+      applySavedState(j.server_state, lastRosters);
+      restoreDirtyTeamsSnapshot(snap);
+      dirty = true;
+      await saveState({ silent: true, skipIncompleteConfirm: true, mergeRetry: true });
+      setStatus(`⟳ сохранено: ваши клубы + ${who} (rev ${stateRevision})`);
+      return;
+    }
     showSyncBanner({ revision: j.revision, updated_by: who });
     if (silent) {
       setStatus(`${who} тоже сохранил — «Загрузить его» или «Оставить моё»`);
@@ -3869,6 +3954,7 @@ async function saveState(options = {}) {
   }
   if (j.ok) {
     dirty = false;
+    dirtyTeams = new Set();
     stateRevision = Number(j.revision) || stateRevision;
     hideSyncBanner();
     updateSyncBadge(j);
