@@ -622,12 +622,30 @@ function setupSharePanel() {
 
 function showSyncBanner(meta) {
   pendingRemoteMeta = meta;
-  const bar = document.getElementById("sync-banner");
-  if (!bar) return;
   const who = meta.updated_by || "напарник";
-  bar.hidden = false;
-  bar.querySelector(".sync-banner-text").textContent =
+  const msg =
     `${who} сохранил новее (rev ${meta.revision}). «Загрузить его» — его версия. «Оставить моё» — перезаписать вашей.`;
+  const bar = document.getElementById("sync-banner");
+  if (bar) {
+    bar.hidden = false;
+    const textEl = bar.querySelector(".sync-banner-text");
+    if (textEl) textEl.textContent = msg;
+  }
+  document.body.classList.add("sync-banner-open");
+  const tb = document.getElementById("sync-conflict-toolbar");
+  const tbLabel = document.getElementById("sync-conflict-label");
+  if (tb) tb.hidden = false;
+  if (tbLabel) tbLabel.textContent = `${who} · rev ${meta.revision}`;
+  setStatus(`⚠ конфликт: ${who} — кнопки «Загрузить его» / «Оставить моё» в шапке`);
+}
+
+function hideSyncBanner() {
+  pendingRemoteMeta = null;
+  const bar = document.getElementById("sync-banner");
+  if (bar) bar.hidden = true;
+  document.body.classList.remove("sync-banner-open");
+  const tb = document.getElementById("sync-conflict-toolbar");
+  if (tb) tb.hidden = true;
 }
 
 async function fetchRemoteMeta() {
@@ -651,12 +669,6 @@ async function keepLocalVersion() {
   } catch (e) {
     setStatus("не удалось сохранить вашу версию: " + (e.message || e));
   }
-}
-
-function hideSyncBanner() {
-  pendingRemoteMeta = null;
-  const bar = document.getElementById("sync-banner");
-  if (bar) bar.hidden = true;
 }
 
 function buildFreshRosterIndexes(rosters) {
@@ -4021,16 +4033,18 @@ document.getElementById("btn-reload-fa")?.addEventListener("click", async () => 
     setStatus("FA: " + err.message);
   }
 });
-document.getElementById("sync-apply")?.addEventListener("click", async () => {
+document.getElementById("sync-apply")?.addEventListener("click", () => applyRemoteStateFromPartner());
+document.getElementById("sync-apply-toolbar")?.addEventListener("click", () => applyRemoteStateFromPartner());
+document.getElementById("sync-dismiss")?.addEventListener("click", () => keepLocalVersion());
+document.getElementById("sync-dismiss-toolbar")?.addEventListener("click", () => keepLocalVersion());
+
+async function applyRemoteStateFromPartner() {
   if (dirty) {
     const ok = window.confirm("Загрузить версию напарника? Ваши несохранённые правки пропадут.");
     if (!ok) return;
   }
   await pullRemoteState();
-});
-document.getElementById("sync-dismiss")?.addEventListener("click", () => {
-  keepLocalVersion();
-});
+}
 document.getElementById("import-squads-file")?.addEventListener("change", async (e) => {
   const f = e.target.files?.[0];
   e.target.value = "";
