@@ -723,7 +723,104 @@ def _parse_transfers_appendix(text: str) -> list[dict]:
     return rows
 
 
-def _build_player_lookup(*team_lists: list[dict] | None) -> dict[tuple[str, str], dict]:
+def _player_name_pos_key(name: str, position: str) -> str:
+    return f"{str(name or '').strip().casefold()}|{str(position or '').strip().upper()}"
+
+
+def _collect_squad_identity_keys(teams: list[dict]) -> set[str]:
+    keys: set[str] = set()
+    for team in teams or []:
+        for zone in ("start", "bench", "reserve"):
+            for p in team.get(zone) or []:
+                if not p or not p.get("name"):
+                    continue
+                npk = _player_name_pos_key(p.get("name") or "", p.get("position") or "")
+                if npk != "|":
+                    keys.add(f"np:{npk}")
+                pid = p.get("person_id")
+                try:
+                    pid_n = int(pid)
+                    if pid_n > 0:
+                        keys.add(f"pid:{pid_n}")
+                except (TypeError, ValueError):
+                    pass
+                if p.get("id"):
+                    keys.add(f"id:{p['id']}")
+    return keys
+
+
+def _player_matches_squad_keys(p: dict, keys: set[str]) -> bool:
+    if not p:
+        return False
+    npk = _player_name_pos_key(p.get("name") or "", p.get("position") or "")
+    if npk != "|" and f"np:{npk}" in keys:
+        return True
+    try:
+        pid_n = int(p.get("person_id") or 0)
+        if pid_n > 0 and f"pid:{pid_n}" in keys:
+            return True
+    except (TypeError, ValueError):
+        pass
+    if p.get("id") and f"id:{p['id']}" in keys:
+        return True
+    return False
+
+
+def _filter_fa_not_in_squads(fa_list: list[dict], teams: list[dict]) -> list[dict]:
+    keys = _collect_squad_identity_keys(teams)
+    return [p for p in (fa_list or []) if not _player_matches_squad_keys(p, keys)]
+
+
+def _find_player_in_teams(teams: list[dict], name: str, position: str = "") -> tuple[str, dict] | None:
+    nm = str(name or "").strip().casefold()
+    pos = str(position or "").strip().upper()
+    for team in teams or []:
+        tname = team.get("name") or ""
+        for zone in ("start", "bench", "reserve"):
+            for p in team.get(zone) or []:
+                if not p or not p.get("name"):
+                    continue
+                if str(p["name"]).strip().casefold() != nm:
+                    continue
+                if pos and str(p.get("position") or "").strip().upper() != pos:
+                    continue
+                return tname, p
+    return None
+
+
+def _apply_transfers_to_state(
+    teams: list[dict],
+    baseline_home: dict[str, str],
+    free_agents: list[dict],
+    transfers: list[dict],
+) -> tuple[dict[str, str], list[dict], list[str]]:
+    baseline = dict(baseline_home or {})
+    fa = list(free_agents or [])
+    notes: list[str] = []
+    applied = 0
+    for tr in transfers or []:
+        name = str(tr.get("name") or "").strip()
+        pos = str(tr.get("position") or "").strip().upper()
+        frm = str(tr.get("from_team") or "").strip()
+        to = str(tr.get("to_team") or "").strip()
+        if not name or not frm or not to:
+            continue
+        hit = _find_player_in_teams(teams, name, pos)
+        if not hit:
+            notes.append(f"не найден в составах: {name} → {to}")
+            continue
+        _team_name, player = hit
+        pid = player.get("id")
+        if not pid:
+            continue
+        baseline[pid] = frm
+        applied += 1
+    fa = _filter_fa_not_in_squads(fa, teams)
+    notes.insert(0, f"трансферов применено: {applied}")
+    return baseline, fa, notes
+
+
+def _build_player_lookup(*team_lists: list[dict] | None, fa_list: list[dict] | None = None) -> dict[tuple[str, str], dict]:
     out: dict[tuple[str, str], dict] = {}
     for team_list in team_lists:
         for team in team_list or []:
@@ -742,6 +839,20 @@ def _build_player_lookup(*team_lists: list[dict] | None) -> dict[tuple[str, str]
                         for fld in ("person_id", "id", "nickname", "nation", "injured", "injury_from", "injury_until", "injury_months"):
                             if p.get(fld) is not None and prev.get(fld) is None:
                                 prev[fld] = p[fld]
+    for p in fa_list or []:
+        if not p or not p.get("name"):
+            continue
+        key = (
+            str(p["name"]).strip().casefold(),
+            str(p.get("position") or "").strip().upper(),
+        )
+        if key not in out:
+            out[key] = dict(p)
+        else:
+            prev = out[key]
+            for fld in ("person_id", "id", "nickname", "nation", "fired"):
+                if p.get(fld) is not None and prev.get(fld) is None:
+                    prev[fld] = p[fld]
     return out
 
 
@@ -878,7 +989,8 @@ def _apply_squads_export_full(
     text: str,
     rosters_baseline: dict | None = None,
     rosters_teams: list[dict] | None = None,
-) -> tuple[list[dict], dict[str, str], list[str]]:
+    free_agents_in: list[dict] | None = None,
+) -> tuple[list[dict], dict[str, str], list[dict], list[str]]:
     """Полная загрузка squads_export_*.txt в состояние приложения."""
     from scripts.apply_bulk_squad_declarations import resolve_team_label, split_bulk_blocks
     from utils.roster_manual import parse_squad_declaration_text
@@ -888,7 +1000,8 @@ def _apply_squads_export_full(
     by_name = {t["name"]: t for t in teams}
     notes: list[str] = []
     transfers_appendix = _parse_transfers_appendix(text)
-    lookup = _build_player_lookup(teams, rosters_teams or [])
+    fa_seed = list(free_agents_in or [])
+    lookup = _build_player_lookup(teams, rosters_teams or [], fa_seed)
     body = strip_transfers_appendix(text or "")
     applied = 0
     for team_raw, block in split_bulk_blocks(body):
@@ -908,8 +1021,12 @@ def _apply_squads_export_full(
     baseline = _rebuild_baseline_from_squads(
         teams, rosters_baseline or {}, rosters_teams or [], transfers_appendix
     )
-    notes.insert(0, f"загружено клубов: {applied}, трансферов в файле: {len(transfers_appendix)}")
-    return teams, baseline, notes
+    if transfers_appendix:
+        baseline, fa_seed, tr_notes = _apply_transfers_to_state(teams, baseline, fa_seed, transfers_appendix)
+        notes.extend(tr_notes[1:])
+    free_agents = _filter_fa_not_in_squads(fa_seed, teams)
+    notes.insert(0, f"загружено клубов: {applied}, FA осталось: {len(free_agents)}")
+    return teams, baseline, free_agents, notes
 
 
 def _merge_squads_from_bot_export(
@@ -1805,19 +1922,23 @@ class Handler(BaseHTTPRequestHandler):
                 rp = _rosters_path()
                 if rp.is_file():
                     rosters = json.loads(rp.read_text(encoding="utf-8"))
-                updated, baseline, notes = _apply_squads_export_full(
+                fa_seed = data.get("free_agents") or rosters.get("free_agents") or []
+                updated, baseline, free_agents, notes = _apply_squads_export_full(
                     teams_in,
                     text,
                     rosters.get("baseline_home") or {},
                     rosters.get("teams") or [],
+                    fa_seed,
                 )
                 return self._send_json(
                     {
                         "ok": True,
                         "teams": updated,
                         "baseline_home": baseline,
+                        "free_agents": free_agents,
                         "notes": notes,
                         "full": True,
+                        "transfers_count": len(compute_transfers({"teams": updated, "baseline_home": baseline, "free_agents": free_agents})),
                     }
                 )
             updated, notes = _merge_squads_from_bot_export(teams_in, text)
@@ -1828,16 +1949,48 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(raw, dict) or not raw.get("teams"):
                 return self._send_json({"ok": False, "error": "нужен transfer_window_state_*.json"}, 400)
             payload = build_state_payload(raw)
+            fa = _filter_fa_not_in_squads(payload.get("free_agents") or [], payload.get("teams") or [])
             return self._send_json(
                 {
                     "ok": True,
                     "teams": payload.get("teams") or [],
                     "baseline_home": payload.get("baseline_home") or {},
-                    "free_agents": payload.get("free_agents") or [],
+                    "free_agents": fa,
                     "removed_from_squad": payload.get("removed_from_squad") or {},
                     "window": payload.get("window"),
                     "season": payload.get("season"),
                     "transfers_count": len(payload.get("transfers") or []),
+                    "full": True,
+                }
+            )
+        if parsed.path == "/api/import-transfers":
+            data = self._read_json()
+            text = str(data.get("text") or "")
+            teams_in = data.get("teams") or []
+            baseline_in = data.get("baseline_home") or {}
+            fa_in = data.get("free_agents") or []
+            from utils.transfer_window_apply import parse_transfers_file
+
+            try:
+                transfers, _ = parse_transfers_file(text, "transfers_simple.txt")
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 400)
+            baseline, free_agents, notes = _apply_transfers_to_state(
+                teams_in, baseline_in, fa_in, transfers
+            )
+            state = {
+                "teams": teams_in,
+                "baseline_home": baseline,
+                "free_agents": free_agents,
+            }
+            return self._send_json(
+                {
+                    "ok": True,
+                    "teams": teams_in,
+                    "baseline_home": baseline,
+                    "free_agents": free_agents,
+                    "notes": notes,
+                    "transfers_count": len(compute_transfers(state)),
                     "full": True,
                 }
             )

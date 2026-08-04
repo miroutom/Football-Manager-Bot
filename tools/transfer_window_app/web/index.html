@@ -49,6 +49,7 @@
       <div class="toolbar-group clubs-only">
         <span class="toolbar-group-label">Загрузка</span>
         <button type="button" id="btn-import-squads" class="secondary" title="squads_export_*.txt или transfer_window_state_*.json">Составы</button>
+        <button type="button" id="btn-import-transfers" class="secondary" title="transfers_simple_*.txt">Трансферы</button>
         <button type="button" id="btn-import-fa" class="secondary">FA</button>
         <button type="button" id="btn-import-national" class="secondary">Пул сборных</button>
         <button type="button" id="btn-reload-fa" class="secondary" title="Обновить пул из free_agents.db">↻ FA</button>
@@ -83,6 +84,7 @@
       </div>
     </div>
     <input type="file" id="import-squads-file" accept=".txt,.json" hidden>
+    <input type="file" id="import-transfers-file" accept=".txt" hidden>
     <input type="file" id="import-fa-file" accept=".json" hidden>
     <input type="file" id="import-national-file" accept=".json" hidden>
     <input type="file" id="import-wc-squads-file" accept=".txt" hidden>

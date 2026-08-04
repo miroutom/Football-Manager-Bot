@@ -1002,6 +1002,8 @@ function collectSquadIdentityKeys() {
       for (const p of team[zone] || []) {
         const k = playerIdentityKey(p);
         if (k) keys.add(k);
+        const npk = playerNamePosKey(p);
+        if (npk) keys.add(`np:${npk}`);
         if (p?.id) keys.add(`id:${p.id}`);
       }
     }
@@ -1009,12 +1011,17 @@ function collectSquadIdentityKeys() {
   return keys;
 }
 
-/** Убрать из пула FA тех, кто уже в составе клуба (по person_id / id). */
+/** Убрать из пула FA тех, кто уже в составе клуба (person_id, имя+позиция, id). */
 function purgeFreeAgentsInSquads() {
   const inSquads = collectSquadIdentityKeys();
   freeAgents = (freeAgents || []).filter((p) => {
     const k = playerIdentityKey(p);
     if (k && inSquads.has(k)) {
+      delete baselineHome[p.id];
+      return false;
+    }
+    const npk = playerNamePosKey(p);
+    if (npk && inSquads.has(`np:${npk}`)) {
       delete baselineHome[p.id];
       return false;
     }
@@ -1128,7 +1135,8 @@ function mergeFreeAgentsWithDb(dbList) {
   for (const raw of dbList || []) {
     if (!raw?.id) continue;
     const k = playerIdentityKey(raw);
-    if ((k && inSquads.has(k)) || inSquads.has(`id:${raw.id}`)) continue;
+    const npk = playerNamePosKey(raw);
+    if ((k && inSquads.has(k)) || (npk && inSquads.has(`np:${npk}`)) || inSquads.has(`id:${raw.id}`)) continue;
     const prev = byId.get(raw.id);
     const merged = {
       ...(prev || {}),
@@ -1179,6 +1187,11 @@ function playerIdentityKey(p) {
   if (Number.isFinite(pid) && pid > 0) return `pid:${pid}`;
   const nm = String(p.name || "").trim().toLowerCase();
   return nm ? `nm:${nm}` : "";
+}
+
+function playerNamePosKey(p) {
+  if (!p?.name) return "";
+  return `${String(p.name).trim().toLowerCase()}|${String(p.position || "").trim().toUpperCase()}`;
 }
 
 function squadIdentityKeysForTeam(teamName) {
@@ -2473,11 +2486,46 @@ function setupFaSignForm() {
   });
 }
 
+function applyImportPayload(j) {
+  pushUndo();
+  if (Array.isArray(j.teams)) teams = j.teams;
+  if (j.baseline_home) baselineHome = { ...j.baseline_home };
+  if (Array.isArray(j.free_agents)) {
+    freeAgents = j.free_agents.map((p) => ({
+      ...p,
+      status: p.status || "bench",
+      fired: !!p.fired,
+    }));
+  }
+  if (j.removed_from_squad) removedFromSquad = { ...j.removed_from_squad };
+  if (j.window === "summer" || j.window === "winter") {
+    currentWindow = j.window;
+    localStorage.setItem("tw_window", currentWindow);
+    updateTitle();
+  }
+  rekeyClubPlayersWithWrongIds();
+  dedupeGlobally(teams);
+  purgeFreeAgentsInSquads();
+  for (const p of freeAgents) {
+    if (p?.id) baselineHome[p.id] = FA_TEAM;
+  }
+  applyInjuryFlags(teams);
+  markDirty();
+  renderAll();
+  const note = (j.notes || []).join("; ");
+  const kind = j.full ? "полная загрузка" : "обновление карточек";
+  const tr = j.transfers_count != null ? ` · трансферов: ${j.transfers_count}` : "";
+  const fa = freeAgents.length ? ` · FA: ${freeAgents.length}` : "";
+  setStatus(`${kind}${tr}${fa}${note ? ` · ${note}` : ""}`);
+}
+
 async function importSquadsFromFile(file) {
   const text = await file.text();
   const isJson = file.name.toLowerCase().endsWith(".json") || text.trimStart().startsWith("{");
   const url = isJson ? "/api/import-state" : "/api/import-squads";
-  const body = isJson ? JSON.parse(text) : { text, teams };
+  const body = isJson
+    ? JSON.parse(text)
+    : { text, teams, baseline_home: baselineHome, free_agents: freeAgents };
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -2485,28 +2533,25 @@ async function importSquadsFromFile(file) {
   });
   const j = await res.json();
   if (!j.ok) throw new Error(j.error || "import failed");
-  pushUndo();
-  teams = j.teams;
-  if (j.baseline_home) baselineHome = { ...j.baseline_home };
-  if (Array.isArray(j.free_agents)) {
-    freeAgents = j.free_agents.map((p) => ({ ...p, status: p.status || "bench", fired: !!p.fired }));
-  }
-  if (j.removed_from_squad) removedFromSquad = { ...j.removed_from_squad };
-  if (j.window === "summer" || j.window === "winter") {
-    currentWindow = j.window;
-    localStorage.setItem("tw_window", currentWindow);
-    applyWindowQuotas({ windows: {} }, currentWindow);
-  }
-  rekeyClubPlayersWithWrongIds();
-  if (lastRosters) repairBaselineHomeFromRosters(lastRosters);
-  dedupeGlobally(teams);
-  applyInjuryFlags(teams);
-  markDirty();
-  renderAll();
-  const note = (j.notes || []).join("; ");
-  const kind = j.full ? "полная загрузка" : "обновление карточек";
-  const tr = j.transfers_count != null ? ` · трансферов: ${j.transfers_count}` : "";
-  setStatus(`${kind}${tr}${note ? ` · ${note}` : ""}`);
+  applyImportPayload(j);
+}
+
+async function importTransfersFromFile(file) {
+  const text = await file.text();
+  const res = await fetch("/api/import-transfers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text,
+      teams,
+      baseline_home: baselineHome,
+      free_agents: freeAgents,
+      window: currentWindow,
+    }),
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "import failed");
+  applyImportPayload(j);
 }
 
 function setFreeAgentsFromImport(players) {
@@ -4350,6 +4395,19 @@ document.getElementById("btn-reset-rosters")?.addEventListener("click", () => {
 });
 document.getElementById("btn-import-squads")?.addEventListener("click", () => {
   document.getElementById("import-squads-file")?.click();
+});
+document.getElementById("btn-import-transfers")?.addEventListener("click", () => {
+  document.getElementById("import-transfers-file")?.click();
+});
+document.getElementById("import-transfers-file")?.addEventListener("change", async (e) => {
+  const f = e.target.files?.[0];
+  e.target.value = "";
+  if (!f) return;
+  try {
+    await importTransfersFromFile(f);
+  } catch (err) {
+    setStatus("ошибка импорта трансферов: " + err.message);
+  }
 });
 document.getElementById("btn-import-fa")?.addEventListener("click", () => {
   document.getElementById("import-fa-file")?.click();
