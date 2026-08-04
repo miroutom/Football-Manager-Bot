@@ -33,6 +33,21 @@ def test_parse_tunnel_url_none():
     assert parse_tunnel_url("no url here") is None
 
 
+def test_parse_tunnel_url_ignores_cloudflare_terms_for_cloudflared():
+    line = (
+        "INF Terms: https://www.cloudflare.com/website-terms/ "
+        "visit https://random-words-here.trycloudflare.com when ready"
+    )
+    assert (
+        parse_tunnel_url(line, backend="cloudflared")
+        == "https://random-words-here.trycloudflare.com/"
+    )
+    assert (
+        parse_tunnel_url("https://www.cloudflare.com/website-terms/", backend="cloudflared")
+        is None
+    )
+
+
 def test_tunnel_backend_default(monkeypatch):
     monkeypatch.delenv("TW_TUNNEL_BACKEND", raising=False)
     assert tunnel_backend() == "cloudflared"

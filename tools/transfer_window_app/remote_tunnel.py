@@ -32,7 +32,7 @@ _SKIP_URL_PARTS = (
     "yastatic.net",
     "passport.yandex",
     "mc.yandex.ru",
-    "developers.cloudflare.com",
+    "cloudflare.com",
 )
 
 _DEFAULT_TUNNELER_CMD = "tunneler http --port {port}"
@@ -74,9 +74,11 @@ def parse_tunnel_url(text: str, *, backend: str | None = None) -> str | None:
     backend = backend or tunnel_backend()
 
     if backend == "cloudflared":
+        # Только *.trycloudflare.com — cloudflared сначала печатает website-terms и др.
         m = _CLOUDFLARE_URL_RE.search(text)
         if m:
             return _normalize_public_url(m.group(0))
+        return None
 
     try:
         data = json.loads(text)
