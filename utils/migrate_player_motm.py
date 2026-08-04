@@ -17,9 +17,7 @@ _COL = ("motm", "INTEGER DEFAULT 0")
 
 
 def _legacy_add_via_sql() -> list[str]:
-    from sqlalchemy import text
-    from sqlalchemy.exc import OperationalError
-
+    from utils.migrate_sqlite_schema import safe_add_column, sqlite_has_player_roster
     from utils.utils import engine_cl, engine_common, engine_league
 
     out: list[str] = []
@@ -30,19 +28,18 @@ def _legacy_add_via_sql() -> list[str]:
         (engine_common, "common"),
     ):
         with engine.begin() as conn:
+            if not sqlite_has_player_roster(conn):
+                continue
             for table in _TABLES:
-                try:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
+                if safe_add_column(conn, table, f"{col} {typ}"):
                     out.append(f"{label}:{table}.{col}")
-                except OperationalError as e:
-                    if "duplicate column name" not in str(e).lower():
-                        raise
     return out
 
 
 def migrate_motm_for_sqlite(db_path: str, *, label: str | None = None) -> list[str]:
-    from sqlalchemy import create_engine, text
-    from sqlalchemy.exc import OperationalError
+    from sqlalchemy import create_engine
+
+    from utils.migrate_sqlite_schema import safe_add_column, sqlite_has_player_roster
 
     col, typ = _COL
     tag = label or db_path
@@ -50,13 +47,11 @@ def migrate_motm_for_sqlite(db_path: str, *, label: str | None = None) -> list[s
     eng = create_engine(f"sqlite:///{db_path}")
     try:
         with eng.begin() as conn:
+            if not sqlite_has_player_roster(conn):
+                return []
             for table in _TABLES:
-                try:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
+                if safe_add_column(conn, table, f"{col} {typ}"):
                     out.append(f"{tag}:{table}.{col}")
-                except OperationalError as e:
-                    if "duplicate column name" not in str(e).lower():
-                        raise
     finally:
         eng.dispose()
     return out

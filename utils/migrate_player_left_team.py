@@ -22,9 +22,7 @@ _TABLES = ("forwards", "midfielders", "defenders", "goalkeepers")
 
 
 def _legacy_add_left_team_via_sql() -> list[str]:
-    from sqlalchemy import text
-    from sqlalchemy.exc import OperationalError
-
+    from utils.migrate_sqlite_schema import safe_add_column, sqlite_has_player_roster
     from utils.utils import engine_cl, engine_common, engine_league
 
     out: list[str] = []
@@ -34,18 +32,13 @@ def _legacy_add_left_team_via_sql() -> list[str]:
         (engine_common, "common"),
     ):
         with engine.begin() as conn:
+            if not sqlite_has_player_roster(conn):
+                continue
             for table in _TABLES:
-                try:
-                    conn.execute(
-                        text(
-                            f"ALTER TABLE {table} ADD COLUMN left_team BOOLEAN "
-                            f"NOT NULL DEFAULT 0"
-                        )
-                    )
+                if safe_add_column(
+                    conn, table, "left_team BOOLEAN NOT NULL DEFAULT 0"
+                ):
                     out.append(f"{label}:{table}")
-                except OperationalError as e:
-                    if "duplicate column name" not in str(e).lower():
-                        raise
     return out
 
 
@@ -66,8 +59,9 @@ def migrate_all_player_left_team_columns() -> list[str]:
 
 
 def migrate_left_team_for_sqlite(db_path: str, *, label: str = "") -> list[str]:
-    from sqlalchemy import create_engine, text
-    from sqlalchemy.exc import OperationalError
+    from sqlalchemy import create_engine
+
+    from utils.migrate_sqlite_schema import safe_add_column, sqlite_has_player_roster
 
     if not Path(db_path).is_file():
         return []
@@ -75,18 +69,12 @@ def migrate_left_team_for_sqlite(db_path: str, *, label: str = "") -> list[str]:
     out: list[str] = []
     engine = create_engine(f"sqlite:///{db_path}")
     with engine.begin() as conn:
+        if not sqlite_has_player_roster(conn):
+            engine.dispose()
+            return []
         for table in _TABLES:
-            try:
-                conn.execute(
-                    text(
-                        f"ALTER TABLE {table} ADD COLUMN left_team BOOLEAN "
-                        f"NOT NULL DEFAULT 0"
-                    )
-                )
+            if safe_add_column(conn, table, "left_team BOOLEAN NOT NULL DEFAULT 0"):
                 out.append(f"{tag}:{table}")
-            except OperationalError as e:
-                if "duplicate column name" not in str(e).lower():
-                    raise
     engine.dispose()
     return out
 

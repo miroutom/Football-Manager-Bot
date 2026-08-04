@@ -10,9 +10,6 @@ import logging
 import sys
 from pathlib import Path
 
-from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
-
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -36,6 +33,8 @@ _ALTER: list[tuple[str, str, str]] = [
 
 
 def migrate_player_awards_columns() -> list[str]:
+    from utils.migrate_sqlite_schema import safe_add_column, sqlite_has_player_roster
+
     out: list[str] = []
     for engine, label in (
         (engine_league, "league"),
@@ -43,13 +42,11 @@ def migrate_player_awards_columns() -> list[str]:
         (engine_common, "common"),
     ):
         with engine.begin() as conn:
+            if not sqlite_has_player_roster(conn):
+                continue
             for table, col, sqlt in _ALTER:
-                try:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {sqlt}"))
+                if safe_add_column(conn, table, f"{col} {sqlt}"):
                     out.append(f"{label}:{table}.{col}")
-                except OperationalError as e:
-                    if "duplicate column" not in str(e).lower():
-                        raise
     if out:
         logger.info("Awards columns added: %s", ", ".join(out))
     return out

@@ -34,8 +34,9 @@ def _split_motm_into_potm(conn, table: str) -> None:
 
 
 def migrate_potm_for_sqlite(db_path: str, *, label: str | None = None) -> list[str]:
-    from sqlalchemy import create_engine, text
-    from sqlalchemy.exc import OperationalError
+    from sqlalchemy import create_engine
+
+    from utils.migrate_sqlite_schema import safe_add_column, sqlite_has_player_roster
 
     col, typ = _COL
     tag = label or db_path
@@ -43,16 +44,11 @@ def migrate_potm_for_sqlite(db_path: str, *, label: str | None = None) -> list[s
     eng = create_engine(f"sqlite:///{db_path}")
     try:
         with eng.begin() as conn:
+            if not sqlite_has_player_roster(conn):
+                return []
             for table in _TABLES:
-                added = False
-                try:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
+                if safe_add_column(conn, table, f"{col} {typ}"):
                     out.append(f"{tag}:{table}.{col}")
-                    added = True
-                except OperationalError as e:
-                    if "duplicate column name" not in str(e).lower():
-                        raise
-                if added:
                     _split_motm_into_potm(conn, table)
     finally:
         eng.dispose()

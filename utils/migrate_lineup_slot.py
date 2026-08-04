@@ -16,9 +16,7 @@ _TABLES = ("forwards", "midfielders", "defenders", "goalkeepers")
 
 
 def _add_column_via_engines() -> list[str]:
-    from sqlalchemy import text
-    from sqlalchemy.exc import OperationalError
-
+    from utils.migrate_sqlite_schema import safe_add_column, sqlite_has_player_roster
     from utils.utils import engine_cl, engine_common, engine_league
 
     out: list[str] = []
@@ -28,21 +26,18 @@ def _add_column_via_engines() -> list[str]:
         (engine_common, "common"),
     ):
         with engine.begin() as conn:
+            if not sqlite_has_player_roster(conn):
+                continue
             for table in _TABLES:
-                try:
-                    conn.execute(
-                        text(f"ALTER TABLE {table} ADD COLUMN lineup_slot VARCHAR")
-                    )
+                if safe_add_column(conn, table, "lineup_slot VARCHAR"):
                     out.append(f"{label}:{table}")
-                except OperationalError as e:
-                    if "duplicate column name" not in str(e).lower():
-                        raise
     return out
 
 
 def migrate_lineup_slot_for_sqlite(db_path: str, *, label: str = "") -> list[str]:
-    from sqlalchemy import create_engine, text
-    from sqlalchemy.exc import OperationalError
+    from sqlalchemy import create_engine
+
+    from utils.migrate_sqlite_schema import safe_add_column, sqlite_has_player_roster
 
     if not Path(db_path).is_file():
         return []
@@ -50,15 +45,12 @@ def migrate_lineup_slot_for_sqlite(db_path: str, *, label: str = "") -> list[str
     out: list[str] = []
     engine = create_engine(f"sqlite:///{db_path}")
     with engine.begin() as conn:
+        if not sqlite_has_player_roster(conn):
+            engine.dispose()
+            return []
         for table in _TABLES:
-            try:
-                conn.execute(
-                    text(f"ALTER TABLE {table} ADD COLUMN lineup_slot VARCHAR")
-                )
+            if safe_add_column(conn, table, "lineup_slot VARCHAR"):
                 out.append(f"{tag}:{table}")
-            except OperationalError as e:
-                if "duplicate column name" not in str(e).lower():
-                    raise
     engine.dispose()
     return out
 
