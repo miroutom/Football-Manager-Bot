@@ -12,8 +12,9 @@
 матч в этот же «−1» не попадают (см. ``register_match_played_for_discipline`` + снимок в боте).
 - травма: «имя Nм» / «имя Nm» — только **2** или **4** месяца;
   «имя сM Nм» / «имя @M Nm» — с месяца M на 2 или 4 месяца.
-  У **полевых** две «жизни»: первая травма — остаётся в клубе; вторая — ``left_team=True``.
-  У **вратарей** пять «жизней»: уходит после пятой травмы. Рейтинг не меняется.
+  «Жизни» подряд: у **полевых** 2 — первый удар только ``1/2`` (без пропуска),
+  второй подряд — реальная травма и ``left_team=True``; у **вратарей** 5 — удары 1–4
+  без пропуска, 5-й — травма и уход. Рейтинг не меняется.
 - дисквал: в JSON ``unavailable_from_round`` — с какого тура чемпионата бан действует (null = как раньше).
   Нац. лига: туров 1–14; если бан «после» 14-го — ``unavailable_from_round=1`` (перенос на
   следующий сезон; при ``clear_discipline_for_new_season`` активные дисквалы сохраняются,
@@ -307,6 +308,27 @@ def _injury_life_limit(player: Any) -> int:
     return _FIELD_INJURY_LIVES if _is_field_player(player) else _GK_INJURY_LIVES
 
 
+def _injury_pending_strikes(st: dict, name: str, team: str) -> int:
+    """Число ударов подряд с последней реальной травмы (записи ``life_only``)."""
+    count = 0
+    for row in reversed(_injuries_for_player(st, name, team)):
+        if row.get("life_only"):
+            count += 1
+        else:
+            break
+    return count
+
+
+def _injury_life_strike_key(
+    name: str,
+    team: str,
+    season: int,
+    strike: int,
+    month: int,
+) -> str:
+    return f"{_norm(name)}|{_norm(team)}|{int(season)}|life|{int(strike)}|{int(month)}"
+
+
 def _validate_injury_duration(nmonths: int) -> str | None:
     if int(nmonths) not in _ALLOWED_INJURY_MONTHS:
         return "Травма только на 2 или 4 месяца: <code>имя 2м</code> или <code>имя 4м</code>."
@@ -409,6 +431,8 @@ def _injury_blocks_at_month(
     с ``return_month`` > 10, в сезоне S+1 она блокирует месяцы 1..(return_month-10) и т. д.
     Без ``season`` период **не** блокирует (нужно проставить сезон в JSON).
     """
+    if inj.get("life_only"):
+        return False
     ofm = inj.get("out_from_month")
     if ofm is None:
         return False
@@ -1159,8 +1183,36 @@ def _apply_injury(
     cur = max(1, min(10, int(out_from_month if out_from_month is not None else month)))
     ret = cur + int(nmonths)
     season_now = _get_active_season_or_default()
+    life_limit = _injury_life_limit(player)
     with _lock:
         st = _load()
+        pending = _injury_pending_strikes(st, player.name, team)
+        next_strike = pending + 1
+        if next_strike < life_limit:
+            tk = injury_type.strip() or "удар"
+            inj = {
+                "key": _injury_life_strike_key(
+                    player.name, team, season_now, next_strike, cur
+                ),
+                "name": player.name,
+                "name_norm": _norm(player.name),
+                "team": team,
+                "team_norm": _norm(team),
+                "life_only": True,
+                "strike": next_strike,
+                "life_limit": life_limit,
+                "season": season_now,
+                "month": cur,
+                "type": tk,
+            }
+            st.setdefault("injuries", []).append(inj)
+            _save(st)
+            return (
+                f"✓ Удар ({tk}): {player.name} — жизни {next_strike}/{life_limit} "
+                f"({format_calendar_month_label(cur)}, без пропуска). "
+                f"Следующий удар — травма на {nmonths} мес.",
+                True,
+            )
         inj = _find_injury_period(
             st, player.name, team, cur, ret, season=season_now
         )
@@ -1187,13 +1239,13 @@ def _apply_injury(
                 player.name, team, cur, ret, season_now
             )
             added = False
-        periods_count = len(_injuries_for_player(st, player.name, team))
         _save(st)
     leave_note = ""
-    life_limit = _injury_life_limit(player)
-    if added and periods_count >= life_limit:
+    if added:
         if _mark_player_left_team_in_dbs(player.name, team):
-            leave_note = f" Игрок ушёл из клуба ({periods_count}-я травма)."
+            leave_note = (
+                f" Игрок ушёл из клуба (травма после {life_limit} ударов подряд)."
+            )
     rating_note = ""
     if added:
         delta = injury_overall_penalty(nmonths)
@@ -1217,7 +1269,7 @@ def _apply_injury(
                 rating_note = f" (рейтинг: {bump_res.errors[0]})"
     tk = injury_type.strip() or "травма"
     note = (
-        f"Добавлен период (всего у игрока: {len(_injuries_for_player(st, player.name, team))})."
+        f"Жизни исчерпаны ({life_limit}/{life_limit}) — травма на {nmonths} мес."
         if added
         else "Период уже был — обновлён только тип."
     )
@@ -1347,6 +1399,15 @@ def _injury_status_label(
     month: int,
     season_now: int,
 ) -> str:
+    if inj.get("life_only"):
+        try:
+            strike = int(inj.get("strike") or 0)
+            limit = int(inj.get("life_limit") or 0)
+        except (TypeError, ValueError):
+            strike, limit = 0, 0
+        if strike and limit:
+            return f"жизнь {strike}/{limit}"
+        return "жизнь"
     ret = int(inj.get("return_month") or 99)
     ofm = inj.get("out_from_month")
     inj_season = inj.get("season")
@@ -1381,14 +1442,18 @@ def _format_injury_rows_table(
     )
     inj_rows: list[tuple[str, str, str, str, str, str]] = []
     for inj in injuries:
-        ret = int(inj.get("return_month") or 99)
-        ofm = inj.get("out_from_month")
         name = str(inj.get("name") or "?").strip()
         team = str(inj.get("team") or "?").strip()
         kind = (inj.get("type") or "травма").strip() or "травма"
         st_mark = _injury_status_label(inj, month=month, season_now=season_now)
-        start_s = format_calendar_month_label(int(ofm) if ofm is not None else None)
-        end_s = format_calendar_month_label(ret if ret != 99 else None)
+        if inj.get("life_only"):
+            start_s = format_calendar_month_label(inj.get("month"))
+            end_s = "—"
+        else:
+            ret = int(inj.get("return_month") or 99)
+            ofm = inj.get("out_from_month")
+            start_s = format_calendar_month_label(int(ofm) if ofm is not None else None)
+            end_s = format_calendar_month_label(ret if ret != 99 else None)
         inj_rows.append((team, name, kind, st_mark, start_s, end_s))
     if not inj_rows:
         chunks.append("Записей о травмах нет.")
@@ -1454,6 +1519,8 @@ def format_injury_frequency_report_text(*, limit: int = 25) -> str:
     # name_norm -> agg
     agg: dict[str, dict[str, Any]] = {}
     for inj in st.get("injuries") or []:
+        if inj.get("life_only"):
+            continue
         nn = str(inj.get("name_norm") or _norm(str(inj.get("name") or ""))).strip()
         if not nn:
             continue
@@ -1627,6 +1694,8 @@ def format_never_injured_report_text(
         st = _load()
     injured: set[str] = set()
     for inj in st.get("injuries") or []:
+        if inj.get("life_only"):
+            continue
         nn = str(inj.get("name_norm") or _norm(str(inj.get("name") or ""))).strip()
         if nn:
             injured.add(nn)
