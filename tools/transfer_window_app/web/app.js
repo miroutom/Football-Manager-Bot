@@ -848,6 +848,7 @@ function applySavedState(saved, rosters) {
     syncFreeAgentsFromRosters(rosters);
   }
   removedFromSquad = saved.removed_from_squad || {};
+  rekeyClubPlayersWithWrongIds();
   dedupeGlobally(teams);
   applyInjuryFlags(teams);
   ensureExtraReserveSlots(teams);
@@ -932,6 +933,7 @@ function loadFreshFromRosters(rosters, msg) {
   removedFromSquad = {};
   undoStack = [];
   updateUndoBtn();
+  rekeyClubPlayersWithWrongIds();
   dedupeGlobally(teams);
   applyInjuryFlags(teams);
   ensureExtraReserveSlots(teams);
@@ -985,11 +987,65 @@ function initFaBaseline(list) {
   }
 }
 
+function collectSquadIdentityKeys() {
+  const keys = new Set();
+  for (const team of teams) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (const p of team[zone] || []) {
+        const k = playerIdentityKey(p);
+        if (k) keys.add(k);
+        if (p?.id) keys.add(`id:${p.id}`);
+      }
+    }
+  }
+  return keys;
+}
+
+/** Убрать из пула FA тех, кто уже в составе клуба (по person_id / id). */
+function purgeFreeAgentsInSquads() {
+  const inSquads = collectSquadIdentityKeys();
+  freeAgents = (freeAgents || []).filter((p) => {
+    const k = playerIdentityKey(p);
+    if (k && inSquads.has(k)) {
+      delete baselineHome[p.id];
+      return false;
+    }
+    if (p?.id && inSquads.has(`id:${p.id}`)) {
+      delete baselineHome[p.id];
+      return false;
+    }
+    return true;
+  });
+}
+
+/** Игроки в клубах с id «Free Agent|…» или чужим префиксом — переключить на id клуба. */
+function rekeyClubPlayersWithWrongIds() {
+  if (isNationsMode()) return;
+  for (const team of teams) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (const p of team[zone] || []) {
+        if (!p?.id) continue;
+        const prefix = String(p.id).split("|")[0];
+        if (prefix === team.name) continue;
+        const oldId = p.id;
+        const newId = playerIdFor(team.name, p.name, p.position);
+        if (oldId === newId) continue;
+        p.id = newId;
+        delete baselineHome[oldId];
+        baselineHome[newId] = team.name;
+      }
+    }
+  }
+}
+
 /** Добавить/обновить FA из free_agents.db (не терять «новых» после reload/save). */
 function mergeFreeAgentsWithDb(dbList) {
+  const inSquads = collectSquadIdentityKeys();
   const byId = new Map((freeAgents || []).map((p) => [p.id, p]));
   for (const raw of dbList || []) {
     if (!raw?.id) continue;
+    const k = playerIdentityKey(raw);
+    if ((k && inSquads.has(k)) || inSquads.has(`id:${raw.id}`)) continue;
     const prev = byId.get(raw.id);
     const merged = {
       ...(prev || {}),
@@ -1003,6 +1059,7 @@ function mergeFreeAgentsWithDb(dbList) {
   freeAgents = Array.from(byId.values()).sort(
     (a, b) => (Number(b.overall) || 0) - (Number(a.overall) || 0)
   );
+  purgeFreeAgentsInSquads();
 }
 
 function syncFreeAgentsFromRosters(rosters) {
@@ -3112,7 +3169,47 @@ function pickKeepPlacement(id, locs) {
   return bestHome;
 }
 
+function zoneRankForDedupe(zone) {
+  return { start: 3, bench: 2, reserve: 1 }[zone] || 0;
+}
+
+function dedupeByPersonId(list) {
+  const byPid = new Map();
+  for (const team of list) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (let i = 0; i < team[zone].length; i++) {
+        const p = team[zone][i];
+        const pid = Number(p?.person_id);
+        if (!Number.isFinite(pid) || pid <= 0 || !p?.id) continue;
+        if (!byPid.has(pid)) byPid.set(pid, []);
+        byPid.get(pid).push({ team, teamName: team.name, zone, index: i, id: p.id, player: p });
+      }
+    }
+  }
+  for (const [, locs] of byPid) {
+    if (locs.length <= 1) continue;
+    let keep = locs[0];
+    let best = -1;
+    for (const loc of locs) {
+      const home = baselineHome[loc.id];
+      const score =
+        (home === loc.teamName ? 1000 : 0) +
+        zoneRankForDedupe(loc.zone) * 100 +
+        (home && home !== FA_TEAM ? 10 : 0);
+      if (score > best) {
+        best = score;
+        keep = loc;
+      }
+    }
+    for (const loc of locs) {
+      if (loc === keep) continue;
+      emptySlot(loc.team, loc.zone, loc.index);
+    }
+  }
+}
+
 function dedupeGlobally(list) {
+  dedupeByPersonId(list);
   const byId = new Map();
   for (const team of list) {
     for (const zone of ["start", "bench", "reserve"]) {
@@ -3135,6 +3232,7 @@ function dedupeGlobally(list) {
       emptySlot(loc.team, loc.zone, loc.index);
     }
   }
+  purgeFreeAgentsInSquads();
 }
 
 function movePlayer(src, destTeamName, destZone, destIndex) {
@@ -3208,13 +3306,28 @@ function movePlayer(src, destTeamName, destZone, destIndex) {
       }
     }
     if (!faPlayer) return;
-    freeAgents = freeAgents.filter((p) => p.id !== src.id);
-    if (!baselineHome[src.id]) baselineHome[src.id] = FA_TEAM;
+    const oldFaId = src.id;
+    const faKey = playerIdentityKey(faPlayer);
+    freeAgents = freeAgents.filter((p) => {
+      if (p.id === oldFaId) return false;
+      const pk = playerIdentityKey(p);
+      return !(faKey && pk && pk === faKey);
+    });
+    delete baselineHome[oldFaId];
+    const newId = playerIdFor(destTeamName, faPlayer.name, faPlayer.position);
+    const moving = { ...faPlayer, id: newId };
+    baselineHome[newId] = destTeamName;
     const destSlot = destTeam[destZone][destIndex];
-    const moving = { ...faPlayer };
     const displaced = destSlot?.id && destSlot.id !== moving.id ? { ...destSlot } : null;
-    removeAllInstancesOfId(moving.id);
+    removeAllInstancesOfId(oldFaId);
+    removeAllInstancesOfId(newId);
     placePlayer(destTeam, destZone, destIndex, moving);
+    syncNationalPoolPlayer(oldFaId, {
+      id: newId,
+      person_id: moving.person_id,
+      is_fa: false,
+      team: destTeamName,
+    });
     if (displaced) {
       if (baselineHome[displaced.id] === FA_TEAM) {
         freeAgents.push({ ...displaced, status: "bench" });
@@ -3249,10 +3362,20 @@ function movePlayer(src, destTeamName, destZone, destIndex) {
 
   const destSlot = destTeam[destZone][destIndex];
   const moving = { ...loc.player };
+  const oldId = moving.id;
+  if (!isNationsMode() && loc.teamName !== destTeamName) {
+    const newId = playerIdFor(destTeamName, moving.name, moving.position);
+    if (newId !== oldId) {
+      moving.id = newId;
+      delete baselineHome[oldId];
+      baselineHome[newId] = destTeamName;
+    }
+  }
   const displaced = destSlot?.id && destSlot.id !== moving.id ? { ...destSlot } : null;
   const vacated = { team: loc.team, zone: loc.zone, index: loc.index };
 
-  removeAllInstancesOfId(moving.id);
+  removeAllInstancesOfId(oldId);
+  if (moving.id !== oldId) removeAllInstancesOfId(moving.id);
   placePlayer(destTeam, destZone, destIndex, moving);
 
   if (displaced) {
