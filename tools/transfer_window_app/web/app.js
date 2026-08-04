@@ -2318,6 +2318,53 @@ function emptyTeamFromTemplate(tmpl) {
   };
 }
 
+function emptyStartFromFormation(fid, fallbackStart) {
+  const form = formationById(fid);
+  if (form && Array.isArray(form.slots) && form.slots.length) {
+    return form.slots.map((slot) => ({
+      id: null,
+      name: null,
+      position: null,
+      overall: null,
+      injured: false,
+      slot: slot.slot_id,
+      x: slot.x,
+      y: slot.y,
+    }));
+  }
+  return (fallbackStart || []).map((slot) => ({
+    id: null,
+    name: null,
+    position: null,
+    overall: null,
+    injured: false,
+    slot: slot.slot,
+    x: slot.x,
+    y: slot.y,
+  }));
+}
+
+function mergeSavedStart(savedStart, fid, fallbackStart, freshBaseline) {
+  const slots = emptyStartFromFormation(fid, fallbackStart);
+  const bySlot = new Map();
+  (savedStart || []).forEach((p, i) => {
+    if (!p?.id) return;
+    if (p.slot) bySlot.set(String(p.slot), p);
+    bySlot.set(`__idx_${i}`, p);
+  });
+  return slots.map((slot, i) => {
+    const src = bySlot.get(slot.slot) || bySlot.get(`__idx_${i}`);
+    if (!src?.id) return slot;
+    return {
+      ...src,
+      id: migrateId(src.id, freshBaseline),
+      slot: slot.slot,
+      x: slot.x,
+      y: slot.y,
+    };
+  });
+}
+
 function migrateSavedState(saved, rosters) {
   const savedByName = Object.fromEntries((saved.teams || []).map((t) => [t.name, t]));
   const freshBaseline = rosters.baseline_home || {};
@@ -2330,7 +2377,15 @@ function migrateSavedState(saved, rosters) {
       continue;
     }
 
+    const fid =
+      savedTeam.formation_id != null
+        ? Number(savedTeam.formation_id)
+        : Number(tmpl.formation_id) || 1;
+
     const team = emptyTeamFromTemplate(tmpl);
+    team.formation_id = fid;
+    team.start = mergeSavedStart(savedTeam.start, fid, tmpl.start, freshBaseline);
+
     for (const zone of ["bench", "reserve"]) {
       const savedLen = (savedTeam[zone] || []).length;
       while (team[zone].length < savedLen) {
@@ -2338,19 +2393,11 @@ function migrateSavedState(saved, rosters) {
       }
     }
 
-    for (const zone of ["start", "bench", "reserve"]) {
+    for (const zone of ["bench", "reserve"]) {
       (savedTeam[zone] || []).forEach((src, i) => {
         if (!src || !src.id || i >= team[zone].length) return;
-        const migrated = { ...src, id: migrateId(src.id, freshBaseline) };
-        if (zone === "start") {
-          placePlayerOnTeam(team, zone, i, migrated);
-        } else {
-          team[zone][i] = migrated;
-        }
+        team[zone][i] = { ...src, id: migrateId(src.id, freshBaseline) };
       });
-    }
-    if (savedTeam.formation_id != null) {
-      team.formation_id = Number(savedTeam.formation_id);
     }
     if (savedTeam.formation) team.formation = savedTeam.formation;
     if (savedTeam.caption) team.caption = savedTeam.caption;
