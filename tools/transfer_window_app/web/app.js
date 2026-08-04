@@ -627,7 +627,30 @@ function showSyncBanner(meta) {
   const who = meta.updated_by || "напарник";
   bar.hidden = false;
   bar.querySelector(".sync-banner-text").textContent =
-    `${who} сохранил новую версию (rev ${meta.revision}). Обновить? Несохранённые изменения пропадут.`;
+    `${who} сохранил новее (rev ${meta.revision}). «Загрузить его» — его версия. «Оставить моё» — перезаписать вашей.`;
+}
+
+async function fetchRemoteMeta() {
+  const url = isNationsMode()
+    ? "/api/state/meta?mode=nations"
+    : `/api/state/meta?window=${encodeURIComponent(currentWindow)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("meta");
+  return res.json();
+}
+
+/** Перезаписать сервер локальной версией после конфликта с напарником. */
+async function keepLocalVersion() {
+  hideSyncBanner();
+  try {
+    const meta = await fetchRemoteMeta();
+    stateRevision = Number(meta.revision) || stateRevision;
+    dirty = true;
+    await saveState({ silent: true, skipIncompleteConfirm: true });
+    setStatus(`сохранена ваша версия (rev ${stateRevision})`);
+  } catch (e) {
+    setStatus("не удалось сохранить вашу версию: " + (e.message || e));
+  }
 }
 
 function hideSyncBanner() {
@@ -791,6 +814,11 @@ async function pollRemoteRevision() {
     if (dragPayload) return;
     if (dirty) {
       if (liveSyncEnabled && (autosaveInFlight || autosaveTimer)) return;
+      showSyncBanner(meta);
+      return;
+    }
+    // В live-мультиплеере не подменяем сейв молча — только через плашку.
+    if (liveSyncEnabled) {
       showSyncBanner(meta);
       return;
     }
@@ -3818,21 +3846,12 @@ async function saveState(options = {}) {
   const j = await res.json();
   if (res.status === 409 && j.conflict) {
     const who = j.updated_by || "напарник";
+    stateRevision = Number(j.revision) || stateRevision;
+    showSyncBanner({ revision: j.revision, updated_by: who });
     if (silent) {
-      showSyncBanner({ revision: j.revision, updated_by: who });
-      setStatus(`${who} тоже менял — нажми «Обновить» или сохрани снова`);
-      return;
-    }
-    const ok = window.confirm(
-      `${who} уже сохранил (rev ${j.revision}).\n\n` +
-        "Загрузить его версию? Ваши несохранённые правки пропадут."
-    );
-    if (ok && j.server_state && lastRosters) {
-      applySavedState(j.server_state, lastRosters);
-      hideSyncBanner();
-      setStatus(`загружена версия ${who} (rev ${stateRevision})`);
+      setStatus(`${who} тоже сохранил — «Загрузить его» или «Оставить моё»`);
     } else {
-      setStatus("конфликт сохранения — договоритесь, кто сохраняет");
+      setStatus(`конфликт с ${who} (rev ${j.revision}) — выберите в плашке сверху`);
     }
     return;
   }
@@ -4002,13 +4021,15 @@ document.getElementById("btn-reload-fa")?.addEventListener("click", async () => 
     setStatus("FA: " + err.message);
   }
 });
-document.getElementById("sync-apply")?.addEventListener("click", () => {
-  pullRemoteState();
+document.getElementById("sync-apply")?.addEventListener("click", async () => {
+  if (dirty) {
+    const ok = window.confirm("Загрузить версию напарника? Ваши несохранённые правки пропадут.");
+    if (!ok) return;
+  }
+  await pullRemoteState();
 });
 document.getElementById("sync-dismiss")?.addEventListener("click", () => {
-  if (pendingRemoteMeta) stateRevision = Number(pendingRemoteMeta.revision) || stateRevision;
-  hideSyncBanner();
-  setStatus("обновление отложено — сохраните свои правки");
+  keepLocalVersion();
 });
 document.getElementById("import-squads-file")?.addEventListener("change", async (e) => {
   const f = e.target.files?.[0];
