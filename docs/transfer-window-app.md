@@ -76,7 +76,7 @@ python3 tools/transfer_window_app/main.py --lan
 
 ### После перезапуска `--tunnel`
 
-- Старая ссылка `https://….trycloudflare.com` **перестаёт работать**.
+- Старая публичная ссылка **перестаёт работать** после перезапуска tunneler.
 - В терминале появится **новая** ссылка (~10–30 с) — отправь её другу снова.
 - В шапке app: **«Ссылка для друга» → Копировать** (когда ссылка готова).
 - У друга должна быть метка **● live** — иначе перезагрузи страницу по новой ссылке.
@@ -103,7 +103,7 @@ python3 tools/transfer_window_app/main.py --tunnel   # или --lan, или бе
 python3 tools/transfer_window_app/main.py --tunnel --port 9000
 ```
 
-У напарника в ссылке будет `:9000` (для tunnel — новый URL от cloudflared).
+У напарника в ссылке будет `:9000` (для tunnel — новый URL от tunneler).
 
 ---
 
@@ -113,21 +113,32 @@ python3 tools/transfer_window_app/main.py --tunnel --port 9000
 
 #### Из разных квартир (рекомендуется)
 
-Wi‑Fi/LAN не подходит, если вы в разных сетях. Поднимите **публичный туннель**:
+Wi‑Fi/LAN не подходит, если вы в разных сетях. Поднимите **публичный туннель** через [Yandex tunneler](https://docs.yandex-team.ru/si-infra/tunneler/tunneler) (cloudflared **не** используем):
 
 ```bash
 python3 tools/transfer_window_app/export_rosters.py
-brew install cloudflared   # один раз
+
+# Авто: tunneler в PATH, команда по умолчанию tunneler http --port {port}
 ./tools/transfer_window_app/share_remote.sh
-# или:
+
+# Своя команда из доки:
+export TW_TUNNEL_CMD='tunneler … {port} …'
 python3 tools/transfer_window_app/main.py --tunnel
 ```
 
-Через ~10–30 с в терминале появится **`https://….trycloudflare.com`** — эту ссылку открывает напарник (с телефона, другой квартиры, мобильного интернета).
+**Tunneler уже запущен вручную** (в другом терминале):
+
+```bash
+python3 tools/transfer_window_app/main.py --tunnel --tunnel-url 'https://…'
+# или
+TW_TUNNEL_URL='https://…' ./tools/transfer_window_app/share_remote.sh
+```
+
+Через ~10–30 с в терминале появится **HTTPS-ссылка** — её открывает напарник.
 
 - Держите терминал с `--tunnel` **открытым**, пока играете.
-- Ссылка **временная** и **без пароля** — только для доверенного напарника.
-- В шапке app есть **«Ссылка для друга» → Копировать**.
+- Ссылка **временная** — только для доверенного напарника.
+- В шапке app: **«Ссылка для друга» → Копировать**.
 
 **Альтернатива:** [Tailscale](https://tailscale.com) на обоих Mac/PC → хост запускает `--lan`, друг открывает адрес **`100.x.x.x`** из терминала (строка «Tailscale»).
 

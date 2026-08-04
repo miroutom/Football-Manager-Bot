@@ -41,7 +41,7 @@ from multiplayer_state import (
     state_meta,
     state_revision,
 )
-from remote_tunnel import start_cloudflared_tunnel
+from remote_tunnel import DOCS_URL, start_tunneler_process
 
 WINDOW_QUOTAS: dict[str, dict[str, int]] = {
     "summer": {"max_in": 5, "max_out": 5, "label": "Лето"},
@@ -245,11 +245,28 @@ def _on_tunnel_error(msg: str) -> None:
     print(f"⚠️  Туннель: {msg}", file=sys.stderr)
 
 
-def _start_remote_tunnel(port: int) -> None:
-    global _TUNNEL_PENDING, _TUNNEL_PROC
+def _start_remote_tunnel(port: int, *, preset_url: str = "", spawn: bool = True) -> None:
+    global _TUNNEL_PENDING, _TUNNEL_PROC, _TUNNEL_URL
+    preset = (preset_url or "").strip()
+    if preset:
+        _on_tunnel_url(preset)
+        return
+    if not spawn:
+        _TUNNEL_PENDING = True
+        print(
+            "⏳ Режим --tunnel-manual: подними tunneler в другом терминале "
+            f"(см. {DOCS_URL})",
+            file=sys.stderr,
+        )
+        print(
+            "  Затем перезапусти с --tunnel-url 'https://…' "
+            "или export TW_TUNNEL_URL=…",
+            file=sys.stderr,
+        )
+        return
     _TUNNEL_PENDING = True
-    print("⏳ Создаём публичную ссылку через cloudflared…")
-    _TUNNEL_PROC = start_cloudflared_tunnel(
+    print(f"⏳ Создаём публичную ссылку через Yandex tunneler… ({DOCS_URL})")
+    _TUNNEL_PROC = start_tunneler_process(
         port,
         on_url=_on_tunnel_url,
         on_error=_on_tunnel_error,
@@ -349,12 +366,16 @@ def _persist_window_state(
         return out, False
 
 
-def _parse_runtime_args(argv: list[str]) -> tuple[str, int, bool, bool]:
-    """host, port, open_browser, tunnel_mode."""
+def _parse_runtime_args(argv: list[str]) -> tuple[str, int, bool, bool, str, bool]:
+    """host, port, open_browser, tunnel_mode, tunnel_url, tunnel_spawn."""
     host = "127.0.0.1"
     port = 8765
     open_browser = True
     tunnel_mode = "--tunnel" in argv or "--remote" in argv
+    tunnel_url = (os.environ.get("TW_TUNNEL_URL") or "").strip()
+    if "--tunnel-url" in argv:
+        tunnel_url = argv[argv.index("--tunnel-url") + 1].strip()
+    tunnel_spawn = "--tunnel-manual" not in argv
     if "--host" in argv:
         host = argv[argv.index("--host") + 1]
     elif "--lan" in argv:
@@ -363,7 +384,7 @@ def _parse_runtime_args(argv: list[str]) -> tuple[str, int, bool, bool]:
         port = int(argv[argv.index("--port") + 1])
     if "--no-browser" in argv:
         open_browser = False
-    return host, port, open_browser, tunnel_mode
+    return host, port, open_browser, tunnel_mode, tunnel_url, tunnel_spawn
 
 
 def _normalize_window(raw: str | None) -> str:
@@ -1648,7 +1669,9 @@ def _open_browser_when_ready(url: str, port: int) -> None:
 
 def main() -> int:
     global _BIND_HOST, _SERVER_PORT
-    _BIND_HOST, _SERVER_PORT, open_browser, tunnel_mode = _parse_runtime_args(sys.argv)
+    _BIND_HOST, _SERVER_PORT, open_browser, tunnel_mode, tunnel_url, tunnel_spawn = (
+        _parse_runtime_args(sys.argv)
+    )
     port = _SERVER_PORT
     host = _BIND_HOST
     url = f"http://127.0.0.1:{port}/"
@@ -1674,7 +1697,7 @@ def main() -> int:
 
     print(f"Transfer Window: {url}")
     if tunnel_mode:
-        _start_remote_tunnel(port)
+        _start_remote_tunnel(port, preset_url=tunnel_url, spawn=tunnel_spawn)
     if host == "0.0.0.0" or tunnel_mode:
         _print_share_startup_hints(port, tunnel_mode=tunnel_mode, lan_mode=(host == "0.0.0.0"))
     print(f"Сейвы и экспорты: {data}")
