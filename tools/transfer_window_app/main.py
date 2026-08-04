@@ -802,13 +802,34 @@ def compute_transfers(state: dict) -> list[dict]:
     removed = set((state.get("removed_from_squad") or {}).keys())
     loc = _collect_player_locations(state.get("teams") or [])
     loc.update(_collect_fa_locations(state.get("free_agents") or []))
+    by_name_pos: dict[tuple[str, str], tuple[str, str, dict]] = {}
+    by_person_id: dict[int, tuple[str, str, dict]] = {}
+    for _lid, (team, status, p) in loc.items():
+        name = str(p.get("name") or "").strip().lower()
+        pos = str(p.get("position") or "").strip().upper()
+        if name and pos:
+            by_name_pos[(name, pos)] = (team, status, p)
+        pid_n = p.get("person_id")
+        if pid_n:
+            try:
+                by_person_id[int(pid_n)] = (team, status, p)
+            except (TypeError, ValueError):
+                pass
     rows: list[dict] = []
     for pid, from_team in sorted(baseline_home.items(), key=lambda x: x[1]):
         if pid in removed:
             continue
-        if pid not in loc:
-            continue
-        to_team, status, p = loc[pid]
+        if pid in loc:
+            to_team, status, p = loc[pid]
+        else:
+            parts = pid.split("|")
+            matched = None
+            if len(parts) >= 3:
+                key = (parts[1].strip().lower(), parts[2].strip().upper())
+                matched = by_name_pos.get(key)
+            if not matched:
+                continue
+            to_team, status, p = matched
         if to_team == from_team:
             continue
         parts = pid.split("|")
@@ -1379,10 +1400,6 @@ class Handler(BaseHTTPRequestHandler):
             kind = (qs.get("kind") or ["squads"])[0]
             draft = (qs.get("draft") or ["0"])[0].lower() in ("1", "true", "yes")
             data = self._read_json()
-            if kind in ("squads", "wc-squads") and not draft:
-                err = _squads_validation_error(data)
-                if err:
-                    return self._send_json({"ok": False, "error": err}, 400)
             out_dir = _export_dir()
             if kind == "draft-bundle":
                 window = _normalize_window(data.get("window"))
@@ -1420,6 +1437,9 @@ class Handler(BaseHTTPRequestHandler):
                     }
                 )
             if kind == "wc-squads":
+                err = _squads_validation_error(data)
+                if err:
+                    return self._send_json({"ok": False, "error": err}, 400)
                 from utils.wc_squad_app import format_wc_squads_export_txt
 
                 out = out_dir / "wc_squads_export.txt"
@@ -1487,7 +1507,7 @@ class Handler(BaseHTTPRequestHandler):
             rows = compute_squads(data)
             window = _normalize_window(data.get("window"))
             suffix = f"_{window}" + ("_draft" if draft else "")
-            inc = _incomplete_team_count(data) if draft else 0
+            inc = _incomplete_team_count(data)
             if fmt == "xlsx":
                 out = out_dir / f"squads_export{suffix}.xlsx"
                 try:
@@ -1500,7 +1520,7 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 out = out_dir / f"squads_export{suffix}.txt"
                 payload = build_state_payload(data)
-                _write_squads_txt(out, payload, draft=draft)
+                _write_squads_txt(out, payload, draft=draft or inc > 0)
                 return self._send_json(
                     {
                         "ok": True,

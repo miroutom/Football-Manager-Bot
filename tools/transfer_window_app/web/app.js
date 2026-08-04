@@ -473,6 +473,7 @@ function markDirty(...teamNames) {
     const name = String(raw || "").trim();
     if (name) dirtyTeams.add(name);
   }
+  if (lastRosters && !isNationsMode()) repairBaselineHomeFromRosters(lastRosters);
   scheduleAutosave();
 }
 
@@ -828,6 +829,7 @@ function reconcileWithFreshRosters(rosters) {
   if (rosters?.rosters_revision != null) {
     rostersRevision = rosters.rosters_revision;
   }
+  repairBaselineHomeFromRosters(rosters);
   renderAll();
   return { ovr, removed, fa: freeAgents.length };
 }
@@ -849,7 +851,7 @@ function applySavedState(saved, rosters) {
   }
   removedFromSquad = saved.removed_from_squad || {};
   rekeyClubPlayersWithWrongIds();
-  repairBaselineHomeFromRosters(rosters);
+  const baselineRepaired = repairBaselineHomeFromRosters(rosters);
   dedupeGlobally(teams);
   applyInjuryFlags(teams);
   ensureExtraReserveSlots(teams);
@@ -861,6 +863,11 @@ function applySavedState(saved, rosters) {
   populateNationSelect();
   renderAll();
   updateSyncBadge(saved);
+  if (baselineRepaired) {
+    saveState({ silent: true, skipIncompleteConfirm: true }).then(() => {
+      setStatus("baseline трансферов восстановлен из rosters · сейв обновлён");
+    });
+  }
 }
 
 async function pullRemoteState() {
@@ -1035,40 +1042,67 @@ function migrateBaselineHome(oldId, newId, destTeamName, fallbackHome) {
   return newId;
 }
 
-/** Починить baseline после бага: игрок в клубе, а home = этот же клуб (должен быть FA / старый клуб). */
+/** Индекс «исходный клуб сезона» из rosters.json (до трансферного окна). */
+function buildOriginalHomeIndex(rosters) {
+  const byPersonId = new Map();
+  const byNamePos = new Map();
+  const baseline = rosters?.baseline_home || {};
+  for (const [id, home] of Object.entries(baseline)) {
+    const parts = String(id).split("|");
+    if (parts.length >= 3) {
+      const key = `${parts[1].trim().toLowerCase()}|${parts[2].trim().toUpperCase()}`;
+      byNamePos.set(key, home);
+    }
+  }
+  for (const team of rosters?.teams || []) {
+    const tname = team.name;
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (const p of team[zone] || []) {
+        if (!p?.name) continue;
+        const pid = Number(p.person_id);
+        const home = (p.id && baseline[p.id]) || tname;
+        if (Number.isFinite(pid) && pid > 0) byPersonId.set(pid, home);
+        const key = `${String(p.name).trim().toLowerCase()}|${String(p.position || "").trim().toUpperCase()}`;
+        if (!byNamePos.has(key)) byNamePos.set(key, home);
+      }
+    }
+  }
+  return { byPersonId, byNamePos };
+}
+
+function lookupOriginalHome(p, rosters) {
+  if (!p?.name || !rosters) return null;
+  const { byPersonId, byNamePos } = buildOriginalHomeIndex(rosters);
+  const pid = Number(p.person_id);
+  if (Number.isFinite(pid) && pid > 0 && byPersonId.has(pid)) {
+    return byPersonId.get(pid);
+  }
+  const key = `${String(p.name).trim().toLowerCase()}|${String(p.position || "").trim().toUpperCase()}`;
+  return byNamePos.get(key) || null;
+}
+
+/** Починить baseline: «дом» = клуб из rosters, если игрок сейчас в другом месте. */
 function repairBaselineHomeFromRosters(rosters) {
-  if (isNationsMode() || !rosters) return;
-  const freshBaseline = rosters.baseline_home || {};
-  for (const [fid, fhome] of Object.entries(freshBaseline)) {
-    if (fhome !== FA_TEAM) continue;
-    const parts = String(fid).split("|");
-    if (parts.length < 3 || parts[0] !== "Free Agent") continue;
-    const name = parts[1];
-    const pos = parts[2].toUpperCase();
-    for (const team of teams) {
-      for (const zone of ["start", "bench", "reserve"]) {
-        for (const p of team[zone] || []) {
-          if (!p?.id || !p.name) continue;
-          if (String(p.name).trim() !== name) continue;
-          if (String(p.position || "").trim().toUpperCase() !== pos) continue;
-          if (baselineHome[p.id] === team.name) baselineHome[p.id] = FA_TEAM;
+  if (isNationsMode() || !rosters) return false;
+  let changed = false;
+  for (const team of teams) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (const p of team[zone] || []) {
+        if (!p?.id || !p.name) continue;
+        const orig = lookupOriginalHome(p, rosters);
+        if (!orig || orig === team.name) continue;
+        const cur = baselineHome[p.id];
+        if (cur === undefined || cur === team.name) {
+          baselineHome[p.id] = orig;
+          changed = true;
         }
       }
     }
   }
-  for (const team of teams) {
-    for (const zone of ["start", "bench", "reserve"]) {
-      for (const p of team[zone] || []) {
-        if (!p?.id) continue;
-        const idClub = String(p.id).split("|")[0];
-        if (idClub === "Free Agent" || idClub === team.name) continue;
-        if (baselineHome[p.id] === team.name) baselineHome[p.id] = idClub;
-      }
-    }
-  }
+  return changed;
 }
 
-/** Игроки в клубах с id «Free Agent|…» или чужим префиксом — переключить на id клуба. */
+/** Только FA-id в клубе → id с префиксом клуба. Трансферы между клубами id не меняем. */
 function rekeyClubPlayersWithWrongIds() {
   if (isNationsMode()) return;
   for (const team of teams) {
@@ -1076,14 +1110,12 @@ function rekeyClubPlayersWithWrongIds() {
       for (const p of team[zone] || []) {
         if (!p?.id) continue;
         const prefix = String(p.id).split("|")[0];
-        if (prefix === team.name) continue;
+        if (prefix !== "Free Agent") continue;
         const oldId = p.id;
         const newId = playerIdFor(team.name, p.name, p.position);
         if (oldId === newId) continue;
         p.id = newId;
-        const fallback =
-          prefix === "Free Agent" ? FA_TEAM : prefix !== team.name ? prefix : team.name;
-        migrateBaselineHome(oldId, newId, team.name, fallback);
+        migrateBaselineHome(oldId, newId, team.name, FA_TEAM);
       }
     }
   }
@@ -3413,18 +3445,10 @@ function movePlayer(src, destTeamName, destZone, destIndex) {
   const destSlot = destTeam[destZone][destIndex];
   const moving = { ...loc.player };
   const oldId = moving.id;
-  if (!isNationsMode() && loc.teamName !== destTeamName) {
-    const newId = playerIdFor(destTeamName, moving.name, moving.position);
-    if (newId !== oldId) {
-      moving.id = newId;
-      migrateBaselineHome(oldId, newId, destTeamName, baselineHome[oldId] ?? loc.teamName);
-    }
-  }
   const displaced = destSlot?.id && destSlot.id !== moving.id ? { ...destSlot } : null;
   const vacated = { team: loc.team, zone: loc.zone, index: loc.index };
 
   removeAllInstancesOfId(oldId);
-  if (moving.id !== oldId) removeAllInstancesOfId(moving.id);
   placePlayer(destTeam, destZone, destIndex, moving);
 
   if (displaced) {
@@ -4154,14 +4178,7 @@ async function saveState(options = {}) {
 }
 
 async function exportFmt(fmt, { draft = false } = {}) {
-  if (!draft) {
-    const incomplete = findIncompleteSquads();
-    if (incomplete.length) {
-      window.alert(squadExportBlockedMessage(incomplete));
-      setStatus(`экспорт блокирован: неполная заявка (${incomplete.length} клубов)`);
-      return;
-    }
-  }
+  const incomplete = findIncompleteSquads();
   const q = draft ? "&draft=1" : "";
   const res = await fetch(`/api/export?fmt=${fmt}&kind=squads${q}`, {
     method: "POST",
@@ -4169,12 +4186,13 @@ async function exportFmt(fmt, { draft = false } = {}) {
     body: JSON.stringify(currentState()),
   });
   const j = await res.json();
-  setStatus(
-    j.ok
-      ? `${draft ? "черновик" : "выгружено"}: ${j.path}` +
-          (j.incomplete_teams ? ` · неполных клубов: ${j.incomplete_teams}` : "")
-      : `ошибка: ${j.error || "?"}`
-  );
+  let msg = j.ok ? `выгружено: ${j.path}` : `ошибка: ${j.error || "?"}`;
+  if (j.ok && incomplete.length) {
+    msg += ` · неполных клубов: ${incomplete.length} (черновик)`;
+  } else if (j.ok && j.incomplete_teams) {
+    msg += ` · неполных клубов: ${j.incomplete_teams}`;
+  }
+  setStatus(msg);
   if (!j.ok && j.error) window.alert(j.error);
 }
 
