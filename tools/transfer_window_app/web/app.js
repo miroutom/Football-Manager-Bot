@@ -4180,13 +4180,28 @@ async function saveState(options = {}) {
 async function exportFmt(fmt, { draft = false } = {}) {
   const incomplete = findIncompleteSquads();
   const q = draft ? "&draft=1" : "";
-  const res = await fetch(`/api/export?fmt=${fmt}&kind=squads${q}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(currentState()),
-  });
-  const j = await res.json();
+  let res;
+  try {
+    res = await fetch(`/api/export?fmt=${fmt}&kind=squads${q}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentState()),
+    });
+  } catch (e) {
+    setStatus(`ошибка сети: ${e.message}`);
+    return;
+  }
+  let j;
+  try {
+    j = await res.json();
+  } catch {
+    setStatus("ошибка: сервер упал при выгрузке — перезапусти main.py (git pull)");
+    return;
+  }
   let msg = j.ok ? `выгружено: ${j.path}` : `ошибка: ${j.error || "?"}`;
+  if (j.ok && j.export_dir && !String(j.path || "").startsWith(j.export_dir)) {
+    msg = `выгружено: ${j.path} (папка: ${j.export_dir})`;
+  }
   if (j.ok && incomplete.length) {
     msg += ` · неполных клубов: ${incomplete.length} (черновик)`;
   } else if (j.ok && j.incomplete_teams) {

@@ -504,10 +504,19 @@ def _state_path(window: str = DEFAULT_WINDOW, *, mode: str = "clubs") -> Path:
 
 
 def _export_dir() -> Path:
-    """Папка для выгрузок из приложения (составы, трансферы, сборные)."""
-    d = Path.home() / "Downloads"
-    d.mkdir(parents=True, exist_ok=True)
-    return d
+    """Папка для выгрузок: Downloads, иначе data_dir/exports."""
+    for d in (Path.home() / "Downloads", _data_dir() / "exports", _APP_DIR / "exports"):
+        try:
+            d.mkdir(parents=True, exist_ok=True)
+            probe = d / ".tw_export_ok"
+            probe.write_text("ok", encoding="utf-8")
+            probe.unlink(missing_ok=True)
+            return d
+        except OSError:
+            continue
+    fallback = _data_dir() / "exports"
+    fallback.mkdir(parents=True, exist_ok=True)
+    return fallback
 
 
 def _enrich_teams_person_ids(teams: list) -> None:
@@ -1071,6 +1080,143 @@ def _write_export_xlsx(path: Path, rows: list[dict]) -> None:
     wb.save(path)
 
 
+def _handle_export(fmt: str, kind: str, draft: bool, data: dict, out_dir: Path) -> dict:
+    """Сформировать ответ /api/export (caller шлёт JSON)."""
+    if kind == "draft-bundle":
+        window = _normalize_window(data.get("window"))
+        suffix = f"_{window}_draft"
+        payload = build_state_payload(data)
+        inc = _incomplete_team_count(data)
+        files: list[dict] = []
+        squads_out = out_dir / f"squads_export{suffix}.txt"
+        _write_squads_txt(squads_out, payload, draft=True)
+        files.append({"kind": "squads", "path": str(squads_out)})
+        transfer_rows = payload.get("transfers") or compute_transfers(payload)
+        tr_out = out_dir / f"transfers_simple{suffix}.txt"
+        _write_transfers_simple_txt(tr_out, transfer_rows)
+        files.append({"kind": "transfers", "path": str(tr_out), "count": len(transfer_rows)})
+        state_out = out_dir / f"transfer_window_state{suffix}.json"
+        state_out.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        files.append({"kind": "state", "path": str(state_out)})
+        squad_players = sum(
+            1
+            for t in payload.get("teams") or []
+            for z in ("start", "bench", "reserve")
+            for p in t.get(z) or []
+            if p.get("name")
+        )
+        return {
+            "ok": True,
+            "files": files,
+            "transfers_count": len(transfer_rows),
+            "squad_players": squad_players,
+            "incomplete_teams": inc,
+            "export_dir": str(out_dir),
+        }
+    if kind == "wc-squads":
+        err = _squads_validation_error(data)
+        if err:
+            return {"ok": False, "error": err}
+        from utils.wc_squad_app import format_wc_squads_export_txt
+
+        out = out_dir / "wc_squads_export.txt"
+        out.write_text(
+            format_wc_squads_export_txt(data.get("teams") or []),
+            encoding="utf-8",
+        )
+        return {
+            "ok": True,
+            "path": str(out),
+            "count": sum(
+                1
+                for t in data.get("teams") or []
+                for z in ("start", "bench", "reserve")
+                for p in t.get(z) or []
+                if p.get("name")
+            ),
+            "nations": len(data.get("teams") or []),
+            "export_dir": str(out_dir),
+        }
+    if kind == "national":
+        from national_pools import (
+            build_all_national_pools,
+            write_national_pools_json,
+            write_national_pools_txt,
+        )
+
+        pools = build_all_national_pools()
+        if fmt == "json":
+            out = out_dir / "national_pools.json"
+            write_national_pools_json(str(out), pools)
+        else:
+            out = out_dir / "national_pools.txt"
+            write_national_pools_txt(str(out), pools)
+        return {
+            "ok": True,
+            "path": str(out),
+            "nations": len(pools.get("nations") or []),
+            "count": pools.get("player_count") or 0,
+            "export_dir": str(out_dir),
+        }
+    if kind == "transfers":
+        rows = compute_transfers(data)
+        window = _normalize_window(data.get("window"))
+        suffix = f"_{window}" + ("_draft" if draft else "")
+        if fmt == "xlsx":
+            out = out_dir / f"transfers_export{suffix}.xlsx"
+            try:
+                _write_export_xlsx(out, rows)
+            except ImportError:
+                return {"ok": False, "error": "нужен openpyxl"}
+        elif fmt == "simple":
+            out = out_dir / f"transfers_simple{suffix}.txt"
+            _write_transfers_simple_txt(out, rows)
+        else:
+            out = out_dir / f"transfers_export{suffix}.txt"
+            _write_export_txt(out, rows)
+        return {"ok": True, "path": str(out), "count": len(rows), "export_dir": str(out_dir)}
+    rows = compute_squads(data)
+    window = _normalize_window(data.get("window"))
+    suffix = f"_{window}" + ("_draft" if draft else "")
+    inc = _incomplete_team_count(data)
+    if fmt == "xlsx":
+        out = out_dir / f"squads_export{suffix}.xlsx"
+        try:
+            _write_squads_xlsx(out, rows)
+        except ImportError:
+            return {"ok": False, "error": "нужен openpyxl"}
+    elif fmt == "table":
+        out = out_dir / f"squads_table{suffix}.txt"
+        _write_squads_table_txt(out, rows)
+    else:
+        out = out_dir / f"squads_export{suffix}.txt"
+        payload = build_state_payload(data)
+        _write_squads_txt(out, payload, draft=draft or inc > 0)
+        return {
+            "ok": True,
+            "path": str(out),
+            "count": sum(
+                1
+                for t in data.get("teams") or []
+                for z in ("start", "bench", "reserve")
+                for p in t.get(z) or []
+                if p.get("name")
+            ),
+            "incomplete_teams": inc,
+            "export_dir": str(out_dir),
+        }
+    return {
+        "ok": True,
+        "path": str(out),
+        "count": len(rows),
+        "incomplete_teams": inc,
+        "export_dir": str(out_dir),
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:
         pass
@@ -1399,150 +1545,18 @@ class Handler(BaseHTTPRequestHandler):
             fmt = (qs.get("fmt") or ["txt"])[0]
             kind = (qs.get("kind") or ["squads"])[0]
             draft = (qs.get("draft") or ["0"])[0].lower() in ("1", "true", "yes")
-            data = self._read_json()
-            out_dir = _export_dir()
-            if kind == "draft-bundle":
-                window = _normalize_window(data.get("window"))
-                suffix = f"_{window}_draft"
-                payload = build_state_payload(data)
-                inc = _incomplete_team_count(data)
-                files: list[dict] = []
-                squads_out = out_dir / f"squads_export{suffix}.txt"
-                _write_squads_txt(squads_out, payload, draft=True)
-                files.append({"kind": "squads", "path": str(squads_out)})
-                transfer_rows = payload.get("transfers") or compute_transfers(payload)
-                tr_out = out_dir / f"transfers_simple{suffix}.txt"
-                _write_transfers_simple_txt(tr_out, transfer_rows)
-                files.append({"kind": "transfers", "path": str(tr_out), "count": len(transfer_rows)})
-                state_out = out_dir / f"transfer_window_state{suffix}.json"
-                state_out.write_text(
-                    json.dumps(payload, ensure_ascii=False, indent=2),
-                    encoding="utf-8",
-                )
-                files.append({"kind": "state", "path": str(state_out)})
-                squad_players = sum(
-                    1
-                    for t in payload.get("teams") or []
-                    for z in ("start", "bench", "reserve")
-                    for p in t.get(z) or []
-                    if p.get("name")
-                )
-                return self._send_json(
-                    {
-                        "ok": True,
-                        "files": files,
-                        "transfers_count": len(transfer_rows),
-                        "squad_players": squad_players,
-                        "incomplete_teams": inc,
-                    }
-                )
-            if kind == "wc-squads":
-                err = _squads_validation_error(data)
-                if err:
-                    return self._send_json({"ok": False, "error": err}, 400)
-                from utils.wc_squad_app import format_wc_squads_export_txt
-
-                out = out_dir / "wc_squads_export.txt"
-                out.write_text(
-                    format_wc_squads_export_txt(data.get("teams") or []),
-                    encoding="utf-8",
-                )
-                return self._send_json(
-                    {
-                        "ok": True,
-                        "path": str(out),
-                        "count": sum(
-                            1
-                            for t in data.get("teams") or []
-                            for z in ("start", "bench", "reserve")
-                            for p in t.get(z) or []
-                            if p.get("name")
-                        ),
-                        "nations": len(data.get("teams") or []),
-                    }
-                )
-            if kind == "national":
-                try:
-                    from national_pools import (
-                        build_all_national_pools,
-                        write_national_pools_json,
-                        write_national_pools_txt,
-                    )
-
-                    pools = build_all_national_pools()
-                except Exception as e:
-                    return self._send_json({"ok": False, "error": str(e)}, 500)
+            try:
+                data = self._read_json()
                 out_dir = _export_dir()
-                if fmt == "json":
-                    out = out_dir / "national_pools.json"
-                    write_national_pools_json(str(out), pools)
-                else:
-                    out = out_dir / "national_pools.txt"
-                    write_national_pools_txt(str(out), pools)
-                return self._send_json(
-                    {
-                        "ok": True,
-                        "path": str(out),
-                        "nations": len(pools.get("nations") or []),
-                        "count": pools.get("player_count") or 0,
-                    }
-                )
-            if kind == "transfers":
-                rows = compute_transfers(data)
-                window = _normalize_window(data.get("window"))
-                suffix = f"_{window}" + ("_draft" if draft else "")
-                if fmt == "xlsx":
-                    out = out_dir / f"transfers_export{suffix}.xlsx"
-                    try:
-                        _write_export_xlsx(out, rows)
-                    except ImportError:
-                        return self._send_json({"ok": False, "error": "нужен openpyxl"}, 500)
-                elif fmt == "simple":
-                    out = out_dir / f"transfers_simple{suffix}.txt"
-                    _write_transfers_simple_txt(out, rows)
-                else:
-                    out = out_dir / f"transfers_export{suffix}.txt"
-                    _write_export_txt(out, rows)
-                return self._send_json({"ok": True, "path": str(out), "count": len(rows)})
-            rows = compute_squads(data)
-            window = _normalize_window(data.get("window"))
-            suffix = f"_{window}" + ("_draft" if draft else "")
-            inc = _incomplete_team_count(data)
-            if fmt == "xlsx":
-                out = out_dir / f"squads_export{suffix}.xlsx"
-                try:
-                    _write_squads_xlsx(out, rows)
-                except ImportError:
-                    return self._send_json({"ok": False, "error": "нужен openpyxl"}, 500)
-            elif fmt == "table":
-                out = out_dir / f"squads_table{suffix}.txt"
-                _write_squads_table_txt(out, rows)
-            else:
-                out = out_dir / f"squads_export{suffix}.txt"
-                payload = build_state_payload(data)
-                _write_squads_txt(out, payload, draft=draft or inc > 0)
-                return self._send_json(
-                    {
-                        "ok": True,
-                        "path": str(out),
-                        "count": sum(
-                            1
-                            for t in data.get("teams") or []
-                            for z in ("start", "bench", "reserve")
-                            for p in t.get(z) or []
-                            if p.get("name")
-                        ),
-                        "incomplete_teams": inc,
-                    }
-                )
-            return self._send_json(
-                {
-                    "ok": True,
-                    "path": str(out),
-                    "count": len(rows),
-                    "incomplete_teams": inc,
-                }
-            )
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 500)
+            try:
+                result = _handle_export(fmt, kind, draft, data, out_dir)
+            except Exception as e:
+                _write_startup_log(f"export failed ({kind}/{fmt}): {e}")
+                return self._send_json({"ok": False, "error": str(e)}, 500)
+            status = 400 if not result.get("ok") else 200
+            return self._send_json(result, status)
         if parsed.path == "/api/import-wc-squads":
             data = self._read_json()
             text = str(data.get("text") or "")

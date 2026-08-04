@@ -201,7 +201,7 @@ def evaluate_team_squad(team: dict[str, Any], formation: dict[str, Any] | None) 
         "complete": complete,
         "missing_start": start_missing,
         "missing_reserve": missing_agg,
-        "missing_groups": missing,
+        "missing_groups": reserve_missing,
         "surplus_reserve": surplus_agg,
         "group_status": group_status,
         "groups": [
