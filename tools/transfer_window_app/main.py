@@ -878,6 +878,38 @@ def _squads_validation_error(data: dict) -> str | None:
     return head + "\n" + "\n".join(lines[:12]) + tail
 
 
+def _incomplete_team_count(data: dict) -> int:
+    mode = _normalize_mode(data.get("mode"))
+    teams = data.get("teams") or []
+    if mode == "nations":
+        from utils.wc_squad_quota import evaluate_wc_squad
+
+        n = 0
+        for team in teams:
+            roster = []
+            for zone in ("start", "bench", "reserve"):
+                for p in team.get(zone) or []:
+                    if p and p.get("name"):
+                        row = dict(p)
+                        row["status"] = zone
+                        if zone == "start" and row.get("slot"):
+                            row["lineup_slot"] = row["slot"]
+                        roster.append(row)
+            if not evaluate_wc_squad(roster).get("complete"):
+                n += 1
+        return n
+
+    from utils.transfer_squad_quota import evaluate_all_teams
+
+    formations = data.get("formations")
+    if not formations:
+        rp = _rosters_path()
+        if rp.is_file():
+            formations = json.loads(rp.read_text(encoding="utf-8")).get("formations") or []
+    ev = evaluate_all_teams(teams, formations or [])
+    return sum(1 for row in ev.get("teams") or [] if not row.get("complete"))
+
+
 def _squad_rules_payload(mode: str = "clubs") -> dict:
     if _normalize_mode(mode) == "nations":
         from utils.wc_squad_quota import WC_BENCH, WC_RESERVE, WC_START, WC_TOTAL
@@ -930,9 +962,14 @@ def build_state_payload(data: dict) -> dict:
     return state
 
 
-def _write_squads_txt(path: Path, state: dict) -> None:
+def _write_squads_txt(path: Path, state: dict, *, draft: bool = False) -> None:
     """Текстовые заявки @Клуб (как в боте) + таблица статусов."""
     lines: list[str] = []
+    if draft:
+        window = _normalize_window(state.get("window"))
+        inc = _incomplete_team_count(state)
+        lines.append(f"# ЧЕРНОВИК ({window}) — неполных клубов: {inc}")
+        lines.append("")
     for team in state.get("teams") or []:
         tname = team["name"]
         lines.append(f"@{tname}")
@@ -1340,12 +1377,48 @@ class Handler(BaseHTTPRequestHandler):
             qs = parse_qs(parsed.query)
             fmt = (qs.get("fmt") or ["txt"])[0]
             kind = (qs.get("kind") or ["squads"])[0]
+            draft = (qs.get("draft") or ["0"])[0].lower() in ("1", "true", "yes")
             data = self._read_json()
-            if kind in ("squads", "wc-squads"):
+            if kind in ("squads", "wc-squads") and not draft:
                 err = _squads_validation_error(data)
                 if err:
                     return self._send_json({"ok": False, "error": err}, 400)
             out_dir = _export_dir()
+            if kind == "draft-bundle":
+                window = _normalize_window(data.get("window"))
+                suffix = f"_{window}_draft"
+                payload = build_state_payload(data)
+                inc = _incomplete_team_count(data)
+                files: list[dict] = []
+                squads_out = out_dir / f"squads_export{suffix}.txt"
+                _write_squads_txt(squads_out, payload, draft=True)
+                files.append({"kind": "squads", "path": str(squads_out)})
+                transfer_rows = payload.get("transfers") or compute_transfers(payload)
+                tr_out = out_dir / f"transfers_simple{suffix}.txt"
+                _write_transfers_simple_txt(tr_out, transfer_rows)
+                files.append({"kind": "transfers", "path": str(tr_out), "count": len(transfer_rows)})
+                state_out = out_dir / f"transfer_window_state{suffix}.json"
+                state_out.write_text(
+                    json.dumps(payload, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                files.append({"kind": "state", "path": str(state_out)})
+                squad_players = sum(
+                    1
+                    for t in payload.get("teams") or []
+                    for z in ("start", "bench", "reserve")
+                    for p in t.get(z) or []
+                    if p.get("name")
+                )
+                return self._send_json(
+                    {
+                        "ok": True,
+                        "files": files,
+                        "transfers_count": len(transfer_rows),
+                        "squad_players": squad_players,
+                        "incomplete_teams": inc,
+                    }
+                )
             if kind == "wc-squads":
                 from utils.wc_squad_app import format_wc_squads_export_txt
 
@@ -1397,7 +1470,7 @@ class Handler(BaseHTTPRequestHandler):
             if kind == "transfers":
                 rows = compute_transfers(data)
                 window = _normalize_window(data.get("window"))
-                suffix = f"_{window}"
+                suffix = f"_{window}" + ("_draft" if draft else "")
                 if fmt == "xlsx":
                     out = out_dir / f"transfers_export{suffix}.xlsx"
                     try:
@@ -1413,7 +1486,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json({"ok": True, "path": str(out), "count": len(rows)})
             rows = compute_squads(data)
             window = _normalize_window(data.get("window"))
-            suffix = f"_{window}"
+            suffix = f"_{window}" + ("_draft" if draft else "")
+            inc = _incomplete_team_count(data) if draft else 0
             if fmt == "xlsx":
                 out = out_dir / f"squads_export{suffix}.xlsx"
                 try:
@@ -1425,7 +1499,8 @@ class Handler(BaseHTTPRequestHandler):
                 _write_squads_table_txt(out, rows)
             else:
                 out = out_dir / f"squads_export{suffix}.txt"
-                _write_squads_txt(out, data)
+                payload = build_state_payload(data)
+                _write_squads_txt(out, payload, draft=draft)
                 return self._send_json(
                     {
                         "ok": True,
@@ -1437,9 +1512,17 @@ class Handler(BaseHTTPRequestHandler):
                             for p in t.get(z) or []
                             if p.get("name")
                         ),
+                        "incomplete_teams": inc,
                     }
                 )
-            return self._send_json({"ok": True, "path": str(out), "count": len(rows)})
+            return self._send_json(
+                {
+                    "ok": True,
+                    "path": str(out),
+                    "count": len(rows),
+                    "incomplete_teams": inc,
+                }
+            )
         if parsed.path == "/api/import-wc-squads":
             data = self._read_json()
             text = str(data.get("text") or "")
