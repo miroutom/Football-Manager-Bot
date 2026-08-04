@@ -2475,21 +2475,38 @@ function setupFaSignForm() {
 
 async function importSquadsFromFile(file) {
   const text = await file.text();
-  const res = await fetch("/api/import-squads", {
+  const isJson = file.name.toLowerCase().endsWith(".json") || text.trimStart().startsWith("{");
+  const url = isJson ? "/api/import-state" : "/api/import-squads";
+  const body = isJson ? JSON.parse(text) : { text, teams };
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, teams }),
+    body: JSON.stringify(body),
   });
   const j = await res.json();
   if (!j.ok) throw new Error(j.error || "import failed");
   pushUndo();
   teams = j.teams;
+  if (j.baseline_home) baselineHome = { ...j.baseline_home };
+  if (Array.isArray(j.free_agents)) {
+    freeAgents = j.free_agents.map((p) => ({ ...p, status: p.status || "bench", fired: !!p.fired }));
+  }
+  if (j.removed_from_squad) removedFromSquad = { ...j.removed_from_squad };
+  if (j.window === "summer" || j.window === "winter") {
+    currentWindow = j.window;
+    localStorage.setItem("tw_window", currentWindow);
+    applyWindowQuotas({ windows: {} }, currentWindow);
+  }
+  rekeyClubPlayersWithWrongIds();
+  if (lastRosters) repairBaselineHomeFromRosters(lastRosters);
   dedupeGlobally(teams);
   applyInjuryFlags(teams);
   markDirty();
   renderAll();
   const note = (j.notes || []).join("; ");
-  setStatus(note || "составы обновлены из бота");
+  const kind = j.full ? "полная загрузка" : "обновление карточек";
+  const tr = j.transfers_count != null ? ` · трансферов: ${j.transfers_count}` : "";
+  setStatus(`${kind}${tr}${note ? ` · ${note}` : ""}`);
 }
 
 function setFreeAgentsFromImport(players) {

@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+import re
 import sys
 import threading
 import webbrowser
@@ -683,6 +684,232 @@ def import_fa_payload(data: dict, *, sync_db: bool = True) -> tuple[list[dict], 
     except Exception:
         players = [p for row in raw if (p := _normalize_fa_player(row if isinstance(row, dict) else {}))]
     return players, notes
+
+
+_EMPTY_PLAYER = {"id": None, "name": None, "position": None, "overall": None, "injured": False}
+FA_TEAM_LABEL = "Free Agent"
+
+
+def _looks_like_squads_export(text: str) -> bool:
+    t = text or ""
+    return "@" in t and re.search(r"(?im)^=+\s*start\s*=+", t) is not None
+
+
+def _parse_transfers_appendix(text: str) -> list[dict]:
+    m = re.search(r"(?im)^===\s*transfers\s*===(.*)\Z", text or "", re.DOTALL)
+    if not m:
+        return []
+    rows: list[dict] = []
+    for raw in m.group(1).splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        hit = re.match(
+            r"^(.+?)\s+(\S+)\s+(\d+)\s+(.+?)\s+->\s+(.+?)(?:\s+\((\w+)\))?\s*$",
+            line,
+        )
+        if not hit:
+            continue
+        rows.append(
+            {
+                "name": hit.group(1).strip(),
+                "position": hit.group(2).strip().upper(),
+                "overall": int(hit.group(3)),
+                "from_team": hit.group(4).strip(),
+                "to_team": hit.group(5).strip(),
+                "status": (hit.group(6) or "bench").strip(),
+            }
+        )
+    return rows
+
+
+def _build_player_lookup(*team_lists: list[dict] | None) -> dict[tuple[str, str], dict]:
+    out: dict[tuple[str, str], dict] = {}
+    for team_list in team_lists:
+        for team in team_list or []:
+            for zone in ("start", "bench", "reserve"):
+                for p in team.get(zone) or []:
+                    if not p or not p.get("name"):
+                        continue
+                    key = (
+                        str(p["name"]).strip().casefold(),
+                        str(p.get("position") or "").strip().upper(),
+                    )
+                    if key not in out:
+                        out[key] = dict(p)
+                    else:
+                        prev = out[key]
+                        for fld in ("person_id", "id", "nickname", "nation", "injured", "injury_from", "injury_until", "injury_months"):
+                            if p.get(fld) is not None and prev.get(fld) is None:
+                                prev[fld] = p[fld]
+    return out
+
+
+def _lookup_original_home(name: str, position: str, rosters_baseline: dict, rosters_teams: list[dict]) -> str | None:
+    nm = str(name or "").strip().casefold()
+    pos = str(position or "").strip().upper()
+    for pid, home in (rosters_baseline or {}).items():
+        parts = str(pid).split("|")
+        if len(parts) >= 3 and parts[1].strip().casefold() == nm and parts[2].strip().upper() == pos:
+            return home
+    for team in rosters_teams or []:
+        tname = team.get("name") or ""
+        for zone in ("start", "bench", "reserve"):
+            for p in team.get(zone) or []:
+                if not p or not p.get("name"):
+                    continue
+                if str(p["name"]).strip().casefold() == nm and str(p.get("position") or "").strip().upper() == pos:
+                    pid = p.get("id")
+                    if pid and pid in rosters_baseline:
+                        return rosters_baseline[pid]
+                    return tname
+    return None
+
+
+def _make_player_card(
+    name: str,
+    position: str,
+    overall: int | None,
+    team_name: str,
+    lookup: dict[tuple[str, str], dict],
+) -> dict:
+    pos = str(position or "").strip().upper()
+    key = (str(name).strip().casefold(), pos)
+    base = lookup.get(key, {})
+    pid = base.get("id") or f"{team_name}|{name}|{pos}"
+    card = {
+        "id": pid,
+        "name": str(name).strip(),
+        "position": pos,
+        "overall": int(overall or base.get("overall") or 72),
+        "injured": bool(base.get("injured")),
+    }
+    if base.get("person_id"):
+        card["person_id"] = base["person_id"]
+    for fld in ("injury_from", "injury_until", "injury_months", "nickname", "nation"):
+        if base.get(fld) is not None:
+            card[fld] = base[fld]
+    return card
+
+
+def _fill_start_from_export(team: dict, entries: list, lookup: dict) -> list[dict]:
+    team_name = team.get("name") or ""
+    start_entries = [e for e in entries if (e[2] or "").lower() == "start"]
+    by_slot: dict[str, tuple] = {}
+    loose: list[tuple] = []
+    for ent in start_entries:
+        slot = (ent[5] or "").strip().upper()
+        if slot:
+            by_slot[slot] = ent
+        else:
+            loose.append(ent)
+    new_start: list[dict] = []
+    for slot_obj in team.get("start") or []:
+        slot_id = str(slot_obj.get("slot") or "").upper()
+        ent = by_slot.pop(slot_id, None)
+        if ent is None and loose:
+            ent = loose.pop(0)
+        if ent:
+            name, pos, _, ovr, _, slot = ent
+            card = _make_player_card(name, pos, ovr, team_name, lookup)
+            row = {**slot_obj, **card, "slot": slot_obj.get("slot") or slot}
+        else:
+            row = {
+                **_EMPTY_PLAYER,
+                "injured": False,
+                "slot": slot_obj.get("slot"),
+                "x": slot_obj.get("x"),
+                "y": slot_obj.get("y"),
+            }
+        new_start.append(row)
+    return new_start
+
+
+def _fill_zone_from_export(
+    template: list[dict], entries: list, lookup: dict, team_name: str, status: str
+) -> list[dict]:
+    zone_entries = [e for e in entries if (e[2] or "").lower() == status]
+    new_zone: list[dict] = []
+    for ent in zone_entries:
+        name, pos, _, ovr, _, _ = ent
+        new_zone.append({**_EMPTY_PLAYER, **_make_player_card(name, pos, ovr, team_name, lookup)})
+    while len(new_zone) < len(template or []):
+        new_zone.append({**_EMPTY_PLAYER, "injured": False})
+    return new_zone[: len(template or [])]
+
+
+def _rebuild_baseline_from_squads(
+    teams: list[dict],
+    rosters_baseline: dict,
+    rosters_teams: list[dict],
+    transfers_appendix: list[dict],
+) -> dict[str, str]:
+    baseline = dict(rosters_baseline or {})
+    loc: dict[tuple[str, str], tuple[str, str]] = {}
+    for team in teams:
+        tname = team.get("name") or ""
+        for zone in ("start", "bench", "reserve"):
+            for p in team.get(zone) or []:
+                if not p or not p.get("id") or not p.get("name"):
+                    continue
+                key = (str(p["name"]).strip().casefold(), str(p.get("position") or "").strip().upper())
+                loc[key] = (tname, p["id"])
+    for tr in transfers_appendix:
+        key = (str(tr.get("name") or "").strip().casefold(), str(tr.get("position") or "").strip().upper())
+        hit = loc.get(key)
+        if hit:
+            baseline[hit[1]] = tr.get("from_team") or baseline.get(hit[1], hit[0])
+    for team in teams:
+        tname = team.get("name") or ""
+        for zone in ("start", "bench", "reserve"):
+            for p in team.get(zone) or []:
+                if not p or not p.get("id") or not p.get("name"):
+                    continue
+                orig = _lookup_original_home(p["name"], p.get("position") or "", rosters_baseline, rosters_teams)
+                if orig and orig != tname:
+                    baseline[p["id"]] = orig
+                elif p["id"] not in baseline:
+                    baseline[p["id"]] = tname
+    return baseline
+
+
+def _apply_squads_export_full(
+    teams_in: list[dict],
+    text: str,
+    rosters_baseline: dict | None = None,
+    rosters_teams: list[dict] | None = None,
+) -> tuple[list[dict], dict[str, str], list[str]]:
+    """Полная загрузка squads_export_*.txt в состояние приложения."""
+    from scripts.apply_bulk_squad_declarations import resolve_team_label, split_bulk_blocks
+    from utils.roster_manual import parse_squad_declaration_text
+    from utils.transfer_window_apply import strip_transfers_appendix
+
+    teams = json.loads(json.dumps(teams_in))
+    by_name = {t["name"]: t for t in teams}
+    notes: list[str] = []
+    transfers_appendix = _parse_transfers_appendix(text)
+    lookup = _build_player_lookup(teams, rosters_teams or [])
+    body = strip_transfers_appendix(text or "")
+    applied = 0
+    for team_raw, block in split_bulk_blocks(body):
+        team_name = resolve_team_label(team_raw)
+        team = by_name.get(team_name)
+        if not team:
+            notes.append(f"нет команды: {team_name}")
+            continue
+        entries, errors = parse_squad_declaration_text(block)
+        if errors:
+            notes.append(f"{team_name}: {errors[0]}")
+            continue
+        team["start"] = _fill_start_from_export(team, entries, lookup)
+        team["bench"] = _fill_zone_from_export(team.get("bench") or [], entries, lookup, team_name, "bench")
+        team["reserve"] = _fill_zone_from_export(team.get("reserve") or [], entries, lookup, team_name, "reserve")
+        applied += 1
+    baseline = _rebuild_baseline_from_squads(
+        teams, rosters_baseline or {}, rosters_teams or [], transfers_appendix
+    )
+    notes.insert(0, f"загружено клубов: {applied}, трансферов в файле: {len(transfers_appendix)}")
+    return teams, baseline, notes
 
 
 def _merge_squads_from_bot_export(
@@ -1573,8 +1800,47 @@ class Handler(BaseHTTPRequestHandler):
             data = self._read_json()
             text = str(data.get("text") or "")
             teams_in = data.get("teams") or []
+            if _looks_like_squads_export(text):
+                rosters: dict = {}
+                rp = _rosters_path()
+                if rp.is_file():
+                    rosters = json.loads(rp.read_text(encoding="utf-8"))
+                updated, baseline, notes = _apply_squads_export_full(
+                    teams_in,
+                    text,
+                    rosters.get("baseline_home") or {},
+                    rosters.get("teams") or [],
+                )
+                return self._send_json(
+                    {
+                        "ok": True,
+                        "teams": updated,
+                        "baseline_home": baseline,
+                        "notes": notes,
+                        "full": True,
+                    }
+                )
             updated, notes = _merge_squads_from_bot_export(teams_in, text)
-            return self._send_json({"ok": True, "teams": updated, "notes": notes})
+            return self._send_json({"ok": True, "teams": updated, "notes": notes, "full": False})
+        if parsed.path == "/api/import-state":
+            data = self._read_json()
+            raw = data.get("state") if isinstance(data.get("state"), dict) else data
+            if not isinstance(raw, dict) or not raw.get("teams"):
+                return self._send_json({"ok": False, "error": "нужен transfer_window_state_*.json"}, 400)
+            payload = build_state_payload(raw)
+            return self._send_json(
+                {
+                    "ok": True,
+                    "teams": payload.get("teams") or [],
+                    "baseline_home": payload.get("baseline_home") or {},
+                    "free_agents": payload.get("free_agents") or [],
+                    "removed_from_squad": payload.get("removed_from_squad") or {},
+                    "window": payload.get("window"),
+                    "season": payload.get("season"),
+                    "transfers_count": len(payload.get("transfers") or []),
+                    "full": True,
+                }
+            )
         if parsed.path == "/api/import-national-pools":
             data = self._read_json()
             try:
