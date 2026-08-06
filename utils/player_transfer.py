@@ -250,6 +250,85 @@ def _insert_fresh_row_at_team(
     _cascade_status(sess, Cls, to_team, pos_u, row, new_status)
 
 
+def _positions_compatible(want: str, have: str) -> bool:
+    """Смежные позиции при подписании FA (ЦП↔ЦОП, фланги, борьба)."""
+    w, h = _norm_cmp(want), _norm_cmp(have)
+    if not w or not h:
+        return True
+    if w == h:
+        return True
+    alias_groups = (
+        ("ЦП", "ЦОП"),
+        ("ЛФА", "ПФА"),
+        ("ЛЗ", "ПЗ"),
+    )
+    for a, b in alias_groups:
+        if {w, h} == {_norm_cmp(a), _norm_cmp(b)}:
+            return True
+    return False
+
+
+def _find_fa_donor(fa_sess, player: str, position: str) -> tuple[type | None, Any | None]:
+    want_name = _norm_cmp(player)
+    want_pos = _norm_cmp(position)
+    hits: list[tuple[type, Any, int]] = []
+    for Cls in _ALL_PLAYER:
+        for r in fa_sess.query(Cls).all():
+            if _norm_cmp(getattr(r, "name", "") or "") != want_name:
+                continue
+            rp = _norm_cmp(getattr(r, "position", "") or "")
+            if want_pos and rp == want_pos:
+                score = 3
+            elif _positions_compatible(position, rp):
+                score = 2
+            elif not want_pos:
+                score = 1
+            else:
+                continue
+            hits.append((Cls, r, score))
+    if not hits:
+        return None, None
+    Cls, row, _ = max(hits, key=lambda x: (x[2], int(getattr(x[1], "overall", 0) or 0)))
+    return Cls, row
+
+
+def _find_active_club_source(sess, player: str, position: str) -> tuple[str, str] | None:
+    """Если в экспорте ошибочно FA, а игрок ещё в клубе — вернуть (club, position)."""
+    from utils.free_agents_db import is_free_agent_team
+
+    want_name = _norm_cmp(player)
+    want_pos = _norm_cmp(position)
+    hits: list[tuple[str, str, int]] = []
+    for Cls in _ALL_PLAYER:
+        q = sess.query(Cls)
+        if hasattr(Cls, "left_team"):
+            q = q.filter(Cls.left_team.is_(False))
+        for r in q.all():
+            if _norm_cmp(getattr(r, "name", "") or "") != want_name:
+                continue
+            team = (getattr(r, "team", "") or "").strip()
+            if not team or is_free_agent_team(team):
+                continue
+            rp = _norm_cmp(getattr(r, "position", "") or "")
+            if want_pos and rp == want_pos:
+                score = 3
+            elif _positions_compatible(position, rp):
+                score = 2
+            elif not want_pos:
+                score = 1
+            else:
+                score = 0
+            if score <= 0:
+                continue
+            hits.append((team, (getattr(r, "position", "") or "").strip().upper(), score))
+    if not hits:
+        return None
+    team, pos, _ = max(hits, key=lambda x: (x[2], x[1]))
+    if not pos:
+        return None
+    return team, pos
+
+
 def _player_already_at_team(sess, player: str, team: str, position: str) -> bool:
     for Cls in _ALL_PLAYER:
         if _row_exists_at_team(sess, Cls, player, team, position):
@@ -474,25 +553,28 @@ def _apply_fa_sign_with_status(
 
     fa_sess, fa_eng = open_fa_session()
     counts: dict[str, int] = {"league": 0, "cl": 0}
-    want_name = _norm_cmp(player)
-    want_pos = _norm_cmp(position)
     donor = None
     donor_cls = None
     try:
-        for Cls in _ALL_PLAYER:
-            for r in fa_sess.query(Cls).all():
-                if _norm_cmp(getattr(r, "name", "") or "") != want_name:
-                    continue
-                if want_pos and _norm_cmp(getattr(r, "position", "") or "") != want_pos:
-                    continue
-                donor_cls, donor = Cls, r
-                break
-            if donor is not None:
-                break
+        donor_cls, donor = _find_fa_donor(fa_sess, player, position)
         if donor is None or donor_cls is None:
+            src = _find_active_club_source(session_league, player, position)
+            if src is not None:
+                actual_team, actual_pos = src
+                return _apply_transfer_with_status_to_sessions(
+                    session_league,
+                    session_cl,
+                    player,
+                    actual_team,
+                    actual_pos,
+                    to_team,
+                    new_status,
+                    new_overall=new_overall,
+                )
             raise ValueError(f"Свободный агент не найден: {player} ({position})")
 
         pos_u = (position or getattr(donor, "position", "") or "").strip().upper()
+        donor_pos = (getattr(donor, "position", "") or pos_u).strip().upper()
         st = (new_status or getattr(donor, "status", None) or "bench")
         st = str(st).strip().lower() if st else "bench"
         if st not in ("start", "bench", "reserve"):
@@ -510,7 +592,7 @@ def _apply_fa_sign_with_status(
             )
             if counts["cl"]:
                 session_cl.commit()
-            remove_free_agent_after_signing(player, position)
+            remove_free_agent_after_signing(player, donor_pos)
             return counts
 
         _insert_fresh_row_at_team(
@@ -539,7 +621,7 @@ def _apply_fa_sign_with_status(
         fa_sess.close()
         fa_eng.dispose()
 
-    remove_free_agent_after_signing(player, position)
+    remove_free_agent_after_signing(player, donor_pos)
     return counts
 
 

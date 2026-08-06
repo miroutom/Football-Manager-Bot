@@ -387,18 +387,19 @@ def update_free_agent_player_fields(
 
 def remove_free_agent_after_signing(name: str, position: str) -> bool:
     """Удалить строку FA после подписания в клуб (стата уходит в league.db)."""
-    from utils.player_transfer import _cls_for_position, _norm_cmp
+    from utils.player_transfer import _find_fa_donor, _norm_cmp
 
     sess, eng = open_fa_session()
     removed = False
     try:
-        Cls = _cls_for_position(position)
+        donor_cls, donor = _find_fa_donor(sess, name, position)
+        if donor is None or donor_cls is None:
+            return False
         want_n = _norm_cmp(name)
-        want_p = _norm_cmp(position)
-        for r in list(sess.query(Cls).all()):
+        for r in list(sess.query(donor_cls).all()):
             if _norm_cmp(getattr(r, "name", "") or "") != want_n:
                 continue
-            if want_p and _norm_cmp(getattr(r, "position", "") or "") != want_p:
+            if int(getattr(r, "id", 0) or 0) != int(getattr(donor, "id", 0) or 0):
                 continue
             sess.delete(r)
             removed = True
