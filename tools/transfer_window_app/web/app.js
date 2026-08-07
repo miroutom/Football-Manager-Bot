@@ -2002,10 +2002,45 @@ function resolveCatalogNation(text) {
   return null;
 }
 
-function nationPrefixMatches(text) {
-  const q = normNat(text);
-  if (!q) return false;
-  return nationsList.some((n) => normNat(n).includes(q));
+/** Любая страна: точное совпадение с каталогом ЧМ или произвольный текст. */
+function commitNationPickerValue(input, hidden) {
+  const raw = input.value.trim();
+  const resolved = resolveCatalogNation(raw);
+  input.classList.remove("invalid");
+  hidden.value = resolved || raw;
+  return true;
+}
+
+function appendNationSuggestionItems(list, input, hidden, raw, matches, onPick) {
+  list.innerHTML = "";
+  const q = normNat(raw);
+  if (raw && !matches.some((n) => normNat(n) === q)) {
+    const custom = document.createElement("li");
+    custom.className = "nation-custom";
+    custom.textContent = `Использовать «${raw}»`;
+    custom.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      input.value = raw;
+      commitNationPickerValue(input, hidden);
+      list.classList.add("hidden");
+      onPick?.();
+    });
+    list.appendChild(custom);
+  }
+  matches.slice(0, 16).forEach((n) => {
+    const li = document.createElement("li");
+    li.textContent = n;
+    li.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      input.value = n;
+      commitNationPickerValue(input, hidden);
+      list.classList.add("hidden");
+      onPick?.();
+    });
+    list.appendChild(li);
+  });
+  if (list.childElementCount) list.classList.remove("hidden");
+  else list.classList.add("hidden");
 }
 
 function resetNationPicker() {
@@ -2026,14 +2061,7 @@ function setupNationPicker() {
   const list = document.getElementById("form-nation-suggestions");
   if (!input || !hidden || !list) return;
 
-  const validateNation = () => {
-    const raw = input.value.trim();
-    const resolved = resolveCatalogNation(raw);
-    const invalid = raw.length > 0 && !resolved && !nationPrefixMatches(raw);
-    input.classList.toggle("invalid", invalid);
-    hidden.value = resolved || "";
-    return !invalid;
-  };
+  const validateNation = () => commitNationPickerValue(input, hidden);
 
   const showSuggestions = () => {
     const raw = input.value.trim();
@@ -2041,27 +2069,12 @@ function setupNationPicker() {
     const matches = q
       ? nationsList.filter((n) => normNat(n).includes(q))
       : nationsList.slice();
-    list.innerHTML = "";
-    if (!matches.length) {
-      list.classList.add("hidden");
-      return;
-    }
     if (matches.length === 1 && normNat(matches[0]) === q) {
       list.classList.add("hidden");
+      validateNation();
       return;
     }
-    matches.slice(0, 16).forEach((n) => {
-      const li = document.createElement("li");
-      li.textContent = n;
-      li.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        input.value = n;
-        validateNation();
-        list.classList.add("hidden");
-      });
-      list.appendChild(li);
-    });
-    list.classList.remove("hidden");
+    appendNationSuggestionItems(list, input, hidden, raw, matches, validateNation);
   };
 
   if (!input.dataset.nationBound) {
@@ -2109,10 +2122,7 @@ function setupPlayerForm() {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (window.__twValidateNation && !window.__twValidateNation()) {
-      setStatus("нация не из списка — выбери из подсказок или оставь пустым");
-      return;
-    }
+    if (window.__twValidateNation) window.__twValidateNation();
     const fd = new FormData(form);
     const name = String(fd.get("name") || "").trim();
     const nickname = String(fd.get("nickname") || "").trim();
@@ -2216,14 +2226,7 @@ function setupEditNationPicker() {
   if (!input || !hidden || !list || input.dataset.bound === "1") return;
   input.dataset.bound = "1";
 
-  const validateNation = () => {
-    const raw = input.value.trim();
-    const resolved = resolveCatalogNation(raw);
-    const invalid = raw.length > 0 && !resolved && !nationPrefixMatches(raw);
-    input.classList.toggle("invalid", invalid);
-    hidden.value = resolved || "";
-    return !invalid;
-  };
+  const validateNation = () => commitNationPickerValue(input, hidden);
 
   const showSuggestions = () => {
     const raw = input.value.trim();
@@ -2231,28 +2234,12 @@ function setupEditNationPicker() {
     const matches = q
       ? nationsList.filter((n) => normNat(n).includes(q))
       : nationsList.slice();
-    list.innerHTML = "";
-    if (!matches.length) {
-      list.classList.add("hidden");
-      return;
-    }
     if (matches.length === 1 && normNat(matches[0]) === q) {
       list.classList.add("hidden");
+      validateNation();
       return;
     }
-    matches.slice(0, 16).forEach((n) => {
-      const li = document.createElement("li");
-      li.textContent = n;
-      li.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        input.value = n;
-        hidden.value = n;
-        list.classList.add("hidden");
-        validateNation();
-      });
-      list.appendChild(li);
-    });
-    list.classList.remove("hidden");
+    appendNationSuggestionItems(list, input, hidden, raw, matches, validateNation);
   };
 
   input.addEventListener("input", () => {
@@ -2376,10 +2363,7 @@ function setupPlayerEditForm() {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (window.__twValidateEditNation && !window.__twValidateEditNation()) {
-      setStatus("нация не из списка — выбери из подсказок или оставь пустым");
-      return;
-    }
+    if (window.__twValidateEditNation) window.__twValidateEditNation();
     const oldId = document.getElementById("edit-player-id")?.value || "";
     const team = document.getElementById("edit-team")?.value || "";
     const oldName = document.getElementById("edit-old-name")?.value || "";
