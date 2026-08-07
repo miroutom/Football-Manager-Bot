@@ -660,6 +660,7 @@ def apply_transfer_with_status(
     new_status: str | None,
     *,
     rebuild_common: bool = True,
+    mirror_synced: bool = True,
     new_overall: int | None = None,
     nation_update: bool = False,
     new_nation: str | None = None,
@@ -683,16 +684,17 @@ def apply_transfer_with_status(
             from utils.common_db import rebuild_common_database
 
             rebuild_common_database()
-        from utils import cumulative_mirror
+        if mirror_synced:
+            from utils import cumulative_mirror
 
-        cumulative_mirror.mirror_transfer_with_status(
-            player,
-            from_team,
-            position,
-            to_team,
-            new_status,
-            new_overall=new_overall,
-        )
+            cumulative_mirror.mirror_transfer_with_status(
+                player,
+                from_team,
+                position,
+                to_team,
+                new_status,
+                new_overall=new_overall,
+            )
         return counts
 
     if is_free_agent_team(to_team):
@@ -707,16 +709,17 @@ def apply_transfer_with_status(
             from utils.common_db import rebuild_common_database
 
             rebuild_common_database()
-        from utils import cumulative_mirror
+        if mirror_synced:
+            from utils import cumulative_mirror
 
-        cumulative_mirror.mirror_transfer_with_status(
-            player,
-            from_team,
-            position,
-            to_team,
-            new_status,
-            new_overall=new_overall,
-        )
+            cumulative_mirror.mirror_transfer_with_status(
+                player,
+                from_team,
+                position,
+                to_team,
+                new_status,
+                new_overall=new_overall,
+            )
         return counts
 
     counts = _apply_transfer_with_status_to_sessions(
@@ -753,18 +756,19 @@ def apply_transfer_with_status(
 
     migrate_cl_discipline_team(player, to_team)
 
-    from utils import cumulative_mirror
+    if mirror_synced:
+        from utils import cumulative_mirror
 
-    cumulative_mirror.mirror_transfer_with_status(
-        player,
-        from_team,
-        position,
-        to_team,
-        new_status,
-        new_overall=new_overall,
-        nation_update=nation_update,
-        new_nation=new_nation,
-    )
+        cumulative_mirror.mirror_transfer_with_status(
+            player,
+            from_team,
+            position,
+            to_team,
+            new_status,
+            new_overall=new_overall,
+            nation_update=nation_update,
+            new_nation=new_nation,
+        )
     return counts
 
 

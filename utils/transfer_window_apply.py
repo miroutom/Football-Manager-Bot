@@ -182,13 +182,14 @@ def apply_transfers(transfers: list[dict[str, Any]], *, dry_run: bool = False) -
             to,
             st,
             rebuild_common=False,
+            mirror_synced=False,
             new_overall=ovr_i if ovr_i else None,
         )
         n_ok += 1
     return n_ok
 
 
-def apply_squads_text(text: str, *, dry_run: bool = False) -> int:
+def apply_squads_text(text: str, *, dry_run: bool = False, mirror_synced: bool = True) -> int:
     from scripts.apply_bulk_squad_declarations import resolve_team_label, split_bulk_blocks
     from utils.roster_manual import apply_team_squad_declaration, parse_squad_declaration_text
 
@@ -203,7 +204,7 @@ def apply_squads_text(text: str, *, dry_run: bool = False) -> int:
         if dry_run:
             n += 1
             continue
-        apply_team_squad_declaration(team, entries)
+        apply_team_squad_declaration(team, entries, mirror_synced=mirror_synced)
         n += 1
     return n
 
@@ -252,7 +253,7 @@ def apply_transfer_window_upload(
             "Файл составов не похож на squads_export_*.txt (@Клуб, секции start/bench/reserve)."
         )
     if not dry_run:
-        res.squads_ok = apply_squads_text(squads_text, dry_run=False)
+        res.squads_ok = apply_squads_text(squads_text, dry_run=False, mirror_synced=False)
         res.lines.append(f"✓ Заявки клубов: {res.squads_ok}")
     else:
         from scripts.apply_bulk_squad_declarations import split_bulk_blocks
