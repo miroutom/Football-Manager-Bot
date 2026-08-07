@@ -588,6 +588,14 @@ def _nations_flat(catalog: dict[str, list[str]] | None = None) -> list[str]:
     return out
 
 
+def _nations_for_picker(wc_catalog: dict[str, list[str]] | None = None) -> list[str]:
+    """Полный список стран для подсказок + сборные ЧМ из конфига."""
+    from utils.nations_catalog import nations_for_picker
+
+    wc_flat = _nations_flat(wc_catalog) if wc_catalog else _nations_flat()
+    return nations_for_picker(extra=wc_flat)
+
+
 def _load_coaches_list() -> list[str]:
     try:
         from coach_squad_state import list_coach_display_names
@@ -1656,17 +1664,18 @@ class Handler(BaseHTTPRequestHandler):
                     "squad_rules": _squad_rules_payload("clubs"),
                     "multiplayer": _multiplayer_config_payload(),
                     "nations_by_confederation": nations_catalog,
-                    "nations": _nations_flat(nations_catalog),
+                    "nations": _nations_for_picker(nations_catalog),
                 }
             )
         if path == "/api/nations":
             catalog = _load_nations_catalog()
+            picker = _nations_for_picker(catalog)
             return self._send_json(
                 {
                     "ok": True,
                     "nations_by_confederation": catalog,
-                    "nations": _nations_flat(catalog),
-                    "count": len(_nations_flat(catalog)),
+                    "nations": picker,
+                    "count": len(picker),
                 }
             )
         if path == "/api/coaches":
