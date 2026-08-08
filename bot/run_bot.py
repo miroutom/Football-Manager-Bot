@@ -41,8 +41,27 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
+_log = logging.getLogger(__name__)
+
+
+async def _migrate_free_agents_background() -> None:
+    """Не блокировать polling: перенос FA из league/cl в free_agents.db."""
+    try:
+        from utils.free_agents_db import ensure_free_agents_db, migrate_free_agents_from_league_dbs
+
+        _log.info("Startup: FA migration (background)…")
+        await asyncio.to_thread(ensure_free_agents_db)
+        stats = await asyncio.to_thread(migrate_free_agents_from_league_dbs)
+        if stats.get("migrated") or stats.get("removed_league"):
+            _log.info("Startup: FA migration done: %s", stats)
+        else:
+            _log.info("Startup: FA migration done (no changes)")
+    except Exception:
+        _log.exception("Startup: FA migration failed")
+
 
 async def main() -> None:
+    _log.info("Startup: begin")
     try:
         await asyncio.to_thread(migrate_all_player_status_columns)
     except Exception:
@@ -50,6 +69,7 @@ async def main() -> None:
             "Не удалось применить миграции SQLite (колонка status и др.)"
         )
         raise
+    _log.info("Startup: player status columns OK")
     try:
         await asyncio.to_thread(migrate_all_player_left_team_columns)
     except Exception:
@@ -57,6 +77,7 @@ async def main() -> None:
             "Не удалось применить миграции SQLite (колонка left_team)"
         )
         raise
+    _log.info("Startup: left_team columns OK")
     try:
         from utils.migrate_lineup_slot import migrate_all_lineup_slot_columns
 
@@ -66,6 +87,7 @@ async def main() -> None:
             "Не удалось применить миграции SQLite (колонка lineup_slot)"
         )
         raise
+    _log.info("Startup: lineup_slot columns OK")
     try:
         await asyncio.to_thread(migrate_all_player_discipline_columns)
     except Exception:
@@ -73,6 +95,7 @@ async def main() -> None:
             "Не удалось применить миграции дисциплины (жк/кк)"
         )
         raise
+    _log.info("Startup: discipline columns OK")
     try:
         await asyncio.to_thread(migrate_player_awards_columns)
     except Exception:
@@ -80,6 +103,7 @@ async def main() -> None:
             "Не удалось применить миграции наград (golden_boots, golden_boys, …)"
         )
         raise
+    _log.info("Startup: awards columns OK")
     try:
         await asyncio.to_thread(migrate_all_player_potm_columns)
     except Exception:
@@ -87,6 +111,7 @@ async def main() -> None:
             "Не удалось применить миграции SQLite (колонка potm)"
         )
         raise
+    _log.info("Startup: potm columns OK")
     try:
         await asyncio.to_thread(migrate_all_player_motm_columns)
     except Exception:
@@ -94,18 +119,9 @@ async def main() -> None:
             "Не удалось применить миграции SQLite (колонка motm)"
         )
         raise
-    try:
-        from utils.free_agents_db import ensure_free_agents_db, migrate_free_agents_from_league_dbs
-
-        await asyncio.to_thread(ensure_free_agents_db)
-        stats = await asyncio.to_thread(migrate_free_agents_from_league_dbs)
-        if stats.get("migrated") or stats.get("removed_league"):
-            logging.getLogger(__name__).info("Free agents migration: %s", stats)
-    except Exception:
-        logging.getLogger(__name__).exception(
-            "Не удалось мигрировать свободных агентов в free_agents.db"
-        )
+    _log.info("Startup: motm columns OK")
     token = get_bot_token()
+    _log.info("Startup: TELEGRAM_BOT_TOKEN loaded")
     dp = Dispatcher(storage=MemoryStorage())
     match_router.message.middleware(AccessMiddleware())
     match_router.callback_query.middleware(AccessMiddleware())
@@ -163,7 +179,14 @@ async def main() -> None:
         token=token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
-    await setup_bot_commands(telegram_bot)
+    dp.startup.register(_migrate_free_agents_background)
+    _log.info("Startup: registering routers…")
+    try:
+        await asyncio.wait_for(setup_bot_commands(telegram_bot), timeout=45.0)
+        _log.info("Startup: bot commands registered")
+    except Exception:
+        _log.exception("Startup: set_my_commands failed (continuing to poll)")
+    _log.info("Startup: polling (bot is accepting /start and menu)")
     await dp.start_polling(telegram_bot)
 
 
