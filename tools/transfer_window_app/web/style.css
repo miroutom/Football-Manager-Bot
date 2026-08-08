@@ -525,6 +525,10 @@ body {
   cursor: pointer;
   font-size: 13px;
 }
+.nation-suggestions li.nation-custom {
+  font-style: italic;
+  color: var(--muted, #888);
+}
 .nation-suggestions li:hover,
 .nation-suggestions li.active {
   background: #1c4a7a;
