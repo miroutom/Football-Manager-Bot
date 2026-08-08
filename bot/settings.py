@@ -29,6 +29,18 @@ def get_bot_token() -> str:
     return token
 
 
+def get_telegram_proxy() -> str | None:
+    """
+    HTTP/SOCKS прокси для api.telegram.org (если с VM нет прямого доступа).
+
+    Примеры::
+        TELEGRAM_PROXY=http://127.0.0.1:8080
+        TELEGRAM_PROXY=socks5://127.0.0.1:1080
+    """
+    raw = (os.environ.get("TELEGRAM_PROXY") or "").strip()
+    return raw or None
+
+
 def get_allowed_user_ids() -> frozenset[int]:
     """
     Пустой набор = проверка отключена (бот доступен всем).

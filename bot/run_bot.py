@@ -29,7 +29,7 @@ from bot.loan_handlers import loan_router
 from bot.injury_handlers import injury_router
 from bot.players_position_handlers import players_pos_router
 from bot.stats_position_handlers import stats_pos_router
-from bot.settings import get_bot_token
+from bot.settings import get_bot_token, get_telegram_proxy
 from utils.db_startup import run_startup_schema_migrations
 logging.basicConfig(
     level=logging.INFO,
@@ -127,10 +127,21 @@ async def main() -> None:
     dp.include_router(season_router)
     dp.include_router(router)
 
-    telegram_bot = Bot(
-        token=token,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-    )
+    bot_props = DefaultBotProperties(parse_mode=ParseMode.HTML)
+    proxy = get_telegram_proxy()
+    if proxy:
+        from aiogram.client.session.aiohttp import AiohttpSession
+
+        # Не логируем credentials из URL прокси.
+        proxy_log = proxy.split("@")[-1] if "@" in proxy else proxy
+        _log.info("Startup: TELEGRAM_PROXY=%s", proxy_log)
+        telegram_bot = Bot(
+            token=token,
+            session=AiohttpSession(proxy=proxy),
+            default=bot_props,
+        )
+    else:
+        telegram_bot = Bot(token=token, default=bot_props)
     dp.startup.register(_migrate_free_agents_background)
     _log.info("Startup: registering routers…")
     try:
