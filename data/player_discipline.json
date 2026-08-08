@@ -12,11 +12,11 @@
       "matches_left": 2
     },
     {
-      "key": "зобнин|спартак|cl|cl",
+      "key": "зобнин|челси|cl|cl",
       "name": "Зобнин",
       "name_norm": "зобнин",
-      "team": "Спартак",
-      "team_norm": "спартак",
+      "team": "Челси",
+      "team_norm": "челси",
       "league_code": "cl",
       "scope": "cl",
       "matches_left": 1
@@ -86,7 +86,18 @@
       "matches_left": 3
     }
   ],
-  "yellow_cycle": [],
+  "yellow_cycle": [
+    {
+      "key": "бальде|барселона|esp|league",
+      "name": "Бальде",
+      "name_norm": "бальде",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    }
+  ],
   "injuries": [
     {
       "name": "Бонавентура",
@@ -3390,6 +3401,32 @@
       "return_month": 11,
       "type": "травма",
       "season": 3
+    },
+    {
+      "key": "торрейра|барселона|4|life|1|1",
+      "name": "Торрейра",
+      "name_norm": "торрейра",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "клаудиньо|лейпциг|4|life|1|1",
+      "name": "Клаудиньо",
+      "name_norm": "клаудиньо",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
     }
   ]
 }

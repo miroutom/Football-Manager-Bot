@@ -2137,5 +2137,33 @@
     "away_score": 1,
     "league_code": "cl",
     "cl_phase": "knockout"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Барселона",
+    "away": "Реал",
+    "tournament": "league",
+    "player": "Лева",
+    "team": "Барселона",
+    "position": "ФРВ",
+    "recorded_at": "2026-08-08T16:49:09Z",
+    "home_score": 3,
+    "away_score": 1,
+    "league_code": "esp"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Лейпциг",
+    "away": "Вольфсбург",
+    "tournament": "league",
+    "player": "Исак",
+    "team": "Вольфсбург",
+    "position": "ФРВ",
+    "recorded_at": "2026-08-08T16:50:28Z",
+    "home_score": 2,
+    "away_score": 3,
+    "league_code": "ger"
   }
 ]

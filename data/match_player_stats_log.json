@@ -7307,5 +7307,94 @@
     "away_score": 1,
     "league_code": "cl",
     "cl_phase": "knockout"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Барселона",
+    "away": "Реал",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Сон",
+        "team": "Барселона",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Лева",
+        "team": "Барселона",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Педри",
+        "team": "Барселона",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Осимен",
+        "team": "Реал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-08T16:49:09Z",
+    "home_score": 3,
+    "away_score": 1,
+    "league_code": "esp"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Лейпциг",
+    "away": "Вольфсбург",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Вернер",
+        "team": "Лейпциг",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Клаудиньо",
+        "team": "Лейпциг",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Ольмо",
+        "team": "Лейпциг",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Исак",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Майер",
+        "team": "Вольфсбург",
+        "position": "",
+        "goals": 0,
+        "assists": 3
+      }
+    ],
+    "recorded_at": "2026-08-08T16:50:28Z",
+    "home_score": 2,
+    "away_score": 3,
+    "league_code": "ger"
   }
 ]
