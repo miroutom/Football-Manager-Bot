@@ -189,7 +189,13 @@ def apply_transfers(transfers: list[dict[str, Any]], *, dry_run: bool = False) -
     return n_ok
 
 
-def apply_squads_text(text: str, *, dry_run: bool = False, mirror_synced: bool = True) -> int:
+def apply_squads_text(
+    text: str,
+    *,
+    dry_run: bool = False,
+    mirror_synced: bool = True,
+    rebuild_common: bool = True,
+) -> int:
     from scripts.apply_bulk_squad_declarations import resolve_team_label, split_bulk_blocks
     from utils.roster_manual import apply_team_squad_declaration, parse_squad_declaration_text
 
@@ -204,7 +210,12 @@ def apply_squads_text(text: str, *, dry_run: bool = False, mirror_synced: bool =
         if dry_run:
             n += 1
             continue
-        apply_team_squad_declaration(team, entries, mirror_synced=mirror_synced)
+        apply_team_squad_declaration(
+            team,
+            entries,
+            mirror_synced=mirror_synced,
+            rebuild_common=rebuild_common,
+        )
         n += 1
     return n
 
@@ -237,29 +248,37 @@ def apply_transfer_window_upload(
     res = TransferApplyResult()
     transfers, teams_from_json = parse_transfers_file(transfers_content, transfers_filename)
     res.lines.append(f"Трансферов в файле: {len(transfers)}")
-    if not dry_run and transfers:
-        res.transfers_ok = apply_transfers(transfers, dry_run=False)
-        from utils.common_db import rebuild_common_database
-
-        rebuild_common_database()
-        res.lines.append(f"✓ Трансферы: {res.transfers_ok}")
-    elif dry_run:
+    if dry_run:
         res.transfers_ok = len(transfers)
         res.lines.append(f"(dry-run) трансферов: {len(transfers)}")
+    elif transfers:
+        res.transfers_ok = apply_transfers(transfers, dry_run=False)
+        res.lines.append(f"✓ Трансферы: {res.transfers_ok}")
 
     squad_blocks = strip_transfers_appendix(squads_text)
     if "@" not in squad_blocks and "==== start ===" not in squad_blocks.lower():
         raise ValueError(
             "Файл составов не похож на squads_export_*.txt (@Клуб, секции start/bench/reserve)."
         )
-    if not dry_run:
-        res.squads_ok = apply_squads_text(squads_text, dry_run=False, mirror_synced=False)
-        res.lines.append(f"✓ Заявки клубов: {res.squads_ok}")
-    else:
+    if dry_run:
         from scripts.apply_bulk_squad_declarations import split_bulk_blocks
 
         res.squads_ok = len(split_bulk_blocks(strip_transfers_appendix(squads_text)))
         res.lines.append(f"(dry-run) клубов в заявках: {res.squads_ok}")
+    else:
+        res.squads_ok = apply_squads_text(
+            squads_text,
+            dry_run=False,
+            mirror_synced=False,
+            rebuild_common=False,
+        )
+        res.lines.append(f"✓ Заявки клубов: {res.squads_ok}")
+
+    if not dry_run and (res.transfers_ok or res.squads_ok):
+        from utils.common_db import rebuild_common_database
+
+        rebuild_common_database()
+        res.lines.append("✓ common.db пересобрана (один раз)")
 
     if teams_from_json:
         if not dry_run:
