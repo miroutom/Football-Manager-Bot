@@ -150,7 +150,21 @@ async def main() -> None:
     except Exception:
         _log.exception("Startup: set_my_commands failed (continuing to poll)")
     _log.info("Startup: polling (bot is accepting /start and menu)")
-    await dp.start_polling(telegram_bot)
+    while True:
+        try:
+            await dp.start_polling(telegram_bot)
+            return
+        except Exception as exc:
+            from aiogram.exceptions import TelegramNetworkError
+
+            if isinstance(exc, TelegramNetworkError):
+                _log.exception(
+                    "Telegram API недоступен (timeout/блокировка). "
+                    "Повтор через 60 с; задайте TELEGRAM_PROXY в bot/.env"
+                )
+                await asyncio.sleep(60)
+                continue
+            raise
 
 
 if __name__ == "__main__":
