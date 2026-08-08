@@ -30,12 +30,7 @@ from bot.injury_handlers import injury_router
 from bot.players_position_handlers import players_pos_router
 from bot.stats_position_handlers import stats_pos_router
 from bot.settings import get_bot_token
-from utils.migrate_player_discipline import migrate_all_player_discipline_columns
-from utils.migrate_player_awards import migrate_player_awards_columns
-from utils.migrate_player_status import migrate_all_player_status_columns
-from utils.migrate_player_left_team import migrate_all_player_left_team_columns
-from utils.migrate_player_motm import migrate_all_player_motm_columns
-from utils.migrate_player_potm import migrate_all_player_potm_columns
+from utils.db_startup import run_startup_schema_migrations
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -63,63 +58,20 @@ async def _migrate_free_agents_background() -> None:
 async def main() -> None:
     _log.info("Startup: begin")
     try:
-        await asyncio.to_thread(migrate_all_player_status_columns)
-    except Exception:
-        logging.getLogger(__name__).exception(
-            "Не удалось применить миграции SQLite (колонка status и др.)"
+        await asyncio.wait_for(
+            asyncio.to_thread(run_startup_schema_migrations),
+            timeout=120.0,
+        )
+    except asyncio.TimeoutError:
+        _log.exception(
+            "Startup: schema migrations timed out after 120s "
+            "(проверьте lock на db/season_*/ *.db; можно BOT_SKIP_STARTUP_MIGRATIONS=1)"
         )
         raise
-    _log.info("Startup: player status columns OK")
-    try:
-        await asyncio.to_thread(migrate_all_player_left_team_columns)
     except Exception:
-        logging.getLogger(__name__).exception(
-            "Не удалось применить миграции SQLite (колонка left_team)"
-        )
+        _log.exception("Startup: schema migrations failed")
         raise
-    _log.info("Startup: left_team columns OK")
-    try:
-        from utils.migrate_lineup_slot import migrate_all_lineup_slot_columns
-
-        await asyncio.to_thread(migrate_all_lineup_slot_columns)
-    except Exception:
-        logging.getLogger(__name__).exception(
-            "Не удалось применить миграции SQLite (колонка lineup_slot)"
-        )
-        raise
-    _log.info("Startup: lineup_slot columns OK")
-    try:
-        await asyncio.to_thread(migrate_all_player_discipline_columns)
-    except Exception:
-        logging.getLogger(__name__).exception(
-            "Не удалось применить миграции дисциплины (жк/кк)"
-        )
-        raise
-    _log.info("Startup: discipline columns OK")
-    try:
-        await asyncio.to_thread(migrate_player_awards_columns)
-    except Exception:
-        logging.getLogger(__name__).exception(
-            "Не удалось применить миграции наград (golden_boots, golden_boys, …)"
-        )
-        raise
-    _log.info("Startup: awards columns OK")
-    try:
-        await asyncio.to_thread(migrate_all_player_potm_columns)
-    except Exception:
-        logging.getLogger(__name__).exception(
-            "Не удалось применить миграции SQLite (колонка potm)"
-        )
-        raise
-    _log.info("Startup: potm columns OK")
-    try:
-        await asyncio.to_thread(migrate_all_player_motm_columns)
-    except Exception:
-        logging.getLogger(__name__).exception(
-            "Не удалось применить миграции SQLite (колонка motm)"
-        )
-        raise
-    _log.info("Startup: motm columns OK")
+    _log.info("Startup: schema migrations OK")
     token = get_bot_token()
     _log.info("Startup: TELEGRAM_BOT_TOKEN loaded")
     dp = Dispatcher(storage=MemoryStorage())

@@ -48,24 +48,7 @@ def _legacy_add_via_sql() -> list[str]:
 
 
 def migrate_all_player_discipline_columns() -> list[str]:
-    ini = _ROOT / "alembic.ini"
-    try:
-        from alembic import command
-        from alembic.config import Config
-    except ImportError:
-        logger.info("Alembic не установлен — добавляю жк/кк через ALTER TABLE")
-        return _legacy_add_via_sql()
-
-    if not ini.is_file():
-        logger.info("Нет alembic.ini — добавляю жк/кк через ALTER TABLE")
-        return _legacy_add_via_sql()
-    try:
-        cfg = Config(str(ini))
-        command.upgrade(cfg, "head")
-    except Exception as e:
-        logger.warning("alembic upgrade: %s — fallback ALTER", e)
-        return _legacy_add_via_sql()
-    # Alembic может не знать про жк/кк — idempotent ADD COLUMN
+    """Idempotent ADD COLUMN для жк/кк (без Alembic — быстрый старт бота)."""
     return _legacy_add_via_sql()
 
 

@@ -50,12 +50,16 @@ def _legacy_add_status_via_sql() -> list[str]:
     return out
 
 
-def migrate_all_player_status_columns() -> list[str]:
+def migrate_all_player_status_columns(*, use_alembic: bool = False) -> list[str]:
     """
     Привести схему всех трёх рабочих SQLite в соответствие с моделями.
 
-    С Alembic возвращает ``[]``; без — список добавленных ``label:table``.
+    По умолчанию — быстрый idempotent ``ALTER TABLE`` (старт бота).
+    ``use_alembic=True`` — ``alembic upgrade head`` (CLI / ручной прогон).
     """
+    if not use_alembic:
+        return _legacy_add_status_via_sql()
+
     ini = _ROOT / "alembic.ini"
     try:
         from alembic import command
@@ -74,5 +78,14 @@ def migrate_all_player_status_columns() -> list[str]:
 
 
 if __name__ == "__main__":
-    r = migrate_all_player_status_columns()
+    import argparse
+
+    p = argparse.ArgumentParser()
+    p.add_argument(
+        "--alembic",
+        action="store_true",
+        help="через alembic upgrade head (по умолчанию — быстрый ALTER TABLE)",
+    )
+    args = p.parse_args()
+    r = migrate_all_player_status_columns(use_alembic=args.alembic)
     print("OK" if not r else "Added (legacy): " + ", ".join(r))
