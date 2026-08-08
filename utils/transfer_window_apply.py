@@ -4,9 +4,27 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
+
+# done, total, phase_label, detail, phase_done, phase_total
+ApplyProgressCallback = Callable[[int, int, str, Optional[str], int, int], None]
+
+
+def _report_progress(
+    on_progress: ApplyProgressCallback | None,
+    *,
+    done: int,
+    total: int,
+    phase: str,
+    detail: Optional[str] = None,
+    phase_done: int = 0,
+    phase_total: int = 0,
+) -> None:
+    if on_progress and total > 0:
+        on_progress(done, total, phase, detail, phase_done, phase_total)
 
 
 def strip_transfers_appendix(text: str) -> str:
@@ -136,7 +154,14 @@ class TransferApplyResult:
     lines: list[str] = field(default_factory=list)
 
 
-def apply_transfers(transfers: list[dict[str, Any]], *, dry_run: bool = False) -> int:
+def apply_transfers(
+    transfers: list[dict[str, Any]],
+    *,
+    dry_run: bool = False,
+    on_progress: ApplyProgressCallback | None = None,
+    progress_base: int = 0,
+    progress_total: int = 0,
+) -> int:
     from utils.free_agents_db import is_free_agent_team
     from utils.player_transfer import apply_transfer_with_status, normalize_player_name_for_db
     from utils.roster_manual import FREE_AGENT_TEAM
@@ -186,6 +211,17 @@ def apply_transfers(transfers: list[dict[str, Any]], *, dry_run: bool = False) -
             new_overall=ovr_i if ovr_i else None,
         )
         n_ok += 1
+        if on_progress and progress_total > 0:
+            detail = f"{name} → {to}"
+            _report_progress(
+                on_progress,
+                done=progress_base + n_ok,
+                total=progress_total,
+                phase="Трансферы",
+                detail=detail,
+                phase_done=n_ok,
+                phase_total=len(transfers),
+            )
     return n_ok
 
 
@@ -195,6 +231,9 @@ def apply_squads_text(
     dry_run: bool = False,
     mirror_synced: bool = True,
     rebuild_common: bool = True,
+    on_progress: ApplyProgressCallback | None = None,
+    progress_base: int = 0,
+    progress_total: int = 0,
 ) -> int:
     from scripts.apply_bulk_squad_declarations import resolve_team_label, split_bulk_blocks
     from utils.roster_manual import apply_team_squad_declaration, parse_squad_declaration_text
@@ -217,6 +256,16 @@ def apply_squads_text(
             rebuild_common=rebuild_common,
         )
         n += 1
+        if on_progress and progress_total > 0:
+            _report_progress(
+                on_progress,
+                done=progress_base + n,
+                total=progress_total,
+                phase="Составы",
+                detail=team,
+                phase_done=n,
+                phase_total=len(blocks),
+            )
     return n
 
 
@@ -238,32 +287,66 @@ def apply_formations(teams: list[dict[str, Any]], *, dry_run: bool = False) -> i
     return n
 
 
+def _count_formation_updates(teams: list[dict[str, Any]] | None) -> int:
+    if not teams:
+        return 0
+    from coach_squad_state import get_coach_id_for_team
+
+    n = 0
+    for t in teams:
+        name = str(t.get("name") or "").strip()
+        fid = t.get("formation_id")
+        if not name or fid is None:
+            continue
+        if get_coach_id_for_team(name):
+            n += 1
+    return n
+
+
 def apply_transfer_window_upload(
     *,
     squads_text: str,
     transfers_content: str,
     transfers_filename: str,
     dry_run: bool = False,
+    on_progress: ApplyProgressCallback | None = None,
 ) -> TransferApplyResult:
+    from scripts.apply_bulk_squad_declarations import split_bulk_blocks
+
     res = TransferApplyResult()
     transfers, teams_from_json = parse_transfers_file(transfers_content, transfers_filename)
     res.lines.append(f"Трансферов в файле: {len(transfers)}")
+
+    squad_body = strip_transfers_appendix(squads_text)
+    n_squads = len(split_bulk_blocks(squad_body)) if "@" in squad_body else 0
+    n_form = _count_formation_updates(teams_from_json) if not dry_run else 0
+    rebuild_step = 0 if dry_run else int(bool(transfers or n_squads))
+    progress_total = len(transfers) + n_squads + rebuild_step + n_form
+    progress_done = 0
+
+    if on_progress and progress_total > 0:
+        _report_progress(on_progress, done=0, total=progress_total, phase="Старт")
+
     if dry_run:
         res.transfers_ok = len(transfers)
         res.lines.append(f"(dry-run) трансферов: {len(transfers)}")
     elif transfers:
-        res.transfers_ok = apply_transfers(transfers, dry_run=False)
+        res.transfers_ok = apply_transfers(
+            transfers,
+            dry_run=False,
+            on_progress=on_progress,
+            progress_base=progress_done,
+            progress_total=progress_total,
+        )
+        progress_done += res.transfers_ok
         res.lines.append(f"✓ Трансферы: {res.transfers_ok}")
 
-    squad_blocks = strip_transfers_appendix(squads_text)
-    if "@" not in squad_blocks and "==== start ===" not in squad_blocks.lower():
+    if "@" not in squad_body and "==== start ===" not in squad_body.lower():
         raise ValueError(
             "Файл составов не похож на squads_export_*.txt (@Клуб, секции start/bench/reserve)."
         )
     if dry_run:
-        from scripts.apply_bulk_squad_declarations import split_bulk_blocks
-
-        res.squads_ok = len(split_bulk_blocks(strip_transfers_appendix(squads_text)))
+        res.squads_ok = n_squads
         res.lines.append(f"(dry-run) клубов в заявках: {res.squads_ok}")
     else:
         res.squads_ok = apply_squads_text(
@@ -271,24 +354,80 @@ def apply_transfer_window_upload(
             dry_run=False,
             mirror_synced=False,
             rebuild_common=False,
+            on_progress=on_progress,
+            progress_base=progress_done,
+            progress_total=progress_total,
         )
+        progress_done += res.squads_ok
         res.lines.append(f"✓ Заявки клубов: {res.squads_ok}")
 
-    if not dry_run and (res.transfers_ok or res.squads_ok):
+    if not dry_run and rebuild_step:
+        if on_progress and progress_total > 0:
+            _report_progress(
+                on_progress,
+                done=progress_done,
+                total=progress_total,
+                phase="common.db",
+                detail="пересборка (1–3 мин)",
+                phase_done=0,
+                phase_total=1,
+            )
         from utils.common_db import rebuild_common_database
 
         rebuild_common_database()
+        progress_done += 1
+        if on_progress and progress_total > 0:
+            _report_progress(
+                on_progress,
+                done=progress_done,
+                total=progress_total,
+                phase="common.db",
+                phase_done=1,
+                phase_total=1,
+            )
         res.lines.append("✓ common.db пересобрана (один раз)")
 
     if teams_from_json:
         if not dry_run:
-            res.formations_ok = apply_formations(teams_from_json, dry_run=False)
+            for t in teams_from_json:
+                name = str(t.get("name") or "").strip()
+                fid = t.get("formation_id")
+                if not name or fid is None:
+                    continue
+                from coach_squad_state import get_coach_id_for_team, set_active_formation_id
+
+                cid = get_coach_id_for_team(name)
+                if not cid:
+                    continue
+                set_active_formation_id(cid, int(fid))
+                res.formations_ok += 1
+                progress_done += 1
+                if on_progress and progress_total > 0:
+                    _report_progress(
+                        on_progress,
+                        done=progress_done,
+                        total=progress_total,
+                        phase="Схемы",
+                        detail=name,
+                        phase_done=res.formations_ok,
+                        phase_total=n_form,
+                    )
         else:
             res.formations_ok = sum(
                 1 for t in teams_from_json if t.get("formation_id") is not None
             )
         if res.formations_ok:
             res.lines.append(f"✓ Схемы тренеров: {res.formations_ok}")
+
+    if on_progress and progress_total > 0:
+        _report_progress(
+            on_progress,
+            done=progress_total,
+            total=progress_total,
+            phase="Готово",
+            phase_done=progress_total,
+            phase_total=progress_total,
+        )
 
     return res
 

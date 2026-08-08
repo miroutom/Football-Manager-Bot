@@ -130,6 +130,11 @@ def _ensure_season_dbs_and_pickle(*, force_reclone: bool = False) -> None:
                 shutil.rmtree(p_dst)
             shutil.copytree(src_p, p_dst)
             print(f"Скопирован pickle: {src_p} → {p_dst}")
+            from teams import reset_all_teams, reload_teams_from_disk
+
+            reset_all_teams()
+            reload_teams_from_disk()
+            print("Pickle обнулён (таблицы сезона с 0 матчей).")
 
     actions = season_paths.repair_per_season_database_files()
     if actions:

@@ -28,6 +28,115 @@ _TEXT_NOT_CMD = F.text & ~F.text.startswith("/")
 _DOC = F.document
 
 
+class _TransferApplyProgress:
+    """Живой счётчик + полоса прогресса (apply в worker thread → edit через event loop)."""
+
+    _SPINNERS = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
+
+    def __init__(self, message: Message, loop: asyncio.AbstractEventLoop) -> None:
+        self._message = message
+        self._loop = loop
+        self._started = __import__("time").monotonic()
+        self._last_edit = 0.0
+        self._last_done = -1
+        self._last_phase = ""
+        self._snapshot: tuple[int, int, str, str | None, int, int] = (0, 1, "", None, 0, 0)
+        self._heartbeat_on = False
+        self._heartbeat_task: asyncio.Task | None = None
+
+    @staticmethod
+    def _bar_with_pct(pct: int, width: int = 22) -> str:
+        pct = max(0, min(100, int(pct)))
+        filled = round(width * pct / 100)
+        bar = "█" * filled + "░" * (width - filled)
+        return f"[{bar}] {pct:3d}%"
+
+    def _format(
+        self,
+        done: int,
+        total: int,
+        phase: str,
+        detail: str | None,
+        phase_done: int,
+        phase_total: int,
+        *,
+        spinner: str = "",
+    ) -> str:
+        pct = int(100 * done / total) if total else 0
+        elapsed = int(__import__("time").monotonic() - self._started)
+        mins, secs = divmod(elapsed, 60)
+        head = f"{spinner} <b>Применяю трансферы и составы</b>" if spinner else "<b>Применяю трансферы и составы</b>"
+        lines = [
+            head,
+            f"<pre>{self._bar_with_pct(pct)}</pre>",
+            f"Шагов: <b>{done}</b> / {total}",
+        ]
+        if phase_total > 0:
+            lines.append(f"{html_escape(phase)}: <b>{phase_done}</b> / {phase_total}")
+        elif phase:
+            lines.append(html_escape(phase))
+        if detail:
+            lines.append(f"↳ <i>{html_escape(detail[:120])}</i>")
+        lines.append(f"⏱ {mins}:{secs:02d}")
+        return "\n".join(lines)
+
+    def __call__(
+        self,
+        done: int,
+        total: int,
+        phase: str,
+        detail: str | None,
+        phase_done: int = 0,
+        phase_total: int = 0,
+    ) -> None:
+        import time
+
+        if total <= 0:
+            return
+        self._snapshot = (done, total, phase, detail, phase_done, phase_total)
+        now = time.monotonic()
+        phase_changed = phase != self._last_phase
+        jumped = done - self._last_done
+        finished = done >= total
+        long_step = phase == "common.db" and detail and "пересборка" in (detail or "")
+
+        if long_step and not self._heartbeat_on:
+            self._heartbeat_on = True
+            asyncio.run_coroutine_threadsafe(self._heartbeat(), self._loop)
+        if finished:
+            self._heartbeat_on = False
+
+        force = finished or phase_changed or jumped >= 2 or long_step
+        if not force and (now - self._last_edit) < 0.85:
+            return
+        self._last_edit = now
+        self._last_done = done
+        self._last_phase = phase
+        text = self._format(done, total, phase, detail, phase_done, phase_total)
+        asyncio.run_coroutine_threadsafe(self._edit(text), self._loop)
+
+    async def _heartbeat(self) -> None:
+        """Пока common.db пересобирается — крутим спиннер раз в секунду."""
+        tick = 0
+        while self._heartbeat_on:
+            await asyncio.sleep(1.0)
+            if not self._heartbeat_on:
+                break
+            done, total, phase, detail, phase_done, phase_total = self._snapshot
+            spin = self._SPINNERS[tick % len(self._SPINNERS)]
+            tick += 1
+            text = self._format(
+                done, total, phase, detail, phase_done, phase_total, spinner=spin
+            )
+            await self._edit(text)
+
+    async def _edit(self, text: str) -> None:
+        try:
+            await self._message.edit_text(text, parse_mode="HTML")
+        except Exception:
+            logger.debug("progress edit skipped", exc_info=True)
+
+
 def _home_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -209,25 +318,45 @@ async def cb_xfer_apply(callback: CallbackQuery, state: FSMContext) -> None:
         if callback.message:
             await callback.message.answer("Данные потерялись — начни заново: /transfer")
         return
+    progress_msg = None
     if callback.message:
-        await callback.message.answer("⏳ Применяю трансферы и составы…")
+        progress_msg = await callback.message.answer(
+            "<b>Применяю трансферы и составы</b>\n"
+            "<pre>[░░░░░░░░░░░░░░░░░░░░░░]   0%</pre>\n"
+            "Шагов: <b>0</b> / …",
+            parse_mode="HTML",
+        )
     try:
         from utils.transfer_window_apply import apply_transfer_window_upload
 
+        on_progress = None
+        if progress_msg is not None:
+            on_progress = _TransferApplyProgress(progress_msg, asyncio.get_running_loop())
         res = await asyncio.to_thread(
             apply_transfer_window_upload,
             squads_text=str(squads),
             transfers_content=str(tr_text),
             transfers_filename=str(tr_name),
             dry_run=False,
+            on_progress=on_progress,
         )
         body = "\n".join(res.lines)
         await state.clear()
+        if progress_msg is not None:
+            try:
+                await progress_msg.delete()
+            except Exception:
+                pass
         if callback.message:
             await callback.message.answer(f"✅ <b>Готово</b>\n{html_escape(body)}", parse_mode="HTML")
     except Exception as e:
         logger.exception("apply transfer window upload")
         await state.clear()
+        if progress_msg is not None:
+            try:
+                await progress_msg.delete()
+            except Exception:
+                pass
         if callback.message:
             await callback.message.answer(
                 f"✗ Ошибка: {html_escape(str(e))}",
