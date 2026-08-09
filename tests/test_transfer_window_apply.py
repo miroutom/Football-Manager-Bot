@@ -60,3 +60,15 @@ def test_apply_squads_text_skips_complete_roster():
     assert skipped == 1
     apply_decl.assert_called_once()
     assert apply_decl.call_args[0][0] == "Spartak"
+
+
+def test_release_to_fa_skips_when_already_in_pool(monkeypatch):
+    from utils import free_agents_db as fa_mod
+
+    monkeypatch.setattr(fa_mod, "fa_player_exists", lambda _n, _p: True)
+    monkeypatch.setattr(
+        "utils.player_field_edit.find_player_row",
+        lambda _sess, _team, _name, _pos: (None, None),
+    )
+    out = fa_mod.release_club_player_to_fa("Куртуа", "ВРТ", "Реал")
+    assert out.get("skipped") is True

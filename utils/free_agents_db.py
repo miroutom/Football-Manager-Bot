@@ -121,6 +121,24 @@ def fa_player_id(name: str, position: str) -> str:
     return f"{FREE_AGENT_TEAM}|{(name or '').strip()}|{(position or '').strip().upper()}"
 
 
+def fa_player_exists(name: str, position: str) -> bool:
+    """Есть ли игрок в ``free_agents.db`` (по имени и позиции)."""
+    from utils.player_transfer import _find_fa_donor, normalize_player_name_for_db
+    from utils.transfer_input import normalize_position
+
+    nm = normalize_player_name_for_db((name or "").strip())
+    pos = normalize_position(position)
+    if not nm or not pos:
+        return False
+    fa_sess, fa_eng = open_fa_session()
+    try:
+        _, row = _find_fa_donor(fa_sess, nm, pos)
+        return row is not None
+    finally:
+        fa_sess.close()
+        fa_eng.dispose()
+
+
 def _load_fired_map(sess: Session) -> dict[tuple[str, int], bool]:
     from sqlalchemy import text
     from sqlalchemy.exc import OperationalError
@@ -490,21 +508,40 @@ def release_club_player_to_fa(
     from utils.common_db import resolve_team_name_for_cl_pool
     from utils.player_field_edit import find_player_row
     from utils.player_transfer import mark_player_left_team, normalize_player_name_for_db
-    from utils.transfer_input import normalize_position
+    from utils.transfer_input import normalize_position, resolve_team_name
     from utils.utils import session_cl, session_league
 
     nm = normalize_player_name_for_db((name or "").strip())
     pos = normalize_position(position)
-    team = (from_team or "").strip()
-    if not nm or not pos or not team:
+    team_raw = (from_team or "").strip()
+    if not nm or not pos or not team_raw:
         raise ValueError("Нужны имя, позиция и клуб.")
 
     sleague = session_league
     scl = session_cl
+    team = resolve_team_name(team_raw, sleague) or team_raw
     Cls_l, row_l = find_player_row(sleague, team, nm, pos)
     if row_l is None:
+        if fa_player_exists(nm, pos):
+            return {
+                "name": nm,
+                "position": pos,
+                "from_team": team,
+                "person_id": None,
+                "fa_id": fa_player_id(nm, pos),
+                "skipped": True,
+            }
         raise ValueError(f"Нет игрока «{nm}» ({pos}) в «{team}».")
     if bool(getattr(row_l, "left_team", False)):
+        if fa_player_exists(nm, pos):
+            return {
+                "name": nm,
+                "position": pos,
+                "from_team": team,
+                "person_id": int(row_l.person_id) if getattr(row_l, "person_id", None) else None,
+                "fa_id": fa_player_id(nm, pos),
+                "skipped": True,
+            }
         raise ValueError(f"«{nm}» уже снят с заявки «{team}».")
 
     fa_sess, fa_eng = open_fa_session()
