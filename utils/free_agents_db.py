@@ -278,6 +278,51 @@ def add_free_agent_player(
         eng.dispose()
 
 
+def ensure_free_agent_player(
+    *,
+    name: str,
+    position: str,
+    overall: int,
+    nation: str | None = None,
+    status: str = "bench",
+    person_id: int | None = None,
+    nickname: str | None = None,
+) -> dict[str, Any]:
+    """Добавить FA, если ещё нет (для синка перед apply трансферного окна)."""
+    position = (position or "").strip().upper()
+    if fa_player_exists(name, position):
+        from utils.player_transfer import _find_fa_donor
+
+        fa_sess, fa_eng = open_fa_session()
+        try:
+            _, row = _find_fa_donor(fa_sess, name, position)
+            if row is None:
+                raise ValueError(f"Свободный агент не найден: {name} ({position})")
+            return {
+                "id": fa_player_id(row.name, row.position),
+                "person_id": int(row.person_id) if getattr(row, "person_id", None) else person_id,
+                "name": row.name,
+                "position": (row.position or "").strip().upper(),
+                "overall": int(row.overall or 0),
+                "nation": (getattr(row, "nation", None) or "") or "",
+                "nickname": (nickname or "").strip(),
+                "status": (getattr(row, "status", None) or status) or "bench",
+                "fired": False,
+            }
+        finally:
+            fa_sess.close()
+            fa_eng.dispose()
+    return add_free_agent_player(
+        name=name,
+        position=position,
+        overall=overall,
+        nation=nation,
+        status=status,
+        person_id=person_id,
+        nickname=nickname,
+    )
+
+
 def delete_free_agent_player(
     *,
     name: str = "",

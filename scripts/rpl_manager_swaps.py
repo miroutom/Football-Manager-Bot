@@ -365,7 +365,7 @@ def main() -> int:
             stem = stem[len("transfer_window_state") : -len(".json")]
         elif stem.endswith(".json"):
             stem = Path(stem).stem
-        suffix = f"{stem}_rpl_swaps" if stem else "_rpl_swaps"
+        suffix = f"_{stem.lstrip('_')}_rpl_swaps" if stem else "_rpl_swaps"
 
     state = json.loads(src.read_text(encoding="utf-8"))
     state = copy.deepcopy(state)
@@ -378,7 +378,7 @@ def main() -> int:
     )
     all_log = lika_log + roman_log
 
-    paths = _export_bundle(state, Path(args.out_dir).expanduser(), args.suffix)
+    paths = _export_bundle(state, Path(args.out_dir).expanduser(), suffix)
 
     from utils.transfer_squad_quota import evaluate_all_teams, format_missing_hint
 

@@ -571,7 +571,17 @@ def _apply_fa_sign_with_status(
                     new_status,
                     new_overall=new_overall,
                 )
-            raise ValueError(f"Свободный агент не найден: {player} ({position})")
+            if new_overall is not None and (position or "").strip():
+                from utils.free_agents_db import ensure_free_agent_player
+
+                ensure_free_agent_player(
+                    name=player,
+                    position=position,
+                    overall=int(new_overall),
+                )
+                donor_cls, donor = _find_fa_donor(fa_sess, player, position)
+            if donor is None or donor_cls is None:
+                raise ValueError(f"Свободный агент не найден: {player} ({position})")
 
         pos_u = (position or getattr(donor, "position", "") or "").strip().upper()
         donor_pos = (getattr(donor, "position", "") or pos_u).strip().upper()

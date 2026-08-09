@@ -224,12 +224,28 @@ def apply_transfers(
         else:
             to = resolve_team_name(to_raw, session_league) or to_raw
         if not pos:
-            from player_stats import find_player_by_name, get_session
+            if is_free_agent_team(frm_raw):
+                from utils.free_agents_db import open_fa_session
+                from utils.player_transfer import _find_fa_donor
 
-            pl, _ = find_player_by_name(get_session(session_league), name, frm)
-            if pl is None:
-                raise ValueError(f"Нет позиции для {name} ({frm} → {to}) — укажи в transfers_export.")
-            pos = str(pl.position or "").strip()
+                fa_sess, fa_eng = open_fa_session()
+                try:
+                    _, row = _find_fa_donor(fa_sess, name, "")
+                    if row is not None:
+                        pos = str(getattr(row, "position", "") or "").strip()
+                finally:
+                    fa_sess.close()
+                    fa_eng.dispose()
+            if not pos:
+                from player_stats import find_player_by_name, get_session
+
+                pl, _ = find_player_by_name(get_session(session_league), name, frm)
+                if pl is None:
+                    raise ValueError(
+                        f"Нет позиции для {name} ({frm} → {to}) — укажи в transfers_export "
+                        "или добавь игрока в free_agents.db."
+                    )
+                pos = str(pl.position or "").strip()
         if not pos:
             raise ValueError(f"Нет позиции у трансфера: {name}")
         st = (t.get("status") or "bench")
