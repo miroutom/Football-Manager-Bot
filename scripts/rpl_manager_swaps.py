@@ -4,6 +4,7 @@
 Свапы РПЛ ↔ топ-лиги внутри одного менеджера (Roman / Lika).
 
 Игрок 75–79 из клуба топ-лиги ↔ игрок 80+ той же позиции из РПЛ-клуба того же менеджера.
+Если 80+ на позиции в РПЛ не осталось — любой игрок той же позиции с рейтингом выше (например Вейга 75 → Палмер 78).
 Пары клубов — по силе (Сити↔Зенит, Барселона↔Локомотив, …).
 
   python3 scripts/rpl_manager_swaps.py \\
@@ -135,22 +136,49 @@ def _pair_teams(foreign: list[str], rpl: list[str]) -> list[tuple[str, str]]:
     return pairs
 
 
+def _candidates_at_pos(
+    pool: list[PlRef],
+    pos: str,
+    *,
+    used_keys: set[tuple[str, str]],
+    min_ovr: int,
+    strict_gt: int | None = None,
+) -> list[PlRef]:
+    out: list[PlRef] = []
+    for r in pool:
+        if r.key in used_keys:
+            continue
+        if str(r.player.get("position") or "") != pos:
+            continue
+        ovr = int(r.player.get("overall") or 0)
+        if ovr < min_ovr:
+            continue
+        if strict_gt is not None and ovr <= strict_gt:
+            continue
+        out.append(r)
+    out.sort(
+        key=lambda r: (-int(r.player.get("overall") or 0), r.player.get("name") or "")
+    )
+    return out
+
+
 def _find_swaps_for_pair(
     foreign_team: dict,
     rpl_team: dict,
     *,
+    rpl_pool: list[dict],
     used_keys: set[tuple[str, str]],
-) -> list[tuple[PlRef, PlRef]]:
+) -> list[tuple[PlRef, PlRef, str]]:
     weak = [
         r
         for r in _iter_players(foreign_team)
         if 75 <= int(r.player.get("overall") or 0) <= 79 and r.key not in used_keys
     ]
-    strong = [
-        r
-        for r in _iter_players(rpl_team)
-        if int(r.player.get("overall") or 0) >= 80 and r.key not in used_keys
-    ]
+    paired_rpl = _iter_players(rpl_team)
+    all_rpl: list[PlRef] = []
+    for rt in rpl_pool:
+        all_rpl.extend(_iter_players(rt))
+
     weak.sort(
         key=lambda r: (
             _ZONE_RANK.get(r.zone, 9),
@@ -158,26 +186,36 @@ def _find_swaps_for_pair(
             r.player.get("name") or "",
         )
     )
-    strong_by_pos: dict[str, list[PlRef]] = {}
-    for r in strong:
-        strong_by_pos.setdefault(r.player.get("position") or "", []).append(r)
-    for pos in strong_by_pos:
-        strong_by_pos[pos].sort(
-            key=lambda r: (-int(r.player.get("overall") or 0), r.player.get("name") or "")
-        )
 
-    swaps: list[tuple[PlRef, PlRef]] = []
+    swaps: list[tuple[PlRef, PlRef, str]] = []
     for w in weak:
         pos = str(w.player.get("position") or "")
-        cands = [
-            r
-            for r in strong_by_pos.get(pos, [])
-            if r.key not in used_keys
-        ]
-        if not cands:
+        weak_ovr = int(w.player.get("overall") or 0)
+        pick: PlRef | None = None
+        tier = "80+"
+
+        cands = _candidates_at_pos(paired_rpl, pos, used_keys=used_keys, min_ovr=80)
+        if cands:
+            pick = cands[0]
+        else:
+            cands = _candidates_at_pos(
+                paired_rpl, pos, used_keys=used_keys, min_ovr=1, strict_gt=weak_ovr
+            )
+            if cands:
+                pick = cands[0]
+                tier = "upgrade"
+            else:
+                others = [r for r in all_rpl if r.team != rpl_team.get("name")]
+                cands = _candidates_at_pos(
+                    others, pos, used_keys=used_keys, min_ovr=1, strict_gt=weak_ovr
+                )
+                if cands:
+                    pick = cands[0]
+                    tier = "upgrade"
+
+        if pick is None:
             continue
-        pick = cands[0]
-        swaps.append((w, pick))
+        swaps.append((w, pick, tier))
         used_keys.add(w.key)
         used_keys.add(pick.key)
     return swaps
@@ -192,6 +230,7 @@ def apply_manager_swaps(
 ) -> list[dict[str, Any]]:
     teams = state.get("teams") or []
     by_name = _team_index(teams)
+    rpl_teams = [by_name[n] for n in rpl_order if n in by_name]
     used: set[tuple[str, str]] = set()
     log: list[dict[str, Any]] = []
 
@@ -200,7 +239,9 @@ def apply_manager_swaps(
         rt = by_name.get(rpl_name)
         if not ft or not rt:
             continue
-        for w, s in _find_swaps_for_pair(ft, rt, used_keys=used):
+        for w, s, tier in _find_swaps_for_pair(
+            ft, rt, rpl_pool=rpl_teams, used_keys=used
+        ):
             weak_name = w.player.get("name")
             weak_pos = w.player.get("position")
             weak_ovr = w.player.get("overall")
@@ -211,8 +252,10 @@ def apply_manager_swaps(
             log.append(
                 {
                     "manager": manager,
+                    "tier": tier,
                     "foreign_club": foreign_name,
                     "rpl_club": rpl_name,
+                    "rpl_club_in": s.team,
                     "foreign_out": {
                         "name": weak_name,
                         "position": weak_pos,
@@ -282,9 +325,11 @@ def main() -> int:
     for row in all_log:
         fo = row["foreign_out"]
         ri = row["rpl_in"]
+        tier = row.get("tier") or "80+"
+        rpl_from = row.get("rpl_club_in") or row["rpl_club"]
         print(
-            f"  [{row['manager']}] {row['foreign_club']}↔{row['rpl_club']}: "
-            f"{fo['name']} {fo['position']} {fo['overall']} ({fo['zone']}) → {row['rpl_club']}  |  "
+            f"  [{row['manager']}|{tier}] {row['foreign_club']}↔{row['rpl_club']}: "
+            f"{fo['name']} {fo['position']} {fo['overall']} ({fo['zone']}) → {rpl_from}  |  "
             f"{ri['name']} {ri['position']} {ri['overall']} ({ri['zone']}) → {row['foreign_club']}"
         )
     print("\nFiles:")
