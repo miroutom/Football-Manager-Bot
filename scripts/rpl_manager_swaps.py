@@ -350,13 +350,22 @@ def main() -> int:
     p = argparse.ArgumentParser(description="RPL ↔ top-league swaps per manager.")
     p.add_argument("--state", required=True, help="transfer_window_state_*.json")
     p.add_argument("--out-dir", default=str(Path.home() / "Downloads"))
-    p.add_argument("--suffix", default="_rpl_swaps")
+    p.add_argument("--suffix", default=None, help="default: _<stem>_rpl_swaps from --state")
     args = p.parse_args()
 
     src = Path(args.state).expanduser()
     if not src.is_file():
         print("Not found:", src, file=sys.stderr)
         return 1
+
+    suffix = args.suffix
+    if not suffix:
+        stem = src.name
+        if stem.startswith("transfer_window_state") and stem.endswith(".json"):
+            stem = stem[len("transfer_window_state") : -len(".json")]
+        elif stem.endswith(".json"):
+            stem = Path(stem).stem
+        suffix = f"{stem}_rpl_swaps" if stem else "_rpl_swaps"
 
     state = json.loads(src.read_text(encoding="utf-8"))
     state = copy.deepcopy(state)
