@@ -1704,7 +1704,7 @@ def render_pvp_kryptonite_list_png(*, min_played: int = 3) -> bytes:
         if note:
             draw.text((x0 + 980, ry + 14), note, font=font_sm, fill=_DIM)
 
-    foot = "Нажми пару ниже — полная хронология встреч"
+    foot = "Нажми пару в клавиатуре (стр. ← →) — полная хронология встреч"
     draw.text((_PAD, y + table_h + 12), foot, font=font_sm, fill=_DIM)
     return _to_png(im.convert("RGB"))
 

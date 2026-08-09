@@ -60,6 +60,7 @@ history_router = Router()
 _pending_two: dict[int, dict[str, Any]] = {}
 # user_id -> list[kryptonite row dict] для кнопок детализации
 _krypto_cache: dict[int, list[dict[str, Any]]] = {}
+_KRYPTO_PAGE_SIZE = 12
 
 _AWARD_CAPTION = {
     "golden_ball": "Золотой мяч",
@@ -180,22 +181,58 @@ def history_winner_squad_season_kb(
 
 
 def history_kryptonite_pick_kb(
-    items: list[dict[str, Any]], *, back: str = "hist:back"
+    items: list[dict[str, Any]], *, page: int = 0, back: str = "hist:back"
 ) -> InlineKeyboardMarkup:
+    n = len(items)
+    total_pages = max(1, (n + _KRYPTO_PAGE_SIZE - 1) // _KRYPTO_PAGE_SIZE)
+    page = max(0, min(int(page), total_pages - 1))
+    start = page * _KRYPTO_PAGE_SIZE
+    chunk = items[start : start + _KRYPTO_PAGE_SIZE]
+
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
-    for i, r in enumerate(items[:12]):
+    for i, r in enumerate(chunk):
+        idx = start + i
         dom = str(r.get("dominant") or "")
         vic = str(r.get("victim") or "")
         lab = f"{_fit_team_btn(dom, 12)}→{_fit_team_btn(vic, 12)}"
-        row.append(InlineKeyboardButton(text=lab, callback_data=f"hist:krypto:d:{i}"))
+        row.append(InlineKeyboardButton(text=lab, callback_data=f"hist:krypto:d:{idx}"))
         if len(row) == 2:
             rows.append(row)
             row = []
     if row:
         rows.append(row)
+
+    if total_pages > 1:
+        nav: list[InlineKeyboardButton] = []
+        if page > 0:
+            nav.append(InlineKeyboardButton(text="←", callback_data=f"hist:krypto:p:{page - 1}"))
+        nav.append(
+            InlineKeyboardButton(
+                text=f"{page + 1}/{total_pages}",
+                callback_data="hist:krypto:noop",
+            )
+        )
+        if page < total_pages - 1:
+            nav.append(InlineKeyboardButton(text="→", callback_data=f"hist:krypto:p:{page + 1}"))
+        rows.append(nav)
+
     rows.append([InlineKeyboardButton(text="« Назад", callback_data=back)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _kryptonite_pick_caption(items: list[dict[str, Any]], page: int = 0) -> str:
+    n = len(items)
+    total_pages = max(1, (n + _KRYPTO_PAGE_SIZE - 1) // _KRYPTO_PAGE_SIZE)
+    page = max(0, min(int(page), total_pages - 1))
+    if total_pages <= 1:
+        return f"Выбери пару для полной хронологии ({n}):"
+    start = page * _KRYPTO_PAGE_SIZE + 1
+    end = min(n, (page + 1) * _KRYPTO_PAGE_SIZE)
+    return (
+        f"Выбери пару для полной хронологии · "
+        f"стр. {page + 1}/{total_pages} · пары {start}–{end} из {n}"
+    )
 
 
 def history_league_choice_kb(
@@ -1253,9 +1290,38 @@ async def cb_hist_kryptonite_list(callback: CallbackQuery) -> None:
         )
         if items:
             await callback.message.answer(
-                "Выбери пару для полной хронологии:",
-                reply_markup=history_kryptonite_pick_kb(items),
+                _kryptonite_pick_caption(items),
+                reply_markup=history_kryptonite_pick_kb(items, page=0),
             )
+
+
+@history_router.callback_query(F.data == "hist:krypto:noop")
+async def cb_hist_kryptonite_noop(callback: CallbackQuery) -> None:
+    await callback.answer()
+
+
+@history_router.callback_query(F.data.startswith("hist:krypto:p:"))
+async def cb_hist_kryptonite_page(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 4:
+        await callback.answer()
+        return
+    try:
+        page = int(parts[3])
+    except ValueError:
+        await callback.answer()
+        return
+    uid = _uid(callback)
+    items = _krypto_cache.get(uid) or []
+    if not items:
+        await callback.answer("Список устарел — открой PVP-криптониты снова", show_alert=True)
+        return
+    await callback.answer()
+    if callback.message:
+        await callback.message.edit_text(
+            _kryptonite_pick_caption(items, page=page),
+            reply_markup=history_kryptonite_pick_kb(items, page=page),
+        )
 
 
 @history_router.callback_query(F.data.startswith("hist:krypto:d:"))
