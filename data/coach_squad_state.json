@@ -16,7 +16,7 @@
     },
     "ancelotti": {
       "name": "Анчеллоти",
-      "active_formation_id": 9
+      "active_formation_id": 1
     },
     "pochettino": {
       "name": "Почеттино",
@@ -48,7 +48,7 @@
     },
     "simeone": {
       "name": "Симеоне",
-      "active_formation_id": 5
+      "active_formation_id": 1
     },
     "goncharenko": {
       "name": "Гончаренко",
@@ -93,7 +93,7 @@
     },
     "terzic": {
       "name": "Терзич",
-      "active_formation_id": 2
+      "active_formation_id": 1
     },
     "ten_hag": {
       "name": "тен Хаг",
@@ -109,7 +109,7 @@
     },
     "inzaghi": {
       "name": "Инзаги",
-      "active_formation_id": 9
+      "active_formation_id": 5
     },
     "abaskal": {
       "name": "Абаскаль",
@@ -198,7 +198,7 @@
     },
     "pioli_spartak": {
       "name": "Пиоли",
-      "active_formation_id": 5
+      "active_formation_id": 1
     },
     "xavi": {
       "name": "Хави",
