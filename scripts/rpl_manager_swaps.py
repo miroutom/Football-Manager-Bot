@@ -129,6 +129,45 @@ def _swap_identity(a: PlRef, b: PlRef) -> None:
     _apply_identity(b.player, ia, team=b.team)
 
 
+def _load_formations() -> list[dict[str, Any]]:
+    path = _ROOT / "tools" / "transfer_window_app" / "rosters.json"
+    if not path.is_file():
+        return []
+    return json.loads(path.read_text(encoding="utf-8")).get("formations") or []
+
+
+def _formation_for(team: dict, formations: list[dict[str, Any]]) -> dict[str, Any] | None:
+    fid = int(team.get("formation_id") or 1)
+    return next((f for f in formations if int(f.get("id") or 0) == fid), None)
+
+
+def _team_squad_complete(team: dict, formations: list[dict[str, Any]]) -> bool:
+    from utils.transfer_squad_quota import evaluate_team_squad
+
+    return bool(evaluate_team_squad(team, _formation_for(team, formations)).get("complete"))
+
+
+def _try_swap_pair(
+    w: PlRef,
+    s: PlRef,
+    *,
+    foreign_team: dict,
+    rpl_team: dict,
+    formations: list[dict[str, Any]],
+) -> bool:
+    """Свап только если оба клуба остаются с валидной заявкой (32 + слоты замен)."""
+    ia = _extract_identity(w.player)
+    ib = _extract_identity(s.player)
+    _swap_identity(w, s)
+    ok = _team_squad_complete(foreign_team, formations) and _team_squad_complete(
+        rpl_team, formations
+    )
+    if not ok:
+        _apply_identity(w.player, ia, team=w.team)
+        _apply_identity(s.player, ib, team=s.team)
+    return ok
+
+
 def _pair_teams(foreign: list[str], rpl: list[str]) -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
     for i, f in enumerate(foreign):
@@ -216,8 +255,6 @@ def _find_swaps_for_pair(
         if pick is None:
             continue
         swaps.append((w, pick, tier))
-        used_keys.add(w.key)
-        used_keys.add(pick.key)
     return swaps
 
 
@@ -231,8 +268,10 @@ def apply_manager_swaps(
     teams = state.get("teams") or []
     by_name = _team_index(teams)
     rpl_teams = [by_name[n] for n in rpl_order if n in by_name]
+    formations = _load_formations()
     used: set[tuple[str, str]] = set()
     log: list[dict[str, Any]] = []
+    skipped = 0
 
     for foreign_name, rpl_name in _pair_teams(foreign_order, rpl_order):
         ft = by_name.get(foreign_name)
@@ -248,7 +287,16 @@ def apply_manager_swaps(
             strong_name = s.player.get("name")
             strong_pos = s.player.get("position")
             strong_ovr = s.player.get("overall")
-            _swap_identity(w, s)
+            weak_key = w.key
+            strong_key = s.key
+            rpl_side = by_name.get(s.team) or rt
+            if not _try_swap_pair(
+                w, s, foreign_team=ft, rpl_team=rpl_side, formations=formations
+            ):
+                skipped += 1
+                continue
+            used.add(weak_key)
+            used.add(strong_key)
             log.append(
                 {
                     "manager": manager,
@@ -270,6 +318,8 @@ def apply_manager_swaps(
                     },
                 }
             )
+    if skipped:
+        log.append({"_skipped_invalid": skipped})
     return log
 
 
@@ -321,8 +371,18 @@ def main() -> int:
 
     paths = _export_bundle(state, Path(args.out_dir).expanduser(), args.suffix)
 
-    print(f"Swaps: {len(all_log)} (Lika {len(lika_log)}, Roman {len(roman_log)})")
-    for row in all_log:
+    from utils.transfer_squad_quota import evaluate_all_teams, format_missing_hint
+
+    formations = _load_formations()
+    ev = evaluate_all_teams(state.get("teams") or [], formations)
+    incomplete = [r for r in ev.get("teams") or [] if not r.get("complete")]
+
+    real_log = [r for r in all_log if "_skipped_invalid" not in r]
+    skipped = next((r.get("_skipped_invalid") for r in all_log if "_skipped_invalid" in r), 0)
+
+    print(f"Swaps: {len(real_log)} (Lika {sum(1 for r in real_log if r.get('manager')=='Lika')}, "
+          f"Roman {sum(1 for r in real_log if r.get('manager')=='Roman')}, skipped {skipped})")
+    for row in real_log:
         fo = row["foreign_out"]
         ri = row["rpl_in"]
         tier = row.get("tier") or "80+"
@@ -335,6 +395,12 @@ def main() -> int:
     print("\nFiles:")
     for k, path in paths.items():
         print(f"  {k}: {path}")
+    if incomplete:
+        print(f"\nНеполные заявки после свапов: {len(incomplete)}")
+        for r in incomplete:
+            print(f"  {r['team']}: {format_missing_hint(r)}")
+    else:
+        print("\nВсе клубы с валидной заявкой (32 + слоты замен).")
     return 0
 
 
