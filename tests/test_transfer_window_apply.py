@@ -48,13 +48,13 @@ def test_apply_progress_callback_dry_run():
     assert calls[-1][2] == "Готово"
 
 
-def test_apply_squads_text_skips_complete_roster():
+def test_apply_squads_text_skips_matching_roster():
     squads = (
         "@Zenit\n==== start ===\nИванов ЦП 80\n\n"
         "@Spartak\n==== start ===\nПетров ЦП 80\n"
     )
-    with patch("utils.roster_manual.team_squad_is_complete") as complete:
-        complete.side_effect = lambda team, **_: team == "Zenit"
+    with patch("utils.roster_manual.team_squad_matches_declaration") as matches:
+        matches.side_effect = lambda team, entries, **_: team == "Zenit"
         with patch("utils.roster_manual.apply_team_squad_declaration") as apply_decl:
             applied, skipped = apply_squads_text(squads, dry_run=False)
     assert applied == 1

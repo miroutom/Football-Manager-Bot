@@ -280,9 +280,8 @@ def apply_squads_text(
     from utils.roster_manual import (
         apply_team_squad_declaration,
         parse_squad_declaration_text,
-        team_squad_is_complete,
+        team_squad_matches_declaration,
     )
-    from utils.squad_limits import SQUAD_MAX
 
     body = strip_transfers_appendix(text)
     blocks = split_bulk_blocks(body)
@@ -291,7 +290,10 @@ def apply_squads_text(
     step = 0
     for team_raw, block in blocks:
         team = resolve_team_label(team_raw)
-        if team_squad_is_complete(team):
+        entries, errors = parse_squad_declaration_text(block)
+        if errors:
+            raise ValueError(f"Разбор заявки {team}: {errors[0]}")
+        if not dry_run and team_squad_matches_declaration(team, entries):
             skipped += 1
             step += 1
             if on_progress and progress_total > 0:
@@ -300,14 +302,11 @@ def apply_squads_text(
                     done=progress_base + step,
                     total=progress_total,
                     phase="Составы",
-                    detail=f"{team} · готов ({SQUAD_MAX})",
+                    detail=f"{team} · без изменений",
                     phase_done=step,
                     phase_total=len(blocks),
                 )
             continue
-        entries, errors = parse_squad_declaration_text(block)
-        if errors:
-            raise ValueError(f"Разбор заявки {team}: {errors[0]}")
         if dry_run:
             applied += 1
             step += 1

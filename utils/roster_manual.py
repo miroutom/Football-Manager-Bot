@@ -163,6 +163,81 @@ def team_squad_is_complete(team: str, *, session_league: Any | None = None) -> b
     return count_team_squad_players(team, session_league=session_league) >= SQUAD_MAX
 
 
+def _active_roster_status_map(
+    sleague: Any, team: str
+) -> dict[tuple[str, str], tuple[str, str | None]]:
+    from utils.player_transfer import normalize_player_name_for_db
+    from utils.transfer_input import normalize_position
+
+    out: dict[tuple[str, str], tuple[str, str | None]] = {}
+    for _Cls, r in _iter_team_players(sleague, team):
+        if bool(getattr(r, "left_team", False)):
+            continue
+        nm = normalize_player_name_for_db(r.name or "")
+        pp = normalize_position(r.position or "")
+        st = (getattr(r, "status", None) or "bench").strip().lower()
+        if st not in ("start", "bench", "reserve"):
+            st = "bench"
+        slot = getattr(r, "lineup_slot", None)
+        slot_s = str(slot).strip().upper() if slot and st == "start" else None
+        out[_roster_key(nm, pp)] = (st, slot_s)
+    return out
+
+
+def team_squad_matches_declaration(
+    team: str,
+    entries: list[tuple[str, str, str, int | None, str | None, str | None]],
+    *,
+    session_league: Any | None = None,
+) -> bool:
+    """Заявка в БД уже совпадает с текстом — повторное применение не нужно."""
+    from utils.player_transfer import normalize_player_name_for_db
+    from utils.transfer_input import normalize_position, resolve_team_name
+    from utils.utils import session_league as default_league
+
+    if not entries:
+        return False
+    sleague = session_league or default_league
+    team_raw = (team or "").strip()
+    if len(team_raw) < 2:
+        return False
+    team_res = resolve_team_name(team_raw, sleague) or team_raw
+
+    declared: dict[tuple[str, str], tuple[str, str | None]] = {}
+    for name, pos, st, _ovr, _nat, slot in entries:
+        nm = normalize_player_name_for_db(name)
+        pp = normalize_position(pos)
+        stx = (st or "bench").strip().lower()
+        if stx not in ("start", "bench", "reserve"):
+            stx = "bench"
+        slot_s = str(slot).strip().upper() if slot and stx == "start" else None
+        declared[_roster_key(nm, pp)] = (stx, slot_s)
+
+    return declared == _active_roster_status_map(sleague, team_res)
+
+
+def _player_row_matches_declaration(
+    row: Any,
+    status: str,
+    overall: int | None,
+    lineup_slot: str | None,
+) -> bool:
+    st_want = (status or "bench").strip().lower()
+    st_db = (getattr(row, "status", None) or "bench").strip().lower()
+    if st_db not in ("start", "bench", "reserve"):
+        st_db = "bench"
+    if st_db != st_want:
+        return False
+    if st_want == "start":
+        slot_db = str(getattr(row, "lineup_slot", None) or "").strip().upper() or None
+        slot_want = str(lineup_slot or "").strip().upper() or None
+        if slot_db != slot_want:
+            return False
+    if overall is not None and int(getattr(row, "overall", 0) or 0) != int(overall):
+        return False
+    return True
+
+
 def _release_player_from_team_sessions(
     sleague: Any, scl: Any, team: str, nm: str, pos: str
 ) -> str:
@@ -254,6 +329,7 @@ def add_player_to_team_roster(
     mirror_synced: bool = True,
     commit: bool = True,
     skip_status_cascade: bool = False,
+    skip_person_lookup: bool = False,
 ) -> dict[str, Any]:
     from utils import cumulative_mirror
     from utils.common_db import rebuild_common_database, resolve_team_name_for_cl_pool
@@ -279,8 +355,8 @@ def add_player_to_team_roster(
     if cl_team:
         _Cls_c, row_c = fpr(scl, cl_team, nm, pos)
 
-    cum = _find_rows_cumulative_common(nm, pos)
     existing = row_l is not None or row_c is not None
+    cum = _find_rows_cumulative_common(nm, pos) if not existing else []
 
     if existing:
         ovr_res = int(
@@ -345,7 +421,7 @@ def add_player_to_team_roster(
     preferred_pid = None
     if existing:
         preferred_pid = row_person_id(row_l) or row_person_id(row_c)
-    if preferred_pid is None:
+    if preferred_pid is None and not skip_person_lookup:
         preferred_pid = lookup_canonical_person_id_by_team(nm, team=team) or lookup_canonical_person_id(
             nm, pos, team=team
         )
@@ -953,19 +1029,29 @@ def apply_team_squad_declaration(
     deduped = list(od.values())
     declared = set(od.keys())
 
+    current_rows: dict[tuple[str, str], Any] = {}
+    for _Cls, r in _iter_team_players(sleague, team):
+        if bool(getattr(r, "left_team", False)):
+            continue
+        nm0 = normalize_player_name_for_db(r.name or "")
+        pp0 = normalize_position(r.position or "")
+        current_rows[_roster_key(nm0, pp0)] = r
+
     released_labels: list[str] = []
     try:
-        for _Cls, r in list(_iter_team_players(sleague, team)):
-            nm = normalize_player_name_for_db(r.name or "")
-            pp = normalize_position(r.position or "")
-            k = _roster_key(nm, pp)
+        for k, r in list(current_rows.items()):
             if k in declared:
                 continue
+            nm = normalize_player_name_for_db(r.name or "")
+            pp = normalize_position(r.position or "")
             tag = _release_player_from_team_sessions(sleague, scl, team, nm, pp)
             if tag:
                 released_labels.append(f"{nm} ({pp}): {tag}")
 
         for nm, pp, st, ovr, nat, slot in deduped:
+            row = current_rows.get(_roster_key(nm, pp))
+            if row is not None and _player_row_matches_declaration(row, st, ovr, slot):
+                continue
             add_player_to_team_roster(
                 team,
                 nm,
@@ -980,6 +1066,7 @@ def apply_team_squad_declaration(
                 mirror_synced=False,
                 commit=False,
                 skip_status_cascade=True,
+                skip_person_lookup=True,
             )
 
         sleague.commit()
