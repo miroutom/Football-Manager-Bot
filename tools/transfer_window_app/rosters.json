@@ -1,6 +1,6 @@
 {
   "season": 4,
-  "exported_at": 1785634044,
+  "exported_at": 1786094007,
   "injury_as_of_month": 6,
   "injured_count": 0,
   "squad_rules": {
@@ -1467,6 +1467,62 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -1745,6 +1801,62 @@
           "overall": 78,
           "slot": null,
           "person_id": 98,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -2104,6 +2216,55 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -2374,6 +2535,69 @@
           "overall": 78,
           "slot": null,
           "person_id": 697,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -2687,6 +2911,62 @@
           "overall": 78,
           "slot": null,
           "person_id": 703,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -3045,6 +3325,55 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -3331,6 +3660,55 @@
           "overall": 78,
           "slot": null,
           "person_id": 691,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -3690,6 +4068,55 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -3951,6 +4378,76 @@
           "overall": 79,
           "slot": null,
           "person_id": 280,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -4288,6 +4785,69 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -4554,6 +5114,69 @@
           "overall": 80,
           "slot": null,
           "person_id": 417,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -4894,6 +5517,69 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -5171,6 +5857,90 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -5389,6 +6159,104 @@
         }
       ],
       "reserve": [
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
         {
           "id": null,
           "name": null,
@@ -5701,6 +6569,83 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -5976,6 +6921,90 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -6208,12 +7237,100 @@
           "injured": false
         },
         {
+          "id": "Реал|Бойе|ПЗ",
+          "name": "Бойе",
+          "position": "ПЗ",
+          "overall": 80,
+          "slot": null,
+          "person_id": 4974,
+          "injured": false
+        },
+        {
+          "id": "Реал|Гюнтер|ЛЗ",
+          "name": "Гюнтер",
+          "position": "ЛЗ",
+          "overall": 79,
+          "slot": null,
+          "person_id": 4970,
+          "injured": false
+        },
+        {
           "id": "Реал|Гиттенс|ЛФА",
           "name": "Гиттенс",
           "position": "ЛФА",
           "overall": 75,
           "slot": null,
           "person_id": 65,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -6272,6 +7389,8 @@
         "Реал|Менди|ЛЗ",
         "Реал|Цыганков|ПФА",
         "Реал|Камавинга|ЦП",
+        "Реал|Бойе|ПЗ",
+        "Реал|Гюнтер|ЛЗ",
         "Реал|Гиттенс|ЛФА"
       ]
     },
@@ -6491,6 +7610,15 @@
           "injured": false
         },
         {
+          "id": "Барселона|Робинсон|ЛЗ",
+          "name": "Робинсон",
+          "position": "ЛЗ",
+          "overall": 78,
+          "slot": null,
+          "person_id": 4972,
+          "injured": false
+        },
+        {
           "id": "Барселона|Коне|ЦП",
           "name": "Коне",
           "position": "ЦП",
@@ -6506,6 +7634,69 @@
           "overall": 76,
           "slot": null,
           "person_id": 893,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -6565,6 +7756,7 @@
         "Барселона|Кристенсен|ЦЗ",
         "Барселона|Моффи|ФРВ",
         "Барселона|Уннерсталь|ВРТ",
+        "Барселона|Робинсон|ЛЗ",
         "Барселона|Коне|ЦП",
         "Барселона|Тавареш|ЛЗ"
       ]
@@ -6767,9 +7959,9 @@
       ],
       "reserve": [
         {
-          "id": "Атлетико|Адамс|ЦОП",
+          "id": "Атлетико|Адамс|ЦП",
           "name": "Адамс",
-          "position": "ЦОП",
+          "position": "ЦП",
           "overall": 78,
           "slot": null,
           "person_id": 552,
@@ -6854,6 +8046,62 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -6875,7 +8123,7 @@
         "Атлетико|Эрмосо|ЦЗ",
         "Атлетико|Сауль|ЦП",
         "Атлетико|Хоселу|ФРВ",
-        "Атлетико|Адамс|ЦОП",
+        "Атлетико|Адамс|ЦП",
         "Атлетико|Альварез|ПЗ",
         "Атлетико|Додо|ПЗ",
         "Атлетико|Маммана|ЦЗ",
@@ -7132,6 +8380,62 @@
           "overall": 77,
           "slot": null,
           "person_id": 298,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -7455,6 +8759,83 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -7703,6 +9084,83 @@
           "overall": 78,
           "slot": null,
           "person_id": 11,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -7991,6 +9449,104 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -8206,6 +9762,104 @@
         }
       ],
       "reserve": [
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
         {
           "id": null,
           "name": null,
@@ -8537,6 +10191,69 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -8776,6 +10493,90 @@
           "overall": 75,
           "slot": null,
           "person_id": 791,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -9111,6 +10912,69 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -9361,6 +11225,83 @@
           "overall": 79,
           "slot": null,
           "person_id": 1086,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -9672,6 +11613,90 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -9863,9 +11888,9 @@
           "injured": false
         },
         {
-          "id": "Фиорентина|Малком|ФРВ",
+          "id": "Фиорентина|Малком|ПФА",
           "name": "Малком",
-          "position": "ФРВ",
+          "position": "ПФА",
           "overall": 79,
           "slot": null,
           "person_id": 52,
@@ -9925,6 +11950,104 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -9940,7 +12063,7 @@
         "Фиорентина|Ибаньес|ЦЗ",
         "Фиорентина|Са|ВРТ",
         "Фиорентина|Барак|ЦП",
-        "Фиорентина|Малком|ФРВ",
+        "Фиорентина|Малком|ПФА",
         "Фиорентина|Мингз|ЦЗ",
         "Фиорентина|Паризи|ЛЗ"
       ]
@@ -10149,6 +12272,97 @@
           "overall": 80,
           "slot": null,
           "person_id": 452,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -10438,6 +12652,104 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -10676,30 +12988,89 @@
           "injured": false
         },
         {
-          "id": "Бавария|Грохе|ВРТ",
-          "name": "Грохе",
-          "position": "ВРТ",
-          "overall": 79,
-          "slot": null,
-          "person_id": 995,
-          "injured": false
-        },
-        {
-          "id": "Бавария|Ди Григорио|ВРТ",
-          "name": "Ди Григорио",
-          "position": "ВРТ",
-          "overall": 79,
-          "slot": null,
-          "person_id": 978,
-          "injured": false
-        },
-        {
           "id": "Бавария|Пакета|ЦАП",
           "name": "Пакета",
           "position": "ЦАП",
           "overall": 77,
           "slot": null,
           "person_id": 525,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -10759,8 +13130,6 @@
         "Бавария|Пинеда|ЦАП",
         "Бавария|Гнабри|ЛФА",
         "Бавария|Джака|ЦП",
-        "Бавария|Грохе|ВРТ",
-        "Бавария|Ди Григорио|ВРТ",
         "Бавария|Пакета|ЦАП"
       ]
     },
@@ -11004,6 +13373,69 @@
           "overall": 74,
           "slot": null,
           "person_id": 980,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -11293,6 +13725,104 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -11547,30 +14077,75 @@
           "injured": false
         },
         {
-          "id": "Лейпциг|Хайдара|ЦП",
-          "name": "Хайдара",
-          "position": "ЦП",
-          "overall": 78,
-          "slot": null,
-          "person_id": 503,
-          "injured": false
-        },
-        {
-          "id": "Лейпциг|Блашвич|ВРТ",
-          "name": "Блашвич",
-          "position": "ВРТ",
-          "overall": 77,
-          "slot": null,
-          "person_id": 987,
-          "injured": false
-        },
-        {
           "id": "Лейпциг|Солет|ЦЗ",
           "name": "Солет",
           "position": "ЦЗ",
           "overall": 76,
           "slot": null,
           "person_id": 885,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -11632,8 +14207,6 @@
         "Лейпциг|Биссума|ЦОП",
         "Лейпциг|Шлагер|ЦОП",
         "Лейпциг|Изуни|ФРВ",
-        "Лейпциг|Хайдара|ЦП",
-        "Лейпциг|Блашвич|ВРТ",
         "Лейпциг|Солет|ЦЗ"
       ]
     },
@@ -11868,6 +14441,76 @@
           "overall": 75,
           "slot": null,
           "person_id": 210,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
           "injured": false
         },
         {
@@ -12178,6 +14821,90 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -12361,10 +15088,12 @@
           "injured": false
         },
         {
-          "id": null,
-          "name": null,
-          "position": null,
-          "overall": null,
+          "id": "Вольфсбург|Жегрова|ПФА",
+          "name": "Жегрова",
+          "position": "ПФА",
+          "overall": 78,
+          "slot": null,
+          "person_id": 4978,
           "injured": false
         },
         {
@@ -12424,6 +15153,104 @@
           "position": null,
           "overall": null,
           "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
         }
       ],
       "baseline_ids": [
@@ -12440,7 +15267,8 @@
         "Вольфсбург|Виммер|ПФА",
         "Вольфсбург|Саму Гарсия|ЦП",
         "Вольфсбург|Шмейхель|ВРТ",
-        "Вольфсбург|Руи|ЛЗ"
+        "Вольфсбург|Руи|ЛЗ",
+        "Вольфсбург|Жегрова|ПФА"
       ]
     },
     {
@@ -12637,6 +15465,104 @@
         }
       ],
       "reserve": [
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
+        {
+          "id": null,
+          "name": null,
+          "position": null,
+          "overall": null,
+          "injured": false
+        },
         {
           "id": null,
           "name": null,
@@ -13071,6 +15997,8 @@
     "Реал|Менди|ЛЗ": "Реал",
     "Реал|Цыганков|ПФА": "Реал",
     "Реал|Камавинга|ЦП": "Реал",
+    "Реал|Бойе|ПЗ": "Реал",
+    "Реал|Гюнтер|ЛЗ": "Реал",
     "Реал|Гиттенс|ЛФА": "Реал",
     "Барселона|Тер Штеген|ВРТ": "Барселона",
     "Барселона|Бальде|ЛЗ": "Барселона",
@@ -13092,6 +16020,7 @@
     "Барселона|Кристенсен|ЦЗ": "Барселона",
     "Барселона|Моффи|ФРВ": "Барселона",
     "Барселона|Уннерсталь|ВРТ": "Барселона",
+    "Барселона|Робинсон|ЛЗ": "Барселона",
     "Барселона|Коне|ЦП": "Барселона",
     "Барселона|Тавареш|ЛЗ": "Барселона",
     "Атлетико|Облак|ВРТ": "Атлетико",
@@ -13112,7 +16041,7 @@
     "Атлетико|Эрмосо|ЦЗ": "Атлетико",
     "Атлетико|Сауль|ЦП": "Атлетико",
     "Атлетико|Хоселу|ФРВ": "Атлетико",
-    "Атлетико|Адамс|ЦОП": "Атлетико",
+    "Атлетико|Адамс|ЦП": "Атлетико",
     "Атлетико|Альварез|ПЗ": "Атлетико",
     "Атлетико|Додо|ПЗ": "Атлетико",
     "Атлетико|Маммана|ЦЗ": "Атлетико",
@@ -13332,7 +16261,7 @@
     "Фиорентина|Ибаньес|ЦЗ": "Фиорентина",
     "Фиорентина|Са|ВРТ": "Фиорентина",
     "Фиорентина|Барак|ЦП": "Фиорентина",
-    "Фиорентина|Малком|ФРВ": "Фиорентина",
+    "Фиорентина|Малком|ПФА": "Фиорентина",
     "Фиорентина|Мингз|ЦЗ": "Фиорентина",
     "Фиорентина|Паризи|ЛЗ": "Фиорентина",
     "Лацио|Шунин|ВРТ": "Лацио",
@@ -13391,8 +16320,6 @@
     "Бавария|Пинеда|ЦАП": "Бавария",
     "Бавария|Гнабри|ЛФА": "Бавария",
     "Бавария|Джака|ЦП": "Бавария",
-    "Бавария|Грохе|ВРТ": "Бавария",
-    "Бавария|Ди Григорио|ВРТ": "Бавария",
     "Бавария|Пакета|ЦАП": "Бавария",
     "Дортмунд|Кобель|ВРТ": "Дортмунд",
     "Дортмунд|Мендеш|ЛЗ": "Дортмунд",
@@ -13454,8 +16381,6 @@
     "Лейпциг|Биссума|ЦОП": "Лейпциг",
     "Лейпциг|Шлагер|ЦОП": "Лейпциг",
     "Лейпциг|Изуни|ФРВ": "Лейпциг",
-    "Лейпциг|Хайдара|ЦП": "Лейпциг",
-    "Лейпциг|Блашвич|ВРТ": "Лейпциг",
     "Лейпциг|Солет|ЦЗ": "Лейпциг",
     "Франкфурт|Трапп|ВРТ": "Франкфурт",
     "Франкфурт|Нкунку|ЛЗ": "Франкфурт",
@@ -13511,6 +16436,7 @@
     "Вольфсбург|Саму Гарсия|ЦП": "Вольфсбург",
     "Вольфсбург|Шмейхель|ВРТ": "Вольфсбург",
     "Вольфсбург|Руи|ЛЗ": "Вольфсбург",
+    "Вольфсбург|Жегрова|ПФА": "Вольфсбург",
     "Хоффенхайм|Бауманн|ВРТ": "Хоффенхайм",
     "Хоффенхайм|Керкес|ЛЗ": "Хоффенхайм",
     "Хоффенхайм|Бонджорно|ЦЗ": "Хоффенхайм",
@@ -13531,11 +16457,9 @@
     "Free Agent|Де Поль|ЦП": "Free Agent",
     "Free Agent|Стоунз|ЦЗ": "Free Agent",
     "Free Agent|Аллер|ФРВ": "Free Agent",
+    "Free Agent|Гинтер|ЦЗ": "Free Agent",
     "Free Agent|Гонзалез|ПФА": "Free Agent",
-    "Free Agent|Джеко|ФРВ": "Free Agent",
-    "Free Agent|Ляказет|ФРВ": "Free Agent",
-    "Free Agent|Диа|ФРВ": "Free Agent",
-    "Free Agent|Жиру|ФРВ": "Free Agent",
+    "Free Agent|Давид Гарсия|ЦЗ": "Free Agent",
     "Free Agent|Митома|ЛФА": "Free Agent",
     "Free Agent|Уилсон|ФРВ": "Free Agent",
     "Free Agent|Чуквуезе|ПФА": "Free Agent",
@@ -13545,90 +16469,153 @@
     "Free Agent|Барнс|ЛФА": "Free Agent",
     "Free Agent|Бето|ФРВ": "Free Agent",
     "Free Agent|Бовен|ПФА": "Free Agent",
-    "Free Agent|Бонифасе|ФРВ": "Free Agent",
+    "Free Agent|Коатес|ЦЗ": "Free Agent",
     "Free Agent|Макс Лопес|ЦП": "Free Agent",
     "Free Agent|Скхири|ЦОП": "Free Agent",
     "Free Agent|Терье|ЛФА": "Free Agent",
-    "Free Agent|Буендиа|ФРВ": "Free Agent",
+    "Free Agent|Абубакар|ФРВ": "Free Agent",
+    "Free Agent|Авила|ФРВ": "Free Agent",
+    "Free Agent|Бонуччи|ЦЗ": "Free Agent",
     "Free Agent|Бёрн|ЦЗ": "Free Agent",
     "Free Agent|Ванакен|ЦП": "Free Agent",
+    "Free Agent|Виера|ЦАП": "Free Agent",
+    "Free Agent|Грифо|ЛФА": "Free Agent",
     "Free Agent|Де Рун|ЦОП": "Free Agent",
-    "Free Agent|Джордан|ЦП": "Free Agent",
+    "Free Agent|Делофеу|ФРВ": "Free Agent",
     "Free Agent|Дуглас Луис|ЦП": "Free Agent",
     "Free Agent|Корона|ПФА": "Free Agent",
     "Free Agent|Ламела|ПФА": "Free Agent",
+    "Free Agent|Мертенс|ФРВ": "Free Agent",
     "Free Agent|Саванье|ЦАП": "Free Agent",
+    "Free Agent|Сантос|ЛФА": "Free Agent",
     "Free Agent|Эдвардс|ПФА": "Free Agent",
     "Free Agent|Агуэрд|ЦЗ": "Free Agent",
     "Free Agent|Арамбари|ЦП": "Free Agent",
+    "Free Agent|Бельтран|ЦП": "Free Agent",
     "Free Agent|Бонавентура|ЦАП": "Free Agent",
-    "Free Agent|Зиркзи|ФРВ": "Free Agent",
+    "Free Agent|Грохе|ВРТ": "Free Agent",
+    "Free Agent|Гуири|ЛФА": "Free Agent",
+    "Free Agent|Демирбай|ЦП": "Free Agent",
+    "Free Agent|Ди Григорио|ВРТ": "Free Agent",
+    "Free Agent|Зелараян|ЦАП": "Free Agent",
+    "Free Agent|Зиеш|ЦАП": "Free Agent",
     "Free Agent|Зума|ЦЗ": "Free Agent",
-    "Free Agent|Кастелланос|ФРВ": "Free Agent",
+    "Free Agent|Кабела|ЦАП": "Free Agent",
+    "Free Agent|Катена|ЦЗ": "Free Agent",
+    "Free Agent|Лайнхарт|ЦЗ": "Free Agent",
     "Free Agent|Макгинн|ЦП": "Free Agent",
+    "Free Agent|Мои Гомез|ЦП": "Free Agent",
+    "Free Agent|Мукиеле|ПЗ": "Free Agent",
     "Free Agent|Ндиди|ЦОП": "Free Agent",
+    "Free Agent|Нереш|ПФА": "Free Agent",
+    "Free Agent|Пино|ЛФА": "Free Agent",
     "Free Agent|Ришарлисон|ФРВ": "Free Agent",
     "Free Agent|Ромариньо|ФРВ": "Free Agent",
+    "Free Agent|Ронгер|ЦП": "Free Agent",
+    "Free Agent|Траунер|ЦЗ": "Free Agent",
     "Free Agent|Хименез|ФРВ": "Free Agent",
     "Free Agent|Черны|ПФА": "Free Agent",
     "Free Agent|Антонио|ФРВ": "Free Agent",
     "Free Agent|Артур|ЦП": "Free Agent",
     "Free Agent|Бартра|ЦЗ": "Free Agent",
+    "Free Agent|Бекер|ФРВ": "Free Agent",
     "Free Agent|Булка|ВРТ": "Free Agent",
+    "Free Agent|Варди|ФРВ": "Free Agent",
     "Free Agent|Гектор|ЦП": "Free Agent",
     "Free Agent|Джексон|ФРВ": "Free Agent",
+    "Free Agent|Доехи|ЦЗ": "Free Agent",
+    "Free Agent|Кайнц|ЦАП": "Free Agent",
     "Free Agent|Калабрия|ПЗ": "Free Agent",
     "Free Agent|Кахвечи|ЦАП": "Free Agent",
     "Free Agent|Круз|ЦП": "Free Agent",
     "Free Agent|Лаймер|ЦП": "Free Agent",
     "Free Agent|Лонгстаф|ЦП": "Free Agent",
+    "Free Agent|Малиновский|ЦП": "Free Agent",
+    "Free Agent|Монкайола|ЦП": "Free Agent",
     "Free Agent|Мотинг|ФРВ": "Free Agent",
+    "Free Agent|Наби Кейта|ЦП": "Free Agent",
+    "Free Agent|Наварро|ФРВ": "Free Agent",
+    "Free Agent|Николя Пепе|ПФА": "Free Agent",
     "Free Agent|Озкан|ЦП": "Free Agent",
     "Free Agent|Оливера|ЛЗ": "Free Agent",
     "Free Agent|Паласиос|ЦОП": "Free Agent",
+    "Free Agent|Папе Сарр|ЦП": "Free Agent",
+    "Free Agent|Паулиста|ЦЗ": "Free Agent",
     "Free Agent|Пессина|ЦАП": "Free Agent",
+    "Free Agent|Пицци|ЦП": "Free Agent",
+    "Free Agent|Роберто Перейра|ЦП": "Free Agent",
     "Free Agent|Роял|ПЗ": "Free Agent",
     "Free Agent|Семеду|ПЗ": "Free Agent",
     "Free Agent|Сенси|ЦП": "Free Agent",
     "Free Agent|Соттил|ЛФА": "Free Agent",
+    "Free Agent|Фройлер|ЦП": "Free Agent",
+    "Free Agent|Хайдара|ЦП": "Free Agent",
+    "Free Agent|Юня Ито|ПФА": "Free Agent",
     "Free Agent|Авонийи|ФРВ": "Free Agent",
     "Free Agent|Айвоби|ЛП": "Free Agent",
+    "Free Agent|Алиендро|ЦП": "Free Agent",
     "Free Agent|Альварадо|ПП": "Free Agent",
+    "Free Agent|Амаду Онана|ЦП": "Free Agent",
     "Free Agent|Амири|ЦАП": "Free Agent",
+    "Free Agent|Анхелиньо|ЛЗ": "Free Agent",
     "Free Agent|Барроу|ФРВ": "Free Agent",
+    "Free Agent|Батшуаи|ФРВ": "Free Agent",
     "Free Agent|Бельерин|ПЗ": "Free Agent",
+    "Free Agent|Блашвич|ВРТ": "Free Agent",
+    "Free Agent|Брейтвейт|ФРВ": "Free Agent",
+    "Free Agent|Валент|ЦЗ": "Free Agent",
     "Free Agent|Вандерсон|ПЗ": "Free Agent",
     "Free Agent|Висса|ЛФА": "Free Agent",
+    "Free Agent|Галено|ЛФА": "Free Agent",
     "Free Agent|Герхардт|ЦП": "Free Agent",
     "Free Agent|Джене|ЦЗ": "Free Agent",
+    "Free Agent|Джики|ЦЗ": "Free Agent",
     "Free Agent|Джонс|ЦП": "Free Agent",
+    "Free Agent|Доан|ПФА": "Free Agent",
+    "Free Agent|Жота|ЛФА": "Free Agent",
     "Free Agent|Калверт-Льюин|ФРВ": "Free Agent",
     "Free Agent|Калулу|ЦЗ": "Free Agent",
+    "Free Agent|Кардосо|ЦЗ": "Free Agent",
+    "Free Agent|Карлсон|ЛФА": "Free Agent",
     "Free Agent|Кинтеро|ЦАП": "Free Agent",
+    "Free Agent|Клаессон|ЦП": "Free Agent",
     "Free Agent|Конан|ЛЗ": "Free Agent",
+    "Free Agent|Кордоба|ФРВ": "Free Agent",
     "Free Agent|Крамер|ЦП": "Free Agent",
+    "Free Agent|Лемина|ЦП": "Free Agent",
     "Free Agent|Ленглет|ЦЗ": "Free Agent",
     "Free Agent|Ливай Гарсия|ФРВ": "Free Agent",
     "Free Agent|Лозано|ЛФА": "Free Agent",
     "Free Agent|Луиз Энрике|ЛФА": "Free Agent",
+    "Free Agent|Мелендо|ЦП": "Free Agent",
     "Free Agent|Монтес|ЦЗ": "Free Agent",
     "Free Agent|Науфф|ПФА": "Free Agent",
     "Free Agent|Нельсон|ЦЗ": "Free Agent",
     "Free Agent|Нуньез|ЦЗ": "Free Agent",
     "Free Agent|Паредес|ЦП": "Free Agent",
+    "Free Agent|Пепелу|ЦП": "Free Agent",
     "Free Agent|Пош|ПЗ": "Free Agent",
     "Free Agent|Родригез|ФРВ": "Free Agent",
+    "Free Agent|Родригез|ЛЗ": "Free Agent",
+    "Free Agent|Рубен Гарсия|ЛФА": "Free Agent",
     "Free Agent|Сабали|ПЗ": "Free Agent",
     "Free Agent|Сантьяго Буено|ЦЗ": "Free Agent",
+    "Free Agent|Санчез|ЦЗ": "Free Agent",
     "Free Agent|Соса|ЛЗ": "Free Agent",
     "Free Agent|Сотока|ФРВ": "Free Agent",
+    "Free Agent|Степаненко|ЦП": "Free Agent",
+    "Free Agent|Стрефезза|ПФА": "Free Agent",
     "Free Agent|Сугавару|ПЗ": "Free Agent",
     "Free Agent|Сёюнджю|ЦЗ": "Free Agent",
+    "Free Agent|Тальяфико|ЛЗ": "Free Agent",
+    "Free Agent|Тапия|ЦП": "Free Agent",
     "Free Agent|Тапсоба|ЦЗ": "Free Agent",
+    "Free Agent|Торган Азар|ЛФА": "Free Agent",
     "Free Agent|Ундер|ПФА": "Free Agent",
     "Free Agent|Холс|ЦЗ": "Free Agent",
     "Free Agent|Цимикас|ЛЗ": "Free Agent",
     "Free Agent|Чакир|ВРТ": "Free Agent",
+    "Free Agent|Чемберлен|ЦП": "Free Agent",
     "Free Agent|Юранович|ПЗ": "Free Agent",
     "Free Agent|Антуна|ПФА": "Free Agent",
     "Free Agent|Байиндыр|ВРТ": "Free Agent",
@@ -13636,6 +16623,7 @@
     "Free Agent|Брекало|ЛФА": "Free Agent",
     "Free Agent|Бултер|ПФА": "Free Agent",
     "Free Agent|Буфаль|ФРВ": "Free Agent",
+    "Free Agent|Вермирен|ЦП": "Free Agent",
     "Free Agent|Вёбер|ЦЗ": "Free Agent",
     "Free Agent|Гриллич|ЦОП": "Free Agent",
     "Free Agent|Де Кетеларе|ЦАП": "Free Agent",
@@ -13644,6 +16632,8 @@
     "Free Agent|Дорли|ЦП": "Free Agent",
     "Free Agent|Зубер|ФРВ": "Free Agent",
     "Free Agent|Иванушеч|ЛФА": "Free Agent",
+    "Free Agent|Идрисса|ЦП": "Free Agent",
+    "Free Agent|Исмаила Сарр|ПФА": "Free Agent",
     "Free Agent|Кеан|ФРВ": "Free Agent",
     "Free Agent|Кордова|ЦАП": "Free Agent",
     "Free Agent|Косуну|ЦЗ": "Free Agent",
@@ -13658,35 +16648,59 @@
     "Free Agent|Понграчич|ЦЗ": "Free Agent",
     "Free Agent|Рейна|ПФА": "Free Agent",
     "Free Agent|Телло|ЛФА": "Free Agent",
+    "Free Agent|Трезор|ЛФА": "Free Agent",
     "Free Agent|Фогт|ЦЗ": "Free Agent",
     "Free Agent|Чалоба|ЦЗ": "Free Agent",
     "Free Agent|Челик|ПЗ": "Free Agent",
     "Free Agent|Эрик Санчес|ЦП": "Free Agent",
     "Free Agent|Айна|ЛЗ": "Free Agent",
     "Free Agent|Акпогума|ЦЗ": "Free Agent",
+    "Free Agent|Амат Ндиае|ЛФА": "Free Agent",
     "Free Agent|Андерсон|ПФА": "Free Agent",
     "Free Agent|Арибо|ЦП": "Free Agent",
+    "Free Agent|Баликвиша|ЛФА": "Free Agent",
+    "Free Agent|Балло-Туре|ЛЗ": "Free Agent",
     "Free Agent|Барис Йилмаз|ЛФА": "Free Agent",
     "Free Agent|Барренечеа|ЛФА": "Free Agent",
+    "Free Agent|Вандервурт|ВРТ": "Free Agent",
+    "Free Agent|Винтер|ЦЗ": "Free Agent",
     "Free Agent|Виска|ПФА": "Free Agent",
+    "Free Agent|Вранкс|ЦП": "Free Agent",
     "Free Agent|Вушкович|ЦЗ": "Free Agent",
     "Free Agent|Галларно|ЛЗ": "Free Agent",
     "Free Agent|Гастон Альварез|ЦЗ": "Free Agent",
+    "Free Agent|Гее|ЦП": "Free Agent",
+    "Free Agent|Годс|ЛФА": "Free Agent",
     "Free Agent|Гомес|ЦЗ": "Free Agent",
     "Free Agent|Гутиеррез|ЛЗ": "Free Agent",
+    "Free Agent|Дахиль|ЦЗ": "Free Agent",
+    "Free Agent|Дебаст|ЦЗ": "Free Agent",
+    "Free Agent|Диау|ВРТ": "Free Agent",
+    "Free Agent|Дюранвиль|ЛФА": "Free Agent",
     "Free Agent|Ежов|ПФА": "Free Agent",
     "Free Agent|Иво Грбич|ВРТ": "Free Agent",
+    "Free Agent|Ильман Ндиае|ЦАП": "Free Agent",
     "Free Agent|Каплан|ЦЗ": "Free Agent",
+    "Free Agent|Кейта Баде|ВРТ": "Free Agent",
     "Free Agent|Койта|ФРВ": "Free Agent",
     "Free Agent|Кристиан Оливера|ЛФА": "Free Agent",
+    "Free Agent|Куйпер|ПЗ": "Free Agent",
+    "Free Agent|Лавиа|ЦП": "Free Agent",
     "Free Agent|Лайнер|ПЗ": "Free Agent",
+    "Free Agent|Ламин Камара|ЦП": "Free Agent",
+    "Free Agent|Локонга|ЦП": "Free Agent",
     "Free Agent|Лучиано Родригез|ПФА": "Free Agent",
+    "Free Agent|Малик Фофана|ЛФА": "Free Agent",
+    "Free Agent|Мандела Кейта|ЦП": "Free Agent",
     "Free Agent|Марсель Руиз|ЦП": "Free Agent",
     "Free Agent|Матеус Энрике|ЦП": "Free Agent",
     "Free Agent|Маурис|ЦП": "Free Agent",
     "Free Agent|Медина|ЦАП": "Free Agent",
     "Free Agent|Мор|ПФА": "Free Agent",
     "Free Agent|Нвободо|ЦП": "Free Agent",
+    "Free Agent|Нгонге|ПФА": "Free Agent",
+    "Free Agent|Ноа Мбамба|ЦП": "Free Agent",
+    "Free Agent|Ноа Фадига|ПЗ": "Free Agent",
     "Free Agent|Окойе|ВРТ": "Free Agent",
     "Free Agent|Ониедика|ЦП": "Free Agent",
     "Free Agent|Ониека|ЦП": "Free Agent",
@@ -13697,21 +16711,27 @@
     "Free Agent|Пеллистри|ПФА": "Free Agent",
     "Free Agent|Порту|ПФА": "Free Agent",
     "Free Agent|Промес|ЛФА": "Free Agent",
+    "Free Agent|Раскин|ЦП": "Free Agent",
     "Free Agent|Ребич|ФРВ": "Free Agent",
     "Free Agent|Рейс|ЦЗ": "Free Agent",
     "Free Agent|Ридван Йилмаз|ЛЗ": "Free Agent",
     "Free Agent|Ромо|ЦП": "Free Agent",
     "Free Agent|Росси|ФРВ": "Free Agent",
+    "Free Agent|Саббе|ПЗ": "Free Agent",
     "Free Agent|Садик|ФРВ": "Free Agent",
     "Free Agent|Салазар|ЦАП": "Free Agent",
     "Free Agent|Самассеку|ЦОП": "Free Agent",
     "Free Agent|Сануси|ЛЗ": "Free Agent",
+    "Free Agent|Сарделя|ПЗ": "Free Agent",
     "Free Agent|Сари|ЛФА": "Free Agent",
     "Free Agent|Сатчи|ЦЗ": "Free Agent",
     "Free Agent|Сессеньон|ЛЗ": "Free Agent",
+    "Free Agent|Сима|ЛФА": "Free Agent",
     "Free Agent|Скалли|ПЗ": "Free Agent",
     "Free Agent|Соланко|ФРВ": "Free Agent",
     "Free Agent|Стах|ЦП": "Free Agent",
+    "Free Agent|Стройкенс|ЦАП": "Free Agent",
+    "Free Agent|Стукерс|ФРВ": "Free Agent",
     "Free Agent|Сулейманов|ФРВ": "Free Agent",
     "Free Agent|Сумаре|ЦОП": "Free Agent",
     "Free Agent|Телла|ПФА": "Free Agent",
@@ -13722,6 +16742,7 @@
     "Free Agent|Узун|ФРВ": "Free Agent",
     "Free Agent|Факундо|ПП": "Free Agent",
     "Free Agent|Франко Израэль|ВРТ": "Free Agent",
+    "Free Agent|Хабиб Диара|ЦП": "Free Agent",
     "Free Agent|Хорхе Эдуардо|ПЗ": "Free Agent",
     "Free Agent|Хуерта|ЛФА": "Free Agent",
     "Free Agent|Хулиан Араухо|ПЗ": "Free Agent",
@@ -13729,9 +16750,12 @@
     "Free Agent|Шаиби|ЛФА": "Free Agent",
     "Free Agent|Эбу|ПЗ": "Free Agent",
     "Free Agent|Эдуард|ФРВ": "Free Agent",
+    "Free Agent|Эль Ямик|ЦЗ": "Free Agent",
+    "Free Agent|Энгельс|ЦП": "Free Agent",
     "Free Agent|Эхизибу|ПЗ": "Free Agent",
     "Free Agent|Юксек|ЦП": "Free Agent",
     "Free Agent|Юсуф|ЦП": "Free Agent",
+    "Free Agent|Якобс|ЛЗ": "Free Agent",
     "Free Agent|Баккер|ЛЗ": "Free Agent",
     "Free Agent|Бренет|ПЗ": "Free Agent",
     "Free Agent|Диуф|ЦП": "Free Agent",
@@ -13749,12 +16773,12 @@
     "Free Agent|Нианзу|ЦЗ": "Free Agent",
     "Free Agent|Стиллер|ЦП": "Free Agent",
     "Free Agent|Хато|ЦЗ": "Free Agent",
+    "Free Agent|Куриа|ПФА": "Free Agent",
     "Free Agent|Нсоки|ЦЗ": "Free Agent",
     "Free Agent|Поттер|ЛФА": "Free Agent",
     "Free Agent|Холм|ПЗ": "Free Agent",
     "Free Agent|Чо|ФРВ": "Free Agent",
     "Free Agent|Джон|ЛЗ": "Free Agent",
-    "Free Agent|Эль Ямик|ЦЗ": "Free Agent",
     "Free Agent|Жустван|ЦАП": "Free Agent",
     "Free Agent|Семеньо|ФРВ": "Free Agent",
     "Free Agent|Торре|ЦАП": "Free Agent"
@@ -13805,6 +16829,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Гинтер|ЦЗ",
+      "person_id": 4946,
+      "name": "Гинтер",
+      "position": "ЦЗ",
+      "overall": 83,
+      "nation": "Германия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Гонзалез|ПФА",
       "person_id": 48,
       "name": "Гонзалез",
@@ -13816,48 +16851,15 @@
       "fired": true
     },
     {
-      "id": "Free Agent|Джеко|ФРВ",
-      "person_id": 145,
-      "name": "Джеко",
-      "position": "ФРВ",
-      "overall": 83,
-      "nation": "Босния",
-      "nickname": "",
-      "status": "bench",
-      "fired": true
-    },
-    {
-      "id": "Free Agent|Ляказет|ФРВ",
-      "person_id": 264,
-      "name": "Ляказет",
-      "position": "ФРВ",
-      "overall": 83,
-      "nation": "Франция",
-      "nickname": "",
-      "status": "bench",
-      "fired": true
-    },
-    {
-      "id": "Free Agent|Диа|ФРВ",
-      "person_id": 137,
-      "name": "Диа",
-      "position": "ФРВ",
+      "id": "Free Agent|Давид Гарсия|ЦЗ",
+      "person_id": 4948,
+      "name": "Давид Гарсия",
+      "position": "ЦЗ",
       "overall": 82,
-      "nation": "сенегал",
+      "nation": "Испания",
       "nickname": "",
       "status": "bench",
-      "fired": true
-    },
-    {
-      "id": "Free Agent|Жиру|ФРВ",
-      "person_id": 20,
-      "name": "Жиру",
-      "position": "ФРВ",
-      "overall": 82,
-      "nation": "Франция",
-      "nickname": "",
-      "status": "bench",
-      "fired": true
+      "fired": false
     },
     {
       "id": "Free Agent|Митома|ЛФА",
@@ -13959,12 +16961,12 @@
       "fired": true
     },
     {
-      "id": "Free Agent|Бонифасе|ФРВ",
-      "person_id": 4875,
-      "name": "Бонифасе",
-      "position": "ФРВ",
+      "id": "Free Agent|Коатес|ЦЗ",
+      "person_id": 4949,
+      "name": "Коатес",
+      "position": "ЦЗ",
       "overall": 81,
-      "nation": "Нигерия",
+      "nation": "Уругвай",
       "nickname": "",
       "status": "bench",
       "fired": false
@@ -14003,15 +17005,37 @@
       "fired": true
     },
     {
-      "id": "Free Agent|Буендиа|ФРВ",
-      "person_id": 112,
-      "name": "Буендиа",
+      "id": "Free Agent|Абубакар|ФРВ",
+      "person_id": 4951,
+      "name": "Абубакар",
+      "position": "ФРВ",
+      "overall": 80,
+      "nation": "Камерун",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Авила|ФРВ",
+      "person_id": 4953,
+      "name": "Авила",
       "position": "ФРВ",
       "overall": 80,
       "nation": "Аргентина",
       "nickname": "",
       "status": "bench",
-      "fired": true
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Бонуччи|ЦЗ",
+      "person_id": 4956,
+      "name": "Бонуччи",
+      "position": "ЦЗ",
+      "overall": 80,
+      "nation": "Италия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Бёрн|ЦЗ",
@@ -14036,6 +17060,28 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Виера|ЦАП",
+      "person_id": 4954,
+      "name": "Виера",
+      "position": "ЦАП",
+      "overall": 80,
+      "nation": "Испания",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Грифо|ЛФА",
+      "person_id": 4957,
+      "name": "Грифо",
+      "position": "ЛФА",
+      "overall": 80,
+      "nation": "Италия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Де Рун|ЦОП",
       "person_id": 350,
       "name": "Де Рун",
@@ -14047,15 +17093,15 @@
       "fired": true
     },
     {
-      "id": "Free Agent|Джордан|ЦП",
-      "person_id": 446,
-      "name": "Джордан",
-      "position": "ЦП",
+      "id": "Free Agent|Делофеу|ФРВ",
+      "person_id": 4955,
+      "name": "Делофеу",
+      "position": "ФРВ",
       "overall": 80,
       "nation": "Испания",
-      "nickname": "",
+      "nickname": "Дело",
       "status": "bench",
-      "fired": true
+      "fired": false
     },
     {
       "id": "Free Agent|Дуглас Луис|ЦП",
@@ -14091,6 +17137,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Мертенс|ФРВ",
+      "person_id": 4952,
+      "name": "Мертенс",
+      "position": "ФРВ",
+      "overall": 80,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Саванье|ЦАП",
       "person_id": 568,
       "name": "Саванье",
@@ -14100,6 +17157,17 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Сантос|ЛФА",
+      "person_id": 4950,
+      "name": "Сантос",
+      "position": "ЛФА",
+      "overall": 80,
+      "nation": "Португалия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Эдвардс|ПФА",
@@ -14135,6 +17203,17 @@
       "fired": false
     },
     {
+      "id": "Free Agent|Бельтран|ЦП",
+      "person_id": 4964,
+      "name": "Бельтран",
+      "position": "ЦП",
+      "overall": 79,
+      "nation": "Испания",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Бонавентура|ЦАП",
       "person_id": 335,
       "name": "Бонавентура",
@@ -14146,14 +17225,69 @@
       "fired": true
     },
     {
-      "id": "Free Agent|Зиркзи|ФРВ",
-      "person_id": 4839,
-      "name": "Зиркзи",
-      "position": "ФРВ",
+      "id": "Free Agent|Грохе|ВРТ",
+      "person_id": 995,
+      "name": "Грохе",
+      "position": "ВРТ",
       "overall": 79,
-      "nation": "Нидерланды",
+      "nation": "бразилия",
       "nickname": "",
-      "status": "reserve",
+      "status": "bench",
+      "fired": true
+    },
+    {
+      "id": "Free Agent|Гуири|ЛФА",
+      "person_id": 4967,
+      "name": "Гуири",
+      "position": "ЛФА",
+      "overall": 79,
+      "nation": "Франция",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Демирбай|ЦП",
+      "person_id": 4961,
+      "name": "Демирбай",
+      "position": "ЦП",
+      "overall": 79,
+      "nation": "Германия",
+      "nickname": "Дем",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Ди Григорио|ВРТ",
+      "person_id": 978,
+      "name": "Ди Григорио",
+      "position": "ВРТ",
+      "overall": 79,
+      "nation": "Италия",
+      "nickname": "",
+      "status": "bench",
+      "fired": true
+    },
+    {
+      "id": "Free Agent|Зелараян|ЦАП",
+      "person_id": 4958,
+      "name": "Зелараян",
+      "position": "ЦАП",
+      "overall": 79,
+      "nation": "Грузия",
+      "nickname": "Зела",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Зиеш|ЦАП",
+      "person_id": 4960,
+      "name": "Зиеш",
+      "position": "ЦАП",
+      "overall": 79,
+      "nation": "Марокко",
+      "nickname": "",
+      "status": "bench",
       "fired": false
     },
     {
@@ -14168,15 +17302,37 @@
       "fired": true
     },
     {
-      "id": "Free Agent|Кастелланос|ФРВ",
-      "person_id": 160,
-      "name": "Кастелланос",
-      "position": "ФРВ",
+      "id": "Free Agent|Кабела|ЦАП",
+      "person_id": 4968,
+      "name": "Кабела",
+      "position": "ЦАП",
       "overall": 79,
-      "nation": "аргентина",
+      "nation": "Франция",
       "nickname": "",
       "status": "bench",
-      "fired": true
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Катена|ЦЗ",
+      "person_id": 4963,
+      "name": "Катена",
+      "position": "ЦЗ",
+      "overall": 79,
+      "nation": "Испания",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Лайнхарт|ЦЗ",
+      "person_id": 4965,
+      "name": "Лайнхарт",
+      "position": "ЦЗ",
+      "overall": 79,
+      "nation": "Австрия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Макгинн|ЦП",
@@ -14190,6 +17346,28 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Мои Гомез|ЦП",
+      "person_id": 4962,
+      "name": "Мои Гомез",
+      "position": "ЦП",
+      "overall": 79,
+      "nation": "Испания",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Мукиеле|ПЗ",
+      "person_id": 4976,
+      "name": "Мукиеле",
+      "position": "ПЗ",
+      "overall": 79,
+      "nation": "Франция",
+      "nickname": "Муки",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Ндиди|ЦОП",
       "person_id": 4502,
       "name": "Ндиди",
@@ -14199,6 +17377,28 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Нереш|ПФА",
+      "person_id": 4959,
+      "name": "Нереш",
+      "position": "ПФА",
+      "overall": 79,
+      "nation": "Бразилия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Пино|ЛФА",
+      "person_id": 4977,
+      "name": "Пино",
+      "position": "ЛФА",
+      "overall": 79,
+      "nation": "Испания",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ришарлисон|ФРВ",
@@ -14221,6 +17421,28 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Ронгер|ЦП",
+      "person_id": 4966,
+      "name": "Ронгер",
+      "position": "ЦП",
+      "overall": 79,
+      "nation": "Франция",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Траунер|ЦЗ",
+      "person_id": 4969,
+      "name": "Траунер",
+      "position": "ЦЗ",
+      "overall": 79,
+      "nation": "Австрия",
+      "nickname": "Траур",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Хименез|ФРВ",
@@ -14278,6 +17500,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Бекер|ФРВ",
+      "person_id": 4989,
+      "name": "Бекер",
+      "position": "ФРВ",
+      "overall": 78,
+      "nation": "Австрия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Булка|ВРТ",
       "person_id": 942,
       "name": "Булка",
@@ -14287,6 +17520,17 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Варди|ФРВ",
+      "person_id": 4993,
+      "name": "Варди",
+      "position": "ФРВ",
+      "overall": 78,
+      "nation": "Англия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Гектор|ЦП",
@@ -14309,6 +17553,28 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Доехи|ЦЗ",
+      "person_id": 4990,
+      "name": "Доехи",
+      "position": "ЦЗ",
+      "overall": 78,
+      "nation": "Нидерланды",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Кайнц|ЦАП",
+      "person_id": 4992,
+      "name": "Кайнц",
+      "position": "ЦАП",
+      "overall": 78,
+      "nation": "Австрия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Калабрия|ПЗ",
@@ -14366,6 +17632,28 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Малиновский|ЦП",
+      "person_id": 4987,
+      "name": "Малиновский",
+      "position": "ЦП",
+      "overall": 78,
+      "nation": "Украина",
+      "nickname": "Малина",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Монкайола|ЦП",
+      "person_id": 4984,
+      "name": "Монкайола",
+      "position": "ЦП",
+      "overall": 78,
+      "nation": "Испания",
+      "nickname": "Монка",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Мотинг|ФРВ",
       "person_id": 174,
       "name": "Мотинг",
@@ -14375,6 +17663,39 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Наби Кейта|ЦП",
+      "person_id": 4991,
+      "name": "Наби Кейта",
+      "position": "ЦП",
+      "overall": 78,
+      "nation": "Австрия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Наварро|ФРВ",
+      "person_id": 4983,
+      "name": "Наварро",
+      "position": "ФРВ",
+      "overall": 78,
+      "nation": "Испания",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Николя Пепе|ПФА",
+      "person_id": 4981,
+      "name": "Николя Пепе",
+      "position": "ПФА",
+      "overall": 78,
+      "nation": "Кот-Д’Ивуар",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Озкан|ЦП",
@@ -14410,6 +17731,28 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Папе Сарр|ЦП",
+      "person_id": 4906,
+      "name": "Папе Сарр",
+      "position": "ЦП",
+      "overall": 78,
+      "nation": "Сенегал",
+      "nickname": "Папе",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Паулиста|ЦЗ",
+      "person_id": 4985,
+      "name": "Паулиста",
+      "position": "ЦЗ",
+      "overall": 78,
+      "nation": "Бразилия",
+      "nickname": "Пау",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Пессина|ЦАП",
       "person_id": 522,
       "name": "Пессина",
@@ -14419,6 +17762,28 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Пицци|ЦП",
+      "person_id": 4982,
+      "name": "Пицци",
+      "position": "ЦП",
+      "overall": 78,
+      "nation": "Португалия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Роберто Перейра|ЦП",
+      "person_id": 4988,
+      "name": "Роберто Перейра",
+      "position": "ЦП",
+      "overall": 78,
+      "nation": "Аргентина",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Роял|ПЗ",
@@ -14465,6 +17830,39 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Фройлер|ЦП",
+      "person_id": 4944,
+      "name": "Фройлер",
+      "position": "ЦП",
+      "overall": 78,
+      "nation": "Швейцария",
+      "nickname": "Фрой",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Хайдара|ЦП",
+      "person_id": 503,
+      "name": "Хайдара",
+      "position": "ЦП",
+      "overall": 78,
+      "nation": "Мали",
+      "nickname": "",
+      "status": "bench",
+      "fired": true
+    },
+    {
+      "id": "Free Agent|Юня Ито|ПФА",
+      "person_id": 4980,
+      "name": "Юня Ито",
+      "position": "ПФА",
+      "overall": 78,
+      "nation": "Япония",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Авонийи|ФРВ",
       "person_id": 4521,
       "name": "Авонийи",
@@ -14487,12 +17885,34 @@
       "fired": false
     },
     {
+      "id": "Free Agent|Алиендро|ЦП",
+      "person_id": 4995,
+      "name": "Алиендро",
+      "position": "ЦП",
+      "overall": 77,
+      "nation": "Аргентина",
+      "nickname": "Али",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Альварадо|ПП",
       "person_id": 4905,
       "name": "Альварадо",
       "position": "ПП",
       "overall": 77,
       "nation": "Мексика",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Амаду Онана|ЦП",
+      "person_id": 4920,
+      "name": "Амаду Онана",
+      "position": "ЦП",
+      "overall": 77,
+      "nation": "Бельгия",
       "nickname": "",
       "status": "bench",
       "fired": false
@@ -14509,6 +17929,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Анхелиньо|ЛЗ",
+      "person_id": 5003,
+      "name": "Анхелиньо",
+      "position": "ЛЗ",
+      "overall": 77,
+      "nation": "Испания",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Барроу|ФРВ",
       "person_id": 237,
       "name": "Барроу",
@@ -14520,6 +17951,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Батшуаи|ФРВ",
+      "person_id": 5001,
+      "name": "Батшуаи",
+      "position": "ФРВ",
+      "overall": 77,
+      "nation": "Бельгия",
+      "nickname": "Батш",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Бельерин|ПЗ",
       "person_id": 614,
       "name": "Бельерин",
@@ -14529,6 +17971,39 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Блашвич|ВРТ",
+      "person_id": 987,
+      "name": "Блашвич",
+      "position": "ВРТ",
+      "overall": 77,
+      "nation": "Германия",
+      "nickname": "",
+      "status": "bench",
+      "fired": true
+    },
+    {
+      "id": "Free Agent|Брейтвейт|ФРВ",
+      "person_id": 5005,
+      "name": "Брейтвейт",
+      "position": "ФРВ",
+      "overall": 77,
+      "nation": "Дания",
+      "nickname": "Брейт",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Валент|ЦЗ",
+      "person_id": 5009,
+      "name": "Валент",
+      "position": "ЦЗ",
+      "overall": 77,
+      "nation": "Словакия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вандерсон|ПЗ",
@@ -14553,6 +18028,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Галено|ЛФА",
+      "person_id": 4998,
+      "name": "Галено",
+      "position": "ЛФА",
+      "overall": 77,
+      "nation": "Бразилия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Герхардт|ЦП",
       "person_id": 513,
       "name": "Герхардт",
@@ -14575,6 +18061,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Джики|ЦЗ",
+      "person_id": 5002,
+      "name": "Джики",
+      "position": "ЦЗ",
+      "overall": 77,
+      "nation": "Австрия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Джонс|ЦП",
       "person_id": 416,
       "name": "Джонс",
@@ -14584,6 +18081,28 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Доан|ПФА",
+      "person_id": 5013,
+      "name": "Доан",
+      "position": "ПФА",
+      "overall": 77,
+      "nation": "Япония",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Жота|ЛФА",
+      "person_id": 4996,
+      "name": "Жота",
+      "position": "ЛФА",
+      "overall": 77,
+      "nation": "Португалия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Калверт-Льюин|ФРВ",
@@ -14608,6 +18127,28 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Кардосо|ЦЗ",
+      "person_id": 4997,
+      "name": "Кардосо",
+      "position": "ЦЗ",
+      "overall": 77,
+      "nation": "Португалия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Карлсон|ЛФА",
+      "person_id": 5012,
+      "name": "Карлсон",
+      "position": "ЛФА",
+      "overall": 77,
+      "nation": "Швеция",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Кинтеро|ЦАП",
       "person_id": 575,
       "name": "Кинтеро",
@@ -14617,6 +18158,17 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Клаессон|ЦП",
+      "person_id": 5017,
+      "name": "Клаессон",
+      "position": "ЦП",
+      "overall": 77,
+      "nation": "Швеция",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Конан|ЛЗ",
@@ -14630,6 +18182,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Кордоба|ФРВ",
+      "person_id": 4994,
+      "name": "Кордоба",
+      "position": "ФРВ",
+      "overall": 77,
+      "nation": "Колумбия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Крамер|ЦП",
       "person_id": 495,
       "name": "Крамер",
@@ -14639,6 +18202,17 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Лемина|ЦП",
+      "person_id": 5015,
+      "name": "Лемина",
+      "position": "ЦП",
+      "overall": 77,
+      "nation": "Австрия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ленглет|ЦЗ",
@@ -14683,6 +18257,17 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Мелендо|ЦП",
+      "person_id": 5006,
+      "name": "Мелендо",
+      "position": "ЦП",
+      "overall": 77,
+      "nation": "Испания",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Монтес|ЦЗ",
@@ -14740,6 +18325,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Пепелу|ЦП",
+      "person_id": 5008,
+      "name": "Пепелу",
+      "position": "ЦП",
+      "overall": 77,
+      "nation": "Испания",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Пош|ПЗ",
       "person_id": 897,
       "name": "Пош",
@@ -14757,6 +18353,28 @@
       "position": "ФРВ",
       "overall": 77,
       "nation": "Уругвай",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Родригез|ЛЗ",
+      "person_id": 4945,
+      "name": "Родригез",
+      "position": "ЛЗ",
+      "overall": 77,
+      "nation": "Швейцария",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Рубен Гарсия|ЛФА",
+      "person_id": 5007,
+      "name": "Рубен Гарсия",
+      "position": "ЛФА",
+      "overall": 77,
+      "nation": "Испания",
       "nickname": "",
       "status": "bench",
       "fired": false
@@ -14784,6 +18402,17 @@
       "fired": false
     },
     {
+      "id": "Free Agent|Санчез|ЦЗ",
+      "person_id": 5004,
+      "name": "Санчез",
+      "position": "ЦЗ",
+      "overall": 77,
+      "nation": "Колумбия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Соса|ЛЗ",
       "person_id": 4851,
       "name": "Соса",
@@ -14804,6 +18433,28 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Степаненко|ЦП",
+      "person_id": 4999,
+      "name": "Степаненко",
+      "position": "ЦП",
+      "overall": 77,
+      "nation": "Украина",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Стрефезза|ПФА",
+      "person_id": 5011,
+      "name": "Стрефезза",
+      "position": "ПФА",
+      "overall": 77,
+      "nation": "Бразилия",
+      "nickname": "Стреф",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сугавару|ПЗ",
@@ -14828,6 +18479,28 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Тальяфико|ЛЗ",
+      "person_id": 5014,
+      "name": "Тальяфико",
+      "position": "ЛЗ",
+      "overall": 77,
+      "nation": "Аргентина",
+      "nickname": "Таль",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Тапия|ЦП",
+      "person_id": 5010,
+      "name": "Тапия",
+      "position": "ЦП",
+      "overall": 77,
+      "nation": "Австрия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Тапсоба|ЦЗ",
       "person_id": 1405,
       "name": "Тапсоба",
@@ -14837,6 +18510,17 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Торган Азар|ЛФА",
+      "person_id": 5016,
+      "name": "Торган Азар",
+      "position": "ЛФА",
+      "overall": 77,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ундер|ПФА",
@@ -14879,6 +18563,17 @@
       "overall": 77,
       "nation": "Турция",
       "nickname": "Чак",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Чемберлен|ЦП",
+      "person_id": 5000,
+      "name": "Чемберлен",
+      "position": "ЦП",
+      "overall": 77,
+      "nation": "Англия",
+      "nickname": "Чемб",
       "status": "bench",
       "fired": false
     },
@@ -14958,6 +18653,17 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Вермирен|ЦП",
+      "person_id": 4921,
+      "name": "Вермирен",
+      "position": "ЦП",
+      "overall": 76,
+      "nation": "Бельгия",
+      "nickname": "Верми",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вёбер|ЦЗ",
@@ -15044,6 +18750,28 @@
       "overall": 76,
       "nation": "Хорватия",
       "nickname": "Иван",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Идрисса|ЦП",
+      "person_id": 4908,
+      "name": "Идрисса",
+      "position": "ЦП",
+      "overall": 76,
+      "nation": "Сенегал",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Исмаила Сарр|ПФА",
+      "person_id": 4907,
+      "name": "Исмаила Сарр",
+      "position": "ПФА",
+      "overall": 76,
+      "nation": "Сенегал",
+      "nickname": "Исма",
       "status": "bench",
       "fired": false
     },
@@ -15202,6 +18930,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Трезор|ЛФА",
+      "person_id": 4922,
+      "name": "Трезор",
+      "position": "ЛФА",
+      "overall": 76,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Фогт|ЦЗ",
       "person_id": 849,
       "name": "Фогт",
@@ -15268,6 +19007,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Амат Ндиае|ЛФА",
+      "person_id": 4912,
+      "name": "Амат Ндиае",
+      "position": "ЛФА",
+      "overall": 75,
+      "nation": "Сенегал",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Андерсон|ПФА",
       "person_id": 154,
       "name": "Андерсон",
@@ -15286,6 +19036,28 @@
       "overall": 75,
       "nation": "Нигерия",
       "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Баликвиша|ЛФА",
+      "person_id": 4931,
+      "name": "Баликвиша",
+      "position": "ЛФА",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "Балик",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Балло-Туре|ЛЗ",
+      "person_id": 4915,
+      "name": "Балло-Туре",
+      "position": "ЛЗ",
+      "overall": 75,
+      "nation": "Сенегал",
+      "nickname": "Бало",
       "status": "bench",
       "fired": false
     },
@@ -15312,6 +19084,28 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Вандервурт|ВРТ",
+      "person_id": 4925,
+      "name": "Вандервурт",
+      "position": "ВРТ",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "Вандер",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Винтер|ЦЗ",
+      "person_id": 4940,
+      "name": "Винтер",
+      "position": "ЦЗ",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "Винт",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Виска|ПФА",
       "person_id": 212,
       "name": "Виска",
@@ -15321,6 +19115,17 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Вранкс|ЦП",
+      "person_id": 4928,
+      "name": "Вранкс",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Вушкович|ЦЗ",
@@ -15356,6 +19161,28 @@
       "fired": false
     },
     {
+      "id": "Free Agent|Гее|ЦП",
+      "person_id": 4909,
+      "name": "Гее",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Сенегал",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Годс|ЛФА",
+      "person_id": 4941,
+      "name": "Годс",
+      "position": "ЛФА",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Гомес|ЦЗ",
       "person_id": 749,
       "name": "Гомес",
@@ -15376,6 +19203,50 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Дахиль|ЦЗ",
+      "person_id": 4933,
+      "name": "Дахиль",
+      "position": "ЦЗ",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Дебаст|ЦЗ",
+      "person_id": 4929,
+      "name": "Дебаст",
+      "position": "ЦЗ",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Диау|ВРТ",
+      "person_id": 4910,
+      "name": "Диау",
+      "position": "ВРТ",
+      "overall": 75,
+      "nation": "Сенегал",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Дюранвиль|ЛФА",
+      "person_id": 4939,
+      "name": "Дюранвиль",
+      "position": "ЛФА",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "Дюра",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Ежов|ПФА",
@@ -15400,12 +19271,34 @@
       "fired": false
     },
     {
+      "id": "Free Agent|Ильман Ндиае|ЦАП",
+      "person_id": 4918,
+      "name": "Ильман Ндиае",
+      "position": "ЦАП",
+      "overall": 75,
+      "nation": "Сенегал",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Каплан|ЦЗ",
       "person_id": 4870,
       "name": "Каплан",
       "position": "ЦЗ",
       "overall": 75,
       "nation": "Турция",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Кейта Баде|ВРТ",
+      "person_id": 4916,
+      "name": "Кейта Баде",
+      "position": "ВРТ",
+      "overall": 75,
+      "nation": "Сенегал",
       "nickname": "",
       "status": "bench",
       "fired": false
@@ -15433,6 +19326,28 @@
       "fired": false
     },
     {
+      "id": "Free Agent|Куйпер|ПЗ",
+      "person_id": 4927,
+      "name": "Куйпер",
+      "position": "ПЗ",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Лавиа|ЦП",
+      "person_id": 4930,
+      "name": "Лавиа",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Лайнер|ПЗ",
       "person_id": 835,
       "name": "Лайнер",
@@ -15444,6 +19359,28 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Ламин Камара|ЦП",
+      "person_id": 4917,
+      "name": "Ламин Камара",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Сенегал",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Локонга|ЦП",
+      "person_id": 4923,
+      "name": "Локонга",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "Локо",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Лучиано Родригез|ПФА",
       "person_id": 4844,
       "name": "Лучиано Родригез",
@@ -15451,6 +19388,28 @@
       "overall": 75,
       "nation": "Уругвай",
       "nickname": "Луч",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Малик Фофана|ЛФА",
+      "person_id": 4938,
+      "name": "Малик Фофана",
+      "position": "ЛФА",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Мандела Кейта|ЦП",
+      "person_id": 4924,
+      "name": "Мандела Кейта",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
       "status": "bench",
       "fired": false
     },
@@ -15517,6 +19476,39 @@
       "overall": 75,
       "nation": "Нигерия",
       "nickname": "Ново",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Нгонге|ПФА",
+      "person_id": 4932,
+      "name": "Нгонге",
+      "position": "ПФА",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Ноа Мбамба|ЦП",
+      "person_id": 4942,
+      "name": "Ноа Мбамба",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Ноа Фадига|ПЗ",
+      "person_id": 4919,
+      "name": "Ноа Фадига",
+      "position": "ПЗ",
+      "overall": 75,
+      "nation": "Сенегал",
+      "nickname": "",
       "status": "bench",
       "fired": false
     },
@@ -15631,6 +19623,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Раскин|ЦП",
+      "person_id": 4926,
+      "name": "Раскин",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Ребич|ФРВ",
       "person_id": 4858,
       "name": "Ребич",
@@ -15686,6 +19689,17 @@
       "fired": false
     },
     {
+      "id": "Free Agent|Саббе|ПЗ",
+      "person_id": 4943,
+      "name": "Саббе",
+      "position": "ПЗ",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Садик|ФРВ",
       "person_id": 1091,
       "name": "Садик",
@@ -15730,6 +19744,17 @@
       "fired": false
     },
     {
+      "id": "Free Agent|Сарделя|ПЗ",
+      "person_id": 4937,
+      "name": "Сарделя",
+      "position": "ПЗ",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Сари|ЛФА",
       "person_id": 4871,
       "name": "Сари",
@@ -15763,6 +19788,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Сима|ЛФА",
+      "person_id": 4913,
+      "name": "Сима",
+      "position": "ЛФА",
+      "overall": 75,
+      "nation": "Сенегал",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Скалли|ПЗ",
       "person_id": 833,
       "name": "Скалли",
@@ -15794,6 +19830,28 @@
       "nickname": "",
       "status": "bench",
       "fired": true
+    },
+    {
+      "id": "Free Agent|Стройкенс|ЦАП",
+      "person_id": 4936,
+      "name": "Стройкенс",
+      "position": "ЦАП",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "Строй",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Стукерс|ФРВ",
+      "person_id": 4934,
+      "name": "Стукерс",
+      "position": "ФРВ",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "Стук",
+      "status": "bench",
+      "fired": false
     },
     {
       "id": "Free Agent|Сулейманов|ФРВ",
@@ -15906,6 +19964,17 @@
       "fired": false
     },
     {
+      "id": "Free Agent|Хабиб Диара|ЦП",
+      "person_id": 4914,
+      "name": "Хабиб Диара",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Сенегал",
+      "nickname": "Хабиб",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Хорхе Эдуардо|ПЗ",
       "person_id": 4899,
       "name": "Хорхе Эдуардо",
@@ -15983,6 +20052,28 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Эль Ямик|ЦЗ",
+      "person_id": 886,
+      "name": "Эль Ямик",
+      "position": "ЦЗ",
+      "overall": 75,
+      "nation": "Марокко",
+      "nickname": "",
+      "status": "bench",
+      "fired": true
+    },
+    {
+      "id": "Free Agent|Энгельс|ЦП",
+      "person_id": 4935,
+      "name": "Энгельс",
+      "position": "ЦП",
+      "overall": 75,
+      "nation": "Бельгия",
+      "nickname": "Энг",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Эхизибу|ПЗ",
       "person_id": 4884,
       "name": "Эхизибу",
@@ -16011,6 +20102,17 @@
       "position": "ЦП",
       "overall": 75,
       "nation": "Нигерия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
+      "id": "Free Agent|Якобс|ЛЗ",
+      "person_id": 4911,
+      "name": "Якобс",
+      "position": "ЛЗ",
+      "overall": 75,
+      "nation": "Сенегал",
       "nickname": "",
       "status": "bench",
       "fired": false
@@ -16203,6 +20305,17 @@
       "fired": true
     },
     {
+      "id": "Free Agent|Куриа|ПФА",
+      "person_id": 4986,
+      "name": "Куриа",
+      "position": "ПФА",
+      "overall": 72,
+      "nation": "Италия",
+      "nickname": "",
+      "status": "bench",
+      "fired": false
+    },
+    {
       "id": "Free Agent|Нсоки|ЦЗ",
       "person_id": 852,
       "name": "Нсоки",
@@ -16253,17 +20366,6 @@
       "position": "ЛЗ",
       "overall": 71,
       "nation": "Германия",
-      "nickname": "",
-      "status": "bench",
-      "fired": true
-    },
-    {
-      "id": "Free Agent|Эль Ямик|ЦЗ",
-      "person_id": 886,
-      "name": "Эль Ямик",
-      "position": "ЦЗ",
-      "overall": 71,
-      "nation": "марокко",
       "nickname": "",
       "status": "bench",
       "fired": true

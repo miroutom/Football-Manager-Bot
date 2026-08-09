@@ -25,8 +25,6 @@ rm -rf build dist TransferWindow.spec
 pyinstaller --noconfirm --windowed --name TransferWindow \
   --add-data "web:web" \
   --add-data "rosters.json:." \
-  --add-data "../../data/nations_all.json:data" \
-  --add-data "../../data/world_cup_config.json:data" \
   --exclude-module PIL \
   --exclude-module pillow \
   --exclude-module numpy \

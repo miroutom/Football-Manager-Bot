@@ -1993,52 +1993,13 @@ function normNat(s) {
   return t.split(/\s+/).filter(Boolean).join(" ");
 }
 
-const NATION_ALIASES = {
-  "босния и герцеговина": "Босния",
-  "босния и герцеговна": "Босния",
-  "д р конго": "ДР Конго",
-  "д.р. конго": "ДР Конго",
-  "др конго": "ДР Конго",
-  "конго": "Конго",
-  "коста рика": "Коста-Рика",
-  "коста-рика": "Коста-Рика",
-  "центральноафриканская республика": "ЦАР",
-  "цар": "ЦАР",
-  "тринидад и тобаго": "Тринидад и Тобаго",
-  "юж корея": "Южная Корея",
-  "юж. корея": "Южная Корея",
-  "кот-д'ивуар": "Кот-д'Ивуар",
-  "кот д'ивуар": "Кot-d'Иvuar",
-  "котдивуар": "Кот-д'Ивуар",
-  "франци": "Франция",
-  "франйция": "Франция",
-  "оаэ": "ОАЭ",
-  "эмираты": "ОАЭ",
-  "косово": "Косово",
-};
-
 function resolveCatalogNation(text) {
   const key = normNat(text);
   if (!key) return null;
-  const alias = NATION_ALIASES[key];
-  const lookup = alias ? normNat(alias) : key;
   for (const n of nationsList) {
-    if (normNat(n) === lookup) return n;
+    if (normNat(n) === key) return n;
   }
   return null;
-}
-
-function nationSuggestionMatches(raw) {
-  const q = normNat(raw);
-  if (!q) return nationsList.slice(0, 24);
-  const starts = [];
-  const contains = [];
-  for (const n of nationsList) {
-    const nk = normNat(n);
-    if (nk.startsWith(q)) starts.push(n);
-    else if (nk.includes(q)) contains.push(n);
-  }
-  return starts.concat(contains);
 }
 
 /** Любая страна: точное совпадение с каталогом ЧМ или произвольный текст. */
@@ -2105,7 +2066,9 @@ function setupNationPicker() {
   const showSuggestions = () => {
     const raw = input.value.trim();
     const q = normNat(raw);
-    const matches = nationSuggestionMatches(raw);
+    const matches = q
+      ? nationsList.filter((n) => normNat(n).includes(q))
+      : nationsList.slice();
     if (matches.length === 1 && normNat(matches[0]) === q) {
       list.classList.add("hidden");
       validateNation();
@@ -2268,7 +2231,9 @@ function setupEditNationPicker() {
   const showSuggestions = () => {
     const raw = input.value.trim();
     const q = normNat(raw);
-    const matches = nationSuggestionMatches(raw);
+    const matches = q
+      ? nationsList.filter((n) => normNat(n).includes(q))
+      : nationsList.slice();
     if (matches.length === 1 && normNat(matches[0]) === q) {
       list.classList.add("hidden");
       validateNation();

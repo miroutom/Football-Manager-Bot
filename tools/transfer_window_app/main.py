@@ -588,12 +588,41 @@ def _nations_flat(catalog: dict[str, list[str]] | None = None) -> list[str]:
     return out
 
 
-def _nations_for_picker(wc_catalog: dict[str, list[str]] | None = None) -> list[str]:
-    """Полный список стран для подсказок + сборные ЧМ из конфига."""
-    from utils.nations_catalog import nations_for_picker
+def _load_nations_all() -> list[str]:
+    """Полный список стран для подсказок нации игрока (не только сборные ЧМ)."""
+    paths = [
+        _ROOT / "data" / "nations_all.json",
+        _bundle_dir() / "data" / "nations_all.json",
+        Path(__file__).resolve().parents[2] / "data" / "nations_all.json",
+    ]
+    for path in paths:
+        if not path.is_file():
+            continue
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(raw, list):
+                return [str(x).strip() for x in raw if str(x).strip()]
+        except (OSError, json.JSONDecodeError, TypeError):
+            continue
+    return []
 
-    wc_flat = _nations_flat(wc_catalog) if wc_catalog else _nations_flat()
-    return nations_for_picker(extra=wc_flat)
+
+def _nations_picker_flat() -> list[str]:
+    """Плоский каталог автодополнения: все страны + сборные ЧМ, которых нет в общем списке."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for name in _load_nations_all():
+        if name in seen:
+            continue
+        seen.add(name)
+        out.append(name)
+    for name in _nations_flat(_load_nations_catalog()):
+        if name in seen:
+            continue
+        seen.add(name)
+        out.append(name)
+    out.sort(key=lambda x: x.casefold())
+    return out
 
 
 def _load_coaches_list() -> list[str]:
@@ -1664,12 +1693,12 @@ class Handler(BaseHTTPRequestHandler):
                     "squad_rules": _squad_rules_payload("clubs"),
                     "multiplayer": _multiplayer_config_payload(),
                     "nations_by_confederation": nations_catalog,
-                    "nations": _nations_for_picker(nations_catalog),
+                    "nations": _nations_picker_flat(),
                 }
             )
         if path == "/api/nations":
             catalog = _load_nations_catalog()
-            picker = _nations_for_picker(catalog)
+            picker = _nations_picker_flat()
             return self._send_json(
                 {
                     "ok": True,
