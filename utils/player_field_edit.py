@@ -31,6 +31,27 @@ _TABLE_TO_CLS: dict[str, type] = {
 _SKIP_FIELDS = frozenset({"id", "ga"})
 
 
+def _assert_league_db_writable() -> None:
+    import os
+
+    from utils.utils import LEAGUE_DB_PATH
+
+    path = LEAGUE_DB_PATH
+    if not os.path.isfile(path):
+        raise ValueError(f"БД лиги не найдена: {path}")
+    if not os.access(path, os.W_OK):
+        raise ValueError(
+            f"БД лиги только для чтения: {path}\n"
+            "На сервере после git pull: chmod u+w и chown пользователя бота."
+        )
+    db_dir = os.path.dirname(path) or "."
+    if not os.access(db_dir, os.W_OK):
+        raise ValueError(
+            f"Каталог БД недоступен для записи: {db_dir}\n"
+            "SQLite создаёт journal/WAL в этой папке — нужны права на запись."
+        )
+
+
 def find_player_row(
     sess: Session, team: str, name: str, position: str
 ) -> tuple[type | None, Any]:
@@ -118,6 +139,10 @@ def parse_field_value(Cls: type, field: str, raw: str) -> Any:
             return max(1, min(99, v))
         return v
     if py is str or isinstance(col.type, String):
+        if field == "nation":
+            from utils.player_nation import normalize_player_nation_for_db
+
+            return normalize_player_nation_for_db(s)
         if field == "position":
             return s.upper()
         if field == "status":
@@ -305,6 +330,8 @@ def apply_player_field_update(
     if field in _SKIP_FIELDS:
         raise ValueError("Это поле нельзя менять.")
 
+    _assert_league_db_writable()
+
     team_t = (team or "").strip().title()
     Cls_l, row_l = resolve_player_row(
         session_league,
@@ -332,7 +359,8 @@ def apply_player_field_update(
         new_name = (getattr(row_l, "name", None) or "").strip()
         if new_name and _norm_cmp(new_name) != _norm_cmp(old_name):
             register_name_change(team_t, old_name, new_name)
-            other, ocls = find_by_name_only(session_league, new_name, team_t)
+            with session_league.no_autoflush:
+                other, ocls = find_by_name_only(session_league, new_name, team_t)
             if other is not None and int(other.id) != int(row_l.id):
                 from utils.player_identity import _apply_merge_donors
 
@@ -340,13 +368,14 @@ def apply_player_field_update(
                     session_league, row_l, [(other, ocls)], mode
                 )
                 _sync_ga_if_needed(row_l, field)
-    merged += merge_same_name_duplicates_in_session(
-        session_league,
-        team_t,
-        (getattr(row_l, "name", None) or "").strip() or name,
-        keeper_row=row_l,
-        merge_mode=mode,
-    )
+        with session_league.no_autoflush:
+            merged += merge_same_name_duplicates_in_session(
+                session_league,
+                team_t,
+                (getattr(row_l, "name", None) or "").strip() or name,
+                keeper_row=row_l,
+                merge_mode=mode,
+            )
 
     session_league.commit()
 

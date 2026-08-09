@@ -293,6 +293,16 @@ def normalize_nation_label(raw: str | None) -> str | None:
     return s
 
 
+def normalize_player_nation_for_db(raw: str) -> str | None:
+    """Нация для записи в БД: алиасы, регистр, имя сборной ЧМ если есть."""
+    from utils.wc_callups import resolve_nation_name
+
+    norm = normalize_nation_label(raw)
+    if not norm:
+        return None
+    return resolve_nation_name(norm) or norm
+
+
 def nation_to_flagcdn_code(raw: str | None) -> str | None:
     """Код для flagcdn: ISO2 (``de``) или UK-подрегион ``gb-eng`` …"""
     norm = normalize_nation_label(raw)
