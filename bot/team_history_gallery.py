@@ -19,6 +19,7 @@ from bot.team_history import (
     compute_result_streaks,
     format_match_score_with_pens,
     format_season_tag,
+    find_pvp_kryptonites,
     hall_of_fame_global,
     head_to_head,
     is_nation_name,
@@ -1630,3 +1631,156 @@ def render_club_season_matches_png(team: str, season: int) -> bytes:
     if len(rows) > len(show):
         draw.text((_PAD, y + 4), f"…ещё {len(rows) - len(show)} матчей", font=font_sm, fill=_DIM)
     return _to_png(im.convert("RGB"))
+
+
+def render_pvp_kryptonite_list_png(*, min_played: int = 3) -> bytes:
+    """Список клубных пар, где одна команда не проигрывала другой 3+ матчей."""
+    rows = find_pvp_kryptonites(min_played=min_played)
+    font_m = _pick_font(17)
+    font_sm = _pick_font(14)
+    font_b = _pick_font(20, bold=True)
+    row_h = 44
+    header_h = 36
+    table_h = header_h + max(1, len(rows)) * row_h + 16
+    h = 130 + table_h + 36
+    im = _gradient_bg(min(h, 3600)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    y = _title(
+        draw,
+        "PVP-криптониты",
+        f"Клуб не проигрывал сопернику {min_played}+ матчей · всего пар: {len(rows)}",
+    )
+
+    x0, x1 = _PAD, _CANVAS_W - _PAD
+    draw.rounded_rectangle([x0, y, x1, y + table_h], radius=14, fill=_CARD, outline=_LINE)
+    hy = y + 10
+    for cx, lab in (
+        (x0 + 12, "Кто не проигрывал"),
+        (x0 + 340, "Соперник"),
+        (x0 + 620, "Матчи"),
+        (x0 + 720, "W-D-L"),
+        (x0 + 860, "Голы"),
+    ):
+        draw.text((cx, hy), lab, font=_pick_font(13, bold=True), fill=_DIM)
+    draw.line([(x0 + 12, y + header_h - 4), (x1 - 12, y + header_h - 4)], fill=_LINE, width=1)
+
+    if not rows:
+        draw.text(
+            (x0 + 16, y + header_h + 12),
+            "Таких серий пока нет в журналах матчей.",
+            font=font_m,
+            fill=_DIM,
+        )
+        return _to_png(im.convert("RGB"))
+
+    win_c = (90, 190, 140)
+    draw_c = (200, 180, 90)
+    for i, r in enumerate(rows):
+        ry = y + header_h + i * row_h
+        if i % 2 == 1:
+            draw.rectangle([x0 + 8, ry, x1 - 8, ry + row_h - 2], fill=(22, 32, 50))
+        dom, vic = str(r["dominant"]), str(r["victim"])
+        played = int(r.get("played") or 0)
+        wins = int(r.get("wins") or 0)
+        dr = int(r.get("draws") or 0)
+        losses = int(r.get("losses") or 0)
+        if r.get("all_draws"):
+            wdl = f"0-{dr}-0"
+            note = "все ничьи"
+        else:
+            wdl = f"{wins}-{dr}-{losses}"
+            note = ""
+        h2h = head_to_head(dom, vic)
+        if _team_norm(str(h2h["team_a"])) == _team_norm(dom):
+            goals = f"{h2h['goals_a']}:{h2h['goals_b']}"
+        else:
+            goals = f"{h2h['goals_b']}:{h2h['goals_a']}"
+
+        draw.text((x0 + 12, ry + 12), _fit(draw, dom, font_m, 300), font=font_m, fill=_ROMAN)
+        draw.text((x0 + 340, ry + 12), _fit(draw, vic, font_m, 260), font=font_m, fill=_TEXT)
+        draw.text((x0 + 620, ry + 12), str(played), font=font_b, fill=_GOLD)
+        draw.text((x0 + 720, ry + 12), wdl, font=font_m, fill=win_c if wins else draw_c)
+        draw.text((x0 + 860, ry + 12), goals, font=font_m, fill=_DIM)
+        if note:
+            draw.text((x0 + 980, ry + 14), note, font=font_sm, fill=_DIM)
+
+    foot = "Нажми пару ниже — полная хронология встреч"
+    draw.text((_PAD, y + table_h + 12), foot, font=font_sm, fill=_DIM)
+    return _to_png(im.convert("RGB"))
+
+
+def render_pvp_kryptonite_detail_png(dominant: str, victim: str) -> bytes:
+    """Все встречи пары, где ``dominant`` не проигрывал ``victim``."""
+    h2h = head_to_head(dominant, victim)
+    dom = str(h2h["team_a"])
+    vic = str(h2h["team_b"])
+    matches = list(h2h.get("matches") or [])
+    font_m = _pick_font(16)
+    font_sm = _pick_font(14)
+    font_b = _pick_font(20, bold=True)
+    font_n = _pick_font(26, bold=True)
+
+    row_h = 36
+    list_h = 28 + max(1, len(matches)) * row_h + 16
+    h = 180 + 90 + list_h + 40
+    im = _gradient_bg(min(h, 4000)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    y = _title(draw, "PVP-криптонит · хронология", f"{dom}  →  {vic}")
+
+    mid = _CANVAS_W // 2
+    header_top = y
+    draw.rounded_rectangle(
+        [_PAD, header_top, _CANVAS_W - _PAD, header_top + 100],
+        radius=16,
+        fill=_CARD,
+        outline=_LINE,
+    )
+    _paste_side_mark(im, draw, dom, _PAD + 70, header_top + 50, 56, nation=False)
+    _paste_side_mark(im, draw, vic, _CANVAS_W - _PAD - 70, header_top + 50, 56, nation=False)
+    draw.text((_PAD + 120, header_top + 24), _fit(draw, dom, font_n, 360), font=font_n, fill=_TEXT)
+    bw = draw.textbbox((0, 0), vic, font=font_n)[2]
+    draw.text((_CANVAS_W - _PAD - 120 - bw, header_top + 24), vic, font=font_n, fill=_TEXT)
+    sub = f"{h2h['played']} матчей · {dom} не проигрывал · голы {h2h['goals_a']}:{h2h['goals_b']}"
+    sw = draw.textbbox((0, 0), sub, font=font_sm)[2]
+    draw.text((mid - sw // 2, header_top + 62), sub, font=font_sm, fill=_DIM)
+    y = header_top + 116
+
+    wa = int(h2h["wins_a"])
+    dr = int(h2h["draws"])
+    losses = int(h2h["wins_b"])
+    kpis = [
+        ("Победы", str(wa), _ROMAN),
+        ("Ничьи", str(dr), (200, 180, 90)),
+        ("Поражения", str(losses), (220, 110, 110)),
+    ]
+    gap = 14
+    card_w = (_CANVAS_W - 2 * _PAD - 2 * gap) // 3
+    for i, (lab, val, accent) in enumerate(kpis):
+        x0 = _PAD + i * (card_w + gap)
+        draw.rounded_rectangle([x0, y, x0 + card_w, y + 72], radius=12, fill=_CARD, outline=accent)
+        tw = draw.textbbox((0, 0), lab, font=font_sm)[2]
+        draw.text((x0 + (card_w - tw) // 2, y + 10), lab, font=font_sm, fill=_DIM)
+        vw = draw.textbbox((0, 0), val, font=font_b)[2]
+        draw.text((x0 + (card_w - vw) // 2, y + 34), val, font=font_b, fill=_TEXT)
+    y += 88
+
+    draw.text((_PAD, y), "Все матчи", font=font_b, fill=_TEXT)
+    y += 28
+    res_col = {"W": (90, 190, 140), "D": (200, 180, 90), "L": (220, 110, 110)}
+    for m in matches:
+        res, _pts, gf, ga = _match_result_for_team(m, dom)
+        lg = str(m.get("league") or "")
+        sn = format_season_tag(m.get("_season"))
+        day = m.get("day")
+        score = format_match_score_with_pens(m)
+        line = f"{sn}·м{day} · {lg} · {score}"
+        if m.get("cl_phase"):
+            line += f" ({m.get('cl_phase')})"
+        draw.rounded_rectangle([_PAD, y + 2, _PAD + 28, y + 24], radius=6, fill=res_col.get(res, _LINE))
+        cw = draw.textbbox((0, 0), res, font=font_sm)[2]
+        draw.text((_PAD + (28 - cw) // 2, y + 4), res, font=font_sm, fill=(16, 22, 34))
+        draw.text((_PAD + 40, y + 4), _fit(draw, line, font_m, _CANVAS_W - _PAD - 50), font=font_m, fill=_TEXT)
+        y += row_h
+
+    return _to_png(im.convert("RGB"))
+

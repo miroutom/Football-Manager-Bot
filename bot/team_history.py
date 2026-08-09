@@ -1014,6 +1014,86 @@ def head_to_head(team_a: str, team_b: str) -> dict[str, Any]:
     }
 
 
+def find_pvp_kryptonites(*, min_played: int = 3) -> list[dict[str, Any]]:
+    """
+    Клубные пары, где одна команда не проигрывала другой ``min_played``+ матчей подряд
+    (с учётом всей истории встреч).
+    """
+    from collections import defaultdict
+
+    pair_matches: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for m in iter_all_match_records():
+        home = str(m.get("home") or "").strip()
+        away = str(m.get("away") or "").strip()
+        if not home or not away:
+            continue
+        if is_nation_name(home) or is_nation_name(away):
+            continue
+        key = tuple(sorted((home, away), key=lambda x: _norm(x)))
+        pair_matches[key].append(m)
+
+    out: list[dict[str, Any]] = []
+    for ta, tb in pair_matches:
+        h2h = head_to_head(ta, tb)
+        played = int(h2h.get("played") or 0)
+        if played < int(min_played):
+            continue
+        wa, wb, dr = int(h2h["wins_a"]), int(h2h["wins_b"]), int(h2h["draws"])
+        losses_a = wb
+        losses_b = wa
+        base = {
+            "played": played,
+            "draws": dr,
+            "matches": list(h2h.get("matches") or []),
+            "goals_a": int(h2h.get("goals_a") or 0),
+            "goals_b": int(h2h.get("goals_b") or 0),
+        }
+        if losses_a == 0 and losses_b == 0:
+            out.append(
+                {
+                    **base,
+                    "dominant": ta,
+                    "victim": tb,
+                    "wins": wa,
+                    "losses": 0,
+                    "all_draws": True,
+                }
+            )
+            continue
+        if losses_a == 0:
+            out.append(
+                {
+                    **base,
+                    "dominant": ta,
+                    "victim": tb,
+                    "wins": wa,
+                    "losses": 0,
+                    "all_draws": False,
+                }
+            )
+        if losses_b == 0:
+            out.append(
+                {
+                    **base,
+                    "dominant": tb,
+                    "victim": ta,
+                    "wins": wb,
+                    "losses": 0,
+                    "all_draws": False,
+                }
+            )
+
+    out.sort(
+        key=lambda r: (
+            -int(r.get("played") or 0),
+            -int(r.get("wins") or 0),
+            str(r.get("dominant") or ""),
+            str(r.get("victim") or ""),
+        )
+    )
+    return out
+
+
 def club_matches_in_season(team: str, season: int) -> list[dict[str, Any]]:
     want = _norm(team)
     rows = [

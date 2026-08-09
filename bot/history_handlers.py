@@ -16,6 +16,11 @@ from bot.history_render import (
     render_special_cups_history_png,
     render_wc_history_png,
 )
+from bot.history_champion_squad import (
+    champion_seasons_cl,
+    champion_seasons_league,
+    render_champion_squad_pages,
+)
 from bot.services import LEAGUE_LABELS, teams_ordered_for_goalscorers
 from bot.team_history import format_season_tag, list_history_seasons
 from bot.team_history_gallery import (
@@ -31,6 +36,8 @@ from bot.team_history_gallery import (
     render_managers_png,
     render_nation_career_goals_pages,
     render_prestige_dynamics_png,
+    render_pvp_kryptonite_detail_png,
+    render_pvp_kryptonite_list_png,
     render_season_cover_png,
 )
 from bot.team_history_render import (
@@ -51,6 +58,8 @@ history_router = Router()
 
 # user_id -> {"mode": "cmp"|"h2h", "a": (league, idx)|None}
 _pending_two: dict[int, dict[str, Any]] = {}
+# user_id -> list[kryptonite row dict] для кнопок детализации
+_krypto_cache: dict[int, list[dict[str, Any]]] = {}
 
 _AWARD_CAPTION = {
     "golden_ball": "Золотой мяч",
@@ -94,6 +103,10 @@ def history_root_kb() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🗺 H2H", callback_data="hist:h2h"),
         ],
         [
+            InlineKeyboardButton(text="🏆 Победный состав", callback_data="hist:ws"),
+            InlineKeyboardButton(text="🪨 PVP-криптониты", callback_data="hist:krypto"),
+        ],
+        [
             InlineKeyboardButton(text="👔 Менеджеры", callback_data="hist:mgr"),
             InlineKeyboardButton(text="🌡 Теплокарта", callback_data="hist:heat"),
         ],
@@ -132,6 +145,57 @@ def history_nations_kb() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="« Назад", callback_data="hist:back")],
         ]
     )
+
+
+def history_winner_squad_root_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🏠 Лига", callback_data="hist:ws:pick")],
+            [InlineKeyboardButton(text="⭐ ЛЧ", callback_data="hist:ws:cl")],
+            [InlineKeyboardButton(text="« Назад", callback_data="hist:back")],
+        ]
+    )
+
+
+def _fit_team_btn(name: str, limit: int = 22) -> str:
+    t = (name or "").strip()
+    if len(t) <= limit:
+        return t
+    return t[: limit - 1] + "…"
+
+
+def history_winner_squad_season_kb(
+    rows: list[tuple[int, str]],
+    *,
+    prefix: str,
+    back: str,
+) -> InlineKeyboardMarkup:
+    buttons: list[InlineKeyboardButton] = []
+    for sn, team in rows:
+        lab = f"{format_season_tag(sn)} · {_fit_team_btn(team)}"
+        buttons.append(InlineKeyboardButton(text=lab, callback_data=f"{prefix}{sn}"))
+    out_rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
+    out_rows.append([InlineKeyboardButton(text="« Назад", callback_data=back)])
+    return InlineKeyboardMarkup(inline_keyboard=out_rows)
+
+
+def history_kryptonite_pick_kb(
+    items: list[dict[str, Any]], *, back: str = "hist:back"
+) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for i, r in enumerate(items[:12]):
+        dom = str(r.get("dominant") or "")
+        vic = str(r.get("victim") or "")
+        lab = f"{_fit_team_btn(dom, 12)}→{_fit_team_btn(vic, 12)}"
+        row.append(InlineKeyboardButton(text=lab, callback_data=f"hist:krypto:d:{i}"))
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    rows.append([InlineKeyboardButton(text="« Назад", callback_data=back)])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def history_league_choice_kb(
@@ -256,7 +320,8 @@ async def cb_menu_history(callback: CallbackQuery) -> None:
         return
     await callback.message.answer(
         "<b>История</b>\n\n"
-        "Чемпионы, награды, клубы, сборные, сравнение, H2H, менеджеры, теплокарта, обложки сезонов.",
+        "Чемпионы, награды, клубы, сборные, сравнение, H2H, победный состав, "
+        "PVP-криптониты, менеджеры, теплокарта, обложки сезонов.",
         reply_markup=history_root_kb(),
         parse_mode="HTML",
     )
@@ -1022,3 +1087,207 @@ async def cb_hist_two_team(callback: CallbackQuery) -> None:
             await callback.message.answer(f"Ошибка: {e}")
         return
     await _send_png(callback, png=png, filename=fn, caption=cap)
+
+
+@history_router.callback_query(F.data == "hist:ws")
+async def cb_hist_winner_squad_root(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if callback.message:
+        await callback.message.answer(
+            "<b>Победный состав</b>\n\n"
+            "Схема и вклад игроков (Г, А, Г+А) чемпионов лиги или ЛЧ по сезонам.",
+            reply_markup=history_winner_squad_root_kb(),
+            parse_mode="HTML",
+        )
+
+
+@history_router.callback_query(F.data == "hist:ws:pick")
+async def cb_hist_winner_squad_pick_league(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if callback.message:
+        await callback.message.edit_reply_markup(
+            reply_markup=history_league_choice_kb(
+                prefix="hist:ws:l:", back="hist:ws", kind="club"
+            )
+        )
+
+
+@history_router.callback_query(F.data == "hist:ws:cl")
+async def cb_hist_winner_squad_cl_seasons(callback: CallbackQuery) -> None:
+    rows = champion_seasons_cl()
+    await callback.answer()
+    if not callback.message:
+        return
+    if not rows:
+        await callback.message.answer("В истории ЛЧ пока нет зафиксированных чемпионов.")
+        return
+    await callback.message.answer(
+        "<b>ЛЧ</b> — выбери сезон:",
+        reply_markup=history_winner_squad_season_kb(
+            rows, prefix="hist:ws:go:cl:", back="hist:ws"
+        ),
+        parse_mode="HTML",
+    )
+
+
+@history_router.callback_query(F.data.startswith("hist:ws:l:"))
+async def cb_hist_winner_squad_league_seasons(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 4:
+        await callback.answer()
+        return
+    code = parts[3].strip()
+    title = dict(LEAGUE_LABELS).get(code, code)
+    rows = champion_seasons_league(code)
+    await callback.answer()
+    if not callback.message:
+        return
+    if not rows:
+        await callback.message.answer(f"В {title} пока нет зафиксированных чемпионов.")
+        return
+    await callback.message.answer(
+        f"<b>{title}</b> — выбери сезон:",
+        reply_markup=history_winner_squad_season_kb(
+            rows, prefix=f"hist:ws:go:l:{code}:", back="hist:ws"
+        ),
+        parse_mode="HTML",
+    )
+
+
+@history_router.callback_query(F.data.startswith("hist:ws:go:cl:"))
+async def cb_hist_winner_squad_cl_go(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 5:
+        await callback.answer()
+        return
+    try:
+        sn = int(parts[4])
+    except ValueError:
+        await callback.answer()
+        return
+    by_season = dict(champion_seasons_cl())
+    team = by_season.get(sn)
+    if not team:
+        await callback.answer("Чемпион сезона не найден", show_alert=True)
+        return
+    await callback.answer("Готовлю…")
+    try:
+        pngs = await asyncio.to_thread(
+            render_champion_squad_pages, team, season_num=sn, cl=True
+        )
+    except Exception as e:
+        logger.exception("winner_squad_cl")
+        if callback.message:
+            await callback.message.answer(f"Oшибка: {e}")
+        return
+    await _send_png(
+        callback,
+        png=pngs,
+        filename="winner_squad_cl.png",
+        caption=f"<b>Победный состав</b> · {format_season_tag(sn)} · ЛЧ · {team}",
+    )
+
+
+@history_router.callback_query(F.data.startswith("hist:ws:go:l:"))
+async def cb_hist_winner_squad_league_go(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    # hist:ws:go:l:ger:3
+    if len(parts) != 6:
+        await callback.answer()
+        return
+    code, sn_s = parts[4], parts[5]
+    try:
+        sn = int(sn_s)
+    except ValueError:
+        await callback.answer()
+        return
+    title = dict(LEAGUE_LABELS).get(code, code)
+    by_season = dict(champion_seasons_league(code))
+    team = by_season.get(sn)
+    if not team:
+        await callback.answer("Чемпион сезона не найден", show_alert=True)
+        return
+    await callback.answer("Готовлю…")
+    try:
+        pngs = await asyncio.to_thread(
+            render_champion_squad_pages,
+            team,
+            season_num=sn,
+            cl=False,
+            league_title=title,
+        )
+    except Exception as e:
+        logger.exception("winner_squad_league")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    await _send_png(
+        callback,
+        png=pngs,
+        filename=f"winner_squad_{code}.png",
+        caption=f"<b>Победный состав</b> · {format_season_tag(sn)} · {title} · {team}",
+    )
+
+
+@history_router.callback_query(F.data == "hist:krypto")
+async def cb_hist_kryptonite_list(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    uid = _uid(callback)
+    try:
+        from bot.team_history import find_pvp_kryptonites
+
+        png = await asyncio.to_thread(render_pvp_kryptonite_list_png)
+        items = find_pvp_kryptonites()
+    except Exception as e:
+        logger.exception("kryptonite_list")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    _krypto_cache[uid] = items
+    if callback.message:
+        await _send_png(
+            callback,
+            png=png,
+            filename="kryptonite_list.png",
+            caption="<b>PVP-криптониты</b> — клубы, которые не проигрывали сопернику 3+ матчей",
+        )
+        if items:
+            await callback.message.answer(
+                "Выбери пару для полной хронологии:",
+                reply_markup=history_kryptonite_pick_kb(items),
+            )
+
+
+@history_router.callback_query(F.data.startswith("hist:krypto:d:"))
+async def cb_hist_kryptonite_detail(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 4:
+        await callback.answer()
+        return
+    try:
+        idx = int(parts[3])
+    except ValueError:
+        await callback.answer()
+        return
+    uid = _uid(callback)
+    items = _krypto_cache.get(uid) or []
+    if idx < 0 or idx >= len(items):
+        await callback.answer("Список устарел — открой PVP-криптониты снова", show_alert=True)
+        return
+    row = items[idx]
+    dom = str(row.get("dominant") or "")
+    vic = str(row.get("victim") or "")
+    await callback.answer("Готовлю…")
+    try:
+        png = await asyncio.to_thread(render_pvp_kryptonite_detail_png, dom, vic)
+    except Exception as e:
+        logger.exception("kryptonite_detail")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    await _send_png(
+        callback,
+        png=png,
+        filename="kryptonite_detail.png",
+        caption=f"<b>PVP-криптонит</b> · {dom} → {vic}",
+    )

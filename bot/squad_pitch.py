@@ -306,6 +306,9 @@ class _Pl:
     roster_rank: int = 9999
     lineup_slot: str | None = None
     person_id: int | None = None
+    goals: int = 0
+    assists: int = 0
+    ga: int = 0
 
 
 def _squad_rows_from_py_files() -> bool:
@@ -445,15 +448,28 @@ def _assign_roster_ranks_from_db(players: list[_Pl]) -> None:
         p.roster_rank = rank_map.get(i, 9999)
 
 
-def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
-    t = (tournament or "").strip().lower()
-    if t in ("wc", "world_cup"):
-        return _load_wc_nation_squad_players(team)
+def _open_archive_session(tournament: str, season_num: int):
+    """Сессия SQLite архива сезона (лига или ЛЧ). Возвращает ``(session, engine)``."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
 
+    from utils.stats_history_agg import _season_db_path
+
+    t = (tournament or "").strip().lower()
+    cl = t in ("cl", "champ_league")
+    path = _season_db_path(int(season_num), cl=cl)
+    if not path:
+        raise FileNotFoundError(f"БД сезона {season_num} ({'ЛЧ' if cl else 'лига'}) не найдена")
+    eng = create_engine(
+        f"sqlite:///{path}",
+        connect_args={"check_same_thread": False, "timeout": 30},
+    )
+    return sessionmaker(bind=eng)(), eng
+
+
+def _load_club_squad_from_session(team_db: str, session, tournament: str) -> list[_Pl]:
     from utils.player_transfer import _filter_team
 
-    team_db = _team_name_as_in_db(team)
-    session = get_session(tournament)
     out: list[_Pl] = []
     for cls in (Forward, Midfielder, Defender, Goalkeeper):
         for p in session.query(cls).filter(_filter_team(cls, team_db)).all():
@@ -473,6 +489,10 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                 slot = str(slot).strip().upper() or None
             pid_raw = getattr(p, "person_id", None)
             person_id = int(pid_raw) if pid_raw is not None else None
+            g = int(getattr(p, "goals", 0) or 0)
+            a = int(getattr(p, "assists", 0) or 0)
+            ga_raw = getattr(p, "ga", None)
+            ga = int(ga_raw) if ga_raw is not None else (g + a)
             out.append(
                 _Pl(
                     name=p.name,
@@ -485,10 +505,12 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
                     roster_rank=9999,
                     lineup_slot=slot,
                     person_id=person_id if person_id and person_id > 0 else None,
+                    goals=g,
+                    assists=a,
+                    ga=ga,
                 )
             )
     use_py = _squad_rows_from_py_files()
-    # Сначала заявка из файла (только legacy): при дублях в БД не отбрасываем «левую» строку до merge.
     if use_py:
         _overlay_declared_roster(out, team_db)
     out = _dedupe_squad_pl_by_name(out)
@@ -511,6 +533,26 @@ def load_team_squad_players(team: str, tournament: str) -> list[_Pl]:
     for p in out:
         p.nation = resolve_player_nation(p.name, team_db, p.nation, session)
     return out
+
+
+def load_team_squad_players(
+    team: str, tournament: str, *, season_num: int | None = None
+) -> list[_Pl]:
+    t = (tournament or "").strip().lower()
+    if t in ("wc", "world_cup"):
+        return _load_wc_nation_squad_players(team)
+
+    team_db = _team_name_as_in_db(team)
+    if season_num is not None:
+        session, eng = _open_archive_session(tournament, season_num)
+        try:
+            return _load_club_squad_from_session(team_db, session, tournament)
+        finally:
+            session.close()
+            eng.dispose()
+
+    session = get_session(tournament)
+    return _load_club_squad_from_session(team_db, session, tournament)
 
 
 def _load_wc_nation_squad_players(nation: str) -> list[_Pl]:
@@ -1242,7 +1284,13 @@ def _draw_pitch_base(im: Image.Image, draw: ImageDraw.ImageDraw) -> None:
     draw.ellipse([cx - 70, my - 70, cx + 70, my + 70], outline=_LINE_SOFT, width=1)
 
 
-def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
+def render_squad_pitch_png_bytes(
+    team: str,
+    tournament: str,
+    *,
+    season_num: int | None = None,
+    headline_extra: str | None = None,
+) -> bytes:
     team_db = _team_name_as_in_db(team)
     is_wc = (tournament or "").strip().lower() in ("wc", "world_cup")
     if is_wc:
@@ -1252,7 +1300,9 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
         headline_sub = "ЧМ · сборная"
     else:
         headline_sub = label_for_squad_caption(team_db)
-    players = load_team_squad_players(team, tournament)
+    if headline_extra:
+        headline_sub = f"{headline_extra} · {headline_sub}" if headline_sub else headline_extra
+    players = load_team_squad_players(team, tournament, season_num=season_num)
     w = _CANVAS_W
 
     # Для клубов без игроков — короткая заглушка; для ЧМ рисуем пустое поле + флаг.
@@ -1345,7 +1395,7 @@ def render_squad_pitch_png_bytes(team: str, tournament: str) -> bytes:
     crest_font = _pick_font(22, bold=True)
 
     injuries_by_name: dict[str, int] = {}
-    if not is_wc:
+    if not is_wc and season_num is None:
         try:
             from utils.player_discipline import get_active_injuries_for_team
 
