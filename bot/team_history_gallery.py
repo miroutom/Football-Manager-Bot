@@ -20,6 +20,7 @@ from bot.team_history import (
     format_match_score_with_pens,
     format_season_tag,
     find_pvp_kryptonites,
+    aggregate_pvp_kryptonites_by_team,
     hall_of_fame_global,
     head_to_head,
     is_nation_name,
@@ -1630,6 +1631,66 @@ def render_club_season_matches_png(team: str, season: int) -> bytes:
         y += 34
     if len(rows) > len(show):
         draw.text((_PAD, y + 4), f"…ещё {len(rows) - len(show)} матчей", font=font_sm, fill=_DIM)
+    return _to_png(im.convert("RGB"))
+
+
+def render_pvp_kryptonite_teams_png(*, min_played: int = 3) -> bytes:
+    """Таблица клубов: сколько kryptonite-серий и против кого."""
+    summary = aggregate_pvp_kryptonites_by_team(min_played=min_played)
+    font_m = _pick_font(17)
+    font_sm = _pick_font(14)
+    font_b = _pick_font(20, bold=True)
+    font_h = _pick_font(13, bold=True)
+    row_h = 40
+    header_h = 36
+    table_h = header_h + max(1, len(summary)) * row_h + 16
+    h = 130 + table_h + 36
+    im = _gradient_bg(min(h, 3600)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    y = _title(
+        draw,
+        "PVP-криптониты · по клубам",
+        f"Сколько соперников клуб не проигрывал {min_played}+ матчей · клубов: {len(summary)}",
+    )
+
+    x0, x1 = _PAD, _CANVAS_W - _PAD
+    col_team = x0 + 12
+    col_cnt = x0 + 340
+    col_ops = x0 + 470
+    ops_max_w = x1 - col_ops - 16
+
+    draw.rounded_rectangle([x0, y, x1, y + table_h], radius=14, fill=_CARD, outline=_LINE)
+    hy = y + 10
+    for cx, lab in (
+        (col_team, "Команда"),
+        (col_cnt, "Серий"),
+        (col_ops, "Противники"),
+    ):
+        draw.text((cx, hy), lab, font=font_h, fill=_DIM)
+    draw.line([(x0 + 12, y + header_h - 4), (x1 - 12, y + header_h - 4)], fill=_LINE, width=1)
+
+    if not summary:
+        draw.text(
+            (x0 + 16, y + header_h + 12),
+            "Таких серий пока нет в журналах матчей.",
+            font=font_m,
+            fill=_DIM,
+        )
+        return _to_png(im.convert("RGB"))
+
+    for i, row in enumerate(summary):
+        ry = y + header_h + i * row_h
+        if i % 2 == 1:
+            draw.rectangle([x0 + 8, ry, x1 - 8, ry + row_h - 2], fill=(22, 32, 50))
+        team = str(row.get("team") or "")
+        cnt = int(row.get("count") or 0)
+        ops = " · ".join(str(x) for x in (row.get("opponents") or []))
+        draw.text((col_team, ry + 10), _fit(draw, team, font_m, 300), font=font_m, fill=_ROMAN)
+        draw.text((col_cnt + 8, ry + 8), str(cnt), font=font_b, fill=_GOLD)
+        draw.text((col_ops, ry + 10), _fit(draw, ops, font_m, ops_max_w), font=font_m, fill=_TEXT)
+
+    foot = "Сортировка по числу серий · внутри строки — по числу матчей с соперником"
+    draw.text((_PAD, y + table_h + 12), foot, font=font_sm, fill=_DIM)
     return _to_png(im.convert("RGB"))
 
 

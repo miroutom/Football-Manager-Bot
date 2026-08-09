@@ -38,6 +38,7 @@ from bot.team_history_gallery import (
     render_prestige_dynamics_png,
     render_pvp_kryptonite_detail_png,
     render_pvp_kryptonite_list_png,
+    render_pvp_kryptonite_teams_png,
     render_season_cover_png,
 )
 from bot.team_history_render import (
@@ -1273,7 +1274,12 @@ async def cb_hist_kryptonite_list(callback: CallbackQuery) -> None:
     try:
         from bot.team_history import find_pvp_kryptonites
 
-        png = await asyncio.to_thread(render_pvp_kryptonite_list_png)
+        pngs = await asyncio.to_thread(
+            lambda: [
+                render_pvp_kryptonite_teams_png(),
+                render_pvp_kryptonite_list_png(),
+            ]
+        )
         items = find_pvp_kryptonites()
     except Exception as e:
         logger.exception("kryptonite_list")
@@ -1284,9 +1290,9 @@ async def cb_hist_kryptonite_list(callback: CallbackQuery) -> None:
     if callback.message:
         await _send_png(
             callback,
-            png=png,
+            png=pngs,
             filename="kryptonite_list.png",
-            caption="<b>PVP-криптониты</b> — клубы, которые не проигрывали сопернику 3+ матчей",
+            caption="<b>PVP-криптониты</b> — сводка по клубам и все пары",
         )
         if items:
             await callback.message.answer(

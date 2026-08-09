@@ -1094,6 +1094,36 @@ def find_pvp_kryptonites(*, min_played: int = 3) -> list[dict[str, Any]]:
     return out
 
 
+def aggregate_pvp_kryptonites_by_team(
+    rows: list[dict[str, Any]] | None = None, *, min_played: int = 3
+) -> list[dict[str, Any]]:
+    """Сводка: сколько kryptonite-серий у каждого клуба и против кого."""
+    from collections import defaultdict
+
+    rows = rows if rows is not None else find_pvp_kryptonites(min_played=min_played)
+    by_team: dict[str, list[tuple[str, int]]] = defaultdict(list)
+    for r in rows:
+        dom = str(r.get("dominant") or "").strip()
+        vic = str(r.get("victim") or "").strip()
+        if not dom or not vic:
+            continue
+        by_team[dom].append((vic, int(r.get("played") or 0)))
+
+    out: list[dict[str, Any]] = []
+    for team, pairs in by_team.items():
+        pairs.sort(key=lambda x: (-x[1], x[0].lower()))
+        opponents = [name for name, _ in pairs]
+        out.append(
+            {
+                "team": team,
+                "count": len(opponents),
+                "opponents": opponents,
+            }
+        )
+    out.sort(key=lambda x: (-int(x["count"]), str(x["team"]).lower()))
+    return out
+
+
 def club_matches_in_season(team: str, season: int) -> list[dict[str, Any]]:
     want = _norm(team)
     rows = [
