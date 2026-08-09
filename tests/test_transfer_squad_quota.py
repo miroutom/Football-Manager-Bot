@@ -23,6 +23,26 @@ def test_cam_does_not_fill_cm_slot():
     assert not surplus
 
 
+def test_4222_lcam_rcam_reserve_label_is_cam():
+    """4-2-2-2: LCAM/RCAM на поле — ЦАП, замены тоже по ЦАП (не ЛП/ПП)."""
+    slots = [
+        {"slot_id": "LCAM", "allowed_positions": ["ЛП", "ЛЦП", "ЦАП", "ЦП"]},
+        {"slot_id": "RCAM", "allowed_positions": ["ПП", "ПЦП", "ЦАП", "ЦП"]},
+    ]
+    groups = reserve_groups_for_formation(slots)
+    assert [g.label for g in groups] == ["ЦАП", "ЦАП"]
+    subs = [
+        {"name": "A", "position": "ЦАП"},
+        {"name": "B", "position": "ЦАП"},
+        {"name": "C", "position": "ЦАП"},
+        {"name": "D", "position": "ЦАП"},
+    ]
+    assigned, missing, surplus = assign_substitutes_to_groups(subs, groups)
+    assert assigned == [2, 2]
+    assert not missing
+    assert not surplus
+
+
 def test_two_cm_slots_counted_separately():
     groups = _groups_433()
     subs = [{"name": "CM1", "position": "ЦП"}]
