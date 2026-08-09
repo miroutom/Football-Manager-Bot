@@ -808,9 +808,16 @@ def _filter_fa_not_in_squads(fa_list: list[dict], teams: list[dict]) -> list[dic
     return [p for p in (fa_list or []) if not _player_matches_squad_keys(p, keys)]
 
 
-def _find_player_in_teams(teams: list[dict], name: str, position: str = "") -> tuple[str, dict] | None:
+def _find_player_in_teams(
+    teams: list[dict],
+    name: str,
+    position: str = "",
+    *,
+    prefer_team: str | None = None,
+) -> tuple[str, dict] | None:
     nm = str(name or "").strip().casefold()
     pos = str(position or "").strip().upper()
+    hits: list[tuple[str, dict]] = []
     for team in teams or []:
         tname = team.get("name") or ""
         for zone in ("start", "bench", "reserve"):
@@ -821,8 +828,15 @@ def _find_player_in_teams(teams: list[dict], name: str, position: str = "") -> t
                     continue
                 if pos and str(p.get("position") or "").strip().upper() != pos:
                     continue
+                hits.append((tname, p))
+    if not hits:
+        return None
+    if prefer_team:
+        want = str(prefer_team).strip().casefold()
+        for tname, p in hits:
+            if str(tname).strip().casefold() == want:
                 return tname, p
-    return None
+    return hits[0]
 
 
 def _apply_transfers_to_state(
@@ -840,15 +854,20 @@ def _apply_transfers_to_state(
         pos = str(tr.get("position") or "").strip().upper()
         frm = str(tr.get("from_team") or "").strip()
         to = str(tr.get("to_team") or "").strip()
+        nm = name.casefold()
         if not name or not frm or not to:
             continue
-        hit = _find_player_in_teams(teams, name, pos)
+        hit = _find_player_in_teams(teams, name, pos, prefer_team=to)
         if not hit:
             notes.append(f"не найден в составах: {name} → {to}")
             continue
         _team_name, player = hit
         pid = player.get("id")
         if not pid:
+            continue
+        parts = str(pid).split("|")
+        if len(parts) >= 3 and str(parts[1]).strip().casefold() != nm:
+            notes.append(f"пропуск baseline: id/name не совпали для {name} → {to}")
             continue
         baseline[pid] = frm
         applied += 1
@@ -1235,7 +1254,9 @@ def compute_transfers(state: dict) -> list[dict]:
             }
         )
     rows.sort(key=lambda r: (r["to_team"], -r["overall"], r["name"]))
-    return rows
+    from utils.transfer_window_apply import _dedupe_transfer_rows
+
+    return _dedupe_transfer_rows(rows)
 
 
 def _squads_validation_error(data: dict) -> str | None:

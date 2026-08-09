@@ -3,6 +3,7 @@ from typing import Optional
 from unittest.mock import patch
 
 from utils.transfer_window_apply import (
+    _dedupe_transfer_rows,
     apply_squads_text,
     parse_transfers_text,
     strip_transfers_appendix,
@@ -72,3 +73,27 @@ def test_release_to_fa_skips_when_already_in_pool(monkeypatch):
     )
     out = fa_mod.release_club_player_to_fa("Куртуа", "ВРТ", "Реал")
     assert out.get("skipped") is True
+
+
+def test_dedupe_transfer_rows_prefers_chelsea_silva_to_city():
+    rows = [
+        {
+            "id": "Сити|Сильва|ЦЗ",
+            "name": "Сильва",
+            "position": "ЦЗ",
+            "overall": 88,
+            "from_team": "Аталанта",
+            "to_team": "Сити",
+        },
+        {
+            "id": "Челси|Сильва|ЦЗ",
+            "name": "Сильва",
+            "position": "ЦЗ",
+            "overall": 88,
+            "from_team": "Челси",
+            "to_team": "Сити",
+        },
+    ]
+    out = _dedupe_transfer_rows(rows)
+    assert len(out) == 1
+    assert out[0]["from_team"] == "Челси"

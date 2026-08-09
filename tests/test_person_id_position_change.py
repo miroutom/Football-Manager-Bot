@@ -26,6 +26,15 @@ def test_player_name_identity_token_from_string():
     assert player_name_identity_token("Габриэль Жезус") == "Жезус"
 
 
+def test_player_name_matches_for_person_lookup():
+    from utils.player_names import player_name_matches_for_person_lookup
+
+    assert player_name_matches_for_person_lookup("Антониу Сильва", "Антониу Сильва")
+    assert not player_name_matches_for_person_lookup("Антониу Сильва", "Сильва")
+    assert not player_name_matches_for_person_lookup("Сильва", "Антониу Сильва")
+    assert player_name_matches_for_person_lookup("Сильва", "Сильва")
+
+
 @pytest.mark.skipif(
     not os.path.isfile("db/common_synced.db"),
     reason="common_synced.db not present",

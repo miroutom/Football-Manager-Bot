@@ -222,15 +222,16 @@ def lookup_canonical_person_id_by_team(
     import sqlite3
 
     from utils import season_paths
-    from utils.player_names import player_name_identity_token
+    from utils.player_names import player_name_identity_token, player_name_matches_for_person_lookup
     from utils.player_transfer import _norm_cmp
 
     ident = player_name_identity_token(name or "").casefold()
     want_team = _norm_cmp(team)
-    best: tuple[int, int] | None = None
+    best_exact: tuple[int, int] | None = None
+    best_fuzzy: tuple[int, int] | None = None
 
-    def _consider(pid_raw: object, matches_raw: object) -> None:
-        nonlocal best
+    def _consider(target: str, pid_raw: object, matches_raw: object) -> None:
+        nonlocal best_exact, best_fuzzy
         try:
             pid = int(pid_raw or 0)
         except (TypeError, ValueError):
@@ -239,8 +240,11 @@ def lookup_canonical_person_id_by_team(
             return
         m = int(matches_raw or 0)
         cand = (m, -pid)
-        if best is None or cand > best:
-            best = cand
+        if target == "exact":
+            if best_exact is None or cand > best_exact:
+                best_exact = cand
+        elif best_fuzzy is None or cand > best_fuzzy:
+            best_fuzzy = cand
 
     db_paths: list[str] = []
     for getter in (
@@ -285,17 +289,19 @@ def lookup_canonical_person_id_by_team(
                     continue
                 q = f"SELECT name, person_id, matches, team FROM {tbl}"
                 for nm, pid, matches, tm in conn.execute(q):
-                    if player_name_identity_token(nm or "").casefold() != ident:
-                        continue
                     if _norm_cmp(tm or "") != want_team:
                         continue
-                    _consider(pid, matches)
+                    if _norm_cmp(nm or "") == _norm_cmp(name or ""):
+                        _consider("exact", pid, matches)
+                    elif player_name_matches_for_person_lookup(nm or "", name or ""):
+                        _consider("fuzzy", pid, matches)
         finally:
             conn.close()
 
-    if best is None:
+    pick = best_exact or best_fuzzy
+    if pick is None:
         return None
-    return -best[1]
+    return -pick[1]
 
 
 def ensure_row_person_id(row, *, notes: str = "", persist: bool = True) -> int:

@@ -73,6 +73,25 @@ def player_name_identity_token(name: str) -> str:
     return sn or (name or "").strip()
 
 
+def player_name_matches_for_person_lookup(row_name: str, query_name: str) -> bool:
+    """
+    Сопоставление имён для ``person_id``.
+
+    «Антониу Сильва» и «Сильва» — разные люди; полное имя не матчится с одним словом.
+    """
+    from utils.player_transfer import _norm_cmp
+
+    rn = (row_name or "").strip()
+    qn = (query_name or "").strip()
+    if _norm_cmp(rn) == _norm_cmp(qn):
+        return True
+    if " " in qn:
+        return False
+    if " " in rn:
+        return False
+    return player_name_identity_token(rn).casefold() == qn.casefold()
+
+
 def _parse_initial_surname_query(query: str) -> tuple[str | None, str | None]:
     """«Л. Мартинез», «Л Мартинез», «л.мартинез» → (буква, фамилия)."""
     s = (query or "").strip()

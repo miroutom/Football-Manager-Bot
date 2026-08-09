@@ -141,8 +141,48 @@ def parse_transfers_json(text: str) -> tuple[list[dict[str, Any]], list[dict[str
 def parse_transfers_file(content: str, filename: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]] | None]:
     fn = (filename or "").lower()
     if fn.endswith(".json"):
-        return parse_transfers_json(content)
-    return parse_transfers_text(content), None
+        transfers, teams = parse_transfers_json(content)
+    else:
+        transfers, teams = parse_transfers_text(content), None
+    return _dedupe_transfer_rows(list(transfers)), teams
+
+
+def _dedupe_transfer_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Один (имя, позиция, куда) — один трансфер; предпочитаем id, согласованный с from_team."""
+    best: dict[tuple[str, str, str], dict[str, Any]] = {}
+
+    def _score(row: dict[str, Any]) -> tuple[int, int]:
+        rid = str(row.get("id") or "")
+        parts = rid.split("|")
+        id_home = parts[0].strip() if parts else ""
+        from_team = str(row.get("from_team") or "").strip()
+        pts = 0
+        if id_home and id_home.casefold() == from_team.casefold():
+            pts += 10
+        try:
+            ovr = int(row.get("overall") or 0)
+        except (TypeError, ValueError):
+            ovr = 0
+        return pts, ovr
+
+    for row in rows or []:
+        key = (
+            str(row.get("name") or "").strip().casefold(),
+            str(row.get("position") or "").strip().upper(),
+            str(row.get("to_team") or "").strip().casefold(),
+        )
+        prev = best.get(key)
+        if prev is None or _score(row) > _score(prev):
+            best[key] = row
+    out = list(best.values())
+    out.sort(
+        key=lambda r: (
+            str(r.get("to_team") or ""),
+            -int(r.get("overall") or 0),
+            str(r.get("name") or ""),
+        )
+    )
+    return out
 
 
 @dataclass
