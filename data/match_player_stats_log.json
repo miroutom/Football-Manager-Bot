@@ -7396,5 +7396,102 @@
     "home_score": 2,
     "away_score": 3,
     "league_code": "ger"
+  },
+  {
+    "season": 4,
+    "day": 2,
+    "home": "Барселона",
+    "away": "Атлетико",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Лева",
+        "team": "Барселона",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Педри",
+        "team": "Барселона",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Шарави",
+        "team": "Атлетико",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Мората",
+        "team": "Атлетико",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Депай",
+        "team": "Атлетико",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Вальверде",
+        "team": "Атлетико",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-09T19:58:35Z",
+    "home_score": 3,
+    "away_score": 3,
+    "league_code": "esp"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Арсенал",
+    "away": "Реал",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Арнаутович",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Влашич",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Браим",
+        "team": "Реал",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Кроос",
+        "team": "Реал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-09T20:37:34Z",
+    "home_score": 3,
+    "away_score": 2,
+    "league_code": "cl",
+    "cl_phase": "league"
   }
 ]

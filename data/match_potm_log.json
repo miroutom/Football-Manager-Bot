@@ -2165,5 +2165,34 @@
     "home_score": 2,
     "away_score": 3,
     "league_code": "ger"
+  },
+  {
+    "season": 4,
+    "day": 2,
+    "home": "Барселона",
+    "away": "Атлетико",
+    "tournament": "league",
+    "player": "Депай",
+    "team": "Атлетико",
+    "position": "ЦАП",
+    "recorded_at": "2026-08-09T19:58:35Z",
+    "home_score": 3,
+    "away_score": 3,
+    "league_code": "esp"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Арсенал",
+    "away": "Реал",
+    "tournament": "cl",
+    "player": "Арнаутович",
+    "team": "Арсенал",
+    "position": "ФРВ",
+    "recorded_at": "2026-08-09T20:37:34Z",
+    "home_score": 3,
+    "away_score": 2,
+    "league_code": "cl",
+    "cl_phase": "league"
   }
 ]
