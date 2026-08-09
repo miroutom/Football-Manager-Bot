@@ -1029,6 +1029,9 @@ def apply_team_squad_declaration(
     deduped = list(od.values())
     declared = set(od.keys())
 
+    cl_team = resolve_team_name_for_cl_pool(team)
+    from utils.player_field_edit import find_player_row as fpr
+
     current_rows: dict[tuple[str, str], Any] = {}
     for _Cls, r in _iter_team_players(sleague, team):
         if bool(getattr(r, "left_team", False)):
@@ -1050,7 +1053,14 @@ def apply_team_squad_declaration(
 
         for nm, pp, st, ovr, nat, slot in deduped:
             row = current_rows.get(_roster_key(nm, pp))
-            if row is not None and _player_row_matches_declaration(row, st, ovr, slot):
+            league_ok = row is not None and _player_row_matches_declaration(row, st, ovr, slot)
+            cl_ok = not cl_team
+            if cl_team:
+                _Cls_c, row_c = fpr(scl, cl_team, nm, pp)
+                cl_ok = row_c is not None and _player_row_matches_declaration(
+                    row_c, st, ovr, slot
+                )
+            if league_ok and cl_ok:
                 continue
             add_player_to_team_roster(
                 team,
