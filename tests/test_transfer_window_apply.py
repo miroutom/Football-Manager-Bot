@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Optional
+from unittest.mock import patch
 
 from utils.transfer_window_apply import (
+    apply_squads_text,
     parse_transfers_text,
     strip_transfers_appendix,
     apply_transfer_window_upload,
@@ -43,3 +45,18 @@ def test_apply_progress_callback_dry_run():
     assert calls
     assert calls[0][0] == 0
     assert calls[-1][2] == "Готово"
+
+
+def test_apply_squads_text_skips_complete_roster():
+    squads = (
+        "@Zenit\n==== start ===\nИванов ЦП 80\n\n"
+        "@Spartak\n==== start ===\nПетров ЦП 80\n"
+    )
+    with patch("utils.roster_manual.team_squad_is_complete") as complete:
+        complete.side_effect = lambda team, **_: team == "Zenit"
+        with patch("utils.roster_manual.apply_team_squad_declaration") as apply_decl:
+            applied, skipped = apply_squads_text(squads, dry_run=False)
+    assert applied == 1
+    assert skipped == 1
+    apply_decl.assert_called_once()
+    assert apply_decl.call_args[0][0] == "Spartak"

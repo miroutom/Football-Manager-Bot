@@ -48,7 +48,7 @@ def _apply_transfers(transfers: list[dict], *, dry_run: bool) -> int:
     return apply_transfers(transfers, dry_run=dry_run)
 
 
-def _apply_squads_file(path: Path, *, dry_run: bool) -> int:
+def _apply_squads_file(path: Path, *, dry_run: bool) -> tuple[int, int]:
     from utils.transfer_window_apply import apply_squads_text
 
     return apply_squads_text(path.read_text(encoding="utf-8"), dry_run=dry_run)
@@ -101,8 +101,8 @@ def main() -> int:
         if not args.squads.is_file():
             print("нет squads:", args.squads, file=sys.stderr)
             return 1
-        n = _apply_squads_file(args.squads, dry_run=args.dry_run)
-        print(f"squads done: {n}")
+        applied, skipped = _apply_squads_file(args.squads, dry_run=args.dry_run)
+        print(f"squads done: applied={applied}, skipped={skipped}")
 
     if not args.skip_formations:
         print("=== formations ===")

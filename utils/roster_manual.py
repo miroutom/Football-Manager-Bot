@@ -143,6 +143,26 @@ def _iter_team_players(sess: Any, team: str):
             yield Cls, r
 
 
+def count_team_squad_players(team: str, *, session_league: Any | None = None) -> int:
+    """Число игроков клуба в национальной лиге (все позиции)."""
+    from utils.transfer_input import resolve_team_name
+    from utils.utils import session_league as default_league
+
+    sleague = session_league or default_league
+    team_raw = (team or "").strip()
+    if len(team_raw) < 2:
+        return 0
+    resolved = resolve_team_name(team_raw, sleague) or team_raw
+    return sum(1 for _ in _iter_team_players(sleague, resolved))
+
+
+def team_squad_is_complete(team: str, *, session_league: Any | None = None) -> bool:
+    """Полная заявка (32 игрока) — повторно применять не нужно."""
+    from utils.squad_limits import SQUAD_MAX
+
+    return count_team_squad_players(team, session_league=session_league) >= SQUAD_MAX
+
+
 def _release_player_from_team_sessions(
     sleague: Any, scl: Any, team: str, nm: str, pos: str
 ) -> str:

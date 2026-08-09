@@ -149,6 +149,7 @@ def parse_transfers_file(content: str, filename: str) -> tuple[list[dict[str, An
 class TransferApplyResult:
     transfers_ok: int = 0
     squads_ok: int = 0
+    squads_skipped: int = 0
     formations_ok: int = 0
     errors: list[str] = field(default_factory=list)
     lines: list[str] = field(default_factory=list)
@@ -234,20 +235,42 @@ def apply_squads_text(
     on_progress: ApplyProgressCallback | None = None,
     progress_base: int = 0,
     progress_total: int = 0,
-) -> int:
+) -> tuple[int, int]:
     from scripts.apply_bulk_squad_declarations import resolve_team_label, split_bulk_blocks
-    from utils.roster_manual import apply_team_squad_declaration, parse_squad_declaration_text
+    from utils.roster_manual import (
+        apply_team_squad_declaration,
+        parse_squad_declaration_text,
+        team_squad_is_complete,
+    )
+    from utils.squad_limits import SQUAD_MAX
 
     body = strip_transfers_appendix(text)
     blocks = split_bulk_blocks(body)
-    n = 0
+    applied = 0
+    skipped = 0
+    step = 0
     for team_raw, block in blocks:
         team = resolve_team_label(team_raw)
+        if team_squad_is_complete(team):
+            skipped += 1
+            step += 1
+            if on_progress and progress_total > 0:
+                _report_progress(
+                    on_progress,
+                    done=progress_base + step,
+                    total=progress_total,
+                    phase="Составы",
+                    detail=f"{team} · готов ({SQUAD_MAX})",
+                    phase_done=step,
+                    phase_total=len(blocks),
+                )
+            continue
         entries, errors = parse_squad_declaration_text(block)
         if errors:
             raise ValueError(f"Разбор заявки {team}: {errors[0]}")
         if dry_run:
-            n += 1
+            applied += 1
+            step += 1
             continue
         apply_team_squad_declaration(
             team,
@@ -255,18 +278,19 @@ def apply_squads_text(
             mirror_synced=mirror_synced,
             rebuild_common=rebuild_common,
         )
-        n += 1
+        applied += 1
+        step += 1
         if on_progress and progress_total > 0:
             _report_progress(
                 on_progress,
-                done=progress_base + n,
+                done=progress_base + step,
                 total=progress_total,
                 phase="Составы",
                 detail=team,
-                phase_done=n,
+                phase_done=step,
                 phase_total=len(blocks),
             )
-    return n
+    return applied, skipped
 
 
 def apply_formations(teams: list[dict[str, Any]], *, dry_run: bool = False) -> int:
@@ -349,7 +373,7 @@ def apply_transfer_window_upload(
         res.squads_ok = n_squads
         res.lines.append(f"(dry-run) клубов в заявках: {res.squads_ok}")
     else:
-        res.squads_ok = apply_squads_text(
+        squads_applied, squads_skipped = apply_squads_text(
             squads_text,
             dry_run=False,
             mirror_synced=False,
@@ -358,8 +382,16 @@ def apply_transfer_window_upload(
             progress_base=progress_done,
             progress_total=progress_total,
         )
-        progress_done += res.squads_ok
-        res.lines.append(f"✓ Заявки клубов: {res.squads_ok}")
+        res.squads_ok = squads_applied
+        res.squads_skipped = squads_skipped
+        progress_done += squads_applied + squads_skipped
+        if squads_skipped:
+            res.lines.append(
+                f"✓ Заявки клубов: {squads_applied} "
+                f"(пропущено готовых: {squads_skipped})"
+            )
+        else:
+            res.lines.append(f"✓ Заявки клубов: {squads_applied}")
 
     if not dry_run and rebuild_step:
         if on_progress and progress_total > 0:

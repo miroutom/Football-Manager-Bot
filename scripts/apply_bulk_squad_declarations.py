@@ -79,7 +79,12 @@ def main() -> int:
         print("Файл не найден:", path, file=sys.stderr)
         return 1
 
-    from utils.roster_manual import apply_team_squad_declaration, parse_squad_declaration_text
+    from utils.roster_manual import (
+        apply_team_squad_declaration,
+        parse_squad_declaration_text,
+        team_squad_is_complete,
+    )
+    from utils.squad_limits import SQUAD_MAX
 
     text = path.read_text(encoding="utf-8")
     blocks = split_bulk_blocks(text)
@@ -90,6 +95,9 @@ def main() -> int:
     exit_code = 0
     for team_raw, body in blocks:
         team = resolve_team_label(team_raw)
+        if team_squad_is_complete(team):
+            print(f"SKIP {team}: уже {SQUAD_MAX} игроков — заявка не менялась")
+            continue
         entries, errors = parse_squad_declaration_text(body)
         if errors:
             print(f"--- Ошибки разбора: {team} (исходная строка: {team_raw!r}) ---", file=sys.stderr)
