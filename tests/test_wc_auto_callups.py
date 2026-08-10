@@ -75,6 +75,45 @@ def test_auto_callup_balanced_bench_and_reserve():
     assert len(bench) == 7
     assert len(reserve) == 8
     assert any(r["name"] == "GK2" and r["position"] == "ВРТ" for r in bench)
+    assert sum(1 for r in bench if r["position"] == "ВРТ") == 1
+    assert not any(r["position"] == "ВРТ" for r in reserve)
     picked = {r["name"] for r in bench + reserve}
     assert "LB2" in picked
     assert "STAR" in picked
+
+
+def test_auto_callup_skips_extra_gk_in_rating_fill():
+    players = [
+        {"name": "GK1", "club": "A", "position": "ВРТ", "overall": 85},
+        {"name": "GK2", "club": "B", "position": "ВРТ", "overall": 70},
+        {"name": "GK3", "club": "C", "position": "ВРТ", "overall": 99},
+        {"name": "LB1", "club": "D", "position": "ЛЗ", "overall": 82},
+        {"name": "CB1", "club": "E", "position": "ЦЗ", "overall": 84},
+        {"name": "RB1", "club": "F", "position": "ПЗ", "overall": 83},
+        {"name": "CM1", "club": "G", "position": "ЦП", "overall": 81},
+        {"name": "CAM1", "club": "H", "position": "ЦАП", "overall": 80},
+        {"name": "LW1", "club": "I", "position": "ЛФА", "overall": 79},
+        {"name": "RW1", "club": "J", "position": "ПФА", "overall": 78},
+        {"name": "ST1", "club": "K", "position": "ФРВ", "overall": 86},
+        {"name": "F1", "club": "L", "position": "ФРВ", "overall": 75},
+        {"name": "F2", "club": "M", "position": "ЛФА", "overall": 74},
+        {"name": "F3", "club": "N", "position": "ПФА", "overall": 73},
+        {"name": "F4", "club": "O", "position": "ЦП", "overall": 72},
+        {"name": "F5", "club": "P", "position": "ЦЗ", "overall": 71},
+        {"name": "F6", "club": "Q", "position": "ЛЗ", "overall": 70},
+        {"name": "F7", "club": "R", "position": "ПЗ", "overall": 69},
+        {"name": "F8", "club": "S", "position": "ЦАП", "overall": 68},
+        {"name": "F9", "club": "T", "position": "ЦОП", "overall": 67},
+        {"name": "F10", "club": "U", "position": "ЛЦЗ", "overall": 66},
+        {"name": "F11", "club": "V", "position": "ПЦЗ", "overall": 65},
+        {"name": "F12", "club": "W", "position": "ЛП", "overall": 64},
+        {"name": "F13", "club": "X", "position": "ПП", "overall": 63},
+        {"name": "F14", "club": "Y", "position": "ЛЦП", "overall": 62},
+        {"name": "F15", "club": "Z", "position": "ПЦП", "overall": 61},
+    ]
+    roster = build_auto_callup_roster("Испания", players)
+    bench = [r for r in roster if r.get("status") == "bench"]
+    reserve = [r for r in roster if r.get("status") == "reserve"]
+    assert sum(1 for r in bench if r["position"] == "ВРТ") == 1
+    assert not any(r["position"] == "ВРТ" for r in reserve)
+    assert "GK3" not in {r["name"] for r in bench + reserve}

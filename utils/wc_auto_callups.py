@@ -149,11 +149,14 @@ def _pick_bench_and_reserve(
             continue
         if _next_target() is None:
             break
-        picked = _best_unused([p for p in _remaining() if _norm_pos(p.get("position")) == pos], used)
+        picked = _best_unused(
+            [p for p in _remaining() if not _is_gk(p) and _norm_pos(p.get("position")) == pos],
+            used,
+        )
         if picked:
             _append(_next_target() or "reserve", picked)
 
-    for p in _sort_pool(_remaining()):
+    for p in _sort_pool([x for x in _remaining() if not _is_gk(x)]):
         slot = _next_target()
         if slot is None:
             break

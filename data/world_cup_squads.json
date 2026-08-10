@@ -213,15 +213,6 @@
         "person_id": 309
       },
       {
-        "name": "Кепа",
-        "club": "Реал",
-        "position": "ВРТ",
-        "overall": 84,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 936
-      },
-      {
         "name": "Муниаин",
         "club": "Милан",
         "position": "ЦАП",
@@ -247,6 +238,15 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 602
+      },
+      {
+        "name": "Бускетс",
+        "club": "Наполи",
+        "position": "ЦОП",
+        "overall": 83,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 340
       }
     ],
     "Франция": [
@@ -972,15 +972,6 @@
         "person_id": 4500
       },
       {
-        "name": "Патрисио",
-        "club": "Рома",
-        "position": "ВРТ",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 976
-      },
-      {
         "name": "Гонсалвеш",
         "club": "Сити",
         "position": "ФРВ",
@@ -988,6 +979,15 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 148
+      },
+      {
+        "name": "Диаш",
+        "club": "Арсенал",
+        "position": "ЦЗ",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 1388
       }
     ],
     "Бельгия": [
@@ -1192,24 +1192,6 @@
         "person_id": 4952
       },
       {
-        "name": "Миньоле",
-        "club": "Боруссия М",
-        "position": "ВРТ",
-        "overall": 80,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 994
-      },
-      {
-        "name": "Уннерсталь",
-        "club": "Free Agent",
-        "position": "ВРТ",
-        "overall": 80,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 933
-      },
-      {
         "name": "Батшуаи",
         "club": "Вольфсбург",
         "position": "ФРВ",
@@ -1235,6 +1217,24 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 5016
+      },
+      {
+        "name": "Баликвиша",
+        "club": "Урал",
+        "position": "ПФА",
+        "overall": 75,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 4931
+      },
+      {
+        "name": "Вертессен",
+        "club": "Динамо",
+        "position": "ФРВ",
+        "overall": 75,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 5035
       }
     ],
     "Нидерланды": [
@@ -1695,15 +1695,6 @@
         "person_id": 470
       },
       {
-        "name": "Ортега",
-        "club": "Арсенал",
-        "position": "ВРТ",
-        "overall": 85,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 927
-      },
-      {
         "name": "Андрих",
         "club": "Милан",
         "position": "ЦП",
@@ -1729,6 +1720,15 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 1035
+      },
+      {
+        "name": "Гюндоган",
+        "club": "Ньюкасл",
+        "position": "ЦП",
+        "overall": 83,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 300
       }
     ],
     "Хорватия": [
@@ -2346,24 +2346,6 @@
         "person_id": 4540
       },
       {
-        "name": "Мерет",
-        "club": "Наполи",
-        "position": "ВРТ",
-        "overall": 86,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 943
-      },
-      {
-        "name": "Терраччано",
-        "club": "Ювентус",
-        "position": "ВРТ",
-        "overall": 84,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 974
-      },
-      {
         "name": "Ачерби",
         "club": "Ньюкасл",
         "position": "ЦЗ",
@@ -2398,6 +2380,24 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 668
+      },
+      {
+        "name": "Иммобиле",
+        "club": "Лацио",
+        "position": "ФРВ",
+        "overall": 81,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 156
+      },
+      {
+        "name": "Локателли",
+        "club": "Ювентус",
+        "position": "ЦП",
+        "overall": 81,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 637
       }
     ],
     "Норвегия": [
@@ -3422,15 +3422,6 @@
         "person_id": 82
       },
       {
-        "name": "Кержаков",
-        "club": "Лейпциг",
-        "position": "ВРТ",
-        "overall": 80,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 956
-      },
-      {
         "name": "Егорычев",
         "club": "Челси",
         "position": "ЦП",
@@ -3474,6 +3465,15 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 725
+      },
+      {
+        "name": "Бабкин",
+        "club": "Бетис",
+        "position": "ЦАП",
+        "overall": 78,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 373
       }
     ],
     "Польша": [
@@ -3565,15 +3565,6 @@
         "status": "bench",
         "source": "callup",
         "person_id": 1007
-      },
-      {
-        "name": "Булка",
-        "club": "Free Agent",
-        "position": "ВРТ",
-        "overall": 78,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 942
       }
     ],
     "Швеция": [
@@ -4797,15 +4788,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 4909
-      },
-      {
-        "name": "Диау",
-        "club": "Free Agent",
-        "position": "ВРТ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4910
       },
       {
         "name": "Ламин Камара",
@@ -6099,15 +6081,6 @@
         "person_id": 41
       },
       {
-        "name": "Рульи",
-        "club": "Интер",
-        "position": "ВРТ",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 946
-      },
-      {
         "name": "Авила",
         "club": "Реал",
         "position": "ФРВ",
@@ -6124,6 +6097,15 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 5201
+      },
+      {
+        "name": "Креспо",
+        "club": "Интер",
+        "position": "ФРВ",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 5199
       }
     ],
     "Бразилия": [
