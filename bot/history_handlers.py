@@ -40,7 +40,7 @@ from bot.team_history_gallery import (
     render_pvp_kryptonite_list_png,
     render_pvp_kryptonite_teams_png,
     render_season_cover_png,
-    render_titled_players_club_png,
+    render_titled_players_club_pages,
     render_titled_players_global_pages,
 )
 from bot.team_history_render import (
@@ -890,9 +890,15 @@ async def cb_hist_club_act(callback: CallbackQuery) -> None:
             cap = f"<b>{team}</b> — зал славы"
             fn = "club_hof.png"
         elif action == "titled":
-            png = await asyncio.to_thread(render_titled_players_club_png, team)
-            cap = f"<b>{team}</b> — титулованные игроки (1+)"
-            fn = "club_titled.png"
+            pages = await asyncio.to_thread(render_titled_players_club_pages, team)
+            n = len(pages)
+            cap = (
+                f"<b>{team}</b> — титулованные (1+ в клубе)"
+                if n <= 1
+                else f"<b>{team}</b> — титулованные (1+ в клубе) · {n} стр."
+            )
+            await _send_png(callback, png=pages, filename="club_titled.png", caption=cap)
+            return
         elif action == "dyn":
             png = await asyncio.to_thread(render_prestige_dynamics_png, team)
             cap = f"<b>{team}</b> — динамика престижа"
@@ -1033,17 +1039,23 @@ async def cb_hist_titled_club(callback: CallbackQuery) -> None:
         return
     await callback.answer("Готовлю…")
     try:
-        png = await asyncio.to_thread(render_titled_players_club_png, team)
+        pages = await asyncio.to_thread(render_titled_players_club_pages, team)
     except Exception as e:
         logger.exception("titled club")
         if callback.message:
             await callback.message.answer(f"Ошибка: {e}")
         return
+    n = len(pages)
+    cap = (
+        f"<b>{team}</b> — титулованные (1+ в клубе)"
+        if n <= 1
+        else f"<b>{team}</b> — титулованные (1+ в клубе) · {n} стр."
+    )
     await _send_png(
         callback,
-        png=png,
+        png=pages,
         filename=f"titled_{code}_{idx_s}.png",
-        caption=f"<b>{team}</b> — титулованные игроки (1+)",
+        caption=cap,
     )
 
 

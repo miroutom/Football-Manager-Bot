@@ -2007,17 +2007,40 @@ def render_titled_players_global_pages(*, page_size: int = 14) -> list[bytes]:
     return pages
 
 
-def render_titled_players_club_png(team: str) -> bytes:
+def render_titled_players_club_pages(
+    team: str,
+    *,
+    page_size: int = 20,
+) -> list[bytes]:
     rows = titled_players_for_team(team, min_total=1)
     if not rows:
-        return _render_titled_players_png(
-            [],
-            title=f"Титулованные · {team}",
-            subtitle="Нет игроков с 1+ титулом",
+        return [
+            _render_titled_players_png(
+                [],
+                title=f"Титулованные · {team}",
+                subtitle="Нет игроков с 1+ командным титулом в клубе",
+            )
+        ]
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (len(rows) + page_size - 1) // page_size)
+    pages: list[bytes] = []
+    for p in range(n_pages):
+        off = p * page_size
+        chunk = rows[off : off + page_size]
+        pages.append(
+            _render_titled_players_png(
+                chunk,
+                title=f"Титулованные · {team}",
+                subtitle="1+ командный титул · выиграно в этом клубе",
+                offset=off,
+                page_label=f"{p + 1}/{n_pages}" if n_pages > 1 else None,
+            )
         )
-    return _render_titled_players_png(
-        rows,
-        title=f"Титулованные · {team}",
-        subtitle="1+ командный титул · выиграно в этом клубе",
-    )
+    return pages
+
+
+def render_titled_players_club_png(team: str) -> bytes:
+    """Одна страница (legacy); предпочтительно ``render_titled_players_club_pages``."""
+    pages = render_titled_players_club_pages(team, page_size=20)
+    return pages[0]
 
