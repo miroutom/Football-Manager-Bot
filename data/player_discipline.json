@@ -3437,6 +3437,19 @@
       "season": 4,
       "month": 1,
       "type": "травма"
+    },
+    {
+      "key": "влашич|арсенал|4|life|1|1",
+      "name": "Влашич",
+      "name_norm": "влашич",
+      "team": "Арсенал",
+      "team_norm": "арсенал",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
     }
   ]
 }

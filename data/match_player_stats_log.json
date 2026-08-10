@@ -7493,5 +7493,75 @@
     "away_score": 2,
     "league_code": "cl",
     "cl_phase": "league"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Арсенал",
+    "away": "Бавария",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Арнаутович",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Давид",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Виртц",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 1,
+        "assists": 2
+      },
+      {
+        "player": "Линдстром",
+        "team": "Бавария",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Кейн",
+        "team": "Бавария",
+        "position": "",
+        "goals": 6,
+        "assists": 1
+      },
+      {
+        "player": "Берарди",
+        "team": "Бавария",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Рёль",
+        "team": "Бавария",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Упамекано",
+        "team": "Бавария",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-08-09T21:15:47Z",
+    "home_score": 3,
+    "away_score": 7,
+    "league_code": "cl",
+    "cl_phase": "league"
   }
 ]
