@@ -37,6 +37,7 @@ _NATION_ALIASES: dict[str, str] = {
     "кот-д'ивуар": "Кот-д'Ивуар",
     "кот д'ивуар": "Кот-д'Ивуар",
     "котдивуар": "Кот-д'Ивуар",
+    "сша": "США",
     "франци": "Франция",
     "франйция": "Франция",
     "gb eng": "Англия",
@@ -49,6 +50,7 @@ _NATION_ALIASES: dict[str, str] = {
 _PLAYER_NATION_OVERRIDES: dict[str, str] = {
     "кондогбия": "Франция",
     "дардер": "Испания",
+    "кафу": "Бразилия",
 }
 
 _FLAG_RU: dict[str, str] = {
@@ -268,8 +270,9 @@ _FLAG_EN: dict[str, str] = {
 
 
 def _alias_key(raw: str) -> str:
-    s = (raw or "").strip().casefold()
-    s = s.replace("\u2019", "'").replace("\u2018", "'")
+    s = (raw or "").strip().casefold().replace("ё", "е")
+    for ch in ("\u2019", "\u2018", "`", "\u00b4", "\u02bc", "\u02bb"):
+        s = s.replace(ch, "'")
     s = re.sub(r"[.\u00b7]", " ", s)
     s = " ".join(s.split())
     return _NATION_ALIASES.get(s, s)
