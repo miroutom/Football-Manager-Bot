@@ -402,7 +402,7 @@ async def on_wc_squads_import_file(message: Message, state: FSMContext) -> None:
     try:
         from utils.wc_squad_app import import_wc_squads_export_txt
 
-        stats = await asyncio.to_thread(import_wc_squads_export_txt, text, True)
+        stats = await asyncio.to_thread(import_wc_squads_export_txt, text, apply_db=True)
     except Exception as e:
         logger.exception("wc squads import")
         await message.answer(f"✗ {html_escape(str(e))}", parse_mode="HTML")
