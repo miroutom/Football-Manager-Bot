@@ -1204,9 +1204,14 @@ function squadIdentityKeysForTeam(teamName) {
   if (!team) return keys;
   for (const zone of ["start", "bench", "reserve"]) {
     for (const p of team[zone] || []) {
+      if (!p?.name) continue;
       const k = playerIdentityKey(p);
       if (k) keys.add(k);
+      const npk = playerNamePosKey(p);
+      if (npk) keys.add(`np:${npk}`);
       if (p?.id) keys.add(`id:${p.id}`);
+      const nm = String(p.name).trim().toLowerCase();
+      if (nm) keys.add(`nm:${nm}`);
     }
   }
   return keys;
@@ -1216,7 +1221,11 @@ function isPlayerInNationalSquad(p, squadKeys) {
   if (!p || !squadKeys?.size) return false;
   const k = playerIdentityKey(p);
   if (k && squadKeys.has(k)) return true;
-  if (p.id && squadKeys.has(`id:${p.id}`)) return true;
+  const npk = playerNamePosKey(p);
+  if (npk && squadKeys.has(`np:${npk}`)) return true;
+  if (p?.id && squadKeys.has(`id:${p.id}`)) return true;
+  const nm = String(p.name || "").trim().toLowerCase();
+  if (nm && squadKeys.has(`nm:${nm}`)) return true;
   return false;
 }
 
