@@ -251,6 +251,7 @@ def list_remaining_schedule_matches(
     *,
     league_filter: str | None = None,
     session_kind: str | None = None,
+    team_filter: str | None = None,
 ):
     """
     Все слоты смешанного расписания, которые ещё не сыграны и не в skipped_matches
@@ -262,6 +263,7 @@ def list_remaining_schedule_matches(
     ``league_filter``: ``None`` / ``""`` / ``"all"`` — все лиги; иначе код (``rpl``, ``cl``, …).
     ``session_kind``: ``None`` / ``""`` / ``"all"`` — все; ``"sim"`` — только «Симуляция»;
     ``"game"`` — только «Игра» (по ``manager_session_label``).
+    ``team_filter``: если задано — только матчи, где ``home`` или ``away`` совпадает с клубом.
     """
     from config.leagues_config import manager_session_label
 
@@ -271,6 +273,8 @@ def list_remaining_schedule_matches(
     sk = (session_kind or "").strip().lower()
     if sk in ("", "all"):
         sk = None
+    tf = (team_filter or "").strip()
+    tf_cmp = tf.casefold() if tf else None
 
     skipped = load_skipped_matches()
     out = []
@@ -282,6 +286,11 @@ def list_remaining_schedule_matches(
                 continue
             home, away, league_code = parts[0], parts[1], parts[2]
             if lf and str(league_code).strip().lower() != lf:
+                continue
+            if tf_cmp and tf_cmp not in (
+                (home or "").strip().casefold(),
+                (away or "").strip().casefold(),
+            ):
                 continue
             cl_ph = (
                 cl_phase_from_mixed_schedule_line(match_str, day=day_num)

@@ -2843,5 +2843,19 @@
     "tournament": "cl",
     "cl_phase": "knockout",
     "day": 10
+  },
+  {
+    "home": "Арсенал",
+    "away": "Реал",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
+  },
+  {
+    "home": "Арсенал",
+    "away": "Бавария",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
   }
 ]

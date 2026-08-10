@@ -1960,39 +1960,160 @@ def _schedule_play_league_kb() -> InlineKeyboardMarkup:
 
 
 def _schedule_play_kind_kb(league_key: str) -> InlineKeyboardMarkup:
-    """Шаг 2: все / только сим / только игра (scpk:<lg>:<all|sim|game>)."""
+    """Шаг 2: все / только сим / только игра / команды (scpk / scpt)."""
     lg = league_key
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(text="Все типы", callback_data=f"scpk:{lg}:all"),
+            InlineKeyboardButton(text="Симуляция", callback_data=f"scpk:{lg}:sim"),
+            InlineKeyboardButton(text="Игра", callback_data=f"scpk:{lg}:game"),
+        ],
+    ]
+    if lg not in ("", "all"):
+        rows.append(
+            [
+                InlineKeyboardButton(text="Команды", callback_data=f"scpt:{lg}"),
+            ]
+        )
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="← К выбору чемпионата",
+                callback_data="scpf:back",
+            ),
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _league_team_names(league_key: str) -> list[str]:
+    from main import get_teams_by_league
+
+    code = (league_key or "").strip().lower()
+    if not code or code == "all":
+        return []
+    teams = get_teams_by_league(code)
+    if not teams:
+        return []
+    return sorted(
+        (str(n).strip() for n in teams.keys() if n and not str(n).startswith("_")),
+        key=lambda x: x.casefold(),
+    )
+
+
+def _team_name_by_index(league_key: str, team_idx: int) -> str | None:
+    names = _league_team_names(league_key)
+    if team_idx < 0 or team_idx >= len(names):
+        return None
+    return names[team_idx]
+
+
+def _team_filter_token(team_idx: int | None) -> str:
+    if team_idx is None:
+        return "x"
+    return str(int(team_idx))
+
+
+def _team_idx_from_token(league_key: str, token: str) -> int | None:
+    t = (token or "x").strip().lower()
+    if t in ("", "x", "-", "all"):
+        return None
+    try:
+        idx = int(t)
+    except ValueError:
+        return None
+    if _team_name_by_index(league_key, idx) is None:
+        return None
+    return idx
+
+
+def _schedule_play_teams_kb(league_key: str) -> InlineKeyboardMarkup:
+    names = _league_team_names(league_key)
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for i, name in enumerate(names):
+        row.append(
+            InlineKeyboardButton(
+                text=name,
+                callback_data=f"scptm:{league_key}:{i}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="← Тип матча",
+                callback_data=f"scpk:menu:{league_key}",
+            ),
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _schedule_play_team_kind_kb(league_key: str, team_idx: int) -> InlineKeyboardMarkup:
+    lg = league_key
+    ti = int(team_idx)
+    name = _team_name_by_index(lg, ti) or "?"
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="Все типы", callback_data=f"scpk:{lg}:all"),
-                InlineKeyboardButton(text="Симуляция", callback_data=f"scpk:{lg}:sim"),
-                InlineKeyboardButton(text="Игра", callback_data=f"scpk:{lg}:game"),
+                InlineKeyboardButton(
+                    text="Все типы",
+                    callback_data=f"scptk:{lg}:{ti}:all",
+                ),
+                InlineKeyboardButton(
+                    text="Симуляция",
+                    callback_data=f"scptk:{lg}:{ti}:sim",
+                ),
+                InlineKeyboardButton(
+                    text="Игра",
+                    callback_data=f"scptk:{lg}:{ti}:game",
+                ),
             ],
             [
                 InlineKeyboardButton(
-                    text="← К выбору чемпионата",
-                    callback_data="scpf:back",
+                    text="← К командам",
+                    callback_data=f"scpt:{lg}",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=f"Клуб: {name}",
+                    callback_data="sched:noop",
                 ),
             ],
         ]
     )
 
 
-def _schedule_play_filter_caption(league_key: str, session_kind: str) -> str:
+def _schedule_play_filter_caption(
+    league_key: str,
+    session_kind: str,
+    *,
+    team_idx: int | None = None,
+) -> str:
     lg = (league_key or "all").strip().lower() or "all"
     sk = (session_kind or "all").strip().lower() or "all"
     lg_txt = "все чемпионаты" if lg == "all" else _league_title(lg)
     sk_txt = {"all": "все типы", "sim": "только симуляции", "game": "только игры"}.get(
         sk, sk
     )
-    return f"Фильтр: <b>{html_escape(lg_txt)}</b> · <b>{html_escape(sk_txt)}</b>"
+    parts = [f"<b>{html_escape(lg_txt)}</b>", f"<b>{html_escape(sk_txt)}</b>"]
+    if team_idx is not None:
+        tname = _team_name_by_index(lg, team_idx)
+        if tname:
+            parts.append(f"клуб <b>{html_escape(tname)}</b>")
+    return "Фильтр: " + " · ".join(parts)
 
 
 async def _send_schedule_play_league_step(message: Message) -> None:
     await message.answer(
         "📋 <b>Из календаря</b> — сначала выбери чемпионат, затем тип матча "
-        "(сим / игра / всё). Потом откроется список несыгранных слотов.\n/cancel — отмена.",
+        "или клуб (сим / игра / всё). Потом откроется список несыгранных слотов.\n/cancel — отмена.",
         reply_markup=_schedule_play_league_kb(),
         parse_mode="HTML",
     )
@@ -2004,13 +2125,15 @@ def _schedule_pick_kb(
     page: int,
     league_filter: str = "all",
     session_kind: str = "all",
+    team_token: str = "x",
 ) -> InlineKeyboardMarkup:
-    """Кнопки sched:pick:<idx>:<lg>:<sk>; навигация sched:page:<n>:<lg>:<sk>."""
+    """Кнопки sched:pick:<idx>:<lg>:<sk>:<ti>; навигация sched:page:<n>:<lg>:<sk>:<ti>."""
     n = len(ordered)
     if not ordered:
         raise ValueError("schedule pick keyboard requires non-empty list")
     lf = (league_filter or "all").strip().lower() or "all"
     sk = (session_kind or "all").strip().lower() or "all"
+    ti = (team_token or "x").strip().lower() or "x"
     total_pages = max(1, (n + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
     page = max(0, min(int(page), total_pages - 1))
     start = page * _SCHED_PAGE_SIZE
@@ -2024,7 +2147,7 @@ def _schedule_pick_kb(
             [
                 InlineKeyboardButton(
                     text=label,
-                    callback_data=f"sched:pick:{idx}:{lf}:{sk}",
+                    callback_data=f"sched:pick:{idx}:{lf}:{sk}:{ti}",
                 ),
             ]
         )
@@ -2034,7 +2157,7 @@ def _schedule_pick_kb(
         nav.append(
             InlineKeyboardButton(
                 text=f"« {page}",
-                callback_data=f"sched:page:{page - 1}:{lf}:{sk}",
+                callback_data=f"sched:page:{page - 1}:{lf}:{sk}:{ti}",
             )
         )
     nav.append(
@@ -2047,14 +2170,14 @@ def _schedule_pick_kb(
         nav.append(
             InlineKeyboardButton(
                 text=f"{page + 2} »",
-                callback_data=f"sched:page:{page + 1}:{lf}:{sk}",
+                callback_data=f"sched:page:{page + 1}:{lf}:{sk}:{ti}",
             )
         )
     rows.append(nav)
     rows.append(
         [
             InlineKeyboardButton(
-                text="← Фильтры (лига / тип)",
+                text="← Фильтры (лига / тип / клуб)",
                 callback_data="scpf:back",
             ),
         ]
@@ -2068,12 +2191,15 @@ def _schedule_pick_intro_html(
     *,
     league_filter: str = "all",
     session_kind: str = "all",
+    team_idx: int | None = None,
 ) -> str:
     note = (
         f"\nСтраница <b>{page + 1}</b> из <b>{total_pages}</b> "
         f"(по {_SCHED_PAGE_SIZE} матчей; порядок как в mixed_schedule)."
     )
-    cap = _schedule_play_filter_caption(league_filter, session_kind)
+    cap = _schedule_play_filter_caption(
+        league_filter, session_kind, team_idx=team_idx
+    )
     return (
         f"{cap}\n\n"
         "Выбери матч из календаря — затем отправь счёт двумя числами через пробел "
@@ -2083,18 +2209,101 @@ def _schedule_pick_intro_html(
     )
 
 
-async def _ordered_remaining_filtered(league_filter: str, session_kind: str) -> list:
+def _parse_sched_filter_parts(parts: list[str]) -> tuple[str, str, int | None]:
+    lf = "all"
+    sk = "all"
+    ti: int | None = None
+    if len(parts) >= 4:
+        lf = (parts[3] or "all").strip().lower() or "all"
+    if len(parts) >= 5:
+        sk = (parts[4] or "all").strip().lower() or "all"
+    if len(parts) >= 6:
+        ti = _team_idx_from_token(lf, parts[5])
+    return lf, sk, ti
+
+
+async def _ordered_remaining_filtered(
+    league_filter: str,
+    session_kind: str,
+    *,
+    team_idx: int | None = None,
+) -> list:
     from main import list_remaining_schedule_matches, load_or_generate_mixed_schedule
 
     lf = (league_filter or "all").strip().lower() or "all"
     sk = (session_kind or "all").strip().lower() or "all"
+    team_name = (
+        _team_name_by_index(lf, team_idx) if team_idx is not None else None
+    )
     sch = await asyncio.to_thread(load_or_generate_mixed_schedule)
     return await asyncio.to_thread(
         list_remaining_schedule_matches,
         sch,
         league_filter=None if lf == "all" else lf,
         session_kind=None if sk == "all" else sk,
+        team_filter=team_name,
     )
+
+
+async def _send_schedule_pick_list(
+    message: Message,
+    *,
+    league_key: str,
+    session_kind: str,
+    team_idx: int | None = None,
+    page: int = 0,
+    edit: bool = True,
+) -> None:
+    ordered = await _ordered_remaining_filtered(
+        league_key, session_kind, team_idx=team_idx
+    )
+    back_kb = (
+        _schedule_play_team_kind_kb(league_key, team_idx)
+        if team_idx is not None
+        else _schedule_play_kind_kb(league_key)
+    )
+    if not ordered:
+        text = (
+            "По выбранному фильтру нет доступных матчей. "
+            "Попробуй другой тип или клуб."
+        )
+        if edit:
+            try:
+                await message.edit_text(
+                    text,
+                    reply_markup=back_kb,
+                    parse_mode="HTML",
+                )
+                return
+            except Exception:
+                pass
+        await message.answer(text, reply_markup=back_kb, parse_mode="HTML")
+        return
+
+    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
+    page = max(0, min(int(page), total_pages - 1))
+    ti_tok = _team_filter_token(team_idx)
+    kb = _schedule_pick_kb(
+        ordered,
+        page=page,
+        league_filter=league_key,
+        session_kind=session_kind,
+        team_token=ti_tok,
+    )
+    text = _schedule_pick_intro_html(
+        page,
+        total_pages,
+        league_filter=league_key,
+        session_kind=session_kind,
+        team_idx=team_idx,
+    )
+    if edit:
+        try:
+            await message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+            return
+        except Exception:
+            pass
+    await message.answer(text, reply_markup=kb, parse_mode="HTML")
 
 
 @match_router.callback_query(F.data == "play:schedule")
@@ -2132,7 +2341,8 @@ async def cb_sched_play_filter_league(callback: CallbackQuery, state: FSMContext
         if callback.message:
             try:
                 await callback.message.edit_text(
-                    "📋 <b>Из календаря</b> — выбери чемпионат, затем тип матча.\n/cancel — отмена.",
+                    "📋 <b>Из календаря</b> — выбери чемпионат, затем тип матча "
+                "или клуб.\n/cancel — отмена.",
                     reply_markup=_schedule_play_league_kb(),
                     parse_mode="HTML",
                 )
@@ -2144,14 +2354,14 @@ async def cb_sched_play_filter_league(callback: CallbackQuery, state: FSMContext
         try:
             await callback.message.edit_text(
                 f"Чемпионат: <b>{html_escape(_league_title(tag) if tag != 'all' else 'все')}</b>.\n"
-                "Теперь выбери тип слотов:",
+                "Выбери тип слотов или клуб:",
                 reply_markup=_schedule_play_kind_kb(tag),
                 parse_mode="HTML",
             )
         except Exception:
             await callback.message.answer(
                 f"Чемпионат: <b>{html_escape(_league_title(tag) if tag != 'all' else 'все')}</b>.\n"
-                "Теперь выбери тип слотов:",
+                "Выбери тип слотов или клуб:",
                 reply_markup=_schedule_play_kind_kb(tag),
                 parse_mode="HTML",
             )
@@ -2161,6 +2371,29 @@ async def cb_sched_play_filter_league(callback: CallbackQuery, state: FSMContext
 async def cb_sched_play_filter_kind(callback: CallbackQuery, state: FSMContext) -> None:
     await state.clear()
     parts = (callback.data or "").split(":")
+    if len(parts) < 2:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    tag = parts[1].strip().lower()
+    if tag == "menu" and len(parts) >= 3:
+        league_key = parts[2].strip().lower() or "all"
+        await callback.answer()
+        if callback.message:
+            try:
+                await callback.message.edit_text(
+                    f"Чемпионат: <b>{html_escape(_league_title(league_key) if league_key != 'all' else 'все')}</b>.\n"
+                    "Выбери тип слотов или клуб:",
+                    reply_markup=_schedule_play_kind_kb(league_key),
+                    parse_mode="HTML",
+                )
+            except Exception:
+                await callback.message.answer(
+                    f"Чемпионат: <b>{html_escape(_league_title(league_key) if league_key != 'all' else 'все')}</b>.\n"
+                    "Выбери тип слотов или клуб:",
+                    reply_markup=_schedule_play_kind_kb(league_key),
+                    parse_mode="HTML",
+                )
+        return
     if len(parts) < 3:
         await callback.answer("Ошибка кнопки.", show_alert=True)
         return
@@ -2170,122 +2403,138 @@ async def cb_sched_play_filter_kind(callback: CallbackQuery, state: FSMContext) 
         await callback.answer("Неизвестный тип.", show_alert=True)
         return
     await callback.answer()
-    if not callback.message:
-        return
-    ordered = await _ordered_remaining_filtered(league_key, sk)
-    if not ordered:
-        try:
-            await callback.message.edit_text(
-                "По выбранному фильтру нет доступных матчей. Попробуй другой чемпионат или тип.",
-                reply_markup=_schedule_play_kind_kb(league_key),
-                parse_mode="HTML",
-            )
-        except Exception:
-            await callback.message.answer(
-                "По выбранному фильтру нет доступных матчей. Попробуй другой чемпионат или тип.",
-                reply_markup=_schedule_play_kind_kb(league_key),
-                parse_mode="HTML",
-            )
-        return
-
-    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
-    page = 0
-    kb = _schedule_pick_kb(
-        ordered,
-        page=page,
-        league_filter=league_key,
-        session_kind=sk,
-    )
-    text = _schedule_pick_intro_html(
-        page,
-        total_pages,
-        league_filter=league_key,
-        session_kind=sk,
-    )
-    try:
-        await callback.message.edit_text(
-            text,
-            reply_markup=kb,
-            parse_mode="HTML",
+    if callback.message:
+        await _send_schedule_pick_list(
+            callback.message,
+            league_key=league_key,
+            session_kind=sk,
+            team_idx=None,
+            page=0,
         )
-    except Exception:
-        await callback.message.answer(
-            text,
-            reply_markup=kb,
-            parse_mode="HTML",
+
+
+@match_router.callback_query(F.data.startswith("scpt:"))
+async def cb_sched_play_teams(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.clear()
+    parts = (callback.data or "").split(":")
+    if len(parts) < 2:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    league_key = parts[1].strip().lower()
+    if league_key in ("", "all"):
+        await callback.answer("Выбери конкретный чемпионат.", show_alert=True)
+        return
+    names = _league_team_names(league_key)
+    if not names:
+        await callback.answer("Нет списка клубов для этой лиги.", show_alert=True)
+        return
+    await callback.answer()
+    if callback.message:
+        title = _league_title(league_key)
+        text = (
+            f"Чемпионат: <b>{html_escape(title)}</b>\n"
+            "Выбери клуб — затем тип матча (сим / игра / всё)."
+        )
+        kb = _schedule_play_teams_kb(league_key)
+        try:
+            await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+        except Exception:
+            await callback.message.answer(text, reply_markup=kb, parse_mode="HTML")
+
+
+@match_router.callback_query(F.data.startswith("scptm:"))
+async def cb_sched_play_team_picked(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.clear()
+    parts = (callback.data or "").split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    league_key = parts[1].strip().lower()
+    try:
+        team_idx = int(parts[2])
+    except ValueError:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    name = _team_name_by_index(league_key, team_idx)
+    if not name:
+        await callback.answer("Клуб не найден.", show_alert=True)
+        return
+    await callback.answer()
+    if callback.message:
+        text = (
+            f"Клуб: <b>{html_escape(name)}</b> · "
+            f"{html_escape(_league_title(league_key))}\n"
+            "Выбери тип слотов:"
+        )
+        kb = _schedule_play_team_kind_kb(league_key, team_idx)
+        try:
+            await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+        except Exception:
+            await callback.message.answer(text, reply_markup=kb, parse_mode="HTML")
+
+
+@match_router.callback_query(F.data.startswith("scptk:"))
+async def cb_sched_play_team_kind(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.clear()
+    parts = (callback.data or "").split(":")
+    if len(parts) < 4:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    league_key = parts[1].strip().lower()
+    try:
+        team_idx = int(parts[2])
+    except ValueError:
+        await callback.answer("Ошибка кнопки.", show_alert=True)
+        return
+    sk = parts[3].strip().lower() or "all"
+    if sk not in ("all", "sim", "game"):
+        await callback.answer("Неизвестный тип.", show_alert=True)
+        return
+    if _team_name_by_index(league_key, team_idx) is None:
+        await callback.answer("Клуб не найден.", show_alert=True)
+        return
+    await callback.answer()
+    if callback.message:
+        await _send_schedule_pick_list(
+            callback.message,
+            league_key=league_key,
+            session_kind=sk,
+            team_idx=team_idx,
+            page=0,
         )
 
 
 @match_router.callback_query(F.data.startswith("sched:page:"))
 async def cb_sched_page(callback: CallbackQuery, state: FSMContext) -> None:
     parts = (callback.data or "").split(":")
-    lf, sk = "all", "all"
     try:
         page = int(parts[2])
     except (IndexError, ValueError):
         await callback.answer()
         return
-    if len(parts) >= 5:
-        lf = (parts[3] or "all").strip().lower() or "all"
-        sk = (parts[4] or "all").strip().lower() or "all"
+    lf, sk, ti = _parse_sched_filter_parts(parts)
     await callback.answer()
-    ordered = await _ordered_remaining_filtered(lf, sk)
-    if not ordered:
-        if callback.message:
-            try:
-                await callback.message.edit_text(
-                    "Нет доступных матчей по этому фильтру.",
-                    parse_mode="HTML",
-                )
-            except Exception:
-                await callback.message.answer(
-                    "Нет доступных матчей по этому фильтру.",
-                    parse_mode="HTML",
-                )
-        return
-    total_pages = max(1, (len(ordered) + _SCHED_PAGE_SIZE - 1) // _SCHED_PAGE_SIZE)
-    page = max(0, min(page, total_pages - 1))
-    kb = _schedule_pick_kb(
-        ordered,
-        page=page,
-        league_filter=lf,
-        session_kind=sk,
-    )
-    text = _schedule_pick_intro_html(
-        page,
-        total_pages,
-        league_filter=lf,
-        session_kind=sk,
-    )
     if callback.message:
-        try:
-            await callback.message.edit_text(
-                text,
-                reply_markup=kb,
-                parse_mode="HTML",
-            )
-        except Exception:
-            await callback.message.answer(
-                text,
-                reply_markup=kb,
-                parse_mode="HTML",
-            )
+        await _send_schedule_pick_list(
+            callback.message,
+            league_key=lf,
+            session_kind=sk,
+            team_idx=ti,
+            page=page,
+        )
 
 
 @match_router.callback_query(F.data.startswith("sched:pick:"))
 async def cb_sched_pick(callback: CallbackQuery, state: FSMContext) -> None:
     parts = (callback.data or "").split(":")
-    lf, sk = "all", "all"
     try:
         idx = int(parts[2])
     except (IndexError, ValueError):
         await callback.answer("Ошибка кнопки.", show_alert=True)
         return
-    if len(parts) >= 5:
-        lf = (parts[3] or "all").strip().lower() or "all"
-        sk = (parts[4] or "all").strip().lower() or "all"
+    lf, sk, ti = _parse_sched_filter_parts(parts)
 
-    ordered = await _ordered_remaining_filtered(lf, sk)
+    ordered = await _ordered_remaining_filtered(lf, sk, team_idx=ti)
     if idx < 0 or idx >= len(ordered):
         await callback.answer("Матча нет в списке. Обнови список.", show_alert=True)
         return
