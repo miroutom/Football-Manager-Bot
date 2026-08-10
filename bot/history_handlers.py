@@ -40,6 +40,8 @@ from bot.team_history_gallery import (
     render_pvp_kryptonite_list_png,
     render_pvp_kryptonite_teams_png,
     render_season_cover_png,
+    render_titled_players_club_png,
+    render_titled_players_global_pages,
 )
 from bot.team_history_render import (
     render_attack_rating_pages,
@@ -99,24 +101,45 @@ def history_root_kb() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="🎖 Зал славы", callback_data="hist:hof"),
+            InlineKeyboardButton(text="🏅 Титулованные", callback_data="hist:titled"),
+        ],
+        [
             InlineKeyboardButton(text="⚔ Сравнить", callback_data="hist:cmp"),
         ],
         [
             InlineKeyboardButton(text="🗺 H2H", callback_data="hist:h2h"),
+            InlineKeyboardButton(text="👔 Менеджеры", callback_data="hist:mgr"),
+        ],
+        [
+            InlineKeyboardButton(text="🌡 Теплокарта", callback_data="hist:heat"),
+            InlineKeyboardButton(text="🖼 Обложка сезона", callback_data="hist:cover"),
         ],
         [
             InlineKeyboardButton(text="🏆 Победный состав", callback_data="hist:ws"),
             InlineKeyboardButton(text="🪨 PVP-криптониты", callback_data="hist:krypto"),
         ],
-        [
-            InlineKeyboardButton(text="👔 Менеджеры", callback_data="hist:mgr"),
-            InlineKeyboardButton(text="🌡 Теплокарта", callback_data="hist:heat"),
-        ],
-        [
-            InlineKeyboardButton(text="🖼 Обложка сезона", callback_data="hist:cover"),
-        ],
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def history_titled_root_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🏅 Топ игроков (3+)",
+                    callback_data="hist:titled:global",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🏟 По клубам (1+)",
+                    callback_data="hist:titled:teams",
+                ),
+            ],
+            [InlineKeyboardButton(text="« Назад", callback_data="hist:back")],
+        ]
+    )
 
 
 def history_teams_kb() -> InlineKeyboardMarkup:
@@ -296,6 +319,7 @@ def history_club_actions_kb(league_code: str, idx: int) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(text="📁 Досье", callback_data=f"hist:act:dossier:{base}")],
             [InlineKeyboardButton(text="🎖 Зал славы клуба", callback_data=f"hist:act:hof:{base}")],
+            [InlineKeyboardButton(text="🏅 Титулованные", callback_data=f"hist:act:titled:{base}")],
             [InlineKeyboardButton(text="📈 Динамика престижа", callback_data=f"hist:act:dyn:{base}")],
             [InlineKeyboardButton(text="🔑 Влияние игрока", callback_data=f"hist:act:infl:{base}")],
             [InlineKeyboardButton(text="📅 Матчи сезона", callback_data=f"hist:act:matches:{base}")],
@@ -865,6 +889,10 @@ async def cb_hist_club_act(callback: CallbackQuery) -> None:
             png = await asyncio.to_thread(render_club_hall_of_fame_png, team)
             cap = f"<b>{team}</b> — зал славы"
             fn = "club_hof.png"
+        elif action == "titled":
+            png = await asyncio.to_thread(render_titled_players_club_png, team)
+            cap = f"<b>{team}</b> — титулованные игроки (1+)"
+            fn = "club_titled.png"
         elif action == "dyn":
             png = await asyncio.to_thread(render_prestige_dynamics_png, team)
             cap = f"<b>{team}</b> — динамика престижа"
@@ -911,6 +939,111 @@ async def cb_hist_club_matches_season(callback: CallbackQuery) -> None:
         png=png,
         filename=f"matches_{sn}.png",
         caption=f"<b>{team}</b> — матчи · {format_season_tag(sn)}",
+    )
+
+
+@history_router.callback_query(F.data == "hist:titled")
+async def cb_hist_titled_root(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if not callback.message:
+        return
+    text = (
+        "<b>Титулованные игроки</b>\n\n"
+        "Топ по сумме титулов (лига + ЛЧ + личные награды) или список по клубу."
+    )
+    try:
+        await callback.message.edit_text(
+            text,
+            reply_markup=history_titled_root_kb(),
+            parse_mode="HTML",
+        )
+    except Exception:
+        await callback.message.answer(
+            text,
+            reply_markup=history_titled_root_kb(),
+            parse_mode="HTML",
+        )
+
+
+@history_router.callback_query(F.data == "hist:titled:global")
+async def cb_hist_titled_global(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        pages = await asyncio.to_thread(render_titled_players_global_pages, page_size=14)
+    except Exception as e:
+        logger.exception("titled global")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    n = len(pages)
+    cap = (
+        "<b>Титулованные игроки</b> — 3+ титула · сортировка по сумме"
+        if n <= 1
+        else f"<b>Титулованные игроки</b> — 3+ титула · {n} стр."
+    )
+    await _send_png(
+        callback,
+        png=pages,
+        filename="titled_players.png",
+        caption=cap,
+    )
+
+
+@history_router.callback_query(F.data == "hist:titled:teams")
+async def cb_hist_titled_teams(callback: CallbackQuery) -> None:
+    await callback.answer()
+    if callback.message:
+        await callback.message.edit_reply_markup(
+            reply_markup=history_league_choice_kb(
+                prefix="hist:ttcl:",
+                back="hist:titled",
+            )
+        )
+
+
+@history_router.callback_query(F.data.startswith("hist:ttcl:"))
+async def cb_hist_titled_league(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 3:
+        await callback.answer()
+        return
+    code = parts[2].strip()
+    await callback.answer()
+    if callback.message:
+        await callback.message.edit_reply_markup(
+            reply_markup=history_club_pick_kb(
+                code,
+                prefix="hist:ttc:",
+                back="hist:titled:teams",
+            )
+        )
+
+
+@history_router.callback_query(F.data.startswith("hist:ttc:"))
+async def cb_hist_titled_club(callback: CallbackQuery) -> None:
+    parts = (callback.data or "").split(":")
+    if len(parts) != 4:
+        await callback.answer()
+        return
+    code, idx_s = parts[2], parts[3]
+    try:
+        team = _team_by_idx(code, int(idx_s))
+    except Exception:
+        await callback.answer("Клуб не найден", show_alert=True)
+        return
+    await callback.answer("Готовлю…")
+    try:
+        png = await asyncio.to_thread(render_titled_players_club_png, team)
+    except Exception as e:
+        logger.exception("titled club")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    await _send_png(
+        callback,
+        png=png,
+        filename=f"titled_{code}_{idx_s}.png",
+        caption=f"<b>{team}</b> — титулованные игроки (1+)",
     )
 
 

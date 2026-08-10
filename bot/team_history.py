@@ -2185,3 +2185,268 @@ def league_winners_heatmap() -> dict[str, Any]:
                     w = str(row[1])
             grid[(sn, code)] = w
     return {"seasons": seasons, "codes": codes, "grid": grid}
+
+
+_PLAYER_TABLES = ("forwards", "midfielders", "defenders", "goalkeepers")
+
+
+@dataclass
+class TitledPlayer:
+    """Игрок с командными и личными титулами за карьеру (synced БД)."""
+
+    name: str
+    team: str
+    position: str
+    overall: int
+    league_titles: int
+    cl_titles: int
+    individual_awards: int
+    person_id: int | None = None
+
+    @property
+    def total_titles(self) -> int:
+        return (
+            int(self.league_titles)
+            + int(self.cl_titles)
+            + int(self.individual_awards)
+        )
+
+
+def _titled_merge_key(person_id: Any, name: str, position: str) -> tuple:
+    pos = (position or "").strip().upper()
+    if person_id is not None:
+        try:
+            return ("p", int(person_id), pos)
+        except (TypeError, ValueError):
+            pass
+    return ("n", (name or "").strip().casefold(), pos)
+
+
+def _wc_best_counts_by_player() -> dict[str, int]:
+    hist = load_history()
+    out: dict[str, int] = {}
+    for row in hist.get("world_cup_best") or []:
+        if not row or len(row) < 2:
+            continue
+        p = str(row[1]).strip()
+        if p:
+            k = p.casefold()
+            out[k] = out.get(k, 0) + 1
+    return out
+
+
+def _scan_synced_trophy_column(db_path: str, *, field: str) -> dict[tuple, int]:
+    """Сумма ``trophies`` по ключу игрока из одной synced-БД."""
+    if not db_path or not os.path.isfile(db_path):
+        return {}
+    out: dict[tuple, int] = {}
+    conn = sqlite3.connect(db_path)
+    try:
+        for tbl in _PLAYER_TABLES:
+            try:
+                cur = conn.execute(
+                    f"SELECT name, position, person_id, COALESCE(trophies, 0) "
+                    f"FROM {tbl} WHERE COALESCE(trophies, 0) > 0"
+                )
+            except sqlite3.OperationalError:
+                continue
+            for name, pos, pid, tr in cur:
+                key = _titled_merge_key(pid, str(name or ""), str(pos or ""))
+                out[key] = out.get(key, 0) + int(tr or 0)
+    finally:
+        conn.close()
+    return out
+
+
+def _scan_synced_golden_awards(db_path: str) -> dict[tuple, dict[str, Any]]:
+    """Золотые награды и метаданные из common_synced."""
+    if not db_path or not os.path.isfile(db_path):
+        return {}
+    out: dict[tuple, dict[str, Any]] = {}
+    conn = sqlite3.connect(db_path)
+    try:
+        for tbl in _PLAYER_TABLES:
+            is_gk = tbl == "goalkeepers"
+            cols = (
+                "name, team, position, overall, person_id, "
+                "COALESCE(golden_balls,0), COALESCE(golden_boots,0), "
+                "COALESCE(golden_boys,0)"
+            )
+            if is_gk:
+                cols += ", COALESCE(golden_gloves,0)"
+            try:
+                cur = conn.execute(f"SELECT {cols} FROM {tbl}")
+            except sqlite3.OperationalError:
+                continue
+            for row in cur:
+                if is_gk:
+                    name, team, pos, ovr, pid, gb, gbo, gby, gg = row
+                else:
+                    name, team, pos, ovr, pid, gb, gbo, gby = row
+                    gg = 0
+                awards = int(gb or 0) + int(gbo or 0) + int(gby or 0) + int(gg or 0)
+                key = _titled_merge_key(pid, str(name or ""), str(pos or ""))
+                prev = out.get(key)
+                if prev is None:
+                    out[key] = {
+                        "name": str(name or "").strip(),
+                        "team": str(team or "").strip().title(),
+                        "position": str(pos or "").strip().upper(),
+                        "overall": int(ovr or 0),
+                        "person_id": int(pid) if pid is not None else None,
+                        "golden_awards": awards,
+                    }
+                else:
+                    prev["golden_awards"] = int(prev.get("golden_awards") or 0) + awards
+                    if int(ovr or 0) > int(prev.get("overall") or 0):
+                        prev["overall"] = int(ovr or 0)
+                    if str(name or "").strip():
+                        prev["name"] = str(name).strip()
+                    if str(team or "").strip():
+                        prev["team"] = str(team).strip().title()
+    finally:
+        conn.close()
+    return out
+
+
+def _build_titled_players_bucket() -> dict[tuple, dict[str, Any]]:
+    from utils import season_paths
+
+    league_tr = _scan_synced_trophy_column(
+        season_paths.get_cumulative_league_db_path(), field="league"
+    )
+    cl_tr = _scan_synced_trophy_column(
+        season_paths.get_cumulative_cl_db_path(), field="cl"
+    )
+    meta = _scan_synced_golden_awards(season_paths.get_cumulative_common_db_path())
+    wc_best = _wc_best_counts_by_player()
+
+    keys: set[tuple] = set(league_tr) | set(cl_tr) | set(meta)
+    bucket: dict[tuple, dict[str, Any]] = {}
+    for key in keys:
+        m = meta.get(key) or {}
+        name = str(m.get("name") or "").strip()
+        if not name:
+            # метаданные только в league/cl synced — подтянем имя из trophies scan
+            for db_path in (
+                season_paths.get_cumulative_league_db_path(),
+                season_paths.get_cumulative_cl_db_path(),
+            ):
+                if not os.path.isfile(db_path):
+                    continue
+                conn = sqlite3.connect(db_path)
+                try:
+                    for tbl in _PLAYER_TABLES:
+                        try:
+                            cur = conn.execute(
+                                f"SELECT name, team, position, overall, person_id "
+                                f"FROM {tbl} WHERE name IS NOT NULL"
+                            )
+                        except sqlite3.OperationalError:
+                            continue
+                        for nm, tm, ps, ovr, pid in cur:
+                            if _titled_merge_key(pid, str(nm or ""), str(ps or "")) == key:
+                                m = {
+                                    "name": str(nm or "").strip(),
+                                    "team": str(tm or "").strip().title(),
+                                    "position": str(ps or "").strip().upper(),
+                                    "overall": int(ovr or 0),
+                                    "person_id": int(pid) if pid is not None else None,
+                                    "golden_awards": 0,
+                                }
+                                break
+                        if m.get("name"):
+                            break
+                finally:
+                    conn.close()
+                if m.get("name"):
+                    break
+        name = str(m.get("name") or "").strip()
+        if not name:
+            continue
+        lt = int(league_tr.get(key, 0))
+        ct = int(cl_tr.get(key, 0))
+        ga = int(m.get("golden_awards") or 0)
+        ga += int(wc_best.get(name.casefold(), 0))
+        if lt + ct + ga <= 0:
+            continue
+        bucket[key] = {
+            "name": name,
+            "team": str(m.get("team") or "").strip().title() or "—",
+            "position": str(m.get("position") or "").strip().upper() or "—",
+            "overall": int(m.get("overall") or 0),
+            "person_id": m.get("person_id"),
+            "league_titles": lt,
+            "cl_titles": ct,
+            "individual_awards": ga,
+        }
+
+    rows = list(bucket.values())
+    if rows:
+        from utils.stats_history_agg import _apply_active_season_club_labels
+
+        _apply_active_season_club_labels(rows)
+    return bucket
+
+
+def _titled_players_from_bucket(
+    bucket: dict[tuple, dict[str, Any]],
+    *,
+    min_total: int = 1,
+    team: str | None = None,
+) -> list[TitledPlayer]:
+    want = _norm(team) if team else None
+    out: list[TitledPlayer] = []
+    for b in bucket.values():
+        tp = TitledPlayer(
+            name=str(b.get("name") or ""),
+            team=str(b.get("team") or "—"),
+            position=str(b.get("position") or "—"),
+            overall=int(b.get("overall") or 0),
+            league_titles=int(b.get("league_titles") or 0),
+            cl_titles=int(b.get("cl_titles") or 0),
+            individual_awards=int(b.get("individual_awards") or 0),
+            person_id=b.get("person_id"),
+        )
+        if tp.total_titles < int(min_total):
+            continue
+        if want and _norm(tp.team) != want:
+            continue
+        out.append(tp)
+    out.sort(
+        key=lambda x: (
+            -x.total_titles,
+            -x.league_titles,
+            -x.cl_titles,
+            -x.individual_awards,
+            x.name.casefold(),
+        )
+    )
+    return out
+
+
+_titled_players_cache: dict[tuple, dict[str, Any]] | None = None
+
+
+def _titled_players_bucket_cached() -> dict[tuple, dict[str, Any]]:
+    global _titled_players_cache
+    if _titled_players_cache is None:
+        _titled_players_cache = _build_titled_players_bucket()
+    return _titled_players_cache
+
+
+def titled_players_global(*, min_total: int = 3) -> list[TitledPlayer]:
+    """Все игроки с ``min_total``+ титулов (лига + ЛЧ + личные награды)."""
+    return _titled_players_from_bucket(
+        _titled_players_bucket_cached(),
+        min_total=min_total,
+    )
+
+
+def titled_players_for_team(team: str, *, min_total: int = 1) -> list[TitledPlayer]:
+    """Титулованные игроки текущего клуба (``min_total``+)."""
+    return _titled_players_from_bucket(
+        _titled_players_bucket_cached(),
+        min_total=min_total,
+        team=team,
+    )

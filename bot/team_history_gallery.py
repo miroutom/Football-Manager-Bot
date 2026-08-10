@@ -30,6 +30,9 @@ from bot.team_history import (
     nation_career_goals,
     prestige_dynamics,
     season_cover_data,
+    titled_players_for_team,
+    titled_players_global,
+    TitledPlayer,
 )
 from player_stats import LEAGUE_NAMES
 
@@ -1844,4 +1847,177 @@ def render_pvp_kryptonite_detail_png(dominant: str, victim: str) -> bytes:
         y += row_h
 
     return _to_png(im.convert("RGB"))
+
+
+def _render_titled_players_png(
+    rows: list[TitledPlayer],
+    *,
+    title: str,
+    subtitle: str | None = None,
+    offset: int = 0,
+    page_label: str | None = None,
+) -> bytes:
+    """Таблица титулованных игроков: лига / ЛЧ / награды / сумма."""
+    font_b = _pick_font(19, bold=True)
+    font_sm = _pick_font(13)
+    font_r = _pick_font(22, bold=True)
+    font_head = _pick_font(13, bold=True)
+    font_num = _pick_font(18, bold=True)
+
+    row_h = 46
+    head_h = 34
+    n = max(1, len(rows)) if rows else 1
+    table_h = head_h + n * row_h + 12
+    h = 118 + table_h + 36
+    im = _gradient_bg(min(h, 3200)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    sub = subtitle or "Титулы лиг · ЛЧ · личные награды · сумма"
+    if page_label:
+        sub = f"{sub} · стр. {page_label}"
+    y = _title(draw, title, sub)
+
+    cols = [
+        ("league_titles", "Лига"),
+        ("cl_titles", "ЛЧ"),
+        ("individual_awards", "Нагр"),
+        ("total_titles", "Σ"),
+    ]
+    col_w = 72
+    stats_right = _CANVAS_W - _PAD - 16
+    stats_span = len(cols) * col_w
+    stats_left = stats_right - stats_span
+    name_x = _PAD + 96
+    name_max = stats_left - name_x - 16
+
+    def _col_center(i: int) -> int:
+        return stats_left + i * col_w + col_w // 2
+
+    table_top = y
+    table_bot = y + table_h
+    draw.rounded_rectangle(
+        [_PAD, table_top, _CANVAS_W - _PAD, table_bot],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+        width=1,
+    )
+
+    hy = table_top + 4
+    draw.rounded_rectangle(
+        [_PAD + 4, hy, _CANVAS_W - _PAD - 4, hy + head_h],
+        radius=8,
+        fill=(18, 26, 42),
+    )
+    draw.text((_PAD + 18, hy + 8), "#", font=font_head, fill=_DIM)
+    draw.text((name_x, hy + 8), "Игрок", font=font_head, fill=_DIM)
+    for i, (_key, lab) in enumerate(cols):
+        cx = _col_center(i)
+        lw = draw.textbbox((0, 0), lab, font=font_head)[2]
+        draw.text((cx - lw // 2, hy + 8), lab, font=font_head, fill=_GOLD)
+
+    if not rows:
+        draw.text(
+            (name_x, hy + head_h + 14),
+            "Нет данных по выбранному фильтру.",
+            font=font_sm,
+            fill=_DIM,
+        )
+        return _to_png(im.convert("RGB"))
+
+    medal = {1: (255, 214, 110), 2: (198, 208, 224), 3: (205, 148, 98)}
+    y = hy + head_h
+
+    for i, row in enumerate(rows):
+        rank = offset + i + 1
+        top = y
+        if i % 2 == 1:
+            draw.rectangle(
+                [_PAD + 4, top, _CANVAS_W - _PAD - 4, top + row_h],
+                fill=(24, 34, 54),
+            )
+        if rank <= 3:
+            draw.rounded_rectangle(
+                [_PAD + 6, top + 8, _PAD + 10, top + row_h - 8],
+                radius=2,
+                fill=medal.get(rank, _LINE),
+            )
+
+        rank_c = medal.get(rank, _DIM)
+        draw.text((_PAD + 18, top + 11), f"{rank:02d}", font=font_r, fill=rank_c)
+
+        crest = _try_load_crest_rgba(row.team)
+        if crest is not None:
+            _paste_crest_natural(im, crest, _PAD + 70, top + row_h // 2, 24)
+        draw.text(
+            (name_x, top + 5),
+            _fit(draw, row.name, font_b, name_max),
+            font=font_b,
+            fill=_TEXT,
+        )
+        meta = f"{row.team} · {row.position or '—'}"
+        draw.text(
+            (name_x, top + 26),
+            _fit(draw, meta, font_sm, name_max),
+            font=font_sm,
+            fill=_DIM,
+        )
+
+        vals = {
+            "league_titles": row.league_titles,
+            "cl_titles": row.cl_titles,
+            "individual_awards": row.individual_awards,
+            "total_titles": row.total_titles,
+        }
+        for ci, (key, _lab) in enumerate(cols):
+            cx = _col_center(ci)
+            val = str(vals[key])
+            vw = draw.textbbox((0, 0), val, font=font_num)[2]
+            fill = _GOLD if key == "total_titles" else _TEXT
+            draw.text((cx - vw // 2, top + 12), val, font=font_num, fill=fill)
+        y += row_h
+
+    return _to_png(im.convert("RGB"))
+
+
+def render_titled_players_global_pages(*, page_size: int = 14) -> list[bytes]:
+    rows = titled_players_global(min_total=3)
+    if not rows:
+        return [
+            _render_titled_players_png(
+                [],
+                title="Титулованные игроки",
+                subtitle="Нет игроков с 3+ титулами",
+            )
+        ]
+    page_size = max(1, int(page_size))
+    n_pages = max(1, (len(rows) + page_size - 1) // page_size)
+    pages: list[bytes] = []
+    for p in range(n_pages):
+        off = p * page_size
+        chunk = rows[off : off + page_size]
+        pages.append(
+            _render_titled_players_png(
+                chunk,
+                title="Титулованные игроки",
+                subtitle="3+ титула · сортировка по сумме",
+                offset=off,
+                page_label=f"{p + 1}/{n_pages}",
+            )
+        )
+    return pages
+
+
+def render_titled_players_club_png(team: str) -> bytes:
+    rows = titled_players_for_team(team, min_total=1)
+    if not rows:
+        return _render_titled_players_png(
+            [],
+            title=f"Титулованные · {team}",
+            subtitle="Нет игроков с 1+ титулом",
+        )
+    return _render_titled_players_png(
+        rows,
+        title=f"Титулованные · {team}",
+        subtitle="1+ титул · текущий состав",
+    )
 
