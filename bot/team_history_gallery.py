@@ -2018,6 +2018,6 @@ def render_titled_players_club_png(team: str) -> bytes:
     return _render_titled_players_png(
         rows,
         title=f"Титулованные · {team}",
-        subtitle="1+ титул · текущий состав",
+        subtitle="1+ командный титул · выиграно в этом клубе",
     )
 

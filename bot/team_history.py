@@ -2250,59 +2250,6 @@ def _history_winners_by_season(rows: list[Any] | None) -> dict[int, str]:
     return out
 
 
-def _season_db_path_for_titles(season_num: int, *, cl: bool) -> str | None:
-    """Архивный или активный ``league.db`` / ``champions_league.db`` сезона."""
-    from utils import season_paths
-
-    active = int(season_paths.get_active_season())
-    if season_num == active:
-        path = (
-            season_paths.get_cl_db_path()
-            if cl
-            else season_paths.get_league_db_path()
-        )
-        return path if os.path.isfile(path) else None
-    fname = season_paths.SEASON_CL_NAME if cl else season_paths.SEASON_LEAGUE_NAME
-    path = os.path.join(season_paths.season_archive_directory(season_num), fname)
-    return path if os.path.isfile(path) else None
-
-
-def _iter_squad_rows_in_db(
-    db_path: str, team: str
-) -> list[tuple[str, str, Any, str, int]]:
-    """Строки заявки клуба из сезонной БД: name, position, person_id, team, overall."""
-    want = _norm(team)
-    out: list[tuple[str, str, Any, str, int]] = []
-    conn = sqlite3.connect(db_path)
-    try:
-        for tbl in _PLAYER_TABLES:
-            try:
-                cur = conn.execute(
-                    f"SELECT name, team, position, overall, person_id FROM {tbl} "
-                    f"WHERE team IS NOT NULL AND trim(team) != ''"
-                )
-            except sqlite3.OperationalError:
-                continue
-            for name, tm, pos, ovr, pid in cur:
-                if _norm(str(tm or "")) != want:
-                    continue
-                nm = str(name or "").strip()
-                if not nm:
-                    continue
-                out.append(
-                    (
-                        nm,
-                        str(pos or "").strip().upper(),
-                        pid,
-                        str(tm or "").strip().title(),
-                        int(ovr or 0),
-                    )
-                )
-    finally:
-        conn.close()
-    return out
-
-
 def _bucket_ensure_player(
     bucket: dict[tuple, dict[str, Any]],
     key: tuple,
@@ -2324,6 +2271,8 @@ def _bucket_ensure_player(
             "league_titles": 0,
             "cl_titles": 0,
             "individual_awards": 0,
+            "league_titles_by_club": {},
+            "cl_titles_by_club": {},
         }
         bucket[key] = row
         return row
@@ -2337,7 +2286,20 @@ def _bucket_ensure_player(
         row["position"] = position
     if person_id is not None:
         row["person_id"] = int(person_id)
+    row.setdefault("league_titles_by_club", {})
+    row.setdefault("cl_titles_by_club", {})
     return row
+
+
+def _inc_club_title_counter(row: dict[str, Any], field: str, club: str) -> None:
+    by_club: dict[str, int] = row.setdefault(field, {})
+    ck = _norm(club)
+    by_club[ck] = int(by_club.get(ck, 0)) + 1
+
+
+def _club_title_count(row: dict[str, Any], field: str, club: str) -> int:
+    by_club = row.get(field) or {}
+    return int(by_club.get(_norm(club), 0))
 
 
 def _award_titles_to_winner_squad(
@@ -2348,22 +2310,31 @@ def _award_titles_to_winner_squad(
     cl: bool,
 ) -> None:
     """+1 титул каждому игроку заявки чемпиона (по ``season_history`` + архив сезона)."""
-    path = _season_db_path_for_titles(int(season_num), cl=cl)
+    from utils.player_trophies import (
+        iter_squad_rows_in_db,
+        season_tournament_db_path,
+        teams_matching_winner,
+    )
+
+    path = season_tournament_db_path(int(season_num), cl=cl)
     if not path:
         return
     field = "cl_titles" if cl else "league_titles"
-    for name, pos, pid, team, ovr in _iter_squad_rows_in_db(path, winner):
-        key = _titled_merge_key(pid, name, pos)
-        row = _bucket_ensure_player(
-            bucket,
-            key,
-            name=name,
-            team=team,
-            position=pos,
-            overall=ovr,
-            person_id=pid,
-        )
-        row[field] = int(row.get(field) or 0) + 1
+    club_field = "cl_titles_by_club" if cl else "league_titles_by_club"
+    for team_label in teams_matching_winner(path, winner):
+        for name, pos, pid, team, ovr in iter_squad_rows_in_db(path, team_label):
+            key = _titled_merge_key(pid, name, pos)
+            row = _bucket_ensure_player(
+                bucket,
+                key,
+                name=name,
+                team=team,
+                position=pos,
+                overall=ovr,
+                person_id=pid,
+            )
+            row[field] = int(row.get(field) or 0) + 1
+            _inc_club_title_counter(row, club_field, team_label)
 
 
 def _scan_synced_golden_awards(db_path: str) -> dict[tuple, dict[str, Any]]:
@@ -2494,24 +2465,41 @@ def _titled_players_from_bucket(
     *,
     min_total: int = 1,
     team: str | None = None,
+    at_club: bool = False,
 ) -> list[TitledPlayer]:
     want = _norm(team) if team else None
     out: list[TitledPlayer] = []
     for b in bucket.values():
-        tp = TitledPlayer(
-            name=str(b.get("name") or ""),
-            team=str(b.get("team") or "—"),
-            position=str(b.get("position") or "—"),
-            overall=int(b.get("overall") or 0),
-            league_titles=int(b.get("league_titles") or 0),
-            cl_titles=int(b.get("cl_titles") or 0),
-            individual_awards=int(b.get("individual_awards") or 0),
-            person_id=b.get("person_id"),
-        )
-        if tp.total_titles < int(min_total):
-            continue
-        if want and _norm(tp.team) != want:
-            continue
+        if at_club and want:
+            lt = _club_title_count(b, "league_titles_by_club", want)
+            ct = _club_title_count(b, "cl_titles_by_club", want)
+            ia = int(b.get("individual_awards") or 0)
+            team_titles = lt + ct
+            if team_titles < int(min_total):
+                continue
+            tp = TitledPlayer(
+                name=str(b.get("name") or ""),
+                team=str(b.get("team") or "—"),
+                position=str(b.get("position") or "—"),
+                overall=int(b.get("overall") or 0),
+                league_titles=lt,
+                cl_titles=ct,
+                individual_awards=ia,
+                person_id=b.get("person_id"),
+            )
+        else:
+            tp = TitledPlayer(
+                name=str(b.get("name") or ""),
+                team=str(b.get("team") or "—"),
+                position=str(b.get("position") or "—"),
+                overall=int(b.get("overall") or 0),
+                league_titles=int(b.get("league_titles") or 0),
+                cl_titles=int(b.get("cl_titles") or 0),
+                individual_awards=int(b.get("individual_awards") or 0),
+                person_id=b.get("person_id"),
+            )
+            if tp.total_titles < int(min_total):
+                continue
         out.append(tp)
     out.sort(
         key=lambda x: (
@@ -2550,9 +2538,10 @@ def titled_players_global(*, min_total: int = 3) -> list[TitledPlayer]:
 
 
 def titled_players_for_team(team: str, *, min_total: int = 1) -> list[TitledPlayer]:
-    """Титулованные игроки текущего клуба (``min_total``+)."""
+    """Игроки с ``min_total``+ **командных** титулов, выигранных в этом клубе."""
     return _titled_players_from_bucket(
         _titled_players_bucket_cached(),
         min_total=min_total,
         team=team,
+        at_club=True,
     )

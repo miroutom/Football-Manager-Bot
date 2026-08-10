@@ -14,6 +14,8 @@ def test_titled_players_sort_and_filter():
             "league_titles": 2,
             "cl_titles": 1,
             "individual_awards": 0,
+            "league_titles_by_club": {"club a": 2},
+            "cl_titles_by_club": {"club a": 1},
         },
         ("b",): {
             "name": "Beta",
@@ -23,24 +25,33 @@ def test_titled_players_sort_and_filter():
             "league_titles": 1,
             "cl_titles": 0,
             "individual_awards": 1,
+            "league_titles_by_club": {"club b": 1},
+            "cl_titles_by_club": {},
         },
         ("c",): {
             "name": "Gamma",
             "team": "Club A",
             "position": "ВР",
             "overall": 80,
-            "league_titles": 0,
-            "cl_titles": 0,
+            "league_titles": 3,
+            "cl_titles": 1,
             "individual_awards": 0,
+            "league_titles_by_club": {"club b": 3},
+            "cl_titles_by_club": {"club b": 1},
         },
     }
     global_rows = _titled_players_from_bucket(bucket, min_total=3)
-    assert [r.name for r in global_rows] == ["Alpha"]
-    assert global_rows[0].total_titles == 3
+    assert [r.name for r in global_rows] == ["Gamma", "Alpha"]
+    assert global_rows[0].total_titles == 4
 
-    club_rows = _titled_players_from_bucket(bucket, min_total=1, team="Club A")
-    assert len(club_rows) == 1
-    assert club_rows[0].name == "Alpha"
+    club_rows = _titled_players_from_bucket(
+        bucket, min_total=1, team="Club A", at_club=True
+    )
+    assert [r.name for r in club_rows] == ["Alpha"]
+    assert club_rows[0].league_titles == 2 and club_rows[0].cl_titles == 1
+
+    # Карьерные титулы за Club B, сейчас в Club A — не попадает в Club A
+    assert "Gamma" not in [r.name for r in club_rows]
 
 
 def test_titled_player_total():
