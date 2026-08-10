@@ -1054,15 +1054,23 @@ def _norm_pl_status(p: _Pl) -> str:
     return s if s in ("start", "bench", "reserve") else ""
 
 
-# Один ФИО — одна карточка: при дублях в БД (разные позиции/таблицы) оставляем заявку старт/скамейка.
+# Дубль в БД (один person_id или одно имя+позиция) — одна карточка; разные люди с одной фамилией — оба.
 _DEDUPE_STATUS_RANK: dict[str, int] = {"start": 0, "bench": 1, "reserve": 2, "": 3}
+
+
+def _dedupe_squad_pl_key(p: _Pl) -> str:
+    pid = getattr(p, "person_id", None)
+    if pid is not None and int(pid) > 0:
+        return f"pid:{int(pid)}"
+    pos = (p.position or "").strip().upper()
+    return f"{_player_name_key(p.name)}|{pos}"
 
 
 def _dedupe_squad_pl_by_name(rows: list[_Pl]) -> list[_Pl]:
     buckets: dict[str, list[_Pl]] = {}
     for p in rows:
-        k = _player_name_key(p.name)
-        if not k:
+        k = _dedupe_squad_pl_key(p)
+        if not k or k == "|":
             continue
         buckets.setdefault(k, []).append(p)
     out: list[_Pl] = []
