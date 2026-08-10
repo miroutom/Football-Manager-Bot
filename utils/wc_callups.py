@@ -52,6 +52,7 @@ def club_players_for_nation(nation: str, *, limit: int = 120) -> list[dict[str, 
     from data.forward import Forward
     from data.goalkeeper import Goalkeeper
     from data.midfielder import Midfielder
+    from utils.player_nation import effective_player_nation
     from utils.roster_manual import FREE_AGENT_TEAM
 
     path = season_paths.get_league_db_path()
@@ -62,19 +63,21 @@ def club_players_for_nation(nation: str, *, limit: int = 120) -> list[dict[str, 
         with Session() as session:
             for Cls in (Forward, Midfielder, Defender, Goalkeeper):
                 for r in session.query(Cls).all():
-                    nat = getattr(r, "nation", None) or ""
-                    if _norm_nat(str(nat)) != want:
-                        continue
                     left = bool(getattr(r, "left_team", False))
                     if left:
                         continue
                     name = (getattr(r, "name", None) or "").strip()
                     if not name:
                         continue
+                    team = (getattr(r, "team", None) or "").strip()
+                    db_nat = getattr(r, "nation", None) or ""
+                    nat = effective_player_nation(name, team, db_nat or None, session)
+                    if not nat or _norm_nat(str(nat)) != want:
+                        continue
                     rows.append(
                         {
                             "name": name,
-                            "club": (getattr(r, "team", None) or "").strip(),
+                            "club": team,
                             "position": (getattr(r, "position", None) or "").strip(),
                             "overall": int(getattr(r, "overall", 0) or 0),
                             "nation": canon,
@@ -82,29 +85,28 @@ def club_players_for_nation(nation: str, *, limit: int = 120) -> list[dict[str, 
                             "person_id": getattr(r, "person_id", None),
                         }
                     )
+
+            from utils.free_agents_db import list_free_agents
+
+            for p in list_free_agents():
+                name = p.get("name") or ""
+                db_nat = p.get("nation") or ""
+                nat = effective_player_nation(name, FREE_AGENT_TEAM, db_nat or None, session)
+                if not nat or _norm_nat(str(nat)) != want:
+                    continue
+                rows.append(
+                    {
+                        "name": name,
+                        "club": FREE_AGENT_TEAM,
+                        "position": p.get("position") or "",
+                        "overall": int(p.get("overall") or 0),
+                        "nation": canon,
+                        "source": "fa",
+                        "person_id": p.get("person_id"),
+                    }
+                )
     finally:
         eng.dispose()
-
-    try:
-        from utils.free_agents_db import list_free_agents
-
-        for p in list_free_agents():
-            nat = p.get("nation") or ""
-            if _norm_nat(str(nat)) != want:
-                continue
-            rows.append(
-                {
-                    "name": p.get("name") or "",
-                    "club": FREE_AGENT_TEAM,
-                    "position": p.get("position") or "",
-                    "overall": int(p.get("overall") or 0),
-                    "nation": canon,
-                    "source": "fa",
-                    "person_id": p.get("person_id"),
-                }
-            )
-    except Exception:
-        pass
 
     # дедуп по имени (клубный приоритетнее FA-дубля)
     seen: set[str] = set()

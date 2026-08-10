@@ -14,6 +14,29 @@ _INTER_FB = frozenset({"ЛЗ", "ПЗ", "ЛФЗ", "ПФЗ"})
 _INTER_CM = frozenset({"ЦП", "ЦОП"})
 _INTER_ATTACK = frozenset({"ЛФА", "ПФА", "ФРВ", "ЛФД", "ПФД", "ЦФД"})
 _FORWARD_SLOT_IDS = frozenset({"LW", "RW", "ST", "STL", "STR", "CF"})
+_DEPTH_POSITION_ORDER: tuple[str, ...] = (
+    "ВРТ",
+    "ЛЗ",
+    "ПЗ",
+    "ЦЗ",
+    "ЛЦЗ",
+    "ПЦЗ",
+    "ЛФЗ",
+    "ПФЗ",
+    "ЦП",
+    "ЦАП",
+    "ЦОП",
+    "ЛП",
+    "ПП",
+    "ЛЦП",
+    "ПЦП",
+    "ЛФА",
+    "ПФА",
+    "ФРВ",
+    "ЦФД",
+    "ЛФД",
+    "ПФД",
+)
 
 
 def _norm_pos(raw: Any) -> str:
@@ -77,6 +100,68 @@ def _sort_pool(pool: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
 
+def _best_unused(candidates: list[dict[str, Any]], used: set[str]) -> dict[str, Any] | None:
+    pool = [p for p in candidates if p["name"].casefold() not in used]
+    if not pool:
+        return None
+    return max(
+        pool,
+        key=lambda x: (int(x.get("overall") or 0), str(x.get("name") or "").casefold()),
+    )
+
+
+def _pick_bench_and_reserve(
+    pool: list[dict[str, Any]],
+    used: set[str],
+    *,
+    bench_size: int,
+    reserve_size: int,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """
+    Запас + резерв: 1 вратарь в запас, по одному на каждую позицию, остальное — по рейтингу.
+    """
+    bench: list[dict[str, Any]] = []
+    reserve: list[dict[str, Any]] = []
+
+    def _remaining() -> list[dict[str, Any]]:
+        return [p for p in pool if p["name"].casefold() not in used]
+
+    def _append(target: str, player: dict[str, Any]) -> None:
+        if target == "bench":
+            bench.append(player)
+        else:
+            reserve.append(player)
+        used.add(player["name"].casefold())
+
+    def _next_target() -> str | None:
+        if len(bench) < bench_size:
+            return "bench"
+        if len(reserve) < reserve_size:
+            return "reserve"
+        return None
+
+    gk = _best_unused([p for p in _remaining() if _is_gk(p)], used)
+    if gk and _next_target() == "bench":
+        _append("bench", gk)
+
+    for pos in _DEPTH_POSITION_ORDER:
+        if pos == "ВРТ":
+            continue
+        if _next_target() is None:
+            break
+        picked = _best_unused([p for p in _remaining() if _norm_pos(p.get("position")) == pos], used)
+        if picked:
+            _append(_next_target() or "reserve", picked)
+
+    for p in _sort_pool(_remaining()):
+        slot = _next_target()
+        if slot is None:
+            break
+        _append(slot, p)
+
+    return bench, reserve
+
+
 def build_auto_callup_roster(
     nation: str,
     players: list[dict[str, Any]] | None = None,
@@ -111,31 +196,12 @@ def build_auto_callup_roster(
             }
         )
 
-    remaining = [p for p in pool if p["name"].casefold() not in used]
-    gk_remaining = [p for p in remaining if _is_gk(p)]
-    out_remaining = [p for p in remaining if not _is_gk(p)]
-
-    bench: list[dict[str, Any]] = []
-    if gk_remaining and sum(1 for r in roster if _is_gk(r)) == 1:
-        gk_bench = gk_remaining.pop(0)
-        bench.append(gk_bench)
-        used.add(gk_bench["name"].casefold())
-
-    for p in _sort_pool(out_remaining + gk_remaining):
-        if len(bench) >= WC_BENCH:
-            break
-        key = p["name"].casefold()
-        if key in used:
-            continue
-        bench.append(p)
-        used.add(key)
-
-    reserve: list[dict[str, Any]] = []
-    for p in _sort_pool([x for x in pool if x["name"].casefold() not in used]):
-        if len(reserve) >= WC_RESERVE:
-            break
-        reserve.append(p)
-        used.add(p["name"].casefold())
+    bench, reserve = _pick_bench_and_reserve(
+        pool,
+        used,
+        bench_size=WC_BENCH,
+        reserve_size=WC_RESERVE,
+    )
 
     for p in bench:
         roster.append(

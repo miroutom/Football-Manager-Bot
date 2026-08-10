@@ -38,3 +38,43 @@ def test_auto_callup_allows_short_squad():
     ]
     roster = build_auto_callup_roster("Мальта", players)
     assert len(roster) <= WC_TOTAL
+
+
+def test_auto_callup_balanced_bench_and_reserve():
+    players = [
+        {"name": "GK1", "club": "A", "position": "ВРТ", "overall": 85},
+        {"name": "GK2", "club": "B", "position": "ВРТ", "overall": 70},
+        {"name": "LB1", "club": "C", "position": "ЛЗ", "overall": 82},
+        {"name": "LB2", "club": "D", "position": "ЛЗ", "overall": 60},
+        {"name": "CB1", "club": "E", "position": "ЦЗ", "overall": 84},
+        {"name": "CB2", "club": "F", "position": "ЦЗ", "overall": 61},
+        {"name": "RB1", "club": "G", "position": "ПЗ", "overall": 83},
+        {"name": "CM1", "club": "H", "position": "ЦП", "overall": 81},
+        {"name": "CM2", "club": "I", "position": "ЦП", "overall": 62},
+        {"name": "CAM1", "club": "J", "position": "ЦАП", "overall": 80},
+        {"name": "LW1", "club": "K", "position": "ЛФА", "overall": 79},
+        {"name": "RW1", "club": "L", "position": "ПФА", "overall": 78},
+        {"name": "ST1", "club": "M", "position": "ФРВ", "overall": 86},
+        {"name": "ST2", "club": "N", "position": "ФРВ", "overall": 63},
+        {"name": "STAR", "club": "O", "position": "ЦП", "overall": 90},
+        {"name": "X1", "club": "P", "position": "ЛЦЗ", "overall": 59},
+        {"name": "X2", "club": "Q", "position": "ПЦЗ", "overall": 58},
+        {"name": "X3", "club": "R", "position": "ЦОП", "overall": 57},
+        {"name": "X4", "club": "S", "position": "ЛП", "overall": 56},
+        {"name": "X5", "club": "T", "position": "ПП", "overall": 55},
+        {"name": "X6", "club": "U", "position": "ЛЦП", "overall": 54},
+        {"name": "X7", "club": "V", "position": "ПЦП", "overall": 53},
+        {"name": "X8", "club": "W", "position": "ЦФД", "overall": 52},
+        {"name": "X9", "club": "X", "position": "ЛФД", "overall": 51},
+        {"name": "X10", "club": "Y", "position": "ПФД", "overall": 50},
+        {"name": "X11", "club": "Z", "position": "ЛФЗ", "overall": 49},
+    ]
+    roster = build_auto_callup_roster("Испания", players)
+    bench = [r for r in roster if r.get("status") == "bench"]
+    reserve = [r for r in roster if r.get("status") == "reserve"]
+    assert len(bench) == 7
+    assert len(reserve) == 8
+    assert any(r["name"] == "GK2" and r["position"] == "ВРТ" for r in bench)
+    picked = {r["name"] for r in bench + reserve}
+    assert "LB2" in picked
+    assert "STAR" in picked

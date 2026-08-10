@@ -31,6 +31,8 @@ def test_ivory_coast_variants_map_to_same_country():
 def test_kafu_resolves_brazil():
     assert resolve_player_nation("Кафу", "Рома", None) == "Бразилия"
     assert nation_to_flagcdn_code(resolve_player_nation("Кафу", "Рома", None)) == "br"
+    assert resolve_player_nation("Пеле", "Сити", None) == "Бразилия"
+    assert resolve_player_nation("Роналдиньо", "Интер", None) == "Бразилия"
 
 
 def test_seedorf_resolves_netherlands():

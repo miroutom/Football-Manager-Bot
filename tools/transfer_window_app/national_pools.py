@@ -35,6 +35,7 @@ def build_all_national_pools() -> dict[str, Any]:
     from data.midfielder import Midfielder
     from utils.free_agents_db import fa_player_id, is_free_agent_team, list_free_agents
     from utils.player_names import player_display_name
+    from utils.player_nation import effective_player_nation
     from utils import season_paths
     from utils.utils import session_league
 
@@ -89,9 +90,13 @@ def build_all_national_pools() -> dict[str, Any]:
             team = (getattr(r, "team", "") or "").strip()
             if not team or is_free_agent_team(team):
                 continue
-            nat = (getattr(r, "nation", None) or "") or ""
+            name = player_display_name(r)
+            db_nat = (getattr(r, "nation", None) or "") or ""
+            nat = effective_player_nation(name, team, db_nat or None, sleague) or ""
+            if not nat:
+                continue
             _add(
-                name=player_display_name(r),
+                name=name,
                 position=getattr(r, "position", "") or "",
                 overall=int(getattr(r, "overall", 0) or 0),
                 team=team,
@@ -101,12 +106,17 @@ def build_all_national_pools() -> dict[str, Any]:
             )
 
     for p in list_free_agents():
+        fa_name = str(p.get("name") or "")
+        db_nat = str(p.get("nation") or "")
+        nat = effective_player_nation(fa_name, "Free Agent", db_nat or None, sleague) or ""
+        if not nat:
+            continue
         _add(
-            name=str(p.get("name") or ""),
+            name=fa_name,
             position=str(p.get("position") or ""),
             overall=int(p.get("overall") or 0),
             team="Free Agent",
-            nation_raw=str(p.get("nation") or ""),
+            nation_raw=nat,
             is_fa=True,
             person_id=p.get("person_id"),
         )

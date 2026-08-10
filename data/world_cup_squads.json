@@ -123,22 +123,22 @@
         "person_id": 969
       },
       {
-        "name": "Родри",
-        "club": "Наполи",
-        "position": "ЦОП",
-        "overall": 87,
+        "name": "Гримальдо",
+        "club": "Вольфсбург",
+        "position": "ЛЗ",
+        "overall": 83,
         "status": "bench",
         "source": "callup",
-        "person_id": 292
+        "person_id": 821
       },
       {
-        "name": "Мерино",
-        "club": "Арсенал",
-        "position": "ЦП",
-        "overall": 85,
+        "name": "Навас",
+        "club": "Севилья",
+        "position": "ПЗ",
+        "overall": 83,
         "status": "bench",
         "source": "callup",
-        "person_id": 399
+        "person_id": 780
       },
       {
         "name": "Вивиан",
@@ -150,11 +150,65 @@
         "person_id": 586
       },
       {
+        "name": "Мерино",
+        "club": "Арсенал",
+        "position": "ЦП",
+        "overall": 85,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 399
+      },
+      {
+        "name": "Оярзабаль",
+        "club": "Ньюкасл",
+        "position": "ЦАП",
+        "overall": 84,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 326
+      },
+      {
+        "name": "Родри",
+        "club": "Наполи",
+        "position": "ЦОП",
+        "overall": 87,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 292
+      },
+      {
+        "name": "Нико",
+        "club": "Атлетик",
+        "position": "ЛФА",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 10
+      },
+      {
+        "name": "Траоре",
+        "club": "Боруссия М",
+        "position": "ПФА",
+        "overall": 77,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 193
+      },
+      {
+        "name": "Де Томас",
+        "club": "Жирона",
+        "position": "ФРВ",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 265
+      },
+      {
         "name": "Иско",
         "club": "Ливерпуль",
         "position": "ЦАП",
         "overall": 84,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 309
       },
@@ -163,7 +217,7 @@
         "club": "Реал",
         "position": "ВРТ",
         "overall": 84,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 936
       },
@@ -172,18 +226,9 @@
         "club": "Милан",
         "position": "ЦАП",
         "overall": 84,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 284
-      },
-      {
-        "name": "Оярзабаль",
-        "club": "Ньюкасл",
-        "position": "ЦАП",
-        "overall": 84,
         "status": "reserve",
         "source": "callup",
-        "person_id": 326
+        "person_id": 284
       },
       {
         "name": "Алейш Гарсия",
@@ -202,51 +247,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 602
-      },
-      {
-        "name": "Бускетс",
-        "club": "Наполи",
-        "position": "ЦОП",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 340
-      },
-      {
-        "name": "Васкез",
-        "club": "Бетис",
-        "position": "ПЗ",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 610
-      },
-      {
-        "name": "Гави",
-        "club": "Барселона",
-        "position": "ЦП",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 299
-      },
-      {
-        "name": "Галан",
-        "club": "Бетис",
-        "position": "ЛЗ",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 595
-      },
-      {
-        "name": "Гримальдо",
-        "club": "Вольфсбург",
-        "position": "ЛЗ",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 821
       }
     ],
     "Франция": [
@@ -361,13 +361,31 @@
         "lineup_slot": "RW"
       },
       {
-        "name": "Ареола",
-        "club": "Челси",
+        "name": "Самба",
+        "club": "Сити",
         "position": "ВРТ",
         "overall": 81,
         "status": "bench",
         "source": "callup",
-        "person_id": 4496
+        "person_id": 926
+      },
+      {
+        "name": "Труфферт",
+        "club": "Интер",
+        "position": "ЛЗ",
+        "overall": 80,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 870
+      },
+      {
+        "name": "Гюсто",
+        "club": "Челси",
+        "position": "ПЗ",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 771
       },
       {
         "name": "Фофана",
@@ -379,11 +397,65 @@
         "person_id": 774
       },
       {
+        "name": "Гендузи",
+        "club": "Ювентус",
+        "position": "ЦП",
+        "overall": 84,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 449
+      },
+      {
+        "name": "Фекир",
+        "club": "Мю",
+        "position": "ЦАП",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 442
+      },
+      {
+        "name": "Канте",
+        "club": "Лейпциг",
+        "position": "ЦОП",
+        "overall": 81,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 403
+      },
+      {
+        "name": "Коман",
+        "club": "Реал",
+        "position": "ЛФА",
+        "overall": 85,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 175
+      },
+      {
+        "name": "Нкунку",
+        "club": "Арсенал",
+        "position": "ПФА",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 31
+      },
+      {
+        "name": "Бен-Йеддер",
+        "club": "Лейпциг",
+        "position": "ФРВ",
+        "overall": 84,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 199
+      },
+      {
         "name": "Салиба",
         "club": "Интер",
         "position": "ЦЗ",
         "overall": 86,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 729
       },
@@ -392,45 +464,18 @@
         "club": "Сити",
         "position": "ЦЗ",
         "overall": 85,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 632
-      },
-      {
-        "name": "Коман",
-        "club": "Реал",
-        "position": "ЛФА",
-        "overall": 85,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 175
-      },
-      {
-        "name": "Бен-Йеддер",
-        "club": "Лейпциг",
-        "position": "ФРВ",
-        "overall": 84,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 199
       },
       {
         "name": "Варан",
         "club": "Реал",
         "position": "ЦЗ",
         "overall": 84,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 755
-      },
-      {
-        "name": "Гендузи",
-        "club": "Ювентус",
-        "position": "ЦП",
-        "overall": 84,
         "status": "reserve",
         "source": "callup",
-        "person_id": 449
+        "person_id": 755
       },
       {
         "name": "Вахи",
@@ -449,51 +494,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 562
-      },
-      {
-        "name": "Иконе",
-        "club": "Байер",
-        "position": "ФРВ",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 188
-      },
-      {
-        "name": "Тюрам",
-        "club": "Атлетико",
-        "position": "ЦП",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 295
-      },
-      {
-        "name": "Гризманн",
-        "club": "Фиорентина",
-        "position": "ФРВ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 167
-      },
-      {
-        "name": "Гюсто",
-        "club": "Челси",
-        "position": "ПЗ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 771
-      },
-      {
-        "name": "Заир-Эмери",
-        "club": "Ювентус",
-        "position": "ЦП",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 330
       }
     ],
     "Англия": [
@@ -508,13 +508,13 @@
         "lineup_slot": "GK"
       },
       {
-        "name": "Хенри",
-        "club": "Аталанта",
+        "name": "Уокер",
+        "club": "Сити",
         "position": "ЛЗ",
-        "overall": 82,
+        "overall": 84,
         "status": "start",
         "source": "callup",
-        "person_id": 903,
+        "person_id": 582,
         "lineup_slot": "LB"
       },
       {
@@ -617,6 +617,15 @@
         "person_id": 965
       },
       {
+        "name": "Хенри",
+        "club": "Аталанта",
+        "position": "ЛЗ",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 903
+      },
+      {
         "name": "Трипье",
         "club": "Ньюкасл",
         "position": "ПЗ",
@@ -635,6 +644,24 @@
         "person_id": 899
       },
       {
+        "name": "Филлипс",
+        "club": "Барселона",
+        "position": "ЦП",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 282
+      },
+      {
+        "name": "Мэддисон",
+        "club": "Тоттенхэм",
+        "position": "ЦАП",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 431
+      },
+      {
         "name": "Рэшфорд",
         "club": "Сити",
         "position": "ЛФА",
@@ -644,11 +671,29 @@
         "person_id": 3
       },
       {
+        "name": "Бовен",
+        "club": "Челси",
+        "position": "ПФА",
+        "overall": 81,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 268
+      },
+      {
+        "name": "Уилсон",
+        "club": "Бетис",
+        "position": "ФРВ",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 133
+      },
+      {
         "name": "Брентвейт",
         "club": "Мю",
         "position": "ЦЗ",
         "overall": 83,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 861
       },
@@ -657,7 +702,7 @@
         "club": "Мю",
         "position": "ПЗ",
         "overall": 83,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 751
       },
@@ -666,7 +711,7 @@
         "club": "Наполи",
         "position": "ПЗ",
         "overall": 83,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 722
       },
@@ -678,15 +723,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 900
-      },
-      {
-        "name": "Мэддисон",
-        "club": "Тоттенхэм",
-        "position": "ЦАП",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 431
       },
       {
         "name": "Райс",
@@ -705,42 +741,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 915
-      },
-      {
-        "name": "Уилсон",
-        "club": "Бетис",
-        "position": "ФРВ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 133
-      },
-      {
-        "name": "Филлипс",
-        "club": "Барселона",
-        "position": "ЦП",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 282
-      },
-      {
-        "name": "Барнс",
-        "club": "Жирона",
-        "position": "ЛФА",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 162
-      },
-      {
-        "name": "Бовен",
-        "club": "Челси",
-        "position": "ПФА",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 268
       }
     ],
     "Португалия": [
@@ -864,40 +864,13 @@
         "person_id": 962
       },
       {
-        "name": "Жота",
-        "club": "Ливерпуль",
-        "position": "ФРВ",
-        "overall": 86,
+        "name": "Геррейро",
+        "club": "Рома",
+        "position": "ЛЗ",
+        "overall": 82,
         "status": "bench",
         "source": "callup",
-        "person_id": 114
-      },
-      {
-        "name": "Роналду",
-        "club": "Ювентус",
-        "position": "ФРВ",
-        "overall": 86,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 178
-      },
-      {
-        "name": "Феликс",
-        "club": "Бетис",
-        "position": "ФРВ",
-        "overall": 84,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 23
-      },
-      {
-        "name": "Алмейда",
-        "club": "Бетис",
-        "position": "ЦП",
-        "overall": 83,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4500
+        "person_id": 807
       },
       {
         "name": "Далот",
@@ -909,6 +882,15 @@
         "person_id": 1380
       },
       {
+        "name": "Флорентину",
+        "club": "Тоттенхэм",
+        "position": "ЦЗ",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 768
+      },
+      {
         "name": "Палинья",
         "club": "Сити",
         "position": "ЦП",
@@ -916,6 +898,78 @@
         "status": "bench",
         "source": "callup",
         "person_id": 277
+      },
+      {
+        "name": "Перез Гуедес",
+        "club": "Локомотив",
+        "position": "ЦАП",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5178
+      },
+      {
+        "name": "Невеш",
+        "club": "Милан",
+        "position": "ЦОП",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 342
+      },
+      {
+        "name": "Рафа",
+        "club": "Ньюкасл",
+        "position": "ЛФА",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 556
+      },
+      {
+        "name": "Мартинш",
+        "club": "Атлетик",
+        "position": "ПФА",
+        "overall": 78,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 571
+      },
+      {
+        "name": "Роналду",
+        "club": "Ювентус",
+        "position": "ФРВ",
+        "overall": 86,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 178
+      },
+      {
+        "name": "Жота",
+        "club": "Ливерпуль",
+        "position": "ФРВ",
+        "overall": 86,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 114
+      },
+      {
+        "name": "Феликс",
+        "club": "Бетис",
+        "position": "ФРВ",
+        "overall": 84,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 23
+      },
+      {
+        "name": "Алмейда",
+        "club": "Бетис",
+        "position": "ЦП",
+        "overall": 83,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 4500
       },
       {
         "name": "Патрисио",
@@ -927,15 +981,6 @@
         "person_id": 976
       },
       {
-        "name": "Геррейро",
-        "club": "Рома",
-        "position": "ЛЗ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 807
-      },
-      {
         "name": "Гонсалвеш",
         "club": "Сити",
         "position": "ФРВ",
@@ -943,51 +988,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 148
-      },
-      {
-        "name": "Диаш",
-        "club": "Арсенал",
-        "position": "ЦЗ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 1388
-      },
-      {
-        "name": "Невеш",
-        "club": "Милан",
-        "position": "ЦОП",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 342
-      },
-      {
-        "name": "Фирмино",
-        "club": "Франкфурт",
-        "position": "ФРВ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 207
-      },
-      {
-        "name": "Флорентину",
-        "club": "Тоттенхэм",
-        "position": "ЦЗ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 768
-      },
-      {
-        "name": "Бето",
-        "club": "Жирона",
-        "position": "ФРВ",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 254
       }
     ],
     "Бельгия": [
@@ -1111,13 +1111,13 @@
         "person_id": 1003
       },
       {
-        "name": "Опенда",
-        "club": "Лейпциг",
-        "position": "ФРВ",
-        "overall": 85,
+        "name": "Куйпер",
+        "club": "Вольфсбург",
+        "position": "ПЗ",
+        "overall": 75,
         "status": "bench",
         "source": "callup",
-        "person_id": 198
+        "person_id": 4927
       },
       {
         "name": "Борнау",
@@ -1129,31 +1129,31 @@
         "person_id": 853
       },
       {
-        "name": "Мертенс",
-        "club": "Ньюкасл",
-        "position": "ФРВ",
-        "overall": 80,
+        "name": "Вермирен",
+        "club": "Интер",
+        "position": "ЦП",
+        "overall": 76,
         "status": "bench",
         "source": "callup",
-        "person_id": 4952
+        "person_id": 4921
       },
       {
-        "name": "Миньоле",
-        "club": "Боруссия М",
-        "position": "ВРТ",
-        "overall": 80,
+        "name": "Троссар",
+        "club": "Крылья Советов",
+        "position": "ЦАП",
+        "overall": 75,
         "status": "bench",
         "source": "callup",
-        "person_id": 994
+        "person_id": 4533
       },
       {
-        "name": "Лукебакио",
-        "club": "Реал Сосьедад",
-        "position": "ПФА",
-        "overall": 78,
+        "name": "Амаду Онана",
+        "club": "Вольфсбург",
+        "position": "ЦОП",
+        "overall": 77,
         "status": "bench",
         "source": "callup",
-        "person_id": 150
+        "person_id": 4920
       },
       {
         "name": "Трезор",
@@ -1165,13 +1165,49 @@
         "person_id": 4922
       },
       {
-        "name": "Амаду Онана",
-        "club": "Вольфсбург",
-        "position": "ЦОП",
-        "overall": 77,
+        "name": "Лукебакио",
+        "club": "Реал Сосьедад",
+        "position": "ПФА",
+        "overall": 78,
         "status": "reserve",
         "source": "callup",
-        "person_id": 4920
+        "person_id": 150
+      },
+      {
+        "name": "Опенда",
+        "club": "Лейпциг",
+        "position": "ФРВ",
+        "overall": 85,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 198
+      },
+      {
+        "name": "Мертенс",
+        "club": "Ньюкасл",
+        "position": "ФРВ",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 4952
+      },
+      {
+        "name": "Миньоле",
+        "club": "Боруссия М",
+        "position": "ВРТ",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 994
+      },
+      {
+        "name": "Уннерсталь",
+        "club": "Free Agent",
+        "position": "ВРТ",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 933
       },
       {
         "name": "Батшуаи",
@@ -1199,42 +1235,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 5016
-      },
-      {
-        "name": "Вермирен",
-        "club": "Интер",
-        "position": "ЦП",
-        "overall": 76,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4921
-      },
-      {
-        "name": "Баликвиша",
-        "club": "Урал",
-        "position": "ПФА",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4931
-      },
-      {
-        "name": "Вандервурт",
-        "club": "Free Agent",
-        "position": "ВРТ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4925
-      },
-      {
-        "name": "Вертессен",
-        "club": "Динамо",
-        "position": "ФРВ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 5035
       }
     ],
     "Нидерланды": [
@@ -1358,24 +1358,6 @@
         "person_id": 4537
       },
       {
-        "name": "Фримпонг",
-        "club": "Бавария",
-        "position": "ПЗ",
-        "overall": 87,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 810
-      },
-      {
-        "name": "Карсдорп",
-        "club": "Фиорентина",
-        "position": "ПЗ",
-        "overall": 83,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 802
-      },
-      {
         "name": "Маласия",
         "club": "Мю",
         "position": "ЛЗ",
@@ -1385,11 +1367,83 @@
         "person_id": 752
       },
       {
+        "name": "Фримпонг",
+        "club": "Бавария",
+        "position": "ПЗ",
+        "overall": 87,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 810
+      },
+      {
+        "name": "Де Врей",
+        "club": "Интер",
+        "position": "ЦЗ",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 669
+      },
+      {
+        "name": "Вирман",
+        "club": "Интер",
+        "position": "ЦП",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 359
+      },
+      {
+        "name": "Клюверт",
+        "club": "Астон Вилла",
+        "position": "ЦАП",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 221
+      },
+      {
+        "name": "Симонс",
+        "club": "Аталанта",
+        "position": "ЛФА",
+        "overall": 81,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 347
+      },
+      {
+        "name": "Дилросун",
+        "club": "Бетис",
+        "position": "ПФА",
+        "overall": 75,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 233
+      },
+      {
+        "name": "Патрик Клюйверт",
+        "club": "Сити",
+        "position": "ФРВ",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 5185
+      },
+      {
+        "name": "Карсдорп",
+        "club": "Фиорентина",
+        "position": "ПЗ",
+        "overall": 83,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 802
+      },
+      {
         "name": "Тимбер",
         "club": "Арсенал",
         "position": "ПЗ",
         "overall": 83,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 730
       },
@@ -1398,7 +1452,7 @@
         "club": "Рома",
         "position": "ЦАП",
         "overall": 82,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 541
       },
@@ -1407,7 +1461,7 @@
         "club": "Тоттенхэм",
         "position": "ЦЗ",
         "overall": 82,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 764
       },
@@ -1421,33 +1475,6 @@
         "person_id": 1379
       },
       {
-        "name": "Вирман",
-        "club": "Интер",
-        "position": "ЦП",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 359
-      },
-      {
-        "name": "Де Врей",
-        "club": "Интер",
-        "position": "ЦЗ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 669
-      },
-      {
-        "name": "Клюверт",
-        "club": "Астон Вилла",
-        "position": "ЦАП",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 221
-      },
-      {
         "name": "Маатсен",
         "club": "Челси",
         "position": "ЛЗ",
@@ -1455,33 +1482,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 772
-      },
-      {
-        "name": "Аке",
-        "club": "Сити",
-        "position": "ЦЗ",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 584
-      },
-      {
-        "name": "Бергвин",
-        "club": "Рома",
-        "position": "ЛФА",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 232
-      },
-      {
-        "name": "Блинд",
-        "club": "Жирона",
-        "position": "ЦЗ",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 604
       }
     ],
     "Германия": [
@@ -1605,6 +1605,33 @@
         "person_id": 932
       },
       {
+        "name": "Гюнтер",
+        "club": "Ливерпуль",
+        "position": "ЛЗ",
+        "overall": 79,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4970
+      },
+      {
+        "name": "Баку",
+        "club": "Франкфурт",
+        "position": "ПЗ",
+        "overall": 81,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 816
+      },
+      {
+        "name": "Гинтер",
+        "club": "Реал",
+        "position": "ЦЗ",
+        "overall": 83,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4946
+      },
+      {
         "name": "Кроос",
         "club": "Реал",
         "position": "ЦП",
@@ -1612,6 +1639,15 @@
         "status": "bench",
         "source": "callup",
         "person_id": 317
+      },
+      {
+        "name": "Рёль",
+        "club": "Бавария",
+        "position": "ЦАП",
+        "overall": 84,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 468
       },
       {
         "name": "Арнольд",
@@ -1623,29 +1659,38 @@
         "person_id": 515
       },
       {
-        "name": "Кох",
-        "club": "Наполи",
-        "position": "ЦП",
-        "overall": 86,
-        "status": "bench",
+        "name": "Адейеми",
+        "club": "Дортмунд",
+        "position": "ПФА",
+        "overall": 80,
+        "status": "reserve",
         "source": "callup",
-        "person_id": 485
+        "person_id": 181
       },
       {
         "name": "Вернер",
         "club": "Лейпциг",
         "position": "ФРВ",
         "overall": 85,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 197
+      },
+      {
+        "name": "Кох",
+        "club": "Наполи",
+        "position": "ЦП",
+        "overall": 86,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 485
       },
       {
         "name": "Джан",
         "club": "Дортмунд",
         "position": "ЦП",
         "overall": 85,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 470
       },
@@ -1654,7 +1699,7 @@
         "club": "Арсенал",
         "position": "ВРТ",
         "overall": 85,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 927
       },
@@ -1677,15 +1722,6 @@
         "person_id": 222
       },
       {
-        "name": "Рёль",
-        "club": "Бавария",
-        "position": "ЦАП",
-        "overall": 84,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 468
-      },
-      {
         "name": "Фуллкруг",
         "club": "Челси",
         "position": "ФРВ",
@@ -1693,42 +1729,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 1035
-      },
-      {
-        "name": "Гинтер",
-        "club": "Реал",
-        "position": "ЦЗ",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4946
-      },
-      {
-        "name": "Гюндоган",
-        "club": "Ньюкасл",
-        "position": "ЦП",
-        "overall": 83,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 300
-      },
-      {
-        "name": "Бауманн",
-        "club": "Хоффенхайм",
-        "position": "ВРТ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 988
-      },
-      {
-        "name": "Гётце",
-        "club": "Франкфурт",
-        "position": "ЦП",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 484
       }
     ],
     "Хорватия": [
@@ -1852,13 +1852,22 @@
         "person_id": 4854
       },
       {
-        "name": "Брозович",
-        "club": "Мю",
-        "position": "ЦП",
-        "overall": 84,
+        "name": "Станишич",
+        "club": "Фиорентина",
+        "position": "ПЗ",
+        "overall": 77,
         "status": "bench",
         "source": "callup",
-        "person_id": 424
+        "person_id": 827
+      },
+      {
+        "name": "Бегич",
+        "club": "Бавария",
+        "position": "ЦЗ",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 706
       },
       {
         "name": "Майер",
@@ -1870,24 +1879,6 @@
         "person_id": 516
       },
       {
-        "name": "Модрич",
-        "club": "Ливерпуль",
-        "position": "ЦП",
-        "overall": 82,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 322
-      },
-      {
-        "name": "Перишич",
-        "club": "Тоттенхэм",
-        "position": "ЦП",
-        "overall": 82,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 433
-      },
-      {
         "name": "Пашалич",
         "club": "Аталанта",
         "position": "ЦАП",
@@ -1897,22 +1888,58 @@
         "person_id": 346
       },
       {
+        "name": "Ракитич",
+        "club": "Free Agent",
+        "position": "ЦОП",
+        "overall": 80,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 445
+      },
+      {
+        "name": "Ребич",
+        "club": "Цска",
+        "position": "ФРВ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4858
+      },
+      {
+        "name": "Брозович",
+        "club": "Мю",
+        "position": "ЦП",
+        "overall": 84,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 424
+      },
+      {
+        "name": "Модрич",
+        "club": "Ливерпуль",
+        "position": "ЦП",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 322
+      },
+      {
+        "name": "Перишич",
+        "club": "Тоттенхэм",
+        "position": "ЦП",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 433
+      },
+      {
         "name": "Батурина",
         "club": "Жирона",
         "position": "ЦП",
         "overall": 80,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 573
-      },
-      {
-        "name": "Бегич",
-        "club": "Бавария",
-        "position": "ЦЗ",
-        "overall": 78,
         "status": "reserve",
         "source": "callup",
-        "person_id": 706
+        "person_id": 573
       },
       {
         "name": "Мишкич",
@@ -1922,15 +1949,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 387
-      },
-      {
-        "name": "Станишич",
-        "club": "Фиорентина",
-        "position": "ПЗ",
-        "overall": 77,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 827
       },
       {
         "name": "Крамарич",
@@ -1958,15 +1976,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 4859
-      },
-      {
-        "name": "Ребич",
-        "club": "Цска",
-        "position": "ФРВ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4858
       }
     ],
     "Швейцария": [
@@ -2090,13 +2099,22 @@
         "person_id": 945
       },
       {
-        "name": "Закария",
-        "club": "Динамо",
-        "position": "ЦП",
+        "name": "Шмит",
+        "club": "Лацио",
+        "position": "ЛЗ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5141
+      },
+      {
+        "name": "Эльведи",
+        "club": "Локомотив",
+        "position": "ЦЗ",
         "overall": 77,
         "status": "bench",
         "source": "callup",
-        "person_id": 518
+        "person_id": 834
       },
       {
         "name": "Пуертас",
@@ -2108,13 +2126,13 @@
         "person_id": 5062
       },
       {
-        "name": "Эльведи",
-        "club": "Локомотив",
-        "position": "ЦЗ",
+        "name": "Закария",
+        "club": "Динамо",
+        "position": "ЦП",
         "overall": 77,
         "status": "bench",
         "source": "callup",
-        "person_id": 834
+        "person_id": 518
       },
       {
         "name": "Стержиу",
@@ -2133,15 +2151,6 @@
         "status": "bench",
         "source": "callup",
         "person_id": 4519
-      },
-      {
-        "name": "Шмит",
-        "club": "Лацио",
-        "position": "ЛЗ",
-        "overall": 75,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 5141
       }
     ],
     "Италия": [
@@ -2216,13 +2225,13 @@
         "lineup_slot": "RCM"
       },
       {
-        "name": "Пеллегрини",
-        "club": "Рома",
+        "name": "Инсинье",
+        "club": "Лейпциг",
         "position": "ЦАП",
-        "overall": 80,
+        "overall": 82,
         "status": "start",
         "source": "callup",
-        "person_id": 463,
+        "person_id": 215,
         "lineup_slot": "CAM"
       },
       {
@@ -2265,40 +2274,22 @@
         "person_id": 1597
       },
       {
-        "name": "Мерет",
-        "club": "Наполи",
-        "position": "ВРТ",
-        "overall": 86,
+        "name": "Спиназолла",
+        "club": "Милан",
+        "position": "ЛЗ",
+        "overall": 82,
         "status": "bench",
         "source": "callup",
-        "person_id": 943
+        "person_id": 799
       },
       {
-        "name": "Жоржиньо",
-        "club": "Интер",
-        "position": "ЦП",
-        "overall": 84,
+        "name": "Лаззари",
+        "club": "Дортмунд",
+        "position": "ПЗ",
+        "overall": 80,
         "status": "bench",
         "source": "callup",
-        "person_id": 1168
-      },
-      {
-        "name": "Терраччано",
-        "club": "Ювентус",
-        "position": "ВРТ",
-        "overall": 84,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 974
-      },
-      {
-        "name": "Ачерби",
-        "club": "Ньюкасл",
-        "position": "ЦЗ",
-        "overall": 83,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 1448
+        "person_id": 786
       },
       {
         "name": "Манчини",
@@ -2310,22 +2301,85 @@
         "person_id": 798
       },
       {
-        "name": "Кристанте",
-        "club": "Бавария",
+        "name": "Жоржиньо",
+        "club": "Интер",
         "position": "ЦП",
-        "overall": 82,
+        "overall": 84,
         "status": "bench",
         "source": "callup",
-        "person_id": 460
+        "person_id": 1168
+      },
+      {
+        "name": "Пеллегрини",
+        "club": "Рома",
+        "position": "ЦАП",
+        "overall": 80,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 463
       },
       {
         "name": "Кьеза",
         "club": "Фиорентина",
         "position": "ЛФА",
         "overall": 82,
-        "status": "reserve",
+        "status": "bench",
         "source": "callup",
         "person_id": 45
+      },
+      {
+        "name": "Политано",
+        "club": "Наполи",
+        "position": "ПФА",
+        "overall": 79,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 1086
+      },
+      {
+        "name": "Скамака",
+        "club": "Атлетико",
+        "position": "ФРВ",
+        "overall": 81,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 4540
+      },
+      {
+        "name": "Мерет",
+        "club": "Наполи",
+        "position": "ВРТ",
+        "overall": 86,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 943
+      },
+      {
+        "name": "Терраччано",
+        "club": "Ювентус",
+        "position": "ВРТ",
+        "overall": 84,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 974
+      },
+      {
+        "name": "Ачерби",
+        "club": "Ньюкасл",
+        "position": "ЦЗ",
+        "overall": 83,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 1448
+      },
+      {
+        "name": "Кристанте",
+        "club": "Бавария",
+        "position": "ЦП",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 460
       },
       {
         "name": "Ровелла",
@@ -2337,15 +2391,6 @@
         "person_id": 407
       },
       {
-        "name": "Спиназолла",
-        "club": "Милан",
-        "position": "ЛЗ",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 799
-      },
-      {
         "name": "Дармиан",
         "club": "Дортмунд",
         "position": "ЦЗ",
@@ -2353,42 +2398,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 668
-      },
-      {
-        "name": "Иммобиле",
-        "club": "Лацио",
-        "position": "ФРВ",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 156
-      },
-      {
-        "name": "Локателли",
-        "club": "Ювентус",
-        "position": "ЦП",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 637
-      },
-      {
-        "name": "Миретти",
-        "club": "Франкфурт",
-        "position": "ЦП",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 331
-      },
-      {
-        "name": "Скамака",
-        "club": "Атлетико",
-        "position": "ФРВ",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4540
       }
     ],
     "Норвегия": [
@@ -2442,15 +2451,6 @@
         "person_id": 5097
       },
       {
-        "name": "Педерсен",
-        "club": "Локомотив",
-        "position": "ПЗ",
-        "overall": 75,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 5085
-      },
-      {
         "name": "Холм",
         "club": "Крылья Советов",
         "position": "ПЗ",
@@ -2458,6 +2458,15 @@
         "status": "bench",
         "source": "callup",
         "person_id": 663
+      },
+      {
+        "name": "Педерсен",
+        "club": "Локомотив",
+        "position": "ПЗ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5085
       }
     ],
     "Дания": [
@@ -2572,13 +2581,13 @@
         "lineup_slot": "RW"
       },
       {
-        "name": "Хульманд",
-        "club": "Лейпциг",
-        "position": "ЦП",
-        "overall": 82,
+        "name": "Сков",
+        "club": "Севилья",
+        "position": "ЛЗ",
+        "overall": 78,
         "status": "bench",
         "source": "callup",
-        "person_id": 866
+        "person_id": 847
       },
       {
         "name": "Бах",
@@ -2590,13 +2599,31 @@
         "person_id": 881
       },
       {
-        "name": "О'райли",
-        "club": "Дортмунд",
-        "position": "ЦП",
-        "overall": 81,
+        "name": "Мольгард",
+        "club": "Боруссия М",
+        "position": "ЦЗ",
+        "overall": 75,
         "status": "bench",
         "source": "callup",
-        "person_id": 360
+        "person_id": 5104
+      },
+      {
+        "name": "Хульманд",
+        "club": "Лейпциг",
+        "position": "ЦП",
+        "overall": 82,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 866
+      },
+      {
+        "name": "Гронбек",
+        "club": "Урал",
+        "position": "ЦАП",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5128
       },
       {
         "name": "Ольсен",
@@ -2608,29 +2635,38 @@
         "person_id": 220
       },
       {
+        "name": "Дарами",
+        "club": "Рома",
+        "position": "ПФА",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5038
+      },
+      {
+        "name": "О'райли",
+        "club": "Дортмунд",
+        "position": "ЦП",
+        "overall": 81,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 360
+      },
+      {
         "name": "Билинг",
         "club": "Милан",
         "position": "ЦП",
         "overall": 80,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 533
-      },
-      {
-        "name": "Сков",
-        "club": "Севилья",
-        "position": "ЛЗ",
-        "overall": 78,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 847
       },
       {
         "name": "Валлис",
         "club": "Франкфурт",
         "position": "ЦАП",
         "overall": 75,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 5169
       },
@@ -2642,33 +2678,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 5069
-      },
-      {
-        "name": "Гронбек",
-        "club": "Урал",
-        "position": "ЦАП",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 5128
-      },
-      {
-        "name": "Дарами",
-        "club": "Рома",
-        "position": "ПФА",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 5038
-      },
-      {
-        "name": "Мольгард",
-        "club": "Боруссия М",
-        "position": "ЦЗ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 5104
       },
       {
         "name": "Френдруп",
@@ -2782,13 +2791,13 @@
         "lineup_slot": "ST"
       },
       {
-        "name": "Сейвальд",
-        "club": "Лейпциг",
-        "position": "ЦОП",
-        "overall": 83,
+        "name": "Реннер",
+        "club": "Рома",
+        "position": "ЛЗ",
+        "overall": 75,
         "status": "bench",
         "source": "callup",
-        "person_id": 498
+        "person_id": 5149
       },
       {
         "name": "Лайнхарт",
@@ -2800,24 +2809,6 @@
         "person_id": 4965
       },
       {
-        "name": "Шлагер",
-        "club": "Лейпциг",
-        "position": "ЦОП",
-        "overall": 79,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 501
-      },
-      {
-        "name": "Жегрова",
-        "club": "Вольфсбург",
-        "position": "ПФА",
-        "overall": 78,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4978
-      },
-      {
         "name": "Лаймер",
         "club": "Челси",
         "position": "ЦП",
@@ -2827,47 +2818,29 @@
         "person_id": 465
       },
       {
-        "name": "Наби Кейта",
-        "club": "Ньюкасл",
-        "position": "ЦП",
-        "overall": 78,
+        "name": "Сейвальд",
+        "club": "Лейпциг",
+        "position": "ЦОП",
+        "overall": 83,
         "status": "bench",
         "source": "callup",
-        "person_id": 4991
+        "person_id": 498
       },
       {
-        "name": "Джики",
-        "club": "Хоффенхайм",
-        "position": "ЦЗ",
-        "overall": 77,
+        "name": "Шлагер",
+        "club": "Лейпциг",
+        "position": "ЦОП",
+        "overall": 79,
         "status": "bench",
         "source": "callup",
-        "person_id": 5002
-      },
-      {
-        "name": "Лемина",
-        "club": "Крылья Советов",
-        "position": "ЦП",
-        "overall": 77,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 5015
-      },
-      {
-        "name": "Тапия",
-        "club": "Крылья Советов",
-        "position": "ЦП",
-        "overall": 77,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 5010
+        "person_id": 501
       },
       {
         "name": "Вёбер",
         "club": "Спартак",
         "position": "ЦЗ",
         "overall": 76,
-        "status": "reserve",
+        "status": "bench",
         "source": "callup",
         "person_id": 831
       },
@@ -2876,7 +2849,7 @@
         "club": "Цска",
         "position": "ЦП",
         "overall": 76,
-        "status": "reserve",
+        "status": "bench",
         "source": "callup",
         "person_id": 509
       },
@@ -2888,15 +2861,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 5137
-      },
-      {
-        "name": "Реннер",
-        "club": "Рома",
-        "position": "ЛЗ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 5149
       }
     ],
     "Турция": [
@@ -2941,13 +2905,13 @@
         "lineup_slot": "RCB"
       },
       {
-        "name": "Челик",
-        "club": "Урал",
+        "name": "Кадыоглу",
+        "club": "Лейпциг",
         "position": "ПЗ",
-        "overall": 76,
+        "overall": 79,
         "status": "start",
         "source": "callup",
-        "person_id": 4872,
+        "person_id": 842,
         "lineup_slot": "RB"
       },
       {
@@ -3020,31 +2984,13 @@
         "person_id": 4861
       },
       {
-        "name": "Йилдыз",
-        "club": "Лацио",
-        "position": "ФРВ",
-        "overall": 78,
+        "name": "Челик",
+        "club": "Урал",
+        "position": "ПЗ",
+        "overall": 76,
         "status": "bench",
         "source": "callup",
-        "person_id": 78
-      },
-      {
-        "name": "Кахвечи",
-        "club": "Челси",
-        "position": "ЦАП",
-        "overall": 78,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4866
-      },
-      {
-        "name": "Озкан",
-        "club": "Спартак",
-        "position": "ЦП",
-        "overall": 78,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4873
+        "person_id": 4872
       },
       {
         "name": "Демираль",
@@ -3056,11 +3002,56 @@
         "person_id": 862
       },
       {
+        "name": "Озкан",
+        "club": "Спартак",
+        "position": "ЦП",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4873
+      },
+      {
+        "name": "Кахвечи",
+        "club": "Челси",
+        "position": "ЦАП",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4866
+      },
+      {
+        "name": "Сари",
+        "club": "Краснодар",
+        "position": "ЛФА",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4871
+      },
+      {
+        "name": "Мор",
+        "club": "Крылья Советов",
+        "position": "ПФА",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4868
+      },
+      {
+        "name": "Йилдыз",
+        "club": "Лацио",
+        "position": "ФРВ",
+        "overall": 78,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 78
+      },
+      {
         "name": "Барис Йилмаз",
         "club": "Спартак",
         "position": "ЛФА",
         "overall": 75,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 4863
       },
@@ -3069,7 +3060,7 @@
         "club": "Хоффенхайм",
         "position": "ЦЗ",
         "overall": 75,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 851
       },
@@ -3081,24 +3072,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 4870
-      },
-      {
-        "name": "Мор",
-        "club": "Крылья Советов",
-        "position": "ПФА",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4868
-      },
-      {
-        "name": "Сари",
-        "club": "Краснодар",
-        "position": "ЛФА",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4871
       },
       {
         "name": "Сатчи",
@@ -3199,13 +3172,13 @@
         "lineup_slot": "LCM"
       },
       {
-        "name": "Цыганков",
-        "club": "Бетис",
-        "position": "ПФА",
-        "overall": 78,
+        "name": "Шевченко",
+        "club": "Милан",
+        "position": "ФРВ",
+        "overall": 80,
         "status": "start",
         "source": "callup",
-        "person_id": 1109,
+        "person_id": 5205,
         "lineup_slot": "RCM"
       },
       {
@@ -3219,23 +3192,14 @@
         "lineup_slot": "CAM"
       },
       {
-        "name": "Довбык",
-        "club": "Зенит",
-        "position": "ФРВ",
+        "name": "Цыганков",
+        "club": "Бетис",
+        "position": "ПФА",
         "overall": 78,
         "status": "start",
         "source": "callup",
-        "person_id": 201,
+        "person_id": 1109,
         "lineup_slot": "LW"
-      },
-      {
-        "name": "Степаненко",
-        "club": "Боруссия М",
-        "position": "ЦП",
-        "overall": 77,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4999
       },
       {
         "name": "Шапаренко",
@@ -3245,6 +3209,24 @@
         "status": "bench",
         "source": "callup",
         "person_id": 523
+      },
+      {
+        "name": "Довбык",
+        "club": "Зенит",
+        "position": "ФРВ",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 201
+      },
+      {
+        "name": "Степаненко",
+        "club": "Боруссия М",
+        "position": "ЦП",
+        "overall": 77,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4999
       }
     ],
     "Россия": [
@@ -3359,24 +3341,6 @@
         "lineup_slot": "RW"
       },
       {
-        "name": "Кержаков",
-        "club": "Лейпциг",
-        "position": "ВРТ",
-        "overall": 80,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 956
-      },
-      {
-        "name": "Чалов",
-        "club": "Интер",
-        "position": "ФРВ",
-        "overall": 81,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 82
-      },
-      {
         "name": "Максименко",
         "club": "Рома",
         "position": "ВРТ",
@@ -3386,11 +3350,92 @@
         "person_id": 953
       },
       {
+        "name": "Самошников",
+        "club": "Реал Сосьедад",
+        "position": "ЛЗ",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 695
+      },
+      {
+        "name": "Сильянов",
+        "club": "Реал Сосьедад",
+        "position": "ПЗ",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 697
+      },
+      {
+        "name": "Мамин",
+        "club": "Байер",
+        "position": "ЦЗ",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 710
+      },
+      {
+        "name": "Черников",
+        "club": "Наполи",
+        "position": "ЦП",
+        "overall": 79,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 367
+      },
+      {
+        "name": "Кривцов",
+        "club": "Спартак",
+        "position": "ЦАП",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 1531
+      },
+      {
+        "name": "Пиняев",
+        "club": "Реал Сосьедад",
+        "position": "ЛФА",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 81
+      },
+      {
+        "name": "Кокорин",
+        "club": "Челси",
+        "position": "ПФА",
+        "overall": 78,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 91
+      },
+      {
+        "name": "Чалов",
+        "club": "Интер",
+        "position": "ФРВ",
+        "overall": 81,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 82
+      },
+      {
+        "name": "Кержаков",
+        "club": "Лейпциг",
+        "position": "ВРТ",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 956
+      },
+      {
         "name": "Егорычев",
         "club": "Челси",
         "position": "ЦП",
         "overall": 79,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 384
       },
@@ -3399,7 +3444,7 @@
         "club": "Бетис",
         "position": "ФРВ",
         "overall": 79,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 101
       },
@@ -3408,7 +3453,7 @@
         "club": "Интер",
         "position": "ФРВ",
         "overall": 79,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 76
       },
@@ -3417,18 +3462,9 @@
         "club": "Лейпциг",
         "position": "ФРВ",
         "overall": 79,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 1136
-      },
-      {
-        "name": "Черников",
-        "club": "Наполи",
-        "position": "ЦП",
-        "overall": 79,
         "status": "reserve",
         "source": "callup",
-        "person_id": 367
+        "person_id": 1136
       },
       {
         "name": "Агапов",
@@ -3438,60 +3474,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 725
-      },
-      {
-        "name": "Агкацев",
-        "club": "Краснодар",
-        "position": "ВРТ",
-        "overall": 78,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 950
-      },
-      {
-        "name": "Бабкин",
-        "club": "Бетис",
-        "position": "ЦАП",
-        "overall": 78,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 373
-      },
-      {
-        "name": "Бевеев",
-        "club": "Бавария",
-        "position": "ПЗ",
-        "overall": 78,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 705
-      },
-      {
-        "name": "Волков",
-        "club": "Атлетико",
-        "position": "ПЗ",
-        "overall": 78,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 680
-      },
-      {
-        "name": "Газинский",
-        "club": "Байер",
-        "position": "ЦП",
-        "overall": 78,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 1347
-      },
-      {
-        "name": "Глушенков",
-        "club": "Бетис",
-        "position": "ПФА",
-        "overall": 78,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 83
       }
     ],
     "Польша": [
@@ -3696,15 +3678,6 @@
         "lineup_slot": "ST"
       },
       {
-        "name": "Гьокереш",
-        "club": "Франкфурт",
-        "position": "ФРВ",
-        "overall": 79,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 186
-      },
-      {
         "name": "Клаессон",
         "club": "Вольфсбург",
         "position": "ЦП",
@@ -3712,6 +3685,15 @@
         "status": "bench",
         "source": "callup",
         "person_id": 5017
+      },
+      {
+        "name": "Гьокереш",
+        "club": "Франкфурт",
+        "position": "ФРВ",
+        "overall": 79,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 186
       },
       {
         "name": "Ларссон",
@@ -4366,6 +4348,15 @@
         "lineup_slot": "ST"
       },
       {
+        "name": "Ватанабе",
+        "club": "Краснодар",
+        "position": "ЦЗ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5116
+      },
+      {
         "name": "Морита",
         "club": "Байер",
         "position": "ЦП",
@@ -4391,15 +4382,6 @@
         "status": "bench",
         "source": "callup",
         "person_id": 5034
-      },
-      {
-        "name": "Ватанабе",
-        "club": "Краснодар",
-        "position": "ЦЗ",
-        "overall": 75,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 5116
       },
       {
         "name": "Маэда",
@@ -4597,13 +4579,13 @@
         "lineup_slot": "RW"
       },
       {
-        "name": "Буфаль",
-        "club": "Free Agent",
-        "position": "ФРВ",
-        "overall": 76,
+        "name": "Харит",
+        "club": "Рома",
+        "position": "ЦП",
+        "overall": 75,
         "status": "bench",
         "source": "callup",
-        "person_id": 253
+        "person_id": 5067
       },
       {
         "name": "Саибари",
@@ -4615,13 +4597,13 @@
         "person_id": 5081
       },
       {
-        "name": "Харит",
-        "club": "Рома",
-        "position": "ЦП",
-        "overall": 75,
+        "name": "Буфаль",
+        "club": "Free Agent",
+        "position": "ФРВ",
+        "overall": 76,
         "status": "bench",
         "source": "callup",
-        "person_id": 5067
+        "person_id": 253
       }
     ],
     "Сенегал": [
@@ -4716,6 +4698,16 @@
         "lineup_slot": "LW"
       },
       {
+        "name": "Мане",
+        "club": "Интер",
+        "position": "ФРВ",
+        "overall": 81,
+        "status": "start",
+        "source": "callup",
+        "person_id": 356,
+        "lineup_slot": "ST"
+      },
+      {
         "name": "Джексон",
         "club": "Рома",
         "position": "ФРВ",
@@ -4723,62 +4715,16 @@
         "status": "start",
         "source": "callup",
         "person_id": 146,
-        "lineup_slot": "ST"
-      },
-      {
-        "name": "Исмаила Сарр",
-        "club": "Краснодар",
-        "position": "ЛФА",
-        "overall": 76,
-        "status": "start",
-        "source": "callup",
-        "person_id": 4907,
         "lineup_slot": "RW"
       },
       {
-        "name": "Диау",
+        "name": "Кейта Баде",
         "club": "Free Agent",
         "position": "ВРТ",
         "overall": 75,
         "status": "bench",
         "source": "callup",
-        "person_id": 4910
-      },
-      {
-        "name": "Ниакате",
-        "club": "Ювентус",
-        "position": "ЦЗ",
-        "overall": 80,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 868
-      },
-      {
-        "name": "Дансо",
-        "club": "Зенит",
-        "position": "ЦЗ",
-        "overall": 76,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 785
-      },
-      {
-        "name": "Идрисса",
-        "club": "Урал",
-        "position": "ЦП",
-        "overall": 76,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4908
-      },
-      {
-        "name": "Амат Ндиае",
-        "club": "Урал",
-        "position": "ЛФА",
-        "overall": 75,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4912
+        "person_id": 4916
       },
       {
         "name": "Балло-Туре",
@@ -4790,22 +4736,76 @@
         "person_id": 4915
       },
       {
+        "name": "Ноа Фадига",
+        "club": "Спартак",
+        "position": "ПЗ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4919
+      },
+      {
+        "name": "Ниакате",
+        "club": "Ювентус",
+        "position": "ЦЗ",
+        "overall": 80,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 868
+      },
+      {
+        "name": "Идрисса",
+        "club": "Урал",
+        "position": "ЦП",
+        "overall": 76,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4908
+      },
+      {
+        "name": "Исмаила Сарр",
+        "club": "Краснодар",
+        "position": "ЛФА",
+        "overall": 76,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4907
+      },
+      {
+        "name": "Дансо",
+        "club": "Зенит",
+        "position": "ЦЗ",
+        "overall": 76,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 785
+      },
+      {
+        "name": "Амат Ндиае",
+        "club": "Урал",
+        "position": "ЛФА",
+        "overall": 75,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 4912
+      },
+      {
         "name": "Гее",
         "club": "Урал",
         "position": "ЦП",
         "overall": 75,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 4909
       },
       {
-        "name": "Кейта Баде",
+        "name": "Диау",
         "club": "Free Agent",
         "position": "ВРТ",
         "overall": 75,
         "status": "reserve",
         "source": "callup",
-        "person_id": 4916
+        "person_id": 4910
       },
       {
         "name": "Ламин Камара",
@@ -4815,15 +4815,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 4917
-      },
-      {
-        "name": "Ноа Фадига",
-        "club": "Спартак",
-        "position": "ПЗ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4919
       },
       {
         "name": "Сима",
@@ -4996,13 +4987,49 @@
         "person_id": 4886
       },
       {
-        "name": "Моффи",
-        "club": "Барселона",
-        "position": "ФРВ",
-        "overall": 80,
+        "name": "Айна",
+        "club": "Спартак",
+        "position": "ЛЗ",
+        "overall": 75,
         "status": "bench",
         "source": "callup",
-        "person_id": 235
+        "person_id": 4885
+      },
+      {
+        "name": "Эбу",
+        "club": "Зенит",
+        "position": "ПЗ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4881
+      },
+      {
+        "name": "Торунарига",
+        "club": "Краснодар",
+        "position": "ЦЗ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4880
+      },
+      {
+        "name": "Ониедика",
+        "club": "Урал",
+        "position": "ЦП",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4876
+      },
+      {
+        "name": "Эжуке",
+        "club": "Зенит",
+        "position": "ЛФА",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5033
       },
       {
         "name": "Лукман",
@@ -5014,29 +5041,29 @@
         "person_id": 58
       },
       {
+        "name": "Моффи",
+        "club": "Барселона",
+        "position": "ФРВ",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 235
+      },
+      {
         "name": "Авонийи",
         "club": "Free Agent",
         "position": "ФРВ",
         "overall": 77,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 4521
-      },
-      {
-        "name": "Айна",
-        "club": "Спартак",
-        "position": "ЛЗ",
-        "overall": 75,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4885
       },
       {
         "name": "Акпогума",
         "club": "Краснодар",
         "position": "ЦЗ",
         "overall": 75,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 848
       },
@@ -5045,7 +5072,7 @@
         "club": "Байер",
         "position": "ЦП",
         "overall": 75,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 4877
       },
@@ -5057,15 +5084,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 4890
-      },
-      {
-        "name": "Ониедика",
-        "club": "Урал",
-        "position": "ЦП",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4876
       },
       {
         "name": "Осай",
@@ -5093,33 +5111,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 1091
-      },
-      {
-        "name": "Телла",
-        "club": "Цска",
-        "position": "ПФА",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4889
-      },
-      {
-        "name": "Торунарига",
-        "club": "Краснодар",
-        "position": "ЦЗ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4880
-      },
-      {
-        "name": "Эбу",
-        "club": "Зенит",
-        "position": "ПЗ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4881
       }
     ],
     "Алжир": [
@@ -5256,6 +5247,15 @@
         "lineup_slot": "LW"
       },
       {
+        "name": "Хасане Камара",
+        "club": "Динамо",
+        "position": "ЛЗ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5094
+      },
+      {
         "name": "Ндика",
         "club": "Рома",
         "position": "ЦЗ",
@@ -5272,6 +5272,15 @@
         "status": "bench",
         "source": "callup",
         "person_id": 1027
+      },
+      {
+        "name": "Диалло",
+        "club": "Франкфурт",
+        "position": "ПФА",
+        "overall": 76,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 123
       },
       {
         "name": "Бога",
@@ -5292,15 +5301,6 @@
         "person_id": 5025
       },
       {
-        "name": "Диалло",
-        "club": "Франкфурт",
-        "position": "ПФА",
-        "overall": 76,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 123
-      },
-      {
         "name": "Косуну",
         "club": "Байер",
         "position": "ЦЗ",
@@ -5308,15 +5308,6 @@
         "status": "bench",
         "source": "callup",
         "person_id": 825
-      },
-      {
-        "name": "Хасане Камара",
-        "club": "Динамо",
-        "position": "ЛЗ",
-        "overall": 75,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 5094
       }
     ],
     "Камерун": [
@@ -5422,6 +5413,16 @@
         "lineup_slot": "LB"
       },
       {
+        "name": "Висса",
+        "club": "Жирона",
+        "position": "ЛФА",
+        "overall": 77,
+        "status": "start",
+        "source": "callup",
+        "person_id": 247,
+        "lineup_slot": "LCB"
+      },
+      {
         "name": "Банза",
         "club": "Арсенал",
         "position": "ФРВ",
@@ -5429,7 +5430,7 @@
         "status": "start",
         "source": "callup",
         "person_id": 176,
-        "lineup_slot": "LCB"
+        "lineup_slot": "RCB"
       },
       {
         "name": "Силас",
@@ -5439,7 +5440,7 @@
         "status": "start",
         "source": "callup",
         "person_id": 66,
-        "lineup_slot": "RCB"
+        "lineup_slot": "RB"
       }
     ],
     "Мексика": [
@@ -5563,40 +5564,13 @@
         "person_id": 4896
       },
       {
-        "name": "Хименез",
-        "club": "Ювентус",
-        "position": "ФРВ",
-        "overall": 79,
+        "name": "Хорхе Эдуардо",
+        "club": "Цска",
+        "position": "ПЗ",
+        "overall": 75,
         "status": "bench",
         "source": "callup",
-        "person_id": 4892
-      },
-      {
-        "name": "Гектор",
-        "club": "Бетис",
-        "position": "ЦП",
-        "overall": 78,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4903
-      },
-      {
-        "name": "Альварадо",
-        "club": "Боруссия М",
-        "position": "ПФА",
-        "overall": 77,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 4905
-      },
-      {
-        "name": "Лозано",
-        "club": "Челси",
-        "position": "ЛФА",
-        "overall": 77,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 216
+        "person_id": 4899
       },
       {
         "name": "Монтес",
@@ -5608,11 +5582,56 @@
         "person_id": 4893
       },
       {
+        "name": "Гектор",
+        "club": "Бетис",
+        "position": "ЦП",
+        "overall": 78,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4903
+      },
+      {
+        "name": "Медина",
+        "club": "Краснодар",
+        "position": "ЦАП",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4902
+      },
+      {
+        "name": "Лозано",
+        "club": "Челси",
+        "position": "ЛФА",
+        "overall": 77,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 216
+      },
+      {
+        "name": "Альварадо",
+        "club": "Боруссия М",
+        "position": "ПФА",
+        "overall": 77,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4905
+      },
+      {
+        "name": "Хименез",
+        "club": "Ювентус",
+        "position": "ФРВ",
+        "overall": 79,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 4892
+      },
+      {
         "name": "Антуна",
         "club": "Реал Сосьедад",
         "position": "ПФА",
         "overall": 76,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 4894
       },
@@ -5635,15 +5654,6 @@
         "person_id": 4898
       },
       {
-        "name": "Медина",
-        "club": "Краснодар",
-        "position": "ЦАП",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4902
-      },
-      {
         "name": "Ромо",
         "club": "Локомотив",
         "position": "ЦП",
@@ -5660,15 +5670,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 5133
-      },
-      {
-        "name": "Хорхе Эдуардо",
-        "club": "Цска",
-        "position": "ПЗ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4899
       },
       {
         "name": "Хуерта",
@@ -5801,6 +5802,15 @@
         "person_id": 670
       },
       {
+        "name": "Веа",
+        "club": "Хоффенхайм",
+        "position": "ПЗ",
+        "overall": 74,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 636
+      },
+      {
         "name": "Блакмон",
         "club": "Хоффенхайм",
         "position": "ЦЗ",
@@ -5808,15 +5818,6 @@
         "status": "bench",
         "source": "callup",
         "person_id": 5111
-      },
-      {
-        "name": "Джонс",
-        "club": "Атлетико",
-        "position": "ЛЗ",
-        "overall": 75,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 5103
       },
       {
         "name": "Себашё",
@@ -5828,6 +5829,15 @@
         "person_id": 195
       },
       {
+        "name": "Джонс",
+        "club": "Атлетико",
+        "position": "ЛЗ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5103
+      },
+      {
         "name": "Толкин",
         "club": "Лацио",
         "position": "ЛЗ",
@@ -5835,15 +5845,6 @@
         "status": "bench",
         "source": "callup",
         "person_id": 5142
-      },
-      {
-        "name": "Веа",
-        "club": "Хоффенхайм",
-        "position": "ПЗ",
-        "overall": 74,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 636
       }
     ],
     "Канада": [
@@ -5940,13 +5941,13 @@
         "lineup_slot": "LCM"
       },
       {
-        "name": "Энцо",
-        "club": "Ливерпуль",
+        "name": "Гидо Родригез",
+        "club": "Бетис",
         "position": "ЦП",
-        "overall": 84,
+        "overall": 85,
         "status": "start",
         "source": "callup",
-        "person_id": 1180,
+        "person_id": 315,
         "lineup_slot": "RCM"
       },
       {
@@ -5999,40 +6000,40 @@
         "person_id": 952
       },
       {
-        "name": "Де Поль",
+        "name": "Тальяфико",
+        "club": "Вольфсбург",
+        "position": "ЛЗ",
+        "overall": 77,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 5014
+      },
+      {
+        "name": "Монтиэль",
+        "club": "Лацио",
+        "position": "ПЗ",
+        "overall": 79,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 923
+      },
+      {
+        "name": "Лисандро Мартинез",
         "club": "Мю",
+        "position": "ЦЗ",
+        "overall": 80,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 753
+      },
+      {
+        "name": "Энцо",
+        "club": "Ливерпуль",
         "position": "ЦП",
         "overall": 84,
         "status": "bench",
         "source": "callup",
-        "person_id": 296
-      },
-      {
-        "name": "Гонзалез",
-        "club": "Реал",
-        "position": "ПФА",
-        "overall": 83,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 48
-      },
-      {
-        "name": "Робертон",
-        "club": "Франкфурт",
-        "position": "ЦП",
-        "overall": 83,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 517
-      },
-      {
-        "name": "Ди Мария",
-        "club": "Аталанта",
-        "position": "ПФА",
-        "overall": 82,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 41
+        "person_id": 1180
       },
       {
         "name": "Алмада",
@@ -6044,13 +6045,22 @@
         "person_id": 293
       },
       {
-        "name": "Рульи",
-        "club": "Интер",
-        "position": "ВРТ",
-        "overall": 81,
+        "name": "Марселино Морено",
+        "club": "Хоффенхайм",
+        "position": "ЛФА",
+        "overall": 77,
         "status": "bench",
         "source": "callup",
-        "person_id": 946
+        "person_id": 5064
+      },
+      {
+        "name": "Гонзалез",
+        "club": "Реал",
+        "position": "ПФА",
+        "overall": 83,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 48
       },
       {
         "name": "Симеоне",
@@ -6062,6 +6072,42 @@
         "person_id": 99
       },
       {
+        "name": "Де Поль",
+        "club": "Мю",
+        "position": "ЦП",
+        "overall": 84,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 296
+      },
+      {
+        "name": "Робертон",
+        "club": "Франкфурт",
+        "position": "ЦП",
+        "overall": 83,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 517
+      },
+      {
+        "name": "Ди Мария",
+        "club": "Аталанта",
+        "position": "ПФА",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 41
+      },
+      {
+        "name": "Рульи",
+        "club": "Интер",
+        "position": "ВРТ",
+        "overall": 81,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 946
+      },
+      {
         "name": "Авила",
         "club": "Реал",
         "position": "ФРВ",
@@ -6071,58 +6117,13 @@
         "person_id": 4953
       },
       {
-        "name": "Ламела",
-        "club": "Атлетико",
-        "position": "ПФА",
-        "overall": 80,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 153
-      },
-      {
-        "name": "Трехо",
-        "club": "Лацио",
+        "name": "Верон",
+        "club": "Интер",
         "position": "ЦП",
         "overall": 80,
         "status": "reserve",
         "source": "callup",
-        "person_id": 388
-      },
-      {
-        "name": "Гарре",
-        "club": "Ювентус",
-        "position": "ПФА",
-        "overall": 79,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 75
-      },
-      {
-        "name": "Корреа",
-        "club": "Астон Вилла",
-        "position": "ФРВ",
-        "overall": 79,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 13
-      },
-      {
-        "name": "Монтиэль",
-        "club": "Лацио",
-        "position": "ПЗ",
-        "overall": 79,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 923
-      },
-      {
-        "name": "Хулиан Альварез",
-        "club": "Реал Сосьедад",
-        "position": "ФРВ",
-        "overall": 79,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 134
+        "person_id": 5201
       }
     ],
     "Бразилия": [
@@ -6246,6 +6247,24 @@
         "person_id": 925
       },
       {
+        "name": "Кайо Энрике",
+        "club": "Фиорентина",
+        "position": "ЛЗ",
+        "overall": 81,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 913
+      },
+      {
+        "name": "Фернандес",
+        "club": "Сити",
+        "position": "ПЗ",
+        "overall": 80,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 713
+      },
+      {
         "name": "Бремер",
         "club": "Барселона",
         "position": "ЦЗ",
@@ -6264,6 +6283,15 @@
         "person_id": 324
       },
       {
+        "name": "Перейра",
+        "club": "Реал Сосьедад",
+        "position": "ЦАП",
+        "overall": 81,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4695
+      },
+      {
         "name": "Каземиро",
         "club": "Мю",
         "position": "ЦОП",
@@ -6273,11 +6301,38 @@
         "person_id": 427
       },
       {
+        "name": "Родриго",
+        "club": "Реал",
+        "position": "ЛФА",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 34
+      },
+      {
+        "name": "Антони",
+        "club": "Наполи",
+        "position": "ПФА",
+        "overall": 82,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 126
+      },
+      {
+        "name": "Пепе",
+        "club": "Астон Вилла",
+        "position": "ФРВ",
+        "overall": 80,
+        "status": "reserve",
+        "source": "callup",
+        "person_id": 85
+      },
+      {
         "name": "Маркао",
         "club": "Челси",
         "position": "ЦЗ",
         "overall": 84,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 1381
       },
@@ -6286,7 +6341,7 @@
         "club": "Лейпциг",
         "position": "ЦЗ",
         "overall": 84,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 882
       },
@@ -6295,7 +6350,7 @@
         "club": "Мю",
         "position": "ЦЗ",
         "overall": 83,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 621
       },
@@ -6316,60 +6371,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 500
-      },
-      {
-        "name": "Антони",
-        "club": "Наполи",
-        "position": "ПФА",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 126
-      },
-      {
-        "name": "Неймар",
-        "club": "Милан",
-        "position": "ЛФА",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 17
-      },
-      {
-        "name": "Родриго",
-        "club": "Реал",
-        "position": "ЛФА",
-        "overall": 82,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 34
-      },
-      {
-        "name": "Кайо Энрике",
-        "club": "Фиорентина",
-        "position": "ЛЗ",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 913
-      },
-      {
-        "name": "Перейра",
-        "club": "Реал Сосьедад",
-        "position": "ЦАП",
-        "overall": 81,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4695
-      },
-      {
-        "name": "Дуглас Луис",
-        "club": "Байер",
-        "position": "ЦП",
-        "overall": 80,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 410
       }
     ],
     "Колумбия": [
@@ -6484,13 +6485,13 @@
         "lineup_slot": "RW"
       },
       {
-        "name": "Синистерра",
-        "club": "Ювентус",
-        "position": "ПФА",
-        "overall": 82,
+        "name": "Машадо",
+        "club": "Хоффенхайм",
+        "position": "ЛЗ",
+        "overall": 77,
         "status": "bench",
         "source": "callup",
-        "person_id": 219
+        "person_id": 922
       },
       {
         "name": "Вильмар Барриос",
@@ -6502,13 +6503,13 @@
         "person_id": 393
       },
       {
-        "name": "Куадрадо",
-        "club": "Тоттенхэм",
+        "name": "Синистерра",
+        "club": "Ювентус",
         "position": "ПФА",
-        "overall": 79,
+        "overall": 82,
         "status": "bench",
         "source": "callup",
-        "person_id": 135
+        "person_id": 219
       },
       {
         "name": "Кордоба",
@@ -6520,6 +6521,15 @@
         "person_id": 4994
       },
       {
+        "name": "Куадрадо",
+        "club": "Тоттенхэм",
+        "position": "ПФА",
+        "overall": 79,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 135
+      },
+      {
         "name": "Лерма",
         "club": "Динамо",
         "position": "ЦП",
@@ -6527,15 +6537,6 @@
         "status": "bench",
         "source": "callup",
         "person_id": 524
-      },
-      {
-        "name": "Машадо",
-        "club": "Хоффенхайм",
-        "position": "ЛЗ",
-        "overall": 77,
-        "status": "bench",
-        "source": "callup",
-        "person_id": 922
       },
       {
         "name": "Эрнандез",
@@ -6677,13 +6678,13 @@
         "person_id": 4847
       },
       {
-        "name": "Торрейра",
-        "club": "Барселона",
-        "position": "ЦП",
-        "overall": 84,
+        "name": "Олаза",
+        "club": "Атлетико",
+        "position": "ЛЗ",
+        "overall": 78,
         "status": "bench",
         "source": "callup",
-        "person_id": 287
+        "person_id": 684
       },
       {
         "name": "Коатес",
@@ -6695,11 +6696,47 @@
         "person_id": 4949
       },
       {
+        "name": "Торрейра",
+        "club": "Барселона",
+        "position": "ЦП",
+        "overall": 84,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 287
+      },
+      {
+        "name": "Салазар",
+        "club": "Спартак",
+        "position": "ЦАП",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4849
+      },
+      {
+        "name": "Пеллистри",
+        "club": "Цска",
+        "position": "ПФА",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4850
+      },
+      {
+        "name": "Родригез",
+        "club": "Спартак",
+        "position": "ФРВ",
+        "overall": 77,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 4842
+      },
+      {
         "name": "Угарте",
         "club": "Бавария",
         "position": "ЦП",
         "overall": 81,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 441
       },
@@ -6708,7 +6745,7 @@
         "club": "Наполи",
         "position": "ЦП",
         "overall": 79,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 4848
       },
@@ -6717,7 +6754,7 @@
         "club": "Севилья",
         "position": "ЦП",
         "overall": 78,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 1194
       },
@@ -6726,7 +6763,7 @@
         "club": "Спартак",
         "position": "ЦП",
         "overall": 78,
-        "status": "bench",
+        "status": "reserve",
         "source": "callup",
         "person_id": 576
       },
@@ -6740,15 +6777,6 @@
         "person_id": 677
       },
       {
-        "name": "Олаза",
-        "club": "Атлетико",
-        "position": "ЛЗ",
-        "overall": 78,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 684
-      },
-      {
         "name": "Нуньез",
         "club": "Бетис",
         "position": "ЦЗ",
@@ -6756,15 +6784,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 906
-      },
-      {
-        "name": "Родригез",
-        "club": "Спартак",
-        "position": "ФРВ",
-        "overall": 77,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4842
       },
       {
         "name": "Сантьяго Буено",
@@ -6783,24 +6802,6 @@
         "status": "reserve",
         "source": "callup",
         "person_id": 4845
-      },
-      {
-        "name": "Гастон Альварез",
-        "club": "Урал",
-        "position": "ЦЗ",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4841
-      },
-      {
-        "name": "Лучиано Родригез",
-        "club": "Спартак",
-        "position": "ПФА",
-        "overall": 75,
-        "status": "reserve",
-        "source": "callup",
-        "person_id": 4844
       }
     ],
     "Эквадор": [
@@ -6845,13 +6846,14 @@
         "lineup_slot": "RCB"
       },
       {
-        "name": "Рамирез",
-        "club": "Краснодар",
-        "position": "ЛЗ",
-        "overall": 75,
-        "status": "bench",
+        "name": "Кайседо",
+        "club": "Астон Вилла",
+        "position": "ЦП",
+        "overall": 81,
+        "status": "start",
         "source": "callup",
-        "person_id": 892
+        "person_id": 440,
+        "lineup_slot": "RB"
       },
       {
         "name": "Чавез",
@@ -6861,6 +6863,15 @@
         "status": "bench",
         "source": "callup",
         "person_id": 5100
+      },
+      {
+        "name": "Рамирез",
+        "club": "Краснодар",
+        "position": "ЛЗ",
+        "overall": 75,
+        "status": "bench",
+        "source": "callup",
+        "person_id": 892
       }
     ],
     "Парагвай": [
