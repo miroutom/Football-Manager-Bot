@@ -1247,6 +1247,7 @@ function syncNationalPoolPlayer(oldId, patch) {
       block.players[i] = patchPlayerFromProfile(next);
     }
   }
+  reorganizeNationalPoolsByNation();
   if (isNationsMode()) renderNationalPanel();
 }
 
@@ -1351,14 +1352,42 @@ function applyPlayerProfilesEverywhere() {
     recomputeAvgStart(team);
   }
   freeAgents = freeAgents.map((p) => patchPlayerFromProfile(p));
-  syncAllNationalPoolsFromProfiles();
+  reorganizeNationalPoolsByNation();
 }
 
-function syncAllNationalPoolsFromProfiles() {
+function effectivePoolNation(player, fallbackBlockName) {
+  const raw = String(player?.nation || "").trim();
+  if (raw) return resolveCatalogNation(raw) || raw;
+  return String(fallbackBlockName || "").trim() || "Без нации";
+}
+
+function reorganizeNationalPoolsByNation() {
   if (!nationalPools?.nations?.length) return;
+  const byId = new Map();
   for (const block of nationalPools.nations) {
-    block.players = (block.players || []).map((p) => patchPlayerFromProfile(p));
+    const blockName = block.name || "";
+    for (const p of block.players || []) {
+      if (!p?.id) continue;
+      byId.set(p.id, patchPlayerFromProfile({ ...p, nation: effectivePoolNation(p, blockName) }));
+    }
   }
+  const buckets = new Map();
+  for (const p of byId.values()) {
+    const nation = effectivePoolNation(p, "");
+    if (!buckets.has(nation)) buckets.set(nation, []);
+    buckets.get(nation).push({ ...p, nation });
+  }
+  nationalPools.nations = Array.from(buckets.entries())
+    .sort((a, b) => a[0].localeCompare(b[0], "ru"))
+    .map(([name, players]) => ({
+      name,
+      players: players.sort(
+        (a, b) =>
+          (Number(b.overall) || 0) - (Number(a.overall) || 0) ||
+          String(a.name || "").localeCompare(String(b.name || ""), "ru")
+      ),
+    }));
+  nationalPools.player_count = byId.size;
 }
 
 function nationNamesMatch(a, b) {
@@ -1561,6 +1590,7 @@ function setNationalPools(data) {
     };
   }
   nationalPools = data;
+  reorganizeNationalPoolsByNation();
   nationalExpanded.clear();
   const panel = document.getElementById("national-panel");
   const cnt = document.getElementById("national-count");
