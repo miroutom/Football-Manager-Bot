@@ -7563,5 +7563,418 @@
     "away_score": 7,
     "league_code": "cl",
     "cl_phase": "league"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Барселона",
+    "away": "Жирона",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Сон",
+        "team": "Барселона",
+        "position": "ЛФА",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Педри",
+        "team": "Барселона",
+        "position": "ЦАП",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Де Томас",
+        "team": "Жирона",
+        "position": "ФРВ",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Талиска",
+        "team": "Жирона",
+        "position": "ЦАП",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Батурина",
+        "team": "Жирона",
+        "position": "ЦП",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Перейра",
+        "team": "Жирона",
+        "position": "ЦП",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-16T16:33:50Z",
+    "home_score": 3,
+    "away_score": 4,
+    "league_code": "esp"
+  },
+  {
+    "season": 4,
+    "day": 2,
+    "home": "Краснодар",
+    "away": "Локомотив",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Мартинш",
+        "team": "Локомотив",
+        "position": "ПП",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Капрари",
+        "team": "Локомотив",
+        "position": "ФРВ",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Колпани",
+        "team": "Локомотив",
+        "position": "ЦП",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-08-16T16:37:58Z",
+    "home_score": 0,
+    "away_score": 4,
+    "league_code": "rpl"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Мю",
+    "away": "Сити",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Нуньес",
+        "team": "Мю",
+        "position": "ФРВ",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Брозович",
+        "team": "Мю",
+        "position": "ЦП",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Рэшфорд",
+        "team": "Сити",
+        "position": "ЛФА",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Клюйверт",
+        "team": "Сити",
+        "position": "ФРВ",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Хаверц",
+        "team": "Сити",
+        "position": "ФРВ",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Месси",
+        "team": "Сити",
+        "position": "ПФА",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Де Брюйне",
+        "team": "Сити",
+        "position": "ЦАП",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Барелла",
+        "team": "Сити",
+        "position": "ЦП",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-16T16:34:09Z",
+    "home_score": 1,
+    "away_score": 4,
+    "league_code": "eng"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Аталанта",
+    "away": "Фиорентина",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Симонс",
+        "team": "Аталанта",
+        "position": "ЛФА",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Вахи",
+        "team": "Аталанта",
+        "position": "ФРВ",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Миранчук",
+        "team": "Аталанта",
+        "position": "ФРВ",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Бакайоко",
+        "team": "Аталанта",
+        "position": "ЛФА",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Илич",
+        "team": "Аталанта",
+        "position": "ЦП",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Буригард",
+        "team": "Аталанта",
+        "position": "ЦП",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Фиго",
+        "team": "Фиорентина",
+        "position": "ПФА",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Секу Фофана",
+        "team": "Фиорентина",
+        "position": "ЦП",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-16T16:34:21Z",
+    "home_score": 5,
+    "away_score": 1,
+    "league_code": "ita"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Краснодар",
+    "away": "Лейпциг",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Кривцов",
+        "team": "Краснодар",
+        "position": "ЦАП",
+        "goals": 2,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-16T16:38:07Z",
+    "home_score": 2,
+    "away_score": 2,
+    "league_code": "cl",
+    "cl_phase": "league"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Милан",
+    "away": "Интер",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Бензема",
+        "team": "Интер",
+        "position": "ФРВ",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мартинез",
+        "team": "Интер",
+        "position": "ФРВ",
+        "goals": 2,
+        "assists": 1
+      },
+      {
+        "player": "Роналдиньо",
+        "team": "Интер",
+        "position": "ЦАП",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Собослай",
+        "team": "Интер",
+        "position": "ЦАП",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Чалханоглу",
+        "team": "Интер",
+        "position": "ЦП",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Льоренте",
+        "team": "Интер",
+        "position": "ЦП",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-08-16T16:34:36Z",
+    "home_score": 0,
+    "away_score": 5,
+    "league_code": "ita"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Наполи",
+    "away": "Аталанта",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Миранчук",
+        "team": "Аталанта",
+        "position": "ФРВ",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Костич",
+        "team": "Аталанта",
+        "position": "ПФА",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Торрес",
+        "team": "Аталанта",
+        "position": "ЦАП",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Пашалич",
+        "team": "Аталанта",
+        "position": "ЦАП",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Габриэль Жезус",
+        "team": "Наполи",
+        "position": "ФРВ",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Рафинья",
+        "team": "Наполи",
+        "position": "ПФА",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-16T16:34:47Z",
+    "home_score": 1,
+    "away_score": 3,
+    "league_code": "ita"
+  },
+  {
+    "season": 4,
+    "day": 4,
+    "home": "Наполи",
+    "away": "Интер",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Квара",
+        "team": "Наполи",
+        "position": "ЛФА",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Габриэль Жезус",
+        "team": "Наполи",
+        "position": "ФРВ",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Бензема",
+        "team": "Интер",
+        "position": "ФРВ",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мартинез",
+        "team": "Интер",
+        "position": "ФРВ",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Чалханоглу",
+        "team": "Интер",
+        "position": "ЦП",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Льоренте",
+        "team": "Интер",
+        "position": "ЦП",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-16T16:34:58Z",
+    "home_score": 1,
+    "away_score": 3,
+    "league_code": "ita"
   }
 ]

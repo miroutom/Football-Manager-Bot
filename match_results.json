@@ -56,6 +56,70 @@
       "away_score": 4,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Краснодар",
+      "away": "Локомотив",
+      "league": "rpl",
+      "home_score": 0,
+      "away_score": 4,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Мю",
+      "away": "Сити",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 4,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Аталанта",
+      "away": "Фиорентина",
+      "league": "ita",
+      "home_score": 5,
+      "away_score": 1,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Краснодар",
+      "away": "Лейпциг",
+      "league": "cl",
+      "home_score": 2,
+      "away_score": 2,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Интер",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 5,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Аталанта",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Наполи",
+      "away": "Интер",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 4,
+      "entry_type": "play"
     }
   ]
 }

@@ -2857,5 +2857,12 @@
     "tournament": "cl",
     "cl_phase": "league",
     "day": 1
+  },
+  {
+    "home": "Краснодар",
+    "away": "Лейпциг",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
   }
 ]

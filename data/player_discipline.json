@@ -84,6 +84,17 @@
       "league_code": "cl",
       "scope": "cl",
       "matches_left": 3
+    },
+    {
+      "key": "родри|наполи|ita|league",
+      "name": "Родри",
+      "name_norm": "родри",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "ita",
+      "scope": "league",
+      "matches_left": 3,
+      "unavailable_from_round": 3
     }
   ],
   "yellow_cycle": [
@@ -104,6 +115,56 @@
       "team": "Атлетико",
       "team_norm": "атлетико",
       "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "хаверц|сити|eng|league",
+      "name": "Хаверц",
+      "name_norm": "хаверц",
+      "team": "Сити",
+      "team_norm": "сити",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "пашалич|аталанта|ita|league",
+      "name": "Пашалич",
+      "name_norm": "пашалич",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "лапорт|милан|ita|league",
+      "name": "Лапорт",
+      "name_norm": "лапорт",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "кох|наполи|ita|league",
+      "name": "Кох",
+      "name_norm": "кох",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 2
+    },
+    {
+      "key": "ди лоренцо|наполи|ita|league",
+      "name": "Ди Лоренцо",
+      "name_norm": "ди лоренцо",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "ita",
       "scope": "league",
       "count": 1
     }
@@ -3449,6 +3510,71 @@
       "life_limit": 2,
       "season": 4,
       "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "канселу|барселона|4|life|1|1",
+      "name": "Канселу",
+      "name_norm": "канселу",
+      "team": "Барселона",
+      "team_norm": "барселона",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "льоренте|интер|4|life|1|1",
+      "name": "Льоренте",
+      "name_norm": "льоренте",
+      "team": "Интер",
+      "team_norm": "интер",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "буригард|аталанта|4|life|1|1",
+      "name": "Буригард",
+      "name_norm": "буригард",
+      "team": "Аталанта",
+      "team_norm": "аталанта",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "роналдиньо|интер|4|life|1|4",
+      "name": "Роналдиньо",
+      "name_norm": "роналдиньо",
+      "team": "Интер",
+      "team_norm": "интер",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 4,
+      "type": "травма"
+    },
+    {
+      "key": "диатта|локомотив|4|life|1|2",
+      "name": "Диатта",
+      "name_norm": "диатта",
+      "team": "Локомотив",
+      "team_norm": "локомотив",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
       "type": "травма"
     }
   ]
