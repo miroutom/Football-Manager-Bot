@@ -1071,7 +1071,7 @@ def _apply_yellow(
 ) -> tuple[str | None, bool]:
     from utils.player_names import resolve_player_query_in_team
     from utils.utils import get_session
-    from utils.common_db import rebuild_common_database
+    from utils.stats_derived_sync import record_stat_write
 
     t = "cl" if tournament == "cl" or (league_code or "") == "cl" else "league"
     sess = get_session(t)
@@ -1096,10 +1096,7 @@ def _apply_yellow(
         _bump_db_cards(sess, player, add_yellow=1)
         sess.commit()
         _save(st)
-    try:
-        rebuild_common_database()
-    except Exception:
-        pass
+    record_stat_write(player, t, d_yellow_cards=1, flush=True)
     return (f"✓ Жк: {player.name}. {msg_c} В БД жк+1.", True)
 
 
@@ -1118,7 +1115,7 @@ def _apply_red_card(
 ) -> tuple[str | None, bool]:
     from utils.player_names import resolve_player_query_in_team
     from utils.utils import get_session
-    from utils.common_db import rebuild_common_database
+    from utils.stats_derived_sync import record_stat_write
 
     t = "cl" if tournament == "cl" or league_code == "cl" else "league"
     sess = get_session(t)
@@ -1144,10 +1141,13 @@ def _apply_red_card(
         _bump_db_cards(sess, player, add_yellow=add_yellow, add_red=add_red)
         sess.commit()
         _save(st)
-    try:
-        rebuild_common_database()
-    except Exception:
-        pass
+    record_stat_write(
+        player,
+        t,
+        d_yellow_cards=int(add_yellow or 0),
+        d_red_cards=int(add_red or 0),
+        flush=True,
+    )
     if unavailable_from_round is None:
         ufr_note = ""
     elif int(unavailable_from_round) == 1:

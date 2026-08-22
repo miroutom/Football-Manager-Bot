@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from functools import lru_cache
 from typing import Any
 
 from utils.utils import PROJECT_ROOT
@@ -101,6 +102,48 @@ def load_nicknames() -> dict[str, Any]:
     return raw
 
 
+_NICK_CACHE: dict[str, Any] | None = None
+_NICK_CACHE_MTIME: float | None = None
+_NICK_TO_PIDS: dict[str, set[int]] | None = None
+
+
+def _refresh_nickname_cache() -> None:
+    global _NICK_CACHE, _NICK_CACHE_MTIME, _NICK_TO_PIDS
+    try:
+        mtime = os.path.getmtime(_PATH)
+    except OSError:
+        mtime = None
+    if _NICK_CACHE is not None and mtime == _NICK_CACHE_MTIME:
+        return
+    data = load_nicknames()
+    rev: dict[str, set[int]] = {}
+    for pid_s, nick in (data.get("by_person_id") or {}).items():
+        key = str(nick).strip().casefold()
+        if not key:
+            continue
+        try:
+            pid = int(pid_s)
+        except (TypeError, ValueError):
+            continue
+        rev.setdefault(key, set()).add(pid)
+    _NICK_CACHE = data
+    _NICK_CACHE_MTIME = mtime
+    _NICK_TO_PIDS = rev
+
+
+def _invalidate_nickname_cache() -> None:
+    global _NICK_CACHE, _NICK_CACHE_MTIME, _NICK_TO_PIDS
+    _NICK_CACHE = None
+    _NICK_CACHE_MTIME = None
+    _NICK_TO_PIDS = None
+
+
+def nicknames_data() -> dict[str, Any]:
+    _refresh_nickname_cache()
+    assert _NICK_CACHE is not None
+    return _NICK_CACHE
+
+
 def save_nicknames(data: dict[str, Any]) -> None:
     os.makedirs(os.path.dirname(_PATH), exist_ok=True)
     tmp = _PATH + ".tmp"
@@ -108,6 +151,16 @@ def save_nicknames(data: dict[str, Any]) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")
     os.replace(tmp, _PATH)
+    _invalidate_nickname_cache()
+
+
+@lru_cache(maxsize=1024)
+def _sibling_person_ids_cached(
+    name: str, team: str | None, person_id: int | None
+) -> tuple[int, ...]:
+    return tuple(
+        sibling_person_ids(name=name, team=team, person_id=person_id)
+    )
 
 
 def sibling_person_ids(
@@ -171,7 +224,7 @@ def sibling_person_ids(
 def get_nickname(person_id: int | None) -> str | None:
     if person_id is None:
         return None
-    mp = load_nicknames().get("by_person_id") or {}
+    mp = nicknames_data().get("by_person_id") or {}
     v = mp.get(str(int(person_id)))
     s = (str(v).strip() if v is not None else "")
     return s or None
@@ -189,8 +242,8 @@ def get_nickname_for_player(
         return direct
     if not name:
         return None
-    mp = load_nicknames().get("by_person_id") or {}
-    for pid in sibling_person_ids(name=name, team=team, person_id=person_id):
+    mp = nicknames_data().get("by_person_id") or {}
+    for pid in _sibling_person_ids_cached(name, team, person_id):
         v = mp.get(str(pid))
         s = (str(v).strip() if v is not None else "")
         if s:
@@ -230,6 +283,8 @@ def set_nickname(
         for k in keys:
             mp.pop(k, None)
         save_nicknames(data)
+        _invalidate_nickname_cache()
+        _sibling_person_ids_cached.cache_clear()
         return ""
     want = nick.casefold()
     for other_id, other_nick in list(mp.items()):
@@ -242,6 +297,8 @@ def set_nickname(
     for k in keys:
         mp[k] = nick
     save_nicknames(data)
+    _invalidate_nickname_cache()
+    _sibling_person_ids_cached.cache_clear()
     return nick
 
 
@@ -249,13 +306,11 @@ def resolve_person_id_by_nickname(nickname: str) -> int | None:
     want = (nickname or "").strip().casefold()
     if not want:
         return None
-    for pid_s, nick in (load_nicknames().get("by_person_id") or {}).items():
-        if str(nick).strip().casefold() == want:
-            try:
-                return int(pid_s)
-            except (TypeError, ValueError):
-                return None
-    return None
+    _refresh_nickname_cache()
+    pids = (_NICK_TO_PIDS or {}).get(want)
+    if not pids:
+        return None
+    return min(pids)
 
 
 def nickname_matches_person(
@@ -270,19 +325,17 @@ def nickname_matches_person(
     if not q:
         return False
     qn = q.casefold()
-    nick = get_nickname_for_player(person_id=person_id, name=name, team=team)
-    if nick and nick.casefold() == qn:
-        return True
     resolved = resolve_person_id_by_nickname(q)
-    if resolved is None or person_id is None:
-        return False
-    if int(resolved) == int(person_id):
-        return True
-    if name:
-        sibs = set(sibling_person_ids(name=name, team=team, person_id=person_id))
-        if int(resolved) in sibs:
+    if resolved is not None:
+        if person_id is not None and int(resolved) == int(person_id):
             return True
-    return False
+        if person_id is not None and name:
+            sibs = _sibling_person_ids_cached(name, team, person_id)
+            if int(resolved) in sibs:
+                return True
+        return False
+    nick = get_nickname(person_id)
+    return bool(nick and nick.casefold() == qn)
 
 
 def complex_name_reasons(full_name: str) -> list[str]:

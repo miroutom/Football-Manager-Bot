@@ -30,6 +30,8 @@ class StatWriteDelta:
     d_clean_sheets: int = 0
     d_potm: int = 0
     d_motm: int = 0
+    d_yellow_cards: int = 0
+    d_red_cards: int = 0
 
 
 def _player_class(position: str):
@@ -71,6 +73,10 @@ def _apply_outfield_delta(row: Any, player: Any, delta: StatWriteDelta) -> None:
         row.potm = int(getattr(row, "potm", 0) or 0) + delta.d_potm
     if hasattr(row, "motm"):
         row.motm = int(getattr(row, "motm", 0) or 0) + delta.d_motm
+    if hasattr(row, "yellow_cards"):
+        row.yellow_cards = int(getattr(row, "yellow_cards", 0) or 0) + delta.d_yellow_cards
+    if hasattr(row, "red_cards"):
+        row.red_cards = int(getattr(row, "red_cards", 0) or 0) + delta.d_red_cards
     _weighted_overall(row, player, delta.d_matches)
     if (getattr(player, "name", None) or "").strip():
         row.name = player.name
@@ -85,6 +91,10 @@ def _apply_gk_delta(row: Any, player: Any, delta: StatWriteDelta) -> None:
         row.potm = int(getattr(row, "potm", 0) or 0) + delta.d_potm
     if hasattr(row, "motm"):
         row.motm = int(getattr(row, "motm", 0) or 0) + delta.d_motm
+    if hasattr(row, "yellow_cards"):
+        row.yellow_cards = int(getattr(row, "yellow_cards", 0) or 0) + delta.d_yellow_cards
+    if hasattr(row, "red_cards"):
+        row.red_cards = int(getattr(row, "red_cards", 0) or 0) + delta.d_red_cards
     _weighted_overall(row, player, delta.d_matches)
     if (getattr(player, "name", None) or "").strip():
         row.name = player.name
@@ -130,6 +140,10 @@ def _apply_delta_to_synced_career(session: Any, player: Any, delta: StatWriteDel
             row.potm = int(getattr(row, "potm", 0) or 0) + delta.d_potm
         if hasattr(row, "motm"):
             row.motm = int(getattr(row, "motm", 0) or 0) + delta.d_motm
+        if hasattr(row, "yellow_cards"):
+            row.yellow_cards = int(getattr(row, "yellow_cards", 0) or 0) + delta.d_yellow_cards
+        if hasattr(row, "red_cards"):
+            row.red_cards = int(getattr(row, "red_cards", 0) or 0) + delta.d_red_cards
         _weighted_overall(row, player, delta.d_matches)
         return
     stub = SimpleNamespace(
@@ -140,8 +154,8 @@ def _apply_delta_to_synced_career(session: Any, player: Any, delta: StatWriteDel
         clean_sheets=0,
         missed_goals=0,
         trophies=0,
-        yellow_cards=0,
-        red_cards=0,
+        yellow_cards=delta.d_yellow_cards,
+        red_cards=delta.d_red_cards,
         potm=delta.d_potm,
         motm=delta.d_motm,
         golden_balls=0,
@@ -163,6 +177,8 @@ def record_stat_write(
     d_clean_sheets: int = 0,
     d_potm: int = 0,
     d_motm: int = 0,
+    d_yellow_cards: int = 0,
+    d_red_cards: int = 0,
     flush: bool = False,
 ) -> None:
     """Запомнить дельту; при ``flush=True`` сразу применить буфер."""
@@ -178,6 +194,8 @@ def record_stat_write(
                 d_clean_sheets=int(d_clean_sheets or 0),
                 d_potm=int(d_potm or 0),
                 d_motm=int(d_motm or 0),
+                d_yellow_cards=int(d_yellow_cards or 0),
+                d_red_cards=int(d_red_cards or 0),
             ),
         )
     )
