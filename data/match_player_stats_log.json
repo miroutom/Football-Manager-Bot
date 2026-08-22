@@ -7976,5 +7976,509 @@
     "home_score": 1,
     "away_score": 3,
     "league_code": "ita"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Ювентус",
+    "away": "Рома",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Вини",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Роналду",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Одегаард",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Гендузи",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Заир",
+        "team": "Ювентус",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Бергвин",
+        "team": "Рома",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Мудрык",
+        "team": "Рома",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Десподов",
+        "team": "Рома",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-08-16T17:25:39Z",
+    "home_score": 4,
+    "away_score": 2,
+    "league_code": "ita"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Ливерпуль",
+    "away": "Ньюкасл",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Лукаку",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Сучич",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Ковачич",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мармуш",
+        "team": "Ньюкасл",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Оярзабаль",
+        "team": "Ньюкасл",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-08-16T18:10:57Z",
+    "home_score": 2,
+    "away_score": 2,
+    "league_code": "eng"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Мю",
+    "away": "Тоттенхэм",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Мухтар",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Холанд",
+        "team": "Мю",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Зидан",
+        "team": "Мю",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Уоткинс",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 2,
+        "assists": 1
+      },
+      {
+        "player": "Куадрадо",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Мэддисон",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Перишич",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-16T18:45:10Z",
+    "home_score": 2,
+    "away_score": 5,
+    "league_code": "eng"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Хоффенхайм",
+    "away": "Бавария",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Берарди",
+        "team": "Бавария",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Рёль",
+        "team": "Бавария",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      }
+    ],
+    "recorded_at": "2026-08-16T19:50:21Z",
+    "home_score": 0,
+    "away_score": 3,
+    "league_code": "ger"
+  },
+  {
+    "season": 4,
+    "day": 2,
+    "home": "Тоттенхэм",
+    "away": "Наполи",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Заха",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Уоткинс",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мэддисон",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Квара",
+        "team": "Наполи",
+        "position": "",
+        "goals": 2,
+        "assists": 1
+      },
+      {
+        "player": "Жезус",
+        "team": "Наполи",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Ангисса",
+        "team": "Наполи",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-08-16T20:14:58Z",
+    "home_score": 2,
+    "away_score": 3,
+    "league_code": "cl",
+    "cl_phase": "league"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Тоттенхэм",
+    "away": "Милан",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Уоткинс",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мэддисон",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 2,
+        "assists": 1
+      },
+      {
+        "player": "Чавез",
+        "team": "Тоттенхэм",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Марез",
+        "team": "Милан",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Муниаин",
+        "team": "Милан",
+        "position": "",
+        "goals": 0,
+        "assists": 3
+      },
+      {
+        "player": "Андрих",
+        "team": "Милан",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-16T20:32:16Z",
+    "home_score": 3,
+    "away_score": 3,
+    "league_code": "cl",
+    "cl_phase": "league"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Рома",
+    "away": "Интер",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Бергвин",
+        "team": "Рома",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Бергвис",
+        "team": "Рома",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Бензема",
+        "team": "Интер",
+        "position": "",
+        "goals": 3,
+        "assists": 1
+      },
+      {
+        "player": "Мартинез",
+        "team": "Интер",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Роналдиньо",
+        "team": "Интер",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Собослай",
+        "team": "Интер",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Льоренте",
+        "team": "Интер",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Думфрис",
+        "team": "Интер",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-08-16T20:53:45Z",
+    "home_score": 2,
+    "away_score": 7,
+    "league_code": "ita"
+  },
+  {
+    "season": 4,
+    "day": 2,
+    "home": "Интер",
+    "away": "Ливерпуль",
+    "tournament": "cl",
+    "players": [
+      {
+        "player": "Бензема",
+        "team": "Интер",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Собослай",
+        "team": "Интер",
+        "position": "",
+        "goals": 0,
+        "assists": 2
+      },
+      {
+        "player": "Чалханоглу",
+        "team": "Интер",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-16T21:10:04Z",
+    "home_score": 2,
+    "away_score": 0,
+    "league_code": "cl",
+    "cl_phase": "league"
+  },
+  {
+    "season": 4,
+    "day": 2,
+    "home": "Ливерпуль",
+    "away": "Арсенал",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Лукаку",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Терье",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 2,
+        "assists": 0
+      },
+      {
+        "player": "Жота",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Олисе",
+        "team": "Ливерпуль",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-08-16T21:28:26Z",
+    "home_score": 4,
+    "away_score": 0,
+    "league_code": "eng"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Арсенал",
+    "away": "Астон Вилла",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Мерино",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Акунья",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Арнаутович",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 1,
+        "assists": 1
+      },
+      {
+        "player": "Сперцян",
+        "team": "Астон Вилла",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-22T19:53:00Z",
+    "home_score": 2,
+    "away_score": 1,
+    "league_code": "eng"
   }
 ]

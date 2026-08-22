@@ -2864,5 +2864,26 @@
     "tournament": "cl",
     "cl_phase": "league",
     "day": 1
+  },
+  {
+    "home": "Тоттенхэм",
+    "away": "Наполи",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 2
+  },
+  {
+    "home": "Тоттенхэм",
+    "away": "Милан",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
+  },
+  {
+    "home": "Интер",
+    "away": "Ливерпуль",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 2
   }
 ]
