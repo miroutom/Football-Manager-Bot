@@ -390,6 +390,16 @@
       "league_code": "esp",
       "scope": "league",
       "count": 1
+    },
+    {
+      "key": "заир-эмери|ювентус|ita|league",
+      "name": "Заир-Эмери",
+      "name_norm": "заир-эмери",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
     }
   ],
   "injuries": [

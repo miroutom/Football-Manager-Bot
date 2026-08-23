@@ -9184,5 +9184,46 @@
     "home_score": 5,
     "away_score": 3,
     "league_code": "ger"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Ювентус",
+    "away": "Фиорентина",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Кьеза",
+        "team": "Фиорентина",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Гризманн",
+        "team": "Фиорентина",
+        "position": "",
+        "goals": 3,
+        "assists": 0
+      },
+      {
+        "player": "Барак",
+        "team": "Фиорентина",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Кайо",
+        "team": "Фиорентина",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      }
+    ],
+    "recorded_at": "2026-08-23T17:19:12Z",
+    "home_score": 0,
+    "away_score": 3,
+    "league_code": "ita"
   }
 ]
