@@ -93,7 +93,7 @@
       "team_norm": "наполи",
       "league_code": "ita",
       "scope": "league",
-      "matches_left": 3,
+      "matches_left": 2,
       "unavailable_from_round": 3
     },
     {
@@ -399,6 +399,66 @@
       "team_norm": "ювентус",
       "league_code": "ita",
       "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "санчо|вольфсбург|cl|cl",
+      "name": "Санчо",
+      "name_norm": "санчо",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "борнау|вольфсбург|cl|cl",
+      "name": "Борнау",
+      "name_norm": "борнау",
+      "team": "Вольфсбург",
+      "team_norm": "вольфсбург",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "сане|байер|ger|league",
+      "name": "Сане",
+      "name_norm": "сане",
+      "team": "Байер",
+      "team_norm": "байер",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "еракович|лацио|ita|league",
+      "name": "Еракович",
+      "name_norm": "еракович",
+      "team": "Лацио",
+      "team_norm": "лацио",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "паулиста|лацио|ita|league",
+      "name": "Паулиста",
+      "name_norm": "паулиста",
+      "team": "Лацио",
+      "team_norm": "лацио",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "итакура|севилья|cl|cl",
+      "name": "Итакура",
+      "name_norm": "итакура",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "league_code": "cl",
+      "scope": "cl",
       "count": 1
     }
   ],
@@ -4091,6 +4151,60 @@
       "season": 4,
       "month": 1,
       "type": "травма"
+    },
+    {
+      "key": "де брюйне|сити|4|life|1|1",
+      "name": "Де Брюйне",
+      "name_norm": "де брюйне",
+      "team": "Сити",
+      "team_norm": "сити",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "ди лоренцо|наполи|4|1|3",
+      "name": "Ди Лоренцо",
+      "name_norm": "ди лоренцо",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "out_from_month": 1,
+      "out_from_day": 26,
+      "return_month": 3,
+      "return_day": 26,
+      "return_season": 4,
+      "type": "травма",
+      "season": 4
+    },
+    {
+      "key": "дриусси|севилья|4|life|1|1",
+      "name": "Дриусси",
+      "name_norm": "дриусси",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "лапорт|милан|4|2|6",
+      "name": "Лапорт",
+      "name_norm": "лапорт",
+      "team": "Милан",
+      "team_norm": "милан",
+      "out_from_month": 2,
+      "out_from_day": 10,
+      "return_month": 6,
+      "return_day": 10,
+      "return_season": 4,
+      "type": "травма",
+      "season": 4
     }
   ]
 }

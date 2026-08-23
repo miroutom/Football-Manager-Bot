@@ -2892,5 +2892,19 @@
     "tournament": "cl",
     "cl_phase": "league",
     "day": 1
+  },
+  {
+    "home": "Сити",
+    "away": "Вольфсбург",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
+  },
+  {
+    "home": "Севилья",
+    "away": "Ливерпуль",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
   }
 ]
