@@ -313,6 +313,15 @@
       "away_score": 4,
       "day": 1,
       "entry_type": "play"
+    },
+    {
+      "home": "Байер",
+      "away": "Хоффенхайм",
+      "league": "ger",
+      "home_score": 5,
+      "away_score": 3,
+      "day": 1,
+      "entry_type": "play"
     }
   ]
 }

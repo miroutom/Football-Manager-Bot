@@ -2577,5 +2577,19 @@
     "home_score": 2,
     "away_score": 4,
     "league_code": "ger"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Байер",
+    "away": "Хоффенхайм",
+    "tournament": "league",
+    "player": "Рэмзи",
+    "team": "Байер",
+    "position": "ЦАП",
+    "recorded_at": "2026-08-23T17:00:33Z",
+    "home_score": 5,
+    "away_score": 3,
+    "league_code": "ger"
   }
 ]

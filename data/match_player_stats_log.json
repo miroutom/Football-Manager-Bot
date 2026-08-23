@@ -9115,5 +9115,74 @@
     "home_score": 2,
     "away_score": 4,
     "league_code": "ger"
+  },
+  {
+    "season": 4,
+    "day": 1,
+    "home": "Байер",
+    "away": "Хоффенхайм",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Лападула",
+        "team": "Байер",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Иконе",
+        "team": "Байер",
+        "position": "",
+        "goals": 2,
+        "assists": 1
+      },
+      {
+        "player": "Рэмзи",
+        "team": "Байер",
+        "position": "",
+        "goals": 3,
+        "assists": 1
+      },
+      {
+        "player": "Тринкао",
+        "team": "Байер",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Мариу",
+        "team": "Байер",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Морено",
+        "team": "Хоффенхайм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Мартин",
+        "team": "Хоффенхайм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Боуди",
+        "team": "Хоффенхайм",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      }
+    ],
+    "recorded_at": "2026-08-23T17:00:33Z",
+    "home_score": 5,
+    "away_score": 3,
+    "league_code": "ger"
   }
 ]
