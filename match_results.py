@@ -80,7 +80,10 @@ def resolve_cl_phase(cl_phase=None, *, day=None, match_str=None) -> str:
     if match_str:
         parts = [x.strip() for x in str(match_str).split(";")]
         if len(parts) >= 4 and parts[2] == "cl":
-            return _normalize_cl_phase(parts[3])
+            if parts[3].isdigit():
+                pass  # month_day, фаза по календарному месяцу
+            else:
+                return _normalize_cl_phase(parts[3])
     if cl_phase is not None and str(cl_phase).strip():
         return _normalize_cl_phase(cl_phase)
     if day is not None:
@@ -480,6 +483,7 @@ def add_match_result(
     penalties_by_team=None,
     *,
     entry_type: str | None = None,
+    month_day: int | None = None,
 ):
     """Добавить матч в сыгранные. Счёт и день тура — опционально.
 
@@ -507,6 +511,11 @@ def add_match_result(
         'away_score': away_score,
         'day': day,
     }
+    if month_day is not None:
+        try:
+            row['month_day'] = int(month_day)
+        except (TypeError, ValueError):
+            pass
     if tournament == 'cl':
         row['cl_phase'] = phase
     if penalties_by_team:

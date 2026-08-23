@@ -281,10 +281,12 @@ def list_remaining_schedule_matches(
     for day_data in mixed_schedule:
         day_num = day_data["day"]
         for match_str in day_data["matches"]:
-            parts = match_str.split(";")
-            if len(parts) < 3:
+            from utils.season_calendar import parse_mixed_match_line
+
+            parsed = parse_mixed_match_line(str(match_str))
+            home, away, league_code = parsed["home"], parsed["away"], parsed["league_code"]
+            if not home or not away or not league_code:
                 continue
-            home, away, league_code = parts[0], parts[1], parts[2]
             if lf and str(league_code).strip().lower() != lf:
                 continue
             if tf_cmp and tf_cmp not in (
@@ -318,6 +320,7 @@ def list_remaining_schedule_matches(
             out.append(
                 {
                     "day": day_num,
+                    "month_day": parsed.get("month_day"),
                     "match_str": match_str,
                     "home": home,
                     "away": away,
@@ -370,16 +373,21 @@ def list_played_schedule_matches(
         if mf is not None and day_num != mf:
             continue
         for match_str in day_data["matches"]:
-            parts = match_str.split(";")
-            if len(parts) < 3:
+            from utils.season_calendar import parse_mixed_match_line
+
+            parsed = parse_mixed_match_line(str(match_str))
+            home, away, league_code = parsed["home"], parsed["away"], parsed["league_code"]
+            if not home or not away or not league_code:
                 continue
-            home, away, league_code = parts[0], parts[1], parts[2]
             if lf and str(league_code).strip().lower() != lf:
                 continue
             cl_ph = (
-                cl_phase_from_mixed_schedule_line(match_str, day=day_num)
-                if league_code == "cl"
-                else None
+                parsed.get("cl_phase")
+                or (
+                    cl_phase_from_mixed_schedule_line(match_str, day=day_num)
+                    if league_code == "cl"
+                    else None
+                )
             )
             teams = get_teams_by_league(league_code)
             if not teams:
@@ -394,6 +402,9 @@ def list_played_schedule_matches(
             hs, aws = rec.get("home_score"), rec.get("away_score")
             if hs is None or aws is None:
                 continue
+            month_day = rec.get("month_day")
+            if month_day is None:
+                month_day = parsed.get("month_day")
             if sk in ("sim", "game"):
                 lab = manager_session_label(home.strip(), away.strip())
                 if sk == "sim" and lab != "Симуляция":
@@ -405,6 +416,7 @@ def list_played_schedule_matches(
             out.append(
                 {
                     "day": day_num,
+                    "month_day": month_day,
                     "match_str": match_str,
                     "home": home,
                     "away": away,
@@ -597,7 +609,7 @@ def save_result(league_code):
 
 def process_match(home, away, home_score, away_score, league_code, round_num=None,
                   with_stats=True, cl_phase=None, *, interactive=True,
-                  penalties_override=None):
+                  penalties_override=None, month_day=None):
     """
     Обработать результат матча.
 
@@ -678,6 +690,7 @@ def process_match(home, away, home_score, away_score, league_code, round_num=Non
         day=round_num,
         cl_phase=cl_ph if league_code == "cl" else None,
         penalties_by_team=penalties_by_team,
+        month_day=month_day,
     )
     save_result(league_code)
 

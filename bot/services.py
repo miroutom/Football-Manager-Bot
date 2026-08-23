@@ -1164,6 +1164,7 @@ def run_process_match_bot(
     round_num: int | None = None,
     cl_phase: str | None = None,
     penalties_override: dict[str, int] | None = None,
+    month_day: int | None = None,
 ) -> tuple[bool, str, list[str]]:
     """
     Запись матча как в main.process_match, без input().
@@ -1190,6 +1191,7 @@ def run_process_match_bot(
             cl_phase=cl_phase,
             interactive=False,
             penalties_override=penalties_override,
+            month_day=month_day,
         )
     if ok:
         try:

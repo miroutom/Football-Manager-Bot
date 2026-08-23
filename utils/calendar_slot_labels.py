@@ -54,6 +54,17 @@ def team_display_round(team: str, league_code: str) -> int | None:
     return _clamp_round(count_team_league_matches_played(team, lc) + 1)
 
 
+def slot_calendar_short(day: int | None, month_day: int | None = None) -> str:
+    """Краткая дата слота: ``28 авг`` или ``м2``, если день не задан."""
+    if day is None:
+        return "?"
+    if month_day is not None:
+        from utils.season_calendar import format_season_date
+
+        return format_season_date(int(day), int(month_day))
+    return f"м{int(day)}"
+
+
 def home_display_round(home: str, league_code: str) -> int | None:
     """
     Тур для подписи кнопки: следующий у **домашней** команды в чемпионате.

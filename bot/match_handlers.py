@@ -107,6 +107,7 @@ async def _finish_match_and_offer_stats(
     aws: int,
     league_code: str,
     schedule_day: int | None = None,
+    schedule_month_day: int | None = None,
     log_html_lines: list[str] | None = None,
     cl_phase: str | None = None,
 ) -> None:
@@ -148,6 +149,7 @@ async def _finish_match_and_offer_stats(
         stats_tournament="cl" if league_code == "cl" else "league",
         stats_league_code=league_code,
         stats_schedule_day=schedule_day,
+        stats_schedule_month_day=schedule_month_day,
         stats_cl_phase=cl_phase,
         stats_continue_source="calendar",
     )
@@ -183,6 +185,7 @@ async def _record_match_or_request_penalties(
     league_code: str,
     round_num: int | None,
     cl_ph: str | None,
+    month_day: int | None = None,
 ) -> None:
     """Запись матча или запрос серии пенальти (ЛЧ нокаут: финал или ничья по сумме двух матчей)."""
     hn = home.strip().title()
@@ -197,6 +200,7 @@ async def _record_match_or_request_penalties(
             pen_aws=aws,
             pen_league=league_code,
             pen_round=round_num,
+            pen_month_day=month_day,
             pen_cl_ph=cl_ph,
         )
         from utils.cl_knockout_schedule import cl_knockout_penalties_prompt_html
@@ -216,6 +220,7 @@ async def _record_match_or_request_penalties(
         league_code,
         round_num=round_num,
         cl_phase=cl_ph,
+        month_day=month_day,
     )
     await _finish_match_and_offer_stats(
         message,
@@ -228,6 +233,7 @@ async def _record_match_or_request_penalties(
         aws=aws,
         league_code=league_code,
         schedule_day=round_num,
+        schedule_month_day=month_day,
         log_html_lines=log_html_lines,
         cl_phase=cl_ph,
     )
@@ -590,6 +596,8 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
                     cl_ph = rec.get("cl_phase")
                     if data.get("stats_schedule_day") is None and rec.get("day") is not None:
                         data = {**data, "stats_schedule_day": rec.get("day")}
+                    if data.get("stats_schedule_month_day") is None and rec.get("month_day") is not None:
+                        data = {**data, "stats_schedule_month_day": rec.get("month_day")}
             # Журнал голов/передач по матчу (для игрока месяца)
             try:
                 from utils.match_player_stats_log import flush_session_acc_to_log
@@ -679,6 +687,8 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
                     home_score=hs,
                     away_score=aws,
                     cl_phase=cl_ph,
+                    day=data.get("stats_schedule_day"),
+                    month_day=data.get("stats_schedule_month_day"),
                 )
                 extra = "\nМатч добавлен в журнал match_results.json."
     except Exception:
@@ -710,8 +720,11 @@ def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
     if day is None:
         return None
     from match_results import cl_phase_from_mixed_schedule_line
+    from utils.season_calendar import parse_mixed_match_line
 
-    cl_ph = (
+    parsed = parse_mixed_match_line(str(match_str))
+    month_day = parsed.get("month_day")
+    cl_ph = parsed.get("cl_phase") or (
         cl_phase_from_mixed_schedule_line(match_str, day=day) if league_code == "cl" else None
     )
     from utils.calendar_slot_labels import home_display_round
@@ -719,6 +732,7 @@ def _slot_from_schedule_tuple(tup: tuple) -> dict | None:
 
     slot = {
         "day": day,
+        "month_day": month_day,
         "match_str": match_str,
         "home": home,
         "away": away,
@@ -767,18 +781,18 @@ async def _peek_next_schedule_slot(session_kind: str | None) -> dict | None:
 
 def _calendar_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     """
-    Подпись кнопки: месяц, тур (лига: след. у хозяев), матч, турнир, сим/игра.
-    Пример: ``1. м2 т6 · Бавария — Вольфсбург (Бундеслига, сим)``; ЛЧ без ``т``.
+    Подпись кнопки: дата, тур (лига: след. у хозяев), матч, турнир, сим/игра.
+    Пример: ``1. 28 авг т6 · Бавария — Вольфсбург (Бундеслига, сим)``; ЛЧ без ``т``.
     """
     from config.leagues_config import manager_session_label
-    from utils.calendar_slot_labels import home_display_round
+    from utils.calendar_slot_labels import home_display_round, slot_calendar_short
 
     home = str(slot.get("home") or "?").strip()
     away = str(slot.get("away") or "?").strip()
     lc_code = str(slot.get("league_code") or slot.get("tournament") or "")
     lg = _league_title(lc_code)
 
-    month = slot.get("day", "?")
+    date_s = slot_calendar_short(slot.get("day"), slot.get("month_day"))
     rnd = slot.get("display_round")
     if rnd is None:
         rnd = home_display_round(home, lc_code)
@@ -791,7 +805,7 @@ def _calendar_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     meta = f"({lg}, {mode_short})"
 
     def _pack(h: str, a: str, sep: str = " — ") -> str:
-        return f"{head}м{month}{rnd_part} · {h}{sep}{a} {meta}"
+        return f"{head}{date_s}{rnd_part} · {h}{sep}{a} {meta}"
 
     for h, a, sep in (
         (home, away, " — "),
@@ -801,15 +815,15 @@ def _calendar_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
         if len(label) <= 64:
             return label
 
-    budget = 64 - len(f"{head}м{month}{rnd_part} · ") - len(f" {meta}")
+    budget = 64 - len(f"{head}{date_s}{rnd_part} · ") - len(f" {meta}")
     if budget < 10:
-        short = f"{head}м{month}{rnd_part} {meta}"
+        short = f"{head}{date_s}{rnd_part} {meta}"
         return short if len(short) <= 64 else short[:61] + "…"
     half = max(4, (budget - 1) // 2)
     h_s = home if len(home) <= half else home[: half - 1].rstrip() + "…"
     rem = budget - len(h_s) - 1
     a_s = away if len(away) <= rem else away[: max(3, rem - 1)].rstrip() + "…"
-    label = f"{head}м{month}{rnd_part} · {h_s}—{a_s} {meta}"
+    label = f"{head}{date_s}{rnd_part} · {h_s}—{a_s} {meta}"
     return label if len(label) <= 64 else label[:61] + "…"
 
 
@@ -823,9 +837,9 @@ def _played_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     lc_code = str(slot.get("league_code") or slot.get("tournament") or "")
     lg = _league_title(lc_code)
     from config.leagues_config import manager_session_label
-    from utils.calendar_slot_labels import home_display_round
+    from utils.calendar_slot_labels import home_display_round, slot_calendar_short
 
-    month = slot.get("day", "?")
+    date_s = slot_calendar_short(slot.get("day"), slot.get("month_day"))
     rnd = slot.get("display_round")
     if rnd is None:
         rnd = home_display_round(home, lc_code)
@@ -834,11 +848,11 @@ def _played_slot_btn_label(slot: dict, *, index: int | None = None) -> str:
     mode_short = "игра" if mode == "Игра" else ("сим" if mode == "Симуляция" else "?")
     head = f"{index}. " if index is not None else ""
     meta = f"({lg}, {mode_short})"
-    core = f"{head}м{month}{rnd_part} · {home}{score_s} — {away} {meta}"
+    core = f"{head}{date_s}{rnd_part} · {home}{score_s} — {away} {meta}"
     if len(core) <= 64:
         return core
     short_meta = f"({lg})"
-    core2 = f"{head}м{month} · {home}{score_s}—{away} {short_meta}"
+    core2 = f"{head}{date_s} · {home}{score_s}—{away} {short_meta}"
     return core2 if len(core2) <= 64 else core2[:61] + "…"
 
 
@@ -1158,6 +1172,9 @@ async def _begin_stats_for_played_slot(
     )
     if rec and lc == "cl":
         cl_ph = rec.get("cl_phase") or cl_ph
+    month_day = slot.get("month_day")
+    if rec and month_day is None:
+        month_day = rec.get("month_day")
 
     await state.clear()
     await state.update_data(
@@ -1168,6 +1185,7 @@ async def _begin_stats_for_played_slot(
         stats_tournament="cl" if lc == "cl" else "league",
         stats_league_code=lc,
         stats_schedule_day=slot.get("day"),
+        stats_schedule_month_day=month_day,
         stats_cl_phase=cl_ph,
         stats_continue_source="ason",
         stats_ason_ctx=ason_ctx,
@@ -1411,6 +1429,7 @@ async def _prompt_score_for_scheduled_slot(
     from utils.schedule_by_months import read_mixed_slot_label
 
     day = slot["day"]
+    month_day = slot.get("month_day")
     match_str = slot["match_str"]
     home = slot["home"]
     away = slot["away"]
@@ -1418,10 +1437,14 @@ async def _prompt_score_for_scheduled_slot(
     cl_ph = slot.get("cl_ph")
 
     slot_label = read_mixed_slot_label(MIXED_SCHEDULE_FILE)
+    from utils.calendar_slot_labels import slot_calendar_short
+
+    date_label = slot_calendar_short(day, month_day)
 
     await state.set_state(MatchEnter.next_score)
     await state.update_data(
         day=day,
+        month_day=month_day,
         match_str=match_str,
         home=home,
         away=away,
@@ -1448,6 +1471,7 @@ async def _prompt_score_for_scheduled_slot(
         away,
         league_code=league_code,
         schedule_day=day,
+        schedule_month_day=month_day,
         cl_phase=cl_ph,
     )
     disc_block = f"{disc_html}\n\n" if disc_html else ""
@@ -1460,7 +1484,7 @@ async def _prompt_score_for_scheduled_slot(
 
     await message.answer(
         f"{mode_line}"
-        f"{slot_label} <b>{day}</b> · {lg}\n"
+        f"{slot_label} <b>{date_label}</b> · {lg}\n"
         f"<b>{home}</b> — <b>{away}</b>\n\n"
         f"{first_leg_block}"
         f"{disc_block}"
@@ -1665,6 +1689,7 @@ async def on_next_score(message: Message, state: FSMContext) -> None:
     away = data["away"]
     league_code = data["league_code"]
     day = data["day"]
+    month_day = data.get("month_day")
     cl_ph = data.get("cl_ph")
 
     await _record_match_or_request_penalties(
@@ -1677,6 +1702,7 @@ async def on_next_score(message: Message, state: FSMContext) -> None:
         league_code=league_code,
         round_num=day,
         cl_ph=cl_ph,
+        month_day=month_day,
     )
 
 
@@ -2793,6 +2819,7 @@ async def on_cl_penalties_series(message: Message, state: FSMContext) -> None:
         round_num=data["pen_round"],
         cl_phase=data["pen_cl_ph"],
         penalties_override=pens,
+        month_day=data.get("pen_month_day"),
     )
     await _finish_match_and_offer_stats(
         message,
@@ -2805,6 +2832,7 @@ async def on_cl_penalties_series(message: Message, state: FSMContext) -> None:
         aws=data["pen_aws"],
         league_code=data["pen_league"],
         schedule_day=data.get("pen_round"),
+        schedule_month_day=data.get("pen_month_day"),
         log_html_lines=log_html_lines,
         cl_phase=data.get("pen_cl_ph"),
     )
@@ -3119,6 +3147,7 @@ async def _apply_stats_line_from_message(
         mode_new=mode_new,
         league_code=data.get("stats_league_code"),
         schedule_day=data.get("stats_schedule_day"),
+        schedule_month_day=data.get("stats_schedule_month_day"),
         increment_matches=True,
         session_match_players=session_seen,
         session_acc=session_acc,

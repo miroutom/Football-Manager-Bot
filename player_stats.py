@@ -522,6 +522,7 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
                      match_for_cs: tuple = None, create_if_missing: bool = False,
                      discipline_league_code: str | None = None,
                      schedule_day: int | None = None,
+                     schedule_month_day: int | None = None,
                      skip_discipline_check: bool = False,
                      increment_matches: bool = True,
                      team_goals_already: int = 0,
@@ -622,6 +623,7 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
                 fixture_round=fixture_round,
                 fixture_home=fixture_home,
                 fixture_away=fixture_away,
+                schedule_month_day=schedule_month_day,
             )
             if not el:
                 print(f"  {msg}")
@@ -1463,6 +1465,7 @@ def apply_stats_bot_line(
     mode_new: bool,
     league_code: str | None = None,
     schedule_day: int | None = None,
+    schedule_month_day: int | None = None,
     increment_matches: bool = True,
     session_match_players: set[str] | None = None,
     session_acc: dict[str, dict] | None = None,
@@ -1550,6 +1553,7 @@ def apply_stats_bot_line(
             schedule_month=msched,
             fixture_home=home_team,
             fixture_away=away_team,
+            schedule_month_day=schedule_month_day,
         )
         if handled:
             tail = ""
@@ -1597,6 +1601,7 @@ def apply_stats_bot_line(
                                     create_if_missing=False,
                                     discipline_league_code=lc,
                                     schedule_day=schedule_day,
+                                    schedule_month_day=schedule_month_day,
                                     increment_matches=True,
                                     skip_discipline_check=True,
                                     sync_derived=False,
@@ -1687,6 +1692,7 @@ def apply_stats_bot_line(
             create_if_missing=mode_new,
             discipline_league_code=lc,
             schedule_day=schedule_day,
+            schedule_month_day=schedule_month_day,
             increment_matches=do_incr,
             skip_discipline_check=True,
             team_goals_already=team_g0,

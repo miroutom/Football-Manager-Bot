@@ -84,13 +84,27 @@ def is_card_line(text: str) -> bool:
 
 
 def format_calendar_month_label(month: int | None) -> str:
-    """«6 месяц» вместо «с6» / «м6»."""
+    """«август» / «6 месяц» для старых подписей."""
     if month is None:
         return "—"
+    try:
+        from utils.season_calendar import format_month_name
+
+        name = format_month_name(int(month), short=False)
+        if name and not name.endswith(" мес."):
+            return name
+    except Exception:
+        pass
     try:
         return f"{int(month)} месяц"
     except (TypeError, ValueError):
         return "—"
+
+
+def format_calendar_date_label(month: int | None, day: int | None = None) -> str:
+    from utils.season_calendar import format_season_date
+
+    return format_season_date(month, day)
 
 
 def injury_overall_penalty(months: int) -> int:
@@ -424,37 +438,76 @@ def _injury_blocks_at_month(
     month: int,
     *,
     current_season: int | None = None,
+    month_day: int | None = None,
 ) -> bool:
-    """Блокирует ли травма игрока в данном месяце ``month`` в сезоне ``current_season``.
+    """Блокирует ли травма игрока в дату (или весь месяц без ``month_day``)."""
+    if month_day is not None:
+        return _injury_blocks_at_date(
+            inj,
+            int(current_season or inj.get("season") or 1),
+            int(month),
+            int(month_day),
+        )
+    # Без дня: активна, если блокирует хотя бы середину месяца (для сводок).
+    from utils.season_calendar import LEGACY_DEFAULT_MONTH_DAY, days_in_month
 
-    Поддерживает «перенос остатка» в следующие сезоны: если травма создана в сезоне S
-    с ``return_month`` > 10, в сезоне S+1 она блокирует месяцы 1..(return_month-10) и т. д.
-    Без ``season`` период **не** блокирует (нужно проставить сезон в JSON).
-    """
+    mid = min(LEGACY_DEFAULT_MONTH_DAY, days_in_month(int(month)))
+    return _injury_blocks_at_date(
+        inj,
+        int(current_season or inj.get("season") or 1),
+        int(month),
+        mid,
+    )
+
+
+def _injury_blocks_at_date(
+    inj: dict,
+    current_season: int,
+    month: int,
+    day: int,
+) -> bool:
+    """Блокировка по календарной дате сезона (авг=1 … май=10)."""
     if inj.get("life_only"):
         return False
     ofm = inj.get("out_from_month")
     if ofm is None:
         return False
-    try:
-        start = int(ofm)
-        ret = int(inj.get("return_month") or 99)
-    except (TypeError, ValueError):
-        return False
-    m = max(1, min(_SEASON_MONTHS, int(month)))
     inj_season = inj.get("season")
     if inj_season is None:
         return False
-    if current_season is None:
-        return start <= m < ret
     try:
-        elapsed = int(current_season) - int(inj_season)
+        from utils.season_calendar import (
+            LEGACY_DEFAULT_MONTH_DAY,
+            compare_dates,
+            days_in_month,
+        )
+
+        out_m = int(ofm)
+        out_d = int(inj.get("out_from_day") or LEGACY_DEFAULT_MONTH_DAY)
+        ret_m = int(inj.get("return_month") or 99)
+        ret_d = int(inj.get("return_day") or LEGACY_DEFAULT_MONTH_DAY)
+        inj_s = int(inj_season)
+        ret_s = int(inj.get("return_season") or inj_s)
+        cs = int(current_season)
+        cm = max(1, min(_SEASON_MONTHS, int(month)))
+        cd = max(1, min(days_in_month(cm), int(day)))
+
+        has_days = inj.get("out_from_day") is not None or inj.get("return_day") is not None
+        if not has_days:
+            # legacy: только номера месяцев
+            elapsed = cs - inj_s
+            if elapsed < 0:
+                return False
+            global_m = cm + _SEASON_MONTHS * elapsed
+            return out_m <= global_m < ret_m
+
+        if compare_dates(cs, cm, cd, inj_s, out_m, out_d) < 0:
+            return False
+        if compare_dates(cs, cm, cd, ret_s, ret_m, ret_d) >= 0:
+            return False
+        return True
     except (TypeError, ValueError):
-        elapsed = 0
-    if elapsed < 0:
         return False
-    global_m = m + _SEASON_MONTHS * elapsed
-    return start <= global_m < ret
 
 
 def _suspension_blocks_at_round(row: dict, fixture_round: int | None) -> bool:
@@ -545,6 +598,7 @@ def _drop_active_real_injuries(
     *,
     month: int,
     season: int,
+    month_day: int | None = None,
 ) -> int:
     """Убрать активные реальные травмы игрока — новая заменяет старую, не суммируется."""
     nn, tn = _norm(name), _norm(team)
@@ -560,7 +614,9 @@ def _drop_active_real_injuries(
         if row.get("life_only"):
             kept.append(row)
             continue
-        if _injury_blocks_at_month(row, month, current_season=season):
+        if _injury_blocks_at_month(
+            row, month, current_season=season, month_day=month_day
+        ):
             removed += 1
             continue
         kept.append(row)
@@ -611,10 +667,13 @@ def _injury_blocking_at_month(
     month: int,
     *,
     current_season: int | None = None,
+    month_day: int | None = None,
 ) -> dict | None:
-    """Период травмы, который закрывает игрока в данном месяце календаря (если есть)."""
+    """Период травмы, который закрывает игрока в данную дату (если есть)."""
     for inj in _injuries_for_player(st, name, team):
-        if _injury_blocks_at_month(inj, month, current_season=current_season):
+        if _injury_blocks_at_month(
+            inj, month, current_season=current_season, month_day=month_day
+        ):
             return inj
     return None
 
@@ -746,6 +805,7 @@ def check_player_eligible(
     fixture_home: str | None = None,
     fixture_away: str | None = None,
     cl_phase: str | None = None,
+    schedule_month_day: int | None = None,
 ) -> tuple[bool, str | None]:
     """
     Можно ли вписать матчевую стату (голы и т.д.). Возвращает (ok, сообщение при запрете).
@@ -757,14 +817,20 @@ def check_player_eligible(
     month = max(1, min(10, int(schedule_month)))
 
     season_now = _get_active_season_or_default()
-    inj = _injury_blocking_at_month(st, name, team, month, current_season=season_now)
+    inj = _injury_blocking_at_month(
+        st, name, team, month, current_season=season_now, month_day=schedule_month_day
+    )
     if inj:
-        ret = int(inj.get("return_month") or 99)
         ofm = int(inj.get("out_from_month") or month)
+        ofd = inj.get("out_from_day")
+        ret_m = int(inj.get("return_month") or 99)
+        ret_d = inj.get("return_day")
         kind = (inj.get("type") or "травма").strip() or "травма"
+        span = format_calendar_date_label(ofm, ofd)
+        ret_s = format_calendar_date_label(ret_m, ret_d)
         return (
             False,
-            f"🚫 {name} — травма с {ofm} мес., выход с {ret} ({kind})",
+            f"🚫 {name} — травма с {span}, выход с {ret_s} ({kind})",
         )
 
     rnd = fixture_round
@@ -979,6 +1045,7 @@ def try_apply_discipline_line(
     fixture_home: str | None = None,
     fixture_away: str | None = None,
     cl_phase: str | None = None,
+    schedule_month_day: int | None = None,
 ) -> tuple[str | None, bool]:
     """
     Разбор строки дисциплины/травмы. (сообщение, обработано_ли).
@@ -1044,6 +1111,7 @@ def try_apply_discipline_line(
             league_code=league_code,
             fixture_home=fixture_home,
             fixture_away=fixture_away,
+            schedule_month_day=schedule_month_day,
         )
     m3 = _RE_INJ.match(raw)
     if m3:
@@ -1072,6 +1140,7 @@ def try_apply_discipline_line(
             league_code=league_code,
             fixture_home=fixture_home,
             fixture_away=fixture_away,
+            schedule_month_day=schedule_month_day,
         )
     if _RE_Y.match(raw):
         my = _RE_Y.match(raw)
@@ -1266,7 +1335,14 @@ def _apply_injury(
     league_code: str | None = None,
     fixture_home: str | None = None,
     fixture_away: str | None = None,
+    schedule_month_day: int | None = None,
 ) -> tuple[str | None, bool]:
+    from utils.season_calendar import (
+        LEGACY_DEFAULT_MONTH_DAY,
+        add_calendar_months,
+        days_in_month,
+        format_season_date,
+    )
     from utils.utils import get_session as _default_get_session
 
     t = "cl" if tournament == "cl" else "league"
@@ -1290,9 +1366,11 @@ def _apply_injury(
             return (f"✗ {err}", True)
         if not player:
             return (f"✗ Не найден: {name.strip()} ({team})", True)
-    cur = max(1, min(10, int(out_from_month if out_from_month is not None else month)))
-    ret = cur + int(nmonths)
+    cur_m = max(1, min(10, int(out_from_month if out_from_month is not None else month)))
+    cur_d = int(schedule_month_day or LEGACY_DEFAULT_MONTH_DAY)
+    cur_d = max(1, min(days_in_month(cur_m), cur_d))
     season_now = _get_active_season_or_default()
+    ret_s, ret_m, ret_d = add_calendar_months(season_now, cur_m, cur_d, int(nmonths))
     life_limit = _injury_life_limit(player)
     with _lock:
         st = _load()
@@ -1303,7 +1381,7 @@ def _apply_injury(
             tk = injury_type.strip() or "удар"
             inj = {
                 "key": _injury_life_strike_key(
-                    player.name, team, season_now, next_strike, cur
+                    player.name, team, season_now, next_strike, cur_m
                 ),
                 "name": player.name,
                 "name_norm": _norm(player.name),
@@ -1313,30 +1391,33 @@ def _apply_injury(
                 "strike": next_strike,
                 "life_limit": life_limit,
                 "season": season_now,
-                "month": cur,
+                "month": cur_m,
                 "type": tk,
             }
             st.setdefault("injuries", []).append(inj)
             _save(st)
             return (
                 f"✓ Удар ({tk}): {player.name} — жизни {next_strike}/{life_limit} "
-                f"({format_calendar_month_label(cur)}, без пропуска). "
+                f"({format_calendar_date_label(cur_m, cur_d)}, без пропуска). "
                 f"Следующий удар — травма на {nmonths} мес.",
                 True,
             )
         replaced = _drop_active_real_injuries(
-            st, player.name, team, month=cur, season=season_now
+            st, player.name, team, month=cur_m, season=season_now, month_day=cur_d
         )
         inj = {
             "key": _injury_period_key(
-                player.name, team, cur, ret, season_now
+                player.name, team, cur_m, ret_m, season_now
             ),
             "name": player.name,
             "name_norm": _norm(player.name),
             "team": team,
             "team_norm": _norm(team),
-            "out_from_month": cur,
-            "return_month": ret,
+            "out_from_month": cur_m,
+            "out_from_day": cur_d,
+            "return_month": ret_m,
+            "return_day": ret_d,
+            "return_season": ret_s,
             "type": injury_type,
             "season": season_now,
         }
@@ -1363,7 +1444,7 @@ def _apply_injury(
                     with _lock:
                         st2 = _load()
                         row = _find_injury_period(
-                            st2, player.name, team, cur, ret, season=season_now
+                            st2, player.name, team, cur_m, ret_m, season=season_now
                         )
                         if row is not None:
                             row["overall_before_penalty"] = overall_before_penalty
@@ -1378,15 +1459,11 @@ def _apply_injury(
     else:
         note = f"Травма на {nmonths} мес."
     carry = ""
-    if ret > _SEASON_MONTHS:
-        in_this = max(0, _SEASON_MONTHS + 1 - cur)
-        in_next = (ret - cur) - in_this
-        carry = (
-            f" Переход на следующий сезон: ~{in_this} мес. в этом, ~{in_next} мес. в следующем."
-        )
+    if ret_s > season_now:
+        carry = " Переход на следующий сезон."
     return (
-        f"✓ Травма ({tk}): {player.name} — с {format_calendar_month_label(cur)}, "
-        f"выход с {format_calendar_month_label(ret)} "
+        f"✓ Травма ({tk}): {player.name} — с {format_season_date(cur_m, cur_d)}, "
+        f"выход с {format_season_date(ret_m, ret_d)} "
         f"(срок {nmonths} мес.).{carry}{rating_note}{leave_note} {note}",
         True,
     )
@@ -1398,6 +1475,7 @@ def format_discipline_pre_match_notice_html(
     *,
     league_code: str,
     schedule_day: int | None = None,
+    schedule_month_day: int | None = None,
     cl_phase: str | None = None,
     fixture_round: int | None = None,
 ) -> str:
@@ -1412,6 +1490,7 @@ def format_discipline_pre_match_notice_html(
     season_now = _get_active_season_or_default()
     scope = "cl" if league_code == "cl" else "league"
     lc = "cl" if scope == "cl" else league_code
+    slot_date = format_calendar_date_label(month, schedule_month_day)
 
     with _lock:
         st = _load()
@@ -1427,20 +1506,27 @@ def format_discipline_pre_match_notice_html(
         for inj in st.get("injuries", []):
             if inj.get("team_norm") != team_norm:
                 continue
-            if not _injury_blocks_at_month(inj, month, current_season=season_now):
+            if not _injury_blocks_at_month(
+                inj, month, current_season=season_now, month_day=schedule_month_day
+            ):
                 continue
-            ret = int(inj.get("return_month") or 99)
             ofm = inj.get("out_from_month")
+            ofd = inj.get("out_from_day")
+            ret_m = int(inj.get("return_month") or 99)
+            ret_d = inj.get("return_day")
             nm = esc(str(inj.get("name", "?")))
             tk = esc((inj.get("type") or "травма").strip() or "травма")
             if ofm is not None:
+                span = format_calendar_date_label(int(ofm), ofd)
+                ret_s = format_calendar_date_label(ret_m, ret_d)
                 lines.append(
-                    f"• {nm} — <b>{tk}</b>: с <b>{int(ofm)}</b>-го мес., выход с <b>{ret}</b>-го "
-                    f"(слот <b>{month}</b>-й)"
+                    f"• {nm} — <b>{tk}</b>: с <b>{span}</b>, выход с <b>{ret_s}</b> "
+                    f"(слот <b>{slot_date}</b>)"
                 )
             else:
+                ret_s = format_calendar_date_label(ret_m, ret_d)
                 lines.append(
-                    f"• {nm} — <b>{tk}</b>: выход с <b>{ret}</b>-го мес. "
+                    f"• {nm} — <b>{tk}</b>: выход с <b>{ret_s}</b> "
                     f"(⚠ задайте <code>out_from_month</code> в JSON)"
                 )
         for row in st.get("suspensions", []):

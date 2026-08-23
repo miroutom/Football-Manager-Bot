@@ -420,7 +420,7 @@ def is_schedule_v3(data: list[dict] | dict) -> bool:
 
 
 def mixed_slot_label_from_raw(raw: Any) -> str:
-    """Подпись периода в UI (в календаре v3 и в боте — всегда «месяц»)."""
+    """Подпись периода в UI."""
     return "Месяц"
 
 
@@ -446,8 +446,14 @@ def load_parsed_mixed(path: Path | str | None = None) -> tuple[list[dict[str, An
         raw: Any = json.load(f)
     label = mixed_slot_label_from_raw(raw)
     if isinstance(raw, list):
-        return raw, label
+        from utils.season_calendar import ensure_flat_schedule_month_days
+
+        return ensure_flat_schedule_month_days(raw), label
     if isinstance(raw, dict) and int(raw.get("version") or 0) >= 3:
         flat = v3_to_flat_schedule(raw)
-        return (flat, label) if flat else ([], label)
+        if flat:
+            from utils.season_calendar import ensure_flat_schedule_month_days
+
+            return ensure_flat_schedule_month_days(flat), label
+        return ([], label)
     return [], label

@@ -50,6 +50,16 @@ _SKIP_THEME = LeagueTheme(
     (220, 140, 40), (40, 28, 16), (130, 100, 70), (220, 140, 40),
 )
 
+
+def _row_calendar_label(row: dict[str, Any]) -> str | None:
+    """Дата слота: ``15 авг`` или ``м2``, если день внутри месяца не задан."""
+    from utils.calendar_slot_labels import slot_calendar_short
+
+    day = row.get("day") if row.get("day") is not None else row.get("round")
+    if day is None:
+        return None
+    return slot_calendar_short(int(day), row.get("month_day"))
+
 _LEAGUE_SHORT = {
     "rpl": "РПЛ",
     "eng": "АПЛ",
@@ -166,7 +176,7 @@ def render_match_list_png_pages(
     rows_per_page: int = _ROWS_PAGE,
 ) -> list[bytes]:
     """
-    row keys: home, away, league, day|round, score (optional), meta (optional), status (optional)
+    row keys: home, away, league, day|round, month_day (optional), score (optional), meta (optional), status (optional)
     """
     theme = _match_list_theme(kind)
     if not rows:
@@ -204,10 +214,10 @@ def render_match_list_png_pages(
             cy = y0 + _ROW_H // 2
             lg = str(row.get("league") or "").lower()
             lg_lab = _LEAGUE_SHORT.get(lg, lg.upper() or "—")
-            day = row.get("day") if row.get("day") is not None else row.get("round")
             left_meta = f"{lg_lab}"
-            if day is not None:
-                left_meta += f" · м{day}"
+            date_label = _row_calendar_label(row)
+            if date_label:
+                left_meta += f" · {date_label}"
             meta = str(row.get("meta") or "").strip()
             if meta:
                 # короткие подписи — иначе «Симуляция» обрезается
@@ -277,6 +287,7 @@ def collect_schedule_rows(
                     "away": r.get("away"),
                     "league": lg,
                     "day": r.get("day"),
+                    "month_day": r.get("month_day"),
                     "score": score,
                     "meta": meta,
                 }
@@ -307,6 +318,7 @@ def collect_schedule_rows(
                     "away": s["away"],
                     "league": s["league_code"],
                     "day": s["day"],
+                    "month_day": s.get("month_day"),
                     "meta": lab or "",
                     "status": "",
                 }
@@ -320,16 +332,21 @@ def collect_schedule_rows(
         for day_data in mixed:
             day_num = day_data["day"]
             for match_str in day_data["matches"]:
-                parts = match_str.split(";")
-                if len(parts) < 3:
+                from utils.season_calendar import parse_mixed_match_line
+
+                parsed = parse_mixed_match_line(str(match_str))
+                home, away, league_code = parsed["home"], parsed["away"], parsed["league_code"]
+                if not home or not away or not league_code:
                     continue
-                home, away, league_code = parts[0], parts[1], parts[2]
                 if league_filter and league_code != league_filter:
                     continue
                 cl_ph = (
-                    cl_phase_from_mixed_schedule_line(match_str, day=day_num)
-                    if league_code == "cl"
-                    else None
+                    parsed.get("cl_phase")
+                    or (
+                        cl_phase_from_mixed_schedule_line(match_str, day=day_num)
+                        if league_code == "cl"
+                        else None
+                    )
                 )
                 teams = get_teams_by_league(league_code)
                 if not teams:
@@ -349,6 +366,7 @@ def collect_schedule_rows(
                         "away": away,
                         "league": league_code,
                         "day": day_num,
+                        "month_day": parsed.get("month_day"),
                         "meta": meta,
                         "status": "✓" if played else "",
                         "score": None,
@@ -357,6 +375,8 @@ def collect_schedule_rows(
         title = "КАЛЕНДАРЬ"
 
     sub = LEAGUE_NAMES.get(league_filter or "", "все лиги") if league_filter else "все лиги"
+    if match_filter_code != "played":
+        sub += " · авг — май"
     if sk == "sim":
         sub += " · сим"
     elif sk == "game":
@@ -383,6 +403,7 @@ def collect_journal_rows(limit: int = 120) -> tuple[str, str, list[dict[str, Any
                 "away": r.get("away"),
                 "league": lg,
                 "day": r.get("day"),
+                "month_day": r.get("month_day"),
                 "score": score,
                 "meta": meta,
             }
@@ -462,7 +483,12 @@ def render_next_match_infographic_png_bytes() -> list[bytes]:
 
     lg = LEAGUE_NAMES.get(league_code or "", league_code or "")
     lab = manager_session_label(home, away) or ""
-    sub = f"{lg} · месяц {day}" + (f" · {lab}" if lab else "")
+    from utils.calendar_slot_labels import slot_calendar_short
+    from utils.season_calendar import parse_mixed_match_line
+
+    month_day = parse_mixed_match_line(str(match_str)).get("month_day")
+    date_s = slot_calendar_short(day, month_day)
+    sub = f"{lg} · {date_s}" + (f" · {lab}" if lab else "")
     draw_header_bar(
         draw, theme=theme, width=w, height=_HEADER_H, title="СЛЕДУЮЩИЙ МАТЧ", subtitle=sub
     )
