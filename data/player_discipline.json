@@ -4193,18 +4193,17 @@
       "type": "травма"
     },
     {
-      "key": "лапорт|милан|4|2|6",
-      "name": "Лапорт",
-      "name_norm": "лапорт",
+      "key": "фофана|милан|4|life|1|2",
+      "name": "Фофана",
+      "name_norm": "фофана",
       "team": "Милан",
       "team_norm": "милан",
-      "out_from_month": 2,
-      "out_from_day": 10,
-      "return_month": 6,
-      "return_day": 10,
-      "return_season": 4,
-      "type": "травма",
-      "season": 4
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
+      "type": "травма"
     }
   ]
 }
