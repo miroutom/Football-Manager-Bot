@@ -158,8 +158,11 @@ def cl_phase_from_mixed_schedule_line(
     parts = [x.strip() for x in match_str.split(";")]
     if len(parts) < 3 or parts[2] != "cl":
         return None
-    if len(parts) >= 4:
-        return _normalize_cl_phase(parts[3])
+    tail = parts[3:]
+    if tail and tail[-1].isdigit():
+        tail.pop()
+    if tail:
+        return _normalize_cl_phase(tail[0])
     if day is not None:
         return cl_phase_from_calendar_day(day)
     h, a = _norm(parts[0]), _norm(parts[1])

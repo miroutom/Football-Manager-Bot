@@ -40,6 +40,24 @@ def test_injury_blocks_by_day_not_whole_month():
     assert not _injury_blocks_at_month(inj, 3, current_season=4, month_day=28)
 
 
+def test_cl_phase_ignores_month_day_suffix():
+    from match_results import cl_phase_from_mixed_schedule_line, is_match_played
+
+    ph = cl_phase_from_mixed_schedule_line("Арсенал;Реал;cl;12", day=1)
+    assert ph == "league"
+    assert is_match_played("Арсенал", "Реал", "cl", cl_phase=ph)
+    ph2 = cl_phase_from_mixed_schedule_line("Тоттенхэм;Милан;cl;14", day=1)
+    assert ph2 == "league"
+    assert is_match_played("Тоттенхэм", "Милан", "cl", cl_phase=ph2)
+
+
+def test_cl_phase_explicit_with_month_day():
+    from match_results import cl_phase_from_mixed_schedule_line
+
+    assert cl_phase_from_mixed_schedule_line("А;Б;cl;knockout;28", day=8) == "knockout"
+    assert cl_phase_from_mixed_schedule_line("А;Б;cl;league;15", day=1) == "league"
+
+
 def test_parse_mixed_match_line():
     p = parse_mixed_match_line("Лейпциг;Франкфурт;ger;31")
     assert p["home"] == "Лейпциг"
