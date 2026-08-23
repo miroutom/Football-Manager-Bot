@@ -29,6 +29,7 @@ from bot.team_history_gallery import (
     render_club_hall_of_fame_png,
     render_club_player_influence_png,
     render_club_season_matches_png,
+    render_club_streak_leaderboards_pages,
     render_compare_clubs_png,
     render_h2h_png,
     render_hall_of_fame_png,
@@ -150,6 +151,7 @@ def history_teams_kb() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="🏆 Чемпионства (вес лиг)", callback_data="hist:t:titles")],
             [InlineKeyboardButton(text="⚽ Голы клубов", callback_data="hist:t:goals")],
             [InlineKeyboardButton(text="🛡 Пропущенные", callback_data="hist:t:conceded")],
+            [InlineKeyboardButton(text="📈 Серии", callback_data="hist:t:streaks")],
             [InlineKeyboardButton(text="⚡ Рейтинг нападения", callback_data="hist:t:attack")],
             [InlineKeyboardButton(text="🧱 Рейтинг защиты", callback_data="hist:t:defense")],
             [InlineKeyboardButton(text="🔑 Влияние игрока", callback_data="hist:t:influence")],
@@ -691,6 +693,26 @@ async def cb_hist_club_goals(callback: CallbackQuery) -> None:
         png=pages,
         filename="history_club_goals.png",
         caption=cap,
+    )
+
+
+@history_router.callback_query(F.data == "hist:t:streaks")
+async def cb_hist_club_streaks(callback: CallbackQuery) -> None:
+    await callback.answer("Готовлю…")
+    try:
+        pages = await asyncio.to_thread(render_club_streak_leaderboards_pages, limit=20)
+    except Exception as e:
+        logger.exception("club streaks")
+        if callback.message:
+            await callback.message.answer(f"Ошибка: {e}")
+        return
+    await _send_png(
+        callback,
+        png=pages,
+        filename="history_club_streaks.png",
+        caption=(
+            "<b>Серии клубов</b> — топ-20 · победы · луз-стрики · без поражений · все сезоны"
+        ),
     )
 
 

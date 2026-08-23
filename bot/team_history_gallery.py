@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw
 
 from bot.squad_pitch import _paste_crest_natural, _pick_font, _try_load_crest_rgba
 from bot.team_history import (
+    ClubCareerStreaks,
     ClubLegend,
     _penalties_pair,
     _norm as _team_norm,
@@ -29,6 +30,7 @@ from bot.team_history import (
     manager_side_stats,
     nation_career_goals,
     prestige_dynamics,
+    rank_clubs_by_streak,
     season_cover_data,
     titled_players_for_team,
     titled_players_global,
@@ -1096,6 +1098,120 @@ def render_club_career_goals_pages(*, page_size: int = 10) -> list[bytes]:
             )
         )
     return pages
+
+
+def _render_streak_leaderboard_png(
+    *,
+    title: str,
+    subtitle: str,
+    rows: list[ClubCareerStreaks],
+    value_key: str,
+    value_label: str,
+) -> bytes:
+    font_b = _pick_font(20, bold=True)
+    font_r = _pick_font(22, bold=True)
+    font_head = _pick_font(14, bold=True)
+    font_num = _pick_font(19, bold=True)
+
+    row_h = 44
+    head_h = 34
+    n = max(1, len(rows))
+    table_h = head_h + n * row_h + 12
+    h = 118 + table_h + 36
+    im = _gradient_bg(min(h, 3200)).convert("RGBA")
+    draw = ImageDraw.Draw(im)
+    y = _title(draw, title, subtitle)
+
+    name_x = _PAD + 96
+    val_x = _CANVAS_W - _PAD - 80
+    name_max = val_x - name_x - 24
+
+    table_top = y
+    table_bot = y + table_h
+    draw.rounded_rectangle(
+        [_PAD, table_top, _CANVAS_W - _PAD, table_bot],
+        radius=14,
+        fill=_CARD,
+        outline=_LINE,
+        width=1,
+    )
+
+    hy = table_top + 4
+    draw.rounded_rectangle(
+        [_PAD + 4, hy, _CANVAS_W - _PAD - 4, hy + head_h],
+        radius=8,
+        fill=(18, 26, 42),
+    )
+    draw.text((_PAD + 18, hy + 8), "#", font=font_head, fill=_DIM)
+    draw.text((name_x, hy + 8), "Клуб", font=font_head, fill=_DIM)
+    vw = draw.textbbox((0, 0), value_label, font=font_head)[2]
+    draw.text((val_x - vw // 2, hy + 8), value_label, font=font_head, fill=_GOLD)
+
+    medal = {1: (255, 214, 110), 2: (198, 208, 224), 3: (205, 148, 98)}
+    y = hy + head_h
+
+    for i, row in enumerate(rows, 1):
+        top = y
+        if i % 2 == 0:
+            draw.rectangle(
+                [_PAD + 4, top, _CANVAS_W - _PAD - 4, top + row_h],
+                fill=(24, 34, 54),
+            )
+        if i <= 3:
+            draw.rounded_rectangle(
+                [_PAD + 6, top + 8, _PAD + 10, top + row_h - 8],
+                radius=2,
+                fill=medal[i],
+            )
+
+        rank_c = medal.get(i, _DIM)
+        draw.text((_PAD + 18, top + 10), f"{i:02d}", font=font_r, fill=rank_c)
+
+        crest = _try_load_crest_rgba(row.team)
+        if crest is not None:
+            _paste_crest_natural(im, crest, _PAD + 70, top + row_h // 2, 24)
+        draw.text(
+            (name_x, top + 11),
+            _fit(draw, row.team, font_b, name_max),
+            font=font_b,
+            fill=_TEXT,
+        )
+
+        val = str(getattr(row, value_key))
+        vtw = draw.textbbox((0, 0), val, font=font_num)[2]
+        draw.text((val_x - vtw // 2, top + 11), val, font=font_num, fill=_GOLD)
+        y += row_h
+
+    return _to_png(im.convert("RGB"))
+
+
+def render_club_streak_leaderboards_pages(*, limit: int = 20) -> list[bytes]:
+    """Три топа: победная серия, луз-стрик, без поражений — по ``limit`` клубов."""
+    limit = max(1, int(limit))
+    sub = f"Топ-{limit} · все сезоны · лига + ЛЧ"
+    return [
+        _render_streak_leaderboard_png(
+            title="Победные серии",
+            subtitle=sub,
+            rows=rank_clubs_by_streak("wins", limit=limit),
+            value_key="wins",
+            value_label="Побед",
+        ),
+        _render_streak_leaderboard_png(
+            title="Луз-стрики",
+            subtitle=sub,
+            rows=rank_clubs_by_streak("losses", limit=limit),
+            value_key="losses",
+            value_label="Пораж.",
+        ),
+        _render_streak_leaderboard_png(
+            title="Без поражений",
+            subtitle=sub,
+            rows=rank_clubs_by_streak("unbeaten", limit=limit),
+            value_key="unbeaten",
+            value_label="Матчей",
+        ),
+    ]
 
 
 def render_nation_career_goals_png(

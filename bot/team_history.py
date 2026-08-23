@@ -965,6 +965,28 @@ def compute_result_streaks(results: list[str]) -> dict[str, int]:
         best_l = max(best_l, cur_l)
     return {"unbeaten": best_u, "wins": best_w, "losses": best_l}
 
+
+def _match_chrono_key(m: dict[str, Any]) -> tuple[int, int, str]:
+    return (int(m.get("_season") or 0), int(m.get("day") or 0), str(m.get("league") or ""))
+
+
+def club_match_results_chronological(team: str) -> list[str]:
+    """Хронология ``W|D|L`` клуба по всем сезонам (лига + ЛЧ)."""
+    want = _norm(team)
+    rows = [
+        m
+        for m in iter_all_match_records()
+        if _norm(str(m.get("home") or "")) == want
+        or _norm(str(m.get("away") or "")) == want
+    ]
+    rows.sort(key=_match_chrono_key)
+    return [match_result_for_team(m, team)[0] for m in rows]
+
+
+def club_career_streaks_for(team: str) -> dict[str, int]:
+    return compute_result_streaks(club_match_results_chronological(team))
+
+
 def format_match_score_with_pens(m: dict[str, Any]) -> str:
     """``Ливерпуль 2:2 Аталанта (пен. 5:3)``."""
     home = str(m.get("home") or "")
@@ -1324,6 +1346,76 @@ def club_career_goals_for(team: str) -> ClubCareerGoals:
             return row
     display = team.strip().title() if team else "?"
     return ClubCareerGoals(team=display, league_gf=0, cl_gf=0)
+
+
+@dataclass
+class ClubCareerStreaks:
+    """Максимальные серии клуба за всю историю (лига + ЛЧ)."""
+
+    team: str
+    unbeaten: int
+    wins: int
+    losses: int
+
+
+def club_career_streaks(*, pool_only: bool = True) -> list[ClubCareerStreaks]:
+    pool = _current_pool_club_names()
+    by_norm: dict[str, str] = {_norm(n): n for n in pool}
+    team_norms: set[str] = set(by_norm.keys())
+    if not pool_only:
+        for m in iter_all_match_records():
+            for side in (m.get("home"), m.get("away")):
+                tn = _norm(str(side or ""))
+                if tn:
+                    team_norms.add(tn)
+
+    matches_by_team: dict[str, list[dict[str, Any]]] = {tn: [] for tn in team_norms}
+    for m in iter_all_match_records():
+        for side in (m.get("home"), m.get("away")):
+            tn = _norm(str(side or ""))
+            if tn in matches_by_team:
+                matches_by_team[tn].append(m)
+
+    out: list[ClubCareerStreaks] = []
+    for tn, matches in matches_by_team.items():
+        matches.sort(key=_match_chrono_key)
+        display = by_norm.get(tn)
+        if not display and matches:
+            for m in matches:
+                if _norm(str(m.get("home") or "")) == tn:
+                    display = str(m.get("home") or "").strip()
+                    break
+                if _norm(str(m.get("away") or "")) == tn:
+                    display = str(m.get("away") or "").strip()
+                    break
+        display = display or tn.title()
+        s = compute_result_streaks(
+            [match_result_for_team(m, display)[0] for m in matches]
+        )
+        out.append(
+            ClubCareerStreaks(
+                team=display,
+                unbeaten=int(s["unbeaten"]),
+                wins=int(s["wins"]),
+                losses=int(s["losses"]),
+            )
+        )
+    return out
+
+
+def rank_clubs_by_streak(
+    kind: str,
+    *,
+    limit: int = 20,
+    pool_only: bool = True,
+) -> list[ClubCareerStreaks]:
+    """``kind``: ``wins`` | ``losses`` | ``unbeaten``."""
+    key = str(kind or "wins").strip().lower()
+    if key not in {"wins", "losses", "unbeaten"}:
+        raise ValueError("kind must be wins, losses or unbeaten")
+    rows = club_career_streaks(pool_only=pool_only)
+    rows.sort(key=lambda r: (-getattr(r, key), r.team.casefold()))
+    return rows[: max(1, int(limit))]
 
 
 @dataclass

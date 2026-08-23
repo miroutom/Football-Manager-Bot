@@ -296,11 +296,12 @@ def render_prestige_breakdown_pages(*, page_size: int = 10) -> list[bytes]:
 
 def render_club_dossier_png(team: str) -> bytes:
     from bot.report_gfx import paste_nation_flag
-    from bot.team_history import format_season_list, format_season_tag
+    from bot.team_history import club_career_streaks_for, format_season_list, format_season_tag
 
     is_nat = is_nation_name(team)
     d: ClubDossier = build_nation_dossier(team) if is_nat else build_club_dossier(team)
     p: TeamPrestige = d.prestige
+    streak_row_h = 0 if is_nat else 84
 
     awards_block_h = 0
     if d.awards:
@@ -309,7 +310,7 @@ def render_club_dossier_png(team: str) -> bytes:
     if d.special_cups:
         special_h = 36 + ((len(d.special_cups) + 1) // 2) * 72 + 16
     legends_h = 52 + max(1, len(d.legends)) * 32
-    h = 560 + awards_block_h + special_h + legends_h
+    h = 560 + streak_row_h + awards_block_h + special_h + legends_h
     im = _gradient_bg(h).convert("RGBA")
     draw = ImageDraw.Draw(im)
 
@@ -374,6 +375,37 @@ def render_club_dossier_png(team: str) -> bytes:
         )
 
     y = 224
+    if not is_nat:
+        streaks = club_career_streaks_for(team)
+        gap = 14
+        n = 3
+        card_w = (_CANVAS_W - 2 * _PAD - (n - 1) * gap) // n
+        y0 = 210
+        for i, (lab, val) in enumerate(
+            [
+                ("Без пораж. · макс", str(streaks["unbeaten"])),
+                ("Победы · макс", str(streaks["wins"])),
+                ("Лузы · макс", str(streaks["losses"])),
+            ]
+        ):
+            x0 = _PAD + i * (card_w + gap)
+            draw.rounded_rectangle(
+                [x0, y0, x0 + card_w, y0 + 72],
+                radius=12,
+                fill=_CARD,
+                outline=_LINE,
+            )
+            lw = draw.textbbox((0, 0), lab, font=font_sm)[2]
+            draw.text((x0 + (card_w - lw) // 2, y0 + 10), lab, font=font_sm, fill=_DIM)
+            vw = draw.textbbox((0, 0), val, font=font_kpi)[2]
+            draw.text(
+                (x0 + (card_w - vw) // 2, y0 + 32),
+                val,
+                font=font_kpi,
+                fill=_TEXT,
+            )
+        y = 224 + streak_row_h
+
     if is_nat:
         draw.text((_PAD, y), "Трофеи ЧМ", font=font_b, fill=_TEXT)
         y += 34
