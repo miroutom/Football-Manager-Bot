@@ -2885,5 +2885,12 @@
     "tournament": "cl",
     "cl_phase": "league",
     "day": 2
+  },
+  {
+    "home": "Наполи",
+    "away": "Атлетик",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
   }
 ]

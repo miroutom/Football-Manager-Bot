@@ -117,6 +117,17 @@
       "scope": "league",
       "matches_left": 3,
       "unavailable_from_round": 2
+    },
+    {
+      "key": "гвардиоль|атлетик|esp|league",
+      "name": "Гвардиоль",
+      "name_norm": "гвардиоль",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "league_code": "esp",
+      "scope": "league",
+      "matches_left": 3,
+      "unavailable_from_round": 4
     }
   ],
   "yellow_cycle": [
@@ -267,6 +278,116 @@
       "team": "Астон Вилла",
       "team_norm": "астон вилла",
       "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "гюсто|челси|eng|league",
+      "name": "Гюсто",
+      "name_norm": "гюсто",
+      "team": "Челси",
+      "team_norm": "челси",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "маркао|челси|eng|league",
+      "name": "Маркао",
+      "name_norm": "маркао",
+      "team": "Челси",
+      "team_norm": "челси",
+      "league_code": "eng",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "романьоли|наполи|cl|cl",
+      "name": "Романьоли",
+      "name_norm": "романьоли",
+      "team": "Наполи",
+      "team_norm": "наполи",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "гвардиоль|атлетик|cl|cl",
+      "name": "Гвардиоль",
+      "name_norm": "гвардиоль",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "талиска|жирона|esp|league",
+      "name": "Талиска",
+      "name_norm": "талиска",
+      "team": "Жирона",
+      "team_norm": "жирона",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "эль шарави|атлетико|esp|league",
+      "name": "Эль Шарави",
+      "name_norm": "эль шарави",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "вальверде|атлетико|esp|league",
+      "name": "Вальверде",
+      "name_norm": "вальверде",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "дардер|севилья|esp|league",
+      "name": "Дардер",
+      "name_norm": "дардер",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "итакура|севилья|esp|league",
+      "name": "Итакура",
+      "name_norm": "итакура",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 2
+    },
+    {
+      "key": "пиннок|севилья|esp|league",
+      "name": "Пиннок",
+      "name_norm": "пиннок",
+      "team": "Севилья",
+      "team_norm": "севилья",
+      "league_code": "esp",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "начо|реал|esp|league",
+      "name": "Начо",
+      "name_norm": "начо",
+      "team": "Реал",
+      "team_norm": "реал",
+      "league_code": "esp",
       "scope": "league",
       "count": 1
     }
@@ -3844,6 +3965,121 @@
       "life_limit": 2,
       "season": 4,
       "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "мертенс|ньюкасл|4|life|1|2",
+      "name": "Мертенс",
+      "name_norm": "мертенс",
+      "team": "Ньюкасл",
+      "team_norm": "ньюкасл",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "висса|жирона|4|life|1|1",
+      "name": "Висса",
+      "name_norm": "висса",
+      "team": "Жирона",
+      "team_norm": "жирона",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "джикия|атлетико|4|life|1|1",
+      "name": "Джикия",
+      "name_norm": "джикия",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "иньяки|атлетик|4|life|1|2",
+      "name": "Иньяки",
+      "name_norm": "иньяки",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "мбаппе|атлетик|4|life|1|2",
+      "name": "Мбаппе",
+      "name_norm": "мбаппе",
+      "team": "Атлетик",
+      "team_norm": "атлетик",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "клаудиньо|лейпциг|4|1|3",
+      "name": "Клаудиньо",
+      "name_norm": "клаудиньо",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "out_from_month": 1,
+      "return_month": 3,
+      "type": "травма",
+      "season": 4
+    },
+    {
+      "key": "хульманд|лейпциг|4|life|1|1",
+      "name": "Хульманд",
+      "name_norm": "хульманд",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "сейвальд|лейпциг|4|life|1|1",
+      "name": "Сейвальд",
+      "name_norm": "сейвальд",
+      "team": "Лейпциг",
+      "team_norm": "лейпциг",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
+      "type": "травма"
+    },
+    {
+      "key": "мусиаля|франкфурт|4|life|1|1",
+      "name": "Мусиаля",
+      "name_norm": "мусиаля",
+      "team": "Франкфурт",
+      "team_norm": "франкфурт",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 1,
       "type": "травма"
     }
   ]
