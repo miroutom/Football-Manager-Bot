@@ -526,7 +526,8 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
                      increment_matches: bool = True,
                      team_goals_already: int = 0,
                      team_assists_already: int = 0,
-                     sync_derived: bool = True):
+                     sync_derived: bool = True,
+                     include_left_in_lookup: bool = False):
     """
     Добавить статистику игрока после матча.
 
@@ -559,14 +560,14 @@ def add_player_stats(name: str, position: str, team: str, goals: int = 0, assist
 
         if position is None or auto_find:
             player, err = resolve_player_query_in_team(
-                session, team, name, position=None
+                session, team, name, position=None, include_left=include_left_in_lookup
             )
             if err:
                 print(f"  ✗ {err}")
                 return False
         else:
             player, err = resolve_player_query_in_team(
-                session, team, name, position=position.upper()
+                session, team, name, position=position.upper(), include_left=include_left_in_lookup
             )
             if err:
                 print(f"  ✗ {err}")
@@ -1468,6 +1469,7 @@ def apply_stats_bot_line(
     session_acc: dict[str, dict] | None = None,
     stats_played_keys: set[str] | None = None,
     confirm_unlisted_apply: bool = False,
+    include_left_in_lookup: bool = False,
 ) -> tuple[str, str, bool, dict | None]:
     """
     Одна строка ввода статистики для бота (без input()).
@@ -1529,6 +1531,7 @@ def apply_stats_bot_line(
                     sess_chk,
                     current_team.strip().title(),
                     pname_chk.strip(),
+                    include_left=include_left_in_lookup,
                 )
                 if pl_chk:
                     key_chk = _stats_session_key(pl_chk.name, pl_chk.team)
@@ -1550,6 +1553,7 @@ def apply_stats_bot_line(
             schedule_month=msched,
             fixture_home=home_team,
             fixture_away=away_team,
+            include_left=include_left_in_lookup,
         )
         if handled:
             tail = ""
@@ -1563,6 +1567,7 @@ def apply_stats_bot_line(
                         sess,
                         current_team.strip().title(),
                         pname_raw.strip(),
+                        include_left=include_left_in_lookup,
                     )
                     if pl:
                         key_d = _stats_session_key(pl.name, pl.team)
@@ -1692,6 +1697,7 @@ def apply_stats_bot_line(
             team_goals_already=team_g0,
             team_assists_already=team_a0,
             sync_derived=False,
+            include_left_in_lookup=include_left_in_lookup,
         )
     out = buf2.getvalue().strip()
     if not ok_add:

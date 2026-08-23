@@ -943,6 +943,7 @@ def try_apply_discipline_line(
     fixture_home: str | None = None,
     fixture_away: str | None = None,
     cl_phase: str | None = None,
+    include_left: bool = False,
 ) -> tuple[str | None, bool]:
     """
     Разбор строки дисциплины/травмы. (сообщение, обработано_ли).
@@ -974,11 +975,12 @@ def try_apply_discipline_line(
             add_red=1,
             kind_label="2-я жёлтая (кк)",
             unavailable_from_round=ban_from,
+            fixture_home=fixture_home,
+            fixture_away=fixture_away,
+            include_left=include_left,
         )
     m3f = _RE_INJ_FROM.match(raw)
     if m3f:
-        from player_stats import find_player_by_name, get_session
-
         name = m3f.group(1).strip()
         out_from = int(m3f.group(2))
         nm = int(m3f.group(3))
@@ -1002,14 +1004,16 @@ def try_apply_discipline_line(
             schedule_month,
             nm,
             injury_type,
-            find_player_by_name,
-            get_session,
+            None,
+            None,
             out_from_month=out_from,
+            league_code=league_code,
+            fixture_home=fixture_home,
+            fixture_away=fixture_away,
+            include_left=include_left,
         )
     m3 = _RE_INJ.match(raw)
     if m3:
-        from player_stats import find_player_by_name, get_session
-
         name, nm = m3.group(1).strip(), int(m3.group(2))
         raw_type = (m3.group(3) or "").strip()
         if nm < 1 or nm > _MAX_INJURY_DURATION_MONTHS:
@@ -1030,8 +1034,12 @@ def try_apply_discipline_line(
             schedule_month,
             nm,
             injury_type,
-            find_player_by_name,
-            get_session,
+            None,
+            None,
+            league_code=league_code,
+            fixture_home=fixture_home,
+            fixture_away=fixture_away,
+            include_left=include_left,
         )
     if _RE_Y.match(raw):
         my = _RE_Y.match(raw)
@@ -1042,6 +1050,9 @@ def try_apply_discipline_line(
             tournament,
             league_code,
             unavailable_from_round=ban_from,
+            fixture_home=fixture_home,
+            fixture_away=fixture_away,
+            include_left=include_left,
         )
     if _RE_R.match(raw) and not m2:
         mr = _RE_R.match(raw)
@@ -1057,8 +1068,48 @@ def try_apply_discipline_line(
             add_red=1,
             kind_label="прямая кк",
             unavailable_from_round=ban_from,
+            fixture_home=fixture_home,
+            fixture_away=fixture_away,
+            include_left=include_left,
         )
     return (None, False)
+
+
+def _resolve_discipline_player(
+    name: str,
+    *,
+    current_team: str,
+    tournament: str,
+    league_code: str,
+    fixture_home: str | None = None,
+    fixture_away: str | None = None,
+    include_left: bool = False,
+) -> tuple[Any | None, str | None, str]:
+    """
+    Игрок для жк/кк/травмы: текущая сторона ввода, затем хозяева/гости матча.
+    ``include_left`` — учитывать ``left_team`` (ввод статы уже сыгранного матча).
+    """
+    from utils.player_names import resolve_player_query_in_team
+    from utils.utils import get_session
+
+    t = "cl" if tournament == "cl" or (league_code or "") == "cl" else "league"
+    sess = get_session(t)
+    teams: list[str] = []
+    for raw in (current_team, fixture_home, fixture_away):
+        tt = (raw or "").strip().title()
+        if tt and tt not in teams:
+            teams.append(tt)
+    last_err: str | None = None
+    for team in teams:
+        player, err = resolve_player_query_in_team(
+            sess, team, name, include_left=include_left
+        )
+        if player:
+            return player, None, (getattr(player, "team", None) or team).strip().title()
+        if err:
+            last_err = err
+    hint = (current_team or "").strip().title() or "?"
+    return None, last_err or f"Не найден: {name.strip()} ({hint})", hint
 
 
 def _apply_yellow(
@@ -1068,15 +1119,24 @@ def _apply_yellow(
     league_code: str,
     *,
     unavailable_from_round: int | None = None,
+    fixture_home: str | None = None,
+    fixture_away: str | None = None,
+    include_left: bool = False,
 ) -> tuple[str | None, bool]:
-    from utils.player_names import resolve_player_query_in_team
-    from utils.utils import get_session
     from utils.stats_derived_sync import record_stat_write
+    from utils.utils import get_session
 
     t = "cl" if tournament == "cl" or (league_code or "") == "cl" else "league"
     sess = get_session(t)
-    team = current_team.strip().title()
-    player, err = resolve_player_query_in_team(sess, team, name)
+    player, err, team = _resolve_discipline_player(
+        name,
+        current_team=current_team,
+        tournament=tournament,
+        league_code=league_code,
+        fixture_home=fixture_home,
+        fixture_away=fixture_away,
+        include_left=include_left,
+    )
     if err:
         return (f"✗ {err}", True)
     if not player:
@@ -1112,15 +1172,24 @@ def _apply_red_card(
     add_red: int,
     kind_label: str,
     unavailable_from_round: int | None = None,
+    fixture_home: str | None = None,
+    fixture_away: str | None = None,
+    include_left: bool = False,
 ) -> tuple[str | None, bool]:
-    from utils.player_names import resolve_player_query_in_team
-    from utils.utils import get_session
     from utils.stats_derived_sync import record_stat_write
+    from utils.utils import get_session
 
     t = "cl" if tournament == "cl" or league_code == "cl" else "league"
     sess = get_session(t)
-    team = current_team.strip().title()
-    player, err = resolve_player_query_in_team(sess, team, name)
+    player, err, team = _resolve_discipline_player(
+        name,
+        current_team=current_team,
+        tournament=tournament,
+        league_code=league_code,
+        fixture_home=fixture_home,
+        fixture_away=fixture_away,
+        include_left=include_left,
+    )
     if err:
         return (f"✗ {err}", True)
     if not player:
@@ -1172,14 +1241,35 @@ def _apply_injury(
     get_sess,
     *,
     out_from_month: int | None = None,
+    league_code: str | None = None,
+    fixture_home: str | None = None,
+    fixture_away: str | None = None,
+    include_left: bool = False,
 ) -> tuple[str | None, bool]:
+    from utils.utils import get_session as _default_get_session
+
     t = "cl" if tournament == "cl" else "league"
-    sess = get_sess(t)
+    sess = (get_sess or _default_get_session)(t)
     team = current_team.strip().title()
-    nmt = name.title()
-    player, _ = find_pl(sess, nmt, team)
-    if not player:
-        return (f"✗ Не найден: {nmt} ({team})", True)
+    if find_pl is not None:
+        nmt = name.title()
+        player, _ = find_pl(sess, nmt, team)
+        if not player:
+            return (f"✗ Не найден: {nmt} ({team})", True)
+    else:
+        player, err, team = _resolve_discipline_player(
+            name,
+            current_team=current_team,
+            tournament=tournament,
+            league_code=league_code or ("cl" if t == "cl" else ""),
+            fixture_home=fixture_home,
+            fixture_away=fixture_away,
+            include_left=include_left,
+        )
+        if err:
+            return (f"✗ {err}", True)
+        if not player:
+            return (f"✗ Не найден: {name.strip()} ({team})", True)
     cur = max(1, min(10, int(out_from_month if out_from_month is not None else month)))
     ret = cur + int(nmonths)
     season_now = _get_active_season_or_default()
