@@ -532,6 +532,42 @@ def _injuries_for_player(st: dict, name: str, team: str) -> list[dict]:
     ]
 
 
+def _player_has_real_injury_history(st: dict, name: str, team: str) -> bool:
+    return any(
+        not row.get("life_only") for row in _injuries_for_player(st, name, team)
+    )
+
+
+def _drop_active_real_injuries(
+    st: dict,
+    name: str,
+    team: str,
+    *,
+    month: int,
+    season: int,
+) -> int:
+    """Убрать активные реальные травмы игрока — новая заменяет старую, не суммируется."""
+    nn, tn = _norm(name), _norm(team)
+    removed = 0
+    kept: list[dict] = []
+    for row in st.get("injuries") or []:
+        if not isinstance(row, dict):
+            kept.append(row)
+            continue
+        if row.get("name_norm") != nn or row.get("team_norm") != tn:
+            kept.append(row)
+            continue
+        if row.get("life_only"):
+            kept.append(row)
+            continue
+        if _injury_blocks_at_month(row, month, current_season=season):
+            removed += 1
+            continue
+        kept.append(row)
+    st["injuries"] = kept
+    return removed
+
+
 def _find_injury_period(
     st: dict,
     name: str,
@@ -943,7 +979,6 @@ def try_apply_discipline_line(
     fixture_home: str | None = None,
     fixture_away: str | None = None,
     cl_phase: str | None = None,
-    include_left: bool = False,
 ) -> tuple[str | None, bool]:
     """
     Разбор строки дисциплины/травмы. (сообщение, обработано_ли).
@@ -977,7 +1012,6 @@ def try_apply_discipline_line(
             unavailable_from_round=ban_from,
             fixture_home=fixture_home,
             fixture_away=fixture_away,
-            include_left=include_left,
         )
     m3f = _RE_INJ_FROM.match(raw)
     if m3f:
@@ -1010,7 +1044,6 @@ def try_apply_discipline_line(
             league_code=league_code,
             fixture_home=fixture_home,
             fixture_away=fixture_away,
-            include_left=include_left,
         )
     m3 = _RE_INJ.match(raw)
     if m3:
@@ -1039,7 +1072,6 @@ def try_apply_discipline_line(
             league_code=league_code,
             fixture_home=fixture_home,
             fixture_away=fixture_away,
-            include_left=include_left,
         )
     if _RE_Y.match(raw):
         my = _RE_Y.match(raw)
@@ -1052,7 +1084,6 @@ def try_apply_discipline_line(
             unavailable_from_round=ban_from,
             fixture_home=fixture_home,
             fixture_away=fixture_away,
-            include_left=include_left,
         )
     if _RE_R.match(raw) and not m2:
         mr = _RE_R.match(raw)
@@ -1070,7 +1101,6 @@ def try_apply_discipline_line(
             unavailable_from_round=ban_from,
             fixture_home=fixture_home,
             fixture_away=fixture_away,
-            include_left=include_left,
         )
     return (None, False)
 
@@ -1083,11 +1113,9 @@ def _resolve_discipline_player(
     league_code: str,
     fixture_home: str | None = None,
     fixture_away: str | None = None,
-    include_left: bool = False,
 ) -> tuple[Any | None, str | None, str]:
     """
     Игрок для жк/кк/травмы: текущая сторона ввода, затем хозяева/гости матча.
-    ``include_left`` — учитывать ``left_team`` (ввод статы уже сыгранного матча).
     """
     from utils.player_names import resolve_player_query_in_team
     from utils.utils import get_session
@@ -1101,9 +1129,7 @@ def _resolve_discipline_player(
             teams.append(tt)
     last_err: str | None = None
     for team in teams:
-        player, err = resolve_player_query_in_team(
-            sess, team, name, include_left=include_left
-        )
+        player, err = resolve_player_query_in_team(sess, team, name)
         if player:
             return player, None, (getattr(player, "team", None) or team).strip().title()
         if err:
@@ -1121,7 +1147,6 @@ def _apply_yellow(
     unavailable_from_round: int | None = None,
     fixture_home: str | None = None,
     fixture_away: str | None = None,
-    include_left: bool = False,
 ) -> tuple[str | None, bool]:
     from utils.stats_derived_sync import record_stat_write
     from utils.utils import get_session
@@ -1135,7 +1160,6 @@ def _apply_yellow(
         league_code=league_code,
         fixture_home=fixture_home,
         fixture_away=fixture_away,
-        include_left=include_left,
     )
     if err:
         return (f"✗ {err}", True)
@@ -1174,7 +1198,6 @@ def _apply_red_card(
     unavailable_from_round: int | None = None,
     fixture_home: str | None = None,
     fixture_away: str | None = None,
-    include_left: bool = False,
 ) -> tuple[str | None, bool]:
     from utils.stats_derived_sync import record_stat_write
     from utils.utils import get_session
@@ -1188,7 +1211,6 @@ def _apply_red_card(
         league_code=league_code,
         fixture_home=fixture_home,
         fixture_away=fixture_away,
-        include_left=include_left,
     )
     if err:
         return (f"✗ {err}", True)
@@ -1244,7 +1266,6 @@ def _apply_injury(
     league_code: str | None = None,
     fixture_home: str | None = None,
     fixture_away: str | None = None,
-    include_left: bool = False,
 ) -> tuple[str | None, bool]:
     from utils.utils import get_session as _default_get_session
 
@@ -1264,7 +1285,6 @@ def _apply_injury(
             league_code=league_code or ("cl" if t == "cl" else ""),
             fixture_home=fixture_home,
             fixture_away=fixture_away,
-            include_left=include_left,
         )
         if err:
             return (f"✗ {err}", True)
@@ -1278,7 +1298,8 @@ def _apply_injury(
         st = _load()
         pending = _injury_pending_strikes(st, player.name, team)
         next_strike = pending + 1
-        if next_strike < life_limit:
+        has_real_history = _player_has_real_injury_history(st, player.name, team)
+        if next_strike < life_limit and not has_real_history:
             tk = injury_type.strip() or "удар"
             inj = {
                 "key": _injury_life_strike_key(
@@ -1303,32 +1324,24 @@ def _apply_injury(
                 f"Следующий удар — травма на {nmonths} мес.",
                 True,
             )
-        inj = _find_injury_period(
-            st, player.name, team, cur, ret, season=season_now
+        replaced = _drop_active_real_injuries(
+            st, player.name, team, month=cur, season=season_now
         )
-        if inj is None:
-            inj = {
-                "key": _injury_period_key(
-                    player.name, team, cur, ret, season_now
-                ),
-                "name": player.name,
-                "name_norm": _norm(player.name),
-                "team": team,
-                "team_norm": _norm(team),
-                "out_from_month": cur,
-                "return_month": ret,
-                "type": injury_type,
-                "season": season_now,
-            }
-            st.setdefault("injuries", []).append(inj)
-            added = True
-        else:
-            inj["type"] = injury_type
-            inj["season"] = season_now
-            inj["key"] = _injury_period_key(
+        inj = {
+            "key": _injury_period_key(
                 player.name, team, cur, ret, season_now
-            )
-            added = False
+            ),
+            "name": player.name,
+            "name_norm": _norm(player.name),
+            "team": team,
+            "team_norm": _norm(team),
+            "out_from_month": cur,
+            "return_month": ret,
+            "type": injury_type,
+            "season": season_now,
+        }
+        st.setdefault("injuries", []).append(inj)
+        added = not has_real_history
         _save(st)
     leave_note = ""
     if added:
@@ -1358,11 +1371,12 @@ def _apply_injury(
             elif bump_res.errors:
                 rating_note = f" (рейтинг: {bump_res.errors[0]})"
     tk = injury_type.strip() or "травма"
-    note = (
-        f"Жизни исчерпаны ({life_limit}/{life_limit}) — травма на {nmonths} мес."
-        if added
-        else "Период уже был — обновлён только тип."
-    )
+    if added:
+        note = f"Жизни исчерпаны ({life_limit}/{life_limit}) — травма на {nmonths} мес."
+    elif replaced:
+        note = f"Активная травма заменена — срок {nmonths} мес. (не суммируется)."
+    else:
+        note = f"Травма на {nmonths} мес."
     carry = ""
     if ret > _SEASON_MONTHS:
         in_this = max(0, _SEASON_MONTHS + 1 - cur)

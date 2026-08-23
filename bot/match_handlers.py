@@ -3124,7 +3124,6 @@ async def _apply_stats_line_from_message(
         session_acc=session_acc,
         stats_played_keys=stats_played_keys,
         confirm_unlisted_apply=confirm_unlisted_apply,
-        include_left_in_lookup=True,
     )
     if confirm and not confirm_unlisted_apply:
         await state.update_data(stats_pending_confirm=confirm)

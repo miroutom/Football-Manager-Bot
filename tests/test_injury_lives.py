@@ -214,13 +214,59 @@ def test_actual_injury_resets_pending_strikes(monkeypatch, tmp_path):
     monkeypatch.setattr(pd, "_mark_player_left_team_in_dbs", lambda *a: False)
 
     pd._apply_injury("Тестов", "Интер", "league", 1, 2, "т", fake_find, fake_sess)
-    pd._apply_injury("Тестов", "Интер", "league", 3, 2, "т", fake_find, fake_sess)
+    pd._apply_injury("Тестов", "Интер", "league", 3, 4, "т", fake_find, fake_sess)
 
     st = pd._load()
     assert pd._injury_pending_strikes(st, "Тестов", "Интер") == 0
+    real_before = [r for r in st["injuries"] if not r.get("life_only")]
+    assert len(real_before) == 1
+    assert real_before[0]["return_month"] == 7
 
     msg, _ = pd._apply_injury("Тестов", "Интер", "league", 6, 2, "т", fake_find, fake_sess)
-    assert "1/2" in msg
+    assert "заменена" in msg
+    st = pd._load()
+    real = [r for r in st["injuries"] if not r.get("life_only")]
+    assert len(real) == 1
+    assert real[0]["out_from_month"] == 6
+    assert real[0]["return_month"] == 8
+    assert not pd._injury_blocks_at_month(real[0], 5, current_season=4)
+    assert pd._injury_blocks_at_month(real[0], 6, current_season=4)
+
+
+def test_real_injury_replaced_not_summed(monkeypatch, tmp_path):
+    import utils.player_discipline as pd
+
+    store = tmp_path / "player_discipline.json"
+    store.write_text(
+        '{"version":1,"suspensions":[],"yellow_cycle":[],"injuries":[]}',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(pd, "_STATE_PATH", store)
+    monkeypatch.setattr(pd, "_get_active_season_or_default", lambda: 4)
+    monkeypatch.setattr(pd, "_mark_player_left_team_in_dbs", lambda *a: False)
+
+    player = SimpleNamespace(name="Тестов", position="ЦП", overall=80, left_team=False)
+
+    def fake_find(sess, name, team):
+        return player, None
+
+    def fake_sess(t):
+        return object()
+
+    pd._apply_injury("Тестов", "Интер", "league", 1, 2, "т", fake_find, fake_sess)
+    pd._apply_injury("Тестов", "Интер", "league", 2, 4, "т", fake_find, fake_sess)
+    pd._apply_injury("Тестов", "Интер", "league", 4, 2, "т", fake_find, fake_sess)
+
+    st = pd._load()
+    real = [r for r in st["injuries"] if not r.get("life_only")]
+    assert len(real) == 1
+    assert real[0]["out_from_month"] == 4
+    assert real[0]["return_month"] == 6
+    assert _injury_months(real[0]) == 2
+
+
+def _injury_months(row: dict) -> int:
+    return int(row["return_month"]) - int(row["out_from_month"])
 
 
 def test_close_stale_carryover_injuries(monkeypatch, tmp_path):
