@@ -2707,6 +2707,34 @@
       "to_team": "Вольфсбург",
       "new_status": "reserve",
       "effective_month": 6
+    },
+    {
+      "ts": "2026-08-26T21:01:12+00:00",
+      "user_id": null,
+      "player": "Орта",
+      "from_team": "Спартак",
+      "position": "ЦАП",
+      "to_team": "Челси",
+      "new_status": "bench"
+    },
+    {
+      "ts": "2026-08-26T21:01:13+00:00",
+      "user_id": null,
+      "player": "Егорычев",
+      "from_team": "Челси",
+      "position": "ЦП",
+      "to_team": "Спартак",
+      "new_status": "bench"
+    },
+    {
+      "ts": "2026-08-26T21:01:13+00:00",
+      "user_id": null,
+      "player": "Меламед",
+      "from_team": "Спартак",
+      "position": "ЦАП",
+      "to_team": "(свободный агент)",
+      "new_status": "bench",
+      "free_agent": true
     }
   ]
 }
