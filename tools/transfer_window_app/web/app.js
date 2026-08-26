@@ -55,6 +55,10 @@ let positionsCatalog = [
 ];
 let coachesCatalog = [];
 let playerProfiles = {};
+let highlightPlayerId = null;
+let playerSearchHits = [];
+let playerSearchActiveIdx = -1;
+let highlightPlayerTimer = null;
 
 const SQUAD_TARGET = 32;
 const SQUAD_START_TARGET = 11;
@@ -1463,6 +1467,233 @@ function playerMatchesNameSearch(p, q) {
   const parts = name.split(/\s+/).filter(Boolean);
   const surname = parts.length ? parts[parts.length - 1] : name;
   return surname.includes(ql) || surname.startsWith(ql);
+}
+
+function teamHasPlayerId(team, playerId) {
+  if (!team || !playerId) return false;
+  for (const zone of ["start", "bench", "reserve"]) {
+    for (const slot of team[zone] || []) {
+      if (slot?.id === playerId) return true;
+    }
+  }
+  return false;
+}
+
+function teamLabelForSearch(teamName) {
+  if (teamName === FA_TEAM) return "FA";
+  return teamName;
+}
+
+function collectSearchablePlayers() {
+  const out = [];
+  const seen = new Set();
+  const add = (p, teamName) => {
+    if (!p?.id || seen.has(p.id)) return;
+    seen.add(p.id);
+    out.push({
+      id: p.id,
+      name: p.name,
+      nickname: p.nickname,
+      position: p.position,
+      overall: p.overall,
+      teamName,
+    });
+  };
+  for (const team of teams) {
+    for (const zone of ["start", "bench", "reserve"]) {
+      for (const slot of team[zone] || []) {
+        if (slot?.id) add(slot, team.name);
+      }
+    }
+  }
+  if (!isNationsMode()) {
+    for (const p of freeAgents) add(p, FA_TEAM);
+  }
+  return out;
+}
+
+function searchPlayersGlobal(query, limit = 30) {
+  const q = (query || "").trim();
+  if (q.length < 2) return [];
+  const hits = collectSearchablePlayers().filter((p) => playerMatchesNameSearch(p, q));
+  hits.sort((a, b) => {
+    const od = (Number(b.overall) || 0) - (Number(a.overall) || 0);
+    if (od !== 0) return od;
+    return String(a.name || "").localeCompare(String(b.name || ""), "ru");
+  });
+  return hits.slice(0, limit);
+}
+
+function formatPlayerSearchLine(entry) {
+  const pos = String(entry.position || "?").trim();
+  const ovr = Number(entry.overall) || 0;
+  const club = teamLabelForSearch(entry.teamName);
+  return `${entry.name} ${pos} ${ovr} ${club}`;
+}
+
+function hidePlayerSearchResults() {
+  const list = document.getElementById("player-search-results");
+  const input = document.getElementById("player-search");
+  if (list) {
+    list.classList.add("hidden");
+    list.innerHTML = "";
+  }
+  if (input) input.setAttribute("aria-expanded", "false");
+  playerSearchHits = [];
+  playerSearchActiveIdx = -1;
+}
+
+function renderPlayerSearchResults() {
+  const input = document.getElementById("player-search");
+  const list = document.getElementById("player-search-results");
+  if (!input || !list) return;
+  const q = input.value || "";
+  playerSearchHits = searchPlayersGlobal(q);
+  list.innerHTML = "";
+  if (q.trim().length < 2) {
+    hidePlayerSearchResults();
+    return;
+  }
+  input.setAttribute("aria-expanded", "true");
+  list.classList.remove("hidden");
+  if (!playerSearchHits.length) {
+    const li = document.createElement("li");
+    li.className = "ps-empty";
+    li.textContent = "Никого не найдено";
+    list.appendChild(li);
+    return;
+  }
+  playerSearchHits.forEach((entry, idx) => {
+    const li = document.createElement("li");
+    li.setAttribute("role", "option");
+    li.dataset.idx = String(idx);
+    if (idx === playerSearchActiveIdx) li.classList.add("active");
+    const pos = String(entry.position || "?").trim();
+    const ovr = Number(entry.overall) || 0;
+    const club = teamLabelForSearch(entry.teamName);
+    li.innerHTML =
+      `<span class="ps-name">${escapeHtml(entry.name)}</span> ` +
+      `<span class="ps-meta">${escapeHtml(pos)} ${ovr} · ${escapeHtml(club)}</span>`;
+    li.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      focusPlayerBySearch(entry);
+    });
+    list.appendChild(li);
+  });
+}
+
+function escapeHtml(text) {
+  return String(text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function focusPlayerBySearch(entry) {
+  if (!entry?.id) return;
+  hidePlayerSearchResults();
+  const input = document.getElementById("player-search");
+  if (input) {
+    input.value = entry.name || "";
+    input.blur();
+  }
+
+  highlightPlayerId = entry.id;
+  clearTimeout(highlightPlayerTimer);
+
+  const loc = findPlayerGlobally(entry.id);
+  const isFa = entry.teamName === FA_TEAM || !!findFaPlayer(entry.id);
+
+  if (isNationsMode() && loc) {
+    const nation = loc.teamName;
+    if (nation && nation !== selectedNation) {
+      selectedNation = nation;
+      const sel = document.getElementById("nation-select");
+      if (sel) sel.value = nation;
+    }
+  }
+
+  if (isFa && !isNationsMode()) {
+    faFilter = "";
+    const faSearch = document.getElementById("fa-search");
+    if (faSearch) faSearch.value = "";
+    readFaPoolFiltersFromDom();
+  }
+
+  renderAll();
+
+  requestAnimationFrame(() => {
+    const safeId = String(entry.id).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const playerEl = document.querySelector(`.player[data-id="${safeId}"]`);
+    const teamName = loc?.teamName || (isFa ? FA_TEAM : entry.teamName);
+    const card =
+      teamName && teamName !== FA_TEAM
+        ? document.querySelector(`.team-card[data-team="${String(teamName).replace(/"/g, '\\"')}"]`)
+        : null;
+
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (isFa) {
+      document.getElementById("fa-panel")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    if (playerEl) {
+      playerEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    highlightPlayerTimer = setTimeout(() => {
+      highlightPlayerId = null;
+      renderAll();
+    }, 4500);
+  });
+
+  const club = teamLabelForSearch(entry.teamName);
+  setStatus(`→ ${entry.name} · ${club}`);
+}
+
+function setupPlayerSearch() {
+  const input = document.getElementById("player-search");
+  const wrap = document.getElementById("player-search-wrap");
+  if (!input) return;
+
+  input.addEventListener("input", () => {
+    playerSearchActiveIdx = -1;
+    renderPlayerSearchResults();
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      hidePlayerSearchResults();
+      input.blur();
+      return;
+    }
+    if (!playerSearchHits.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      playerSearchActiveIdx = Math.min(playerSearchActiveIdx + 1, playerSearchHits.length - 1);
+      renderPlayerSearchResults();
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      playerSearchActiveIdx = Math.max(playerSearchActiveIdx - 1, 0);
+      renderPlayerSearchResults();
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const pick =
+        playerSearchActiveIdx >= 0
+          ? playerSearchHits[playerSearchActiveIdx]
+          : playerSearchHits[0];
+      if (pick) focusPlayerBySearch(pick);
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (wrap && !wrap.contains(e.target)) hidePlayerSearchResults();
+  });
 }
 
 function playerMatchesOvr(p, min, max) {
@@ -2990,7 +3221,8 @@ function renderPlayer(teamName, p, inline) {
     "player" +
     (inline ? " player-inline" : "") +
     (isIncoming(teamName, p) ? " incoming" : "") +
-    (p.injured ? " injured" : "");
+    (p.injured ? " injured" : "") +
+    (p.id === highlightPlayerId ? " search-highlight" : "");
   el.draggable = true;
   el.dataset.id = p.id;
   el.dataset.team = teamName;
@@ -3683,6 +3915,9 @@ function renderTeam(team) {
   const card = document.createElement("div");
   card.className = "team-card";
   card.dataset.team = team.name;
+  if (highlightPlayerId && teamHasPlayerId(team, highlightPlayerId)) {
+    card.classList.add("team-card-focus");
+  }
   if (!isNationsMode()) {
     const { inn, out } = countInOut(team);
     const overIn = inn > maxIn;
@@ -4510,6 +4745,7 @@ loadData()
     setupPlayerForm();
     setupPlayerEditForm();
     setupPoolFilters();
+    setupPlayerSearch();
     setupFaSignForm();
     setupSharePanel();
   })

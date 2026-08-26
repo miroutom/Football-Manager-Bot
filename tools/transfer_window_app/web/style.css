@@ -93,6 +93,76 @@ body {
   background: #1c4a7a;
   color: #fff;
 }
+.player-search-wrap {
+  position: relative;
+  flex: 1 1 200px;
+  max-width: 320px;
+  min-width: 160px;
+}
+.player-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid #2a3a48;
+  background: #0f1820;
+  color: #e8eef4;
+  font-size: 13px;
+}
+.player-search-input:focus {
+  outline: none;
+  border-color: #3a7ec8;
+  box-shadow: 0 0 0 2px rgba(58, 126, 200, 0.25);
+}
+.player-search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 150;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  background: #152028;
+  border: 1px solid #3a7ec8;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.player-search-results.hidden {
+  display: none;
+}
+.player-search-results li {
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #cfe;
+  border-bottom: 1px solid #1e2a34;
+  line-height: 1.35;
+}
+.player-search-results li:last-child {
+  border-bottom: none;
+}
+.player-search-results li:hover,
+.player-search-results li.active {
+  background: #1c4a7a;
+}
+.player-search-results li .ps-name {
+  font-weight: 600;
+  color: #fff;
+}
+.player-search-results li .ps-meta {
+  color: #9ab;
+  font-size: 11px;
+}
+.player-search-results li.ps-empty {
+  cursor: default;
+  color: #8a9;
+}
+.player-search-results li.ps-empty:hover {
+  background: transparent;
+}
 .mode-switch {
   display: inline-flex;
   border: 1px solid #2a3a48;
@@ -681,6 +751,17 @@ body {
 .team-hdr .counters .in { color: #7dcea0; }
 .team-hdr .counters .out { color: #f1948a; }
 .team-card.squad-incomplete { box-shadow: 0 0 0 2px rgba(241, 148, 138, 0.45); }
+.team-card.team-card-focus {
+  box-shadow: 0 0 0 2px rgba(93, 255, 168, 0.75);
+}
+.player.search-highlight {
+  box-shadow: 0 0 0 2px #5dffa8, 0 0 12px rgba(93, 255, 168, 0.35);
+  animation: search-pulse 1.2s ease-in-out 2;
+}
+@keyframes search-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.25); }
+}
 .squad-quota {
   margin-top: 6px;
   padding: 6px 8px;

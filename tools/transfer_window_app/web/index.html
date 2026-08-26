@@ -23,6 +23,20 @@
         <button type="button" class="win-btn active" data-window="summer" id="btn-summer">Лето 5/5</button>
         <button type="button" class="win-btn" data-window="winter" id="btn-winter">Зима 2/2</button>
       </div>
+      <div class="player-search-wrap" id="player-search-wrap">
+        <input
+          type="search"
+          id="player-search"
+          class="player-search-input"
+          placeholder="Поиск игрока…"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Поиск игрока по имени"
+          aria-expanded="false"
+          aria-controls="player-search-results"
+        >
+        <ul id="player-search-results" class="player-search-results hidden" role="listbox"></ul>
+      </div>
       <div id="nation-switch" class="nation-switch nations-only" hidden>
         <label>Сборная
           <select id="nation-select"></select>
