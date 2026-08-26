@@ -610,7 +610,16 @@
       "home_score": 4,
       "away_score": 3,
       "day": 3,
-      "month_day": 5,
+      "entry_type": "play"
+    },
+    {
+      "home": "Челси",
+      "away": "Арсенал",
+      "league": "eng",
+      "home_score": 1,
+      "away_score": 7,
+      "day": 3,
+      "month_day": 7,
       "entry_type": "play"
     }
   ]

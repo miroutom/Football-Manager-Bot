@@ -10767,5 +10767,60 @@
     "home_score": 4,
     "away_score": 3,
     "league_code": "eng"
+  },
+  {
+    "season": 4,
+    "day": 3,
+    "home": "Челси",
+    "away": "Арсенал",
+    "tournament": "league",
+    "players": [
+      {
+        "player": "Давсари",
+        "team": "Челси",
+        "position": "",
+        "goals": 0,
+        "assists": 1
+      },
+      {
+        "player": "Орта",
+        "team": "Челси",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Арнаутович",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 3,
+        "assists": 1
+      },
+      {
+        "player": "Давид",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 1,
+        "assists": 0
+      },
+      {
+        "player": "Влашич",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 0,
+        "assists": 4
+      },
+      {
+        "player": "Мерино",
+        "team": "Арсенал",
+        "position": "",
+        "goals": 3,
+        "assists": 2
+      }
+    ],
+    "recorded_at": "2026-08-26T21:12:39Z",
+    "home_score": 1,
+    "away_score": 7,
+    "league_code": "eng"
   }
 ]

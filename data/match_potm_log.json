@@ -3021,5 +3021,19 @@
     "home_score": 4,
     "away_score": 3,
     "league_code": "eng"
+  },
+  {
+    "season": 4,
+    "day": 3,
+    "home": "Челси",
+    "away": "Арсенал",
+    "tournament": "league",
+    "player": "Мерино",
+    "team": "Арсенал",
+    "position": "ЦП",
+    "recorded_at": "2026-08-26T21:12:39Z",
+    "home_score": 1,
+    "away_score": 7,
+    "league_code": "eng"
   }
 ]
