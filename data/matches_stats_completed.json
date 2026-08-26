@@ -2906,5 +2906,61 @@
     "tournament": "cl",
     "cl_phase": "league",
     "day": 1
+  },
+  {
+    "home": "Интер",
+    "away": "Реал Сосьедад",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
+  },
+  {
+    "home": "Интер",
+    "away": "Дортмунд",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
+  },
+  {
+    "home": "Аталанта",
+    "away": "Севилья",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
+  },
+  {
+    "home": "Сити",
+    "away": "Барселона",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 1
+  },
+  {
+    "home": "Хоффенхайм",
+    "away": "Челси",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 2
+  },
+  {
+    "home": "Челси",
+    "away": "Интер",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 2
+  },
+  {
+    "home": "Дортмунд",
+    "away": "Атлетико",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 2
+  },
+  {
+    "home": "Барселона",
+    "away": "Вольфсбург",
+    "tournament": "cl",
+    "cl_phase": "league",
+    "day": 2
   }
 ]

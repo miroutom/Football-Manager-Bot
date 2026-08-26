@@ -19,7 +19,7 @@
       "team_norm": "челси",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 1
+      "matches_left": 0
     },
     {
       "key": "толои|тоттенхэм|cl|cl",
@@ -83,7 +83,7 @@
       "team_norm": "дортмунд",
       "league_code": "cl",
       "scope": "cl",
-      "matches_left": 3
+      "matches_left": 1
     },
     {
       "key": "родри|наполи|ita|league",
@@ -93,7 +93,7 @@
       "team_norm": "наполи",
       "league_code": "ita",
       "scope": "league",
-      "matches_left": 2,
+      "matches_left": 1,
       "unavailable_from_round": 3
     },
     {
@@ -459,6 +459,66 @@
       "team_norm": "севилья",
       "league_code": "cl",
       "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "фред|дортмунд|ger|league",
+      "name": "Фред",
+      "name_norm": "фред",
+      "team": "Дортмунд",
+      "team_norm": "дортмунд",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "бардакджы|дортмунд|ger|league",
+      "name": "Бардакджы",
+      "name_norm": "бардакджы",
+      "team": "Дортмунд",
+      "team_norm": "дортмунд",
+      "league_code": "ger",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "гудмундсон|челси|cl|cl",
+      "name": "Гудмундсон",
+      "name_norm": "гудмундсон",
+      "team": "Челси",
+      "team_norm": "челси",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "гиго|челси|cl|cl",
+      "name": "Гиго",
+      "name_norm": "гиго",
+      "team": "Челси",
+      "team_norm": "челси",
+      "league_code": "cl",
+      "scope": "cl",
+      "count": 1
+    },
+    {
+      "key": "билинг|милан|ita|league",
+      "name": "Билинг",
+      "name_norm": "билинг",
+      "team": "Милан",
+      "team_norm": "милан",
+      "league_code": "ita",
+      "scope": "league",
+      "count": 1
+    },
+    {
+      "key": "флорентину|тоттенхэм|eng|league",
+      "name": "Флорентину",
+      "name_norm": "флорентину",
+      "team": "Тоттенхэм",
+      "team_norm": "тоттенхэм",
+      "league_code": "eng",
+      "scope": "league",
       "count": 1
     }
   ],
@@ -4203,6 +4263,84 @@
       "life_limit": 2,
       "season": 4,
       "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "газинский|байер|4|life|1|2",
+      "name": "Газинский",
+      "name_norm": "газинский",
+      "team": "Байер",
+      "team_norm": "байер",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "милар|байер|4|life|1|2",
+      "name": "Милар",
+      "name_norm": "милар",
+      "team": "Байер",
+      "team_norm": "байер",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "шлоттербек|дортмунд|4|life|1|2",
+      "name": "Шлоттербек",
+      "name_norm": "шлоттербек",
+      "team": "Дортмунд",
+      "team_norm": "дортмунд",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "тюрам|атлетико|4|life|1|2",
+      "name": "Тюрам",
+      "name_norm": "тюрам",
+      "team": "Атлетико",
+      "team_norm": "атлетико",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "бах|ювентус|4|life|1|2",
+      "name": "Бах",
+      "name_norm": "бах",
+      "team": "Ювентус",
+      "team_norm": "ювентус",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 2,
+      "type": "травма"
+    },
+    {
+      "key": "терье|ливерпуль|4|life|1|3",
+      "name": "Терье",
+      "name_norm": "терье",
+      "team": "Ливерпуль",
+      "team_norm": "ливерпуль",
+      "life_only": true,
+      "strike": 1,
+      "life_limit": 2,
+      "season": 4,
+      "month": 3,
       "type": "травма"
     }
   ]

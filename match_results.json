@@ -422,7 +422,195 @@
       "home_score": 1,
       "away_score": 1,
       "day": 2,
-      "month_day": 10,
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Байер",
+      "league": "ger",
+      "home_score": 1,
+      "away_score": 2,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Франкфурт",
+      "league": "ger",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Реал Сосьедад",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Интер",
+      "away": "Дортмунд",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Ньюкасл",
+      "away": "Сити",
+      "league": "eng",
+      "home_score": 3,
+      "away_score": 5,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Арсенал",
+      "away": "Тоттенхэм",
+      "league": "eng",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетико",
+      "away": "Бетис",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Аталанта",
+      "away": "Севилья",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Сити",
+      "away": "Барселона",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 1,
+      "day": 1,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Атлетик",
+      "away": "Реал Сосьедад",
+      "league": "esp",
+      "home_score": 2,
+      "away_score": 1,
+      "day": 1,
+      "entry_type": "play"
+    },
+    {
+      "home": "Хоффенхайм",
+      "away": "Челси",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 3,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Боруссия М",
+      "away": "Бавария",
+      "league": "ger",
+      "home_score": 3,
+      "away_score": 2,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Челси",
+      "away": "Интер",
+      "league": "cl",
+      "home_score": 1,
+      "away_score": 5,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Дортмунд",
+      "away": "Атлетико",
+      "league": "cl",
+      "home_score": 3,
+      "away_score": 3,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Барселона",
+      "away": "Вольфсбург",
+      "league": "cl",
+      "home_score": 6,
+      "away_score": 0,
+      "day": 2,
+      "cl_phase": "league",
+      "entry_type": "play"
+    },
+    {
+      "home": "Милан",
+      "away": "Аталанта",
+      "league": "ita",
+      "home_score": 1,
+      "away_score": 6,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Ювентус",
+      "away": "Наполи",
+      "league": "ita",
+      "home_score": 2,
+      "away_score": 3,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Бетис",
+      "away": "Севилья",
+      "league": "esp",
+      "home_score": 1,
+      "away_score": 8,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Фиорентина",
+      "away": "Интер",
+      "league": "ita",
+      "home_score": 0,
+      "away_score": 6,
+      "day": 2,
+      "entry_type": "play"
+    },
+    {
+      "home": "Тоттенхэм",
+      "away": "Ливерпуль",
+      "league": "eng",
+      "home_score": 4,
+      "away_score": 3,
+      "day": 3,
+      "month_day": 5,
       "entry_type": "play"
     }
   ]
