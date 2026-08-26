@@ -117,6 +117,22 @@ def _norm_club_token(s: str) -> str:
     return " ".join((s or "").strip().lower().split())
 
 
+def is_rpl_club(team_display: str) -> bool:
+    """Клуб из списка РПЛ (``rpl`` или реестр команд)."""
+    n = _norm_club_token(team_display)
+    if not n:
+        return False
+    for c in rpl:
+        if _norm_club_token(c) == n:
+            return True
+    try:
+        from utils.team_registry import league_code_for_team
+
+        return (league_code_for_team(team_display) or "").strip().lower() == "rpl"
+    except Exception:
+        return False
+
+
 def manager_side_for_team(team_display: str) -> str | None:
     """
     К какому менеджеру относится клуб (Roman / Lika), по ``MANAGER_TEAMS``.
@@ -147,10 +163,18 @@ def manager_side_for_team(team_display: str) -> str | None:
 def manager_session_label(home: str, away: str) -> str | None:
     """
     Подпись к матчу: оба клуба одного менеджера — «Симуляция», разные — «Игра».
+    Любой матч с клубом РПЛ — тоже «Симуляция» (лига и ЛЧ).
     Если клуб не найден в разбиении — None.
     """
+    if is_rpl_club(home) or is_rpl_club(away):
+        return "Симуляция"
     a = manager_side_for_team(home)
     b = manager_side_for_team(away)
     if a is None or b is None:
         return None
     return "Симуляция" if a == b else "Игра"
+
+
+def match_journal_entry_type(home: str, away: str) -> str:
+    """``entry_type`` для ``match_results``: ``simulation`` или ``play``."""
+    return "simulation" if manager_session_label(home, away) == "Симуляция" else "play"

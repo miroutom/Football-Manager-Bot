@@ -681,6 +681,8 @@ def process_match(home, away, home_score, away_score, league_code, round_num=Non
     cl_ph_norm = _normalize_cl_phase(cl_ph) if league_code == "cl" else None
     if league_code != "cl" or cl_ph_norm == "league":
         add_stat(home, away, home_score, away_score, teams)
+    from config.leagues_config import match_journal_entry_type
+
     add_match_result(
         home,
         away,
@@ -691,6 +693,7 @@ def process_match(home, away, home_score, away_score, league_code, round_num=Non
         cl_phase=cl_ph if league_code == "cl" else None,
         penalties_by_team=penalties_by_team,
         month_day=month_day,
+        entry_type=match_journal_entry_type(home, away),
     )
     save_result(league_code)
 

@@ -680,6 +680,8 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
             else:
                 cl_ph = None
             if not _played(h, a, lc, cl_phase=cl_ph):
+                from config.leagues_config import match_journal_entry_type
+
                 add_match_result(
                     h,
                     a,
@@ -689,6 +691,7 @@ async def _finalize_stats_session(message: Message, state: FSMContext) -> None:
                     cl_phase=cl_ph,
                     day=data.get("stats_schedule_day"),
                     month_day=data.get("stats_schedule_month_day"),
+                    entry_type=match_journal_entry_type(h, a),
                 )
                 extra = "\nМатч добавлен в журнал match_results.json."
     except Exception:

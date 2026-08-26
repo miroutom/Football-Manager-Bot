@@ -1756,6 +1756,8 @@ def add_stats_to_match_interactive():
         is_match_played as _is_in_journal,
     )
     if not _is_in_journal(home, away, league_code):
+        from config.leagues_config import match_journal_entry_type
+
         add_match_result(
             home,
             away,
@@ -1763,6 +1765,7 @@ def add_stats_to_match_interactive():
             home_score=home_score,
             away_score=away_score,
             cl_phase="knockout" if league_code == "cl" else None,
+            entry_type=match_journal_entry_type(home, away),
         )
         print(f"  (матч добавлен в журнал {get_match_results_path()})")
 
